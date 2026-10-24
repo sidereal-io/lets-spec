@@ -26,18 +26,11 @@ const REVIEW = ['delegate', 'review', 'run', '--for', 'code', '--name', 'x', '--
 const HANDOFF = ['delegate', 'handoff', 'run', '--for', 'apply', '--name', 'x', '--prompt-file', 'p.md', '--model', 'claude'];
 
 test('every old command is rejected by name', async () => {
-  for (const command of ['critique', 'detect', 'setup', 'conformance']) {
+  for (const command of ['critique', 'detect', 'setup', 'conformance', 'verify']) {
     const { code, stderr } = await lets('delegate', command);
     assert.equal(code, 2, command);
     assert.match(stderr, new RegExp(`unknown command '${command}'`));
   }
-});
-
-test('verify checks a resolver', async () => {
-  const resolver = fileURLToPath(new URL('../../../lets/resolvers/headless-resolver', import.meta.url));
-  const { code, stdout } = await lets('delegate', 'verify', resolver);
-  assert.equal(code, 0);
-  assert.equal(stdout.trim().split('\n').at(-1), 'The resolver keeps the contract.');
 });
 
 test('every old flag is rejected by name', async () => {
@@ -204,8 +197,8 @@ test('an intent from the other strategy is a usage error that names --for', asyn
   assert.match(stderr, /--for/);
 });
 
-test('a resolver listed by path, such as the sh example, is exit 2, naming it and the config file, and is not run', async () => {
-  const example = fileURLToPath(new URL('../../../lets/resolvers/headless-resolver', import.meta.url));
+test('a resolver listed by path is exit 2, naming it and the config file', async () => {
+  const example = '/opt/r/old-resolver';
   const r = repo(`version: 2\nresolvers:\n  - ${example}\n  - subagent\n`);
   const { code, stdout, stderr } = await letsIn(r, 'delegate', 'handoff', 'instructions', '--for', 'apply');
   assert.equal(code, 2);

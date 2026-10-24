@@ -8,12 +8,11 @@ import { Command, CommanderError, InvalidArgumentError, Option } from 'commander
 import { run as handoff } from './delegate/handoff.ts';
 import type { HandoffOptions } from './delegate/handoff.ts';
 import { run as instructions } from './delegate/instructions.ts';
-import { EFFORTS, FAMILIES, parseModel } from './resolvers/kit/protocol.ts';
+import { EFFORTS, FAMILIES, parseModel } from './resolvers/kit/families.ts';
 import { run as review } from './delegate/review.ts';
 import type { ReviewOptions } from './delegate/review.ts';
 import { STRATEGIES } from './delegate/strategies.ts';
 import type { Intent, Strategy } from './delegate/strategies.ts';
-import { run as verify } from './delegate/verify.ts';
 import { realIo } from './io.ts';
 import type { Deps } from './io.ts';
 import { createAdapter as cli } from './resolvers/cli/cli.ts';
@@ -138,9 +137,8 @@ Exit codes:
 
 const INSTRUCTIONS_HELP = `
 stdout: one JSON line with strategy, for, resolver, options and guidance.
-resolver and options come from the first resolver that does not decline a
-probe for this strategy: options are the models it can run now, in its
-order. guidance is delegations.<intent>.guidance from the config, or null.
+resolver and options come from the first resolver that does not decline
+this strategy: options are the models it can run now, in its order. guidance is delegations.<intent>.guidance from the config, or null.
 It starts no session.
 
 Exit codes:
@@ -148,16 +146,6 @@ Exit codes:
   2  usage error, or every resolver in the config declined. A guidance
      that is not a string is a usage error.
   4  the outcome is unknown, such as no reply from the harness`;
-
-const VERIFY_HELP = `
-It prints one line per check, and exits 1 if any fails.
-
-The live part runs "Reply with the single word ready and stop" read-only
-on each model probe lists, in order, until one is not refused (exit 3).
-It checks the answer and the tree, and sends finish. A resolver that lists
-no model gets no run. Then it starts a session with "Say hello and stop"
-on the first model the probe for start lists, or on claude when it lists
-none or does not answer, and leaves it for you to close.`;
 
 // --timeout-minutes: a whole number of minutes.
 function wholeMinutes(value: string): number {
@@ -267,17 +255,6 @@ strategyCommand('handoff', 'start a fresh, interactive session and return at onc
   .addHelpText('after', HANDOFF_HELP)
   .action(async ({ model, for: _intent, ...options }: Omit<HandoffOptions, 'models'> & { model: string[]; for: Intent }) => {
     process.exitCode = await handoff({ ...options, models: model }, realDeps());
-  });
-
-delegate
-  .command('verify')
-  .summary('check that a resolver keeps the contract')
-  .description('Check that a resolver keeps the contract. The checks send requests that start nothing, unless you give --live.')
-  .argument('<command...>', 'the resolver, and any arguments to give it before the verb')
-  .option('--live', 'also run a session and start another: this spends tokens and may open a thread')
-  .addHelpText('after', VERIFY_HELP)
-  .action(async (command: string[], { live }: { live?: boolean }) => {
-    process.exitCode = await verify({ command, live: live === true }, realDeps());
   });
 
 try {
