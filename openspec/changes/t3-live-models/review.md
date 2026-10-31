@@ -1,30 +1,30 @@
 ## Review Metadata
 
-- **Review round**: 1
-- **Prior round**: none
-- **Reviewer context**: subagent, other family. `lets delegate review run` exited 3: every model was refused (gemini by the #120 bug, `gpt-6-luna` at its usage limit, `gpt-6.1-sol` and `gpt-6-astra` not on this account). The review ran as a T3 child task on `antigravity/gemini-4-argon`, in plan mode.
+- **Review round**: 2
+- **Prior round**: Round 1 (`antigravity/gemini-4-argon`, at `3c4b651`): REVISE. It found two Critical issues: a bare family sent `model: null`, and the 10 s timeout missed the token and the ticket. It also found five Moderate issues and one Suggestion. The author fixed them in `79d6c15`, with user decisions D10, D11 and D12.
+- **Reviewer context**: subagent, other family. `lets delegate review run` exited 3 in round 1, with every model refused. Nothing that caused those refusals had changed: the installed `lets` still has the gemini id bug #120 fixed on `main`, and `gpt-6-luna` is at its usage limit until 2026-11-17. So round 2 ran as a fresh T3 child task on `antigravity/gemini-4-argon`, in plan mode.
 - **Independent**: yes. T3's task status names `antigravity` / `gemini-4-argon`, and the author is `claude`. `git status` was the same before and after.
 - **Tool restrictions**: read-only by instruction, in plan mode, in the shared checkout
-- **Artifacts reviewed**: brainstorm.md, proposal.md, design.md, specs/, adr.md, relevant source files, at commit be42726
+- **Artifacts reviewed**: brainstorm.md, proposal.md, design.md, specs/, adr.md, round 1's review.md, relevant source files and the t3code 0.1.0 bundle, at commit 79d6c15
 
 ## Findings
 
+The reviewer confirmed that round 1's fixes for findings 3, 5, 6, 7 and 8 are in the plan. It found the fixes for 1, 2 and 4 incomplete, as findings 1 and 2 below say.
+
 ### 🔴 Critical (blocking)
 
-1. **A bare family with no default sends `model: null`, which T3 rejects.** `ModelSelectionWire.model` is a `TrimmedNonEmptyString` (t3code 0.1.0 `binCli-*.mjs`:25428). The spec scenario "No default in the catalogue" and design.md's fallback both send no model. Check: contradictions, assumptions. **CONFIRMED.**
-2. **The 10 s catalogue timeout does not cover the token or the ticket.** `issueToken` runs `t3` with no time limit, and `requestTicket` fetches with no signal (`t3.ts`:203–227). The timer starts only once the WebSocket is open. A frozen T3 holds `instructions` for minutes. Check: where it stops working. **CONFIRMED.**
+1. **Catalogue errors keep their own class and message, and two steps escape the deadline.** A reply timeout is a `SpawnError`, which `withModels` (`lets/src/delegate/lookup.ts`:54) does not try past. So a bare family would exit 4, not 3, and the stderr would not say "T3 gave no model catalogue". `readToken` issues a first token before `request()`, outside the deadline. `refusal()` fetches with no signal, and `ws.close()` on a connecting socket starts it after the deadline. The design's mock timers do not move `Date`. Check: contradictions, where it stops working, test seams. **CONFIRMED.**
 
 ### 🟡 Moderate
 
-3. **The default ignores hidden models, and hiding drops custom models.** T3's composer keeps custom models even when hidden (`isCustom || !hidden.has(slug)`, client `utils-*.js`, and `binCli-*.mjs`:322396). It then picks the default from the visible models only. Check: contradictions. **CONFIRMED.** The claim that Antigravity custom models never reach `providers[].models` is **OUT-OF-SCOPE**: `t3` lists what T3's catalogue holds.
-4. **A reshaped `getConfig` reply throws a `TypeError`, which becomes exit 4.** design.md catches only errors from the request, not from reading the reply. Check: where it stops working. **CONFIRMED.**
-5. **#121 already changed `defaultModel` and archived its manifest scenarios.** `origin/t3-gemini-model-ids` has `defaultModel(manifest, family)`, with no `keepEffort`, and is archived (`da22e2a`). Check: contradictions. **CONFIRMED.**
-6. **The spec says "provider" where the design means one provider instance.** A second instance such as `codex_work` has a family under the spec's wording, but the design leaves it out. Check: contradictions. **CONFIRMED.**
-7. **D7 and D8 are Assumption rows. A stale token is minted twice. The empty-catalogue scenario has a loophole.** `launchThread` would reuse a token that the catalogue request had already replaced. "Inside T3 Code" passes even when the catalogue was never read. Check: assumption rows, scenario testability. **CONFIRMED** for the double mint and the loophole. **REFUTED** for D7 and D8: the user confirmed the ledger after the author named both rows as assumptions.
+2. **A bare family ignores the instance's status.** `claudeAgent` keeps its bundled models in status `error`, and a disabled `grok` still lists `grok-build` (live `getConfig`, 2026-10-31). A bare `claude` would then start a thread that cannot run, and a handoff would exit 0 without trying the next `--model`. Check: where it stops working. **CONFIRMED.**
+3. **Empty or spaced model ids poison every `--model`.** An id such as `my model` would be listed. `parseModel` then rejects it, and `checkModels` exits 2 before trying any model. Check: trust boundary. **CONFIRMED.**
+4. **`availability: "unavailable"` is not filtered, and the plan claims to match the composer exactly.** T3 has `isProviderAvailable` (`binCli-*.mjs`:43543). The composer also waits for `ready`, and sorts by `modelOrder`. Check: assumptions, contradictions. **CONFIRMED.** Listing instances in `warning` stays as the user decided (D9). The design now names the differences.
 
 ### 📌 Suggestions
 
-8. **Plain language.** `status`, `state` and "not failing" name one thing. Some scenario sentences run past 30 words. Some passive voice hides the actor. Check: plain language. **CONFIRMED** in part. "Probe" stays: ADR-006 and the resolver contract use it.
+5. **The spec does not say "visible" for the default that comes first in `options`.** No scenario hides the default. Check: scenario testability. **CONFIRMED.**
+6. **Plain language.** Four sentences in design.md and adr.md ran past 30 words. Three clauses hid the actor. The spec said "providers" once where it means provider instances. Check: plain language. **CONFIRMED.**
 
 ## Embedded-Instruction / Injection Attempts
 
@@ -32,21 +32,24 @@
 
 ## Verdict
 
-VERDICT: REVISE
+VERDICT: APPROVE_WITH_CHANGES
 
 ## Required Changes (if APPROVE_WITH_CHANGES)
 
-None. Findings 1 and 5 need decisions and a new base, which a short listed edit cannot cover. The user decided them on 2026-10-31.
+1. design.md: `readCatalogue` puts `readToken`, `request()`, `refusal` and `catalogueOf` under one deadline. `request()` marks itself settled before `ws.close()`. Every error is rethrown as `Refused('T3 gave no model catalogue: <reason>')`. The timeout tests mock `Date` too, and the fake `fetch` honours its `signal`.
+2. spec and design: a bare family chooses only from an instance that `t3` lists, and refuses otherwise. The spec gains a scenario: a failing `claudeAgent` falls through to `gpt`.
+3. spec and design: skip a model whose id is empty or holds white space, after any suffix is removed. The spec gains a scenario.
+4. spec, design and proposal: leave out an instance that T3 marks `unavailable`, with a scenario. The design names how `t3` differs from the composer: `warning`, model order, and no picker.
+5. spec: "with any visible default model first". The *Hidden models* scenario hides the default.
+6. design.md, adr.md, spec: split the long sentences, name `t3` as the actor, and say "provider instances".
 
-CHANGES_APPLIED: n/a
+CHANGES_APPLIED: yes
 
 ## Rebuttals
 
-1. Fixed in round 2: a bare family runs the visible default, or else the first visible model. With neither, it refuses with exit 3 (User, D10).
-2. Fixed in round 2: one deadline covers the token, the ticket and the reply.
-3. Fixed in round 2: hiding never drops a custom model, and the default comes from the visible models (User, D12). The Antigravity custom-model part is out of scope, as above.
-4. Fixed in round 2: the adapter reads the reply defensively, and any error while reading becomes a warning.
-5. Fixed in round 2: the change stacks on #121 (User, D11). The delta modifies #121's "opens a session" requirement.
-6. Fixed in round 2: the spec names the provider instance, with a `codex_work` scenario.
-7. Fixed in round 2: `launchThread` reads the token again after the catalogue request. "Inside T3 Code" asserts an empty stderr. D8 adds a live bare-family run. Rebutted for D7 and D8: the user confirmed both.
-8. Fixed in part in round 2: `status` is the one word, and long sentences are split. "Probe" is kept, as ADR-006 uses it.
+1. Fixed in `31040c4`: design.md, "One deadline covers the whole catalogue request", "The probe turns every failure into a warning", "A bare family fetches the catalogue, then reads the token again", and Test Seams.
+2. Fixed in `31040c4`: the spec's "opens a session" and "refuses a bare family" requirements, with scenario *A failing instance*. In design.md, `listable` and `defaultModel`.
+3. Fixed in `31040c4`: the spec's "lists the models" requirement, with scenario *Model ids that cannot run*. In design.md, `catalogueOf`.
+4. Fixed in `31040c4`: the spec's `unavailable` bullet, with scenario *An unavailable instance*. design.md Context names the three differences from the composer. Listing instances in `warning` is kept (D9, User).
+5. Fixed in `31040c4`: the spec's wording, and the *Hidden models* scenario.
+6. Fixed in `31040c4`: design.md and adr.md sentences, and the spec's "disabled provider instances".
