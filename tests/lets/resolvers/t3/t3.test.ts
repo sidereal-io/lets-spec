@@ -616,6 +616,11 @@ test('a run with a null model launches null when the provider has no default', a
   assert.equal((await ranSelection({ family: 'gpt', model: null })).model, null);
 });
 
+test('a bare gemini run launches the manifest\'s default without its effort', async () => {
+  assert.deepEqual(await ranSelection({ family: 'gemini', model: null, effort: 'low' }),
+    { instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] });
+});
+
 test('a start runs the request\'s model, not the project default, with no effort option', async () => {
   const selection = await startedSelection({ family: 'gpt', model: 'gpt-6-luna' },
     { projectDefault: '{"instanceId":"claudeAgent","model":"claude-opus-5-5","options":[]}' });
