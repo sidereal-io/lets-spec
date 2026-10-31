@@ -269,3 +269,9 @@ try {
   if (!(error instanceof CommanderError)) throw error;
   process.exitCode = error.exitCode === 0 ? 0 : 2;
 }
+
+// The command has answered, so exit once its output is written. A WebSocket
+// closed while its server stays silent would otherwise hold the process open
+// until the server answers the close.
+await Promise.all([process.stdout, process.stderr].map((stream) => new Promise((written) => stream.write('', written))));
+process.exit();
