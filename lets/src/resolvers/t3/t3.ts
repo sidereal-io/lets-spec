@@ -349,7 +349,7 @@ export function createAdapter(io: Io): Adapter {
     const branch = (await git(cwd, ['branch', '--show-current'])) || null;
     // A null model is the provider's default; with none, t3 picks its own.
     const manifest = model === null ? readManifest() : null;
-    const chosen = model ?? (manifest === null ? null : defaultModel(manifest, family, { keepEffort: !readOnly }));
+    const chosen = model ?? (manifest === null ? null : defaultModel(manifest, family));
     const modelSelection = t3ModelSelection({ family, model: chosen, effort });
     const token = await readToken(io);
     const { threadId } = await launch(io, { origin, token }, buildLaunch({

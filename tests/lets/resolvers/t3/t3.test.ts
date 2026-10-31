@@ -632,8 +632,9 @@ test('a gemini start sends the model as given, with no effort option', async () 
     { instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] });
 });
 
-test('a start with a bare family runs the provider\'s default as the manifest names it', async () => {
-  assert.equal((await startedSelection({ family: 'gemini', model: null })).model, 'gemini-3.8-flash-high');
+test('a bare gemini start runs the manifest\'s default without its effort', async () => {
+  assert.deepEqual(await startedSelection({ family: 'gemini', model: null }),
+    { instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] });
 });
 
 test('a start with a bare family launches null when the provider has no default', async () => {
