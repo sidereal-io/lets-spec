@@ -27,7 +27,7 @@ export function parseModel(text: string): Model | null {
 export const HEADLESS_EXECUTOR: Record<Family, string> = { gpt: 'codex', claude: 'claude', gemini: 'agy' };
 
 // agy's gemini model ids carry the effort, as gemini-<version>-<effort>,
-// because agy lists each model once per effort. t3's manifest still does.
+// because agy lists each model once per effort. t3's catalogue still does.
 const EFFORT_SUFFIX = /-(low|medium|high)$/;
 export const withoutEffort = (model: string) => model.replace(EFFORT_SUFFIX, '');
 // The model with effort added, unless it already names one.

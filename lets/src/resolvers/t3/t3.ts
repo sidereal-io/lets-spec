@@ -12,6 +12,9 @@
 // What is private here, and why it stays:
 // - The WebSocket RPC and the `launchThread` and `thread.archive` calls are
 //   the UI's own, so they move only when the UI does.
+// - `server.getConfig` is the request the UI makes to fill its model
+//   picker, so it lists the models the composer offers. T3's
+//   model-manifest.json is not that list.
 // - t3's CLI has no thread commands. Its MCP tools reach only the agent
 //   process t3 started, not a child like this one. The `acp-mcp-call`
 //   terminal fallback exists only where t3 sets `T3_ACP_MCP_NODE`, which it
@@ -44,12 +47,6 @@ export const T3_INSTANCE: Record<Family, string> = { gpt: 'codex', claude: 'clau
 const T3_EFFORT_OPTION: Record<Family, string | null> = { gpt: 'reasoningEffort', claude: 'effort', gemini: null };
 
 export type ModelSelection = { instanceId: string; model: string | null; options: { id: string; value: string }[] };
-type Manifest = {
-  manifest: {
-    currentModels: Record<string, string[] | undefined>;
-    providers?: Record<string, { defaults?: { chat?: string } | null } | undefined>;
-  };
-};
 type Project = { project_id: string; title: string; workspace_root: string };
 
 // The composer's model catalogue, as `server.getConfig` gives it: each
@@ -397,8 +394,6 @@ export async function launch(io: Io, server: Server, input: ReturnType<typeof bu
 
 export function createAdapter(io: Io): Adapter {
   const databasePath = () => `${userdata(io)}/statev2.sqlite`;
-  const manifestPath = () => `${userdata(io)}/model-manifest.json`;
-  const readManifest = (): Manifest | null => (io.exists(manifestPath()) ? JSON.parse(io.readFile(manifestPath())) : null);
 
   // Open the database, run read(db), and close it again.
   function withDb<T>(read: (db: Db) => T): T {

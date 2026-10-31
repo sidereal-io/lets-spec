@@ -10,7 +10,7 @@
 
 - [x] 2.1 [medium] `lets delegate review instructions` inside T3 Code lists `options` from the catalogue, and never reads `model-manifest.json`. With only disabled instances it lists `[]` with an empty stderr. When T3 gives no catalogue, refuses, or replies in another shape, it lists `[]`, says why on stderr, and exits 0. The fake WebSocket in `delegate.test.ts` answers by `tag` (verify: node --test tests/lets/resolvers/t3/delegate.test.ts) (✓ node --test tests/lets/resolvers/t3/delegate.test.ts passed)
 - [x] 2.2 [medium] A bare-family `lets delegate handoff run` or `review run` inside T3 Code runs `defaultModel` from the catalogue, and reads the token again after the catalogue request. When the catalogue fails, or `defaultModel` is null, it refuses and names the instance, and starts no thread. So `--model claude --model gpt` with a failing `claudeAgent` runs `gpt-6-luna`, and a lone refused model exits 3 (verify: node --test tests/lets/resolvers/t3/delegate.test.ts) (✓ node --test tests/lets/resolvers/t3/delegate.test.ts passed)
-- [ ] 2.3 [easy] No manifest code is left in `t3.ts`: `Manifest`, `manifestPath` and `readManifest` are gone. The header comment's "What is private here" names `server.getConfig` (verify: pnpm check)
+- [x] 2.3 [easy] No manifest code is left in `t3.ts`: `Manifest`, `manifestPath` and `readManifest` are gone. The header comment's "What is private here" names `server.getConfig` (verify: pnpm check) (✓ pnpm check passed)
 
 ## 3. Document and accept [depends-on: 2]
 
