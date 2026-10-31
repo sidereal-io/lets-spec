@@ -1,0 +1,24 @@
+## 1. Read the catalogue
+
+- [ ] 1.1 [medium] `catalogueOf` reads a `server.getConfig` reply into instances and hidden slugs. It skips an entry or model without the fields it needs, and a model whose id is empty or holds white space after any gemini suffix is removed. It throws when the reply is not an object, or `providers` is not an array (verify: node --test --test-name-pattern=catalogueOf tests/lets/resolvers/t3/t3.test.ts)
+- [ ] 1.2 [medium] `optionsFromCatalogue` lists `<family>/<model>`, replacing `optionsFromT3Manifest` and its tests. It keeps only `listable` instances: enabled, status `ready` or `warning`, not `unavailable`, with an id in `T3_INSTANCE`. They come in the catalogue's order, with visible models only, where a custom model is always visible. The visible default comes first, and each gemini model appears once without its suffix (verify: node --test --test-name-pattern=options tests/lets/resolvers/t3/t3.test.ts)
+- [ ] 1.3 [easy] `defaultModel(catalogue, family)` returns the visible default, or else the first visible model. It returns null when the family's instance is missing, not `listable`, or has no visible model. A gemini default loses its suffix (verify: node --test --test-name-pattern=defaultModel tests/lets/resolvers/t3/t3.test.ts)
+- [ ] 1.4 [complex] `request()` takes an optional deadline. It aborts the ticket `fetch` and the `refusal` fetch with an `AbortSignal`, and gives the reply wait only the time left. It marks itself settled before `ws.close()`, so closing a connecting socket starts no late `refusal`. Its timeout message names a thread only when there is one. Use mock timers for `setTimeout` and `Date`, and a fake `fetch` that rejects when its `signal` aborts (verify: node --test --test-name-pattern=deadline tests/lets/resolvers/t3/t3.test.ts)
+- [ ] 1.5 [medium] `readCatalogue(io, origin)` runs `readToken`, a `server.getConfig` request and `catalogueOf` under one 10 s deadline, with `issueToken` given the time left as `timeoutMs`. It rethrows any error as `Refused('T3 gave no model catalogue: <reason>')`, keeping the original message (verify: node --test --test-name-pattern=readCatalogue tests/lets/resolvers/t3/t3.test.ts)
+
+## 2. Use the catalogue in the adapter [depends-on: 1]
+
+- [ ] 2.1 [medium] `lets delegate review instructions` inside T3 Code lists `options` from the catalogue, and never reads `model-manifest.json`. With only disabled instances it lists `[]` with an empty stderr. When T3 gives no catalogue, refuses, or replies in another shape, it lists `[]`, says why on stderr, and exits 0. The fake WebSocket in `delegate.test.ts` answers by `tag` (verify: node --test tests/lets/resolvers/t3/delegate.test.ts)
+- [ ] 2.2 [medium] A bare-family `lets delegate handoff run` or `review run` inside T3 Code runs `defaultModel` from the catalogue, and reads the token again after the catalogue request. When the catalogue fails, or `defaultModel` is null, it refuses and names the instance, and starts no thread. So `--model claude --model gpt` with a failing `claudeAgent` runs `gpt-6-luna`, and a lone refused model exits 3 (verify: node --test tests/lets/resolvers/t3/delegate.test.ts)
+- [ ] 2.3 [easy] No manifest code is left in `t3.ts`: `Manifest`, `manifestPath` and `readManifest` are gone. The header comment's "What is private here" names `server.getConfig` (verify: pnpm check)
+
+## 3. Document and accept [depends-on: 2]
+
+- [ ] 3.1 [easy] `docs/resolvers.md`, under the t3 resolver's *Which model runs*, says the models come from T3 Code's live catalogue: enabled, ready or warning, and not hidden. It also says what a bare family runs, and when it is refused. *After a t3 update* adds a step: compare `lets delegate handoff instructions --for apply` with the composer's model picker (verify: grep -n "catalogue" docs/resolvers.md)
+- [ ] 3.2 [medium] Inside T3 Code, the in-repo `lets` lists the models the composer offers. The list includes `gpt-6-luna` and `gemini-4-argon`, and leaves out `gpt-6-astra` and the hidden Claude models (verify: lets/bin/lets delegate handoff instructions --for apply)
+- [ ] 3.3 [medium] Inside T3 Code, a bare-family handoff opens a thread on the catalogue's default model and exits 0. Write a one-line prompt asking for the word READY to `.workspace/t3-live-models-prompt.md` first, and archive the thread afterwards (verify: lets/bin/lets delegate handoff run --for apply --name t3-live-models-repro --prompt-file .workspace/t3-live-models-prompt.md --model claude)
+- [ ] 3.4 [easy] The project's checks pass (verify: pnpm test && nix flake check)
+
+## Deviations Ledger
+
+<!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
