@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { Refused, SessionFailed, SpawnError, TimeoutError } from '../../../../lets/src/resolvers/kit/errors.ts';
 import type { Db } from '../../../../lets/src/resolvers/kit/io.ts';
 import {
-  baseDir, buildLaunch, catalogueOf, createAdapter, dispatch, findProject, isAncestor, launch, readFinalMessage,
+  baseDir, buildLaunch, catalogueOf, createAdapter, defaultModel, dispatch, findProject, isAncestor, launch, readFinalMessage,
   optionsFromCatalogue, readRun, readRuntime, readToken, t3ModelSelection,
 } from '../../../../lets/src/resolvers/t3/t3.ts';
 import type { RunInput, StartInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
@@ -214,6 +214,35 @@ test('options from the catalogue put no hidden default first', () => {
 
 test('options from the catalogue list each gemini model once, without its effort', () => {
   assert.deepEqual(options([provider('antigravity', [slug('gemini-3.8-flash-high'), slug('gemini-3.8-flash-low')])]), ['gemini/gemini-3.8-flash']);
+});
+
+const defaultOf = (providers: unknown[], family: 'gpt' | 'claude' | 'gemini', hidden: Record<string, string[]> = {}) => defaultModel(catalogueOf({
+  providers,
+  settings: { providerModelPreferences: Object.fromEntries(Object.entries(hidden).map(([id, hiddenModels]) => [id, { hiddenModels }])) },
+}), family);
+
+test('defaultModel is the visible default', () => {
+  assert.equal(defaultOf([provider('codex', [slug('gpt-6-luna'), slug('gpt-5.6-terra', { isDefault: true })])], 'gpt'), 'gpt-5.6-terra');
+});
+
+test('defaultModel is the first visible model when the default is hidden', () => {
+  assert.equal(defaultOf([provider('codex', [slug('gpt-5.6-terra', { isDefault: true }), slug('gpt-6-luna')])], 'gpt', { codex: ['gpt-5.6-terra'] }), 'gpt-6-luna');
+});
+
+test('defaultModel is null when the family\'s instance is missing', () => {
+  assert.equal(defaultOf([provider('codex', [slug('gpt-6-luna')])], 'claude'), null);
+});
+
+test('defaultModel is null when the family\'s instance is not listed', () => {
+  assert.equal(defaultOf([provider('claudeAgent', [slug('claude-fable-5-1', { isDefault: true })], { status: 'error' })], 'claude'), null);
+});
+
+test('defaultModel is null when the instance has no visible model', () => {
+  assert.equal(defaultOf([provider('codex', [slug('gpt-6-luna')])], 'gpt', { codex: ['gpt-6-luna'] }), null);
+});
+
+test('defaultModel of gemini has no effort suffix', () => {
+  assert.equal(defaultOf([provider('antigravity', [slug('gemini-3.8-flash-high', { isDefault: true })])], 'gemini'), 'gemini-3.8-flash');
 });
 
 test('the adapter\'s options read the model manifest, and a missing one lists none', async () => {

@@ -125,6 +125,16 @@ export function optionsFromCatalogue(catalogue: Catalogue): ModelString[] {
   return [...options];
 }
 
+// The model a bare family runs: the visible default, or else the first
+// visible model, as T3 itself picks. Null when t3 does not list the
+// family's instance, or it has no visible model.
+export function defaultModel(catalogue: Catalogue, family: Family): string | null {
+  const instance = catalogue.instances.find((entry) => entry.instanceId === T3_INSTANCE[family]);
+  if (instance === undefined || !listable(instance)) return null;
+  const [first] = visibleModels(instance, catalogue);
+  return first === undefined ? null : modelId(family, first.slug);
+}
+
 // The models t3 can run, as <family>/<model>: each provider in the
 // manifest's order, its default chat model first. t3 lists gemini once per
 // effort, as gemini-<version>-<effort>, so the effort goes and each gemini
@@ -146,7 +156,7 @@ export function optionsFromT3Manifest(manifest: Manifest): ModelString[] {
 // The provider's default chat model in the manifest, or null when it has none.
 // The manifest's gemini default still names an effort, which t3 no longer
 // accepts in the id, so it goes.
-export function defaultModel(manifest: Manifest, family: Family): string | null {
+function manifestDefault(manifest: Manifest, family: Family): string | null {
   const model = manifest.manifest.providers?.[T3_INSTANCE[family]]?.defaults?.chat ?? null;
   return family === 'gemini' && model !== null ? withoutEffort(model) : model;
 }
@@ -420,7 +430,7 @@ export function createAdapter(io: Io): Adapter {
     const branch = (await git(cwd, ['branch', '--show-current'])) || null;
     // A null model is the provider's default; with none, t3 picks its own.
     const manifest = model === null ? readManifest() : null;
-    const chosen = model ?? (manifest === null ? null : defaultModel(manifest, family));
+    const chosen = model ?? (manifest === null ? null : manifestDefault(manifest, family));
     const modelSelection = t3ModelSelection({ family, model: chosen, effort });
     const token = await readToken(io);
     const { threadId } = await launch(io, { origin, token }, buildLaunch({
