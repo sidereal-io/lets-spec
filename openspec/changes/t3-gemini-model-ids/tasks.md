@@ -1,6 +1,6 @@
 ## 1. Send Gemini ids to T3 as given
 
-- [ ] 1.1 [easy] A gemini review's model selection carries the id unchanged, such as `gemini-4-argon` at effort `medium`, with no effort option. Replace the test that expects the effort added (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
+- [x] 1.1 [easy] A gemini review's model selection carries the id unchanged, such as `gemini-4-argon` at effort `medium`, with no effort option. Replace the test that expects the effort added (verify: node --test tests/lets/resolvers/t3/t3.test.ts) (✓ node --test tests/lets/resolvers/t3/t3.test.ts passed)
 - [ ] 1.2 [easy] A gemini start sends the id unchanged, such as `gemini-3.8-flash`, with no effort option. Replace the test that expects `-medium` added (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
 - [ ] 1.3 [easy] A bare gemini review runs the manifest's default chat model without its effort suffix: `gemini-3.8-flash-high` becomes `gemini-3.8-flash`, whatever the review's effort (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
 - [ ] 1.4 [easy] A bare gemini handoff runs the manifest's default chat model without its effort suffix, as a review does (verify: node --test tests/lets/resolvers/t3/t3.test.ts)

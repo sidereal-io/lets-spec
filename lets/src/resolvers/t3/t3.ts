@@ -83,7 +83,7 @@ export function defaultModel(manifest: Manifest, family: Family, { keepEffort = 
 // A null effort is a start's: no effort option, and medium for gemini.
 export function t3ModelSelection({ family, model, effort }: { family: Family; model: string | null; effort: Effort | null }): ModelSelection {
   const option = T3_EFFORT_OPTION[family];
-  const id = family === 'gemini' && model !== null ? withEffort(model, effort ?? START_EFFORT) : model;
+  const id = family === 'gemini' && model !== null && effort === null ? withEffort(model, START_EFFORT) : model;
   return { instanceId: T3_INSTANCE[family], model: id, options: option && effort !== null ? [{ id: option, value: effort }] : [] };
 }
 

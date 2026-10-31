@@ -154,8 +154,9 @@ test('t3 model selection carries the effort in each provider\'s own option', () 
     { instanceId: 'antigravity', model: 'gemini-3.8-flash-high', options: [] });
 });
 
-test('t3 model selection adds the effort to a gemini model without one', () => {
-  assert.equal(t3ModelSelection({ family: 'gemini', model: 'gemini-3.8-flash', effort: 'high' }).model, 'gemini-3.8-flash-high');
+test('t3 model selection sends a gemini model as given, with no effort option', () => {
+  assert.deepEqual(t3ModelSelection({ family: 'gemini', model: 'gemini-4-argon', effort: 'medium' }),
+    { instanceId: 'antigravity', model: 'gemini-4-argon', options: [] });
 });
 
 test('findProject matches the workspace root, or names the known projects', () => {
@@ -613,10 +614,6 @@ test('a run with a null model launches the manifest\'s default chat model for th
 
 test('a run with a null model launches null when the provider has no default', async () => {
   assert.equal((await ranSelection({ family: 'gpt', model: null })).model, null);
-});
-
-test('a gemini run with a null model launches the default at the review\'s effort', async () => {
-  assert.equal((await ranSelection({ family: 'gemini', model: null, effort: 'low' })).model, 'gemini-3.8-flash-low');
 });
 
 test('a start runs the request\'s model, not the project default, with no effort option', async () => {
