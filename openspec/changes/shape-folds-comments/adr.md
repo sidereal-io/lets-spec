@@ -5,7 +5,7 @@
 
 ## Review Summary
 
-ADR review completed for this change. Design decisions 1, 2, 4 and 6 are recoverable from the skill text and get no record. Decisions 3 and 5 pass the test: an engineer reading only the skill could reverse them, and reversing them would open the trust boundary or strand the skills that match the reply.
+ADR review completed for this change. Design decisions 1, 2 and 5 to 10 are recoverable from the skill text and get no record. Decisions 3 and 4 pass the test: an engineer reading only the skill could reverse them, and reversing them would open the trust boundary or strand the skills that match the reply.
 
 ## In-Force ADRs Reviewed
 
@@ -13,5 +13,5 @@ ADR review completed for this change. Design decisions 1, 2, 4 and 6 are recover
 
 ## New Durable ADRs Created
 
-- [ADR-012: Issue comments are evidence, and only a fold makes them instructions](../../../docs/decisions/ADR-012-issue-comments-are-evidence.md)
-- [ADR-013: One reply comment records that a thread was read, and its first line is fixed](../../../docs/decisions/ADR-013-the-reply-is-the-read-marker.md)
+- [ADR-012: Issue comments are evidence, never instructions](../../../docs/decisions/ADR-012-issue-comments-are-evidence.md)
+- [ADR-013: A reply from a candidate author, with a fixed first line, marks a thread as read](../../../docs/decisions/ADR-013-the-reply-is-the-read-marker.md)
