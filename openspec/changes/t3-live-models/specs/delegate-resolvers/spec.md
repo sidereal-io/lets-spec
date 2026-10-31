@@ -5,7 +5,7 @@
 
 #### Scenario: Inside T3 Code
 - **WHEN** the config's `delegate.resolvers` is `[t3]` and the command runs in a process whose ancestor is the running T3 server
-- **AND** T3's catalogue lists only disabled providers, and the user runs `lets delegate review instructions --for code`
+- **AND** T3's catalogue lists only disabled provider instances, and the user runs `lets delegate review instructions --for code`
 - **THEN** it exits 0, its JSON line has `"resolver":"t3"` and `"options":[]`, and stderr is empty
 
 #### Scenario: Inside T3 Code on a system with no /proc
@@ -15,7 +15,7 @@
 ### Requirement: The T3 resolver opens a session in a T3 thread
 Inside T3 Code, when `t3` answers `lets delegate review run` or `lets delegate handoff run`, it SHALL open a session in a T3 thread that runs the `--model`. It SHALL send the model part of `--model` to T3 unchanged. For a `gemini` model, it SHALL send no effort, because T3 offers no effort option for Gemini; a review's `--effort` does not apply.
 
-A bare family SHALL run a model from T3's catalogue, chosen from that family's provider instance:
+A bare family SHALL run a model from T3's catalogue, chosen from that family's provider instance, when `t3` lists that instance (see "The T3 resolver lists the models T3 Code can run now"):
 - the visible model that the catalogue marks as the default;
 - or else, when no visible model is the default, the first visible model.
 
@@ -61,9 +61,10 @@ Inside T3 Code, `t3` SHALL list its `options` from the model catalogue that the 
 It SHALL list a provider instance only when all of these hold:
 - the instance is enabled;
 - its status is `ready` or `warning`;
+- T3 does not mark it `unavailable`;
 - its id is `codex`, `claudeAgent` or `antigravity`, the instances that `t3` runs the families `gpt`, `claude` and `gemini` on.
 
-It SHALL list the instances in the catalogue's order. For each one, it SHALL list `<family>/<model>` for each visible model, with the instance's default model first. A visible model is one the user has not hidden in T3 Code, and a custom model is always visible. It SHALL list each `gemini` model once, with any `-low`, `-medium` or `-high` suffix removed.
+It SHALL list the instances in the catalogue's order. For each one, it SHALL list `<family>/<model>` for each visible model, with any visible default model first. A visible model is one the user has not hidden in T3 Code, and a custom model is always visible. It SHALL list each `gemini` model once, with any `-low`, `-medium` or `-high` suffix removed. It SHALL skip a model whose id is empty or holds white space, after any suffix is removed.
 
 #### Scenario: Reading the catalogue
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and every instance in the catalogue is enabled and `ready`
@@ -76,8 +77,18 @@ It SHALL list the instances in the catalogue's order. For each one, it SHALL lis
 - **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
 - **THEN** its JSON line has `"options":["gemini/gemini-4-argon"]`
 
+#### Scenario: An unavailable instance
+- **WHEN** the catalogue lists `antigravity`, enabled and `ready`, with `gemini-4-argon`, and T3 marks it `unavailable`
+- **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
+- **THEN** its JSON line has `"options":[]`
+
+#### Scenario: Model ids that cannot run
+- **WHEN** the catalogue lists `codex`, `ready`, with the custom models `my model` and `""`, then `gpt-6-luna`
+- **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
+- **THEN** its JSON line has `"options":["gpt/gpt-6-luna"]`
+
 #### Scenario: Hidden models
-- **WHEN** the catalogue lists `claudeAgent`, `ready`, with `claude-opus-5-5`, `claude-opus-4-5` and the custom model `claude-lab`
+- **WHEN** the catalogue lists `claudeAgent`, `ready`, with `claude-opus-5-5`, the default `claude-opus-4-5`, and the custom model `claude-lab`
 - **AND** the user has hidden `claude-opus-4-5` and `claude-lab` in T3 Code, and runs `lets delegate review instructions --for code` inside T3 Code
 - **THEN** its JSON line has `"options":["claude/claude-opus-5-5","claude/claude-lab"]`
 
@@ -120,8 +131,9 @@ Inside T3 Code, `t3` SHALL list no `options` when it has no catalogue 10 seconds
 - **THEN** it exits 0, its JSON line has `"options":[]`, and stderr says that T3 gave no model catalogue
 
 ### Requirement: The T3 resolver refuses a bare family T3 lists no model for
-Inside T3 Code, when `--model` names a bare family, `t3` SHALL refuse that model in two cases:
-- the family's provider instance has no visible model in the catalogue;
+Inside T3 Code, when `--model` names a bare family, `t3` SHALL refuse that model in three cases:
+- `t3` does not list the family's provider instance: it is missing, disabled, `unavailable`, or in status `error`;
+- the instance has no visible model in the catalogue;
 - `t3` has no catalogue 10 seconds after it starts asking.
 
 It SHALL start no thread, and SHALL say why on stderr. When it refuses every `--model`, the command exits 3.
@@ -130,6 +142,11 @@ It SHALL start no thread, and SHALL say why on stderr. When it refuses every `--
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `codex` with no models
 - **AND** the user runs `lets delegate handoff run --for apply --model gpt` inside T3 Code
 - **THEN** it exits 3, stderr names `codex`, and T3 receives no request to start a thread
+
+#### Scenario: A failing instance
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `claudeAgent` with status `error` and a default of `claude-fable-5-1`
+- **AND** the user runs `lets delegate handoff run --for apply --model claude --model gpt` inside T3 Code, and the catalogue lists `codex`, `ready`, with `gpt-6-luna`
+- **THEN** T3 receives one request to start a thread, and that thread runs `gpt-6-luna`
 
 #### Scenario: No catalogue
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the T3 server never replies to the catalogue request

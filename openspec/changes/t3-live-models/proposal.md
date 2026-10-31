@@ -5,9 +5,9 @@ Inside T3 Code, the `t3` resolver lists its `options` from T3's downloaded model
 ## What Changes
 
 - `t3` lists its `options` from T3's live catalogue, the one the composer uses, which it asks the running T3 server for (D2).
-- It lists only the provider instances that are enabled and whose status is `ready` or `warning`. It leaves out the models the user hid, as the composer does. Each provider's default model comes first, in the catalogue's order (D4, D9, D12).
+- It lists only the provider instances that are enabled, not marked `unavailable`, and whose status is `ready` or `warning`. It leaves out the models the user hid, as the composer does. Each provider's default model comes first, in the catalogue's order (D4, D9, D12).
 - A bare family, such as `--model claude`, runs the visible default model from the catalogue, or else its first visible model (D3, D10, D12).
-- A bare family refuses with exit 3 when T3 lists no visible model for it, or the catalogue cannot be read. Today it sends no model, which T3 rejects (D10).
+- A bare family refuses with exit 3 when `t3` would not list its instance, when the instance has no visible model, or when the catalogue cannot be read. Today it sends no model, which T3 rejects (D10).
 - `t3` stops reading `model-manifest.json`.
 - When T3 gives no catalogue within 10 seconds, `t3` lists no `options`, and says why on stderr. The 10 seconds count the token, the ticket and the reply. The command still exits 0 (D5).
 - To read the catalogue, the probe may need a T3 token, and issues one when none is stored, as a run does (D7).
