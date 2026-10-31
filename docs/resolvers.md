@@ -40,11 +40,23 @@ terminals, list `cli` after it.
 The caller chooses the model, and `t3` runs exactly that one:
 
 - `lets delegate review instructions` and `handoff instructions` list
-  the models in T3 Code's catalog, as `<family>/<model>`. They take each
-  provider in the catalog's order, with that provider's default model
-  first. They list each Gemini model once, without its effort.
+  the models that T3 Code's model picker offers, as `<family>/<model>`.
+  `t3` asks the running T3 server for its live catalogue each time.
+- They list a provider only when it is enabled, its status is ready or
+  warning, and T3 Code does not mark it unavailable. A provider in
+  warning is one T3 Code has not checked yet.
+- They take each provider in the catalogue's order, with its default
+  model first. They leave out the models you hid in T3 Code, but never a
+  custom model. They list each Gemini model once, without its effort.
+- When T3 Code gives no catalogue within 10 seconds, or refuses to, they
+  list no models, say why on stderr, and still exit 0.
 - A review or a handoff runs the model that `--model` names. A bare
-  family, such as `claude`, runs that provider's default model.
+  family, such as `claude`, runs that provider's default model in the
+  catalogue. When you hid the default, it runs the first model you did
+  not hide.
+- `t3` refuses a bare family when it does not list that provider, the
+  provider has no model you can see, or T3 Code gives no catalogue. It
+  then tries the next `--model`.
 - A Gemini model runs as given, such as `gemini-4-argon`. T3 Code has no
   effort setting for Gemini, so a review's `--effort` does not apply to
   it. A bare `gemini` runs the default model without its effort:
@@ -93,6 +105,15 @@ Expect:
 1. `READY` on stdout.
 2. A JSON line on stderr with `"resolver":"t3"` and `"independent":true`.
 3. An archived thread for the review.
+
+Then check that `t3` still reads T3 Code's model catalogue:
+
+```sh
+lets delegate handoff instructions --for apply
+```
+
+Its `options` should list the same models as the model picker in a new
+T3 thread. If they are empty, stderr says why.
 
 The review spends tokens. CI never runs it.
 

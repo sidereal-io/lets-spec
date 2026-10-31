@@ -14,7 +14,7 @@
 
 ## 3. Document and accept [depends-on: 2]
 
-- [ ] 3.1 [easy] `docs/resolvers.md`, under the t3 resolver's *Which model runs*, says the models come from T3 Code's live catalogue: enabled, ready or warning, and not hidden. It also says what a bare family runs, and when it is refused. *After a t3 update* adds a step: compare `lets delegate handoff instructions --for apply` with the composer's model picker (verify: grep -n "catalogue" docs/resolvers.md)
+- [x] 3.1 [easy] `docs/resolvers.md`, under the t3 resolver's *Which model runs*, says the models come from T3 Code's live catalogue: enabled, ready or warning, and not hidden. It also says what a bare family runs, and when it is refused. *After a t3 update* adds a step: compare `lets delegate handoff instructions --for apply` with the composer's model picker (verify: grep -n "catalogue" docs/resolvers.md) (✓ grep -n "catalogue" docs/resolvers.md passed)
 - [ ] 3.2 [medium] Inside T3 Code, the in-repo `lets` lists the models the composer offers. The list includes `gpt-6-luna` and `gemini-4-argon`, and leaves out `gpt-6-astra` and the hidden Claude models (verify: lets/bin/lets delegate handoff instructions --for apply)
 - [ ] 3.3 [medium] Inside T3 Code, a bare-family handoff opens a thread on the catalogue's default model and exits 0. Write a one-line prompt asking for the word READY to `.workspace/t3-live-models-prompt.md` first, and archive the thread afterwards (verify: lets/bin/lets delegate handoff run --for apply --name t3-live-models-repro --prompt-file .workspace/t3-live-models-prompt.md --model claude)
 - [ ] 3.4 [easy] The project's checks pass (verify: pnpm test && nix flake check)
