@@ -5,7 +5,7 @@ Inside T3 Code, the `t3` resolver lists its `options` from T3's downloaded model
 ## What Changes
 
 - `t3` lists its `options` from T3's live catalogue, the one the composer uses, which it asks the running T3 server for (D2).
-- It lists only providers that are enabled and ready, and leaves out the models the user hid in the composer. Each provider's default model comes first, in the catalogue's provider order (D4).
+- It lists only providers that are enabled and not failing, and leaves out the models the user hid in the composer. Each provider's default model comes first, in the catalogue's provider order (D4, D9).
 - A bare family, such as `--model claude`, runs the default model the live catalogue gives that provider (D3).
 - `t3` stops reading `model-manifest.json`.
 - When T3 cannot answer in a few seconds, `t3` lists no `options`, and says why on stderr. The command still exits 0 (D5).

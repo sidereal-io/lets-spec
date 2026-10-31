@@ -15,6 +15,7 @@ https://github.com/sidereal-io/lets-spec/issues/87
 | D6 | Are gemini model ids, which no longer carry an effort suffix, part of this story? | No. #120 (`t3-gemini-model-ids`) owns them and is in progress. This story keeps listing each gemini model once, without an effort suffix. | User |
 | D7 | Can the probe issue a T3 token when none is stored? | Yes. It takes a token the way run does, so the first probe may run `t3 auth session issue`. | Assumption |
 | D8 | How is it accepted? | Unit tests feed `server.getConfig` replies through the fake WebSocket and check the filter, the order, the default and each failure. A manual check inside T3 Code compares `lets delegate handoff instructions --for apply` with the composer's model picker. | Assumption |
+| D9 | Does a provider in T3's `warning` state count as ready (D4)? | Yes. `warning` means T3 has not verified the provider yet, so the probe lists providers in `ready` or `warning`, and leaves out `error` and `disabled`. | User |
 
 ## Changes from the story
 
