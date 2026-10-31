@@ -45,6 +45,10 @@ The caller chooses the model, and `t3` runs exactly that one:
   first. They list each Gemini model once, without its effort.
 - A review or a handoff runs the model that `--model` names. A bare
   family, such as `claude`, runs that provider's default model.
+- A Gemini model runs as given, such as `gemini-4-argon`. T3 Code has no
+  effort setting for Gemini, so a review's `--effort` does not apply to
+  it. A bare `gemini` runs the default model without its effort:
+  `gemini-3.8-flash-high` runs as `gemini-3.8-flash`.
 - When T3 Code or your account says no before the model answers, `t3`
   refuses: the command exits 3, says why on stderr, and archives any
   thread it started. Examples are a model your account cannot run, T3
