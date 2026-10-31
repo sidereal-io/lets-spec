@@ -12,6 +12,9 @@
 // What is private here, and why it stays:
 // - The WebSocket RPC and the `launchThread` and `thread.archive` calls are
 //   the UI's own, so they move only when the UI does.
+// - `server.getConfig` is the request the UI makes to fill its model
+//   picker, so it lists the models the composer offers. T3's
+//   model-manifest.json is not that list.
 // - t3's CLI has no thread commands. Its MCP tools reach only the agent
 //   process t3 started, not a child like this one. The `acp-mcp-call`
 //   terminal fallback exists only where t3 sets `T3_ACP_MCP_NODE`, which it
@@ -35,6 +38,8 @@ export const ORCHESTRATION_PROTOCOL = 2;
 
 const POLL_MS = 5000;
 const REPLY_TIMEOUT_MS = 120_000;
+// The whole catalogue request, from the token to the reply.
+const CATALOGUE_TIMEOUT_MS = 10_000;
 
 // The t3 provider instance for each family.
 export const T3_INSTANCE: Record<Family, string> = { gpt: 'codex', claude: 'claudeAgent', gemini: 'antigravity' };
@@ -42,38 +47,91 @@ export const T3_INSTANCE: Record<Family, string> = { gpt: 'codex', claude: 'clau
 const T3_EFFORT_OPTION: Record<Family, string | null> = { gpt: 'reasoningEffort', claude: 'effort', gemini: null };
 
 export type ModelSelection = { instanceId: string; model: string | null; options: { id: string; value: string }[] };
-type Manifest = {
-  manifest: {
-    currentModels: Record<string, string[] | undefined>;
-    providers?: Record<string, { defaults?: { chat?: string } | null } | undefined>;
-  };
-};
 type Project = { project_id: string; title: string; workspace_root: string };
 
-// The models t3 can run, as <family>/<model>: each provider in the
-// manifest's order, its default chat model first. t3 lists gemini once per
-// effort, as gemini-<version>-<effort>, so the effort goes and each gemini
-// model appears once. A provider instance lets has no family for is left out.
-export function optionsFromT3Manifest(manifest: Manifest): ModelString[] {
-  const familyOf = (instance: string) => FAMILIES.find((family) => T3_INSTANCE[family] === instance);
-  const options = new Set<ModelString>();
-  for (const [instance, models] of Object.entries(manifest.manifest.currentModels)) {
-    const family = familyOf(instance);
-    if (family === undefined) continue;
-    const chat = manifest.manifest.providers?.[instance]?.defaults?.chat;
-    for (const model of [...(chat ? [chat] : []), ...(models ?? [])]) {
-      options.add(`${family}/${family === 'gemini' ? withoutEffort(model) : model}`);
+// The composer's model catalogue, as `server.getConfig` gives it: each
+// provider instance with its models, and the slugs the user hid, by instance.
+export type CatalogueModel = { slug: string; isDefault: boolean; isCustom: boolean };
+export type CatalogueInstance = { instanceId: string; enabled: boolean; status: string; availability: string | null; models: CatalogueModel[] };
+export type Catalogue = { instances: CatalogueInstance[]; hidden: Record<string, string[]> };
+
+const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+
+// The reply is untrusted data from a private protocol, so this keeps only
+// what the next steps can use. An id that is empty or holds white space is
+// one T3 and parseModel both reject.
+export function catalogueOf(value: unknown): Catalogue {
+  if (!isObject(value)) throw new Error('the reply is not an object');
+  if (!Array.isArray(value.providers)) throw new Error('the reply has no list of providers');
+  const instances: CatalogueInstance[] = [];
+  for (const entry of value.providers) {
+    if (!isObject(entry)) continue;
+    const { instanceId, enabled, status, availability, models } = entry;
+    if (typeof instanceId !== 'string' || typeof enabled !== 'boolean' || typeof status !== 'string' || !Array.isArray(models)) continue;
+    const id = (slug: string) => (instanceId === T3_INSTANCE.gemini ? withoutEffort(slug) : slug);
+    instances.push({
+      instanceId,
+      enabled,
+      status,
+      availability: typeof availability === 'string' ? availability : null,
+      models: models
+        .filter((model): model is Record<string, unknown> & { slug: string } => isObject(model) && typeof model.slug === 'string')
+        .filter(({ slug }) => id(slug) !== '' && !/\s/.test(id(slug)))
+        .map(({ slug, isDefault, isCustom }) => ({ slug, isDefault: isDefault === true, isCustom: isCustom === true })),
+    });
+  }
+  const hidden: Record<string, string[]> = {};
+  const preferences = isObject(value.settings) && isObject(value.settings.providerModelPreferences) ? value.settings.providerModelPreferences : {};
+  for (const [instanceId, preference] of Object.entries(preferences)) {
+    if (isObject(preference) && Array.isArray(preference.hiddenModels)) {
+      hidden[instanceId] = preference.hiddenModels.filter((slug): slug is string => typeof slug === 'string');
     }
+  }
+  return { instances, hidden };
+}
+
+const familyOf = (instanceId: string) => FAMILIES.find((family) => T3_INSTANCE[family] === instanceId);
+
+// An instance t3 can run models on. A run always goes to T3_INSTANCE's
+// instance, so a second one, such as codex_work, would run on the wrong
+// instance. `warning` is an instance T3 has not checked yet.
+function listable(instance: CatalogueInstance): boolean {
+  return instance.enabled && (instance.status === 'ready' || instance.status === 'warning')
+    && instance.availability !== 'unavailable' && familyOf(instance.instanceId) !== undefined;
+}
+
+// The models the composer offers for the instance, the visible default
+// first. As in the composer, hiding never removes a custom model.
+function visibleModels(instance: CatalogueInstance, catalogue: Catalogue): CatalogueModel[] {
+  const hidden = new Set(catalogue.hidden[instance.instanceId] ?? []);
+  const visible = instance.models.filter((model) => model.isCustom || !hidden.has(model.slug));
+  const index = visible.findIndex((model) => model.isDefault);
+  return index === -1 ? visible : [visible[index], ...visible.filter((_, i) => i !== index)];
+}
+
+// The id t3 sends: a gemini slug still names an effort, which t3 no longer
+// accepts in the id.
+const modelId = (family: Family, slug: string) => (family === 'gemini' ? withoutEffort(slug) : slug);
+
+// The models t3 can run, as <family>/<model>, in the catalogue's order.
+// Each gemini model appears once.
+export function optionsFromCatalogue(catalogue: Catalogue): ModelString[] {
+  const options = new Set<ModelString>();
+  for (const instance of catalogue.instances.filter(listable)) {
+    const family = familyOf(instance.instanceId)!;
+    for (const { slug } of visibleModels(instance, catalogue)) options.add(`${family}/${modelId(family, slug)}`);
   }
   return [...options];
 }
 
-// The provider's default chat model in the manifest, or null when it has none.
-// The manifest's gemini default still names an effort, which t3 no longer
-// accepts in the id, so it goes.
-export function defaultModel(manifest: Manifest, family: Family): string | null {
-  const model = manifest.manifest.providers?.[T3_INSTANCE[family]]?.defaults?.chat ?? null;
-  return family === 'gemini' && model !== null ? withoutEffort(model) : model;
+// The model a bare family runs: the visible default, or else the first
+// visible model, as T3 itself picks. Null when t3 does not list the
+// family's instance, or it has no visible model.
+export function defaultModel(catalogue: Catalogue, family: Family): string | null {
+  const instance = catalogue.instances.find((entry) => entry.instanceId === T3_INSTANCE[family]);
+  if (instance === undefined || !listable(instance)) return null;
+  const [first] = visibleModels(instance, catalogue);
+  return first === undefined ? null : modelId(family, first.slug);
 }
 
 // The model goes as given. A null effort is a start's, and sends no effort option.
@@ -195,9 +253,9 @@ export function readFinalMessage(db: Db, runId: string): { text: string; streami
 const tokenPath = (io: Io) => join(configDir(io.env, io.homedir()), 't3-token');
 
 // Issue a token with the server's own CLI, so it lands in the same auth store.
-async function issueToken(io: Io): Promise<string> {
+async function issueToken(io: Io, timeoutMs?: number): Promise<string> {
   const args = ['auth', 'session', 'issue', '--base-dir', baseDir(io.env, io.homedir()), '--ttl', '30d', '--label', 'lets-delegate', '--token-only'];
-  const { stdout, stderr, code } = await io.execFile('t3', args, { env: io.env });
+  const { stdout, stderr, code } = await io.execFile('t3', args, { env: io.env, ...(timeoutMs === undefined ? {} : { timeoutMs }) });
   const token = stdout.trim();
   if (code !== 0 || !/^\S+$/.test(token)) throw new Refused(`could not issue a t3 token (exit ${code}): ${stderr.trim()}`);
   const path = tokenPath(io);
@@ -207,15 +265,16 @@ async function issueToken(io: Io): Promise<string> {
 }
 
 // The stored token, or a fresh one when none is stored.
-export async function readToken(io: Io): Promise<string> {
+export async function readToken(io: Io, timeoutMs?: number): Promise<string> {
   const path = tokenPath(io);
-  return io.exists(path) ? io.readFile(path).trim() : issueToken(io);
+  return io.exists(path) ? io.readFile(path).trim() : issueToken(io, timeoutMs);
 }
 
-async function requestTicket(io: Io, origin: string, token: string): Promise<Response> {
+async function requestTicket(io: Io, origin: string, token: string, signal?: AbortSignal): Promise<Response> {
   try {
-    return await io.fetch(`${origin}/api/auth/websocket-ticket`, { method: 'POST', headers: { authorization: `Bearer ${token}` } });
+    return await io.fetch(`${origin}/api/auth/websocket-ticket`, { method: 'POST', headers: { authorization: `Bearer ${token}` }, ...(signal ? { signal } : {}) });
   } catch (error) {
+    if (signal?.aborted) throw new Refused(`t3 at ${origin} did not answer in time`);
     const { cause, message } = error as Error & { cause?: { code?: string } };
     throw new Refused(`t3 at ${origin} is unreachable (${cause?.code ?? message})`);
   }
@@ -227,10 +286,10 @@ type Frame = { _tag: string; requestId?: string; exit?: { _tag: string; value?: 
 
 // Why t3 refused a WebSocket upgrade. t3 answers a plain GET of /ws with
 // JSON whose message says why, such as a protocol it no longer speaks.
-export async function refusal(io: Io, origin: string): Promise<string> {
+export async function refusal(io: Io, origin: string, signal?: AbortSignal): Promise<string> {
   let why = 'it gave no reason';
   try {
-    const response = await io.fetch(`${origin}/ws`);
+    const response = await io.fetch(`${origin}/ws`, ...(signal ? [{ signal }] : []));
     const { message } = await response.json() as { message?: unknown };
     why = typeof message === 'string' ? message : `HTTP ${response.status}`;
   } catch {
@@ -244,54 +303,81 @@ type Rpc = { tag: string; payload: Record<string, unknown>; threadId: string | u
 
 // One request over the WebSocket RPC, as the UI makes it: a ticket for the
 // token, then one Request frame, then its Exit. The result is the Exit's
-// value.
-async function request(io: Io, { origin, token }: Server, { tag, payload, threadId }: Rpc): Promise<unknown> {
-  let response = await requestTicket(io, origin, token);
-  if (rejected(response)) {
-    response = await requestTicket(io, origin, await issueToken(io));
-    if (rejected(response)) throw new Refused('t3 rejected the token twice');
-  }
-  if (!response.ok) throw new Refused(`t3 ticket request failed with HTTP ${response.status}: ${await response.text()}`);
-  const { ticket } = await response.json() as { ticket: string };
-
-  const url = new URL('/ws', origin.replace(/^http/, 'ws'));
-  url.searchParams.set('wsTicket', ticket);
-  url.searchParams.set('orchestrationProtocol', String(ORCHESTRATION_PROTOCOL));
-  const ws = new io.WebSocket(url);
+// value. A deadline, in Date.now() time, stops every step when it passes, so
+// no fetch is left open to keep the process alive.
+export async function request(io: Io, { origin, token }: Server, { tag, payload, threadId }: Rpc, deadline?: number): Promise<unknown> {
+  const left = () => (deadline === undefined ? Infinity : Math.max(0, deadline - Date.now()));
+  const controller = deadline === undefined ? undefined : new AbortController();
+  const abortTimer = controller && setTimeout(() => controller.abort(), left());
+  let ws: WebSocket | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  // Set before the socket closes: closing one that is still connecting fires
+  // error and close, which must not start a late refusal fetch.
+  let settled = false;
   try {
+    let response = await requestTicket(io, origin, token, controller?.signal);
+    if (rejected(response)) {
+      response = await requestTicket(io, origin, await issueToken(io, deadline === undefined ? undefined : left()), controller?.signal);
+      if (rejected(response)) throw new Refused('t3 rejected the token twice');
+    }
+    if (!response.ok) throw new Refused(`t3 ticket request failed with HTTP ${response.status}: ${await response.text()}`);
+    const { ticket } = await response.json() as { ticket: string };
+
+    const url = new URL('/ws', origin.replace(/^http/, 'ws'));
+    url.searchParams.set('wsTicket', ticket);
+    url.searchParams.set('orchestrationProtocol', String(ORCHESTRATION_PROTOCOL));
+    const socket = ws = new io.WebSocket(url);
     const exit = await new Promise<NonNullable<Frame['exit']>>((resolveExit, reject) => {
+      const waitMs = Math.min(REPLY_TIMEOUT_MS, left());
       // A timeout means "unknown", not "failed": the server may still act on it.
-      timer = setTimeout(() => reject(new SpawnError(`no reply from t3 after ${REPLY_TIMEOUT_MS / 1000} s; check ${threadId} before running again`)), REPLY_TIMEOUT_MS);
+      const check = threadId === undefined ? '' : `; check ${threadId} before running again`;
+      timer = setTimeout(() => reject(new SpawnError(`no reply from t3 after ${Math.round(waitMs / 1000)} s${check}`)), waitMs);
       let opened = false;
       let refused = false;
       // Before the socket opens, an error or a close means t3 refused the
       // upgrade, and the WebSocket API hides why. Ask t3 itself, once. After
       // it opens, t3 may have acted on the request, so the outcome is unknown.
       const fail = (reason: string) => {
+        if (settled) return;
         if (opened) return reject(new SpawnError(reason));
         if (refused) return;
         refused = true;
-        refusal(io, origin).then((why) => reject(new Refused(why)));
+        refusal(io, origin, controller?.signal).then((why) => reject(new Refused(why)));
       };
-      ws.addEventListener('open', () => {
+      socket.addEventListener('open', () => {
         opened = true;
-        ws.send(JSON.stringify({ _tag: 'Request', id: '1', tag, payload, headers: [] }));
+        socket.send(JSON.stringify({ _tag: 'Request', id: '1', tag, payload, headers: [] }));
       });
-      ws.addEventListener('message', (event) => {
+      socket.addEventListener('message', (event) => {
         for (const message of [JSON.parse(event.data as string) as Frame | Frame[]].flat()) {
           if (message._tag === 'Exit' && String(message.requestId) === '1') resolveExit(message.exit!);
           else if (message._tag === 'Defect' || message._tag === 'ClientProtocolError') reject(new Refused(`t3 rejected the request: ${JSON.stringify(message)}`));
         }
       });
-      ws.addEventListener('error', (event) => fail(`t3 websocket error: ${(event as Event & { message?: string }).message || event.type}`));
-      ws.addEventListener('close', (event) => fail(`t3 websocket closed: ${event.code} ${event.reason}`));
+      socket.addEventListener('error', (event) => fail(`t3 websocket error: ${(event as Event & { message?: string }).message || event.type}`));
+      socket.addEventListener('close', (event) => fail(`t3 websocket closed: ${event.code} ${event.reason}`));
     });
     if (exit._tag !== 'Success') throw new Refused(`t3 ${tag} failed: ${JSON.stringify(exit)}`);
     return exit.value;
   } finally {
+    settled = true;
     clearTimeout(timer);
-    ws.close();
+    clearTimeout(abortTimer);
+    controller?.abort();
+    ws?.close();
+  }
+}
+
+// The composer's model catalogue, within CATALOGUE_TIMEOUT_MS. Any failure,
+// of any class, is a Refused with one known prefix, so the probe can warn
+// and a bare family can try the next model.
+export async function readCatalogue(io: Io, origin: string): Promise<Catalogue> {
+  const deadline = Date.now() + CATALOGUE_TIMEOUT_MS;
+  try {
+    const token = await readToken(io, Math.max(0, deadline - Date.now()));
+    return catalogueOf(await request(io, { origin, token }, { tag: 'server.getConfig', payload: {}, threadId: undefined }, deadline));
+  } catch (error) {
+    throw new Refused(`T3 gave no model catalogue: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -308,8 +394,6 @@ export async function launch(io: Io, server: Server, input: ReturnType<typeof bu
 
 export function createAdapter(io: Io): Adapter {
   const databasePath = () => `${userdata(io)}/statev2.sqlite`;
-  const manifestPath = () => `${userdata(io)}/model-manifest.json`;
-  const readManifest = (): Manifest | null => (io.exists(manifestPath()) ? JSON.parse(io.readFile(manifestPath())) : null);
 
   // Open the database, run read(db), and close it again.
   function withDb<T>(read: (db: Db) => T): T {
@@ -343,10 +427,12 @@ export function createAdapter(io: Io): Adapter {
     const repoRoot = resolve(await git(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir']), '..');
     const project = withDb((db) => findProject(db, repoRoot));
     const branch = (await git(cwd, ['branch', '--show-current'])) || null;
-    // A null model is the provider's default; with none, t3 picks its own.
-    const manifest = model === null ? readManifest() : null;
-    const chosen = model ?? (manifest === null ? null : defaultModel(manifest, family));
+    // A bare family runs the catalogue's default. T3 rejects a launch with
+    // no model, so with none there is nothing to start.
+    const chosen = model ?? defaultModel(await readCatalogue(io, origin), family);
+    if (chosen === null) throw new Refused(`T3 lists no model t3 can run on its ${T3_INSTANCE[family]} instance`);
     const modelSelection = t3ModelSelection({ family, model: chosen, effort });
+    // Read after the catalogue request, which may have replaced the token.
     const token = await readToken(io);
     const { threadId } = await launch(io, { origin, token }, buildLaunch({
       threadId: randomUUID(),
@@ -402,12 +488,13 @@ export function createAdapter(io: Io): Adapter {
     },
 
     async options(warn) {
-      const manifest = readManifest();
-      if (manifest === null) {
-        warn(`T3 has no model manifest at ${manifestPath()}, so it lists no models`);
+      try {
+        return optionsFromCatalogue(await readCatalogue(io, runningServer().origin));
+      } catch (error) {
+        if (!(error instanceof Refused)) throw error;
+        warn(`${error.message}, so t3 lists no models`);
         return [];
       }
-      return optionsFromT3Manifest(manifest);
     },
 
     async run({ effort, ...input }: RunInput, { timeoutMs }) {

@@ -5,8 +5,8 @@ import { test } from 'node:test';
 import { Refused, SessionFailed, SpawnError, TimeoutError } from '../../../../lets/src/resolvers/kit/errors.ts';
 import type { Db } from '../../../../lets/src/resolvers/kit/io.ts';
 import {
-  baseDir, buildLaunch, createAdapter, dispatch, findProject, isAncestor, launch, readFinalMessage,
-  optionsFromT3Manifest, readRun, readRuntime, readToken, t3ModelSelection,
+  baseDir, buildLaunch, catalogueOf, createAdapter, defaultModel, dispatch, findProject, isAncestor, launch, readCatalogue, readFinalMessage, request,
+  optionsFromCatalogue, readRun, readRuntime, readToken, t3ModelSelection,
 } from '../../../../lets/src/resolvers/t3/t3.ts';
 import type { RunInput, StartInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
 import { fakeIo } from '../kit/fixtures/fake-io.ts';
@@ -112,37 +112,137 @@ test('detect needs a runtime file, a live server, and the server among this proc
   assert.equal(createAdapter(io({ parentPid: (pid: number) => stale[pid] ?? null })).detect(), false);
 });
 
-test('options list each provider in the manifest\'s order, its default first', () => {
-  const manifest = { manifest: {
-    currentModels: { codex: ['gpt-6-luna'], claudeAgent: ['claude-opus-5-5', 'claude-fable-5-1'], antigravity: ['gemini-3.8-flash-high', 'gemini-3.8-flash-low'] },
-    providers: { claudeAgent: { defaults: { chat: 'claude-fable-5-1' } } },
-  } };
-  assert.deepEqual(optionsFromT3Manifest(manifest), ['gpt/gpt-6-luna', 'claude/claude-fable-5-1', 'claude/claude-opus-5-5', 'gemini/gemini-3.8-flash']);
+// An entry of server.getConfig's providers[], enabled and ready unless told otherwise.
+const provider = (instanceId: string, models: unknown, over: Record<string, unknown> = {}) =>
+  ({ instanceId, driver: instanceId, enabled: true, status: 'ready', models, ...over });
+const slug = (id: string, over: Record<string, unknown> = {}) => ({ slug: id, name: id, ...over });
+
+test('catalogueOf reads each provider instance and its models', () => {
+  const reply = { providers: [
+    provider('codex', [slug('gpt-6-luna'), slug('gpt-5.6-terra', { isDefault: true })]),
+    provider('antigravity', [slug('lab', { isCustom: true })], { status: 'warning', enabled: false, availability: 'unavailable' }),
+  ] };
+  assert.deepEqual(catalogueOf(reply), { instances: [
+    { instanceId: 'codex', enabled: true, status: 'ready', availability: null, models: [
+      { slug: 'gpt-6-luna', isDefault: false, isCustom: false }, { slug: 'gpt-5.6-terra', isDefault: true, isCustom: false }] },
+    { instanceId: 'antigravity', enabled: false, status: 'warning', availability: 'unavailable', models: [{ slug: 'lab', isDefault: false, isCustom: true }] },
+  ], hidden: {} });
 });
 
-test('options follow the manifest\'s key order, not the family order', () => {
-  const manifest = { manifest: { currentModels: { antigravity: ['gemini-3.8-flash-high'], codex: ['gpt-6-luna'] } } };
-  assert.deepEqual(optionsFromT3Manifest(manifest), ['gemini/gemini-3.8-flash', 'gpt/gpt-6-luna']);
+test('catalogueOf reads the slugs the user hid for each instance', () => {
+  const reply = { providers: [], settings: { providerModelPreferences: { codex: { hiddenModels: ['gpt-6-luna', 7] }, claudeAgent: {} } } };
+  assert.deepEqual(catalogueOf(reply).hidden, { codex: ['gpt-6-luna'] });
 });
 
-test('options list a gemini default once, without its effort', () => {
-  const manifest = { manifest: {
-    currentModels: { antigravity: ['gemini-3.8-pro-low', 'gemini-3.8-flash-high', 'gemini-3.8-flash-medium'] },
-    providers: { antigravity: { defaults: { chat: 'gemini-3.8-flash-medium' } } },
-  } };
-  assert.deepEqual(optionsFromT3Manifest(manifest), ['gemini/gemini-3.8-flash', 'gemini/gemini-3.8-pro']);
+test('catalogueOf skips an entry without the fields it needs', () => {
+  const reply = { providers: [7, { instanceId: 'codex' }, provider('codex', 'x'), provider('codex', [], { enabled: 'yes' }), provider('claudeAgent', [])] };
+  assert.deepEqual(catalogueOf(reply).instances.map(({ instanceId }) => instanceId), ['claudeAgent']);
 });
 
-test('options leave out a provider instance lets does not know', () => {
-  const manifest = { manifest: { currentModels: { opencode: ['llama-4'], codex: ['gpt-6-luna'] }, providers: { opencode: { defaults: { chat: 'llama-4' } } } } };
-  assert.deepEqual(optionsFromT3Manifest(manifest), ['gpt/gpt-6-luna']);
+test('catalogueOf skips a model without a slug', () => {
+  const reply = { providers: [provider('codex', [null, { name: 'x' }, slug('gpt-6-luna')])] };
+  assert.deepEqual(catalogueOf(reply).instances[0].models.map((model) => model.slug), ['gpt-6-luna']);
 });
 
-test('the adapter\'s options read the model manifest, and a missing one lists none', async () => {
-  const manifest = { manifest: { currentModels: { codex: ['gpt-6.1-sol'] } } };
-  const io = fakeIo({ files: { '/home/u/.t3/userdata/model-manifest.json': JSON.stringify(manifest) }, env: {} });
-  assert.deepEqual(await createAdapter(io).options(() => {}), ['gpt/gpt-6.1-sol']);
-  assert.deepEqual(await createAdapter(fakeIo({ env: {} })).options(() => {}), []);
+test('catalogueOf skips a model whose id cannot run', () => {
+  const reply = { providers: [
+    provider('codex', [slug(''), slug('my model'), slug('gpt-6-luna')]),
+    provider('antigravity', [slug('-high'), slug('gemini 4-low'), slug('gemini-4-argon')]),
+  ] };
+  assert.deepEqual(catalogueOf(reply).instances.map(({ models }) => models.map((model) => model.slug)), [['gpt-6-luna'], ['gemini-4-argon']]);
+});
+
+test('catalogueOf throws on a reply that is not an object', () => {
+  assert.throws(() => catalogueOf(null), /not an object/);
+  assert.throws(() => catalogueOf('x'), /not an object/);
+});
+
+test('catalogueOf throws on a reply with no list of providers', () => {
+  assert.throws(() => catalogueOf({ instances: [] }), /no list of providers/);
+});
+
+const options = (providers: unknown[], hidden: Record<string, string[]> = {}) => optionsFromCatalogue(catalogueOf({
+  providers,
+  settings: { providerModelPreferences: Object.fromEntries(Object.entries(hidden).map(([id, hiddenModels]) => [id, { hiddenModels }])) },
+}));
+
+test('options from the catalogue list each instance in its order, the default first', () => {
+  assert.deepEqual(options([
+    provider('codex', [slug('gpt-6-luna'), slug('gpt-5.6-terra', { isDefault: true })]),
+    provider('claudeAgent', [slug('claude-opus-5-5'), slug('claude-fable-5-1', { isDefault: true })]),
+    provider('antigravity', [slug('gemini-4-argon'), slug('gemini-3.8-flash')]),
+  ]), ['gpt/gpt-5.6-terra', 'gpt/gpt-6-luna', 'claude/claude-fable-5-1', 'claude/claude-opus-5-5', 'gemini/gemini-4-argon', 'gemini/gemini-3.8-flash']);
+});
+
+test('options from the catalogue leave out a disabled instance', () => {
+  assert.deepEqual(options([provider('codex', [slug('gpt-6-luna')], { enabled: false })]), []);
+});
+
+test('options from the catalogue leave out an instance in status error or disabled', () => {
+  assert.deepEqual(options([
+    provider('codex', [slug('gpt-6-luna')], { status: 'disabled' }),
+    provider('claudeAgent', [slug('claude-opus-5-5')], { status: 'error' }),
+  ]), []);
+});
+
+test('options from the catalogue list an instance in status warning', () => {
+  assert.deepEqual(options([provider('antigravity', [slug('gemini-4-argon')], { status: 'warning' })]), ['gemini/gemini-4-argon']);
+});
+
+test('options from the catalogue leave out an unavailable instance', () => {
+  assert.deepEqual(options([provider('antigravity', [slug('gemini-4-argon')], { availability: 'unavailable' })]), []);
+});
+
+test('options from the catalogue leave out an instance t3 does not run', () => {
+  assert.deepEqual(options([provider('cursor', [slug('auto')]), provider('codex_work', [slug('gpt-6-astra')]), provider('codex', [slug('gpt-6-luna')])]),
+    ['gpt/gpt-6-luna']);
+});
+
+test('options from the catalogue leave out a hidden model', () => {
+  assert.deepEqual(options([provider('codex', [slug('gpt-6-luna'), slug('gpt-6-astra')])], { codex: ['gpt-6-astra'] }), ['gpt/gpt-6-luna']);
+});
+
+test('options from the catalogue keep a custom model the user hid', () => {
+  assert.deepEqual(options([provider('claudeAgent', [slug('claude-opus-5-5'), slug('claude-lab', { isCustom: true })])], { claudeAgent: ['claude-lab'] }),
+    ['claude/claude-opus-5-5', 'claude/claude-lab']);
+});
+
+test('options from the catalogue put no hidden default first', () => {
+  assert.deepEqual(options([provider('claudeAgent', [slug('claude-opus-5-5'), slug('claude-opus-4-5', { isDefault: true })])], { claudeAgent: ['claude-opus-4-5'] }),
+    ['claude/claude-opus-5-5']);
+});
+
+test('options from the catalogue list each gemini model once, without its effort', () => {
+  assert.deepEqual(options([provider('antigravity', [slug('gemini-3.8-flash-high'), slug('gemini-3.8-flash-low')])]), ['gemini/gemini-3.8-flash']);
+});
+
+const defaultOf = (providers: unknown[], family: 'gpt' | 'claude' | 'gemini', hidden: Record<string, string[]> = {}) => defaultModel(catalogueOf({
+  providers,
+  settings: { providerModelPreferences: Object.fromEntries(Object.entries(hidden).map(([id, hiddenModels]) => [id, { hiddenModels }])) },
+}), family);
+
+test('defaultModel is the visible default', () => {
+  assert.equal(defaultOf([provider('codex', [slug('gpt-6-luna'), slug('gpt-5.6-terra', { isDefault: true })])], 'gpt'), 'gpt-5.6-terra');
+});
+
+test('defaultModel is the first visible model when the default is hidden', () => {
+  assert.equal(defaultOf([provider('codex', [slug('gpt-5.6-terra', { isDefault: true }), slug('gpt-6-luna')])], 'gpt', { codex: ['gpt-5.6-terra'] }), 'gpt-6-luna');
+});
+
+test('defaultModel is null when the family\'s instance is missing', () => {
+  assert.equal(defaultOf([provider('codex', [slug('gpt-6-luna')])], 'claude'), null);
+});
+
+test('defaultModel is null when the family\'s instance is not listed', () => {
+  assert.equal(defaultOf([provider('claudeAgent', [slug('claude-fable-5-1', { isDefault: true })], { status: 'error' })], 'claude'), null);
+});
+
+test('defaultModel is null when the instance has no visible model', () => {
+  assert.equal(defaultOf([provider('codex', [slug('gpt-6-luna')])], 'gpt', { codex: ['gpt-6-luna'] }), null);
+});
+
+test('defaultModel of gemini has no effort suffix', () => {
+  assert.equal(defaultOf([provider('antigravity', [slug('gemini-3.8-flash-high', { isDefault: true })])], 'gemini'), 'gemini-3.8-flash');
 });
 
 test('t3 model selection carries the effort in each provider\'s own option', () => {
@@ -482,6 +582,166 @@ test('a refused WebSocket with no reason to read still says it was refused', asy
   await assert.rejects(dispatch(io, { origin: ORIGIN, token: 'tok' }, { type: 'x' }), /^Error: t3 refused the WebSocket connection: it gave no reason/);
 });
 
+// A fetch that never answers, and rejects when its signal aborts, as a real
+// fetch does. Each request is logged with its signal.
+function hangingFetch(log: [string, AbortSignal | undefined][], answer: (url: string) => unknown = () => undefined): typeof fetch {
+  return ((url: string, init?: RequestInit) => {
+    log.push([url, init?.signal ?? undefined]);
+    const answered = answer(url);
+    if (answered !== undefined) return Promise.resolve(answered);
+    return new Promise((_, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))));
+  }) as unknown as typeof fetch;
+}
+const TICKET = { status: 200, ok: true, json: async () => ({ ticket: 'TICKET' }) };
+const settle = async () => {
+  for (let i = 0; i < 10; i++) await Promise.resolve();
+};
+const catalogueRpc = { tag: 'server.getConfig', payload: {}, threadId: undefined };
+
+test('a request past its deadline stops waiting for the reply, naming no thread', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const io = fakeIo({ env: {}, fetch: fakeFetch([200], []), WebSocket: silentWebSocket() });
+  const pending = request(io, { origin: ORIGIN, token: 'tok' }, catalogueRpc, 10_000);
+  await settle();
+  t.mock.timers.tick(10_000);
+  await assert.rejects(pending, (error) => error instanceof Error && /no reply from t3 after 10 s$/.test(error.message));
+});
+
+test('a request with a deadline waits for the reply only the time left', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  let settled = false;
+  const io = fakeIo({ env: {}, fetch: fakeFetch([200], []), WebSocket: silentWebSocket() });
+  t.mock.timers.tick(4_000);
+  const pending = request(io, { origin: ORIGIN, token: 'tok' }, catalogueRpc, 10_000).finally(() => {
+    settled = true;
+  });
+  pending.catch(() => {});
+  await settle();
+  t.mock.timers.tick(5_999);
+  await settle();
+  assert.equal(settled, false);
+  t.mock.timers.tick(1);
+  await assert.rejects(pending, /no reply from t3 after 6 s/);
+});
+
+test('a request past its deadline aborts a ticket fetch that never answers', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const fetches: [string, AbortSignal | undefined][] = [];
+  const io = fakeIo({ env: {}, fetch: hangingFetch(fetches), WebSocket: silentWebSocket() });
+  const pending = request(io, { origin: ORIGIN, token: 'tok' }, catalogueRpc, 10_000);
+  await settle();
+  t.mock.timers.tick(10_000);
+  await assert.rejects(pending, (error) => error instanceof Refused && /did not answer in time/.test(error.message));
+  assert.equal(fetches[0][1]?.aborted, true);
+});
+
+test('a request past its deadline aborts the fetch that asks why t3 refused the socket', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const fetches: [string, AbortSignal | undefined][] = [];
+  const fetch = hangingFetch(fetches, (url) => (url.endsWith('/ws') ? undefined : TICKET));
+  const io = fakeIo({ env: {}, fetch, WebSocket: refusedWebSocket() });
+  const pending = request(io, { origin: ORIGIN, token: 'tok' }, catalogueRpc, 10_000);
+  pending.catch(() => {});
+  await settle();
+  t.mock.timers.tick(10_000);
+  await settle();
+  assert.deepEqual(fetches.map(([url, signal]) => [url, signal?.aborted]), [[`${ORIGIN}/api/auth/websocket-ticket`, true], [`${ORIGIN}/ws`, true]]);
+});
+
+// A WebSocket that never opens, and fails and closes when it is closed.
+function connectingWebSocket(): typeof WebSocket {
+  return class {
+    listeners: Record<string, ((event: unknown) => void)[]> = {};
+    addEventListener(type: string, listener: (event: unknown) => void) {
+      (this.listeners[type] ??= []).push(listener);
+    }
+    emit(type: string, event: unknown) {
+      for (const listener of this.listeners[type] ?? []) listener(event);
+    }
+    send() {}
+    close() {
+      this.emit('error', { type: 'error', message: '' });
+      this.emit('close', { code: 1006, reason: '' });
+    }
+  } as unknown as typeof WebSocket;
+}
+
+test('closing a connecting socket at the deadline asks t3 for no refusal', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const fetches: [string, AbortSignal | undefined][] = [];
+  const io = fakeIo({ env: {}, fetch: hangingFetch(fetches, () => TICKET), WebSocket: connectingWebSocket() });
+  const pending = request(io, { origin: ORIGIN, token: 'tok' }, catalogueRpc, 10_000);
+  await settle();
+  t.mock.timers.tick(10_000);
+  await assert.rejects(pending, /no reply from t3/);
+  await settle();
+  assert.deepEqual(fetches.map(([url]) => url), [`${ORIGIN}/api/auth/websocket-ticket`]);
+});
+
+test('a request past its deadline names the thread to check', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const io = fakeIo({ env: {}, fetch: fakeFetch([200], []), WebSocket: silentWebSocket() });
+  const pending = request(io, { origin: ORIGIN, token: 'tok' }, { tag: 'x', payload: {}, threadId: 'T' }, 10_000);
+  await settle();
+  t.mock.timers.tick(10_000);
+  await assert.rejects(pending, /no reply from t3 after 10 s; check T before running again/);
+});
+
+const CONFIG = { providers: [provider('codex', [slug('gpt-6-luna')])] };
+const configured = (value: unknown) => ({ _tag: 'Exit', requestId: '1', exit: { _tag: 'Success', value } });
+
+test('readCatalogue asks T3 for server.getConfig, and reads its reply', async () => {
+  const log: Log = [];
+  const io = fakeIo({ env: {}, files: { [TOKEN]: 'tok' }, fetch: fakeFetch([200], []), WebSocket: fakeWebSocket(configured(CONFIG), log) });
+  assert.deepEqual(await readCatalogue(io, ORIGIN), catalogueOf(CONFIG));
+  assert.deepEqual(log[1], ['send', { _tag: 'Request', id: '1', tag: 'server.getConfig', payload: {}, headers: [] }]);
+});
+
+test('readCatalogue gives issuing a token the time left of its 10 s', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const timeouts: (number | undefined)[] = [];
+  const io = fakeIo({
+    env: {},
+    results: [(_cmd, _args, opts) => {
+      timeouts.push(opts.timeoutMs);
+      return { stdout: 'fresh\n', stderr: '', code: 0 };
+    }],
+    fetch: fakeFetch([200], []),
+    WebSocket: fakeWebSocket(configured(CONFIG), []),
+  });
+  await readCatalogue(io, ORIGIN);
+  assert.deepEqual(timeouts, [10_000]);
+});
+
+test('readCatalogue refuses 10 s after it starts asking', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const io = fakeIo({ env: {}, files: { [TOKEN]: 'tok' }, fetch: fakeFetch([200], []), WebSocket: silentWebSocket() });
+  const pending = readCatalogue(io, ORIGIN);
+  await settle();
+  t.mock.timers.tick(10_000);
+  await assert.rejects(pending, (error) => error instanceof Refused && /^T3 gave no model catalogue: no reply from t3 after 10 s$/.test(error.message));
+});
+
+test('readCatalogue keeps T3\'s own reason for refusing', async () => {
+  const fetch = (async (url: string) => (url.endsWith('/ws')
+    ? { status: 426, ok: false, json: async () => ({ message: 'unsupported orchestration protocol' }) }
+    : TICKET)) as unknown as typeof globalThis.fetch;
+  const io = fakeIo({ env: {}, files: { [TOKEN]: 'tok' }, fetch, WebSocket: refusedWebSocket() });
+  await assert.rejects(readCatalogue(io, ORIGIN), (error) => error instanceof Refused
+    && error.message.startsWith('T3 gave no model catalogue: t3 refused the WebSocket connection: unsupported orchestration protocol'));
+});
+
+test('readCatalogue refuses a reply of another shape', async () => {
+  const io = fakeIo({ env: {}, files: { [TOKEN]: 'tok' }, fetch: fakeFetch([200], []), WebSocket: fakeWebSocket(configured({ instances: [] }), []) });
+  await assert.rejects(readCatalogue(io, ORIGIN), (error) => error instanceof Refused && error.message === 'T3 gave no model catalogue: the reply has no list of providers');
+});
+
+test('readCatalogue refuses on an error of any class', async () => {
+  // The fake's WebSocket throws a plain Error.
+  const io = fakeIo({ env: {}, files: { [TOKEN]: 'tok' }, fetch: fakeFetch([200], []) });
+  await assert.rejects(readCatalogue(io, ORIGIN), (error) => error instanceof Refused && error.message === 'T3 gave no model catalogue: no network in this fake');
+});
+
 test('finish archives the thread on ok and leaves it otherwise', async () => {
   const log: Log = [];
   const io = fakeIo({ env: {}, files: RUNNING, fetch: fakeFetch([200], []), WebSocket: fakeWebSocket(SUCCESS, log) });
@@ -560,17 +820,14 @@ test('run is refused when t3 is not running', async () => {
   await assert.rejects(createAdapter(fakeIo({ env: {} })).run(runInput, { timeoutMs: 60000 }), (error) => error instanceof Refused && /not running/.test(error.message));
 });
 
-// An io inside a running T3 with a project for /r, whose state is db, and a
-// manifest that has defaults. t3 answers each request over the WebSocket
-// with LAUNCHED, which names thread T, and logs it.
+// An io inside a running T3 with a project for /r, whose state is db. t3
+// answers each request over the WebSocket with LAUNCHED, which names thread
+// T, and logs it.
 function launchingIo(db: DatabaseSync, log: Log, { projectDefault = null as string | null, sleep = async () => {}, statuses = [200, 200] } = {}) {
   addProject(db, { root: '/r', selection: projectDefault });
-  const manifest = { manifest: { currentModels: {}, providers: {
-    codex: { defaults: null }, claudeAgent: { defaults: { chat: 'claude-fable-5-1' } }, antigravity: { defaults: { chat: 'gemini-3.8-flash-high' } },
-  } } };
   return fakeIo({
     env: {},
-    files: { ...RUNNING, '/home/u/.t3/userdata/model-manifest.json': JSON.stringify(manifest) },
+    files: RUNNING,
     results: [{ stdout: '/r/.git\n', stderr: '', code: 0 }, { stdout: 'main\n', stderr: '', code: 0 }],
     openDb: () => shared(db),
     fetch: fakeFetch(statuses, []),
@@ -579,17 +836,6 @@ function launchingIo(db: DatabaseSync, log: Log, { projectDefault = null as stri
   });
 }
 const launched = (log: Log) => (log[1][1] as { payload: ReturnType<typeof buildLaunch> }).payload;
-
-// Run a session to its end, and answer the model selection t3 was sent. A
-// run is at high effort unless told otherwise.
-async function ranSelection(input: Partial<RunInput>) {
-  const db = database();
-  addRun(db, 'T', 'run-1', 1, 'completed');
-  addMessage(db, 'a1', 'run-1', 'FINDINGS', 0);
-  const log: Log = [];
-  await createAdapter(launchingIo(db, log)).run({ ...runInput, ...input }, { timeoutMs: 60000 });
-  return launched(log).modelSelection;
-}
 
 const startInput: StartInput = { name: 'fix-login', prompt: 'PROMPT', cwd: '/r/sub', family: 'gpt', model: 'gpt-6-luna' };
 
@@ -608,19 +854,6 @@ test('start launches a default-mode thread, and returns its handle', async () =>
   assert.equal(launched(log).title, 'fix-login');
 });
 
-test('a run with a null model launches the manifest\'s default chat model for the provider', async () => {
-  assert.equal((await ranSelection({ family: 'claude', model: null })).model, 'claude-fable-5-1');
-});
-
-test('a run with a null model launches null when the provider has no default', async () => {
-  assert.equal((await ranSelection({ family: 'gpt', model: null })).model, null);
-});
-
-test('a bare gemini run launches the manifest\'s default without its effort', async () => {
-  assert.deepEqual(await ranSelection({ family: 'gemini', model: null, effort: 'low' }),
-    { instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] });
-});
-
 test('a start runs the request\'s model, not the project default, with no effort option', async () => {
   const selection = await startedSelection({ family: 'gpt', model: 'gpt-6-luna' },
     { projectDefault: '{"instanceId":"claudeAgent","model":"claude-opus-5-5","options":[]}' });
@@ -630,13 +863,4 @@ test('a start runs the request\'s model, not the project default, with no effort
 test('a gemini start sends the model as given, with no effort option', async () => {
   assert.deepEqual(await startedSelection({ family: 'gemini', model: 'gemini-3.8-flash' }),
     { instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] });
-});
-
-test('a bare gemini start runs the manifest\'s default without its effort', async () => {
-  assert.deepEqual(await startedSelection({ family: 'gemini', model: null }),
-    { instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] });
-});
-
-test('a start with a bare family launches null when the provider has no default', async () => {
-  assert.deepEqual(await startedSelection({ family: 'gpt', model: null }), { instanceId: 'codex', model: null, options: [] });
 });
