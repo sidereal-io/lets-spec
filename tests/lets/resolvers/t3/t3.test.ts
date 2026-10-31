@@ -622,8 +622,9 @@ test('a start runs the request\'s model, not the project default, with no effort
   assert.deepEqual(selection, { instanceId: 'codex', model: 'gpt-6-luna', options: [] });
 });
 
-test('a gemini start adds medium effort to the model', async () => {
-  assert.equal((await startedSelection({ family: 'gemini', model: 'gemini-3.8-flash' })).model, 'gemini-3.8-flash-medium');
+test('a gemini start sends the model as given, with no effort option', async () => {
+  assert.deepEqual(await startedSelection({ family: 'gemini', model: 'gemini-3.8-flash' }),
+    { instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] });
 });
 
 test('a start with a bare family runs the provider\'s default as the manifest names it', async () => {
