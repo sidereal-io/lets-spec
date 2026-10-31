@@ -820,17 +820,14 @@ test('run is refused when t3 is not running', async () => {
   await assert.rejects(createAdapter(fakeIo({ env: {} })).run(runInput, { timeoutMs: 60000 }), (error) => error instanceof Refused && /not running/.test(error.message));
 });
 
-// An io inside a running T3 with a project for /r, whose state is db, and a
-// manifest that has defaults. t3 answers each request over the WebSocket
-// with LAUNCHED, which names thread T, and logs it.
+// An io inside a running T3 with a project for /r, whose state is db. t3
+// answers each request over the WebSocket with LAUNCHED, which names thread
+// T, and logs it.
 function launchingIo(db: DatabaseSync, log: Log, { projectDefault = null as string | null, sleep = async () => {}, statuses = [200, 200] } = {}) {
   addProject(db, { root: '/r', selection: projectDefault });
-  const manifest = { manifest: { currentModels: {}, providers: {
-    codex: { defaults: null }, claudeAgent: { defaults: { chat: 'claude-fable-5-1' } }, antigravity: { defaults: { chat: 'gemini-3.8-flash-high' } },
-  } } };
   return fakeIo({
     env: {},
-    files: { ...RUNNING, '/home/u/.t3/userdata/model-manifest.json': JSON.stringify(manifest) },
+    files: RUNNING,
     results: [{ stdout: '/r/.git\n', stderr: '', code: 0 }, { stdout: 'main\n', stderr: '', code: 0 }],
     openDb: () => shared(db),
     fetch: fakeFetch(statuses, []),
@@ -839,17 +836,6 @@ function launchingIo(db: DatabaseSync, log: Log, { projectDefault = null as stri
   });
 }
 const launched = (log: Log) => (log[1][1] as { payload: ReturnType<typeof buildLaunch> }).payload;
-
-// Run a session to its end, and answer the model selection t3 was sent. A
-// run is at high effort unless told otherwise.
-async function ranSelection(input: Partial<RunInput>) {
-  const db = database();
-  addRun(db, 'T', 'run-1', 1, 'completed');
-  addMessage(db, 'a1', 'run-1', 'FINDINGS', 0);
-  const log: Log = [];
-  await createAdapter(launchingIo(db, log)).run({ ...runInput, ...input }, { timeoutMs: 60000 });
-  return launched(log).modelSelection;
-}
 
 const startInput: StartInput = { name: 'fix-login', prompt: 'PROMPT', cwd: '/r/sub', family: 'gpt', model: 'gpt-6-luna' };
 
@@ -868,19 +854,6 @@ test('start launches a default-mode thread, and returns its handle', async () =>
   assert.equal(launched(log).title, 'fix-login');
 });
 
-test('a run with a null model launches the manifest\'s default chat model for the provider', async () => {
-  assert.equal((await ranSelection({ family: 'claude', model: null })).model, 'claude-fable-5-1');
-});
-
-test('a run with a null model launches null when the provider has no default', async () => {
-  assert.equal((await ranSelection({ family: 'gpt', model: null })).model, null);
-});
-
-test('a bare gemini run launches the manifest\'s default without its effort', async () => {
-  assert.deepEqual(await ranSelection({ family: 'gemini', model: null, effort: 'low' }),
-    { instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] });
-});
-
 test('a start runs the request\'s model, not the project default, with no effort option', async () => {
   const selection = await startedSelection({ family: 'gpt', model: 'gpt-6-luna' },
     { projectDefault: '{"instanceId":"claudeAgent","model":"claude-opus-5-5","options":[]}' });
@@ -890,13 +863,4 @@ test('a start runs the request\'s model, not the project default, with no effort
 test('a gemini start sends the model as given, with no effort option', async () => {
   assert.deepEqual(await startedSelection({ family: 'gemini', model: 'gemini-3.8-flash' }),
     { instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] });
-});
-
-test('a bare gemini start runs the manifest\'s default without its effort', async () => {
-  assert.deepEqual(await startedSelection({ family: 'gemini', model: null }),
-    { instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] });
-});
-
-test('a start with a bare family launches null when the provider has no default', async () => {
-  assert.deepEqual(await startedSelection({ family: 'gpt', model: null }), { instanceId: 'codex', model: null, options: [] });
 });

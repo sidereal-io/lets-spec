@@ -137,14 +137,6 @@ export function defaultModel(catalogue: Catalogue, family: Family): string | nul
   return first === undefined ? null : modelId(family, first.slug);
 }
 
-// The provider's default chat model in the manifest, or null when it has none.
-// The manifest's gemini default still names an effort, which t3 no longer
-// accepts in the id, so it goes.
-function manifestDefault(manifest: Manifest, family: Family): string | null {
-  const model = manifest.manifest.providers?.[T3_INSTANCE[family]]?.defaults?.chat ?? null;
-  return family === 'gemini' && model !== null ? withoutEffort(model) : model;
-}
-
 // The model goes as given. A null effort is a start's, and sends no effort option.
 export function t3ModelSelection({ family, model, effort }: { family: Family; model: string | null; effort: Effort | null }): ModelSelection {
   const option = T3_EFFORT_OPTION[family];
@@ -440,10 +432,12 @@ export function createAdapter(io: Io): Adapter {
     const repoRoot = resolve(await git(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir']), '..');
     const project = withDb((db) => findProject(db, repoRoot));
     const branch = (await git(cwd, ['branch', '--show-current'])) || null;
-    // A null model is the provider's default; with none, t3 picks its own.
-    const manifest = model === null ? readManifest() : null;
-    const chosen = model ?? (manifest === null ? null : manifestDefault(manifest, family));
+    // A bare family runs the catalogue's default. T3 rejects a launch with
+    // no model, so with none there is nothing to start.
+    const chosen = model ?? defaultModel(await readCatalogue(io, origin), family);
+    if (chosen === null) throw new Refused(`T3 lists no model t3 can run on its ${T3_INSTANCE[family]} instance`);
     const modelSelection = t3ModelSelection({ family, model: chosen, effort });
+    // Read after the catalogue request, which may have replaced the token.
     const token = await readToken(io);
     const { threadId } = await launch(io, { origin, token }, buildLaunch({
       threadId: randomUUID(),

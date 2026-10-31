@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 import { run as instructions } from '../../../../lets/src/delegate/instructions.ts';
+import { run as handoff } from '../../../../lets/src/delegate/handoff.ts';
 import { run as review } from '../../../../lets/src/delegate/review.ts';
 import type { ReviewOptions } from '../../../../lets/src/delegate/review.ts';
 import { parentPid } from '../../../../lets/src/resolvers/kit/io.ts';
@@ -73,6 +74,8 @@ const io = (parents: Record<number, number>, { config = ONLY_DISABLED as unknown
 });
 const CHAIN = { 100: 50, 50: 7, 7: 1 };
 const insideT3 = (options: Parameters<typeof io>[1] = {}) => io(CHAIN, options);
+
+const SCHEMA = readFileSync(new URL('./fixtures/t3-schema.sql', import.meta.url), 'utf8');
 
 const reviewInstructions = { strategy: 'review', for: 'code' } as const;
 
@@ -218,45 +221,27 @@ test('review instructions decline when the running T3 server is not an ancestor'
 });
 
 // A T3 that is running, with a project for projectRoot and the state in db.
-// Each request over the WebSocket succeeds, and is logged in sent.
-const SCHEMA = readFileSync(new URL('./fixtures/t3-schema.sql', import.meta.url), 'utf8');
-function runningT3({ projectRoot = '/repo' } = {}) {
+// It answers the catalogue request with config, and every other request
+// over the WebSocket with thread T. Each request is logged in sent.
+type Running = { projectRoot?: string; config?: unknown; fetch?: typeof globalThis.fetch; results?: { stdout: string; stderr: string; code: number }[] };
+function runningT3({ projectRoot = '/repo', config = ONLY_DISABLED as unknown, fetch = ticketFetch, results = [] }: Running = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec(SCHEMA);
   db.prepare(`insert into projection_projects (project_id, title, workspace_root, scripts_json, created_at, updated_at)
     values ('p1', 'lets-spec', ?, '[]', 'now', 'now')`).run(projectRoot);
-  const sent: { tag: string; payload: { type?: string; threadId?: string } }[] = [];
-  const WebSocket = class {
-    listeners: Record<string, ((event: unknown) => void)[]> = {};
-    constructor() {
-      queueMicrotask(() => this.emit('open', {}));
-    }
-    addEventListener(type: string, listener: (event: unknown) => void) {
-      (this.listeners[type] ??= []).push(listener);
-    }
-    emit(type: string, event: unknown) {
-      for (const listener of this.listeners[type] ?? []) listener(event);
-    }
-    send(data: string) {
-      sent.push(JSON.parse(data));
-      const reply = { _tag: 'Exit', requestId: '1', exit: { _tag: 'Success', value: { threadId: 'T' } } };
-      queueMicrotask(() => this.emit('message', { data: JSON.stringify(reply) }));
-    }
-    close() {}
-  } as unknown as typeof globalThis.WebSocket;
-  const fetch = (async () => ({ status: 200, ok: true, json: async () => ({ ticket: 'TICKET' }) })) as unknown as typeof globalThis.fetch;
+  const sent: Sent = [];
   const adapterIo = fakeIo({
-    files: { [RUNTIME]: JSON.stringify({ pid: 7, origin: ORIGIN }), '/home/u/.config/lets/t3-token': 'tok' },
+    files: { [RUNTIME]: JSON.stringify({ pid: 7, origin: ORIGIN }), [TOKEN]: 'tok' },
     pid: 100,
-    parentPid: (pid) => ({ 100: 50, 50: 7, 7: 1 } as Record<number, number>)[pid] ?? null,
+    parentPid: (pid) => (CHAIN as Record<number, number>)[pid] ?? null,
     processAlive: (pid) => pid === 7,
     env: {},
-    results: [{ stdout: '/repo/.git\n', stderr: '', code: 0 }, { stdout: 'main\n', stderr: '', code: 0 }],
+    results: [{ stdout: '/repo/.git\n', stderr: '', code: 0 }, { stdout: 'main\n', stderr: '', code: 0 }, ...results],
     openDb: () => ({ prepare: (sql: string) => db.prepare(sql), close() {} }) as Db,
     fetch,
-    WebSocket,
+    WebSocket: t3Socket(sent, config),
   });
-  return { db, sent, t: withT3(adapterIo) };
+  return { db, sent, adapterIo, t: withT3(adapterIo) };
 }
 // A review named x on gpt/gpt-6-astra, from a claude author.
 const astraReview: ReviewOptions = { for: 'code', name: 'x', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', timeoutMinutes: 1, models: ['gpt/gpt-6-astra'] };
@@ -280,4 +265,82 @@ test('a review in a repository T3 has no project for is exit 3, naming it, and c
   assert.match(t.stderr(), /t3 has no project for \/repo/);
   assert.doesNotMatch(t.stderr(), /\(thread /);
   assert.deepEqual(sent, []);
+});
+
+// The threads T3 was asked to start, by the model each runs.
+const launches = (sent: Sent) => sent.filter(({ tag }) => tag === 'orchestration.launchThread').map(({ payload }) => payload.modelSelection);
+const handoffOn = (...models: string[]) => ({ name: 'fix-login', promptFile: 'p.md', models });
+
+const CODEX = provider('codex', ['gpt-6-luna', { slug: 'gpt-5.6-terra', isDefault: true }]);
+
+test('a bare-family handoff runs the catalogue\'s default', async () => {
+  const { sent, t } = runningT3({ config: { providers: [CODEX] } });
+  assert.equal(await handoff(handoffOn('gpt'), t.deps), 0, t.stderr());
+  assert.deepEqual(launches(sent), [{ instanceId: 'codex', model: 'gpt-5.6-terra', options: [] }]);
+});
+
+test('a bare-family handoff runs the first visible model when the default is hidden', async () => {
+  const config = { providers: [provider('codex', [{ slug: 'gpt-5.6-terra', isDefault: true }, 'gpt-6-luna'])],
+    settings: { providerModelPreferences: { codex: { hiddenModels: ['gpt-5.6-terra'] } } } };
+  const { sent, t } = runningT3({ config });
+  assert.equal(await handoff(handoffOn('gpt'), t.deps), 0, t.stderr());
+  assert.deepEqual(launches(sent).map((selection) => selection?.model), ['gpt-6-luna']);
+});
+
+const GEMINI = { providers: [provider('antigravity', ['gemini-4-argon', { slug: 'gemini-3.8-flash-high', isDefault: true }])] };
+
+test('a bare gemini review runs the default without its effort', async () => {
+  const { db, sent, t } = runningT3({ config: GEMINI });
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'antigravity', 'completed', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_messages (message_id, thread_id, run_id, role, streaming, created_at, updated_at, payload_json)
+    values ('a1', 'T', 'run-1', 'assistant', 0, 'now', 'now', '{"text":"FINDINGS"}')`).run();
+  await review({ ...astraReview, for: 'plan', effort: 'low', models: ['gemini'] }, t.deps);
+  assert.deepEqual(launches(sent), [{ instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] }]);
+});
+
+test('a bare gemini handoff runs the default without its effort', async () => {
+  const { sent, t } = runningT3({ config: GEMINI });
+  assert.equal(await handoff(handoffOn('gemini'), t.deps), 0, t.stderr());
+  assert.deepEqual(launches(sent), [{ instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] }]);
+});
+
+test('a bare-family handoff on an instance with no visible model is exit 3, naming it, and starts no thread', async () => {
+  const { sent, t } = runningT3({ config: { providers: [provider('codex', [])] } });
+  assert.equal(await handoff(handoffOn('gpt'), t.deps), 3);
+  assert.match(t.stderr(), /codex/);
+  assert.deepEqual(launches(sent), []);
+});
+
+test('a bare-family handoff on a failing instance tries the next model', async () => {
+  const config = { providers: [provider('claudeAgent', [{ slug: 'claude-fable-5-1', isDefault: true }], { status: 'error' }), provider('codex', ['gpt-6-luna'])] };
+  // Each model it tries asks git again.
+  const { sent, t } = runningT3({ config, results: [{ stdout: '/repo/.git\n', stderr: '', code: 0 }, { stdout: 'main\n', stderr: '', code: 0 }] });
+  assert.equal(await handoff(handoffOn('claude', 'gpt'), t.deps), 0, t.stderr());
+  assert.deepEqual(launches(sent).map((selection) => selection?.model), ['gpt-6-luna']);
+});
+
+test('a bare-family handoff with no catalogue is exit 3 within 15 s, and starts no thread', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const { sent, t: command } = runningT3({ config: SILENT });
+  const pending = handoff(handoffOn('claude'), command.deps);
+  await settle();
+  t.mock.timers.tick(10_000);
+  assert.equal(await pending, 3);
+  assert.match(command.stderr(), /T3 gave no model catalogue/);
+  assert.deepEqual(launches(sent), []);
+});
+
+test('a bare-family handoff launches with the token the catalogue request issued', async () => {
+  const tokens: string[] = [];
+  const statuses = [401, 200, 200];
+  const fetch = (async (_url: string, init?: RequestInit) => {
+    tokens.push((init?.headers as Record<string, string>).authorization);
+    const status = statuses.shift()!;
+    return { status, ok: status === 200, json: async () => ({ ticket: 'TICKET' }) };
+  }) as unknown as typeof globalThis.fetch;
+  const { adapterIo, t } = runningT3({ config: { providers: [CODEX] }, fetch, results: [{ stdout: 'fresh\n', stderr: '', code: 0 }] });
+  assert.equal(await handoff(handoffOn('gpt'), t.deps), 0, t.stderr());
+  assert.deepEqual(tokens, ['Bearer tok', 'Bearer fresh', 'Bearer fresh']);
+  assert.equal((adapterIo as ReturnType<typeof fakeIo>).calls.filter(([cmd]) => cmd === 't3').length, 1);
 });
