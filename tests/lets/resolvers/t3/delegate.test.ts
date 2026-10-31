@@ -14,35 +14,80 @@ import { commandDeps } from '../../delegate/fixtures/command-deps.ts';
 import { fakeIo } from '../kit/fixtures/fake-io.ts';
 
 const ONLY_T3 = 'version: 3\ndelegate: { resolvers: [t3] }\n';
+const ORIGIN = 'http://127.0.0.1:3773';
 const RUNTIME = '/home/u/.t3/userdata/server-runtime.json';
 const MANIFEST = '/home/u/.t3/userdata/model-manifest.json';
+const TOKEN = '/home/u/.config/lets/t3-token';
 
 // commandDeps whose config lists only t3, the real T3 adapter on io.
 const withT3 = (io: Io) => commandDeps({ config: ONLY_T3, real: { t3: createAdapter(io) } });
 
-// This process is 100, and the T3 server is 7.
-const io = (parents: Record<number, number>) => fakeIo({
-  files: { [RUNTIME]: JSON.stringify({ pid: 7, origin: 'http://127.0.0.1:3773' }) },
+// An entry of server.getConfig's providers[], enabled and ready unless told
+// otherwise. A model is its slug, or the model itself.
+type CatalogueModel = string | { slug: string; isDefault?: boolean; isCustom?: boolean };
+const provider = (instanceId: string, models: CatalogueModel[], over: Record<string, unknown> = {}) => ({
+  instanceId, driver: instanceId, enabled: true, status: 'ready', ...over,
+  models: models.map((model) => (typeof model === 'string' ? { slug: model, name: model } : { name: model.slug, ...model })),
+});
+const ONLY_DISABLED = { providers: [provider('codex', ['gpt-6-luna'], { enabled: false, status: 'disabled' })] };
+
+// The T3 server's WebSocket. It answers server.getConfig with config, or
+// never when config is SILENT, and any other request with thread T. It logs
+// each request in sent.
+const SILENT = Symbol('silent');
+type Sent = { tag: string; payload: { type?: string; threadId?: string; modelSelection?: { model: string } } }[];
+function t3Socket(sent: Sent, config: unknown): typeof globalThis.WebSocket {
+  return class {
+    listeners: Record<string, ((event: unknown) => void)[]> = {};
+    constructor() {
+      queueMicrotask(() => this.emit('open', {}));
+    }
+    addEventListener(type: string, listener: (event: unknown) => void) {
+      (this.listeners[type] ??= []).push(listener);
+    }
+    emit(type: string, event: unknown) {
+      for (const listener of this.listeners[type] ?? []) listener(event);
+    }
+    send(data: string) {
+      const frame = JSON.parse(data);
+      sent.push(frame);
+      if (frame.tag === 'server.getConfig' && config === SILENT) return;
+      const value = frame.tag === 'server.getConfig' ? config : { threadId: 'T' };
+      queueMicrotask(() => this.emit('message', { data: JSON.stringify({ _tag: 'Exit', requestId: '1', exit: { _tag: 'Success', value } }) }));
+    }
+    close() {}
+  } as unknown as typeof globalThis.WebSocket;
+}
+const ticketFetch = (async () => ({ status: 200, ok: true, json: async () => ({ ticket: 'TICKET' }) })) as unknown as typeof globalThis.fetch;
+
+// This process is 100, and the T3 server is 7. T3 answers the catalogue
+// request with config.
+const io = (parents: Record<number, number>, { config = ONLY_DISABLED as unknown, sent = [] as Sent, files = {}, fetch = ticketFetch, WebSocket = t3Socket(sent, config) } = {}) => fakeIo({
+  files: { [RUNTIME]: JSON.stringify({ pid: 7, origin: ORIGIN }), [TOKEN]: 'tok', ...files },
   pid: 100,
   parentPid: (pid) => parents[pid] ?? null,
   processAlive: (pid) => pid === 7,
   env: {},
+  fetch,
+  WebSocket,
 });
-const insideT3 = () => io({ 100: 50, 50: 7, 7: 1 });
+const CHAIN = { 100: 50, 50: 7, 7: 1 };
+const insideT3 = (options: Parameters<typeof io>[1] = {}) => io(CHAIN, options);
 
 const reviewInstructions = { strategy: 'review', for: 'code' } as const;
 
-// What review instructions answer inside T3 Code when T3 has no model
-// manifest: t3, no options, and a warning that names the manifest.
-async function answersWithNoManifest(adapterIo: Io) {
+// Review instructions inside T3 Code: the command's exit, the options it
+// lists, and its stderr.
+async function listed(adapterIo: Io) {
   const t = withT3(adapterIo);
-  assert.equal(await instructions(reviewInstructions, t.deps), 0);
-  assert.deepEqual(JSON.parse(t.stdout()), { strategy: 'review', for: 'code', resolver: 't3', options: [], guidance: null });
-  assert.ok(t.stderr().includes(MANIFEST), t.stderr());
+  const code = await instructions(reviewInstructions, t.deps);
+  const answer = JSON.parse(t.stdout());
+  assert.equal(answer.resolver, 't3');
+  return { code, options: answer.options, stderr: t.stderr() };
 }
 
-test('review instructions inside T3 Code with no model manifest list no options, and warn with the manifest\'s path', async () => {
-  await answersWithNoManifest(insideT3());
+test('review instructions inside T3 Code with only disabled instances list no options, with no warning', async () => {
+  assert.deepEqual(await listed(insideT3()), { code: 0, options: [], stderr: '' });
 });
 
 test('review instructions inside T3 Code on a system with no /proc find the T3 server with ps', async () => {
@@ -55,7 +100,114 @@ test('review instructions inside T3 Code on a system with no /proc find the T3 s
     existsSync: () => false,
     spawnSync: (_cmd: string, args: string[]) => ({ stdout: parents[args.at(-1)!] ?? '' }),
   };
-  await answersWithNoManifest({ ...insideT3(), parentPid: (pid: number) => parentPid(pid, sys) });
+  assert.deepEqual(await listed({ ...insideT3(), parentPid: (pid: number) => parentPid(pid, sys) }), { code: 0, options: [], stderr: '' });
+});
+
+test('review instructions list the catalogue\'s models, each instance in order, its default first', async () => {
+  const config = { providers: [
+    provider('codex', ['gpt-6-luna', { slug: 'gpt-5.6-terra', isDefault: true }]),
+    provider('claudeAgent', ['claude-opus-5-5', { slug: 'claude-fable-5-1', isDefault: true }]),
+    provider('antigravity', ['gemini-4-argon', 'gemini-3.8-flash']),
+  ] };
+  assert.deepEqual((await listed(insideT3({ config }))).options,
+    ['gpt/gpt-5.6-terra', 'gpt/gpt-6-luna', 'claude/claude-fable-5-1', 'claude/claude-opus-5-5', 'gemini/gemini-4-argon', 'gemini/gemini-3.8-flash']);
+});
+
+test('review instructions list only the instances t3 can run now', async () => {
+  const config = { providers: [
+    provider('codex', ['gpt-6-luna'], { enabled: false }),
+    provider('claudeAgent', ['claude-opus-5-5'], { status: 'error' }),
+    provider('antigravity', ['gemini-4-argon'], { status: 'warning' }),
+  ] };
+  assert.deepEqual((await listed(insideT3({ config }))).options, ['gemini/gemini-4-argon']);
+});
+
+test('review instructions leave out an unavailable instance', async () => {
+  const config = { providers: [provider('antigravity', ['gemini-4-argon'], { availability: 'unavailable' })] };
+  assert.deepEqual((await listed(insideT3({ config }))).options, []);
+});
+
+test('review instructions leave out a model id that cannot run', async () => {
+  const config = { providers: [provider('codex', [{ slug: 'my model', isCustom: true }, { slug: '', isCustom: true }, 'gpt-6-luna'])] };
+  assert.deepEqual((await listed(insideT3({ config }))).options, ['gpt/gpt-6-luna']);
+});
+
+test('review instructions leave out the models the user hid, but not a custom one', async () => {
+  const config = {
+    providers: [provider('claudeAgent', ['claude-opus-5-5', { slug: 'claude-opus-4-5', isDefault: true }, { slug: 'claude-lab', isCustom: true }])],
+    settings: { providerModelPreferences: { claudeAgent: { hiddenModels: ['claude-opus-4-5', 'claude-lab'] } } },
+  };
+  assert.deepEqual((await listed(insideT3({ config }))).options, ['claude/claude-opus-5-5', 'claude/claude-lab']);
+});
+
+test('review instructions leave out an instance t3 does not run', async () => {
+  const config = { providers: [provider('cursor', ['auto']), provider('codex_work', ['gpt-6-astra']), provider('codex', ['gpt-6-luna'])] };
+  assert.deepEqual((await listed(insideT3({ config }))).options, ['gpt/gpt-6-luna']);
+});
+
+test('review instructions list each gemini model once, without its effort', async () => {
+  const config = { providers: [provider('antigravity', ['gemini-3.8-flash-high', 'gemini-3.8-flash-low'])] };
+  assert.deepEqual((await listed(insideT3({ config }))).options, ['gemini/gemini-3.8-flash']);
+});
+
+test('review instructions never read T3\'s model manifest', async () => {
+  const manifest = { manifest: { currentModels: { codex: ['gpt-6-astra'] } } };
+  const config = { providers: [provider('codex', ['gpt-6-luna'])] };
+  assert.deepEqual((await listed(insideT3({ config, files: { [MANIFEST]: JSON.stringify(manifest) } }))).options, ['gpt/gpt-6-luna']);
+});
+
+// Let every pending callback but the mocked timers run.
+const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+// What review instructions answer when T3 gives no catalogue: exit 0, no
+// options, and a warning that says so.
+function listsNoneBecause(answer: { code: number; options: unknown; stderr: string }, why: RegExp) {
+  assert.equal(answer.code, 0);
+  assert.deepEqual(answer.options, []);
+  assert.match(answer.stderr, /T3 gave no model catalogue/);
+  assert.match(answer.stderr, why);
+}
+
+test('review instructions list no options when T3 never replies, within 15 s', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const pending = listed(insideT3({ config: SILENT }));
+  await settle();
+  t.mock.timers.tick(10_000);
+  listsNoneBecause(await pending, /no reply from t3/);
+});
+
+test('review instructions list no options when T3 never answers the ticket request, within 15 s', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const fetch = ((_url: string, init?: RequestInit) =>
+    new Promise((_, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))))) as unknown as typeof globalThis.fetch;
+  const pending = listed(insideT3({ fetch }));
+  await settle();
+  t.mock.timers.tick(10_000);
+  listsNoneBecause(await pending, /did not answer in time/);
+});
+
+test('review instructions list no options when T3 refuses the request, saying why', async () => {
+  // t3 fails and closes the socket without opening it, and says why at /ws.
+  const WebSocket = class {
+    listeners: Record<string, ((event: unknown) => void)[]> = {};
+    constructor() {
+      queueMicrotask(() => {
+        for (const type of ['error', 'close']) for (const listener of this.listeners[type] ?? []) listener({ type, code: 1006, reason: '' });
+      });
+    }
+    addEventListener(type: string, listener: (event: unknown) => void) {
+      (this.listeners[type] ??= []).push(listener);
+    }
+    close() {}
+  } as unknown as typeof globalThis.WebSocket;
+  const fetch = (async (url: string) => (url.endsWith('/ws')
+    ? { status: 426, ok: false, json: async () => ({ message: 'unsupported orchestration protocol' }) }
+    : { status: 200, ok: true, json: async () => ({ ticket: 'TICKET' }) })) as unknown as typeof globalThis.fetch;
+  listsNoneBecause(await listed(insideT3({ fetch, WebSocket })), /unsupported orchestration protocol/);
+});
+
+test('review instructions list no options when T3\'s reply has another shape', async () => {
+  listsNoneBecause(await listed(insideT3({ config: { instances: [] } })), /no list of providers/);
 });
 
 test('review instructions decline when the running T3 server is not an ancestor', async () => {
@@ -67,7 +219,6 @@ test('review instructions decline when the running T3 server is not an ancestor'
 
 // A T3 that is running, with a project for projectRoot and the state in db.
 // Each request over the WebSocket succeeds, and is logged in sent.
-const ORIGIN = 'http://127.0.0.1:3773';
 const SCHEMA = readFileSync(new URL('./fixtures/t3-schema.sql', import.meta.url), 'utf8');
 function runningT3({ projectRoot = '/repo' } = {}) {
   const db = new DatabaseSync(':memory:');

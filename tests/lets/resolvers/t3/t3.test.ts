@@ -245,13 +245,6 @@ test('defaultModel of gemini has no effort suffix', () => {
   assert.equal(defaultOf([provider('antigravity', [slug('gemini-3.8-flash-high', { isDefault: true })])], 'gemini'), 'gemini-3.8-flash');
 });
 
-test('the adapter\'s options read the model manifest, and a missing one lists none', async () => {
-  const manifest = { manifest: { currentModels: { codex: ['gpt-6.1-sol'] } } };
-  const io = fakeIo({ files: { '/home/u/.t3/userdata/model-manifest.json': JSON.stringify(manifest) }, env: {} });
-  assert.deepEqual(await createAdapter(io).options(() => {}), ['gpt/gpt-6.1-sol']);
-  assert.deepEqual(await createAdapter(fakeIo({ env: {} })).options(() => {}), []);
-});
-
 test('t3 model selection carries the effort in each provider\'s own option', () => {
   assert.deepEqual(t3ModelSelection({ family: 'gpt', model: 'gpt-6.1-sol', effort: 'high' }),
     { instanceId: 'codex', model: 'gpt-6.1-sol', options: [{ id: 'reasoningEffort', value: 'high' }] });

@@ -137,24 +137,6 @@ export function defaultModel(catalogue: Catalogue, family: Family): string | nul
   return first === undefined ? null : modelId(family, first.slug);
 }
 
-// The models t3 can run, as <family>/<model>: each provider in the
-// manifest's order, its default chat model first. t3 lists gemini once per
-// effort, as gemini-<version>-<effort>, so the effort goes and each gemini
-// model appears once. A provider instance lets has no family for is left out.
-export function optionsFromT3Manifest(manifest: Manifest): ModelString[] {
-  const familyOf = (instance: string) => FAMILIES.find((family) => T3_INSTANCE[family] === instance);
-  const options = new Set<ModelString>();
-  for (const [instance, models] of Object.entries(manifest.manifest.currentModels)) {
-    const family = familyOf(instance);
-    if (family === undefined) continue;
-    const chat = manifest.manifest.providers?.[instance]?.defaults?.chat;
-    for (const model of [...(chat ? [chat] : []), ...(models ?? [])]) {
-      options.add(`${family}/${family === 'gemini' ? withoutEffort(model) : model}`);
-    }
-  }
-  return [...options];
-}
-
 // The provider's default chat model in the manifest, or null when it has none.
 // The manifest's gemini default still names an effort, which t3 no longer
 // accepts in the id, so it goes.
@@ -517,12 +499,13 @@ export function createAdapter(io: Io): Adapter {
     },
 
     async options(warn) {
-      const manifest = readManifest();
-      if (manifest === null) {
-        warn(`T3 has no model manifest at ${manifestPath()}, so it lists no models`);
+      try {
+        return optionsFromCatalogue(await readCatalogue(io, runningServer().origin));
+      } catch (error) {
+        if (!(error instanceof Refused)) throw error;
+        warn(`${error.message}, so t3 lists no models`);
         return [];
       }
-      return optionsFromT3Manifest(manifest);
     },
 
     async run({ effort, ...input }: RunInput, { timeoutMs }) {
