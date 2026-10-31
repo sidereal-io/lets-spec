@@ -8,7 +8,7 @@
 ADR review completed for this change. None of design.md's decisions needs a new record.
 
 - Reading T3's live catalogue instead of its model manifest is a requirement now: the `delegate-resolvers` spec says `t3` SHALL NOT read `model-manifest.json`. The spec guards it, so no record is needed.
-- The other decisions are a timeout argument on `request()`, pure catalogue functions, mapping providers by instance id, and listing no models when the catalogue fails. Each one can be read from the code beside it, and each is cheap to change.
+- The other decisions are one deadline for the catalogue request, reading the reply defensively in pure functions, mapping providers by instance id, refusing a bare family with no visible model, and warning instead of failing. A reader finds each one in the code beside it, and each is cheap to change. The refusal is a requirement in the spec.
 - The principle behind the change, that a resolver lists the models its harness can run now, is already [ADR-006](../../../docs/decisions/ADR-006-the-caller-chooses-the-model.md).
 
 ## In-Force ADRs Reviewed

@@ -5,10 +5,11 @@ Inside T3 Code, the `t3` resolver lists its `options` from T3's downloaded model
 ## What Changes
 
 - `t3` lists its `options` from T3's live catalogue, the one the composer uses, which it asks the running T3 server for (D2).
-- It lists only providers that are enabled and not failing, and leaves out the models the user hid in the composer. Each provider's default model comes first, in the catalogue's provider order (D4, D9).
-- A bare family, such as `--model claude`, runs the default model the live catalogue gives that provider (D3).
+- It lists only the provider instances that are enabled and whose status is `ready` or `warning`. It leaves out the models the user hid, as the composer does. Each provider's default model comes first, in the catalogue's order (D4, D9, D12).
+- A bare family, such as `--model claude`, runs the visible default model from the catalogue, or else its first visible model (D3, D10, D12).
+- A bare family refuses with exit 3 when T3 lists no visible model for it, or the catalogue cannot be read. Today it sends no model, which T3 rejects (D10).
 - `t3` stops reading `model-manifest.json`.
-- When T3 cannot answer in a few seconds, `t3` lists no `options`, and says why on stderr. The command still exits 0 (D5).
+- When T3 gives no catalogue within 10 seconds, `t3` lists no `options`, and says why on stderr. The 10 seconds count the token, the ticket and the reply. The command still exits 0 (D5).
 - To read the catalogue, the probe may need a T3 token, and issues one when none is stored, as a run does (D7).
 
 ## Capabilities
@@ -19,11 +20,15 @@ None.
 
 ### Modified Capabilities
 
-- `delegate-resolvers`: the requirement "The T3 resolver lists the models in its manifest" becomes a requirement to list the models T3 Code can run now. It also names where the default model for a bare family comes from. The scenarios of "T3 Code has its own resolver" stop naming the manifest.
+- `delegate-resolvers`:
+  - "The T3 resolver lists the models in its manifest" is replaced by a requirement to list the models T3 Code can run now.
+  - "The T3 resolver opens a session in a T3 thread" takes a bare family's default from the catalogue.
+  - The scenarios of "T3 Code has its own resolver" stop naming the manifest.
+  - New requirements say what happens when T3 gives no catalogue, and when it lists no model for a bare family.
 
 ## Impact
 
-- **Code:** `lets/src/resolvers/t3/t3.ts`: `optionsFromT3Manifest`, `defaultModel`, `readManifest`, the adapter's `options`, and the default model in `launchThread`. The WebSocket `request` gains a caller with a short timeout. Its tests are in `tests/lets/resolvers/t3/`.
+- **Code:** `lets/src/resolvers/t3/t3.ts`: `optionsFromT3Manifest`, `defaultModel`, `readManifest`, the adapter's `options`, and the default model in `launchThread`. The WebSocket `request` and the token issuing gain a deadline. Its tests are in `tests/lets/resolvers/t3/`.
 - **T3 protocol:** the resolver depends on one more private T3 request, `server.getConfig`. A T3 update can change it, as it can change `orchestration.launchThread`. The smoke test in `docs/resolvers.md` ("After a t3 update") should cover the model list.
 - **Docs:** `docs/resolvers.md` ("Which model runs") describes the catalogue.
-- **Overlap with #120 (PR #121):** that change modifies "The T3 resolver opens a session in a T3 thread". Its new scenarios say that T3's manifest gives the bare `gemini` default. Whichever change archives second updates those scenarios to match: after this change, the default comes from the live catalogue, and has no effort suffix to remove. This change does not alter how gemini model ids are sent (D6).
+- **#120 (PR #121), merged:** its bare-gemini scenarios name the manifest. This change rewrites them to name the catalogue. It keeps #121's rules for sending gemini ids (D6, D11).
