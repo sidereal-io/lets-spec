@@ -27,7 +27,7 @@
 
 ## Journey Map
 
-Stage status checked against the code on 2026-10-24.
+Stage status checked against the code on 2026-10-31.
 
 ### People who use Let's Spec
 
@@ -36,16 +36,16 @@ Stage status checked against the code on 2026-10-24.
 ```
   Set it up ──► Set up the backlog ──► Shape ──► Build ──► Review ──► Merge ──► Update
       │               │                 │          │          │          │         │
-   partial         partial          supported  supported   partial   supported  partial
+   partial         partial           partial    partial    partial   supported  partial
 ```
 
-1. **Set it up** — install with Nix or mise, run `lets sync`, describe the project — partial: setup is several documented steps run by hand, and asks nothing in a terminal ([#65](https://github.com/sidereal-io/lets-spec/issues/65)); the flow and skills mode live in `mise.toml`, not the project's config ([#23](https://github.com/sidereal-io/lets-spec/issues/23)); the user's config lives in a folder named for delegation, with no home for other `lets` settings ([#89](https://github.com/sidereal-io/lets-spec/issues/89)); fresh-session reviews need resolver programs installed for the user and listed in the config by absolute path ([#111](https://github.com/sidereal-io/lets-spec/issues/111))
-2. **Set up the backlog** — `lets-setup-backlog` creates the Project and its fields — partial: views, options and workflows are not converged ([#29](https://github.com/sidereal-io/lets-spec/issues/29)); the skill becomes part of one guided setup ([#65](https://github.com/sidereal-io/lets-spec/issues/65))
-3. **Shape** — `lets-shape` turns an idea or a bug into issues with packets — supported
-4. **Build** — `lets-build` claims an issue, plans it, and builds the plan in a fresh session — supported
+1. **Set it up** — install with Nix or mise, run `lets sync`, describe the project — partial: setup is several documented steps run by hand, and asks nothing in a terminal; the flow and skills mode live in `mise.toml`, not the project's config ([#65](https://github.com/sidereal-io/lets-spec/issues/65))
+2. **Set up the backlog** — `lets-setup-backlog` creates the Project and its fields — partial: views, options and workflows are not converged, and the skill becomes part of one guided setup ([#65](https://github.com/sidereal-io/lets-spec/issues/65))
+3. **Shape** — `lets-shape` turns an idea or a bug into issues with packets — partial: shaping reads an issue's body and never its comments, so decisions taken in the thread are lost ([#125](https://github.com/sidereal-io/lets-spec/issues/125), [#128](https://github.com/sidereal-io/lets-spec/issues/128))
+4. **Build** — `lets-build` claims an issue, plans it, and builds the plan in a fresh session — partial: build confirms a packet without seeing comments newer than it ([#126](https://github.com/sidereal-io/lets-spec/issues/126)); brainstorm cannot cite a comment as evidence ([#127](https://github.com/sidereal-io/lets-spec/issues/127))
 5. **Review** — plan and code reviews run in a fresh session, from another family — partial: a read-only T3 review that answers can still fail with exit 5 when T3 shows the run as waiting for a moment ([#102](https://github.com/sidereal-io/lets-spec/issues/102)); the T3 resolver offers models from a downloaded catalogue, not the ones T3 Code can run now ([#87](https://github.com/sidereal-io/lets-spec/issues/87))
 6. **Merge** — the user merges the pull request; archive is the last commit — supported
-7. **Update** — move the pin, sync, commit — partial: the label-backlog migration is undocumented ([#20](https://github.com/sidereal-io/lets-spec/issues/20)); the OpenSpec CLI warning does not name the line to set ([#26](https://github.com/sidereal-io/lets-spec/issues/26))
+7. **Update** — move the pin, sync, commit — partial: the label-backlog migration is undocumented; the OpenSpec CLI warning does not name the line to set ([#26](https://github.com/sidereal-io/lets-spec/issues/26))
 
 ### People who build Let's Spec
 
