@@ -6,7 +6,7 @@ import { Refused, SessionFailed, SpawnError, TimeoutError } from '../../../../le
 import type { Db } from '../../../../lets/src/resolvers/kit/io.ts';
 import {
   baseDir, buildLaunch, catalogueOf, createAdapter, dispatch, findProject, isAncestor, launch, readFinalMessage,
-  optionsFromT3Manifest, readRun, readRuntime, readToken, t3ModelSelection,
+  optionsFromCatalogue, readRun, readRuntime, readToken, t3ModelSelection,
 } from '../../../../lets/src/resolvers/t3/t3.ts';
 import type { RunInput, StartInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
 import { fakeIo } from '../kit/fixtures/fake-io.ts';
@@ -161,30 +161,59 @@ test('catalogueOf throws on a reply with no list of providers', () => {
   assert.throws(() => catalogueOf({ instances: [] }), /no list of providers/);
 });
 
-test('options list each provider in the manifest\'s order, its default first', () => {
-  const manifest = { manifest: {
-    currentModels: { codex: ['gpt-6-luna'], claudeAgent: ['claude-opus-5-5', 'claude-fable-5-1'], antigravity: ['gemini-3.8-flash-high', 'gemini-3.8-flash-low'] },
-    providers: { claudeAgent: { defaults: { chat: 'claude-fable-5-1' } } },
-  } };
-  assert.deepEqual(optionsFromT3Manifest(manifest), ['gpt/gpt-6-luna', 'claude/claude-fable-5-1', 'claude/claude-opus-5-5', 'gemini/gemini-3.8-flash']);
+const options = (providers: unknown[], hidden: Record<string, string[]> = {}) => optionsFromCatalogue(catalogueOf({
+  providers,
+  settings: { providerModelPreferences: Object.fromEntries(Object.entries(hidden).map(([id, hiddenModels]) => [id, { hiddenModels }])) },
+}));
+
+test('options from the catalogue list each instance in its order, the default first', () => {
+  assert.deepEqual(options([
+    provider('codex', [slug('gpt-6-luna'), slug('gpt-5.6-terra', { isDefault: true })]),
+    provider('claudeAgent', [slug('claude-opus-5-5'), slug('claude-fable-5-1', { isDefault: true })]),
+    provider('antigravity', [slug('gemini-4-argon'), slug('gemini-3.8-flash')]),
+  ]), ['gpt/gpt-5.6-terra', 'gpt/gpt-6-luna', 'claude/claude-fable-5-1', 'claude/claude-opus-5-5', 'gemini/gemini-4-argon', 'gemini/gemini-3.8-flash']);
 });
 
-test('options follow the manifest\'s key order, not the family order', () => {
-  const manifest = { manifest: { currentModels: { antigravity: ['gemini-3.8-flash-high'], codex: ['gpt-6-luna'] } } };
-  assert.deepEqual(optionsFromT3Manifest(manifest), ['gemini/gemini-3.8-flash', 'gpt/gpt-6-luna']);
+test('options from the catalogue leave out a disabled instance', () => {
+  assert.deepEqual(options([provider('codex', [slug('gpt-6-luna')], { enabled: false })]), []);
 });
 
-test('options list a gemini default once, without its effort', () => {
-  const manifest = { manifest: {
-    currentModels: { antigravity: ['gemini-3.8-pro-low', 'gemini-3.8-flash-high', 'gemini-3.8-flash-medium'] },
-    providers: { antigravity: { defaults: { chat: 'gemini-3.8-flash-medium' } } },
-  } };
-  assert.deepEqual(optionsFromT3Manifest(manifest), ['gemini/gemini-3.8-flash', 'gemini/gemini-3.8-pro']);
+test('options from the catalogue leave out an instance in status error or disabled', () => {
+  assert.deepEqual(options([
+    provider('codex', [slug('gpt-6-luna')], { status: 'disabled' }),
+    provider('claudeAgent', [slug('claude-opus-5-5')], { status: 'error' }),
+  ]), []);
 });
 
-test('options leave out a provider instance lets does not know', () => {
-  const manifest = { manifest: { currentModels: { opencode: ['llama-4'], codex: ['gpt-6-luna'] }, providers: { opencode: { defaults: { chat: 'llama-4' } } } } };
-  assert.deepEqual(optionsFromT3Manifest(manifest), ['gpt/gpt-6-luna']);
+test('options from the catalogue list an instance in status warning', () => {
+  assert.deepEqual(options([provider('antigravity', [slug('gemini-4-argon')], { status: 'warning' })]), ['gemini/gemini-4-argon']);
+});
+
+test('options from the catalogue leave out an unavailable instance', () => {
+  assert.deepEqual(options([provider('antigravity', [slug('gemini-4-argon')], { availability: 'unavailable' })]), []);
+});
+
+test('options from the catalogue leave out an instance t3 does not run', () => {
+  assert.deepEqual(options([provider('cursor', [slug('auto')]), provider('codex_work', [slug('gpt-6-astra')]), provider('codex', [slug('gpt-6-luna')])]),
+    ['gpt/gpt-6-luna']);
+});
+
+test('options from the catalogue leave out a hidden model', () => {
+  assert.deepEqual(options([provider('codex', [slug('gpt-6-luna'), slug('gpt-6-astra')])], { codex: ['gpt-6-astra'] }), ['gpt/gpt-6-luna']);
+});
+
+test('options from the catalogue keep a custom model the user hid', () => {
+  assert.deepEqual(options([provider('claudeAgent', [slug('claude-opus-5-5'), slug('claude-lab', { isCustom: true })])], { claudeAgent: ['claude-lab'] }),
+    ['claude/claude-opus-5-5', 'claude/claude-lab']);
+});
+
+test('options from the catalogue put no hidden default first', () => {
+  assert.deepEqual(options([provider('claudeAgent', [slug('claude-opus-5-5'), slug('claude-opus-4-5', { isDefault: true })])], { claudeAgent: ['claude-opus-4-5'] }),
+    ['claude/claude-opus-5-5']);
+});
+
+test('options from the catalogue list each gemini model once, without its effort', () => {
+  assert.deepEqual(options([provider('antigravity', [slug('gemini-3.8-flash-high'), slug('gemini-3.8-flash-low')])]), ['gemini/gemini-3.8-flash']);
 });
 
 test('the adapter\'s options read the model manifest, and a missing one lists none', async () => {

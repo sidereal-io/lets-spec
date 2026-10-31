@@ -91,6 +91,40 @@ export function catalogueOf(value: unknown): Catalogue {
   return { instances, hidden };
 }
 
+const familyOf = (instanceId: string) => FAMILIES.find((family) => T3_INSTANCE[family] === instanceId);
+
+// An instance t3 can run models on. A run always goes to T3_INSTANCE's
+// instance, so a second one, such as codex_work, would run on the wrong
+// instance. `warning` is an instance T3 has not checked yet.
+function listable(instance: CatalogueInstance): boolean {
+  return instance.enabled && (instance.status === 'ready' || instance.status === 'warning')
+    && instance.availability !== 'unavailable' && familyOf(instance.instanceId) !== undefined;
+}
+
+// The models the composer offers for the instance, the visible default
+// first. As in the composer, hiding never removes a custom model.
+function visibleModels(instance: CatalogueInstance, catalogue: Catalogue): CatalogueModel[] {
+  const hidden = new Set(catalogue.hidden[instance.instanceId] ?? []);
+  const visible = instance.models.filter((model) => model.isCustom || !hidden.has(model.slug));
+  const index = visible.findIndex((model) => model.isDefault);
+  return index === -1 ? visible : [visible[index], ...visible.filter((_, i) => i !== index)];
+}
+
+// The id t3 sends: a gemini slug still names an effort, which t3 no longer
+// accepts in the id.
+const modelId = (family: Family, slug: string) => (family === 'gemini' ? withoutEffort(slug) : slug);
+
+// The models t3 can run, as <family>/<model>, in the catalogue's order.
+// Each gemini model appears once.
+export function optionsFromCatalogue(catalogue: Catalogue): ModelString[] {
+  const options = new Set<ModelString>();
+  for (const instance of catalogue.instances.filter(listable)) {
+    const family = familyOf(instance.instanceId)!;
+    for (const { slug } of visibleModels(instance, catalogue)) options.add(`${family}/${modelId(family, slug)}`);
+  }
+  return [...options];
+}
+
 // The models t3 can run, as <family>/<model>: each provider in the
 // manifest's order, its default chat model first. t3 lists gemini once per
 // effort, as gemini-<version>-<effort>, so the effort goes and each gemini
