@@ -25,3 +25,4 @@
 
 - 2026-10-31, 1.2: `optionsFromT3Manifest` keeps its body until 2.1, which removes its only caller, the adapter's `options`. Its unit tests are replaced here, as planned.
 - 2026-10-31, 1.3: the manifest's `defaultModel` is renamed `manifestDefault` and kept private until 2.2 replaces its only caller, so `launchThread` keeps working in between.
+- 2026-10-31, code review: `lets/src/main.ts` now exits once the command's output is written. Node's WebSocket keeps a closed socket open until the server answers the close, so a silent T3 kept `lets` alive past the 15 s the spec allows. This reaches outside the t3 resolver's planned blast radius, into every command's exit.
