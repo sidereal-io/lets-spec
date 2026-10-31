@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { Refused, SessionFailed, SpawnError, TimeoutError } from '../../../../lets/src/resolvers/kit/errors.ts';
 import type { Db } from '../../../../lets/src/resolvers/kit/io.ts';
 import {
-  baseDir, buildLaunch, createAdapter, dispatch, findProject, isAncestor, launch, readFinalMessage,
+  baseDir, buildLaunch, catalogueOf, createAdapter, dispatch, findProject, isAncestor, launch, readFinalMessage,
   optionsFromT3Manifest, readRun, readRuntime, readToken, t3ModelSelection,
 } from '../../../../lets/src/resolvers/t3/t3.ts';
 import type { RunInput, StartInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
@@ -110,6 +110,55 @@ test('detect needs a runtime file, a live server, and the server among this proc
   // A stale runtime file: pid 7 is alive but is not an ancestor.
   const stale: Record<number, number> = { 100: 50, 50: 1 };
   assert.equal(createAdapter(io({ parentPid: (pid: number) => stale[pid] ?? null })).detect(), false);
+});
+
+// An entry of server.getConfig's providers[], enabled and ready unless told otherwise.
+const provider = (instanceId: string, models: unknown, over: Record<string, unknown> = {}) =>
+  ({ instanceId, driver: instanceId, enabled: true, status: 'ready', models, ...over });
+const slug = (id: string, over: Record<string, unknown> = {}) => ({ slug: id, name: id, ...over });
+
+test('catalogueOf reads each provider instance and its models', () => {
+  const reply = { providers: [
+    provider('codex', [slug('gpt-6-luna'), slug('gpt-5.6-terra', { isDefault: true })]),
+    provider('antigravity', [slug('lab', { isCustom: true })], { status: 'warning', enabled: false, availability: 'unavailable' }),
+  ] };
+  assert.deepEqual(catalogueOf(reply), { instances: [
+    { instanceId: 'codex', enabled: true, status: 'ready', availability: null, models: [
+      { slug: 'gpt-6-luna', isDefault: false, isCustom: false }, { slug: 'gpt-5.6-terra', isDefault: true, isCustom: false }] },
+    { instanceId: 'antigravity', enabled: false, status: 'warning', availability: 'unavailable', models: [{ slug: 'lab', isDefault: false, isCustom: true }] },
+  ], hidden: {} });
+});
+
+test('catalogueOf reads the slugs the user hid for each instance', () => {
+  const reply = { providers: [], settings: { providerModelPreferences: { codex: { hiddenModels: ['gpt-6-luna', 7] }, claudeAgent: {} } } };
+  assert.deepEqual(catalogueOf(reply).hidden, { codex: ['gpt-6-luna'] });
+});
+
+test('catalogueOf skips an entry without the fields it needs', () => {
+  const reply = { providers: [7, { instanceId: 'codex' }, provider('codex', 'x'), provider('codex', [], { enabled: 'yes' }), provider('claudeAgent', [])] };
+  assert.deepEqual(catalogueOf(reply).instances.map(({ instanceId }) => instanceId), ['claudeAgent']);
+});
+
+test('catalogueOf skips a model without a slug', () => {
+  const reply = { providers: [provider('codex', [null, { name: 'x' }, slug('gpt-6-luna')])] };
+  assert.deepEqual(catalogueOf(reply).instances[0].models.map((model) => model.slug), ['gpt-6-luna']);
+});
+
+test('catalogueOf skips a model whose id cannot run', () => {
+  const reply = { providers: [
+    provider('codex', [slug(''), slug('my model'), slug('gpt-6-luna')]),
+    provider('antigravity', [slug('-high'), slug('gemini 4-low'), slug('gemini-4-argon')]),
+  ] };
+  assert.deepEqual(catalogueOf(reply).instances.map(({ models }) => models.map((model) => model.slug)), [['gpt-6-luna'], ['gemini-4-argon']]);
+});
+
+test('catalogueOf throws on a reply that is not an object', () => {
+  assert.throws(() => catalogueOf(null), /not an object/);
+  assert.throws(() => catalogueOf('x'), /not an object/);
+});
+
+test('catalogueOf throws on a reply with no list of providers', () => {
+  assert.throws(() => catalogueOf({ instances: [] }), /no list of providers/);
 });
 
 test('options list each provider in the manifest\'s order, its default first', () => {

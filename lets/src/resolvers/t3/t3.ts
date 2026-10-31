@@ -50,6 +50,47 @@ type Manifest = {
 };
 type Project = { project_id: string; title: string; workspace_root: string };
 
+// The composer's model catalogue, as `server.getConfig` gives it: each
+// provider instance with its models, and the slugs the user hid, by instance.
+export type CatalogueModel = { slug: string; isDefault: boolean; isCustom: boolean };
+export type CatalogueInstance = { instanceId: string; enabled: boolean; status: string; availability: string | null; models: CatalogueModel[] };
+export type Catalogue = { instances: CatalogueInstance[]; hidden: Record<string, string[]> };
+
+const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+
+// The reply is untrusted data from a private protocol, so this keeps only
+// what the next steps can use. An id that is empty or holds white space is
+// one T3 and parseModel both reject.
+export function catalogueOf(value: unknown): Catalogue {
+  if (!isObject(value)) throw new Error('the reply is not an object');
+  if (!Array.isArray(value.providers)) throw new Error('the reply has no list of providers');
+  const instances: CatalogueInstance[] = [];
+  for (const entry of value.providers) {
+    if (!isObject(entry)) continue;
+    const { instanceId, enabled, status, availability, models } = entry;
+    if (typeof instanceId !== 'string' || typeof enabled !== 'boolean' || typeof status !== 'string' || !Array.isArray(models)) continue;
+    const id = (slug: string) => (instanceId === T3_INSTANCE.gemini ? withoutEffort(slug) : slug);
+    instances.push({
+      instanceId,
+      enabled,
+      status,
+      availability: typeof availability === 'string' ? availability : null,
+      models: models
+        .filter((model): model is Record<string, unknown> & { slug: string } => isObject(model) && typeof model.slug === 'string')
+        .filter(({ slug }) => id(slug) !== '' && !/\s/.test(id(slug)))
+        .map(({ slug, isDefault, isCustom }) => ({ slug, isDefault: isDefault === true, isCustom: isCustom === true })),
+    });
+  }
+  const hidden: Record<string, string[]> = {};
+  const preferences = isObject(value.settings) && isObject(value.settings.providerModelPreferences) ? value.settings.providerModelPreferences : {};
+  for (const [instanceId, preference] of Object.entries(preferences)) {
+    if (isObject(preference) && Array.isArray(preference.hiddenModels)) {
+      hidden[instanceId] = preference.hiddenModels.filter((slug): slug is string => typeof slug === 'string');
+    }
+  }
+  return { instances, hidden };
+}
+
 // The models t3 can run, as <family>/<model>: each provider in the
 // manifest's order, its default chat model first. t3 lists gemini once per
 // effort, as gemini-<version>-<effort>, so the effort goes and each gemini
