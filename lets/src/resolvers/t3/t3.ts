@@ -280,9 +280,9 @@ export function readFinalMessage(db: Db, runId: string): { text: string; streami
 const tokenPath = (io: Io) => join(configDir(io.env, io.homedir()), 't3-token');
 
 // Issue a token with the server's own CLI, so it lands in the same auth store.
-async function issueToken(io: Io): Promise<string> {
+async function issueToken(io: Io, timeoutMs?: number): Promise<string> {
   const args = ['auth', 'session', 'issue', '--base-dir', baseDir(io.env, io.homedir()), '--ttl', '30d', '--label', 'lets-delegate', '--token-only'];
-  const { stdout, stderr, code } = await io.execFile('t3', args, { env: io.env });
+  const { stdout, stderr, code } = await io.execFile('t3', args, { env: io.env, ...(timeoutMs === undefined ? {} : { timeoutMs }) });
   const token = stdout.trim();
   if (code !== 0 || !/^\S+$/.test(token)) throw new Refused(`could not issue a t3 token (exit ${code}): ${stderr.trim()}`);
   const path = tokenPath(io);
@@ -297,10 +297,11 @@ export async function readToken(io: Io): Promise<string> {
   return io.exists(path) ? io.readFile(path).trim() : issueToken(io);
 }
 
-async function requestTicket(io: Io, origin: string, token: string): Promise<Response> {
+async function requestTicket(io: Io, origin: string, token: string, signal?: AbortSignal): Promise<Response> {
   try {
-    return await io.fetch(`${origin}/api/auth/websocket-ticket`, { method: 'POST', headers: { authorization: `Bearer ${token}` } });
+    return await io.fetch(`${origin}/api/auth/websocket-ticket`, { method: 'POST', headers: { authorization: `Bearer ${token}` }, ...(signal ? { signal } : {}) });
   } catch (error) {
+    if (signal?.aborted) throw new Refused(`t3 at ${origin} did not answer in time`);
     const { cause, message } = error as Error & { cause?: { code?: string } };
     throw new Refused(`t3 at ${origin} is unreachable (${cause?.code ?? message})`);
   }
@@ -312,10 +313,10 @@ type Frame = { _tag: string; requestId?: string; exit?: { _tag: string; value?: 
 
 // Why t3 refused a WebSocket upgrade. t3 answers a plain GET of /ws with
 // JSON whose message says why, such as a protocol it no longer speaks.
-export async function refusal(io: Io, origin: string): Promise<string> {
+export async function refusal(io: Io, origin: string, signal?: AbortSignal): Promise<string> {
   let why = 'it gave no reason';
   try {
-    const response = await io.fetch(`${origin}/ws`);
+    const response = await io.fetch(`${origin}/ws`, ...(signal ? [{ signal }] : []));
     const { message } = await response.json() as { message?: unknown };
     why = typeof message === 'string' ? message : `HTTP ${response.status}`;
   } catch {
@@ -329,54 +330,68 @@ type Rpc = { tag: string; payload: Record<string, unknown>; threadId: string | u
 
 // One request over the WebSocket RPC, as the UI makes it: a ticket for the
 // token, then one Request frame, then its Exit. The result is the Exit's
-// value.
-async function request(io: Io, { origin, token }: Server, { tag, payload, threadId }: Rpc): Promise<unknown> {
-  let response = await requestTicket(io, origin, token);
-  if (rejected(response)) {
-    response = await requestTicket(io, origin, await issueToken(io));
-    if (rejected(response)) throw new Refused('t3 rejected the token twice');
-  }
-  if (!response.ok) throw new Refused(`t3 ticket request failed with HTTP ${response.status}: ${await response.text()}`);
-  const { ticket } = await response.json() as { ticket: string };
-
-  const url = new URL('/ws', origin.replace(/^http/, 'ws'));
-  url.searchParams.set('wsTicket', ticket);
-  url.searchParams.set('orchestrationProtocol', String(ORCHESTRATION_PROTOCOL));
-  const ws = new io.WebSocket(url);
+// value. A deadline, in Date.now() time, stops every step when it passes, so
+// no fetch is left open to keep the process alive.
+export async function request(io: Io, { origin, token }: Server, { tag, payload, threadId }: Rpc, deadline?: number): Promise<unknown> {
+  const left = () => (deadline === undefined ? Infinity : Math.max(0, deadline - Date.now()));
+  const controller = deadline === undefined ? undefined : new AbortController();
+  const abortTimer = controller && setTimeout(() => controller.abort(), left());
+  let ws: WebSocket | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  // Set before the socket closes: closing one that is still connecting fires
+  // error and close, which must not start a late refusal fetch.
+  let settled = false;
   try {
+    let response = await requestTicket(io, origin, token, controller?.signal);
+    if (rejected(response)) {
+      response = await requestTicket(io, origin, await issueToken(io, deadline === undefined ? undefined : left()), controller?.signal);
+      if (rejected(response)) throw new Refused('t3 rejected the token twice');
+    }
+    if (!response.ok) throw new Refused(`t3 ticket request failed with HTTP ${response.status}: ${await response.text()}`);
+    const { ticket } = await response.json() as { ticket: string };
+
+    const url = new URL('/ws', origin.replace(/^http/, 'ws'));
+    url.searchParams.set('wsTicket', ticket);
+    url.searchParams.set('orchestrationProtocol', String(ORCHESTRATION_PROTOCOL));
+    const socket = ws = new io.WebSocket(url);
     const exit = await new Promise<NonNullable<Frame['exit']>>((resolveExit, reject) => {
+      const waitMs = Math.min(REPLY_TIMEOUT_MS, left());
       // A timeout means "unknown", not "failed": the server may still act on it.
-      timer = setTimeout(() => reject(new SpawnError(`no reply from t3 after ${REPLY_TIMEOUT_MS / 1000} s; check ${threadId} before running again`)), REPLY_TIMEOUT_MS);
+      const check = threadId === undefined ? '' : `; check ${threadId} before running again`;
+      timer = setTimeout(() => reject(new SpawnError(`no reply from t3 after ${Math.round(waitMs / 1000)} s${check}`)), waitMs);
       let opened = false;
       let refused = false;
       // Before the socket opens, an error or a close means t3 refused the
       // upgrade, and the WebSocket API hides why. Ask t3 itself, once. After
       // it opens, t3 may have acted on the request, so the outcome is unknown.
       const fail = (reason: string) => {
+        if (settled) return;
         if (opened) return reject(new SpawnError(reason));
         if (refused) return;
         refused = true;
-        refusal(io, origin).then((why) => reject(new Refused(why)));
+        refusal(io, origin, controller?.signal).then((why) => reject(new Refused(why)));
       };
-      ws.addEventListener('open', () => {
+      socket.addEventListener('open', () => {
         opened = true;
-        ws.send(JSON.stringify({ _tag: 'Request', id: '1', tag, payload, headers: [] }));
+        socket.send(JSON.stringify({ _tag: 'Request', id: '1', tag, payload, headers: [] }));
       });
-      ws.addEventListener('message', (event) => {
+      socket.addEventListener('message', (event) => {
         for (const message of [JSON.parse(event.data as string) as Frame | Frame[]].flat()) {
           if (message._tag === 'Exit' && String(message.requestId) === '1') resolveExit(message.exit!);
           else if (message._tag === 'Defect' || message._tag === 'ClientProtocolError') reject(new Refused(`t3 rejected the request: ${JSON.stringify(message)}`));
         }
       });
-      ws.addEventListener('error', (event) => fail(`t3 websocket error: ${(event as Event & { message?: string }).message || event.type}`));
-      ws.addEventListener('close', (event) => fail(`t3 websocket closed: ${event.code} ${event.reason}`));
+      socket.addEventListener('error', (event) => fail(`t3 websocket error: ${(event as Event & { message?: string }).message || event.type}`));
+      socket.addEventListener('close', (event) => fail(`t3 websocket closed: ${event.code} ${event.reason}`));
     });
     if (exit._tag !== 'Success') throw new Refused(`t3 ${tag} failed: ${JSON.stringify(exit)}`);
     return exit.value;
   } finally {
+    settled = true;
     clearTimeout(timer);
-    ws.close();
+    clearTimeout(abortTimer);
+    controller?.abort();
+    ws?.close();
   }
 }
 

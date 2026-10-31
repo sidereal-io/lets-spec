@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { Refused, SessionFailed, SpawnError, TimeoutError } from '../../../../lets/src/resolvers/kit/errors.ts';
 import type { Db } from '../../../../lets/src/resolvers/kit/io.ts';
 import {
-  baseDir, buildLaunch, catalogueOf, createAdapter, defaultModel, dispatch, findProject, isAncestor, launch, readFinalMessage,
+  baseDir, buildLaunch, catalogueOf, createAdapter, defaultModel, dispatch, findProject, isAncestor, launch, readFinalMessage, request,
   optionsFromCatalogue, readRun, readRuntime, readToken, t3ModelSelection,
 } from '../../../../lets/src/resolvers/t3/t3.ts';
 import type { RunInput, StartInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
@@ -587,6 +587,111 @@ test('a refused WebSocket with no reason to read still says it was refused', asy
   }) as unknown as typeof globalThis.fetch;
   const io = fakeIo({ env: {}, fetch, WebSocket: refusedWebSocket() });
   await assert.rejects(dispatch(io, { origin: ORIGIN, token: 'tok' }, { type: 'x' }), /^Error: t3 refused the WebSocket connection: it gave no reason/);
+});
+
+// A fetch that never answers, and rejects when its signal aborts, as a real
+// fetch does. Each request is logged with its signal.
+function hangingFetch(log: [string, AbortSignal | undefined][], answer: (url: string) => unknown = () => undefined): typeof fetch {
+  return ((url: string, init?: RequestInit) => {
+    log.push([url, init?.signal ?? undefined]);
+    const answered = answer(url);
+    if (answered !== undefined) return Promise.resolve(answered);
+    return new Promise((_, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))));
+  }) as unknown as typeof fetch;
+}
+const TICKET = { status: 200, ok: true, json: async () => ({ ticket: 'TICKET' }) };
+const settle = async () => {
+  for (let i = 0; i < 10; i++) await Promise.resolve();
+};
+const catalogueRpc = { tag: 'server.getConfig', payload: {}, threadId: undefined };
+
+test('a request past its deadline stops waiting for the reply, naming no thread', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const io = fakeIo({ env: {}, fetch: fakeFetch([200], []), WebSocket: silentWebSocket() });
+  const pending = request(io, { origin: ORIGIN, token: 'tok' }, catalogueRpc, 10_000);
+  await settle();
+  t.mock.timers.tick(10_000);
+  await assert.rejects(pending, (error) => error instanceof Error && /no reply from t3 after 10 s$/.test(error.message));
+});
+
+test('a request with a deadline waits for the reply only the time left', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  let settled = false;
+  const io = fakeIo({ env: {}, fetch: fakeFetch([200], []), WebSocket: silentWebSocket() });
+  t.mock.timers.tick(4_000);
+  const pending = request(io, { origin: ORIGIN, token: 'tok' }, catalogueRpc, 10_000).finally(() => {
+    settled = true;
+  });
+  pending.catch(() => {});
+  await settle();
+  t.mock.timers.tick(5_999);
+  await settle();
+  assert.equal(settled, false);
+  t.mock.timers.tick(1);
+  await assert.rejects(pending, /no reply from t3 after 6 s/);
+});
+
+test('a request past its deadline aborts a ticket fetch that never answers', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const fetches: [string, AbortSignal | undefined][] = [];
+  const io = fakeIo({ env: {}, fetch: hangingFetch(fetches), WebSocket: silentWebSocket() });
+  const pending = request(io, { origin: ORIGIN, token: 'tok' }, catalogueRpc, 10_000);
+  await settle();
+  t.mock.timers.tick(10_000);
+  await assert.rejects(pending, (error) => error instanceof Refused && /did not answer in time/.test(error.message));
+  assert.equal(fetches[0][1]?.aborted, true);
+});
+
+test('a request past its deadline aborts the fetch that asks why t3 refused the socket', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const fetches: [string, AbortSignal | undefined][] = [];
+  const fetch = hangingFetch(fetches, (url) => (url.endsWith('/ws') ? undefined : TICKET));
+  const io = fakeIo({ env: {}, fetch, WebSocket: refusedWebSocket() });
+  const pending = request(io, { origin: ORIGIN, token: 'tok' }, catalogueRpc, 10_000);
+  pending.catch(() => {});
+  await settle();
+  t.mock.timers.tick(10_000);
+  await settle();
+  assert.deepEqual(fetches.map(([url, signal]) => [url, signal?.aborted]), [[`${ORIGIN}/api/auth/websocket-ticket`, true], [`${ORIGIN}/ws`, true]]);
+});
+
+// A WebSocket that never opens, and fails and closes when it is closed.
+function connectingWebSocket(): typeof WebSocket {
+  return class {
+    listeners: Record<string, ((event: unknown) => void)[]> = {};
+    addEventListener(type: string, listener: (event: unknown) => void) {
+      (this.listeners[type] ??= []).push(listener);
+    }
+    emit(type: string, event: unknown) {
+      for (const listener of this.listeners[type] ?? []) listener(event);
+    }
+    send() {}
+    close() {
+      this.emit('error', { type: 'error', message: '' });
+      this.emit('close', { code: 1006, reason: '' });
+    }
+  } as unknown as typeof WebSocket;
+}
+
+test('closing a connecting socket at the deadline asks t3 for no refusal', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const fetches: [string, AbortSignal | undefined][] = [];
+  const io = fakeIo({ env: {}, fetch: hangingFetch(fetches, () => TICKET), WebSocket: connectingWebSocket() });
+  const pending = request(io, { origin: ORIGIN, token: 'tok' }, catalogueRpc, 10_000);
+  await settle();
+  t.mock.timers.tick(10_000);
+  await assert.rejects(pending, /no reply from t3/);
+  await settle();
+  assert.deepEqual(fetches.map(([url]) => url), [`${ORIGIN}/api/auth/websocket-ticket`]);
+});
+
+test('a request past its deadline names the thread to check', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const io = fakeIo({ env: {}, fetch: fakeFetch([200], []), WebSocket: silentWebSocket() });
+  const pending = request(io, { origin: ORIGIN, token: 'tok' }, { tag: 'x', payload: {}, threadId: 'T' }, 10_000);
+  await settle();
+  t.mock.timers.tick(10_000);
+  await assert.rejects(pending, /no reply from t3 after 10 s; check T before running again/);
 });
 
 test('finish archives the thread on ok and leaves it otherwise', async () => {
