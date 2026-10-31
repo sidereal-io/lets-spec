@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { Refused, SessionFailed, SpawnError, TimeoutError } from '../../../../lets/src/resolvers/kit/errors.ts';
 import type { Db } from '../../../../lets/src/resolvers/kit/io.ts';
 import {
-  baseDir, buildLaunch, catalogueOf, createAdapter, defaultModel, dispatch, findProject, isAncestor, launch, readFinalMessage, request,
+  baseDir, buildLaunch, catalogueOf, createAdapter, defaultModel, dispatch, findProject, isAncestor, launch, readCatalogue, readFinalMessage, request,
   optionsFromCatalogue, readRun, readRuntime, readToken, t3ModelSelection,
 } from '../../../../lets/src/resolvers/t3/t3.ts';
 import type { RunInput, StartInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
@@ -692,6 +692,61 @@ test('a request past its deadline names the thread to check', async (t) => {
   await settle();
   t.mock.timers.tick(10_000);
   await assert.rejects(pending, /no reply from t3 after 10 s; check T before running again/);
+});
+
+const CONFIG = { providers: [provider('codex', [slug('gpt-6-luna')])] };
+const configured = (value: unknown) => ({ _tag: 'Exit', requestId: '1', exit: { _tag: 'Success', value } });
+
+test('readCatalogue asks T3 for server.getConfig, and reads its reply', async () => {
+  const log: Log = [];
+  const io = fakeIo({ env: {}, files: { [TOKEN]: 'tok' }, fetch: fakeFetch([200], []), WebSocket: fakeWebSocket(configured(CONFIG), log) });
+  assert.deepEqual(await readCatalogue(io, ORIGIN), catalogueOf(CONFIG));
+  assert.deepEqual(log[1], ['send', { _tag: 'Request', id: '1', tag: 'server.getConfig', payload: {}, headers: [] }]);
+});
+
+test('readCatalogue gives issuing a token the time left of its 10 s', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const timeouts: (number | undefined)[] = [];
+  const io = fakeIo({
+    env: {},
+    results: [(_cmd, _args, opts) => {
+      timeouts.push(opts.timeoutMs);
+      return { stdout: 'fresh\n', stderr: '', code: 0 };
+    }],
+    fetch: fakeFetch([200], []),
+    WebSocket: fakeWebSocket(configured(CONFIG), []),
+  });
+  await readCatalogue(io, ORIGIN);
+  assert.deepEqual(timeouts, [10_000]);
+});
+
+test('readCatalogue refuses 10 s after it starts asking', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const io = fakeIo({ env: {}, files: { [TOKEN]: 'tok' }, fetch: fakeFetch([200], []), WebSocket: silentWebSocket() });
+  const pending = readCatalogue(io, ORIGIN);
+  await settle();
+  t.mock.timers.tick(10_000);
+  await assert.rejects(pending, (error) => error instanceof Refused && /^T3 gave no model catalogue: no reply from t3 after 10 s$/.test(error.message));
+});
+
+test('readCatalogue keeps T3\'s own reason for refusing', async () => {
+  const fetch = (async (url: string) => (url.endsWith('/ws')
+    ? { status: 426, ok: false, json: async () => ({ message: 'unsupported orchestration protocol' }) }
+    : TICKET)) as unknown as typeof globalThis.fetch;
+  const io = fakeIo({ env: {}, files: { [TOKEN]: 'tok' }, fetch, WebSocket: refusedWebSocket() });
+  await assert.rejects(readCatalogue(io, ORIGIN), (error) => error instanceof Refused
+    && error.message.startsWith('T3 gave no model catalogue: t3 refused the WebSocket connection: unsupported orchestration protocol'));
+});
+
+test('readCatalogue refuses a reply of another shape', async () => {
+  const io = fakeIo({ env: {}, files: { [TOKEN]: 'tok' }, fetch: fakeFetch([200], []), WebSocket: fakeWebSocket(configured({ instances: [] }), []) });
+  await assert.rejects(readCatalogue(io, ORIGIN), (error) => error instanceof Refused && error.message === 'T3 gave no model catalogue: the reply has no list of providers');
+});
+
+test('readCatalogue refuses on an error of any class', async () => {
+  // The fake's WebSocket throws a plain Error.
+  const io = fakeIo({ env: {}, files: { [TOKEN]: 'tok' }, fetch: fakeFetch([200], []) });
+  await assert.rejects(readCatalogue(io, ORIGIN), (error) => error instanceof Refused && error.message === 'T3 gave no model catalogue: no network in this fake');
 });
 
 test('finish archives the thread on ok and leaves it otherwise', async () => {

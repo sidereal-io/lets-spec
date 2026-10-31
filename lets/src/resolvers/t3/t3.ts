@@ -35,6 +35,8 @@ export const ORCHESTRATION_PROTOCOL = 2;
 
 const POLL_MS = 5000;
 const REPLY_TIMEOUT_MS = 120_000;
+// The whole catalogue request, from the token to the reply.
+const CATALOGUE_TIMEOUT_MS = 10_000;
 
 // The t3 provider instance for each family.
 export const T3_INSTANCE: Record<Family, string> = { gpt: 'codex', claude: 'claudeAgent', gemini: 'antigravity' };
@@ -292,9 +294,9 @@ async function issueToken(io: Io, timeoutMs?: number): Promise<string> {
 }
 
 // The stored token, or a fresh one when none is stored.
-export async function readToken(io: Io): Promise<string> {
+export async function readToken(io: Io, timeoutMs?: number): Promise<string> {
   const path = tokenPath(io);
-  return io.exists(path) ? io.readFile(path).trim() : issueToken(io);
+  return io.exists(path) ? io.readFile(path).trim() : issueToken(io, timeoutMs);
 }
 
 async function requestTicket(io: Io, origin: string, token: string, signal?: AbortSignal): Promise<Response> {
@@ -392,6 +394,19 @@ export async function request(io: Io, { origin, token }: Server, { tag, payload,
     clearTimeout(abortTimer);
     controller?.abort();
     ws?.close();
+  }
+}
+
+// The composer's model catalogue, within CATALOGUE_TIMEOUT_MS. Any failure,
+// of any class, is a Refused with one known prefix, so the probe can warn
+// and a bare family can try the next model.
+export async function readCatalogue(io: Io, origin: string): Promise<Catalogue> {
+  const deadline = Date.now() + CATALOGUE_TIMEOUT_MS;
+  try {
+    const token = await readToken(io, Math.max(0, deadline - Date.now()));
+    return catalogueOf(await request(io, { origin, token }, { tag: 'server.getConfig', payload: {}, threadId: undefined }, deadline));
+  } catch (error) {
+    throw new Refused(`T3 gave no model catalogue: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
