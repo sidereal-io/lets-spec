@@ -1,3 +1,4 @@
+import { readStdin } from './stdin.ts';
 import { updateGlossary, reconcileGlossary } from './glossary.ts';
 import { Completion } from './completion.ts';
 import { Store, mutationName } from './store.ts';
@@ -60,7 +61,7 @@ export async function dispatch(request: Record<string, any>, query: Query = ghQu
 export async function main() {
   let request: any;
   try {
-    let input = ''; for await (const chunk of process.stdin) { input += chunk; if (Buffer.byteLength(input) > 1024 * 1024) fail('invalid_request', 'request exceeds input limit'); }
+    const input = await readStdin();
     try { request = JSON.parse(input); validateRequest(request as unknown); } catch { fail('invalid_request', 'invalid protocol request'); }
     const response = { protocol: 1, ok: true, result: await dispatch(request) };
     validateResponse(response as unknown, 0, request.operation); process.stdout.write(JSON.stringify(response) + '\n');

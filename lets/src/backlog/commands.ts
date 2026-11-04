@@ -1,3 +1,4 @@
+import { readStdin } from './stdin.ts';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -76,7 +77,7 @@ export async function execute(command: string, input: Record<string, any>, cwd: 
 }
 export async function run(command: string) {
   try {
-    let source = ''; for await (const chunk of process.stdin) { source += chunk; if (Buffer.byteLength(source) > 1024 * 1024) fail('invalid_request', 'input exceeds 1 MiB'); }
+    const source = await readStdin();
     let input;
     try { input = JSON.parse(source); } catch { fail('invalid_request', 'expected one JSON input on stdin'); }
     const result = await execute(command, input, process.cwd()); process.stdout.write(JSON.stringify(result) + '\n');
