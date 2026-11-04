@@ -5,6 +5,7 @@ const info = 'pageInfo { hasNextPage endCursor }';
 const project = 'id title url closed';
 const issue = 'id number title body url closed lastEditedAt repository { nameWithOwner } parent { id number body closed repository { nameWithOwner } }';
 export const QUERIES: Record<string, string> = {
+  UpdateIssueBody: 'mutation UpdateIssueBody($id:ID!,$body:String!) { updateIssue(input:{id:$id,body:$body}) { issue { id } } }',
   PullRequest: 'query PullRequest($owner:String!,$name:String!,$number:Int!) { repository(owner:$owner,name:$name) { pullRequest(number:$number) { id url body merged mergeCommit { oid } repository { nameWithOwner } } } }',
   UpdatePRBody: 'mutation UpdatePRBody($id:ID!,$body:String!) { updatePullRequest(input:{pullRequestId:$id,body:$body}) { pullRequest { id } } }',
 
@@ -24,7 +25,7 @@ export const QUERIES: Record<string, string> = {
   IssueOwners: `query IssueOwners($id:ID!,$cursor:String) { node(id:$id) { ... on Issue { assignees(first:100,after:$cursor) { nodes { login id } ${info} } } } }`,
   IssueProjects: `query IssueProjects($id:ID!,$cursor:String) { node(id:$id) { ... on Issue { projectItems(first:100,after:$cursor,includeArchived:true) { nodes { id project { id } } ${info} } } } }`,
   ItemValues: `query ItemValues($id:ID!,$cursor:String) { node(id:$id) { ... on ProjectV2Item { fieldValues(first:100,after:$cursor) { nodes { ... on ProjectV2ItemFieldSingleSelectValue { optionId field { ... on ProjectV2SingleSelectField { id } } } ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2Field { id } } } } ${info} } } } }`,
-  IssueComments: `query IssueComments($id:ID!,$cursor:String) { node(id:$id) { ... on Issue { comments(first:100,after:$cursor) { nodes { id body createdAt updatedAt author { login } } ${info} } } } }`,
+  IssueComments: `query IssueComments($id:ID!,$cursor:String) { node(id:$id) { ... on Issue { comments(first:100,after:$cursor) { nodes { id url body createdAt updatedAt lastEditedAt authorAssociation author { __typename login } } ${info} } } } }`,
   IssueBlockers: `query IssueBlockers($id:ID!,$cursor:String) { node(id:$id) { ... on Issue { blockedBy(first:100,after:$cursor) { nodes { id closed repository { nameWithOwner } } ${info} } } } }`,
   IssueChildren: `query IssueChildren($id:ID!,$cursor:String) { node(id:$id) { ... on Issue { subIssues(first:100,after:$cursor) { nodes { id closed repository { nameWithOwner } } ${info} } } } }`,
   ProjectItems: `query ProjectItems($id:ID!,$cursor:String) { node(id:$id) { ... on ProjectV2 { items(first:100,after:$cursor) { nodes { id content { ... on Issue { id closed repository { nameWithOwner } } } } ${info} } } } }`,

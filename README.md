@@ -484,3 +484,5 @@ update, run the smoke test in
 ## 📄 License
 
 If you want to reuse this code, it is under the [GNU GPL v3.0](LICENSE).
+
+Build existing GitHub packets through the [backlog commands](docs/backlog-build.md).

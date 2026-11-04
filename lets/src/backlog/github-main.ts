@@ -1,10 +1,11 @@
+import { updateGlossary, reconcileGlossary } from './glossary.ts';
 import { Completion } from './completion.ts';
 import { Store, mutationName } from './store.ts';
 import { Claims } from './claims.ts';
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import { join } from 'node:path';
-import { validateRequest, validateResponse } from './protocol.ts';
+import { validateRequest, validateResponse, MUTATIONS } from './protocol.ts';
 import { GitHub, fail } from './github.ts';
 import type { Context, Query } from './github.ts';
 import { ghQuery } from './gh.ts';
@@ -22,9 +23,11 @@ export async function dispatch(request: Record<string, any>, query: Query = ghQu
   if (item && (item.provider !== context.provider || item.backlog !== context.backlog)) fail('invalid_request', 'item scope differs from request context');
   const page = (items: any[]) => ({ items, complete: true, nextCursor: null });
   switch (request.operation) {
+    case 'item.update': return updateGlossary(new Claims(github, mappings), request);
     case 'reference.write': case 'completion.write': return new Completion(new Claims(github, mappings)).write(request);
     case 'mutation.read': {
       const entry = new Store(context.cwd).read(mutationName({ context, mutationId: request.input.mutationId }));
+      if (entry?.request.operation === 'item.update') return reconcileGlossary(new Claims(github, mappings), request.input.mutationId);
       return entry && ['reference.write', 'completion.write'].includes(entry.request.operation)
         ? new Completion(new Claims(github, mappings)).reconcile(request.input.mutationId)
         : new Claims(github, mappings).reconcile(request.input.mutationId);
@@ -62,7 +65,9 @@ export async function main() {
     const response = { protocol: 1, ok: true, result: await dispatch(request) };
     validateResponse(response, 0, request.operation); process.stdout.write(JSON.stringify(response) + '\n');
   } catch (error) {
-    const failure = error instanceof AdapterFailure ? error : new AdapterFailure('invalid_configuration', 'none', 'GitHub configuration or response validation failed');
+    const failure = error instanceof AdapterFailure ? error : MUTATIONS.includes(request?.operation)
+      ? new AdapterFailure('unknown_outcome', 'unknown', 'GitHub mutation could not return a validated result; reconcile before retry')
+      : new AdapterFailure('invalid_configuration', 'none', 'GitHub configuration or response validation failed');
     process.stdout.write(JSON.stringify({ protocol: 1, ok: false, error: { category: failure.category, effects: failure.effects, message: failure.message } }) + '\n'); process.exitCode = 1;
   }
 }

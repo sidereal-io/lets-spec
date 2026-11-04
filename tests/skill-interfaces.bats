@@ -344,3 +344,12 @@ load support/release
   ln -s "$real" "$alias"
   assert_reference_links "$alias/skill/SKILL.md" "$alias"
 }
+
+@test "backlog workflow commands named by build are callable" {
+  local command
+  for command in request select claim release bind resume packet reference complete glossary-update; do
+    run node "$repo/lets/src/main.ts" backlog "$command" --help
+    [ "$status" -eq 0 ] || { echo "$output"; false; }
+    grep -q "lets backlog $command" <<<"$output" || { echo "$output"; false; }
+  done
+}

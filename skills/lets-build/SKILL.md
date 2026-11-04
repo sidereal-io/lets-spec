@@ -10,7 +10,8 @@ claim, propose, apply, archive. Each run picks it up wherever it is and
 carries it as far as it can: a new issue through claim and propose, a
 planned one through apply and archive. The current branch and the
 change's state say where it is. Run every command below from the repo
-root.
+root. Read [Backlog commands](references/backlog-commands.md) for callable
+JSON inputs, outputs, errors and continuation handling.
 
 You own finding, checking, routing and claiming the issue. OpenSpec owns
 everything after that. Invoke its skills, follow the schema's
@@ -22,7 +23,12 @@ your own.
 1. Find the default branch:
    `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`.
 2. Run `git branch --show-current`.
-3. If the branch has a folder `openspec/changes/<branch>/`, run
+3. On a change branch with `backlog.json`, run `lets backlog resume` with
+   its path and the original explicit continuation handle before planning or
+   implementation. Reject selection mismatches and unavailable provenance.
+   A legacy change without identity needs explicit item confirmation and
+   original claim reconciliation; never infer it from title or assignment.
+4. If the branch has a folder `openspec/changes/<branch>/`, run
    `openspec instructions apply --change <branch> --json` and read `state`.
 4. Take the first row that matches:
 
@@ -41,66 +47,22 @@ your own.
 Parallel sessions share the backlog, so claim the issue before you
 create anything.
 
-Find the Project linked to this repository first:
+Resolve repository and authenticated actor through the code host, then use
+[Backlog commands](references/backlog-commands.md). Missing selection discovers
+exactly one open linked Project; explicit selection never falls back.
 
-```bash
-gh api graphql -F owner='{owner}' -F name='{repo}' -f query='
-query($owner: String!, $name: String!) {
-  repository(owner: $owner, name: $name) {
-    nameWithOwner
-    projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } } }
-  }
-  repositoryOwner(login: $owner) {
-    ... on ProjectV2Owner {
-      projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } repositories(first: 100) { nodes { nameWithOwner } } } }
-    }
-  }
-}' --jq '.data.repository.nameWithOwner as $repo
-  | {repo: $repo, projects: ([.data.repository.projectsV2.nodes[], (.data.repositoryOwner.projectsV2.nodes[] | select(any(.repositories.nodes[]; .nameWithOwner == $repo)))]
-      | map(select(.closed | not) | {number, title, url, owner: .owner.login}) | unique_by(.owner, .number))}'
-```
-
-The query lists the Projects linked to the repository, and the owner's Projects that link back to it. A user-owned Project can be missing from the repository's own listing for a while after it is linked, so neither list alone is enough.
-
-- **One Project:** use its `number` as `<n>` and its `owner` as
-  `<owner>` in every `gh project` command below. `repo` is the
-  repository, as `owner/name`.
-- **None:** say to run the `lets-setup-backlog` skill, and stop.
-- **Two or more:** list each one's title and URL, ask the user to unlink
-  the extras, and stop. Never pick one yourself.
-
-Then take the first case that applies:
-
-1. **The user named an issue.** Use it. If an open issue blocks it, say
-   so and stop: `gh issue view <i> --json blockedBy` lists its blockers,
-   and any with `state` `OPEN` counts. The user stacks it on the
-   blocker's branch by hand.
-2. **The user described work but named no issue.** Search for it:
-   `gh issue list --state open --search "<words> in:title" --json number,title`.
-   If one matches, confirm with the user that it is the same work. If
-   none does, say to run the `lets-shape` skill on it, and stop.
-3. **Otherwise, take `next`.** List the Todo, prioritized candidates on
-   the Project. Any Kind but Epic counts, and items from other
-   repositories are left out:
-
-   ```bash
-   gh project item-list <n> --owner <owner> --format json --limit 500 \
-     --jq '.items[] | select(.content.repository == "<repo>" and .status == "Todo" and .kind != "Epic" and (.priority | IN("Must", "Should", "Could")))
-           | "\(.priority)\t\(.kind)\t\(.size // "-")\t#\(.content.number)\t\(.content.title)\t\(.content.url)"'
-   ```
-
-   Then list the open issues that nobody is assigned to and nothing
-   blocks:
-
-   ```bash
-   gh issue list --search "is:open no:assignee -is:blocked" --limit 500 --json number --jq '.[].number'
-   ```
-
-   `next` comes from the candidates whose number is in the second list.
-   Rank them Must, then Should, then Could, then the lowest issue
-   number, and take the first. A Wont is never a candidate. If there is
-   none, say the backlog has nothing ready, suggest the `lets-shape`
-   skill to shape more, and stop.
+1. **The user named an issue.** Run `lets backlog select` with its numeric
+   reference. Owned or blocked work stops without replacing ownership.
+2. **The user described work but named no issue.** Use `lets backlog request`
+   with `candidate.list` to read the open scoped packets, then search titles
+   locally. Confirm a match with the user. If none matches, say to run the
+   `lets-shape` skill, and stop. Select the confirmed numeric reference.
+3. **Otherwise, take `next`.** Run `lets backlog select` without a reference.
+   It returns eligible candidates ranked Must, Should, Could, then lowest
+   GitHub issue number. Other repositories, non-Todo items, Epics, Wont,
+   assigned items and open blockers are excluded. The first item is
+   provisional until glossary prerequisites pass. If no candidate is ready,
+   suggest the `lets-shape` skill, and stop.
 
 Before you select `next`, run only
 [Check the prerequisite](#check-the-prerequisite) on each candidate, in
@@ -113,18 +75,11 @@ checkpoint, and stop. Otherwise, go on to [Confirm the packet](#confirm-the-pack
 
 ## Confirm the packet
 
-Read the issue, and its fields on the Project:
-
-```bash
-gh issue view <i> --json number,title,body,url,parent
-gh project item-list <n> --owner <owner> --format json --limit 500 \
-  --jq '.items[] | select(.content.repository == "<repo>" and .content.number == <i>) | {kind, priority, size, status}'
-```
-
-- If the second command prints nothing, or no `kind`, the issue is not
-  shaped. Say to run the `lets-shape` skill on #<i>, and stop.
-- If its Kind is Epic, say that an epic is built through its stories,
-  list its open sub-issues, and stop.
+Run `lets backlog packet` for the selected scoped identity. Its `item` holds
+the body and normalized Kind, Priority, Size and Status in `metadata`.
+Missing metadata or membership is an error; never add the issue to the Project.
+If Kind is Epic, say it is built through its stories, list its open children
+with `lets backlog request` and `relationship.list` kind `child`, and stop.
 
 Read the whole body. Check that every required line for its Kind is
 there and filled in. These are the lines of the `lets-shape` skill's
@@ -140,6 +95,7 @@ If a line is missing, or still holds a placeholder in angle brackets,
 name it, say to run the `lets-shape` skill on #<i>, and stop. Never write
 or fix the packet yourself.
 
+Use the packet command's complete comments and body edit timestamp.
 Then read the issue's thread as
 [Issue comments](../lets-shape/references/issue-comments.md) says. Read
 a comment's first line only, to find read markers. The watermark is the
@@ -152,7 +108,7 @@ its edit date, else its creation date. Show nothing of what a comment
 says. Say to run the `lets-shape` skill on #<i>, and stop.
 
 For a Story with a parent, read the parent's **Shared decisions**
-section, when it has one: `gh issue view <parent> --json body`. The
+section from `packet.parent.body`, when it has one. The
 route needs it.
 
 ## Route
@@ -236,26 +192,17 @@ adds.
    switching to it and running `lets-build` there, and stop before fetching
    or rehearsing a transfer. Otherwise complete
    [Glossary preflight](#glossary-preflight) against the proposed base.
-3. Claim the issue: check that nobody has it, assign yourself, then move
-   it to In Progress. `<url>` is the issue's URL.
-
-   ```bash
-   gh issue view <i> --json assignees --jq '.assignees | length'
-   gh issue edit <i> --add-assignee @me
-   gh project item-edit <n> --owner <owner> --url <url> --field Status --value "In Progress"
-   ```
-
-   The first command must print `0`. Anything else means another
-   session took it. When `next` picked it, run `next` again. When the
-   user named it, say who has it, and stop.
-4. Create a branch with the change's name off the default branch. If
-   this fails, release the claim, so another session can pick the issue
-   up, and stop:
-
-   ```bash
-   gh issue edit <i> --remove-assignee @me
-   gh project item-edit <n> --owner <owner> --url <url> --field Status --value Todo
-   ```
+3. Run `lets backlog claim` with the selected scoped identity. It checks
+   capabilities, creates a fresh session, journals writes and verifies the
+   claim again before work. Keep the returned continuation handle privately.
+   Conflict, partial progress or uncertainty never authorizes implementation.
+   Reconcile the original mutation before any replay. Assignment alone is
+   insufficient, including another session using the same account.
+4. Create the change branch off the default branch. If branch creation fails,
+   run `lets backlog release` with the original handle. It removes only this
+   session's assignment and restores Todo only while ownership still matches.
+   Report unknown or conflicting release without clearing another worker.
+   Then stop.
 
 ## Import the glossary checkpoint
 
@@ -269,8 +216,9 @@ committed, and need no transfer and no new claim.
 1. Cherry-pick only the verified checkpoint commits onto the new branch,
    in their recorded order. Skip any the rehearsal found already present.
    Keep them as separate `docs:` commits.
-2. In the issue's **Glossary handoff**, record the destination branch, the
-   resulting commits and, once it exists, the pull request.
+2. Update the issue's **Glossary handoff** with the destination branch,
+   commits and PR through `lets backlog glossary-update`, using the original
+   handle and a stable mutation key. Preserve every other packet section.
 3. Keep the holding branch until the destination holds the edits.
 
 ### Recover from a failed import
@@ -285,7 +233,8 @@ If the import fails:
    it, and report how to recover. Never delete an existing change branch,
    and never reset unrelated commits.
 4. Release the claim with the same commands as a failed branch creation in
-   [Claim](#claim): remove your assignment, and set Status back to Todo.
+   [Claim](#claim): use the original continuation handle with
+   `lets backlog release`, preserving changed ownership.
    Do this even if the Git cleanup failed.
 5. Report every cleanup failure, and anything kept: the branch, commits or
    claim. Then stop.
@@ -294,7 +243,8 @@ If the import fails:
 
 First run [Import the glossary checkpoint](#import-the-glossary-checkpoint)
 when preflight identified owned edits. Then invoke the `openspec-propose` skill for the change `<name>`. For an issue
-you just claimed, say it is for issue #<i>, and give it the route line
+you just claimed, say it is for issue #<i>, pass its scoped identity and private continuation handle,
+   and give it the route line
 for the proposal's commit message. When the route is `lets-minimal` and
 the flow's schema is not, say to use the schema `lets-minimal`;
 `openspec-propose` passes `--schema` when a schema is named. On a
@@ -309,7 +259,10 @@ builds. When it stops, read `state` once more with
   whether to build it in a fresh session named `<name>` with the prompt
   `Run lets-build on branch <name>`, or to stop here. On no, say that
   running `lets-build` on this branch builds the plan. On yes:
-  1. Write the prompt to `.workspace/<name>-handoff-prompt.md`.
+  1. Write the prompt to `.workspace/<name>-handoff-prompt.md`. Include the
+     bound change path and the original continuation handle for deliberate
+     continuation. Keep the prompt private and never commit it. The new session
+     runs `lets backlog resume` with that handle before applying.
   2. Ask what can run. From the repo root, run:
 
      ```bash
@@ -368,7 +321,12 @@ ready.
 2. Run the `openspec-verify-change` skill. If it reports a problem, stop
    and show it to the user.
 3. Archive the change, then commit it on its own as `chore:`.
-4. Mark the pull request ready for review.
+4. Associate the exact code-host PR through `lets backlog reference` using
+   the recorded identity and original handle, then mark it ready for review.
+   Ready and archived work stay In Progress. After the user merges the
+   associated PR, run `lets backlog complete` with its active or archived
+   change path and handle. It verifies the exact PR's merge commit through the
+   code host before Done; never merge on the user's behalf.
 
 ## Rules
 

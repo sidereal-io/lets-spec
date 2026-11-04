@@ -18,6 +18,7 @@ if (name === 'Unassign' && responses._replaceAfterUnassign) {
   value.text = JSON.stringify({...JSON.parse(value.text), session:'replacement'});
   responses.IssueOwners.node.assignees.nodes = [{login:'me'}];
 }
+if (name === 'UpdateIssueBody') responses.Issue.node.body = variables.body;
 if (name === 'Assign') responses.IssueOwners.node.assignees.nodes = [{ login: 'me', id: variables.actor }];
 writeFileSync(path, JSON.stringify(state));
 if (responses._fault === 'after:' + name) process.exit(1);

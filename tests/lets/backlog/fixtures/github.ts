@@ -1,5 +1,5 @@
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, rmSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { invoke } from '../../../../lets/src/backlog/transport.ts';
@@ -25,7 +25,7 @@ export function data() {
     ProjectItems: { node: { items: page([{ content: { id: 'I', repository: { nameWithOwner: 'owner/repo' } } }]) } },
   };
 }
-export async function withGithub(run: (fixture: { call: (operation: string, input?: any, mutationId?: string, contextPatch?: Record<string, string>) => Promise<any>; cwd: string; state: () => any; set: (name: string, value: any) => void }) => Promise<void>, overrides: Record<string, any> = {}) {
+export async function withGithub(run: (fixture: { call: (operation: string, input?: any, mutationId?: string, contextPatch?: Record<string, string>) => Promise<any>; command: (name: string, input?: any) => { status: number | null; result: any }; cwd: string; state: () => any; set: (name: string, value: any) => void }) => Promise<void>, overrides: Record<string, any> = {}) {
   mkdirSync('.workspace', { recursive: true });
   const cwd = mkdtempSync(join(process.cwd(), '.workspace/github-'));
   execFileSync('git', ['init', '--quiet'], { cwd });
@@ -39,8 +39,14 @@ export async function withGithub(run: (fixture: { call: (operation: string, inpu
   const entry = fileURLToPath(new URL('../../../../lets/src/backlog/github-entry.ts', import.meta.url));
   const adapter = join(cwd, 'adapter');
   writeFileSync(adapter, `#!${process.execPath}\nprocess.env.PATH=${JSON.stringify(cwd + ":" + process.env.PATH)}; await import(${JSON.stringify(entry)});`); chmodSync(adapter, 0o700);
+  symlinkSync(adapter, join(cwd, 'lets-backlog-github'));
+  const main = fileURLToPath(new URL('../../../../lets/src/main.ts', import.meta.url));
   try {
-    await run({ cwd, state: () => JSON.parse(readFileSync(path, 'utf8')), set: (name, value) => { const state = JSON.parse(readFileSync(path, 'utf8')); state.responses[name] = value; writeFileSync(path, JSON.stringify(state)); },
+    await run({ cwd, command: (name, input = {}) => {
+      const result = spawnSync(process.execPath, [main, 'backlog', name], { cwd, env: { ...process.env, PATH: cwd + ':' + process.env.PATH }, encoding: 'utf8', input: JSON.stringify({ repository: context.repository, actor: context.actor, timeoutMs: 15000, ...input }) });
+      if (!result.stdout) throw new Error(result.stderr);
+      return { status: result.status, result: JSON.parse(result.stdout) };
+    }, state: () => JSON.parse(readFileSync(path, 'utf8')), set: (name, value) => { const state = JSON.parse(readFileSync(path, 'utf8')); state.responses[name] = value; writeFileSync(path, JSON.stringify(state)); },
       call: async (operation, input = {}, mutationId, contextPatch = {}) => (await invoke(adapter, { protocol: 1, operation, context: { ...context, cwd, ...contextPatch }, input, ...(mutationId ? { mutationId } : {}) }, { timeoutMs: 15000 })).result });
   } finally { rmSync(cwd, { recursive: true, force: true }); }
 }

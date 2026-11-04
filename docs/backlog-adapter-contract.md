@@ -1,8 +1,9 @@
 # Backlog adapter contract
 
-This contract defines the future `lets backlog` executable boundary. It does
-not install a dispatcher or change the current GitHub workflow. The kit tests
-representative simulations; passing them does not establish provider support.
+This contract defines the `lets backlog` executable boundary. The existing-item
+GitHub build implementation is described in [Backlog build commands](backlog-build.md).
+The kit tests representative simulations; passing them does not establish
+provider support. Production support also requires the live acceptance below.
 
 ## Workflow inventory
 
@@ -169,7 +170,7 @@ values themselves, including workflow transition constraints.
 
 ## Repository configuration
 
-The proposed location is `lets.backlog` under `openspec/config.yaml`, one
+The configuration location is `lets.backlog` under `openspec/config.yaml`, one
 object rather than a list. Missing selection means GitHub and executable
 `lets-backlog-github`; setup still requires exactly one linked backlog. An
 explicit selection requires provider, executable, id and all metadata mappings.
@@ -195,8 +196,8 @@ lets:
 The adapter validates native provider field IDs, allowed values and transitions
 before mutations. The kit checks normalized example configuration and mapping
 ambiguity; it does not parse YAML or consume production configuration. The
-current sync parser reads `schema:` only. Production parsing, dispatch and
-migration of skills are later work.
+sync parser continues to read `schema:` only. The backlog runtime parses
+selection separately, without changing sync behavior.
 
 Credentials come from provider login tools or environment variables. Do not
 commit tokens, passwords or API keys in selection or mappings. Missing login
