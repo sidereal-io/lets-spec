@@ -19,6 +19,7 @@ if (name === 'Unassign' && responses._replaceAfterUnassign) {
   responses.IssueOwners.node.assignees.nodes = [{login:'replacement'}];
 }
 if (name === 'UpdateIssueBody') responses.Issue.node.body = variables.body;
+if (name === 'UpdateIssueBody' && responses._clearSizeAfterBody) responses.ItemValues.node.fieldValues.nodes = responses.ItemValues.node.fieldValues.nodes.filter(value => value.field.id !== 'F-Size');
 if (name === 'Assign') responses.IssueOwners.node.assignees.nodes = [{ login: 'me', id: variables.actor }];
 writeFileSync(path, JSON.stringify(state));
 if (responses._fault === 'after:' + name) process.exit(1);

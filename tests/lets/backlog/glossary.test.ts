@@ -22,3 +22,10 @@ test('conclusive glossary rejection permits the original desired patch', () => w
   assert.deepEqual(await call('mutation.read', { mutationId: 'glossary' }), { state: 'absent' });
   assert.equal((await call('item.update', { item, patch: { body } }, 'glossary')).item.body, body);
 }, { Issue: { node: { ...data().Issue.node, body: 'Scope stays.\n\n## Glossary handoff\n\nDestination: pending\n' } } }));
+test('glossary verification failure preserves possible write effects', () => withGithub(async ({ call, set, state }) => {
+  await call('claim.acquire', { item }, 'acquire');
+  set('_clearSizeAfterBody', true);
+  const body = 'Scope stays.\n\n## Glossary handoff\n\nDestination: branch\n';
+  await assert.rejects(call('item.update', { item, patch: { body } }, 'glossary'), (error: any) => error.effects === 'partial');
+  assert.equal(state().responses.Issue.node.body, body);
+}, { Issue: { node: { ...data().Issue.node, body: 'Scope stays.\n\n## Glossary handoff\n\nDestination: pending\n' } } }));

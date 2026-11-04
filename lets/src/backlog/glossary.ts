@@ -29,9 +29,17 @@ export async function updateGlossary(claims: Claims, request: Record<string, any
         throw error;
       }
     }
-    const item = await github.read(id, claims.mappings);
-    if (item.body !== body) fail('conflict', 'glossary body changed during update');
-    const result = { item }; store.write(name, { request, state: 'applied', result }); return result;
+    try {
+      const item = await github.read(id, claims.mappings);
+      if (item.body !== body) fail('conflict', 'glossary body changed during update');
+      const result = { item }; store.write(name, { request, state: 'applied', result }); return result;
+    } catch (error) {
+      if (body !== current.issue.body || previous?.state === 'pending') {
+        if (error instanceof AdapterFailure) throw new AdapterFailure(error.category, error.effects === 'unknown' ? 'unknown' : 'partial', error.message);
+        throw new AdapterFailure('unknown_outcome', 'unknown', 'glossary verification interrupted after write');
+      }
+      throw error;
+    }
   });
 }
 export async function reconcileGlossary(claims: Claims, mutationId: string) {
