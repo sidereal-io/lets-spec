@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: The default's step saves the prompt and refuses
-When the default answers `lets delegate step run`, it SHALL save the prompt `lets` composed, with any answers appended, to `.workspace/lets-delegate/<name>.prompt.md` in the repository, then refuse. The command SHALL exit 3, print nothing on stdout, start no process, and say on stderr that no resolver started a session, that the step runs in a subagent, and the path of the saved prompt. It SHALL NOT say that no resolver is installed.
+When the default answers `lets delegate step run`, it SHALL save the prompt `lets` composed, with any answers appended, to `.workspace/lets-delegate/<name>.prompt.md` in the repository, then refuse. Asked again for the next `--model`, it SHALL write the same file again and refuse again. The command SHALL exit 3, print nothing on stdout, and start no process. Stderr SHALL say that no resolver started a session, that the step runs in a subagent, and the path of the saved prompt. It SHALL NOT say that no resolver is installed.
 
 #### Scenario: A step with no resolver that runs steps
 - **WHEN** the default answers `lets delegate step run --for propose --name plan-x --prompt-file p.md --effort high --model claude`, and `p.md` holds `Run propose on x`

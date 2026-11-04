@@ -19,7 +19,7 @@ Says what `lets delegate step run` does: the kind of session it asks a resolver 
 - **THEN** `t3` is not asked for a session, and the default answers
 
 ### Requirement: The step's session ends its final message with a step report
-A step report SHALL be a fenced code block tagged `step-report`, holding one YAML mapping, at the end of the session's final message. The mapping SHALL hold `outcome`, one of `done`, `needs-input` or `failed`. A `done` report SHALL hold `evidence`, a non-empty list of strings. A `needs-input` report SHALL hold `questions`, a non-empty list of mappings, each with a string `question` and an optional string `recommendation`. A `failed` report SHALL hold a string `reason`. `lets delegate step run` SHALL read the last such block in the final message, and SHALL ignore the text before it.
+A step report SHALL be a fenced code block tagged `step-report`, holding one YAML mapping, at the end of the session's final message. The block SHALL open with a line of three or more backticks followed by `step-report`. It SHALL close with a line of at least as many backticks and nothing else, so a shorter fence inside the block does not close it. The mapping SHALL hold `outcome`, one of `done`, `needs-input` or `failed`. A `done` report SHALL hold `evidence`, a non-empty list of strings. A `needs-input` report SHALL hold `questions`, a non-empty list of mappings, each with a string `question` and an optional string `recommendation`. A `failed` report SHALL hold a string `reason`. `lets delegate step run` SHALL read the last such block in the final message. It SHALL ignore the text before the block and after it.
 
 #### Scenario: A done report
 - **WHEN** the final message ends with a `step-report` block holding `outcome: done` and `evidence` listing `commit 3f2a1c0` and `pull request #164`
@@ -32,6 +32,10 @@ A step report SHALL be a fenced code block tagged `step-report`, holding one YAM
 #### Scenario: A needs-input report without a recommendation
 - **WHEN** the block holds `outcome: needs-input` and one question with no `recommendation`
 - **THEN** the report read has that question, and no recommendation
+
+#### Scenario: A fence inside the block
+- **WHEN** the block opens with four backticks and `step-report`, a `reason` inside it quotes three lines fenced with three backticks, and the block closes with four backticks
+- **THEN** the report is read whole, and its `reason` holds the quoted lines
 
 #### Scenario: Prose before the block
 - **WHEN** the final message holds two paragraphs of prose, then a valid `step-report` block
@@ -53,7 +57,7 @@ When the session ends with a valid step report, `lets delegate step run` SHALL e
 - **THEN** the command exits 0, and stdout is one JSON line starting `{"outcome":"failed",` with `"reason":"tests fail on main"`
 
 ### Requirement: A session that gives no valid report is a failed report
-When the session ends without a `step-report` block, with a block that is not YAML, with a block whose `outcome` is not one of the three, or with a report that lacks a field its outcome requires, `lets delegate step run` SHALL exit 0 and print a `failed` report whose `reason` says what is missing or wrong, and whose `message` holds the session's final message. When the resolver reports that the session failed, it SHALL exit 0 and print a `failed` report whose `reason` is the resolver's message.
+A final message can hold no `step-report` block, a block that is not YAML, an `outcome` that is not one of the three, or a report that lacks a field its outcome requires. In each case `lets delegate step run` SHALL exit 0 and print a `failed` report. Its `reason` SHALL say what is missing or wrong, and its `message` SHALL hold the session's final message. When the resolver reports that the session failed, the command SHALL exit 0 and print a `failed` report whose `reason` is the resolver's message. The resolver gives no handle in that case, so the command SHALL ask no resolver to finish the session, and the record's `handle` SHALL be `null`.
 
 #### Scenario: No block
 - **WHEN** the session's final message is prose with no `step-report` block
@@ -69,10 +73,10 @@ When the session ends without a `step-report` block, with a block that is not YA
 
 #### Scenario: The session failed
 - **WHEN** the resolver reports that the session stopped to ask
-- **THEN** the command exits 0, and stdout is one JSON line with `"outcome":"failed"` and a `reason` that says the session stopped to ask
+- **THEN** the command exits 0, stdout is one JSON line with `"outcome":"failed"` and a `reason` that says the session stopped to ask, no resolver is asked to finish a session, and the record on stderr has `"handle":null`
 
 ### Requirement: The step's exit codes
-`lets delegate step run` SHALL exit 0 when a report is on stdout; 2 on a usage error, a bad config, or when every resolver declines; 3 when every `--model` is refused, with one line per model on stderr; 4 when the outcome is unknown; and 6 when the session does not finish in time. On every code but 0, stdout SHALL be empty. The help text of `lets delegate step run` SHALL list these codes and say that exit 0 carries a report whatever its outcome.
+`lets delegate step run` SHALL exit 0 when a report is on stdout. It SHALL exit 2 on a usage error, a bad config, or when every resolver declines. It SHALL exit 3 when every `--model` is refused, with one line per model on stderr. It SHALL exit 4 when the outcome is unknown, and 6 when the session does not finish in time. On every code but 0, stdout SHALL be empty. The help text of `lets delegate step run` SHALL list these codes and say that exit 0 carries a report whatever its outcome.
 
 #### Scenario: Every model refused
 - **WHEN** the resolver refuses `gpt/gpt-6-astra` and `gemini`
@@ -102,7 +106,7 @@ When the session ends without a `step-report` block, with a block that is not YA
 - **THEN** the resolver is asked for a session with a time limit of 30 minutes
 
 ### Requirement: The step hands its session back to the resolver that made it
-After the session ends, `lets delegate step run` SHALL ask the resolver that made it to finish it: with ok when the report's outcome is `done`, and without ok otherwise, so a session that needs input or failed is kept for a person to read. When finishing fails, the report SHALL stand, and stderr SHALL say the session could not be finished, naming its handle.
+After the session gives its final message, `lets delegate step run` SHALL ask the resolver that made it to finish it. It SHALL finish with ok when the report's outcome is `done`, and without ok otherwise. So a session that needs input or failed is kept for a person to read. When finishing fails, the report SHALL stand, and stderr SHALL say the session could not be finished, naming its handle.
 
 #### Scenario: A done step
 - **WHEN** `t3` answers a step with handle `thread t-1`, and the session ends with a `done` report
@@ -117,14 +121,14 @@ After the session ends, `lets delegate step run` SHALL ask the resolver that mad
 - **THEN** the command exits 0, prints the report, and stderr says it could not finish `thread t-1`
 
 ### Requirement: The step record names the session that ran it
-When `lets delegate step run` exits 0, it SHALL print one JSON line on stderr that holds `for`, the step `--for` gives, as its first field, then `resolver`, `family`, `model`, `handle` and `durationSeconds`. `model` SHALL be the model the resolver ran, or the `--model` value when that value names only a family.
+When `lets delegate step run` exits 0, it SHALL print one JSON line on stderr that holds `for`, the step `--for` gives, as its first field, then `resolver`, `family`, `model`, `handle` and `durationSeconds`. `model` SHALL be the model the resolver ran, or the `--model` value when that value names only a family. `handle` SHALL be the session's handle, or `null` when the resolver reported the session failed without one.
 
 #### Scenario: The record
 - **WHEN** `t3` answers `lets delegate step run --for propose --model claude/claude-opus-5-5` with handle `thread t-1` and a valid report
 - **THEN** stderr ends with one JSON line that starts `{"for":"propose",` and holds `"resolver":"t3"`, `"family":"claude"`, `"model":"claude-opus-5-5"`, the handle and `durationSeconds`
 
 ### Requirement: Answers resume a step
-`lets delegate step run` MAY take `--answers-file <path>`. The file SHALL be a YAML list of mappings, each with a string `question` and a string `answer`, and SHALL hold at least one. `lets` SHALL send the resolver the prompt file's text followed by one section that names each question and its answer, in order, and says those questions are settled and must not be asked again. The caller SHALL be able to give the same `--prompt-file` as the run that reported `needs-input`. When the file cannot be read, is not such a list, or is empty, the command SHALL exit 2, name `--answers-file` on stderr, and ask no resolver.
+`lets delegate step run` MAY take `--answers-file <path>`. The file SHALL be a YAML list of mappings, each with a string `question` and a string `answer`, and SHALL hold at least one. Each `question` and `answer` SHALL hold text other than white space. `lets` SHALL send the resolver the prompt file's text followed by one section that names each question and its answer, in order, and says those questions are settled and must not be asked again. A question or answer of several lines SHALL stay inside its own entry of that section. The caller SHALL be able to give the same `--prompt-file` as the run that reported `needs-input`. When the file cannot be read, is not such a list, is empty, or holds a blank question or answer, the command SHALL exit 2, name `--answers-file` on stderr, and ask no resolver.
 
 #### Scenario: A resumed step
 - **WHEN** `p.md` holds `PROMPT TEXT`, `a.yaml` holds one pair, question `Which schema?` and answer `lets-minimal`, and the user runs `lets delegate step run --for propose --prompt-file p.md --answers-file a.yaml` with the other required options
@@ -133,6 +137,14 @@ When `lets delegate step run` exits 0, it SHALL print one JSON line on stderr th
 #### Scenario: The answers are in order
 - **WHEN** `a.yaml` holds two pairs
 - **THEN** the first question comes before the second in the prompt sent
+
+#### Scenario: A multi-line answer
+- **WHEN** `a.yaml` holds one pair whose answer is three lines, the second starting `- Q:`
+- **THEN** the prompt sent holds all three lines under that pair's entry, and the section has one question
+
+#### Scenario: A blank answer
+- **WHEN** `a.yaml` holds one pair whose answer is `"  "`
+- **THEN** the command exits 2, stderr names `--answers-file`, and no resolver is asked
 
 #### Scenario: A malformed answers file
 - **WHEN** `a.yaml` holds a mapping rather than a list

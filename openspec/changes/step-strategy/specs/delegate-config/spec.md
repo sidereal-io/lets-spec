@@ -150,3 +150,72 @@ An entry of the config's `delegate.resolvers` that is not `t3`, `cli` or `subage
 #### Scenario: A resolver without steps and a step
 - **WHEN** the config lists `cli` then `subagent`, `cli` can run here but runs no step, and the user runs `lets delegate step instructions --for apply`
 - **THEN** `cli` is not asked for its models, and the JSON line has `"resolver":"subagent"`
+
+### Requirement: A chain where every resolver declines fails the command
+When every resolver the config lists declines, `lets delegate` SHALL exit 2, print nothing on stdout, and say on stderr that every resolver declined, naming the config file. The help text of `lets delegate review run`, `lets delegate handoff run` and `lets delegate step run` SHALL name this case under exit 2.
+
+#### Scenario: Only a T3 resolver, run from a terminal
+- **WHEN** the config lists only `t3`, and the command runs outside T3 Code
+- **THEN** `lets delegate review run --for code` exits 2, stdout is empty, and stderr names the config file and says every resolver declined
+
+#### Scenario: An empty list
+- **WHEN** the config's `delegate.resolvers` is `[]`
+- **THEN** `lets delegate handoff run --for apply` exits 2, stdout is empty, and stderr names the config file and says every resolver declined
+
+#### Scenario: The help text
+- **WHEN** the user runs `lets delegate review run --help`
+- **THEN** the line for exit 2 says that every resolver in the config declined
+
+#### Scenario: The step's help text
+- **WHEN** the user runs `lets delegate step run --help`
+- **THEN** the line for exit 2 says that every resolver in the config declined
+
+### Requirement: A refused model passes to the next
+`run` SHALL take `--model` one or more times, as a ranked list. It SHALL ask the resolver that answers for the first model. While that resolver refuses, `run` SHALL ask the same resolver for the next model, and SHALL stop at the first answer that is not a refusal. It SHALL NOT ask a later resolver in the chain after a refusal. When every model is refused, `run` SHALL exit 3, print nothing on stdout, and print on stderr one line per model, `<model>: <reason>`. This holds for `review run`, `handoff run` and `step run`. The review's and the step's JSON line on stderr SHALL name, as `model`, the model the resolver ran, or the `--model` value `lets` asked for when that value names only a family.
+
+#### Scenario: The first model is refused
+- **WHEN** the user runs `lets delegate review run --for code --model gpt/gpt-6-astra --model gemini` with the other required options, and the resolver refuses `gpt/gpt-6-astra` and answers for `gemini`
+- **THEN** the resolver is asked twice, the second time for the family `gemini`, and the command exits 0 with the second answer
+
+#### Scenario: Every model is refused
+- **WHEN** the resolver refuses both `--model gpt/gpt-6-astra` and `--model gemini`
+- **THEN** `lets delegate review run` exits 3, stdout is empty, and stderr has a line starting `gpt/gpt-6-astra: ` and a line starting `gemini: `
+
+#### Scenario: A failure that is not a refusal
+- **WHEN** the session fails for the first of two models
+- **THEN** `lets delegate review run` exits 5, and the resolver is not asked for the second model
+
+#### Scenario: A refusal never moves down the chain
+- **WHEN** the config lists `t3` then `cli`, and `t3` refuses every model of a review
+- **THEN** `lets delegate review run` exits 3, and `cli` is not asked
+
+#### Scenario: The review names the model that ran
+- **WHEN** the resolver refuses `gpt/gpt-6-astra`, then answers for `gemini/gemini-3-pro`
+- **THEN** the JSON line on stderr has `"model":"gemini-3-pro"`
+
+#### Scenario: The resolver reports a null model
+- **WHEN** the resolver answers for `--model claude`, and reports no model of its own
+- **THEN** the JSON line on stderr has `"model":"claude"`
+
+#### Scenario: A step's first model is refused
+- **WHEN** the user runs `lets delegate step run --for apply --model gpt/gpt-6-astra --model gemini` with the other required options, and the resolver refuses `gpt/gpt-6-astra` and answers for `gemini` with a valid report
+- **THEN** the resolver is asked twice, the second time for the family `gemini`, and the command exits 0 with the report
+
+#### Scenario: A step's refusal never moves down the chain
+- **WHEN** the config lists `t3` then `subagent`, and `t3` runs steps but refuses every model of a step
+- **THEN** `lets delegate step run` exits 3, and `subagent` is not asked
+
+### Requirement: An unexpected failure inside a resolver exits 4
+When a resolver fails in a way it does not report as a decline, a refusal, a failed session or a timeout, `lets delegate review run`, `lets delegate handoff run` and `lets delegate step run` SHALL exit 4, print nothing on stdout, and print the failure's message on stderr. Exit 4 means the outcome is unknown.
+
+#### Scenario: A review that breaks
+- **WHEN** the resolver that answers a review fails with the message `boom`
+- **THEN** `lets delegate review run --for code` exits 4, stdout is empty, and stderr contains `boom`
+
+#### Scenario: A handoff that breaks
+- **WHEN** the resolver that answers a handoff fails with the message `boom`
+- **THEN** `lets delegate handoff run --for apply` exits 4, stdout is empty, and stderr contains `boom`
+
+#### Scenario: A step that breaks
+- **WHEN** the resolver that answers a step fails with the message `boom`
+- **THEN** `lets delegate step run --for apply` exits 4, stdout is empty, and stderr contains `boom`

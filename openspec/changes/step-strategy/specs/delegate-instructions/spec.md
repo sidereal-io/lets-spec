@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: The instructions command
-`lets delegate review instructions --for <plan|code>`, `lets delegate handoff instructions --for apply` and `lets delegate step instructions --for <step>` SHALL ask the resolvers which models they can run now, and print one JSON line on stdout, then exit 0. The line SHALL hold `strategy` (`review`, `handoff` or `step`), `for` (the intent given), `resolver` and `options` from the resolver that answered, and `guidance`. They SHALL start no session.
+`lets delegate review instructions --for <plan|code>`, `lets delegate handoff instructions --for apply` and `lets delegate step instructions --for <step>` SHALL ask the resolvers which models they can run now. Each SHALL print one JSON line on stdout, then exit 0. The line SHALL hold `strategy` (`review`, `handoff` or `step`), `for` (the intent given), `resolver` and `options` from the resolver that answered, and `guidance`. They SHALL start no session.
 
 #### Scenario: A resolver with models
 - **WHEN** the config lists `t3`, which can run `gpt/gpt-6-luna` and `claude`, and the user runs `lets delegate review instructions --for code`
