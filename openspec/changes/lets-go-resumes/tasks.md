@@ -12,7 +12,7 @@
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [easy] The whole suite and the flake pass, including the `gh` command check, the `lets delegate step` phrasing check and every `lets-go` test (verify: pnpm test && nix flake check)
+- [x] 3.1 [easy] The whole suite and the flake pass, including the `gh` command check, the `lets delegate step` phrasing check and every `lets-go` test (verify: pnpm test && nix flake check) (✓ pnpm test passed: 598 Node tests, tsc, 136 bats tests; nix flake check: all checks passed)
 
 ## Deviations Ledger
 
