@@ -249,6 +249,14 @@ skill_says() {
   skill_says lets-go 'step-report'
 }
 
+@test "lets-go relays a step's questions" {
+  skill_says lets-go '.workspace/lets-go/<name>-<step>-answers.yaml'
+  skill_says lets-go '--answers-file'
+  skill_says lets-go "lets-go accepted the step's recommendation; the user did not decide"
+  skill_says lets-go 'asked a settled question again'
+  skill_says lets-go 'Skipped propose review: not in the lets-minimal route.'
+}
+
 @test "lets-shape posts its reply with the gh command gh issue comment --body-file" {
   skill_says lets-shape 'gh issue comment <i> --body-file <file>'
 }
