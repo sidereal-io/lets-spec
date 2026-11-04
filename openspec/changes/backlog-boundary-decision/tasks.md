@@ -12,7 +12,7 @@ do not substitute for that review. No tests should mirror the document wording.
 
 - [x] 2.1 [easy] Verify the documentation preserves the Node, type and shell checks (✓ pnpm test passed: 498 Node tests, type check, 130 shell tests)
 - [x] 2.2 [easy] Verify the documentation preserves every flow and release check (✓ nix flake check passed: all five x86_64-linux checks)
-- [x] 2.3 [easy] Complete the repository-required code review and verification, then mark ADR-014 accepted when the change is ready for user review; leave the merge to the user (✓ code review found no issues; source verification and openspec validate backlog-boundary-decision --strict passed)
+- [x] 2.3 [easy] Complete the repository-required code review and verification, then mark ADR-014 accepted when the change is ready for user review; leave the merge to the user (✓ Claude Opus 5.5 review findings addressed; source verification and openspec validate backlog-boundary-decision --strict passed)
 
 ## Deviations Ledger
 
@@ -20,3 +20,7 @@ do not substitute for that review. No tests should mirror the document wording.
   implementation-status snapshot and adoption-status observation, and described
   the protocol as the chosen boundary rather than an existing artifact. The
   architecture decision and its guarantees are unchanged.
+
+- 2026-11-03: Claude Opus 5.5 independently reviewed 7621cc7. Restored the
+  direct-provider-tools alternative, aligned the ADR manifest status and made
+  adoption wording durable. No architecture or protocol guarantees changed.
