@@ -222,7 +222,8 @@ and GitHub keep every record you need, so read them in this order:
    if the branch has no pull request. The tree is clean, so the file is
    committed.
 
-Shape is done once *Confirm the packet* passes. Propose review is done
+Shape is done once *Confirm the packet* passes, whether or not a shape
+step ran in this run. Propose review is done
 once propose is done. Every step before the first unfinished one is
 done. [Print the skip lines](#print-the-skip-lines), then run the steps
 from that one, in their usual order.
@@ -230,7 +231,8 @@ from that one, in their usual order.
 ### Print the skip lines
 
 Print one line for each done step, in step order, before the first step
-that runs. *Start* has printed shape's line. When every step is done, no
+that runs. *Start* has printed shape's line: the `Done` form when a shape
+step ran in this run, and the `Skipped` form otherwise. When every step is done, no
 step runs: go to [End of the run](#end-of-the-run), which prints the
 lines.
 
@@ -583,6 +585,13 @@ Done apply: <date>. <evidence>
 Done apply review: <date>. <evidence>
 ```
 
+When a shape step ran in this run, the first line is its `Done` form
+instead:
+
+```text
+Done shape: <date>. <evidence>
+```
+
 `<date>` on a `Done` line is the report's `date`, and `<evidence>` is its
 `evidence`, joined with `; `. Propose review has no report of its own.
 When propose ran in this run on a schema with a review, its line is
@@ -590,7 +599,8 @@ When propose ran in this run on a schema with a review, its line is
 A step done before this run prints its line from
 [Print the skip lines](#print-the-skip-lines) instead. When
 every step was already done, all five lines are `Skipped` lines. A
-failed step prints `Failed <step>: <reason>`. Then print the pull request's URL:
+failed step prints `Failed <step>: <reason>`. Then print the pull
+request's URL. A failed shape has none: there is no branch yet.
 
 ```bash
 gh pr view <name> --json url --jq .url
