@@ -1,3 +1,37 @@
+# Native reconciliation live acceptance, 2026-11-04
+
+Final source under test: `2b73619`, built with `pnpm build`. The initial native
+lifecycle also passed before the review fixes; the final build repeats it.
+Fixtures remain mstelz/test-repo-pls-ignore, Project
+https://github.com/users/mstelz/projects/7. Existing issues were reused; no new
+issue or PR was created. No machine-state text fields were created, modified or
+deleted. Historical values remain irrelevant to native reconciliation.
+
+| Revised case | Fixture | Observed outcome |
+|---|---|---|
+| Blocked selection | #1 blocked by reopened #2 | Selection returned conflict for open blockers. Both fixtures closed afterward. |
+| Real successful acquire response discarded | #5 | Caller reported unknown effects; original private handle reconciled the same native claim to In Progress. |
+| Owned exclusion | #5 after recovery | Named selection returned conflict for current assignment. |
+| Actual branch failure | #5 | Creating the already-existing local main branch failed. Original handle released assignment and restored Todo; issue closed afterward. |
+| Native claim, release and new claim | #6 | Both claims reached In Progress; intervening release restored Todo without remote machine state. |
+| Immutable binding and deliberate continuation | #6 | bind and resume succeeded with a fresh private handle. |
+
+Merged PR https://github.com/mstelz/test-repo-pls-ignore/pull/7 is the same PR
+previously merged by the user, with exact merge commit
+`fef1ac4c162fb0edb840b6489f0b5aae480b7227`. Native closing links connect it to
+issue #6. No PR was merged by this revision. The final rerun verified native reference association, returned Done for
+completion and idempotent replay, then removed its assignment. Issues #1, #2,
+#5 and #6 were independently verified closed and unassigned after cleanup.
+
+Automated post-review validation passed: 572 Node tests, typecheck, 133 Bats
+checks, and `nix flake check` including packaged conformance and both flows.
+The current process suite covers unmerged refusal, native link pagination,
+competing local intent, rejected-release retry and interrupted completion.
+The historical run below supplies the unchanged workflow's earlier readiness
+and archive-continuation observations; it does not prove native reconciliation.
+
+---
+
 > Historical evidence for the pre-revision implementation. Native reconciliation revision is pending fresh validation and review.
 
 # Live acceptance evidence

@@ -1,3 +1,38 @@
+# Native reconciliation review
+
+Reviewed: main a0aef6b64081bca8f250d031a6dc81ea8d5ba850..787d4c96452815d646756df33a3e564df7221baa
+
+Claude Opus 5.5 reviewed the committed branch read-only in a fresh context,
+high effort. Independent: yes. No REVIEW.md exists. No files were changed by
+the reviewer. The following fixes are limited to the findings they address.
+
+1. **High — stale local intent authorizes a competing local session. CONFIRMED.**
+   Fixed in `65312f0`: retain the current local intent generation in the private
+   journal, reject a new session while an acquire remains unresolved, and check
+   supersession before reads, recovery, release and completion. This is local
+   reconciliation; it does not add remote session guarantees. A regression first
+   reproduced the competing acquire and then passed.
+2. **Medium — conclusively rejected release cannot retry. CONFIRMED.** Fixed in
+   `2b73619`: preserve confirmed no-effect failures, reconcile absence only with
+   matching native pre-state, and permit the original mutation key to retry.
+   Unknown and partial writes keep their guards. The regression first failed on
+   effects classification and then passed. Focused claim/release checks: 9 passed.
+3. **Low — raw completion trusts caller merge evidence. REFUTED.** Protocol 1
+   explicitly trusts code-host evidence supplied by its caller; it is not an
+   authentication boundary. `docs/backlog-adapter-contract.md`, Completion evidence,
+   says adapters accept evidence only from the trusted caller. `host.ts` verifies
+   the exact repository, reference, merged state and nonempty merge commit before
+   normal workflow completion; native closing links are independently checked by
+   the adapter. Possession of the handle permits deliberate use of the trusted raw
+   protocol. Requiring another code-host query in every adapter would change that
+   established boundary. Tests continue to cover unmerged workflow rejection.
+
+Post-review pnpm test passed (572 Node tests, typecheck, 133 Bats checks).
+Nix flake check passed. Revised live fault recovery, branch-failure release,
+merged completion and fixture cleanup passed on the rebuilt final source.
+
+---
+
 > Historical evidence for the pre-revision implementation. Native reconciliation revision is pending fresh validation and review.
 
 # Code review
