@@ -1,4 +1,4 @@
-## 1. Record the common architecture
+## 1. Earlier implementation (historical; corrected by section 2)
 
 This is a documentation chore. Specs are deliberately skipped: the existing
 runtime contract stays in place until #180 migrates it. Verify prose by reading
@@ -17,5 +17,17 @@ tests that merely assert the wording of the ADR.
 Run `pnpm test` and `nix flake check` with the pinned tools before pushing.
 Follow lets-build's required code review, verification and separate archive
 commit before marking the PR ready. Keep #179 In Progress until confirmed
-merge; leave the merge to the user. The glossary must still match the exact
-recovered checkpoint at `openspec/glossary.md`.
+merge; leave the merge to the user. The recovered glossary checkpoint remains historical provenance; the explicitly
+approved Adapter revision is a separate glossary-only commit.
+
+## 2. Correct the execution architecture
+
+The clarified ledger supersedes the earlier execution decision. These are
+prose checks for a documentation chore; no wording-mirroring tests or runtime
+changes are required. Existing runtime specs remain unchanged until migration.
+
+- [ ] 2.1 [medium] Correct ADR-015's decision, history, openness and alternatives for project-wide agent execution without duplicate provider implementations (verify: git diff --check).
+- [ ] 2.2 [medium] Specify bounded action requests, structured submission validation, evidence provenance and independent verification limits, unknown outcomes and reconciliation before retry/progression (verify: git diff --check).
+- [ ] 2.3 [medium] Reconcile definition discovery/versioning and configuration ownership, including machine-specific backlog tools without overriding repository selection; distinguish target definitions from currently implemented delegation settings (verify: git diff --check).
+- [ ] 2.4 [medium] Correct migration, packaging and conformance inventory for #180 and delegation follow-up; retain behavioral guarantees and four-provider release obligations without claiming runtime completion (verify: git diff --check).
+- [ ] 2.5 [medium] Reconcile ADR-005/010/011/014 notices with the corrected decision, preserve historical bodies and document the deliberate glossary revision and earlier review limits (verify: git diff --check).

@@ -1,3 +1,9 @@
+# Correction verification: pending
+
+The report below covers the superseded built-in execution decision at a912eec.
+It is historical evidence, not verification of the execution hybrid. Replace
+this heading with current findings after the correction review and checks.
+
 # Verification: adapter-architecture
 
 | Dimension | Result |
