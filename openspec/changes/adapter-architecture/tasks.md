@@ -26,7 +26,7 @@ The clarified ledger supersedes the earlier execution decision. These are
 prose checks for a documentation chore; no wording-mirroring tests or runtime
 changes are required. Existing runtime specs remain unchanged until migration.
 
-- [ ] 2.1 [medium] Correct ADR-015's decision, history, openness and alternatives for project-wide agent execution without duplicate provider implementations (verify: git diff --check).
+- [x] 2.1 [medium] Correct ADR-015's decision, history, openness and alternatives for project-wide agent execution without duplicate provider implementations (✓ git diff --check passed; decision checked against C1/C2/C4).
 - [ ] 2.2 [medium] Specify bounded action requests, structured submission validation, evidence provenance and independent verification limits, unknown outcomes and reconciliation before retry/progression (verify: git diff --check).
 - [ ] 2.3 [medium] Reconcile definition discovery/versioning and configuration ownership, including machine-specific backlog tools without overriding repository selection; distinguish target definitions from currently implemented delegation settings (verify: git diff --check).
 - [ ] 2.4 [medium] Correct migration, packaging and conformance inventory for #180 and delegation follow-up; retain behavioral guarantees and four-provider release obligations without claiming runtime completion (verify: git diff --check).
