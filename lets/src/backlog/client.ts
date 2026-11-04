@@ -13,7 +13,7 @@ export class Client {
     this.selection = readConfiguration(cwd);
     if (typeof input.repository !== 'string' || !input.repository || typeof input.actor !== 'string' || !input.actor) fail('invalid_request', 'repository and authenticated actor are required');
     this.context = { cwd, provider: this.selection.provider, repository: input.repository, actor: input.actor, session: input.session ?? randomUUID(), ...(this.selection.backlog ? { backlog: this.selection.backlog } : {}) };
-    this.timeoutMs = input.timeoutMs ?? 5000;
+    this.timeoutMs = input.timeoutMs ?? (this.selection.provider === 'github' ? 180000 : 5000);
     if (!Number.isFinite(this.timeoutMs) || this.timeoutMs <= 0) fail('invalid_request', 'positive timeoutMs required');
   }
   call = async (operation: string, input: Record<string, any> = {}, mutationId?: string, session = this.context.session) => {

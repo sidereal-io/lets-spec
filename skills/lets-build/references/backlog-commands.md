@@ -9,8 +9,9 @@ Every workflow input requires `repository` (the code-host `owner/name`) and
 `actor` (the authenticated GitHub login). Obtain those from the code host with
 `gh repo view --json nameWithOwner --jq .nameWithOwner` and
 `gh api /user --jq .login`. Optional `timeoutMs` sets a positive per-adapter
-invocation deadline; the default is 5000. Large GitHub enumerations may need
-60000. An interruption does not undo remote writes.
+invocation deadline. GitHub workflow commands default to 180000 to cover
+complete verified claims; other providers and the bare transport default to
+5000. Larger backlogs can explicitly raise this bounded deadline. An interruption does not undo remote writes.
 
 Start `.workspace/backlog-input.json` with those common fields. All other
 inputs repeat them. The command table names the additional fields.

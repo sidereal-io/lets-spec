@@ -21,3 +21,7 @@ test('claim command explicitly continues an interrupted original session', () =>
   assert.equal(recovered.status, 0); assert.equal(recovered.result.handle, interrupted.result.handle);
   assert.equal(state().calls.filter((call: any) => call.name === 'FieldText').length, 1);
 }));
+test('default GitHub workflow deadline accommodates a full verified claim', () => withGithub(async ({ command }) => {
+  const result = command('claim', { item, timeoutMs: undefined });
+  assert.equal(result.status, 0, JSON.stringify(result.result));
+}, { _delayMs: 160 }));

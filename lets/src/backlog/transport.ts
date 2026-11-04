@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { validateRequest, validateResponse } from './protocol.ts';
+import { validateRequest, validateResponse, MUTATIONS } from './protocol.ts';
 import { AdapterFailure } from './errors.ts';
 
 /** Each invocation crosses the protocol boundary with no shell or extra argv. */
@@ -9,16 +9,17 @@ export async function invoke(executable: string, request: Record<string, any>, o
   const timeoutMs = options.timeoutMs ?? 5000;
   const maxBytes = options.maxBytes ?? 1024 * 1024;
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || !Number.isInteger(maxBytes) || maxBytes <= 0) throw new Error('invalid process limits');
+  const interrupted = (reason: string) => new AdapterFailure(MUTATIONS.includes(request.operation) ? 'unknown_outcome' : 'transient', MUTATIONS.includes(request.operation) ? 'unknown' : 'none', `adapter ${reason}; reconcile mutations before retry`);
   return new Promise((resolve, reject) => {
     const child = spawn(executable, [], { cwd: request.context.cwd, shell: false, stdio: ['pipe', 'pipe', 'pipe'] });
-    const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new AdapterFailure('unknown_outcome', 'unknown', 'adapter timeout; reconcile before retry')); }, timeoutMs);
+    const timer = setTimeout(() => { child.kill('SIGKILL'); reject(interrupted('timeout')); }, timeoutMs);
     let stdout = '';
     let bytes = 0;
     const count = (chunk: Buffer) => {
       bytes += chunk.length;
       if (bytes <= maxBytes) return true;
       child.kill('SIGKILL'); clearTimeout(timer);
-      reject(new AdapterFailure('unknown_outcome', 'unknown', 'adapter output limit; reconcile before retry'));
+      reject(interrupted('output limit'));
       return false;
     };
     const chunks: Buffer[] = [];

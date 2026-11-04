@@ -3,6 +3,7 @@ let input = ''; for await (const chunk of process.stdin) input += chunk;
 const request = JSON.parse(input); const name = request.query.match(/(?:query|mutation) (\w+)/)[1];
 const path = process.env.BACKLOG_TEST_STATE;
 const state = JSON.parse(readFileSync(path, 'utf8')); const { responses } = state;
+if (responses._delayMs) await new Promise(resolve => setTimeout(resolve, responses._delayMs));
 state.calls.push({ name, variables: request.variables });
 const variables = request.variables;
 if (['Assign','Unassign'].includes(name) && /assignable\s*\{\s*id/.test(request.query)) { console.log(JSON.stringify({errors:[{type:'GRAPHQL_VALIDATION_FAILED'}]})); process.exit(1); }

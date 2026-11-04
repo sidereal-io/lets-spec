@@ -39,3 +39,6 @@ test('unavailable executable proves no effects', async () => {
 test('response cannot substitute an item from another backlog', () => adapter(`console.log(JSON.stringify({protocol:1,ok:true,result:{item:{identity:{provider:'github',backlog:'other',id:'i'},reference:'#1',title:'foreign',body:'',owners:[],metadata:{Kind:'Story',Priority:'Must',Size:'S',Status:'Todo'}}}}));`, async path => {
   await assert.rejects(invoke(path, { ...request, operation: 'item.read', input: { item: { provider: 'github', backlog: 'b', id: 'i' } } }), /invalid adapter response/);
 }));
+test('read timeout reports no mutation effects', () => adapter(`setInterval(()=>{},1000);`, async path => {
+  await assert.rejects(invoke(path, request, { timeoutMs: 100 }), (error: any) => error.category === 'transient' && error.effects === 'none');
+}));
