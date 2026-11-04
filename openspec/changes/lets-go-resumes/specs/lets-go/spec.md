@@ -43,7 +43,7 @@
 
 - `gh issue view <i> --json createdAt`, run only when the issue's `lastEditedAt` is null;
 - the issue search of *lets-go takes one issue number*;
-- `git branch --list <name>` and `git ls-remote --heads origin <name>`, to find the change's branch, and the fetch, switch and fast-forward above;
+- `git branch --list <name>` and `git ls-remote --heads origin refs/heads/<name>`, to find the change's branch, and the fetch, switch and fast-forward above;
 - the Git and GitHub reads of *lets-go finds the first unfinished step* and *A skipped step's line carries its evidence and date*.
 
 Start SHALL not be a step: it SHALL run no `lets delegate step` command and SHALL produce no step report.

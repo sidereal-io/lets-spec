@@ -51,7 +51,7 @@ Alternative: the commit date of the last commit that touched the folder. Rejecte
 
 ### D-3. The branch is found before Claim, the issue from the branch, and `origin` is fetched first
 
-On the default branch, after *Route*, `lets-go` looks for the change's branch with `git branch --list <name>` and `git ls-remote --heads origin <name>`. When either finds it, `lets-go` runs `git switch <name>` and goes on as on a change's branch. *Claim* runs only when neither finds it, so *Claim*'s own "branch exists" stop is never reached.
+On the default branch, after *Route*, `lets-go` looks for the change's branch with `git branch --list <name>` and `git ls-remote --heads origin refs/heads/<name>`. The full ref name matters: a bare `<name>` would also match `refs/heads/topic/<name>`. When either finds it, `lets-go` fetches a branch that only `origin` has, runs `git switch <name>`, and goes on as on a change's branch. *Claim* runs only when neither finds it, so *Claim*'s own "branch exists" stop is never reached.
 
 On any change's branch that `origin` has, `lets-go` runs `git fetch origin <name>` before it reads a record. A local branch behind `origin/<name>` is fast-forwarded with `git merge --ff-only origin/<name>`. Without this, a resume on a second machine would read a stale local branch and run steps that another machine finished. A branch that has diverged is a disagreement: both sides moved it, and `lets-go` cannot pick which is right.
 
