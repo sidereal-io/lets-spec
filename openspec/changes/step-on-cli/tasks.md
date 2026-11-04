@@ -25,7 +25,7 @@ The adapter gains `step`, and `run` and `step` share one private runner that dif
 
 ## 4. The whole [depends-on: 2, 3]
 
-- [ ] 4.1 [easy] Every test, the type check and the flake pass, with the main spec's step scenarios for `cli` covered by the tests above (verify: `pnpm test && nix flake check`)
+- [x] 4.1 [easy] Every test, the type check and the flake pass, with the main spec's step scenarios for `cli` covered by the tests above (verify: `pnpm test && nix flake check`) (✓ `pnpm test` passed, 633 node tests and every bats test; ✓ `nix flake check` passed)
 
 ## Deviations Ledger
 
