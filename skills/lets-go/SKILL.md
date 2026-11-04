@@ -5,11 +5,12 @@ description: Take one shaped chore from its issue to a pull request ready for re
 
 # Let's go
 
-Take one shaped chore to a pull request ready for review, in one run.
-*Start* claims the issue in this session. Then each step runs in a
-fresh session: propose, apply, then apply review. A step never asks the
-user. It ends with a report, and this session asks the user for it. Run
-every command below from the repo root.
+Take one shaped story, bug or chore to a pull request ready for review,
+in one run. *Start* claims the issue in this session. Then each step
+runs in a fresh session: propose, apply, then apply review. A step never
+asks the user. It ends with a report. This session answers its questions
+or asks the user, as the interactivity level says. Run every command
+below from the repo root.
 
 A run can stop part way. Run `lets-go` again, on the default branch or
 on the change's branch. It reads from Git and GitHub which steps are
@@ -39,14 +40,23 @@ unfinished step.
      `lets-go` runs on the default branch or on a change's branch, and
      needs the issue number on a change's branch. Stop. If several
      match, say that `lets-go` needs the issue number, and stop.
-3. Run `lets-build`'s *Find the source of demand* for the named issue,
-   then its *Confirm the packet*. A stop either section makes stands, as
-   `lets-build` reports it. A packet that fails sends the user to
-   `lets-shape`, as `lets-build` says.
-4. In *Confirm the packet*, check the Kind as soon as you have read the
-   issue's fields from the Project. If it is not Chore, say that #152
-   adds Stories and Bugs to `lets-go`, say to run `lets-build` on #<i>,
-   and stop. Read no parent epic.
+3. Run `lets-build`'s *Find the source of demand* for the named issue.
+   Read its blockers with `gh issue view <i> --json title,blockedBy`, so
+   you have the title too. `<name>` is the change's name, as *Claim*
+   names it from the title. On a change's branch, it is `<branch>`. When
+   a blocker is open, look for the change's branch before you stop, as
+   step 7 does:
+   - **The branch exists**, here or on `origin`: the user has stacked it
+     by hand. Name the open blockers by number, and go on. On a change's
+     branch, it exists: you are on it.
+   - **It does not exist:** the stop stands, as `lets-build` reports it.
+
+   Any other stop in that section stands as `lets-build` reports it.
+4. Run `lets-build`'s *Confirm the packet*. A stop it makes stands, as
+   `lets-build` reports it. An Epic stops there: it is built through its
+   stories. A packet that fails sends the user to `lets-shape`. For a
+   Story with a parent, it reads the parent's **Shared decisions**:
+   *Route* needs them.
 5. When *Confirm the packet* passes, shape is done. Print:
 
    ```text
@@ -62,8 +72,7 @@ unfinished step.
    ```
 
 6. Run `lets-build`'s *Route*. Keep the route line: the propose step
-   needs it. `<name>` is the change's name, as *Claim* names it. On a
-   change's branch, it is `<branch>`.
+   needs it.
 7. On the default branch, look for the change's branch, here and on
    `origin`:
 
@@ -80,7 +89,8 @@ unfinished step.
      `git fetch origin <name>` first: `git switch` finds a branch on
      `origin` only once it is fetched. Then run `git switch <name>`.
 
-   Stay on `<name>` for the whole run.
+   When step 3 has looked already, use what it found. Stay on `<name>`
+   for the whole run.
 8. When `origin` has the branch, bring it up to date before you read any
    record. On a change's branch, run the `git ls-remote` above to check.
 
@@ -96,14 +106,20 @@ unfinished step.
 9. Set `<schema>`. When `openspec/changes/<name>/.openspec.yaml` exists,
    it is that file's `schema:` line. Otherwise it is the schema *Route*
    picked.
-10. Print the interactivity level:
+10. Set `<level>`, the interactivity level. When the user named `ask` or
+    `recommend` in the request that started the run, it is that word.
+    Otherwise it comes from the Kind: `recommend` for a Chore or a Bug,
+    `ask` for a Story. Never ask the user which level to use. The level
+    holds for this run only. Print one of these lines:
 
     ```text
-    Interactivity: recommend, because #<i> is a Chore.
+    Interactivity: <level>, because #<i> is a <Kind>.
+    Interactivity: <level>, because you asked for it.
     ```
 
     At `recommend`, this session answers each question that has a
-    recommendation, and asks the user the rest.
+    recommendation, and asks the user the rest. At `ask`, it asks the
+    user every question.
 
 *Start* runs in this session. It is not a step, and has no step report.
 
