@@ -29,12 +29,12 @@ The contract SHALL define versioned JSON requests on stdin and responses on stdo
 - **THEN** the harness reports a contract failure and does not treat the operation as successful
 
 #### Scenario: Executable cannot start
-- **WHEN** the configured adapter executable cannot be started
+- **WHEN** the kit's configured adapter executable cannot be started
 - **THEN** invocation rejects with category unknown_outcome and effects unknown
 - **AND** only the supplied executable is attempted
 
 #### Scenario: Combined diagnostic and response output exceeds its limit
-- **WHEN** adapter stdout and stderr together exceed the configured byte limit
+- **WHEN** the kit adapter stdout and stderr together exceed the configured byte limit
 - **THEN** the caller stops the adapter with SIGKILL and reports an unknown outcome
 - **AND** mutation retry or progression requires reconciliation
 
@@ -43,8 +43,16 @@ The contract SHALL define versioned JSON requests on stdin and responses on stdo
 - **THEN** the caller rejects the invocation as an unknown outcome rather than accepting the response
 
 #### Scenario: Adapter ignores graceful termination
-- **WHEN** an adapter ignores SIGTERM and exceeds its deadline
+- **WHEN** a kit adapter ignores SIGTERM and exceeds its deadline
 - **THEN** the invocation stops the adapter with SIGKILL and reports unknown_outcome with unknown effects
+
+#### Scenario: Production executable cannot start
+- **WHEN** the production caller cannot start the selected executable
+- **THEN** it reports invalid_configuration with effects none and attempts no fallback
+
+#### Scenario: Production read exceeds its deadline
+- **WHEN** a production read invocation exceeds its deadline
+- **THEN** it reports transient with effects none, while an interrupted mutation remains unknown_outcome with unknown effects
 
 ### Requirement: Contract covers the full backlog workflow
 The contract SHALL define inputs, outputs, preconditions, side effects and failure outcomes for setup/checking, discovery and work-item reading/searching, creation and targeted updates, metadata, parent/child and directional blocker relationships, candidate enumeration, claiming/release, pull request references and completion. Shared policy SHALL retain packet validation, routing and ready-work ranking rather than delegating those decisions to provider-specific rules.
