@@ -133,10 +133,22 @@ export class GitHub {
     });
   }
   async candidates(mappings?: Mappings): Promise<Item[]> {
-    await this.project(mappings);
+    const config = await this.project(mappings);
     const items = await this.pages('ProjectItems', { id: this.context.backlog }, data => data.node?.items);
     const result: Item[] = [];
-    for (const item of items) if (!item?.content?.closed && item?.content?.repository?.nameWithOwner?.toLowerCase() === this.context.repository.toLowerCase()) result.push(await this.read(item.content.id, mappings));
+    for (const item of items) if (!item?.content?.closed && item?.content?.repository?.nameWithOwner?.toLowerCase() === this.context.repository.toLowerCase()) {
+      if (config.claimField) {
+        const values = await this.values(item.id ?? await this.projectItem(item.content.id));
+        const text = values[config.claimField];
+        if (text !== undefined && text !== '') {
+          let record;
+          try { record = JSON.parse(text as string); } catch { continue; }
+          const strings = ['provider', 'repository', 'backlog', 'item', 'generation', 'actor', 'session', 'token', 'state'];
+          if (!record || record.version !== 1 || record.state !== 'released' || record.provider !== this.context.provider || record.repository !== this.context.repository || record.backlog !== this.context.backlog || record.item !== item.content.id || strings.some(key => typeof record[key] !== 'string' || !record[key]) || Object.keys(record).some(key => !['version', ...strings].includes(key))) continue;
+        }
+      }
+      result.push(await this.read(item.content.id, mappings));
+    }
     return result;
   }
   async named(reference: string, mappings?: Mappings) {

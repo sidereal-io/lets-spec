@@ -29,3 +29,12 @@ test('named Epic remains readable for the skill to route to its stories', () => 
   const result = await select(call, 'owner/repo', '#2');
   assert.equal(result.item.metadata.Kind, 'Epic');
 }, { ItemValues: { node: { fieldValues: page(data().ItemValues.node.fieldValues.nodes.map(value => value.field.id === 'F-Kind' ? { ...value, optionId: 'V-Epic' } : value)) } } }));
+test('next skips active provenance before assignment', () => withGithub(async ({ call }) => {
+  const result = await select(call, 'owner/repo');
+  assert.equal(result.item.reference, '#2');
+}, {
+  ProjectItems: { node: { items: page([{ id: 'PI1', content: { id: 'I1', repository: { nameWithOwner: 'owner/repo' } } }, { id: 'PI', content: { id: 'I', repository: { nameWithOwner: 'owner/repo' } } }]) } },
+  'Issue:I1': { node: { ...data().Issue.node, id: 'I1', number: 1 } },
+  'IssueProjects:I1': { node: { projectItems: page([{ id: 'PI1', project: { id: 'P' } }]) } },
+  'ItemValues:PI1': { node: { fieldValues: page([...data().ItemValues.node.fieldValues.nodes, { field: { id: 'F-claim' }, text: JSON.stringify({ version: 1, state: 'active', actor: 'me', session: 'partial', token: 'token' }) }]) } },
+}));
