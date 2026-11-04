@@ -3,7 +3,7 @@
 Reviewed: main a0aef6b64081bca8f250d031a6dc81ea8d5ba850..787d4c96452815d646756df33a3e564df7221baa
 
 Claude Opus 5.5 reviewed the committed branch read-only in a fresh context,
-high effort. Independent: yes. No REVIEW.md exists. No tracked project files were changed by
+high effort. Independent: yes. No REVIEW.md exists. No files were changed by
 the reviewer. The following fixes are limited to the findings they address.
 
 1. **High — stale local intent authorizes a competing local session. CONFIRMED.**
