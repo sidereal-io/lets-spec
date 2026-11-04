@@ -21,7 +21,7 @@ The adapter gains `step`, and `run` and `step` share one private runner that dif
 ## 3. The docs [depends-on: 1]
 
 - [x] 3.1 [parallel] [easy] `docs/resolvers.md` says `cli` runs a step: the resolver table's step cell reads "A child process of that CLI, in its write mode", the `cli` section drops "It runs no step either" and gains a "How a step runs" table with the three commands and one sentence that a step runs with your own rights, which listing `cli` opts into; the bats check still passes (verify: `bats tests/skill-interfaces.bats`) (✓ `bats tests/skill-interfaces.bats` passed)
-- [ ] 3.2 [parallel] [easy] The README's resolver table has the same step cell for `cli`, and the bats check still passes (verify: `bats tests/skill-interfaces.bats`)
+- [x] 3.2 [parallel] [easy] The README's resolver table has the same step cell for `cli`, and the bats check still passes (verify: `bats tests/skill-interfaces.bats`) (✓ `bats tests/skill-interfaces.bats` passed)
 
 ## 4. The whole [depends-on: 2, 3]
 

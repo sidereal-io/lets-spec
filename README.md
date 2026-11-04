@@ -457,7 +457,7 @@ the ones you want by name:
 | Name | It answers | It needs | A review runs as | A handoff | A step |
 |---|---|---|---|---|---|
 | [`t3`](docs/resolvers.md#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | Starts a new thread in the sidebar | Declines, so the next resolver answers |
-| [`cli`](docs/resolvers.md#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers | Declines, so the next resolver answers |
+| [`cli`](docs/resolvers.md#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers | A child process of that CLI, in its write mode |
 | [`subagent`](docs/resolvers.md#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Gives back the prompt to start any agent with | Saves the prompt, and exits 3, so the caller runs the step in a subagent |
 
 Each declines where it cannot work, so the first that fits where you are
