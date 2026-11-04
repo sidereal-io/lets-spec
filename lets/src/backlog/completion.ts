@@ -53,7 +53,10 @@ export class Completion {
         if (linked?.reference !== reference || (completing && fresh.status !== 'Done')) fail('conflict', 'PR mutation did not retain expected association and state');
         entry.state = 'applied'; store.write(name, entry); return result;
       } catch (error) {
-        if (error instanceof AdapterFailure) throw error;
+        if (error instanceof AdapterFailure) {
+          if (error.effects === 'none') { entry.state = 'absent'; store.write(name, entry); }
+          throw error;
+        }
         throw new AdapterFailure('unknown_outcome', 'unknown', 'PR mutation interrupted; reconcile before retry');
       }
     });
@@ -66,7 +69,7 @@ export class Completion {
       const state = await this.current(entry.request.input.item.id); const linked = this.association(state);
       const completing = entry.request.operation === 'completion.write'; const reference = completing ? entry.request.input.merge.reference : entry.request.input.reference;
       if (linked && linked.reference !== reference) fail('conflict', 'PR association changed after mutation');
-      if (linked?.reference !== reference || (completing && state.status !== 'Done')) return { state: 'unknown' };
+      if (linked?.reference !== reference || (completing && state.status !== 'Done')) return { state: entry.state === 'absent' ? 'absent' : 'unknown' };
       entry.state = 'applied'; entry.result = completing ? { status: 'Done' } : { reference }; store.write(name, entry);
       return { state: 'applied', result: entry.result };
     });

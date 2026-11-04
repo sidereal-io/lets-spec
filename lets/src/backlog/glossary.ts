@@ -1,3 +1,4 @@
+import { AdapterFailure } from './errors.ts';
 import { Claims } from './claims.ts';
 import { fail } from './github.ts';
 import { Store, scope, mutationName } from './store.ts';
@@ -20,9 +21,13 @@ export async function updateGlossary(claims: Claims, request: Record<string, any
     const body = request.input.patch.body;
     if (JSON.stringify(outside(current.issue.body)) !== JSON.stringify(outside(body))) fail('unsupported', 'only the Glossary handoff section may change');
     if (body !== current.issue.body) {
-      if (previous) fail('conflict', 'uncertain glossary update requires reconciliation');
+      if (previous && previous.state !== 'absent') fail('conflict', 'uncertain glossary update requires reconciliation');
       store.write(name, { request, state: 'pending' });
-      await github.query('UpdateIssueBody', { id, body });
+      try { await github.query('UpdateIssueBody', { id, body }); }
+      catch (error) {
+        if (error instanceof AdapterFailure && error.effects === 'none') store.write(name, { request, state: 'absent' });
+        throw error;
+      }
     }
     const item = await github.read(id, claims.mappings);
     if (item.body !== body) fail('conflict', 'glossary body changed during update');
@@ -36,7 +41,7 @@ export async function reconcileGlossary(claims: Claims, mutationId: string) {
     const claim = (await claims.read(entry.request.input.item.id)).claim;
     if (claim.actor !== context.actor || claim.session !== context.session || claim.status !== 'In Progress') fail('conflict', 'glossary ownership changed');
     const item = await claims.github.read(entry.request.input.item.id, claims.mappings);
-    if (item.body !== entry.request.input.patch.body) return { state: 'unknown' };
+    if (item.body !== entry.request.input.patch.body) return { state: entry.state === 'absent' ? 'absent' : 'unknown' };
     entry.state = 'applied'; entry.result = { item }; store.write(name, entry); return { state: 'applied', result: entry.result };
   });
 }

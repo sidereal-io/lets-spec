@@ -49,3 +49,11 @@ test('code-host caller verifies merge before requesting completion', () => withG
   merged = true;
   assert.deepEqual(await completeChange(ctx, change, handle, reference, connect, host), { status: 'Done' });
 }));
+test('conclusive reference rejection permits retry with the original key', () => withGithub(async ({ call, set }) => {
+  await call('claim.acquire', { item }, 'acquire');
+  set('_fault', 'before:FieldText');
+  await assert.rejects(call('reference.write', { item, reference }, 'reference'), (error: any) => error.effects === 'none');
+  set('_fault', null);
+  assert.deepEqual(await call('mutation.read', { mutationId: 'reference' }), { state: 'absent' });
+  assert.deepEqual(await call('reference.write', { item, reference }, 'reference'), { reference });
+}));
