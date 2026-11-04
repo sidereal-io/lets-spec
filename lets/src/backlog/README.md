@@ -6,7 +6,7 @@ an adapter. Node 26 is required; no credentials, network or dependencies are
 needed for the suite:
 
 ```sh
-node --test "tests/backlog-adapter-kit/*.test.ts"
+node --test "tests/lets/backlog/*.test.ts"
 ```
 
 From a source checkout, `pnpm test:backlog` runs the same suite. `pnpm test`

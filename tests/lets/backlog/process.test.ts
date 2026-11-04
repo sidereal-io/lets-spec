@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
-import { invoke } from '../../contrib/backlog-adapter-kit/process.ts';
+import { invoke } from '../../../lets/src/backlog/process.ts';
 const request = { protocol: 1, operation: 'backlog.check', context: { cwd: process.cwd(), provider: 'fake', backlog: 'b', repository: 'r', actor: 'a', session: 's' }, input: {} };
 const fixture = fileURLToPath(new URL('./fixtures/process.ts', import.meta.url));
 test('executable can return conforming result', async () => {
@@ -32,7 +32,7 @@ for (const category of ['authentication', 'permission', 'transient', 'unknown_ou
 test('signal termination rejects even a valid failure envelope', async () => {
   await assert.rejects(invoke(process.execPath, request, { args: [fixture, 'signal'] }), /signal/);
 });
-import { recoverMutation } from '../../contrib/backlog-adapter-kit/recovery.ts';
+import { recoverMutation } from '../../../lets/src/backlog/recovery.ts';
 test('transport timeout reaches mutation reconciliation', async () => {
   let reads = 0;
   const result = await recoverMutation<unknown>(() => invoke(process.execPath, request, { args: [fixture, 'timeout'], timeoutMs: 100 }).then(response => response.result), () => ++reads === 1 ? { state: 'absent' } : { state: 'applied', result: { valid: true, gaps: [] } }, 'backlog.check');

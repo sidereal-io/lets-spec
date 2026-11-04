@@ -65,7 +65,7 @@ share an account. Backlog and item IDs are opaque, provider-scoped strings.
 An item identity is `{provider, backlog, id}`. A display reference is required
 on returned items; a browser URL is optional.
 
-`contrib/backlog-adapter-kit/protocol.ts` publishes executable required/optional
+`lets/src/backlog/protocol.ts` publishes executable required/optional
 field definitions in `INPUTS` and `OUTPUTS`; a trailing `?` marks an optional
 field. Unknown operation input and result fields are rejected. Those definitions
 are the machine-checkable protocol surface. The validators are dependency-free

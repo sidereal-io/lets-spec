@@ -161,8 +161,8 @@
         # carries.
         dist = pkgs.runCommand "lets-spec-dist" { } ''
           mkdir -p $out/contrib $out/tests $out/docs
-          cp -R ${./contrib/backlog-adapter-kit} $out/contrib/backlog-adapter-kit
-          cp -R ${./tests/backlog-adapter-kit} $out/tests/backlog-adapter-kit
+          cp -R ${./lets/src/backlog} $out/lets/src/backlog
+          cp -R ${./tests/lets/backlog} $out/tests/lets/backlog
           cp ${./docs/backlog-adapter-contract.md} $out/docs/backlog-adapter-contract.md
           mkdir -p $out/bin $out/releases
           cp ${lets-cli}/libexec/lets $out/bin/lets
@@ -293,7 +293,7 @@
             [ "$(jq -r .openspec ${dist}/release.json)" = "${pkgs.openspec.version}" ]
             # One standalone kit smoke check; node-tests runs the full suite.
             node --input-type=module <<'JS'
-            import { withAdapter, story } from '${dist}/tests/backlog-adapter-kit/fixtures/adapter.ts';
+            import { withAdapter, story } from '${dist}/tests/lets/backlog/fixtures/adapter.ts';
             await withAdapter(async ({ call }) => {
               const { item } = await call('item.create', story, 'smoke');
               if ((await call('item.read', { item: item.identity })).item.title !== story.title) throw new Error('packaged kit round trip failed');

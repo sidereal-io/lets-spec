@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkConfiguration } from '../../contrib/backlog-adapter-kit/config.ts';
+import { checkConfiguration } from '../../../lets/src/backlog/config.ts';
 test('omitted selection defaults to GitHub', () => {
   assert.equal(checkConfiguration({}, process.cwd(), () => '/bin/adapter').provider, 'github');
 });
@@ -12,7 +12,7 @@ for (const [name, document, finder] of [
 ] as const) {
   test(`invalid selection rejects ${name}`, () => assert.throws(() => checkConfiguration(document, process.cwd(), finder), /config/));
 }
-import { METADATA } from '../../contrib/backlog-adapter-kit/items.ts';
+import { METADATA } from '../../../lets/src/backlog/items.ts';
 const mappings = Object.fromEntries(Object.entries(METADATA).map(([field, values]) => [field, { field, cardinality: 'one' as const, values: Object.fromEntries(values.map(value => [value, value])) }]));
 const local = { lets: { backlog: { provider: 'beads', executable: './bin/local', id: 'local', mappings, storage: { path: '.beads', tracking: 'ignored' } } } };
 test('local selection resolves executable relative to repository', () => {

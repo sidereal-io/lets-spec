@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { recoverMutation } from '../../contrib/backlog-adapter-kit/recovery.ts';
+import { recoverMutation } from '../../../lets/src/backlog/recovery.ts';
 import { withAdapter, story } from './fixtures/adapter.ts';
 test('lost creation is reconciled without creating another item', () => withAdapter(async ({ call }) => {
   const result = await recoverMutation(() => call('item.create', story, 'create', { fault: 'error-unknown_outcome' }), () => call('mutation.read', { mutationId: 'create' }) as any, 'item.create');

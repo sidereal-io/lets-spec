@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { requireCapability, readyWork } from '../../contrib/backlog-adapter-kit/capabilities.ts';
+import { requireCapability, readyWork } from '../../../lets/src/backlog/capabilities.ts';
 test('unknown capability stops required step', () => assert.throws(() => requireCapability({}, 'blockers'), /unsupported/));
-import type { Candidate } from '../../contrib/backlog-adapter-kit/capabilities.ts';
+import type { Candidate } from '../../../lets/src/backlog/capabilities.ts';
 const make = (id: string, patch: Partial<Candidate> = {}): Candidate => ({ identity: { provider: 'fake', backlog: 'b', id }, reference: id, title: id, body: '', metadata: { Kind: 'Story', Priority: 'Must', Size: 'S', Status: 'Todo' }, owners: [], repository: 'r', blockers: { complete: true, open: [] }, ...patch });
 test('ready selection excludes ineligible work', () => {
   const items = [make('eligible'), make('other', { repository: 'other' }), make('owned', { owners: ['a'] }), make('blocked', { blockers: { complete: true, open: [make('x').identity] } }), ...[['Kind', 'Epic'], ['Priority', 'Wont'], ['Status', 'Done']].map(([key, value]) => { const item = make(value); (item.metadata as any)[key] = value; return item; })];

@@ -1,6 +1,6 @@
 ## 1. Source layout and types
 
-- [ ] 1.1 [easy] Preserve all executable conformance cases when moving source to lets/src/backlog and tests to tests/lets/backlog, updating imports, scripts and docs paths (verify: pnpm test:backlog)
+- [x] 1.1 [easy] Preserve all executable conformance cases when moving source to lets/src/backlog and tests to tests/lets/backlog, updating imports, scripts and docs paths (✓ pnpm test:backlog passed after source relocation)
 - [ ] 1.2 [complex] Validate external and persisted values through typed protocol/state boundaries without any, preserving wire fields and using qualified internal reference/session names (verify: pnpm test:backlog)
 
 ## 2. Process execution and failure semantics [depends-on: 1]
