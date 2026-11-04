@@ -58,3 +58,11 @@ for (const [name, category] of [
   }));
 }
 
+for (const category of ['conflict', 'permission', 'invalid_request']) {
+  test(`unexpected programming errors cannot impersonate ${category}`, () =>
+    withAdapter(async ({ call }) => {
+      await assert.rejects(call('backlog.check', {}, undefined, {
+        fault: `programming-${category}`,
+      }), failure('unknown_outcome', 'unknown'));
+    }));
+}

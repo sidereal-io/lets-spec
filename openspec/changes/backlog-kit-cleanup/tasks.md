@@ -9,7 +9,7 @@
 - [x] 2.2 [complex] Enforce an optional shared-I/O combined raw-byte limit with explicit overflow/signal results and configurable kill signal while preserving delegate defaults, testing SIGTERM-resistant children, UTF-8 and buffer ceilings (✓ node --test tests/lets/io.test.ts passed: 13 tests; new regressions failed before implementation)
 - [x] 2.3 [medium] Invoke backlog executables through shared I/O with SIGKILL limits and consistent AdapterFailure categories/effects for pre-launch, spawn, signal and invalid-output failures (✓ node --test tests/lets/backlog/process.test.ts passed; structured failure regressions failed before implementation)
 - [x] 2.4 [complex] Preserve every expected fake failure category/effect using structured errors and a real-executable table, including all cases listed in design Test Seams (✓ real executable category/effects matrix passed: 17 cases)
-- [ ] 2.5 [medium] Report unexpected fake implementation errors as unknown_outcome/unknown without substring classification, retaining lost/partial-write and claim-replay recovery including the four named prior fixes (verify: pnpm test:backlog)
+- [x] 2.5 [medium] Report unexpected fake implementation errors as unknown_outcome/unknown without substring classification, retaining lost/partial-write and claim-replay recovery including the four named prior fixes (✓ pnpm test:backlog passed; unexpected-error regressions failed on substring classification)
 
 ## 3. Release and documentation [depends-on: 2]
 

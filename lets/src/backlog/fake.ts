@@ -7,7 +7,7 @@ import { AdapterFailure } from './errors.ts';
 /** Executable representative simulation. No provider SDK, credentials or network. */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { validateRequest, parseRequest, ERRORS } from './protocol.ts';
+import { validateRequest, parseRequest } from './protocol.ts';
 import { profile } from './profiles.ts';
 import { identityKey, updateMapped, readMapped, validateItem } from './items.ts';
 import { requireCapability } from './capabilities.ts';
@@ -18,6 +18,7 @@ try {
   const { context, input, operation, mutationId } = request;
   const { capabilities, mappings } = profile(context.provider);
   const fault = process.argv[2];
+  if (fault?.startsWith('programming-')) throw new Error(`${fault.slice(12)}: injected implementation bug`);
   const injected = new Map<string, 'authentication' | 'permission' | 'transient'>([
     ['error-authentication', 'authentication'], ['error-permission', 'permission'],
     ['error-transient', 'transient'],
@@ -325,24 +326,11 @@ try {
       throw new AdapterFailure('unknown_outcome', 'unknown', 'response lost after persisted mutation');
   }
   process.stdout.write(JSON.stringify({ protocol: 1, ok: true, result }));
-} catch (error) {
-  const message = String(error);
-  const category = ERRORS.find((category) => message.includes(category)) ?? 'invalid_request';
-  process.stdout.write(
-    JSON.stringify({
-      protocol: 1,
-      ok: false,
-      error: {
-        category,
-        message,
-        effects:
-          error instanceof AdapterFailure
-            ? error.effects
-            : category === 'unknown_outcome'
-              ? 'unknown'
-              : 'none',
-      },
-    }),
-  );
+ } catch (error) {
+  const failure = error instanceof AdapterFailure ? error :
+    new AdapterFailure('unknown_outcome', 'unknown', String(error));
+  process.stdout.write(JSON.stringify({ protocol: 1, ok: false, error: {
+    category: failure.category, message: failure.message, effects: failure.effects,
+  } }));
   process.exitCode = 1;
 }
