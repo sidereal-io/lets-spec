@@ -17,3 +17,11 @@ description: Architecture decision record (ADR) for keeping the review and hando
 ## Decision
 
 Neither `review` nor `handoff` folds into `step`. Each kind of session stays its own strategy, with its own options, output and exit codes. The adapter contract keeps one method per kind of session: `run`, `start` and `step`. A resolver declines a kind by leaving its method out; only `run` is required. A resolver that learns steps adds one method, `step`, and nothing in the `lets delegate` commands changes.
+
+## Consequences
+
+- Easier: a resolver gains steps by adding one method. No command, option or exit code changes, and no other resolver is touched.
+- Easier: a review keeps its guarantees: the session cannot write, and `lets` proves after that the tree is clean.
+- Easier: a resolver may share one private function between `run` and `step`, with a read-only switch. The contract does not see it.
+- Harder: `lets` keeps three command modules that look much alike: each looks up a resolver, tries the ranked models and prints a result. A fix to one may be needed in the others.
+- Harder: `handoff` is kept for one caller, the offer to build a planned change in a new session. If that caller goes, `handoff` goes with it, and `start` leaves the contract.
