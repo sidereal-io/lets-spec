@@ -35,3 +35,11 @@ test('provenance-only partial acquire can be safely released', () => withGithub(
   assert.deepEqual(await call('claim.release', { item, token: record.token }, 'release'), { released: true });
   assert.equal((await call('claim.read', { item })).claim.actor, null);
 }));
+test('conclusive no-effect release permits original-key retry', () => withGithub(async ({ call, set }) => {
+  const { claim } = await call('claim.acquire', { item }, 'acquire');
+  set('_fault', 'before:Unassign');
+  await assert.rejects(call('claim.release', { item, token: claim.token }, 'release'), (error: any) => error.effects === 'none');
+  set('_fault', null);
+  assert.deepEqual(await call('mutation.read', { mutationId: 'release' }), { state: 'absent' });
+  assert.deepEqual(await call('claim.release', { item, token: claim.token }, 'release'), { released: true });
+}));

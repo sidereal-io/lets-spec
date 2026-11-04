@@ -85,6 +85,10 @@ export class Claims {
       const current = await this.snapshot(id);
       if (entry.request.operation === 'claim.release') {
         if (current.currentIntent?.generation !== entry.intent.generation) fail('conflict', 'local claim intent was superseded');
+        if (entry.state === 'absent' || entry.phase === 'prepared') {
+          this.require(current, entry.intent, entry.before.owners, [entry.before.status]);
+          entry.state = 'absent'; store.write(name, entry); return { state: 'absent' };
+        }
         const released = { ...entry.intent, state: 'released' };
         if (!current.owners.length && current.status === 'Todo' && !current.issue.closed) {
           store.write('claim-' + hash([scope(context), context.actor, context.session, id]), released);
@@ -117,25 +121,31 @@ export class Claims {
       if (previous?.state === 'applied') {
         this.require(initial, { ...previous.intent, state: 'released' }, [], ['Todo']); return { released: true };
       }
-      if (previous) throw new AdapterFailure('unknown_outcome', 'unknown', 'release requires mutation reconciliation before retry');
+      if (previous && previous.state !== 'absent') throw new AdapterFailure('unknown_outcome', 'unknown', 'release requires mutation reconciliation before retry');
       if (record.state !== 'active') fail('conflict', 'claim is no longer active');
       const originalOwners = initial.status === 'Todo' && initial.owners.length === 0 ? [] : [record.actor];
       this.require(initial, record, originalOwners, ['Todo', 'In Progress']);
-      const entry = { request, state: 'pending', intent: record, phase: 'prepared', result: undefined as any }; store.write(name, entry);
+      const entry = { request, state: 'pending', intent: record, phase: 'prepared', before: { owners: originalOwners, status: initial.status }, result: undefined as any }; store.write(name, entry);
+      let changed = false;
       try {
         entry.phase = 'writing'; store.write(name, entry);
         const actor = (await github.query('Actor', github.variables())).viewer;
         if (actor.login !== record.actor || !actor.id) fail('authentication', 'authenticated actor changed');
         if (originalOwners.length) await github.query('Unassign', { issue: id, actor: actor.id });
+        changed = originalOwners.length > 0;
         this.require(await this.snapshot(id), record, [], [initial.status]);
         if (initial.status !== 'Todo') await github.query('FieldStatus', { project: github.context.backlog, item: initial.projectItem, field: initial.config.mappings.Status.field, option: initial.config.mappings.Status.values.Todo });
+        changed ||= initial.status !== 'Todo';
         this.require(await this.snapshot(id), record, [], ['Todo']);
         store.write('claim-' + hash([scope(github.context), github.context.actor, github.context.session, id]), { ...record, state: 'released' });
         store.write(currentIntentName(github.context, id), { ...record, state: 'released' });
         this.require(await this.snapshot(id), { ...record, state: 'released' }, [], ['Todo']);
         entry.state = 'applied'; entry.result = { released: true }; store.write(name, entry); return entry.result;
       } catch (error) {
-        if (error instanceof AdapterFailure) throw new AdapterFailure(error.category, error.effects === 'unknown' ? 'unknown' : 'partial', error.message);
+        if (error instanceof AdapterFailure) {
+          if (!changed && error.effects === 'none') { entry.state = 'absent'; store.write(name, entry); throw error; }
+          throw new AdapterFailure(error.category, error.effects === 'unknown' ? 'unknown' : 'partial', error.message);
+        }
         throw new AdapterFailure('unknown_outcome', 'unknown', 'release interrupted; reconcile before retry');
       }
     });
