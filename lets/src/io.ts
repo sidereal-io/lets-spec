@@ -172,12 +172,17 @@ export function realIo(): Io {
               });
               return;
             }
-            finish({
-              stdout: stdout.toString('utf8'),
-              stderr: stderr.toString('utf8'),
-              code: error ? ((error.code as number | undefined) ?? 1) : 0,
-              ...(signal ? { signal } : {}),
-            });
+            try {
+              finish({
+                stdout: stdout.toString('utf8'),
+                stderr: stderr.toString('utf8'),
+                code: error ? ((error.code as number | undefined) ?? 1) : 0,
+                ...(signal ? { signal } : {}),
+              });
+            } catch {
+              finish({ stdout: '', stderr: 'output decoding failed', code: 1,
+                outputLimitExceeded: true, ...(signal ? { signal } : {}) });
+            }
           },
         );
         const stop = (reason: 'timeout' | 'output') => {

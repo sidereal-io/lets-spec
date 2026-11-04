@@ -104,3 +104,19 @@ for (const mode of ['deadline', 'overflow']) {
     assert.equal(result.signal, 'SIGKILL');
   });
 }
+
+test('the real execFile reports output decoding failures without escaping its callback', async (t) => {
+  const original = Buffer.prototype.toString;
+  const marker = Buffer.from('decode-failure-fixture');
+  t.mock.method(Buffer.prototype, 'toString', function (
+    this: Buffer, encoding?: BufferEncoding, start?: number, end?: number,
+  ) {
+    if (this.equals(marker)) throw new RangeError('simulated ERR_STRING_TOO_LONG');
+    return original.call(this, encoding, start, end);
+  });
+  const result = await realIo().execFile(process.execPath, [
+    '-e', "process.stdout.write('decode-failure-fixture');",
+  ], { maxBytes: 1024, timeoutMs: 5000 });
+  assert.equal(result.outputLimitExceeded, true);
+  assert.notEqual(result.code, null);
+});
