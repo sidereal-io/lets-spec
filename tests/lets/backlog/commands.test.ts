@@ -19,7 +19,7 @@ test('claim command explicitly continues an interrupted original session', () =>
   set('_fault', null);
   const recovered = command('claim', { item, handle: interrupted.result.handle });
   assert.equal(recovered.status, 0); assert.equal(recovered.result.handle, interrupted.result.handle);
-  assert.equal(state().calls.filter((call: any) => call.name === 'FieldText').length, 1);
+  assert.equal(state().calls.filter((call: any) => call.name === 'Assign').length, 1);
 }));
 test('default GitHub workflow deadline accommodates a full verified claim', () => withGithub(async ({ command }) => {
   const result = command('claim', { item, timeoutMs: undefined });

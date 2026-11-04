@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { Store, mutationName } from '../../../lets/src/backlog/store.ts';
+import { context } from './fixtures/github.ts';
 import { withGithub, item } from './fixtures/github.ts';
 test('branch failure release restores Todo for the current session', () => withGithub(async ({ call }) => {
   const { claim } = await call('claim.acquire', { item }, 'acquire');
@@ -18,18 +20,18 @@ test('partial release preserves replacement ownership', () => withGithub(async (
   await assert.rejects(call('claim.release', { item, token: claim.token }, 'release'), /conflict/);
   const values = state().responses.ItemValues.node.fieldValues.nodes;
   assert.equal(values.find((value: any) => value.field.id === 'F-Status').optionId, 'V-In Progress');
-  assert.equal(JSON.parse(values.find((value: any) => value.field.id === 'F-claim').text).session, 'replacement');
+
 }));
 test('released acquire replay cannot authorize work', () => withGithub(async ({ call }) => {
   const { claim } = await call('claim.acquire', { item }, 'acquire');
   await call('claim.release', { item, token: claim.token }, 'release');
   await assert.rejects(call('claim.acquire', { item }, 'acquire'), /conflict/);
 }));
-test('provenance-only partial acquire can be safely released', () => withGithub(async ({ call, set, state }) => {
+test('provenance-only partial acquire can be safely released', () => withGithub(async ({ call, set, state, cwd }) => {
   set('_fault', 'before:Assign');
   await assert.rejects(call('claim.acquire', { item }, 'acquire'));
   set('_fault', null);
-  const record = JSON.parse(state().responses.ItemValues.node.fieldValues.nodes.find((value: any) => value.field.id === 'F-claim').text);
+  const record = new Store(cwd).read(mutationName({ context: { ...context, cwd }, mutationId: 'acquire' })).intent;
   assert.deepEqual(await call('claim.release', { item, token: record.token }, 'release'), { released: true });
   assert.equal((await call('claim.read', { item })).claim.actor, null);
 }));

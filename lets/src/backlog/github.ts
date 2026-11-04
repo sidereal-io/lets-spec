@@ -73,12 +73,9 @@ export class GitHub {
       if (mapping.cardinality !== 'one' || field?.dataType !== 'SINGLE_SELECT') fail('invalid_configuration', `${name} requires a single-select native field`);
       for (const value of Object.values(mapping.values)) if (!field.options.some((option: any) => option.id === value)) fail('invalid_configuration', `${name} option does not exist`);
     }
-    const textField = (name: string) => {
-      const matches = fields.filter(field => field.name === name && field.dataType === 'TEXT');
-      return matches.length === 1 ? matches[0].id as string : undefined;
-    };
-    return { project, mappings: selected, claimField: textField('Lets claim'), referenceField: textField('Lets reference') };
+    return { project, mappings: selected };
   }
+
   async issue(id: string) {
     const issue = (await this.query('Issue', { id })).node;
     if (!issue || issue.id !== id || issue.repository?.nameWithOwner?.toLowerCase() !== this.context.repository.toLowerCase()) fail('not_found', 'issue does not belong to the selected repository');
@@ -137,16 +134,6 @@ export class GitHub {
     const items = await this.pages('ProjectItems', { id: this.context.backlog }, data => data.node?.items);
     const result: Item[] = [];
     for (const item of items) if (!item?.content?.closed && item?.content?.repository?.nameWithOwner?.toLowerCase() === this.context.repository.toLowerCase()) {
-      if (config.claimField) {
-        const values = await this.values(item.id ?? await this.projectItem(item.content.id));
-        const text = values[config.claimField];
-        if (text !== undefined && text !== '') {
-          let record;
-          try { record = JSON.parse(text as string); } catch { continue; }
-          const strings = ['provider', 'repository', 'backlog', 'item', 'generation', 'actor', 'session', 'token', 'state'];
-          if (!record || record.version !== 1 || record.state !== 'released' || record.provider !== this.context.provider || record.repository !== this.context.repository || record.backlog !== this.context.backlog || record.item !== item.content.id || strings.some(key => typeof record[key] !== 'string' || !record[key]) || Object.keys(record).some(key => !['version', ...strings].includes(key))) continue;
-        }
-      }
       result.push(await this.read(item.content.id, mappings));
     }
     return result;

@@ -12,19 +12,17 @@ test('lost final status response reconciles the current claim', () => withGithub
   await call('claim.acquire', { item }, 'acquire');
   assert.equal(state().calls.filter((call: any) => call.name === 'FieldText').length, writes);
 }));
-test('lost provenance response remains unknown without replay', () => withGithub(async ({ call, set, state }) => {
-  set('_fault', 'after:FieldText');
+test('lost assignment response remains unknown without replay', () => withGithub(async ({ call, set, state }) => {
+  set('_fault', 'after:Assign');
   await assert.rejects(call('claim.acquire', { item }, 'acquire'), /unknown_outcome/);
   set('_fault', null);
   assert.deepEqual(await call('mutation.read', { mutationId: 'acquire' }), { state: 'unknown' });
   await assert.rejects(call('claim.acquire', { item }, 'acquire'), /reconciliation/);
-  assert.equal(state().calls.filter((call: any) => call.name === 'FieldText').length, 1);
+  assert.equal(state().calls.filter((call: any) => call.name === 'Assign').length, 1);
 }));
 test('journal history cannot authorize a replaced claim', () => withGithub(async ({ call, state, set }) => {
   await call('claim.acquire', { item }, 'acquire');
-  const values = state().responses.ItemValues;
-  const record = values.node.fieldValues.nodes.find((value: any) => value.field.id === 'F-claim');
-  record.text = JSON.stringify({ ...JSON.parse(record.text), token: 'replacement' }); set('ItemValues', values);
+  set('IssueOwners', { node: { assignees: { nodes: [{ login: 'replacement' }], pageInfo: { hasNextPage: false, endCursor: null } } } });
   await assert.rejects(call('mutation.read', { mutationId: 'acquire' }), /conflict/);
 }));
 import { acquireSession, recoverSession } from '../../../lets/src/backlog/sessions.ts';

@@ -16,9 +16,7 @@ if (name === 'FieldText' || name === 'FieldStatus') {
 }
 if (name === 'Unassign') responses.IssueOwners.node.assignees.nodes = [];
 if (name === 'Unassign' && responses._replaceAfterUnassign) {
-  const value = responses.ItemValues.node.fieldValues.nodes.find(value => value.field.id === 'F-claim');
-  value.text = JSON.stringify({...JSON.parse(value.text), session:'replacement'});
-  responses.IssueOwners.node.assignees.nodes = [{login:'me'}];
+  responses.IssueOwners.node.assignees.nodes = [{login:'replacement'}];
 }
 if (name === 'UpdateIssueBody') responses.Issue.node.body = variables.body;
 if (name === 'Assign') responses.IssueOwners.node.assignees.nodes = [{ login: 'me', id: variables.actor }];

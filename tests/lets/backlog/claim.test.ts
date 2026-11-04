@@ -24,10 +24,7 @@ test('assignment-only progress does not authorize claim', () => withGithub(async
 }));
 test('claim replay rechecks current provenance', () => withGithub(async ({ call, state, set }) => {
   await call('claim.acquire', { item }, 'acquire');
-  const values = state().responses.ItemValues;
-  const record = values.node.fieldValues.nodes.find((value: any) => value.field.id === 'F-claim');
-  record.text = JSON.stringify({ ...JSON.parse(record.text), session: 'replacement' });
-  set('ItemValues', values);
+  set('IssueOwners', { node: { assignees: { nodes: [{ login: 'replacement' }], pageInfo: { hasNextPage: false, endCursor: null } } } });
   await assert.rejects(call('claim.acquire', { item }, 'acquire'), /conflict/);
 }));
 import { acquireSession } from '../../../lets/src/backlog/sessions.ts';

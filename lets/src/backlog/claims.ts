@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { GitHub, fail } from './github.ts';
-import { Store, scope, mutationName } from './store.ts';
+import { Store, scope, mutationName, hash } from './store.ts';
 import { AdapterFailure } from './errors.ts';
 import type { Mappings } from './items.ts';
 export type Provenance = { version: 1; provider: string; repository: string; backlog: string; item: string; generation: string; actor: string; session: string; token: string; state: 'active' | 'released' };
@@ -11,19 +11,12 @@ export class Claims {
   async snapshot(id: string) {
     const github = this.github; const config = await github.project(this.mappings);
     const issue = await github.issue(id);
-    if (!config.claimField) fail('unsupported', 'Lets claim text field is required');
     const projectItem = await github.projectItem(id);
     const values = await github.values(projectItem); const owners = await github.owners(id);
     const status = Object.entries(config.mappings.Status.values).find(([, option]) => option === values[config.mappings.Status.field])?.[0];
     if (!status) fail('invalid_configuration', 'missing or ambiguous Status');
-    let provenance: Provenance | undefined;
-    const text = values[config.claimField];
-    if (text !== undefined && text !== '') {
-      try { provenance = JSON.parse(text as string); } catch { fail('conflict', 'malformed claim provenance'); }
-      const record = provenance as any; const context = github.context;
-      const keys = ['version', 'provider', 'repository', 'backlog', 'item', 'generation', 'actor', 'session', 'token', 'state'];
-      if (!record || record.version !== 1 || Object.keys(record).some(key => !keys.includes(key)) || keys.some(key => key !== 'version' && (typeof record[key] !== 'string' || !record[key])) || record.provider !== context.provider || record.repository !== context.repository || record.backlog !== context.backlog || record.item !== id || !['active', 'released'].includes(record.state)) fail('conflict', 'claim provenance does not match scope or schema');
-    }
+    // Local intent permits continuation only; native state is checked separately.
+    const provenance = new Store(github.context.cwd).read('claim-' + hash([scope(github.context), github.context.actor, github.context.session, id])) as Provenance | undefined;
     return { config, issue, projectItem, values, owners, status, provenance };
   }
   async writable(id: string) {
@@ -62,7 +55,7 @@ export class Claims {
       let started = false;
       try {
         entry.phase = 'writing'; store.write(name, entry); started = true;
-        await github.query('FieldText', { project: github.context.backlog, item: initial.projectItem, field: initial.config.claimField, text: JSON.stringify(record) });
+        store.write('claim-' + hash([scope(github.context), github.context.actor, github.context.session, id]), record);
         this.require(await this.snapshot(id), record, [], ['Todo']);
         const actor = (await github.query('Actor', github.variables())).viewer;
         if (actor.login !== record.actor || !actor.id) fail('authentication', 'authenticated actor changed');
@@ -89,7 +82,9 @@ export class Claims {
       const current = await this.snapshot(id);
       if (entry.request.operation === 'claim.release') {
         const released = { ...entry.intent, state: 'released' };
-        if (JSON.stringify(current.provenance) === JSON.stringify(released)) {
+        if (!current.owners.length && current.status === 'Todo' && !current.issue.closed) {
+          store.write('claim-' + hash([scope(context), context.actor, context.session, id]), released);
+          current.provenance = released;
           this.require(current, released, [], ['Todo']); entry.state = 'applied'; entry.result = { released: true }; store.write(name, entry);
           return { state: 'applied', result: entry.result };
         }
@@ -130,7 +125,7 @@ export class Claims {
         this.require(await this.snapshot(id), record, [], [initial.status]);
         if (initial.status !== 'Todo') await github.query('FieldStatus', { project: github.context.backlog, item: initial.projectItem, field: initial.config.mappings.Status.field, option: initial.config.mappings.Status.values.Todo });
         this.require(await this.snapshot(id), record, [], ['Todo']);
-        await github.query('FieldText', { project: github.context.backlog, item: initial.projectItem, field: initial.config.claimField, text: JSON.stringify({ ...record, state: 'released' }) });
+        store.write('claim-' + hash([scope(github.context), github.context.actor, github.context.session, id]), { ...record, state: 'released' });
         this.require(await this.snapshot(id), { ...record, state: 'released' }, [], ['Todo']);
         entry.state = 'applied'; entry.result = { released: true }; store.write(name, entry); return entry.result;
       } catch (error) {

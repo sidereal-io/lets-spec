@@ -49,9 +49,9 @@ export async function dispatch(request: Record<string, any>, query: Query = ghQu
         metadata: { support: 'native', limits: 'Single-select mappings only; setup and shaping writes unsupported.' },
         hierarchy: { support: 'native', limits: 'Existing GitHub parent and sub-issue reads.' },
         blockers: { support: 'native', limits: 'Complete directional GitHub dependency reads required.' },
-        claims: { ...emulated(Boolean(writable && config.claimField), 'Best-effort visible Lets claim Project text field; requires Project write and repository assignment permissions. Project writers may replace provenance; verification is a snapshot, not exclusive execution.'), guarantee: 'best-effort' },
-        references: emulated(Boolean(writable && config.referenceField), 'Visible Lets reference Project text field; requires Project write permissions.'),
-        completion: emulated(Boolean(writable && config.referenceField), 'Requires associated PR merge evidence from the trusted code-host caller and Project write permissions.'),
+        claims: { ...emulated(Boolean(writable), 'Native assignees and Status with private local continuation journals; requires repository assignment and Project write permissions. Best-effort actor-level snapshots cannot distinguish sessions using the same actor or detect reassignment between reads. Local state is not remote ownership proof.'), guarantee: 'best-effort' },
+        references: emulated(Boolean(writable), 'Native PR closing-issue links, read completely; requires repository PR write permissions. Local journals record attempted operations only.'),
+        completion: emulated(Boolean(writable), 'Requires associated PR merge evidence from the trusted code-host caller and Project write permissions.'),
       } };
     }
     default: fail('unsupported', 'operation is unsupported by the GitHub existing-item adapter');

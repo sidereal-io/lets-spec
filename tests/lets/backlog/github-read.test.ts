@@ -67,10 +67,10 @@ test('repeated blockers cursor stops readiness', async () => {
   const github = new GitHub(context, packetQuery({ IssueBlockers: { node: { blockedBy: page([], true, 'loop') } } }));
   await assert.rejects(github.relationships('I', 'blocked_by'), /repeated/);
 });
-test('unavailable provenance is declared unsupported', async () => {
+test('claims do not require machine-state fields', async () => {
   const { dispatch } = await import('../../../lets/src/backlog/github-main.ts');
   const result = await dispatch({ protocol: 1, operation: 'capability.read', context, input: {} }, packetQuery());
-  assert.equal(result.capabilities.claims.support, 'unsupported');
+  assert.equal(result.capabilities.claims.support, 'emulated');
 });
 test('setup mutation is rejected before provider effects', async () => {
   const { dispatch } = await import('../../../lets/src/backlog/github-main.ts');

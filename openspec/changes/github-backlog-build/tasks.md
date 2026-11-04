@@ -32,7 +32,7 @@ Live acceptance evidence is a required supplement to task 4.1's automated comman
 
 ## 5. Native reconciliation revision
 
-- [ ] 5.1 [complex] Replace remote claim provenance with native assignees/Status and local intent, preserving unknown-outcome guards and explicit continuation; test assignment-only partial state, replay, release and same-actor limits.
+- [x] 5.1 [complex] Replace remote claim provenance with native assignees/Status and local intent, preserving unknown-outcome guards and explicit continuation; test assignment-only partial state, replay, release and same-actor limits. (✓ pnpm test passed: 569 Node tests, typecheck, 133 Bats checks)
 - [ ] 5.2 [complex] Replace Project PR association fields with fully paginated native closing links and exact merge gating; test mismatch and interrupted operations.
 - [ ] 5.3 [medium] Reconcile contract, kit expectations, capabilities, source instructions and fixtures with actor-level native limits; remove machine-state field prerequisites.
 - [ ] 5.4 [complex] Run required repository checks, new independent review, revised live acceptance and verification before archiving and marking ready. Prior evidence covers only the old implementation.
