@@ -83,9 +83,9 @@ every command below from the repo root.
    ```
 
    If the merge cannot fast-forward, the branch and `origin` have
-   diverged. Print `Records disagree:`, say so, and say to reconcile the
-   two by hand. Stop. If any command here fails for another reason, show
-   the user its error, and stop.
+   diverged: the [records disagree](#records-that-disagree). If any
+   command here fails for another reason, show the user its error, and
+   stop.
 9. Set `<schema>`. When `openspec/changes/<name>/.openspec.yaml` exists,
    it is that file's `schema:` line. Otherwise it is the schema *Route*
    picked.
@@ -99,6 +99,68 @@ every command below from the repo root.
     recommendation, and asks the user the rest.
 
 *Start* runs in this session. It is not a step, and has no step report.
+
+## Find the first unfinished step
+
+After *Start*, on the branch `<name>`, read where the change stands. Git
+and GitHub keep every record you need, so read them in this order:
+
+1. **The tree.** Run `git status --porcelain`. A line for a path outside
+   `.workspace/` means the records disagree.
+2. **The pull request.** Run:
+
+   ```bash
+   gh pr view <name> --json number,url,state,isDraft,body
+   ```
+
+   When it finds none, note that the branch has no pull request, and go
+   on. A new branch has none yet. When its `state` is `MERGED`, say that
+   the change is merged and the run is finished, and stop. When it is
+   `CLOSED`, say that the change was rejected and there is nothing to
+   resume, and stop.
+3. **The archive folder.** Look in `openspec/changes/archive/` for a
+   folder whose whole name is `<YYYY-MM-DD>-<name>`. A folder whose name
+   only ends in `-<name>` belongs to another change. When the folder
+   exists, every step is done, and the records disagree if either:
+   - `openspec/changes/<name>/` exists too;
+   - the pull request is missing, is a draft, or its `body` has no
+     `Code review` section.
+4. **The change state.** When there is no archive folder, and
+   `openspec/changes/<name>/` exists, run
+   `openspec instructions apply --change <name> --json`. Read `state` as
+   `lets-build`'s *Find where you are* reads it:
+   - `blocked`: the first unfinished step is propose.
+   - `ready`: it is apply.
+   - `all_done`: it is apply review.
+   - anything else: show the user the CLI's `instruction`, and stop.
+
+   With no change folder, the first unfinished step is propose. When
+   `openspec/changes/<name>/brainstorm.md` exists, the records disagree
+   if the branch has no pull request. The tree is clean, so the file is
+   committed.
+
+Shape is done once *Confirm the packet* passes. Propose review is done
+once propose is done. Every step before the first unfinished one is
+done. Run the steps from that one, in their usual order.
+
+### Records that disagree
+
+When the records disagree, print `Records disagree:` and what you found.
+Say what to fix by hand, and stop before any step. Repair nothing: each
+repair means choosing which record is right, and that is the user's
+choice.
+
+| What you found | What to fix by hand |
+|---|---|
+| `git status --porcelain` lists a path outside `.workspace/` | Commit or discard the path. |
+| The branch and `origin/<name>` have diverged | Reconcile the two, and push. |
+| A change folder and an archive folder for the same name | Keep the one that is right, and remove the other. |
+| An archive folder, and the pull request is missing, a draft, or has no `Code review` section | Open the pull request, review it, or mark it ready, as *Finish the change* does. Or revert the archive commit. |
+| `brainstorm.md` is committed, and the branch has no pull request | Push the branch, and open the draft pull request. |
+| A `git log` read for a skipped step finds no commit | Name the command. The step's record is missing: find out why. |
+
+Each case names what you found, such as the path, or the pull request's
+`isDraft`.
 
 ## The steps
 
