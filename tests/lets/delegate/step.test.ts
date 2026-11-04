@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/step.ts';
 import type { StepOptions } from '../../../lets/src/delegate/step.ts';
 import { SessionFailed, SpawnError, TimeoutError } from '../../../lets/src/resolvers/kit/errors.ts';
-import { commandDeps, CONFIG } from './fixtures/command-deps.ts';
+import { commandDeps, CONFIG, PROMPT_FILE } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<StepOptions> = {}): StepOptions =>
   ({ for: 'apply', name: 'Build X', promptFile: 'p.md', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
@@ -203,3 +203,32 @@ test('a step runs no git status, and files the session changed do not count', as
   assert.equal(await run(options(), t.deps), 0);
   assert.deepEqual(t.io.calls.map(([, args]) => (args as string[])[0]), ['rev-parse']);
 });
+
+// commandDeps with t3, the prompt file, and an answers file /repo/a.yaml
+// holding answers, when given.
+const withAnswersFile = (answers?: string) =>
+  withT3({ files: { [PROMPT_FILE]: 'PROMPT TEXT', ...(answers === undefined ? {} : { '/repo/a.yaml': answers }) } });
+const sentPrompt = (t: ReturnType<typeof commandDeps>) => (steps(t.adapterCalls)[0].input as { prompt: string }).prompt;
+
+test('--answers-file sends the prompt followed by the answers section', async () => {
+  const t = withAnswersFile('- question: Which schema?\n  answer: lets-minimal\n');
+  assert.equal(await run(options({ answersFile: 'a.yaml' }), t.deps), 0);
+  assert.equal(sentPrompt(t),
+    'PROMPT TEXT\n\n## Answers\n\nThese questions from the last step report are settled. Do not ask them again.\n\n- Q: Which schema?\n  A: lets-minimal\n');
+});
+
+test('without --answers-file, the prompt is sent unchanged', async () => {
+  const t = withAnswersFile();
+  await run(options(), t.deps);
+  assert.equal(sentPrompt(t), 'PROMPT TEXT');
+});
+
+for (const [name, answers] of [['missing', undefined], ['a mapping', 'question: Which?\nanswer: x\n'], ['empty', '[]\n'], ['blank', '- question: Which?\n  answer: "  "\n']] as const) {
+  test(`an answers file that is ${name} is exit 2, naming --answers-file, and no resolver is asked`, async () => {
+    const t = withAnswersFile(answers);
+    assert.equal(await run(options({ answersFile: 'a.yaml' }), t.deps), 2);
+    assert.equal(t.stdout(), '');
+    assert.match(t.stderr(), /--answers-file a\.yaml/);
+    assert.deepEqual(t.adapterCalls(), []);
+  });
+}
