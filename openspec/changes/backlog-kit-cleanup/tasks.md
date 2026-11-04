@@ -19,9 +19,13 @@
 
 ## 4. Integration [depends-on: 3]
 
-- [ ] 4.1 [medium] Verify complete Node, type and shell coverage after comparing the moved test inventory and checking readable house style (verify: pnpm test)
+- [x] 4.1 [medium] Verify complete Node, type and shell coverage after comparing the moved test inventory and checking readable house style (✓ pnpm test passed: 543 Node tests, type check, 130 shell tests; original test inventory retained)
 - [ ] 4.2 [medium] Verify all flow and release builds after the final implementation (verify: nix flake check)
 
 ## Deviations Ledger
 
-None.
+- 2026-11-03: Independent code review identified an uncaught output-decoding
+  failure plus inherited split-UTF-8 and overflowing-deadline bugs. Fixed each
+  separately with a regression that failed first. No wire or ownership guarantee
+  changed. Final spec sync preserves every existing scenario.
+
