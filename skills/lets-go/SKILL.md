@@ -1,6 +1,6 @@
 ---
 name: lets-go
-description: Take one shaped chore from its issue to a pull request ready for review, in one run. Start claims the issue here; propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. Use when the user names a chore issue and wants it built end to end, or says lets-go with an issue number.
+description: Take one shaped chore from its issue to a pull request ready for review, in one run. Start claims the issue here; propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user names a chore issue and wants it built end to end, says lets-go with an issue number, or runs lets-go again after a run stopped.
 ---
 
 # Let's go
@@ -10,6 +10,11 @@ Take one shaped chore to a pull request ready for review, in one run.
 fresh session: propose, apply, then apply review. A step never asks the
 user. It ends with a report, and this session asks the user for it. Run
 every command below from the repo root.
+
+A run can stop part way. Run `lets-go` again, on the default branch or
+on the change's branch. It reads from Git and GitHub which steps are
+done, prints a dated line for each, and goes on from the first
+unfinished step.
 
 `lets-go` reuses the `lets-build` skill. It names the sections of
 `lets-build` it runs, and repeats none of them.
