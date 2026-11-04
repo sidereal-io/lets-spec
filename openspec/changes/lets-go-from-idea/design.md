@@ -38,9 +38,13 @@ Constraints:
 
 ### D-1: Shape is a fourth step on the same machinery, run inside Start
 
-Start step 2 gains the idea path. When the request is an idea, or when step 4's *Confirm the packet* stops with a `lets-shape` remedy, Start runs the shape step with *Write the prompt*, *Run a step*, *Read the report* and *Relay the questions* as they are, then goes on from step 3 with `<i>`. The step list becomes four, and the table gains a `shape` row. Nothing new is written for the step's lifecycle (D5, D9).
+Start step 2 gains the idea path. The shape step runs when the request is an idea, or when step 4's *Confirm the packet* stops with a `lets-shape` remedy. It runs through *Write the prompt*, *Run a step*, *Read the report* and *Relay the questions*. Then Start goes on from step 3 with `<i>`. The step list becomes four, and the table gains a `shape` row. The shared sections gain only what shape needs: the frame's first lines (D-8), the check of the report's first evidence line (D-5), the failed message with no branch (D-7), and the removal of the answers file (D-6). Start's steps 5 and 10 branch on whether shape ran in this run. *Find the first unfinished step* says shape is done once *Confirm the packet* passes, and that Start printed its line; both sentences now cover the `Done` form too (D5, D9).
 
-Alternatives: shape as a section of its own with its own loop (two copies of the relay to keep in step); running `lets-shape` in the `lets-go` session itself (it asks the user directly, which breaks the level, and it would be the one step without a report or a fresh session).
+The shape step runs at most once per run. When *Confirm the packet* stops again after it, that stop stands: a second shape would loop on the same cause, such as a Project listing that lags behind `gh issue create`.
+
+The prompt tells the step to run *Shape one issue* to its end: the second comment fetch, the reply, and the glossary handoff. The step ends on the default branch with a clean tree, as `lets-shape`'s *Hand over* restores the owned paths. It creates no change and no change branch. A glossary holding branch is `lets-shape`'s own, and *Claim* imports its checkpoint later. The packet confirmation in `lets-shape`'s step 7 is a confirmation question, so it carries no recommendation, like a ledger.
+
+Alternatives: shape as a section of its own with its own loop. Rejected: two copies of the relay to keep in step. Running `lets-shape` in the `lets-go` session itself. Rejected: it asks the user directly, which breaks the level, and it would be the one step without a report or a fresh session.
 
 ### D-2: Start searches, in this session, and the user confirms
 
@@ -56,7 +60,7 @@ Alternative: only the idea path runs shape. Rejected: the search then dead-ends 
 
 ### D-4: The shape step runs at `ask` unless the user named a level
 
-Before shape there is no Kind, so the Kind default cannot apply. `ask` fits: shape is where the user's intent is captured, and the final confirmation has no recommendation at either level. The line is `Interactivity: ask, because shape has not run yet.` After shape, step 10 picks the level again from the Kind the packet got, unless the user named one, so the rest of the run matches a run started from the number (D7).
+Before shape there is no Kind, so the Kind default cannot apply. `ask` fits: shape is where the user's intent is captured, and the final confirmation has no recommendation at either level. The line is `Interactivity: ask, because shape has not run yet.` After shape, step 10 picks the level again from the Kind the packet got, unless the user named one. So the rest of the run matches a run started from the number (D7).
 
 Alternative: ask the user which level. Rejected: the skill never asks that, and the user can name one with the idea.
 
@@ -68,9 +72,11 @@ Alternatives: a second search by the idea's words (fuzzy, and the title may diff
 
 ### D-6: Shape's scratch files are named by the input, not the change
 
-There is no change name before shape. `issue-<i>` serves an existing issue. For an idea, `idea-<slug>` with the first five words keeps the answers file across a retyped run, and a different idea gets a different file (D10). The step's `--name` is `<name>-shape`, as for the other steps.
+There is no change name before shape. `issue-<i>` serves an existing issue. For an idea, `idea-<slug>` keeps the answers file across a retyped run. The slug rule is fixed so two retries agree: split on white space, lower-case each word, keep only letters and digits, drop a word left empty, and join the first five words with hyphens, or all of them when there are fewer. The step's `--name` is `<name>-shape`, as for the other steps.
 
-Alternative: one fixed name, `idea`. Rejected: *Run a step* feeds an existing answers file into the first round, so a stale file from an earlier idea would answer a new one.
+Two ideas can share their first five words, and one issue can enter the shape step twice, once per new comment. So *Read the report* removes `.workspace/lets-go/<name>-shape-answers.yaml` once the shape step reports `done` or `failed`. A done shape is never resumed, and a failed step is never run again, so the file has no reader left (D10).
+
+Alternatives: one fixed name, `idea`. Rejected: *Run a step* feeds an existing answers file into the first round, so a stale file from an earlier idea would answer a new one. A hash of the whole idea. Rejected: one changed word loses the file, and the collision needs the removal anyway.
 
 ### D-7: A too-large idea fails the step
 
@@ -93,6 +99,7 @@ None of these decisions is costly to reverse. ADR-015 and ADR-017 already hold t
 - [A shape step at `ask` costs one session per round, and `lets-shape` asks one question at a time] → The prompt frame already says to list every open question before stopping, so the interview is a few rounds, not one per question. The user can name `recommend`.
 - [The search in Start matches nothing for a long idea] → `lets-build`'s case 2 leaves the search words to the skill. The miss costs one more question in the shape step, where `lets-shape`'s own step 1 is told the search has run.
 - [The slug for `idea-<slug>` differs when the user retypes the idea] → Only the answers file is lost. Shape leaves no other record before the issue exists, and the run reaches the same step.
+- [The shape step agrees a glossary term, and its holding branch or edits are left behind] → The prompt says to run *Shape one issue* to its end, and `lets-shape`'s *Hand over* restores the owned paths. If the user picks a documentation pull request as the owner, `lets-build`'s *Check the prerequisite* stops the run until it merges, as it does under `lets-build`.
 - [The shape step writes an issue, then the run stops before *Claim*] → The issue is shaped and on the Project. Running `lets-go` with its number, or `lets-build`, carries on. Nothing is half-written.
 - [A `done` report whose first evidence line is not `issue #<n>: <title>` fails a step that did its work] → The user reruns with the issue number the report's text names. The prompt shows the exact line.
 
