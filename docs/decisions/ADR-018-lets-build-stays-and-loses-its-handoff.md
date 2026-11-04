@@ -26,3 +26,20 @@ description: Architecture decision record (ADR) for keeping lets-build as the sk
 - Harder: the trim is its own change, and touches several files: `skills/lets-build/SKILL.md`, the README's `lets-build` section and its section on reviews in a fresh session, `docs/resolvers.md`, and the tests that pin the handoff text.
 - Harder: until the `handoff` strategy is removed, it ships with no caller.
 - Harder: a user who used the offer to start a session in another harness by hand loses that path. They start it themselves with `lets-build` on the branch.
+
+## Alternatives Considered
+
+### Alternative 1: Retire `lets-build` and fold its sections into `lets-go`
+- **Pros**: one skill to build an issue, and no sections named across two skills.
+- **Cons**: `lets-go` and each of its step prompts would carry every section `lets-build` holds now. `next` across the whole backlog, and carrying a change on by hand, would need new homes.
+- **Why not**: the apply steps run `lets-build` on the branch, and a failed step tells the user to do the same. Both would lose the skill they run.
+
+### Alternative 2: Keep the handoff offer beside `lets-go`
+- **Pros**: no change to `lets-build`, and the `handoff` strategy keeps its caller.
+- **Cons**: two ways to build a plan in a new session. The handoff gives no report, relays no question, and cannot resume.
+- **Why not**: `lets-go` on the change's branch does all the handoff does, and more. Keeping both leaves two paths to maintain and to explain.
+
+### Alternative 3: Keep `lets-build` whole and change nothing
+- **Pros**: no work now, and nothing for users to relearn.
+- **Cons**: the offer still points users to the weaker path, and the `handoff` strategy, its adapter method and its config key stay in the contract.
+- **Why not**: ADR-016 kept `handoff` only for this offer. With `lets-go` in place, the offer duplicates it, and every resolver keeps a method for a caller that is no longer needed.
