@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/step.ts';
 import type { StepOptions } from '../../../lets/src/delegate/step.ts';
-import { SessionFailed } from '../../../lets/src/resolvers/kit/errors.ts';
-import { commandDeps } from './fixtures/command-deps.ts';
+import { SessionFailed, SpawnError, TimeoutError } from '../../../lets/src/resolvers/kit/errors.ts';
+import { commandDeps, CONFIG } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<StepOptions> = {}): StepOptions =>
   ({ for: 'apply', name: 'Build X', promptFile: 'p.md', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
@@ -127,4 +127,79 @@ test('a finish that fails is reported, and the report stands', async () => {
   assert.equal(report(t).outcome, 'done');
   assert.match(t.stderr(), /could not finish thread t-1: thread gone/);
   assert.equal(JSON.parse(t.stderr().trim().split('\n').at(-1)!).for, 'apply', 'the record still ends stderr');
+});
+
+test('a bad --model is exit 2, naming it, and no resolver is asked', async () => {
+  const t = withT3();
+  assert.equal(await run(options({ models: ['gpt', 'llama/llama-4'] }), t.deps), 2);
+  assert.equal(t.stdout(), '');
+  assert.match(t.stderr(), /llama\/llama-4/);
+  assert.deepEqual(t.adapterCalls(), []);
+});
+
+test('a name lets does not know in the config is exit 2, naming it and the file', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [codex] }\n' });
+  assert.equal(await run(options(), t.deps), 2);
+  assert.equal(t.stdout(), '');
+  assert.match(t.stderr(), new RegExp(`${CONFIG}.*codex`));
+  assert.deepEqual(t.adapterCalls(), []);
+});
+
+test('the step guidance is not read by run, even one that is not a string', async () => {
+  const t = withT3({ config: 'version: 3\ndelegate:\n  resolvers: [t3]\n  step:\n    apply:\n      guidance: 42\n' });
+  assert.equal(await run(options(), t.deps), 0);
+});
+
+test('a chain where every resolver declines a step is exit 2, naming the config file', async () => {
+  const t = withT3({ adapters: { t3: { steps: false } } });
+  assert.equal(await run(options(), t.deps), 2);
+  assert.equal(t.stdout(), '');
+  assert.match(t.stderr(), new RegExp(`every resolver declined.*${CONFIG}`));
+});
+
+test('a resolver that runs no step passes it down the chain', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3, cli] }\n', adapters: { t3: { steps: false }, cli: {} } });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.deepEqual(steps(t.adapterCalls).map(({ name }) => name), ['cli']);
+});
+
+test('a refused model passes to the next one on the same resolver', async () => {
+  const t = withT3({ adapters: { t3: { refuse: ['gpt/gpt-6-astra'] } } });
+  assert.equal(await run(options({ models: ['gpt/gpt-6-astra', 'gemini'] }), t.deps), 0);
+  assert.deepEqual(steps(t.adapterCalls).map(({ input }) => (input as { family: string }).family), ['gpt', 'gemini']);
+  assert.equal(report(t).outcome, 'done');
+});
+
+test('a step whose every model is refused is exit 3, naming each model', async () => {
+  const t = withT3({ adapters: { t3: { refuse: ['gpt/gpt-6-astra', 'gemini'] } } });
+  assert.equal(await run(options({ models: ['gpt/gpt-6-astra', 'gemini'] }), t.deps), 3);
+  assert.equal(t.stdout(), '');
+  assert.match(t.stderr(), /^lets delegate: gpt\/gpt-6-astra: .*\ngemini: /m);
+});
+
+test('a refusal never moves down the chain', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3, cli] }\n', adapters: { t3: { refuse: ['gpt/gpt-6-luna'] }, cli: {} } });
+  assert.equal(await run(options(), t.deps), 3);
+  assert.deepEqual(steps(t.adapterCalls).map(({ name }) => name), ['t3']);
+});
+
+test('an unexpected failure inside the resolver is exit 4 with its message', async () => {
+  for (const error of [new Error('boom'), new SpawnError('boom')]) {
+    const t = withT3({ adapters: { t3: { step: error } } });
+    assert.equal(await run(options(), t.deps), 4);
+    assert.equal(t.stdout(), '');
+    assert.match(t.stderr(), /boom/);
+  }
+});
+
+test('a session past its time is exit 6', async () => {
+  const t = withT3({ adapters: { t3: { step: new TimeoutError('no answer after 120 minutes') } } });
+  assert.equal(await run(options(), t.deps), 6);
+  assert.equal(t.stdout(), '');
+});
+
+test('a step runs no git status, and files the session changed do not count', async () => {
+  const t = withT3({ gitAfter: ' M lets/src/main.ts\0' });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.deepEqual(t.io.calls.map(([, args]) => (args as string[])[0]), ['rev-parse']);
 });
