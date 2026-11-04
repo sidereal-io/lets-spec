@@ -21,7 +21,7 @@ export type ResolverName = (typeof RESOLVER_NAMES)[number];
 // never stops a run.
 export type Config = {
   version: typeof CONFIG_VERSION;
-  delegate: { resolvers?: ResolverName[]; review?: unknown; handoff?: unknown };
+  delegate: { resolvers?: ResolverName[]; review?: unknown; handoff?: unknown; step?: unknown };
 };
 
 export type ConfigDeps = { env: Deps['env']; io: Io };

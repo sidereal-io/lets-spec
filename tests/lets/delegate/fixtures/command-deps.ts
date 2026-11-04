@@ -15,7 +15,7 @@
 //   config:    the text of the delegate config, CONFIG, when there is one
 import type { ResolverName } from '../../../../lets/src/delegate/config.ts';
 import type { Deps } from '../../../../lets/src/io.ts';
-import type { Adapter, Handle, RunInput, StartInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
+import type { Adapter, Handle, RunInput, StartInput, StepInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
 import { Refused } from '../../../../lets/src/resolvers/kit/errors.ts';
 import { createAdapter as subagentAdapter } from '../../../../lets/src/resolvers/subagent/subagent.ts';
 import { fakeIo as fakeResolverIo } from '../../resolvers/kit/fixtures/fake-io.ts';
@@ -23,16 +23,20 @@ import { fakeIo } from './fake-io.ts';
 
 export const PROMPT_FILE = '/repo/p.md';
 export const CONFIG = '/home/u/.config/lets/config.yaml';
+// The final message of a step that went well.
+export const DONE_REPORT = 'All done.\n\n```step-report\noutcome: done\nevidence:\n  - commit 3f2a1c0\n```\n';
 
 // How a fake resolver behaves. By default it detects, starts sessions,
-// lists gpt/fake-model, and answers run with FINDINGS on handle
-// <name> <name>-1, and start with handle <name> <name>-1.
+// runs steps, lists gpt/fake-model, and answers run with FINDINGS on handle
+// <name> <name>-1, start with handle <name> <name>-1, and step with a done
+// report on handle <name> <name>-1.
 //   declines: detect() is false
 //   headless: it has no start
+//   steps:    false when it has no step
 //   options:  the models options lists
 //   warnings: what options warns, in order
 //   refuse:   the models run and start refuse, as --model gives them
-//   run, start: the answer, or the error to throw
+//   run, start, step: the answer, or the error to throw
 //   finish:   the error finish throws
 export type FakeResolver = {
   declines?: boolean;
@@ -42,6 +46,8 @@ export type FakeResolver = {
   refuse?: string[];
   run?: { text?: string; handle?: Handle } | Error;
   start?: Handle | { instructions: string } | Error;
+  steps?: boolean;
+  step?: { text?: string; handle?: Handle } | Error;
   finish?: Error;
 };
 
@@ -78,6 +84,13 @@ export function fakeAdapter(name: ResolverName, behaviour: FakeResolver = {}): A
         return answer(behaviour.start ?? handle);
       },
     }),
+    ...(behaviour.steps === false ? {} : {
+      async step(input: StepInput) {
+        refuses(input);
+        const { text = DONE_REPORT, handle: made = handle } = answer(behaviour.step ?? {});
+        return { text, handle: made };
+      },
+    }),
     async finish() {
       if (behaviour.finish) throw behaviour.finish;
     },
@@ -88,7 +101,7 @@ export function fakeAdapter(name: ResolverName, behaviour: FakeResolver = {}): A
 function recorded(adapter: Adapter, calls: AdapterCall[]): Adapter {
   const name = adapter.name as ResolverName;
   const log = (method: string, input: unknown) => calls.push([name, method, input]);
-  const { start } = adapter;
+  const { start, step } = adapter;
   return {
     ...adapter,
     detect: () => {
@@ -107,6 +120,12 @@ function recorded(adapter: Adapter, calls: AdapterCall[]): Adapter {
       start: (input: StartInput) => {
         log('start', input);
         return start(input);
+      },
+    }),
+    ...(step === undefined ? {} : {
+      step: (input: StepInput, options: { timeoutMs: number }) => {
+        log('step', { input, options });
+        return step(input, options);
       },
     }),
     finish: (handle, ok, options) => {
