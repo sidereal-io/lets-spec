@@ -207,6 +207,13 @@ short hash, from `%h`. A read that prints nothing means the
   Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).
   ```
 
+  When the propose step reported `done` in this run, the review ran in
+  it, so the line starts `Done` instead, with the same reads:
+
+  ```text
+  Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).
+  ```
+
 - **Apply.** Read the last commit that changed the task list: the last
   task's tick.
 
@@ -406,7 +413,7 @@ Read `outcome` from `.workspace/lets-go/<name>-<step>-report.json`:
 
 - **`done`**: go on to the next step. After `propose`, print propose
   review's line from [Print the skip lines](#print-the-skip-lines)
-  before you run `apply`. After `apply-review`, go to [End of the run](#end-of-the-run).
+  before you run `apply`: the `Done` form, or the `lets-minimal` line. After `apply-review`, go to [End of the run](#end-of-the-run).
 - **`needs-input`**: [relay its questions](#relay-the-questions).
 - **`failed`**: print the lines of [End of the run](#end-of-the-run) for
   the steps so far, ending with the failed one. Name the step and the
@@ -461,8 +468,11 @@ Done apply review: <date>. <evidence>
 ```
 
 `<date>` on a `Done` line is the report's `date`, and `<evidence>` is its
-`evidence`, joined with `; `. A step done before this run prints its
-line from [Print the skip lines](#print-the-skip-lines) instead. When
+`evidence`, joined with `; `. Propose review has no report of its own.
+When propose ran in this run on a schema with a review, its line is
+`Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).`
+A step done before this run prints its line from
+[Print the skip lines](#print-the-skip-lines) instead. When
 every step was already done, all five lines are `Skipped` lines. A
 failed step prints `Failed <step>: <reason>`. Then print the pull request's URL:
 
