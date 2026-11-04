@@ -187,9 +187,16 @@ most once per run: after it, a stop that *Confirm the packet* makes
 stands.
 
 1. Check the discovery map. Run `git status --porcelain`. When it lists
-   `openspec/discovery.md`, say that the map has uncommitted edits, and
-   to commit or discard them. Stop, and run no step. Otherwise a
-   discovery's commit could sweep those edits in.
+   `openspec/discovery.md`, look for this input's discovery: an open
+   parent issue that says `Discovery status: in-progress`, and whose
+   `Input:` line names this input, the idea's words or #<i>. For an idea,
+   use what *Start from an idea* found. For an issue, run the query it
+   names.
+   - **There is one:** the edits are that discovery's confirmed phases.
+     Go on: the step resumes it, and its map commit takes them.
+   - **There is none:** say that the map has uncommitted edits, and to
+     commit or discard them. Stop, and run no step. Otherwise a
+     discovery's commit could sweep those edits in.
 2. Print the level line. When the user named a level, it is
    `Interactivity: <level>, because you asked for it.` Otherwise the level
    is `ask`, because there is no Kind yet:
@@ -241,8 +248,11 @@ them in this run.
 A run that stops after discovery and before *Claim*, for any reason,
 leaves the map's edits on the default branch. When
 `git status --porcelain` lists `openspec/discovery.md`, say that it
-holds the discovery's map, uncommitted on the default branch. Say to commit or
-discard it before the next run, because the next run stops on it.
+holds the discovery's map, uncommitted on the default branch. While the
+parent still says `Discovery status: in-progress`, say to leave the map
+as it is: running `lets-go` again with the same idea, or #<i>, resumes
+the discovery and keeps its edits. Otherwise, say to commit or discard
+the map before the next run, because the next run stops on it.
 
 ### Commit the discovery map
 

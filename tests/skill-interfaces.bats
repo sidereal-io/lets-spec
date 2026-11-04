@@ -288,6 +288,7 @@ skill_says() {
   skill_says lets-go 'Discovery status: in-progress'
   skill_says lets-go "gh issue list --state open --search '\"Discovery status: in-progress\" in:body' --json number,title,body"
   skill_says lets-go '*Resume mode*'
+  skill_says lets-go 'the edits are that discovery'"'"'s confirmed phases'
   for phrase in '#153 adds' '#154 adds' '`lets-go` needs an issue number, and stop' \
     'end with a failed report that says so and names'; do
     ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
