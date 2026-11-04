@@ -20,3 +20,4 @@
 
 - 2026-11-04, task 2.1: the shape step's instructions moved out of the table's `shape` cell into a text block, *What shape runs*, under *Write the prompt*. The cell would have held about 350 words. The cell now points at the block, and the prompt carries the block's text. The rules are the ones the spec lists.
 - 2026-11-04, code review finding 1: a dirty map no longer stops the run when an in-progress parent for this input owns it, so a stopped discovery can resume with its confirmed phases. The stop before *Claim* says to leave such a map. The spec's map requirement, its scenarios and design D-5 say the same.
+- 2026-11-04, code review finding 2: the shape text gains an entry point for a parent in Finalize, which has removed its status line but still asks questions. The step finishes Finalize there instead of running discovery from Ingest. The spec's discovery requirement, a new scenario and design D-2 say the same.

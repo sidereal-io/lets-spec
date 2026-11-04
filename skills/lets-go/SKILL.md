@@ -542,9 +542,15 @@ Run the `lets-shape` skill. Start at the first of these that matches:
    phases that the `## Answers` section confirmed are settled. So skip
    the restatement in *Resume mode* and its confirmation, and go straight
    to the parent's recorded next phase.
-2. The `## Answers` section answers the discovery question with yes. Run
+2. An open parent issue's `Input:` line names this input, it has no
+   status line, and the `## Answers` section confirmed its Phase 5 story
+   table. Finalize has started on that parent: Finalize removes the
+   status line first, then asks its own questions. Finish Finalize on
+   that parent, from where the answers leave off, including the glossary
+   handoff. Start no second discovery.
+3. The `## Answers` section answers the discovery question with yes. Run
    its discovery from Ingest, with the idea or #<i> as its input.
-3. Otherwise, run its *Shape one issue* to its end, including its second
+4. Otherwise, run its *Shape one issue* to its end, including its second
    comment fetch, its reply and its glossary handoff. For an issue: shape
    #<i>. For an idea: lets-go has searched for it, and the user confirmed
    that no open issue is the same work. Skip the search in step 1, and
