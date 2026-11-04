@@ -27,7 +27,7 @@ prose checks for a documentation chore; no wording-mirroring tests or runtime
 changes are required. Existing runtime specs remain unchanged until migration.
 
 - [x] 2.1 [medium] Correct ADR-015's decision, history, openness and alternatives for project-wide agent execution without duplicate provider implementations (✓ git diff --check passed; decision checked against C1/C2/C4).
-- [ ] 2.2 [medium] Specify bounded action requests, structured submission validation, evidence provenance and independent verification limits, unknown outcomes and reconciliation before retry/progression (verify: git diff --check).
+- [x] 2.2 [medium] Specify bounded action requests, structured submission validation, evidence provenance and independent verification limits, unknown outcomes and reconciliation before retry/progression (✓ git diff --check passed; evidence and recovery checked against C3/C6).
 - [ ] 2.3 [medium] Reconcile definition discovery/versioning and configuration ownership, including machine-specific backlog tools without overriding repository selection; distinguish target definitions from currently implemented delegation settings (verify: git diff --check).
 - [ ] 2.4 [medium] Correct migration, packaging and conformance inventory for #180 and delegation follow-up; retain behavioral guarantees and four-provider release obligations without claiming runtime completion (verify: git diff --check).
 - [ ] 2.5 [medium] Reconcile ADR-005/010/011/014 notices with the corrected decision, preserve historical bodies and document the deliberate glossary revision and earlier review limits (verify: git diff --check).
