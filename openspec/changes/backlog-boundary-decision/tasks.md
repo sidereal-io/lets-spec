@@ -6,7 +6,7 @@ do not substitute for that review. No tests should mirror the document wording.
 
 - [x] 1.1 [easy] Link the contract's architecture rationale to ADR-014 and explain independent adapter releases without changing protocol guarantees (✓ rg -n 'ADR-014' docs/backlog-adapter-contract.md passed)
 - [x] 1.2 [easy] Clarify that separating runtime dependencies does not confine credentials, and that process isolation is not a sandbox (✓ rg -n 'sandbox|credential' docs/backlog-adapter-contract.md passed)
-- [ ] 1.3 [easy] Review the ADR and contract together for accurate current-support limits, unchanged recovery guarantees and separation from ADR-010; retain the existing offline-only disclaimer (verify: git diff --check)
+- [x] 1.3 [easy] Review the ADR and contract together for accurate current-support limits, unchanged recovery guarantees and separation from ADR-010; retain the existing offline-only disclaimer (✓ git diff --check passed; ADR/contract source review confirmed unchanged guarantees)
 
 ## 2. Validate and finish documentation [depends-on: 1]
 
