@@ -76,7 +76,9 @@ unfinished step.
      makes stands. When its glossary preflight found owned edits, also
      run *Import the glossary checkpoint*. *Claim* creates the branch.
    - **Either prints a line:** the change has started. Do not run
-     *Claim*. Run `git switch <name>`.
+     *Claim*. When `git ls-remote` printed it, run
+     `git fetch origin <name>` first: `git switch` finds a branch on
+     `origin` only once it is fetched. Then run `git switch <name>`.
 
    Stay on `<name>` for the whole run.
 8. When `origin` has the branch, bring it up to date before you read any
@@ -87,10 +89,10 @@ unfinished step.
    git merge --ff-only origin/<name>
    ```
 
-   If the merge cannot fast-forward, the branch and `origin` have
-   diverged: the [records disagree](#records-that-disagree). If any
-   command here fails for another reason, show the user its error, and
-   stop.
+   Skip the fetch when step 7 has just run it. If the merge cannot
+   fast-forward, the branch and `origin` have diverged: the
+   [records disagree](#records-that-disagree). If any command here fails
+   for another reason, show the user its error, and stop.
 9. Set `<schema>`. When `openspec/changes/<name>/.openspec.yaml` exists,
    it is that file's `schema:` line. Otherwise it is the schema *Route*
    picked.
