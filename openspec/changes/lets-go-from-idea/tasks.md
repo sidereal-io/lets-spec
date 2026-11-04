@@ -1,7 +1,7 @@
 ## 1. The test seam
 
 - [x] 1.1 [easy] The test `lets-go ships in both flows with a routing row` fails: its `request` becomes `Take a shaped story, bug or chore, or an idea in words, to a ready pull request in one run`, and it asserts that neither `overlays/AGENTS.md` nor `README.md` keeps a row whose request is `Take a shaped story, bug or chore to a ready pull request in one run` (verify: bats tests/skill-interfaces.bats --filter "routing row") (✓ bats --filter "routing row" fails as expected: overlays/AGENTS.md has no routing row for lets-go)
-- [ ] 1.2 [easy] A new test `lets-go runs a shape step for an idea or an unshaped issue` fails: `skills/lets-go/SKILL.md` must hold `Done shape: <date>. <evidence>`, `Interactivity: ask, because shape has not run yet.`, `issue #<n>: <title>`, `issue-<i>`, `idea-<slug>`, `--for shape`, `Failed shape:` and `at most once`, and must not hold `#153 adds` or `` `lets-go` needs an issue number, and stop `` (verify: bats tests/skill-interfaces.bats --filter "shape step")
+- [x] 1.2 [easy] A new test `lets-go runs a shape step for an idea or an unshaped issue` fails: `skills/lets-go/SKILL.md` must hold `Done shape: <date>. <evidence>`, `Interactivity: ask, because shape has not run yet.`, `issue #<n>: <title>`, `issue-<i>`, `idea-<slug>`, `--for shape`, `Failed shape:` and `at most once`, and must not hold `#153 adds` or `` `lets-go` needs an issue number, and stop `` (verify: bats tests/skill-interfaces.bats --filter "shape step") (✓ bats --filter "shape step" fails as expected: lets-go does not say `Done shape: <date>. <evidence>`)
 
 ## 2. The skill, the spec's Purpose, the overlay and the README [depends-on: 1]
 

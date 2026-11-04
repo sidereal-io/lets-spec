@@ -269,6 +269,22 @@ skill_says() {
   done
 }
 
+@test "lets-go runs a shape step for an idea or an unshaped issue" {
+  local phrase
+  skill_says lets-go 'Done shape: <date>. <evidence>'
+  skill_says lets-go 'Interactivity: ask, because shape has not run yet.'
+  skill_says lets-go 'issue #<n>: <title>'
+  skill_says lets-go 'issue-<i>'
+  skill_says lets-go 'idea-<slug>'
+  skill_says lets-go '--for shape'
+  skill_says lets-go 'Failed shape:'
+  skill_says lets-go 'at most once'
+  for phrase in '#153 adds' '`lets-go` needs an issue number, and stop'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
+      { echo "lets-go still says: $phrase"; false; }
+  done
+}
+
 @test "lets-go runs each step through lets delegate step" {
   skill_says lets-go 'lets delegate step instructions --for <step>'
   skill_says lets-go 'lets delegate step run --for <step>'
