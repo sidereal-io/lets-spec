@@ -83,9 +83,14 @@ At the adapter's stdin boundary, malformed JSON and unknown operations return
 `invalid_request` with effects `none`. Unsupported request protocol versions
 return `unsupported` with effects `none`. Local caller validation rejects invalid
 requests or invocation limits as `invalid_request`/`none` before execution.
-Transport start failures, signal termination, deadlines, output overflow and
-invalid responses expose `unknown_outcome`/`unknown`. The caller attempts only
-the supplied executable. The kit uses SIGKILL for deadline and output limits;
+The kit's conservative transport reports start failures, signal termination,
+deadlines, output overflow and invalid responses as `unknown_outcome`/`unknown`.
+The production caller distinguishes proven absence of mutation effects: a start
+failure is `invalid_configuration`/`none`; interrupted read operations are
+`transient`/`none`; interrupted writes and invalid responses remain
+`unknown_outcome`/`unknown`. These classifications never authorize replay of an
+uncertain write. Every caller attempts only the supplied executable. The kit
+uses SIGKILL for deadline and output limits;
 this stops the launched process, not detached descendants or accepted provider
 writes. Combined stdout/stderr limits count raw bytes before UTF-8 decoding.
 Unexpected simulation implementation errors also report `unknown_outcome` with

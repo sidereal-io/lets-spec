@@ -19,7 +19,7 @@ The agreed backlog contract has only simulated adapters; build still embeds GitH
 
 ### Modified Capabilities
 
-None. `backlog-adapter-contract` remains the prior contract-validation delivery; `issue-comments` and `shared-domain-language` remain shared policy inputs.
+`backlog-adapter-contract`: distinguish the kit’s conservative transport failures from the production caller’s proven no-effect failures; `issue-comments` and `shared-domain-language` remain shared policy inputs.
 
 ## Impact
 
