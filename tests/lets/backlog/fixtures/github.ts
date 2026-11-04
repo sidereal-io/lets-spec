@@ -31,7 +31,7 @@ export async function withGithub(run: (fixture: { call: (operation: string, inpu
   writeFileSync(path, JSON.stringify({ responses: { ...data(), ...overrides }, calls: [] }));
   mkdirSync(join(cwd, 'openspec')); writeFileSync(join(cwd, 'openspec/config.yaml'), 'schema: lets-standard\n');
   const gh = join(cwd, 'gh');
-  writeFileSync(gh, `#!${process.execPath}\nimport {readFileSync,writeFileSync} from 'node:fs'; let input=''; for await(const chunk of process.stdin) input+=chunk; const request=JSON.parse(input); const name=request.query.match(/(?:query|mutation) (\\w+)/)[1]; const path=${JSON.stringify(path)}; const state=JSON.parse(readFileSync(path,'utf8')); state.calls.push({name,variables:request.variables}); writeFileSync(path,JSON.stringify(state)); console.log(JSON.stringify({data:state.responses[name]}));`);
+  writeFileSync(gh, `#!${process.execPath}\nimport {readFileSync,writeFileSync} from 'node:fs'; let input=''; for await(const chunk of process.stdin) input+=chunk; const request=JSON.parse(input); const name=request.query.match(/(?:query|mutation) (\\w+)/)[1]; const path=${JSON.stringify(path)}; const state=JSON.parse(readFileSync(path,'utf8')); state.calls.push({name,variables:request.variables}); writeFileSync(path,JSON.stringify(state)); console.log(JSON.stringify({data:state.responses[name+':'+request.variables.id]??state.responses[name]}));`);
   chmodSync(gh, 0o700);
   const entry = fileURLToPath(new URL('../../../../lets/src/backlog/github-entry.ts', import.meta.url));
   const adapter = join(cwd, 'adapter');

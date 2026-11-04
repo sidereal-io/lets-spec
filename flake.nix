@@ -165,6 +165,7 @@
           cp ${./lets/src/backlog/protocol.ts} $out/lets/src/backlog/protocol.ts
           cp ${./lets/src/backlog/items.ts} $out/lets/src/backlog/items.ts
           cp ${./lets/src/backlog/errors.ts} $out/lets/src/backlog/errors.ts
+          cp ${./lets/src/backlog/capabilities.ts} $out/lets/src/backlog/capabilities.ts
           cp -R ${./contrib/backlog-adapter-kit} $out/contrib/backlog-adapter-kit
           cp -R ${./tests/backlog-adapter-kit} $out/tests/backlog-adapter-kit
           cp ${./docs/backlog-adapter-contract.md} $out/docs/backlog-adapter-contract.md
