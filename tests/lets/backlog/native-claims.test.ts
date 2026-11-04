@@ -11,3 +11,9 @@ test('native ownership changes invalidate local acquire intent', () => withGithu
   set('IssueOwners', { node: { assignees: page([{ login: 'replacement' }]) } });
   await assert.rejects(call('mutation.read', { mutationId: 'acquire' }), /conflict/);
 }));
+test('new local session cannot replace unresolved local acquire intent', () => withGithub(async ({ call, set }) => {
+  set('_fault', 'before:Assign');
+  await assert.rejects(call('claim.acquire', { item }, 'first'));
+  set('_fault', null);
+  await assert.rejects(call('claim.acquire', { item }, 'second', { session: 'second' }), /conflict/);
+}));

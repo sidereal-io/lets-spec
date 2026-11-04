@@ -4,6 +4,7 @@ import { Store, scope, mutationName, hash } from './store.ts';
 import { AdapterFailure } from './errors.ts';
 import type { Mappings } from './items.ts';
 export type Provenance = { version: 1; provider: string; repository: string; backlog: string; item: string; generation: string; actor: string; session: string; token: string; state: 'active' | 'released' };
+const currentIntentName = (context: GitHub['context'], id: string) => 'current-local-claim-' + hash([scope(context), id]);
 export class Claims {
   readonly github: GitHub;
   readonly mappings?: Mappings;
@@ -17,7 +18,8 @@ export class Claims {
     if (!status) fail('invalid_configuration', 'missing or ambiguous Status');
     // Local intent permits continuation only; native state is checked separately.
     const provenance = new Store(github.context.cwd).read('claim-' + hash([scope(github.context), github.context.actor, github.context.session, id])) as Provenance | undefined;
-    return { config, issue, projectItem, values, owners, status, provenance };
+    const currentIntent = new Store(github.context.cwd).read(currentIntentName(github.context, id)) as Provenance | undefined;
+    return { config, issue, projectItem, values, owners, status, provenance, currentIntent };
   }
   async writable(id: string) {
     const snapshot = await this.snapshot(id);
@@ -30,11 +32,11 @@ export class Claims {
       if (state.owners.length) fail('conflict', 'assignment without active session provenance cannot authorize work');
       return { claim: { actor: null, session: null, token: null, status: state.status, guarantee: 'best-effort' } };
     }
-    if (state.issue.closed || state.owners.length !== 1 || state.owners[0] !== record.actor || !['Todo', 'In Progress'].includes(state.status)) fail('conflict', 'claim ownership or status has changed');
+    if (JSON.stringify(state.currentIntent) !== JSON.stringify(record) || state.issue.closed || state.owners.length !== 1 || state.owners[0] !== record.actor || !['Todo', 'In Progress'].includes(state.status)) fail('conflict', 'claim ownership or status has changed');
     return { claim: { actor: record.actor, session: record.session, token: record.token, status: state.status, guarantee: 'best-effort' } };
   }
   require(state: Awaited<ReturnType<Claims['snapshot']>>, record: Provenance, owners: string[], statuses: string[]) {
-    if (JSON.stringify(state.provenance) !== JSON.stringify(record) || state.issue.closed || state.owners.length !== owners.length || owners.some(owner => !state.owners.includes(owner)) || !statuses.includes(state.status)) fail('conflict', 'claim provenance, owners or status changed');
+    if (JSON.stringify(state.currentIntent) !== JSON.stringify(record) || JSON.stringify(state.provenance) !== JSON.stringify(record) || state.issue.closed || state.owners.length !== owners.length || owners.some(owner => !state.owners.includes(owner)) || !statuses.includes(state.status)) fail('conflict', 'claim provenance, owners or status changed');
   }
   async acquire(request: Record<string, any>) {
     const github = this.github; const id = request.input.item.id;
@@ -48,13 +50,14 @@ export class Claims {
         return this.read(id);
       }
       const initial = await this.writable(id);
-      if (initial.issue.closed || initial.owners.length || initial.status !== 'Todo' || initial.provenance?.state === 'active') fail('conflict', 'item is already owned or not Todo');
+      if (initial.issue.closed || initial.owners.length || initial.status !== 'Todo' || initial.currentIntent?.state === 'active') fail('conflict', 'item is already owned or not Todo');
       const record: Provenance = previous?.intent ?? { version: 1, provider: 'github', repository: github.context.repository, backlog: github.context.backlog!, item: id, generation: randomUUID(), actor: github.context.actor, session: github.context.session, token: randomUUID(), state: 'active' };
       const entry = { request, state: 'pending', intent: record, phase: 'prepared', result: undefined as any };
       store.write(name, entry);
       let started = false;
       try {
         entry.phase = 'writing'; store.write(name, entry); started = true;
+        store.write(currentIntentName(github.context, id), record);
         store.write('claim-' + hash([scope(github.context), github.context.actor, github.context.session, id]), record);
         this.require(await this.snapshot(id), record, [], ['Todo']);
         const actor = (await github.query('Actor', github.variables())).viewer;
@@ -81,10 +84,12 @@ export class Claims {
       const id = entry.request.input.item.id;
       const current = await this.snapshot(id);
       if (entry.request.operation === 'claim.release') {
+        if (current.currentIntent?.generation !== entry.intent.generation) fail('conflict', 'local claim intent was superseded');
         const released = { ...entry.intent, state: 'released' };
         if (!current.owners.length && current.status === 'Todo' && !current.issue.closed) {
           store.write('claim-' + hash([scope(context), context.actor, context.session, id]), released);
-          current.provenance = released;
+          store.write(currentIntentName(context, id), released);
+          current.provenance = released; current.currentIntent = released;
           this.require(current, released, [], ['Todo']); entry.state = 'applied'; entry.result = { released: true }; store.write(name, entry);
           return { state: 'applied', result: entry.result };
         }
@@ -126,6 +131,7 @@ export class Claims {
         if (initial.status !== 'Todo') await github.query('FieldStatus', { project: github.context.backlog, item: initial.projectItem, field: initial.config.mappings.Status.field, option: initial.config.mappings.Status.values.Todo });
         this.require(await this.snapshot(id), record, [], ['Todo']);
         store.write('claim-' + hash([scope(github.context), github.context.actor, github.context.session, id]), { ...record, state: 'released' });
+        store.write(currentIntentName(github.context, id), { ...record, state: 'released' });
         this.require(await this.snapshot(id), { ...record, state: 'released' }, [], ['Todo']);
         entry.state = 'applied'; entry.result = { released: true }; store.write(name, entry); return entry.result;
       } catch (error) {

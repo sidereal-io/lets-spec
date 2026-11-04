@@ -15,7 +15,7 @@ export class Completion {
   async current(id: string) {
     const state = await this.claims.writable(id); const context = this.claims.github.context;
     const record = state.provenance;
-    if (!record || record.state !== 'active' || record.actor !== context.actor || record.session !== context.session || state.owners.length !== 1 || state.owners[0] !== context.actor || !['In Progress', 'Done'].includes(state.status)) fail('conflict', 'PR lifecycle requires original current claim provenance');
+    if (!record || JSON.stringify(state.currentIntent) !== JSON.stringify(record) || record.state !== 'active' || record.actor !== context.actor || record.session !== context.session || state.owners.length !== 1 || state.owners[0] !== context.actor || !['In Progress', 'Done'].includes(state.status)) fail('conflict', 'PR lifecycle requires original current claim provenance');
     return state;
   }
   association(state: Awaited<ReturnType<Completion['current']>>) {
