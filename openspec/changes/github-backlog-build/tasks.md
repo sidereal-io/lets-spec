@@ -26,4 +26,4 @@ Live acceptance evidence is a required supplement to task 4.1's automated comman
 
 ## Deviations Ledger
 
-None.
+- Ship the promoted validator import closure with task 1.1 rather than waiting for 3.4: the existing isolated distribution smoke check failed immediately after promotion. Adapter executable packaging and full packaged conformance remain in 3.4.
