@@ -25,3 +25,10 @@ test('default GitHub workflow deadline accommodates a full verified claim', () =
   const result = command('claim', { item, timeoutMs: undefined });
   assert.equal(result.status, 0, JSON.stringify(result.result));
 }, { _delayMs: 160 }));
+test('raw mutation cannot adopt published claim correlation values', () => withGithub(async ({ command, cwd }) => {
+  const acquired = command('claim', { item }); assert.equal(acquired.status, 0);
+  const { claim } = acquired.result;
+  const raw = command('request', { protocol: 1, operation: 'claim.release', mutationId: 'unowned-release', context: { cwd, repository: 'owner/repo', actor: 'me', provider: 'github', backlog: 'P', session: claim.session }, input: { item, token: claim.token } });
+  assert.equal(raw.status, 1); assert.match(raw.result.error.message, /continuation handle/);
+  assert.equal(command('release', { handle: acquired.result.handle }).status, 0);
+}));

@@ -34,7 +34,7 @@ export async function referenceChange(context: Context, change: string, handle: 
   }
   session.reference = reference; session.referenceMutation ??= randomUUID();
   new Store(context.cwd).write('session-' + hash(handle), session);
-  return reconcileWrite(connect(handle), 'reference.write', { item: identity.item, reference }, session.referenceMutation);
+  return reconcileWrite(connect(session.context.session), 'reference.write', { item: identity.item, reference }, session.referenceMutation);
 }
 export async function completeChange(context: Context, change: string, handle: string, reference: string, connect: Connect, host: Query) {
   const identity = readIdentity(context.cwd, change); checkSelection(identity, context);
@@ -43,5 +43,5 @@ export async function completeChange(context: Context, change: string, handle: s
   const pull = await pr(context, reference, host);
   if (pull.merged !== true || typeof pull.mergeCommit?.oid !== 'string' || !pull.mergeCommit.oid.trim()) fail('conflict', 'associated PR is not merged');
   session.completionMutation ??= randomUUID(); new Store(context.cwd).write('session-' + hash(handle), session);
-  return reconcileWrite(connect(handle), 'completion.write', { item: identity.item, merge: { reference, merged: true, commit: pull.mergeCommit.oid } }, session.completionMutation);
+  return reconcileWrite(connect(session.context.session), 'completion.write', { item: identity.item, merge: { reference, merged: true, commit: pull.mergeCommit.oid } }, session.completionMutation);
 }

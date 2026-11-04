@@ -10,10 +10,10 @@ export function verifyClaim(claim: any, context: Context, token: string) {
 }
 export async function acquireSession(context: Context, item: Identity, connect: Connect) {
   const handle = randomUUID(); const store = new Store(context.cwd);
-  const session = { context: { ...context, session: handle }, item, mutationId: randomUUID(), token: undefined as string | undefined };
+  const session = { handle, context: { ...context, session: randomUUID() }, item, mutationId: randomUUID(), token: undefined as string | undefined };
   const name = 'session-' + hash(handle); store.write(name, session);
   try {
-    const call = connect(handle);
+    const call = connect(session.context.session);
     const { claim } = await call('claim.acquire', { item }, session.mutationId);
     session.token = claim.token; store.write(name, session);
     const fresh = (await call('claim.read', { item })).claim;
@@ -27,11 +27,11 @@ export async function acquireSession(context: Context, item: Identity, connect: 
 export function loadSession(context: Context, handle: string) {
   if (typeof handle !== 'string' || !/^[0-9a-f-]{36}$/.test(handle)) fail('conflict', 'explicit original continuation handle required; reconcile manually');
   const store = new Store(context.cwd); const session = store.read('session-' + hash(handle));
-  if (!session || session.context.session !== handle || JSON.stringify(scope(session.context)) !== JSON.stringify(scope(context)) || session.context.actor !== context.actor) fail('conflict', 'continuation handle does not match this selection and actor');
+  if (!session || session.handle !== handle || JSON.stringify(scope(session.context)) !== JSON.stringify(scope(context)) || session.context.actor !== context.actor) fail('conflict', 'continuation handle does not match this selection and actor');
   return session;
 }
 export async function recoverSession(context: Context, handle: string, connect: Connect) {
-  const session = loadSession(context, handle); const call = connect(handle);
+  const session = loadSession(context, handle); const call = connect(session.context.session);
   if (!session.token) {
     const recovery = await call('mutation.read', { mutationId: session.mutationId });
     if (recovery.state === 'unknown') fail('conflict', 'claim outcome remains unknown; reconcile manually without another acquire');

@@ -22,6 +22,8 @@ test('second caller cannot adopt a session from shared storage', () => withGithu
   const ctx = { ...context, cwd }; const { handle } = await acquireSession(ctx, item, connect);
   const change = join(cwd, 'openspec/changes/work'); mkdirSync(change, { recursive: true });
   await bind(ctx, change, handle, (await call('item.read', { item })).item, connect);
+  const visibleSession = (await call('claim.read', { item })).claim.session;
+  await assert.rejects(resume(ctx, change, visibleSession, connect), /continuation handle/);
   await assert.rejects(resume(ctx, change, '', connect), /explicit original continuation handle/);
   await assert.rejects(resume({ ...ctx, backlog: 'other' }, change, handle, connect), /differs/);
   await assert.rejects(bind(ctx, change, handle, { ...(await call('item.read', { item })).item, reference: '#other' }, connect), /immutable/);

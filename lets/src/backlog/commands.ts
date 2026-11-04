@@ -13,7 +13,7 @@ import { ghQuery } from './gh.ts';
 import { AdapterFailure } from './errors.ts';
 import { identityKey } from './items.ts';
 import { requireCapability } from './capabilities.ts';
-import { validateRequest } from './protocol.ts';
+import { validateRequest, MUTATIONS } from './protocol.ts';
 import { invoke } from './transport.ts';
 export async function execute(command: string, input: Record<string, any>, cwd: string) {
   if (command === 'request') {
@@ -25,7 +25,13 @@ export async function execute(command: string, input: Record<string, any>, cwd: 
       await client.resolve();
       if (input.context.backlog !== client.context.backlog) fail('invalid_configuration', 'backlog differs from current selection');
     }
-    return invoke(client.selection.executable, input, { timeoutMs: client.timeoutMs });
+    if (MUTATIONS.includes(input.operation)) {
+      const session = loadSession(client.context, input.handle);
+      if (input.context.session !== session.context.session || (input.input.item && identityKey(input.input.item) !== identityKey(session.item))) fail('conflict', 'raw mutation requires the original private continuation handle and scope');
+      if (input.operation === 'claim.acquire' && input.mutationId !== session.mutationId) fail('conflict', 'raw acquire must continue its original mutation key');
+    }
+    const { handle: _privateHandle, ...envelope } = input;
+    return invoke(client.selection.executable, envelope, { timeoutMs: client.timeoutMs });
   }
   const client = await new Client(cwd, input).resolve(); const { context, call, connect } = client;
   if (command === 'select') return { context, ...await select(call, context.repository, input.reference) };
@@ -36,7 +42,7 @@ export async function execute(command: string, input: Record<string, any>, cwd: 
       const session = loadSession(context, input.handle);
       if (input.item && identityKey(input.item) !== identityKey(session.item)) fail('conflict', 'continuation item differs from original claim');
       await recoverSession(context, input.handle, connect);
-      return { handle: input.handle, claim: (await connect(input.handle)('claim.read', { item: session.item })).claim };
+      return { handle: input.handle, claim: (await connect(session.context.session)('claim.read', { item: session.item })).claim };
     }
     return acquireSession(context, input.item, connect);
   }
@@ -45,7 +51,7 @@ export async function execute(command: string, input: Record<string, any>, cwd: 
     const token = session.token ?? store.read(mutationName({ context: session.context, mutationId: session.mutationId }))?.intent?.token;
     if (!token) fail('conflict', 'original claim token unavailable; reconcile manually');
     session.releaseMutation ??= randomUUID(); store.write('session-' + hash(input.handle), session);
-    return reconcileWrite(connect(input.handle), 'claim.release', { item: session.item, token }, session.releaseMutation);
+    return reconcileWrite(connect(session.context.session), 'claim.release', { item: session.item, token }, session.releaseMutation);
   }
   if (command === 'bind') return bind(context, input.change, input.handle, (await call('item.read', { item: input.item })).item, connect);
   if (command === 'resume') { const result = await resume(context, input.change, input.handle, connect); return { identity: result.identity, handle: input.handle }; }
@@ -63,8 +69,8 @@ export async function execute(command: string, input: Record<string, any>, cwd: 
     return new GitHub(context, ghQuery(cwd)).packet(item.id, config?.lets?.backlog?.mappings);
   }
   if (command === 'glossary-update') {
-    const { identity } = await resume(context, input.change, input.handle, connect);
-    return reconcileWrite(connect(input.handle), 'item.update', { item: identity.item, patch: { body: input.body } }, input.mutationId ?? randomUUID());
+    const { identity, session } = await resume(context, input.change, input.handle, connect);
+    return reconcileWrite(connect(session.context.session), 'item.update', { item: identity.item, patch: { body: input.body } }, input.mutationId ?? randomUUID());
   }
   fail('invalid_request', 'unknown backlog command');
 }

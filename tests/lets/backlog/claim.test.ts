@@ -35,5 +35,5 @@ import { context } from './fixtures/github.ts';
 test('caller receives an explicit fresh continuation handle', () => withGithub(async ({ call, cwd }) => {
   const result = await acquireSession({ ...context, cwd }, item, session => (op, input, key) => call(op, input, key, { session }));
   assert.match(result.handle, /^[0-9a-f-]{36}$/);
-  assert.equal(result.claim.session, result.handle);
+  assert.notEqual(result.claim.session, result.handle);
 }));

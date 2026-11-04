@@ -55,7 +55,10 @@ or release of proven partial progress. To recover an interrupted claim, repeat
 `lets backlog claim` with that explicit handle: it reconciles the original key
 and freshly verifies ownership before returning. It never creates a new session
 for this continuation. Losing it requires manual reconciliation;
-an assigned issue is never enough to adopt a claim. A new session gets new
+an assigned issue is never enough to adopt a claim. The private handle differs from the published session and token. Raw
+`request` mutations also require the original private `handle` as a caller-only
+field; it is checked locally and omitted from the adapter envelope.
+A new session gets new
 authority only through deliberate continuation with the original handle.
 
 `lets backlog request` accepts a full protocol-1 envelope rather than the common
