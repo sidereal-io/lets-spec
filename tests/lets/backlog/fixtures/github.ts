@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,20 +25,22 @@ export function data() {
     ProjectItems: { node: { items: page([{ content: { id: 'I', repository: { nameWithOwner: 'owner/repo' } } }]) } },
   };
 }
-export async function withGithub(run: (fixture: { call: (operation: string, input?: any, mutationId?: string) => Promise<any>; cwd: string; state: () => any; set: (name: string, value: any) => void }) => Promise<void>, overrides: Record<string, any> = {}) {
+export async function withGithub(run: (fixture: { call: (operation: string, input?: any, mutationId?: string, contextPatch?: Record<string, string>) => Promise<any>; cwd: string; state: () => any; set: (name: string, value: any) => void }) => Promise<void>, overrides: Record<string, any> = {}) {
   mkdirSync('.workspace', { recursive: true });
   const cwd = mkdtempSync(join(process.cwd(), '.workspace/github-'));
+  execFileSync('git', ['init', '--quiet'], { cwd });
   const path = join(cwd, 'state.json');
   writeFileSync(path, JSON.stringify({ responses: { ...data(), ...overrides }, calls: [] }));
   mkdirSync(join(cwd, 'openspec')); writeFileSync(join(cwd, 'openspec/config.yaml'), 'schema: lets-standard\n');
   const gh = join(cwd, 'gh');
-  writeFileSync(gh, `#!${process.execPath}\nimport {readFileSync,writeFileSync} from 'node:fs'; let input=''; for await(const chunk of process.stdin) input+=chunk; const request=JSON.parse(input); const name=request.query.match(/(?:query|mutation) (\\w+)/)[1]; const path=${JSON.stringify(path)}; const state=JSON.parse(readFileSync(path,'utf8')); state.calls.push({name,variables:request.variables}); writeFileSync(path,JSON.stringify(state)); console.log(JSON.stringify({data:state.responses[name+':'+request.variables.id]??state.responses[name]}));`);
+  const ghEntry = fileURLToPath(new URL('./gh-process.mjs', import.meta.url));
+  writeFileSync(gh, `#!${process.execPath}\nprocess.env.BACKLOG_TEST_STATE=${JSON.stringify(path)}; await import(${JSON.stringify(ghEntry)});`);
   chmodSync(gh, 0o700);
   const entry = fileURLToPath(new URL('../../../../lets/src/backlog/github-entry.ts', import.meta.url));
   const adapter = join(cwd, 'adapter');
-  writeFileSync(adapter, `#!${process.execPath}\nprocess.env.PATH=${JSON.stringify(cwd)}; await import(${JSON.stringify(entry)});`); chmodSync(adapter, 0o700);
+  writeFileSync(adapter, `#!${process.execPath}\nprocess.env.PATH=${JSON.stringify(cwd + ":" + process.env.PATH)}; await import(${JSON.stringify(entry)});`); chmodSync(adapter, 0o700);
   try {
     await run({ cwd, state: () => JSON.parse(readFileSync(path, 'utf8')), set: (name, value) => { const state = JSON.parse(readFileSync(path, 'utf8')); state.responses[name] = value; writeFileSync(path, JSON.stringify(state)); },
-      call: async (operation, input = {}, mutationId) => (await invoke(adapter, { protocol: 1, operation, context: { ...context, cwd }, input, ...(mutationId ? { mutationId } : {}) }, { timeoutMs: 15000 })).result });
+      call: async (operation, input = {}, mutationId, contextPatch = {}) => (await invoke(adapter, { protocol: 1, operation, context: { ...context, cwd, ...contextPatch }, input, ...(mutationId ? { mutationId } : {}) }, { timeoutMs: 15000 })).result });
   } finally { rmSync(cwd, { recursive: true, force: true }); }
 }

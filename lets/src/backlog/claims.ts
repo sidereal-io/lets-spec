@@ -1,0 +1,81 @@
+import { randomUUID } from 'node:crypto';
+import { GitHub, fail } from './github.ts';
+import { Store, scope, mutationName } from './store.ts';
+import { AdapterFailure } from './errors.ts';
+import type { Mappings } from './items.ts';
+export type Provenance = { version: 1; provider: string; repository: string; backlog: string; item: string; generation: string; actor: string; session: string; token: string; state: 'active' | 'released' };
+export class Claims {
+  readonly github: GitHub;
+  readonly mappings?: Mappings;
+  constructor(github: GitHub, mappings?: Mappings) { this.github = github; this.mappings = mappings; }
+  async snapshot(id: string) {
+    const github = this.github; const config = await github.project(this.mappings);
+    const issue = await github.issue(id);
+    if (!config.claimField) fail('unsupported', 'Lets claim text field is required');
+    const projectItem = await github.projectItem(id);
+    const values = await github.values(projectItem); const owners = await github.owners(id);
+    const status = Object.entries(config.mappings.Status.values).find(([, option]) => option === values[config.mappings.Status.field])?.[0];
+    if (!status) fail('invalid_configuration', 'missing or ambiguous Status');
+    let provenance: Provenance | undefined;
+    const text = values[config.claimField];
+    if (text !== undefined && text !== '') {
+      try { provenance = JSON.parse(text as string); } catch { fail('conflict', 'malformed claim provenance'); }
+      const record = provenance as any; const context = github.context;
+      const keys = ['version', 'provider', 'repository', 'backlog', 'item', 'generation', 'actor', 'session', 'token', 'state'];
+      if (!record || record.version !== 1 || Object.keys(record).some(key => !keys.includes(key)) || keys.some(key => key !== 'version' && (typeof record[key] !== 'string' || !record[key])) || record.provider !== context.provider || record.repository !== context.repository || record.backlog !== context.backlog || record.item !== id || !['active', 'released'].includes(record.state)) fail('conflict', 'claim provenance does not match scope or schema');
+    }
+    return { config, issue, projectItem, values, owners, status, provenance };
+  }
+  async writable(id: string) {
+    const snapshot = await this.snapshot(id);
+    if (!snapshot.config.project.viewerCanUpdate || !['WRITE', 'MAINTAIN', 'ADMIN'].includes(await this.github.authenticate())) fail('permission', 'Project write and repository assignment permissions required');
+    return snapshot;
+  }
+  async read(id: string) {
+    const state = await this.snapshot(id); const record = state.provenance;
+    if (!record || record.state === 'released') {
+      if (state.owners.length) fail('conflict', 'assignment without active session provenance cannot authorize work');
+      return { claim: { actor: null, session: null, token: null, status: state.status, guarantee: 'best-effort' } };
+    }
+    if (state.issue.closed || state.owners.length !== 1 || state.owners[0] !== record.actor || !['Todo', 'In Progress'].includes(state.status)) fail('conflict', 'claim ownership or status has changed');
+    return { claim: { actor: record.actor, session: record.session, token: record.token, status: state.status, guarantee: 'best-effort' } };
+  }
+  require(state: Awaited<ReturnType<Claims['snapshot']>>, record: Provenance, owners: string[], statuses: string[]) {
+    if (JSON.stringify(state.provenance) !== JSON.stringify(record) || state.issue.closed || state.owners.length !== owners.length || owners.some(owner => !state.owners.includes(owner)) || !statuses.includes(state.status)) fail('conflict', 'claim provenance, owners or status changed');
+  }
+  async acquire(request: Record<string, any>) {
+    const github = this.github; const id = request.input.item.id;
+    const store = new Store(github.context.cwd); const name = mutationName(request);
+    return store.lock(scope(github.context), async () => {
+      const previous = store.read(name);
+      if (previous) {
+        if (JSON.stringify(previous.request) !== JSON.stringify(request)) fail('invalid_request', 'mutation key cannot be rebound');
+        if (previous.state !== 'applied') throw new AdapterFailure('unknown_outcome', 'unknown', 'acquire requires mutation reconciliation before retry');
+        const state = await this.snapshot(id); this.require(state, previous.intent, [github.context.actor], ['In Progress']);
+        return this.read(id);
+      }
+      const initial = await this.writable(id);
+      if (initial.issue.closed || initial.owners.length || initial.status !== 'Todo' || initial.provenance?.state === 'active') fail('conflict', 'item is already owned or not Todo');
+      const record: Provenance = { version: 1, provider: 'github', repository: github.context.repository, backlog: github.context.backlog!, item: id, generation: randomUUID(), actor: github.context.actor, session: github.context.session, token: randomUUID(), state: 'active' };
+      const entry = { request, state: 'pending', intent: record, phase: 'prepared', result: undefined as any };
+      store.write(name, entry);
+      let started = false;
+      try {
+        entry.phase = 'writing'; store.write(name, entry); started = true;
+        await github.query('FieldText', { project: github.context.backlog, item: initial.projectItem, field: initial.config.claimField, text: JSON.stringify(record) });
+        this.require(await this.snapshot(id), record, [], ['Todo']);
+        const actor = (await github.query('Actor', github.variables())).viewer;
+        if (actor.login !== record.actor || !actor.id) fail('authentication', 'authenticated actor changed');
+        await github.query('Assign', { issue: id, actor: actor.id });
+        this.require(await this.snapshot(id), record, [record.actor], ['Todo']);
+        await github.query('FieldStatus', { project: github.context.backlog, item: initial.projectItem, field: initial.config.mappings.Status.field, option: initial.config.mappings.Status.values['In Progress'] });
+        this.require(await this.snapshot(id), record, [record.actor], ['In Progress']);
+        const result = await this.read(id); entry.state = 'applied'; entry.result = result; store.write(name, entry);
+        return result;
+      } catch (error) {
+        if (error instanceof AdapterFailure) throw new AdapterFailure(error.category, started ? error.effects === 'unknown' ? 'unknown' : 'partial' : 'none', error.message);
+        throw new AdapterFailure('unknown_outcome', 'unknown', 'claim interrupted; reconcile mutation before progression');
+      }
+    });
+  }
+}

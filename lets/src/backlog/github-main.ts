@@ -1,3 +1,4 @@
+import { Claims } from './claims.ts';
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import { join } from 'node:path';
@@ -19,6 +20,8 @@ export async function dispatch(request: Record<string, any>, query: Query = ghQu
   if (item && (item.provider !== context.provider || item.backlog !== context.backlog)) fail('invalid_request', 'item scope differs from request context');
   const page = (items: any[]) => ({ items, complete: true, nextCursor: null });
   switch (request.operation) {
+    case 'claim.acquire': return new Claims(github, mappings).acquire(request);
+    case 'claim.read': return new Claims(github, mappings).read(item.id);
     case 'backlog.list': return page(await github.discover());
     case 'backlog.check': await github.project(mappings); return { valid: true, gaps: [] };
     case 'item.read': return { item: await github.read(item.id, mappings) };

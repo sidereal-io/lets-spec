@@ -7,7 +7,7 @@
 
 - [x] 2.1 [complex] Read complete repository-scoped GitHub packets through the executable, including linked Project discovery/checking, native mappings, capability gaps, parents, comments and directional blocker pagination (✓ mise exec -- node --test tests/lets/backlog/github-read.test.ts passed: 12 tests; typecheck passed; read-only discovery and mappings verified against the designated live fixture)
 - [x] 2.2 [medium] Select eligible named or next work using shared ranking and complete readiness evidence, preserving numeric GitHub order and rejecting owned or blocked items (✓ mise exec -- node --test tests/lets/backlog/selection.test.ts tests/backlog-adapter-kit/capabilities.test.ts passed: 11 tests)
-- [ ] 2.3 [complex] Acquire a verified best-effort GitHub claim with Project provenance, a fresh explicit continuation handle and durable mutation state; reject competing sessions and assignment-only progress (verify: node --test tests/lets/backlog/claim.test.ts)
+- [x] 2.3 [complex] Acquire a verified best-effort GitHub claim with Project provenance, a fresh explicit continuation handle and durable mutation state; reject competing sessions and assignment-only progress (✓ mise exec -- node --test tests/lets/backlog/claim.test.ts passed: 5 tests)
 - [ ] 2.4 [complex] Reconcile interrupted claim mutations before allowing progression or replay, checking current provenance rather than trusting journal history (verify: node --test tests/lets/backlog/recovery.test.ts)
 - [ ] 2.5 [complex] Restore Todo after branch failure only for the original current claim, preserving another worker's ownership during partial release (verify: node --test tests/lets/backlog/release.test.ts)
 
