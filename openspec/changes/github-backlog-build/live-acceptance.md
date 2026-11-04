@@ -1,3 +1,31 @@
+# Integrated-branch live acceptance
+
+Final runtime source: `bd62df4`, built after integrating main at `19cbf55` and
+applying the integration review fixes. This was a fresh one-off live acceptance
+run against the same designated repository and Project, using fresh private
+continuation journals. No issue, PR or machine-state field was created.
+
+- Issue [#6](https://github.com/mstelz/test-repo-pls-ignore/issues/6): native
+  selection, claim, release, new claim, bind, resume and native closing-link
+  association all passed. Completion verified user-merged PR
+  [#7](https://github.com/mstelz/test-repo-pls-ignore/pull/7), exact merge commit
+  `fef1ac4c162fb0edb840b6489f0b5aae480b7227`, and returned Done twice.
+- Issues #1/#2: reopened existing blocker fixtures were rejected for the open
+  blocker and then closed again.
+- Issue [#5](https://github.com/mstelz/test-repo-pls-ignore/issues/5): discarded
+  successful native acquire response reported unknown effects; original-handle
+  continuation recovered it; named selection rejected the owned item. A real
+  duplicate-main-branch failure triggered successful original-handle release.
+- Cleanup was independently verified: issues #1, #2, #5 and #6 are closed and
+  have no assignees. Historical Project text values were left untouched.
+
+The Project remains https://github.com/users/mstelz/projects/7. These runs were
+performed by local acceptance scripts; they are not checked-in live integration
+tests or CI. Checked-in GitHub tests use process fixtures. Previous live and
+reviewed evidence remains below with its original tested versions.
+
+---
+
 # Native reconciliation live acceptance, 2026-11-04
 
 This is a report of one-off live acceptance runs, not a checked-in live test

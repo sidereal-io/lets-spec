@@ -1,3 +1,47 @@
+# Integration review against current main
+
+Reviewed: main 7d8cec46eac454573418b114e994ad085c07e968..19cbf55619c1158b93713529956c51cc302c8367
+
+Claude Opus 5.5 reviewed read-only in a fresh context, high effort. Independent:
+yes. No REVIEW.md exists. It confirmed main's moved kit and tests, the production
+configuration split, preserved GitHub tests, typed errors, runtime bundles and
+ADR-014/ADR-015 identities. Later source commits address only these findings.
+
+1. **Medium — glossary verification loses write effects. CONFIRMED**, fixed in
+   `d4a12d9`. A post-write verification failure now retains partial/unknown
+   effects. The regression reproduced a successful write followed by a missing
+   Size mapping; four glossary tests then passed.
+2. **Medium — split UTF-8 input corrupts text. CONFIRMED**, fixed in `6417b30`.
+   Both production entries use a shared raw-byte-bounded reader that decodes once.
+   Split multibyte input and overflow regressions passed.
+3. **Low — unsupported protocol classification. CONFIRMED**, fixed in `1beb88b`.
+   GitHub stdin uses main's parseRequest and returns unsupported/none for a newer
+   protocol. A real entry-process regression failed before the fix and passed.
+   The isolated bundle smoke test was also aligned with both protocol classes
+   in `c5c7f55`; the focused smoke passed. The first full run
+   exposed its old expectation and was rerun after the correction.
+4. **Low — kit and production transport contract disagree. CONFIRMED as a
+   documentation inconsistency**, fixed in `b83fb10`. The docs and full contract
+   requirement delta explicitly scope the kit's conservative failures and the
+   production caller's proven no-effect failures. Existing production behavior
+   remains: interrupted reads have no mutation effects; uncertain writes remain
+   unknown. Existing transport tests check each classification.
+5. **Low — overflowing deadlines. CONFIRMED**, fixed in `bd62df4`. Production
+   invocation and workflow validation reject values above 2147483647 before
+   execution, returning invalid_request/none. Focused CLI/transport tests passed:
+   20 tests, including invalid-limit and no-claim assertions.
+6. **Low — stale/misplaced docs references. CONFIRMED**, fixed in `821bf8f`.
+   README names the production runtime, its commands link precedes Development,
+   and the planning review refers to identity ADR-015.
+
+Final integrated live acceptance and cleanup passed. Node checks passed with
+--test-concurrency=4 (625 tests), typecheck passed, and all 133 Bats checks passed.
+Nix flake check passed with --max-jobs 1 --cores 2. Earlier unconstrained runs
+hit process-fixture deadlines; the initial bundle assertion was corrected.
+No production timeout or assertion was relaxed.
+
+---
+
 # Native reconciliation review
 
 Reviewed: main a0aef6b64081bca8f250d031a6dc81ea8d5ba850..787d4c96452815d646756df33a3e564df7221baa

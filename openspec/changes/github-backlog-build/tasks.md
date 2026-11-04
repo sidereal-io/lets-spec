@@ -40,7 +40,7 @@ Live acceptance evidence is a required supplement to task 4.1's automated comman
 ## 6. Integration with main
 
 - [x] 6.1 [complex] Reconcile main's moved, typed adapter kit with the GitHub runtime, preserve both test suites and runtime-only packaging, and resolve the ADR number collision. (✓ pnpm check passed; integrated Node suite passed: 617 tests)
-- [ ] 6.2 [complex] Run both repository checks, review the integrated branch against current main, verify, archive and restore PR readiness.
+- [x] 6.2 [complex] Run both repository checks, review the integrated branch against current main, verify, archive and restore PR readiness. (✓ 625 Node tests with concurrency 4, pnpm check, 133 Bats checks and serial nix flake check passed; six integration-review findings fixed; final live lifecycle, fault recovery and cleanup passed)
 
 Main's kit cleanup supersedes earlier standalone-kit packaging work in tasks 1.1
 and 3.4. The source conformance suite remains; runtime releases exclude its
