@@ -13,6 +13,9 @@ export const CONFIG_VERSION = 3;
 // The resolvers built into lets, by the names the chain lists them under.
 export const RESOLVER_NAMES = ['t3', 'cli', 'subagent'] as const;
 export type ResolverName = (typeof RESOLVER_NAMES)[number];
+// The interactivity levels go.level may set for lets-go.
+export const LEVELS = ['ask', 'recommend'] as const;
+export type Level = (typeof LEVELS)[number];
 
 // The file's shape, with the keys this lets does not know dropped. delegate
 // is {} when the file has none. Each resolver is one of RESOLVER_NAMES.
@@ -94,6 +97,21 @@ export function guidanceFor(config: Config | null, strategy: Strategy, intent: I
   if (guidance === undefined || guidance === null) return null;
   if (typeof guidance !== 'string') throw fail(`delegate.${strategy}.${intent}.guidance`, 'a string', guidance);
   return guidance;
+}
+
+// The default interactivity level, from go.level in a document parseDocument
+// checked, or null when go or go.level is missing or null. Throws a
+// UsageError that names the file and the key when either has the wrong type
+// or value. Other keys under go are not checked.
+export function levelFor(document: Record<string, unknown>, path: string): Level | null {
+  const fail = (key: string, expected: string, value: unknown) => new UsageError(`${path}: ${key} must be ${expected}, got ${show(value)}.`);
+  const { go } = document;
+  if (go === undefined || go === null) return null;
+  if (!isObject(go)) throw fail('go', 'a mapping', go);
+  const { level } = go;
+  if (level === undefined || level === null) return null;
+  if (!(LEVELS as readonly unknown[]).includes(level)) throw fail('go.level', LEVELS.join(' or '), level);
+  return level as Level;
 }
 
 function show(value: unknown): string {
