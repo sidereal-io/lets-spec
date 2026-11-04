@@ -8,7 +8,7 @@
 - **Independent**: no; resolver returned no options, so the skill used a fresh-context gpt-6.1-sol subagent
 - **Tool restrictions**: read-only inspection; working-tree status matched before and after
 - **Reviewed commit**: 59cec29
-- **Artifacts reviewed**: brainstorm.md, proposal.md, design.md, specs/, adr.md, ADR-014 and relevant source/packaging
+- **Artifacts reviewed**: brainstorm.md, proposal.md, design.md, specs/, adr.md, ADR-015 and relevant source/packaging
 
 ## Findings
 

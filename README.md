@@ -416,6 +416,8 @@ fails in CI until someone enters the dev shell on its branch and commits.
 3. Run `lets sync`.
 4. Commit `mise.toml` and `mise.lock` with what `lets sync` wrote.
 
+Build existing GitHub packets through the [backlog commands](docs/backlog-build.md).
+
 ## 🛠️ Development
 
 This section is for you if you want to work on Let's Spec itself.
@@ -434,7 +436,7 @@ you Node 26, pnpm, bats, `jq`, `yq` and the OpenSpec CLI. Then run
 | `build/` | The release builder, the OpenSpec skill generator and the list of OpenSpec workflows |
 | `openspec-*` skills | Not committed. The flake generates them from the OpenSpec CLI in its nixpkgs, for the workflows in `build/openspec.json`, so moving nixpkgs can change their text. Each release records the CLI version in its `release.json`. |
 | `lets/` | The `lets` command, in TypeScript. `src/sync/` is `lets sync`, and `src/delegate/` is `lets delegate`. `src/resolvers/t3/`, `cli/` and `subagent/` are the three resolvers, each an adapter that `lets delegate` calls in process. `src/resolvers/kit/` is the code they share with `lets delegate`: the adapter type, the model families, the errors and exit codes. `build.mjs` bundles `lets` into one file with esbuild. |
-| `lets/src/backlog/` | The offline backlog adapter protocol, representative executable simulations and reusable conformance checks; see [the contract](docs/backlog-adapter-contract.md). |
+| `lets/src/backlog/` | The production backlog caller and GitHub adapter, shared protocol validators, representative executable simulations and reusable conformance checks; see [the contract](docs/backlog-adapter-contract.md). |
 | `docs/` | The pages the README links to, and the decision records in `docs/decisions/` |
 | `package.json`, `pnpm-workspace.yaml`, `tsconfig.json`, `mise.toml` | The pnpm workspace, its scripts, the type check's settings, and the tools for working without Nix |
 | `skills/` | The authored skills, one `lets-*` folder each: the entry points, and the flow skills the schemas call |
@@ -486,4 +488,3 @@ update, run the smoke test in
 
 If you want to reuse this code, it is under the [GNU GPL v3.0](LICENSE).
 
-Build existing GitHub packets through the [backlog commands](docs/backlog-build.md).
