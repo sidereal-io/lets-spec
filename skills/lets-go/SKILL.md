@@ -24,10 +24,21 @@ unfinished step.
 
 1. Find the default branch as `lets-build` does, and run
    `git branch --show-current`.
-2. Find the issue, `<i>`:
-   - **On the default branch**, take the issue number the user gave. If
-     they gave none, say that `lets-go` needs an issue number, and stop.
-   - **On another branch**, `<branch>`, search for the change's issue:
+2. Read the request. A leading or trailing `ask` or `recommend` names
+   the level: take it off, and keep it for step 10. What is left is one
+   of these:
+   - **A number:** it holds `#<n>`, or is a bare number. It names the
+     issue.
+   - **Words:** anything else. They are an idea, kept word for word.
+   - **Nothing.**
+
+   Then find the issue, `<i>`:
+   - **On the default branch**, a number is `<i>`. An idea goes to
+     [Start from an idea](#start-from-an-idea). With nothing, say that
+     `lets-go` needs an issue number or an idea, and stop.
+   - **On another branch**, `<branch>`, given words, say that an idea
+     needs the default branch, and stop. Otherwise search for the
+     change's issue:
 
      ```bash
      gh issue list --state open --search "<branch> in:title" --json number,title
@@ -40,7 +51,8 @@ unfinished step.
      `lets-go` runs on the default branch or on a change's branch, and
      needs the issue number on a change's branch. Stop. If several
      match, say that `lets-go` needs the issue number, and stop.
-3. Run `lets-build`'s *Find the source of demand* for the named issue.
+3. Run `lets-build`'s *Find the source of demand* for `<i>`, as for a
+   named issue.
    Read its blockers with `gh issue view <i> --json title,blockedBy`, so
    you have the title too. `<name>` is the change's name, as *Claim*
    names it from the title. On a change's branch, it is `<branch>`. When
@@ -53,18 +65,29 @@ unfinished step.
    - **It does not exist:** the stop stands, as `lets-build` reports it.
 
    Any other stop in that section stands as `lets-build` reports it.
-4. Run `lets-build`'s *Confirm the packet*. A stop it makes stands, as
-   `lets-build` reports it. An Epic stops there: it is built through its
-   stories. A packet that fails sends the user to `lets-shape`. For a
-   Story with a parent, it reads the parent's **Shared decisions**:
-   *Route* needs them.
-5. When *Confirm the packet* passes, shape is done. Print:
+4. Run `lets-build`'s *Confirm the packet*. Three of its stops say to
+   run `lets-shape` on #<i>: the issue is not shaped, a line is missing
+   or a placeholder, or comments are unread. On the default branch, when
+   no shape step has run in this run, set that stop aside, and
+   [run the shape step](#run-the-shape-step) for #<i>. Any other stop
+   stands, as `lets-build` reports it. An Epic stops there: it is built
+   through its stories. For a Story with a parent, it reads the parent's
+   **Shared decisions**: *Route* needs them.
+5. When *Confirm the packet* passes, shape is done. When a shape step
+   reported `done` in this run, print its line. `<date>` is the report's
+   `date`, and `<evidence>` is its `evidence`, joined with `; `:
+
+   ```text
+   Done shape: <date>. <evidence>
+   ```
+
+   Otherwise print:
 
    ```text
    Skipped shape: #<i>'s packet is complete, last edited <date>.
    ```
 
-   `<date>` is the day of the issue's `lastEditedAt`, from the thread
+   Here `<date>` is the day of the issue's `lastEditedAt`, from the thread
    query in *Confirm the packet*, as `YYYY-MM-DD`. When it is null, the
    body was never edited. Use the day the issue was created:
 
@@ -111,7 +134,8 @@ unfinished step.
     `recommend` in the request that started the run, it is that word.
     Otherwise it comes from the Kind: `recommend` for a Chore or a Bug,
     `ask` for a Story. Never ask the user which level to use. The level
-    holds for this run only. Print one of these lines:
+    holds for this run only. After a shape step, set it again here: the
+    Kind is settled now. Print one of these lines:
 
     ```text
     Interactivity: <level>, because #<i> is a <Kind>.
@@ -123,6 +147,39 @@ unfinished step.
     user every question.
 
 *Start* runs in this session. It is not a step, and has no step report.
+The shape step it runs is a step, and has a report.
+
+### Start from an idea
+
+1. Run `lets-build`'s *Find the source of demand*, its second case: the
+   user described work but named no issue. It searches open issue titles
+   for the idea's words. Show the user the matches, and ask whether one
+   is the same work. Ask at either level: a wrong yes builds someone
+   else's issue.
+2. On a yes, that issue is `<i>`. Go on from step 3.
+3. On a no, or when nothing matches, set aside that case's stop, which
+   says to run `lets-shape`. [Run the shape step](#run-the-shape-step)
+   for the idea.
+
+### Run the shape step
+
+The shape step turns an idea, or an issue whose packet is not complete,
+into one shaped issue. It runs on the default branch, before any branch
+or change exists. On a change's branch, the `lets-shape` stops of
+*Confirm the packet* stand. It runs at most once per run: after it, a
+stop that *Confirm the packet* makes stands.
+
+1. Print the level line. When the user named a level, it is
+   `Interactivity: <level>, because you asked for it.` Otherwise the level
+   is `ask`, because there is no Kind yet:
+
+   ```text
+   Interactivity: ask, because shape has not run yet.
+   ```
+
+2. Run the `shape` step, as [Run a step](#run-a-step) says.
+3. When it reports `done`, [Read the report](#read-the-report) gives
+   `<i>`. Go on from step 3 with it, as for an issue number.
 
 ## Find the first unfinished step
 
