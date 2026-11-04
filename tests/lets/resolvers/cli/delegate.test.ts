@@ -7,8 +7,9 @@ import { run as instructions } from '../../../../lets/src/delegate/instructions.
 import { run as review } from '../../../../lets/src/delegate/review.ts';
 import { run as step } from '../../../../lets/src/delegate/step.ts';
 import type { ReviewOptions } from '../../../../lets/src/delegate/review.ts';
+import type { StepOptions } from '../../../../lets/src/delegate/step.ts';
 import { createAdapter } from '../../../../lets/src/resolvers/cli/cli.ts';
-import { commandDeps } from '../../delegate/fixtures/command-deps.ts';
+import { commandDeps, DONE_REPORT } from '../../delegate/fixtures/command-deps.ts';
 import { fakeIo } from '../kit/fixtures/fake-io.ts';
 import type { FakeIo } from '../kit/fixtures/fake-io.ts';
 
@@ -76,23 +77,6 @@ test('handoff instructions skip cli with codex on PATH, running nothing, and the
   const io = fakeIo({ commands: ['codex'] });
   const t = withCli(io, 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n');
   assert.equal(await instructions(handoffInstructions, t.deps), 0);
-  assert.equal(JSON.parse(t.stdout()).resolver, 'subagent');
-  assert.deepEqual(io.calls, []);
-});
-
-test('a step declines with every family CLI on PATH, starting nothing', async () => {
-  const io = fakeIo({ commands: ['codex', 'claude', 'agy'] });
-  const t = withCli(io);
-  assert.equal(await step({ for: 'apply', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['claude'] }, t.deps), 2);
-  assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), /every resolver declined/);
-  assert.deepEqual(io.calls, []);
-});
-
-test('step instructions skip cli with codex on PATH, running nothing, and the default answers', async () => {
-  const io = fakeIo({ commands: ['codex'] });
-  const t = withCli(io, 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n');
-  assert.equal(await instructions({ strategy: 'step', for: 'apply' }, t.deps), 0);
   assert.equal(JSON.parse(t.stdout()).resolver, 'subagent');
   assert.deepEqual(io.calls, []);
 });
@@ -234,6 +218,31 @@ test('a clean claude review, which writes no files, removes nothing', async () =
   const io = answering();
   assert.equal(await review(reviewOptions({ models: ['claude'] }), withCli(io).deps), 0);
   assert.deepEqual(io.removed, []);
+});
+
+// A step named build-x for apply, at high effort, on the gpt family.
+const stepOptions = (over: Partial<StepOptions> = {}): StepOptions =>
+  ({ for: 'apply', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['gpt'], ...over });
+const STEP_LAST_MESSAGE = '/repo/.workspace/lets-delegate/build-x.last-message.md';
+// An io with every CLI on PATH, whose one run ends with message: codex in
+// its last-message file, the others on stdout.
+const stepping = (message: string) => {
+  const io = fakeIo({ commands: ['codex', 'claude', 'agy'], results: [(cmd, args) => {
+    if (cmd === 'codex') io.files.set(args[args.indexOf('-o') + 1], message);
+    return { stdout: cmd === 'codex' ? '' : message, stderr: '', code: 0 };
+  }] });
+  return io;
+};
+
+test('a step with codex runs it in its write mode, and prints the report from its last message', async () => {
+  const io = stepping(DONE_REPORT);
+  const t = withCli(io);
+  assert.equal(await step(stepOptions({ models: ['gpt/gpt-6-luna'] }), t.deps), 0);
+  assert.deepEqual(argsOf(io), [['codex',
+    ['exec', '--dangerously-bypass-approvals-and-sandbox', '-c', 'model_reasoning_effort="high"', '-m', 'gpt-6-luna', '-o', STEP_LAST_MESSAGE, '-']]]);
+  assert.deepEqual(JSON.parse(t.stdout()), { outcome: 'done', evidence: ['commit 3f2a1c0'], date: '1970-01-01T00:00:00Z' });
+  const { resolver, family, model, handle } = metadata(t);
+  assert.deepEqual({ resolver, family, model, handle }, { resolver: 'cli', family: 'gpt', model: 'gpt-6-luna', handle: { kind: 'process', id: 'build-x' } });
 });
 
 // The adapter itself: the chain only ever finishes a handle the adapter
