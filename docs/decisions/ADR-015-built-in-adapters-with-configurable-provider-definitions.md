@@ -53,9 +53,11 @@ There are two scopes, each with one owner:
 | Repository | `lets.backlog` in `openspec/config.yaml` | One backlog provider and selection, repository/provider context, supported mappings and options, and local storage/tracking policy where needed |
 
 ADR-011's one user file remains the home for machine settings. It does not move
-repository backlog data into that file. A duplicate setting in the wrong scope
-is not an override; report it as invalid configuration when it belongs to the
-consumed configuration surface. Credentials stay in provider login tools,
+repository backlog data into that file. Known backlog selection keys in the
+machine file (`backlog` or `lets.backlog`) are configuration errors, not ignored
+future settings or overrides. Known delegation settings in repository backlog
+definitions are likewise errors. Diagnose these misplaced keys before using
+GitHub defaults, so a selection in the wrong file cannot silently select GitHub. Credentials stay in provider login tools,
 private credential storage or the environment, never committed definitions.
 Private recovery journals are runtime data, not provider configuration.
 
@@ -78,6 +80,15 @@ not a guessed selection. A definition cannot upgrade unsupported behavior to
 native or atomic support.
 
 ### Supported definitions and compatibility
+
+Here a provider definition is a configuration object that supplies the data
+understood by a shipped adapter: its selection/context, supported mappings and
+options. It supplies no execution instructions. The consumed surface is the
+set of keys that the release documents for that object. For backlogs it is the
+complete `lets.backlog` object, including its version, provider, selection,
+mappings and supported provider options. For delegation, only documented
+adapter-option objects are provider definitions; the `delegate` section itself,
+resolver chain and guidance are not provider definitions.
 
 The `lets` release owns the schema, defaults, supported provider options and
 validation code for definitions. Users own the values in their configured
@@ -109,8 +120,12 @@ values and transitions, and required capabilities. Validate local structure
 before backend calls; use scoped read-only backend checks for facts that cannot
 be checked locally, before mutation. Reject unknown options within a consumed
 provider definition so spelling mistakes cannot silently alter behavior. Keep
-ADR-011's tolerance for unrelated settings outside that consumed surface; do not
-reinterpret an ignored future key as executable instructions.
+ADR-011's tolerance for unrelated settings outside that consumed surface,
+including unknown future keys under `delegate`. This validation rule does not
+make all of `delegate` strict. Misplaced known selection keys and obsolete
+executable settings are explicit exceptions to that tolerance, and the migration
+must test their rejection. Do not reinterpret an ignored future key as
+executable instructions.
 
 Reject obsolete adapter executable/path settings with an error naming the file,
 key, unsupported value and supported built-in replacement or migration action.
