@@ -8,10 +8,11 @@ description: Architecture decision record (ADR) for lets asking only the resolve
 
 # ADR-005: The config lists the resolvers to ask, in order, and lets detects nothing
 
-> Reconciled by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md): explicit resolver ordering, no appended
-> fallback and no adapter lookup on PATH still hold. ADR-010 replaced the paths
-> and environment override below with built-in names. Backend tools can remain
-> separate dependencies; finding a backend tool does not discover an adapter.
+> Reconciled by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md):
+> explicit resolver ordering, no implicit fallback and no adapter lookup on PATH
+> remain. The target permits shipped and explicitly configured custom provider
+> definitions; the agent executes bounded tool actions requested by lets.
+> The historical path-based chain below is not the current selection contract.
 
 > Amended by [ADR-010](ADR-010-the-resolvers-are-built-into-lets.md): each entry is a name, `t3`, `cli` or `subagent`, not an absolute path, and `LETS_SPEC_RESOLVER` is gone. The chain, its order and the rule that `lets` looks on `PATH` for nothing still hold.
 

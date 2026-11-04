@@ -8,10 +8,12 @@ description: Architecture decision record for independently installed backlog ad
 
 # ADR-014: Backlog adapters use an executable boundary
 
-> Superseded by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md): delegation and backlogs use built-in
-> execution with configurable provider definitions. The executable model below
-> records the earlier decision; the runtime and contract migration is separate.
-> Behavioral guarantees, native state and private local recovery remain in force.
+> Superseded by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md):
+> the execution hybrid spans delegation and backlogs. lets owns policy, bounded
+> action requests, sequencing, private local recovery and result validation; the
+> agent calls backend tools using shipped or custom provider definitions.
+> This body preserves the earlier executable decision. Runtime/spec migration is
+> separate; behavioral guarantees, native state and private local journals remain.
 
 ## Context
 

@@ -8,11 +8,13 @@ description: Architecture decision record (ADR) for keeping every lets setting i
 
 # ADR-011: lets has one config file, shaped like its commands
 
-> Scoped by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md): this one user file continues to own machine
-> settings, including delegation. Repository backlog selection, mappings and
-> supported provider options belong under `lets.backlog` in `openspec/config.yaml`.
-> Only lets reads and validates configuration. Unrelated future settings remain
-> tolerated; consumed provider definitions require supported, validated options.
+> Scoped by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md):
+> this user file owns machine settings, including delegation and machine-local
+> backlog tool options. Repository backlog selection, mappings and storage policy
+> belong under `lets.backlog` in `openspec/config.yaml`; machine options cannot
+> override them. Only lets reads/validates lets configuration, then supplies scoped
+> provider definitions and action inputs to the agent. Unrelated future settings
+> remain tolerated; consumed definitions require validated, versioned options.
 
 > Builds on [ADR-002](ADR-002-lets-owns-the-delegate-config.md): only `lets` reads the config. This record says where the file lives and how it is laid out.
 
