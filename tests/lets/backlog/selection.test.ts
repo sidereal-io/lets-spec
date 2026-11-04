@@ -25,3 +25,7 @@ test('next ranks numeric GitHub references after exclusions', async () => {
 test('incomplete blocker enumeration rejects selection', () => withGithub(async ({ call }) => {
   await assert.rejects(select(call, 'owner/repo'), /repeated/);
 }, { IssueBlockers: { node: { blockedBy: page([], true, 'loop') } } }));
+test('named Epic remains readable for the skill to route to its stories', () => withGithub(async ({ call }) => {
+  const result = await select(call, 'owner/repo', '#2');
+  assert.equal(result.item.metadata.Kind, 'Epic');
+}, { ItemValues: { node: { fieldValues: page(data().ItemValues.node.fieldValues.nodes.map(value => value.field.id === 'F-Kind' ? { ...value, optionId: 'V-Epic' } : value)) } } }));

@@ -27,6 +27,7 @@ export async function select(call: Call, repository: string, reference?: string)
     if (reference && blockers.some(blocker => blocker.status !== 'Done')) fail('conflict', 'item has open blockers');
     candidates.push({ ...item, repository, blockers: { complete: true, open: blockers.filter(blocker => blocker.status !== 'Done').map(blocker => blocker.identity) } });
   }
+  if (reference && candidates[0].metadata.Kind === 'Epic') return { item: candidates[0], candidates: [candidates[0]] };
   const ready = readyWork(candidates, repository);
   if (!ready.length) fail('not_found', 'backlog has no eligible ready work');
   return { item: ready[0], candidates: ready };
