@@ -4,7 +4,7 @@ Documentation review is the primary seam. Check meaning against ADR-014 and the
 existing contract; the commands below locate or validate the affected text and
 do not substitute for that review. No tests should mirror the document wording.
 
-- [ ] 1.1 [easy] Link the contract's architecture rationale to ADR-014 and explain independent adapter releases without changing protocol guarantees (verify: rg -n 'ADR-014' docs/backlog-adapter-contract.md)
+- [x] 1.1 [easy] Link the contract's architecture rationale to ADR-014 and explain independent adapter releases without changing protocol guarantees (✓ rg -n 'ADR-014' docs/backlog-adapter-contract.md passed)
 - [ ] 1.2 [easy] Clarify that separating runtime dependencies does not confine credentials, and that process isolation is not a sandbox (verify: rg -n 'sandbox|credential' docs/backlog-adapter-contract.md)
 - [ ] 1.3 [easy] Review the ADR and contract together for accurate current-support limits, unchanged recovery guarantees and separation from ADR-010; retain the existing offline-only disclaimer (verify: git diff --check)
 
