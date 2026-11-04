@@ -23,11 +23,24 @@ that goal.
 
 ## Decision
 
-Backlog adapters use a versioned JSON executable contract: one request
-on stdin and one response on stdout per invocation, with diagnostics on stderr.
-The shared caller owns workflow policy, adapters translate provider operations,
-and the code host owns branch and pull request operations. This decision applies
-to backlog adapters; ADR-010 continues to govern delegation resolvers.
+`lets` works with a backlog through an adapter: a separately installed program
+for one provider, such as GitHub, Jira Cloud, Linear or Beads. `lets` owns
+workflow policy, such as what is ready, how work is ranked and claimed, and when
+it is done. The adapter only translates those decisions into the provider's
+operations and data. The code host owns branches and pull requests.
+
+`lets` and adapters are coupled only through a versioned, language-neutral
+contract: the [backlog adapter contract](../backlog-adapter-contract.md). It
+defines the operations an adapter must support, what each one returns, how
+failures are reported and how uncertain writes are reconciled. An adapter is any
+program that conforms to it, shown by passing the contract's conformance checks.
+
+Each operation is a separate request and response with the adapter's process.
+Adapters are not loaded into `lets` and do not run as resident services. A
+repository names exactly one adapter, and `lets` never substitutes another.
+
+This decision applies to backlog adapters. ADR-010 continues to govern
+delegation resolvers.
 
 ## Consequences
 
