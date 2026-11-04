@@ -85,14 +85,23 @@ scopes. Definitions contain data such as field/value mappings and documented
 provider options, not templated command lines or executable operation bodies.
 Configurable data may vary only within the behavior supported by that release.
 
-Use the owning configuration format's version rules. Preserve the existing
-user-file version contract (currently version 3); this ADR alone changes no
-parser or version. A breaking definition-format change requires a documented
-versioned migration, and an unsupported version must be rejected before use.
-Publish supported schema and backend API/tool version constraints with the
-release. An internal interface is coupled to the `lets` release, not a public
-independently versioned adapter wire protocol. Concrete migration syntax belongs
-to the implementation and its tests, not a second configuration file.
+Keep the user-file version contract (currently version 3). Repository backlog
+definitions need their own explicit schema version at `lets.backlog.version`,
+starting at 1 for the built-in definition format. This is independent of the
+OpenSpec workflow `schema:` setting and the machine file's version. A release
+must validate that version before interpreting an explicit backlog definition;
+missing or unsupported versions require an actionable migration error before
+backend mutation, not guessed defaults. Absent backlog selection still uses
+the release's validated GitHub defaults. Old executable definitions must be
+rejected even when their missing version is reported first.
+
+A breaking definition-format change increments its owning format's version
+and requires a documented migration. Publish supported schema versions and
+backend API/tool version constraints with the release. An internal interface
+is coupled to the `lets` release, not a public independently versioned adapter
+wire protocol. This ADR changes no parser: #180 implements and tests the
+repository version contract, including rejection of unsupported versions. A
+newer definition must never be silently interpreted with older mapping semantics.
 
 Validate consumed definitions before operations: provider names, option types,
 required context, mapping completeness, field cardinality and ambiguity, allowed
