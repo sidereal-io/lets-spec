@@ -31,3 +31,49 @@ test('the real execFile runs in the env it is given', async () => {
   const { stdout } = await realIo().execFile('sh', ['-c', 'echo "$ONLY"'], { env: { ONLY: 'this', PATH: process.env.PATH } });
   assert.equal(stdout, 'this\n');
 });
+
+for (const [name, source, limit] of [
+  ['combined streams', "process.stdout.write('x'.repeat(60)); process.stderr.write('x'.repeat(60));", 100],
+  ['stderr', "process.stderr.write('x'.repeat(200));", 100],
+  ['multibyte', "process.stdout.write('😀'.repeat(30));", 100],
+] as const) {
+  test(`the real execFile bounds ${name}`, async () => {
+    const result = await realIo().execFile(process.execPath, ['-e', source], {
+      maxBytes: limit, killSignal: 'SIGKILL', timeoutMs: 5000,
+    });
+    assert.equal(result.outputLimitExceeded, true);
+    assert.notEqual(result.code, null);
+  });
+}
+test('the real execFile counts raw bytes before decoding', async () => {
+  const result = await realIo().execFile(process.execPath, ['-e',
+    'process.stdout.write(Buffer.alloc(20, 255));',
+  ], { maxBytes: 20 });
+  assert.equal(result.code, 0);
+  assert.equal(result.outputLimitExceeded, undefined);
+});
+test('the real execFile honors limits above its default buffer ceiling', async () => {
+  const result = await realIo().execFile(process.execPath, ['-e',
+    "process.stdout.write(Buffer.alloc(65 * 1024 * 1024, 'x'));",
+  ], { maxBytes: 66 * 1024 * 1024, timeoutMs: 10000 });
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout.length, 65 * 1024 * 1024);
+});
+test('the real execFile reports signal termination', async () => {
+  const result = await realIo().execFile(process.execPath, ['-e',
+    "process.kill(process.pid, 'SIGTERM');",
+  ]);
+  assert.equal(result.signal, 'SIGTERM');
+});
+for (const mode of ['deadline', 'overflow']) {
+  test(`the real execFile kills SIGTERM-resistant children on ${mode}`, async () => {
+    const source = "process.on('SIGTERM', () => {}); setTimeout(() => process.exit(0), 1500); " +
+      (mode === 'overflow' ? "setInterval(() => process.stdout.write('x'.repeat(100)), 10);" : 'setInterval(() => {}, 1000);');
+    const result = await realIo().execFile(process.execPath, ['-e', source], {
+      timeoutMs: mode === 'deadline' ? 300 : 5000,
+      maxBytes: 100, killSignal: 'SIGKILL',
+    });
+    assert.equal(mode === 'deadline' ? result.timedOut : result.outputLimitExceeded, true);
+    assert.equal(result.signal, 'SIGKILL');
+  });
+}
