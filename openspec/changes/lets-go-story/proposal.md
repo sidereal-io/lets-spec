@@ -27,7 +27,7 @@ None.
 ## Impact
 
 - `skills/lets-go/SKILL.md`: the description, Start, *Write the prompt*, *Relay the questions* and *End of the run*.
-- `openspec/specs/lets-go/spec.md`: the modified requirements.
+- `openspec/specs/lets-go/spec.md`: the modified requirements, and its `## Purpose`, which still says "for a shaped chore" and which a delta cannot change.
 - `tests/skill-interfaces.bats`: the new fixed strings and the new routing row text.
 - `overlays/AGENTS.md` and `README.md`: the routing row and the `lets-go` section.
 - No code in `lets/` changes. The pinned `lets` 0.7.0 has no `step` command, so the tests check the skill's prose, as in #149 and #150 (D15).

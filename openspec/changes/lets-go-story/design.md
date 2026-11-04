@@ -38,7 +38,7 @@ Constraints:
 
 ### D-1: The level is a value Start sets, and the prompt frame reads it
 
-Start sets `<level>` once: the user's word when they named `ask` or `recommend` in the request, else the Kind's default. The prompt frame's `## Questions` section becomes `The interactivity level is <level>.` followed by one sentence per level, so a step reads the same rules at both levels and the relay alone changes (D5, D7).
+Start sets `<level>` once: the user's word when they named `ask` or `recommend` in the request, else the Kind's default. The prompt frame's `## Questions` section becomes `The interactivity level is <level>.` followed by one sentence per level. So a step reads the same rules at both levels, and the relay alone changes (D5, D7).
 
 Alternatives: a frame per level (two frames to keep in step); a flag the step reads to decide questions itself (rejected by ADR-015).
 
@@ -56,7 +56,7 @@ Alternative: split propose at `adr` and run `review` plus `tasks` as a fourth st
 
 ### D-4: The blocker stop waits for the branch check
 
-Start's step 3 runs *Find the source of demand*, whose first case stops on an open blocker. Start now defers that one stop: it computes `<name>` from the issue title, runs the branch check of step 7 early, and lets the stop stand only when neither `git branch --list` nor `git ls-remote` prints a line. When the branch exists, Start prints the open blockers by number and goes on (D10). Every other stop of `lets-build` stands as before.
+Start's step 3 runs *Find the source of demand*, whose first case stops on an open blocker. Start now defers that one stop. The blocker read becomes `gh issue view <i> --json title,blockedBy`, so Start has the title before *Confirm the packet* reads it. From the title it names the change as *Claim* does, and runs the branch check of step 7 early. The stop stands only when neither `git branch --list` nor `git ls-remote` prints a line. When the branch exists, Start prints the open blockers by number and goes on (D10). Every other stop of `lets-build` stands as before, including the glossary prerequisite: a stacked story whose glossary owner has not merged still stops, as it does under `lets-build`.
 
 Alternative: leave the stop in place and document that stacked stories need `lets-build`. Rejected: this repository stacks most stories, and the stop's own remedy, stacking by hand, is already done once the branch exists.
 
@@ -68,7 +68,7 @@ Alternative: `Take a shaped issue ...`. Rejected: "issue" would read as covering
 
 ### D-6: The spec removes the Chore-only requirement and adds a new one
 
-The requirement `lets-go runs on the default branch, for a Chore` names the Kind in its heading, and MODIFIED must keep the heading. So the delta removes it and adds `lets-go runs for a Chore, a Bug or a Story`. The `ask` relay is a new requirement beside the `recommend` one, whose heading also names its level.
+The requirement `lets-go runs on the default branch, for a Chore` names the Kind in its heading, and MODIFIED must keep the heading. So the delta removes it and adds `lets-go runs for a Chore, a Bug or a Story`, with every scenario the old one had. The `ask` relay is a new requirement beside the `recommend` one, whose heading also names its level. A delta cannot change the main spec's `## Purpose`, which still says "for a shaped chore". One task edits that line in `openspec/specs/lets-go/spec.md` directly, as the schema allows.
 
 None of these decisions is costly to reverse. The ADR step records none; ADR-015 and ADR-017 already hold the two decisions this design leans on.
 

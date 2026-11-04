@@ -5,7 +5,7 @@
 
 ## Review Summary
 
-ADR review completed for this change. The design's six decisions are skill prose a reader can reverse by reading the skill, and none is costly to reverse. The two durable decisions this change leans on already have records: a step asks through its report and the caller owns the level (ADR-015), and `lets-go` keeps no state of its own (ADR-017).
+ADR review completed for this change. The design's six decisions are skill prose a reader can reverse by reading the skill, and none is costly to reverse. The two durable decisions this change leans on already have records. ADR-015 says a step asks through its report, and the caller owns the level. ADR-017 says `lets-go` keeps no state of its own.
 
 ## In-Force ADRs Reviewed
 
