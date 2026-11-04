@@ -152,13 +152,13 @@ flow_texts() {
   done
 }
 
-@test "each lets delegate review or handoff the prose names is followed by instructions or run" {
-  run bash -c "$(declare -f prose); repo='$repo'; prose | xargs grep -ohE 'lets delegate (review|handoff)( [^ \`]+)?' | grep -vE 'lets delegate (review|handoff) (instructions|run)$'"
+@test "each lets delegate review, handoff or step the prose names is followed by instructions or run" {
+  run bash -c "$(declare -f prose); repo='$repo'; prose | xargs grep -ohE 'lets delegate (review|handoff|step)( [^ \`]+)?' | grep -vE 'lets delegate (review|handoff|step) (instructions|run)$'"
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
-@test "the docs name lets delegate review or handoff only with instructions or run" {
-  run bash -c "grep -ohE 'lets delegate (review|handoff)( [^ \`]+)?' '$repo/README.md' '$repo'/docs/*.md | grep -vE 'lets delegate (review|handoff) (instructions|run)$'"
+@test "the docs name lets delegate review, handoff or step only with instructions or run" {
+  run bash -c "grep -ohE 'lets delegate (review|handoff|step)( [^ \`]+)?' '$repo/README.md' '$repo'/docs/*.md | grep -vE 'lets delegate (review|handoff|step) (instructions|run)$'"
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
