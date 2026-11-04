@@ -9,3 +9,7 @@ description: Architecture decision record (ADR) for keeping the review and hando
 # ADR-016: Review and handoff stay their own strategies, apart from step
 
 > Builds on [ADR-007](ADR-007-delegations-by-strategy-and-intent.md): a strategy fixes a session's options, output and exit codes, and this record keeps three of them.
+
+## Context
+
+`lets delegate` has three strategies, one for each kind of session. A `review` is read-only: `lets` waits for its final message, prints it as it is, and checks after that the session changed no file. A `handoff` starts an interactive session and returns at once. A `step` may write files, and `lets` waits for a final message that ends with a step report. Each resolver binds to one adapter contract, and the resolvers each learn to run steps next. Before they do, the contract must be settled: will `review` and `handoff` stay, or fold into `step`? If the contract changed later, every resolver would change twice.
