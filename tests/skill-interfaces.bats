@@ -268,6 +268,18 @@ skill_says() {
   skill_says lets-go 'Skipped propose review: not in the lets-minimal route.'
 }
 
+@test "lets-go resumes a change at its first unfinished step" {
+  skill_says lets-go 'openspec instructions apply --change <name> --json'
+  skill_says lets-go 'git status --porcelain'
+  skill_says lets-go 'git fetch origin <name>'
+  skill_says lets-go 'git merge --ff-only origin/<name>'
+  skill_says lets-go 'git switch <name>'
+  skill_says lets-go 'gh issue list --state open --search "<branch> in:title" --json number,title'
+  skill_says lets-go 'Records disagree:'
+  run grep -n '#150 adds resuming' "$repo/skills/lets-go/SKILL.md"
+  [ "$status" -eq 1 ] || { echo "lets-go still defers resuming to #150: $output"; false; }
+}
+
 @test "lets-shape posts its reply with the gh command gh issue comment --body-file" {
   skill_says lets-shape 'gh issue comment <i> --body-file <file>'
 }
