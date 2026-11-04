@@ -6,13 +6,13 @@ title: 'ADR-011: lets has one config file, shaped like its commands'
 description: Architecture decision record (ADR) for keeping every lets setting in one file under ~/.config/lets/, with one section per command group and each setting at the path of the command that reads it
 ---
 
+# ADR-011: lets has one config file, shaped like its commands
 
 > Scoped by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md): this one user file continues to own machine
 > settings, including delegation. Repository backlog selection, mappings and
 > supported provider options belong under `lets.backlog` in `openspec/config.yaml`.
 > Only lets reads and validates configuration. Unrelated future settings remain
 > tolerated; consumed provider definitions require supported, validated options.
-# ADR-011: lets has one config file, shaped like its commands
 
 > Builds on [ADR-002](ADR-002-lets-owns-the-delegate-config.md): only `lets` reads the config. This record says where the file lives and how it is laid out.
 
