@@ -1,7 +1,7 @@
 # Backlog adapter conformance kit
 
 This is an offline contract kit, not a production adapter or dispatcher.
-Read [the contract](../../docs/backlog-adapter-contract.md) before implementing
+Read [the contract](../../../docs/backlog-adapter-contract.md) before implementing
 an adapter. Node 26 is required; no credentials, network or dependencies are
 needed for the suite:
 
@@ -10,9 +10,10 @@ node --test "tests/lets/backlog/*.test.ts"
 ```
 
 From a source checkout, `pnpm test:backlog` runs the same suite. `pnpm test`
-also includes it and type-checks the kit. `nix flake check` checks it and the
-standalone distribution with one round-trip smoke check. The release includes this directory, the tests and
-the contract in their repository-relative locations. Run from the release root.
+also includes it and type-checks the kit. `nix flake check` checks the repository
+suite and runtime release packaging.
+The runtime release excludes this unused source, its tests and the contract
+document; run conformance from a source checkout.
 Scratch state lives under `.workspace/` and is removed after each profile.
 
 `protocol.ts` exports required/optional operation definitions and validators.

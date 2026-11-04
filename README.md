@@ -443,9 +443,10 @@ you Node 26, pnpm, bats, `jq`, `yq` and the OpenSpec CLI. Then run
 | `tests/` | `*.bats`: end-to-end tests of `lets sync`, the release build, each schema, and every command, file and skill the prose names. The folders: unit tests for `lets` and each resolver, run with fakes. |
 | `.github/workflows/` | `ci.yml` runs `nix flake check` and a mise smoke test; `release.yml` publishes a release when a `v*` tag is pushed |
 
-The [offline backlog adapter kit](lets/src/backlog/README.md) ships
-with its tests and contract in the release. It defines the future provider
-boundary; production adapters and workflow migration remain separate work.
+The [offline backlog adapter kit](lets/src/backlog/README.md) defines the provider
+boundary and runs from this repository. The runtime release excludes its unused
+source, tests and contract document. Production adapters and workflow migration
+remain separate work.
 
 ### Releases
 

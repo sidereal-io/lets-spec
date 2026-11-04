@@ -13,7 +13,6 @@
   },
   "include": [
     "lets/src",
-    "tests",
-    "lets/src/backlog"
+    "tests"
   ]
 }
