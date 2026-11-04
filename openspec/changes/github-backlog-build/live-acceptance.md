@@ -1,7 +1,7 @@
 # Live acceptance evidence
 
-Status: pending the user's merge of the test PR. Task 4.1 remains unchecked.
-No test or product PR has been merged by the implementation agent.
+Status: complete. The user merged the test PR; verified completion and its
+idempotent replay both returned Done. No PR was merged by the implementation agent.
 
 The implementation was exercised on 2026-11-04 in
 [mstelz/test-repo-pls-ignore](https://github.com/mstelz/test-repo-pls-ignore)
@@ -17,7 +17,9 @@ and its [linked Project](https://github.com/users/mstelz/projects/7), node
 - Test PR: [#7](https://github.com/mstelz/test-repo-pls-ignore/pull/7).
 - Test implementation commit: `42f57f23f136efa9bb3d4b276d5cdec889d64e26`.
 - Test archive commit: `a42d589aedd51962d83980cd345de83b84661da0`.
-- Merge commit: pending. No complete-lifecycle support claim is made yet.
+- User-owned merge commit: `fef1ac4c162fb0edb840b6489f0b5aae480b7227`,
+  merged at 2026-11-04T15:20:24Z. The code-host caller verified this exact PR
+  before completion and idempotent replay.
 
 ## Preparation
 
@@ -51,21 +53,31 @@ as a successful claim or silently retried.
 
 ## Checks and cleanup
 
-`pnpm test` passed: 561 Node tests, type checking, and 132 Bats checks.
-`nix flake check` passed on the final implementation head, including the
-complete isolated adapter-kit suite and both executable bundles.
+`pnpm test` passed after review fixes: 567 Node tests, type checking, and
+133 Bats checks.
+`nix flake check` passed after review fixes on x86_64-linux, including the
+complete isolated adapter-kit suite and both executable bundles. An initial
+post-review run hit four process-fixture deadlines; its rerun passed.
 
 The negative-case issues #1–#5 are owned disposable fixtures. #4 and #5 were
 released through the implemented flow before being closed. The setup-only
 assignment on #3 was removed, and #1–#3 were closed. No unrelated
-issue or Project data is removed. The live #6 claim, provenance fields and
-reviewable test PR remain available for merge-gated completion.
+issue or Project data is removed. After verified completion and replay, #6 was closed and its acceptance-owned
+assignment was removed. The provenance fields remain as historical evidence
+and as shared fixture prerequisites; no unrelated fields were removed.
 
-## Remaining acceptance
+## Merge-gated completion
 
-After the user merges PR #7, run `lets backlog complete` with the archived
-change, original private continuation handle and exact PR URL. Verify the
-code-host merge commit, Done reconciliation, idempotent completion and final
-owned-fixture cleanup. Record that merge commit here before checking off 4.1.
-The product PR stays draft until acceptance and finishing checks are complete.
+The user merged PR #7. `lets backlog complete` used the archived identity,
+original explicit handle and associated URL; it verified the merge commit
+through the code host and returned Done. The identical invocation then
+returned Done again without another transition. Cleanup followed these checks.
+
+The subsequent code review corrected workflow deadlines, private handle
+separation, raw CLI mutation guards, conclusive no-effect write retries,
+post-merge routing, exact closing lines and partial-provenance exclusions.
+Those fixes have process-boundary regression coverage and full repository and
+release validation. Public session values can no longer substitute for the
+private continuation handle. The live run above retains its exact tested
+bundle commits rather than being relabeled as a run of later corrections.
 Private inputs and raw responses remain outside tracked artifacts.

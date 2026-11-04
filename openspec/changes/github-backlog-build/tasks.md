@@ -20,9 +20,9 @@
 
 ## 4. Acceptance [depends-on: 3]
 
-- [ ] 4.1 [complex] Demonstrate the implemented CLI lifecycle in mstelz/test-repo-pls-ignore with Project https://github.com/users/mstelz/projects/7, recording commit/item/PR/merge evidence, negative paths, fault injection and owned-fixture cleanup; keep completion pending until the user merges the test PR and run repository checks (verify: pnpm test)
+- [x] 4.1 [complex] Demonstrate the implemented CLI lifecycle in mstelz/test-repo-pls-ignore with Project https://github.com/users/mstelz/projects/7, recording commit/item/PR/merge evidence, negative paths, fault injection and owned-fixture cleanup; keep completion pending until the user merges the test PR and run repository checks (✓ pnpm test passed: 567 Node tests, typecheck, 133 Bats checks; nix flake check passed on rerun; live merge fef1ac4c162fb0edb840b6489f0b5aae480b7227 verified, Done and idempotent completion passed, owned-fixture cleanup complete; see live-acceptance.md)
 
-Live evidence: [live-acceptance.md](live-acceptance.md). Selection, claim, bind, resume, release, reference, unmerged rejection and archive retention passed against the designated fixture. Test PR https://github.com/mstelz/test-repo-pls-ignore/pull/7 awaits the user's merge; keep 4.1 pending.
+Live evidence: [live-acceptance.md](live-acceptance.md). Selection, claim, bind, resume, release, reference, unmerged rejection and archive retention passed against the designated fixture. The user merged test PR https://github.com/mstelz/test-repo-pls-ignore/pull/7; merge-gated completion, idempotent replay and owned-fixture cleanup passed.
 
 Live acceptance evidence is a required supplement to task 4.1's automated command. Fixture preparation alone never satisfies that task. Add the prerequisite `Lets claim` and `Lets reference` text fields to the test Project during fixture preparation. Use the built runtime for selection, claim, bind, resume, release, reference and completion. Do not mark task 4.1 complete while merge or any required live case remains pending. Run both `pnpm test` and `nix flake check` before pushing implementation.
 
