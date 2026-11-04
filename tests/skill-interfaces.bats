@@ -84,11 +84,22 @@ flow_texts() {
       for skill in $shipped; do named_skills "$repo/skills/$skill/SKILL.md"; done
     )"
     for skill in $shipped; do
-      case "$skill" in lets-build | lets-shape | lets-setup-backlog) continue ;; esac
+      case "$skill" in lets-build | lets-go | lets-shape | lets-setup-backlog) continue ;; esac
       grep -qx "$skill" <<<"$named" ||
         { echo "$flow ships $skill, but none of its schema, config or skills name it"; false; }
     done
   done
+}
+
+@test "lets-go ships in both flows with a routing row" {
+  local flow request='Take a shaped chore to a ready pull request in one run'
+  for flow in standard minimal; do
+    flow_skills "$flow" | grep -qx lets-go || { echo "$flow does not ship lets-go"; false; }
+  done
+  grep -qxF "| $request | The \`lets-go\` skill |" "$repo/overlays/AGENTS.md" ||
+    { echo "overlays/AGENTS.md has no routing row for lets-go"; false; }
+  grep -qxF "| $request | \`lets-go\` |" "$repo/README.md" ||
+    { echo "README.md has no usage row for lets-go"; false; }
 }
 
 @test "each skill a schema or config names is one its flow ships, or a generated OpenSpec skill" {
