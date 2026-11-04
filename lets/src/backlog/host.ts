@@ -30,7 +30,7 @@ export async function referenceChange(context: Context, change: string, handle: 
   const pull = await pr(context, reference, host);
   if (identity.item.provider === 'github') {
     const closing = `Closes ${identity.reference}`;
-    if (!pull.body.includes(closing)) await host('UpdatePRBody', { id: pull.id, body: `${pull.body.trimEnd()}\n\n${closing}\n` });
+    if (!pull.body.split(/\r?\n/).some((line: string) => line.trim() === closing)) await host('UpdatePRBody', { id: pull.id, body: `${pull.body.trimEnd()}\n\n${closing}\n` });
   }
   session.reference = reference; session.referenceMutation ??= randomUUID();
   new Store(context.cwd).write('session-' + hash(handle), session);

@@ -35,14 +35,14 @@ test('code-host caller verifies merge before requesting completion', () => withG
   const { handle } = await acquireSession(ctx, item, connect);
   const change = join(cwd, 'openspec/changes/work'); mkdirSync(change, { recursive: true });
   await bind(ctx, change, handle, (await call('item.read', { item })).item, connect);
-  let merged = false; let body = 'Description';
+  let merged = false; let body = 'Closes #20';
   const host = async (name: string, variables: any) => {
     if (name === 'PullRequest') return { repository: { pullRequest: { id: 'PR', url: reference, body, merged, mergeCommit: merged ? { oid: 'merge' } : null, repository: { nameWithOwner: 'owner/repo' } } } };
     if (name === 'UpdatePRBody') { body = variables.body; return {}; }
     throw new Error(name);
   };
   await referenceChange(ctx, change, handle, reference, connect, host);
-  assert.match(body, /Closes #2/);
+  assert.match(body, /^Closes #2$/m);
   const before = state().calls.filter((call: any) => call.name === 'FieldStatus').length;
   await assert.rejects(completeChange(ctx, change, handle, reference, connect, host), /not merged/);
   assert.equal(state().calls.filter((call: any) => call.name === 'FieldStatus').length, before);
