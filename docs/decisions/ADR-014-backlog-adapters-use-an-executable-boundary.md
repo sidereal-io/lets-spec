@@ -1,7 +1,7 @@
 ---
 id: adr-014
 date: 2026-11-03
-status: proposed
+status: accepted
 title: 'ADR-014: Backlog adapters use an executable boundary'
 description: Architecture decision record for independently installed backlog adapters using a versioned JSON process boundary
 ---
