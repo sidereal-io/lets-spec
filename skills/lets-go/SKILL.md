@@ -5,9 +5,11 @@ description: Take one shaped story, bug or chore from its issue to a pull reques
 
 # Let's go
 
-Take one shaped story, bug or chore to a pull request ready for review,
-in one run. *Start* claims the issue in this session. Then each step
-runs in a fresh session: propose, apply, then apply review. A step never
+Take one story, bug or chore to a pull request ready for review, in one
+run. Start from its issue number, or from an idea in words. *Start*
+claims the issue in this session. Then each step runs in a fresh
+session: shape when the issue needs it, then propose, apply and apply
+review. A step never
 asks the user. It ends with a report. This session answers its questions
 or asks the user, as the interactivity level says. Run every command
 below from the repo root.
@@ -318,10 +320,25 @@ Each case names what you found, such as the path, or the pull request's
 
 ## The steps
 
-There are three steps, in this order: `propose`, `apply`, then
-`apply-review`. Run them from the first unfinished step. `<step>` is one
-of these names, and `<name>` is the change's name. Each step gets its own
-prompt, and runs as [Run a step](#run-a-step) says.
+There are four steps, in this order: `shape`, `propose`, `apply`, then
+`apply-review`. Shape runs only inside *Start*, as
+[Run the shape step](#run-the-shape-step) says. Run the others from the
+first unfinished step. `<step>` is one of these names. Each step gets its
+own prompt, and runs as [Run a step](#run-a-step) says.
+
+`<name>` is the change's name. Shape runs before there is one, so its
+`<name>` comes from what it shapes:
+
+- **An issue:** `issue-<i>`, such as `issue-180`.
+- **An idea:** `idea-<slug>`. To make `<slug>`, split the idea on white
+  space. Lower-case each word, and keep only its letters and digits.
+  Drop a word left empty. Join the first five words with hyphens, or all
+  of them when there are fewer. `fix lets-sync — quiet output` becomes
+  `idea-fix-letssync-quiet-output`. The same idea typed again gets the
+  same name, so it finds its answers file.
+
+So the shape step runs with `--for shape` and `--name <name>-shape`,
+such as `--name idea-fix-letssync-quiet-output-shape`.
 
 ## Write the prompt
 
@@ -329,6 +346,24 @@ Create the folder first, if it is missing: `mkdir -p .workspace/lets-go`.
 Then write the frame below to `.workspace/lets-go/<name>-<step>-prompt.md`.
 Fill in each `<...>`, and put the step's row from the table under
 *What to run*. `<schema>` and `<level>` are the ones *Start* set.
+
+For shape, the first two lines differ. There is no change, the branch is
+the default branch, `<default>`, and *Route* has not run, so there is no
+schema. For an issue, they are:
+
+```text
+You run one step of a lets-go run: shape, for issue #<i>.
+Issue: #<i>, <issue URL>. Branch: <default>.
+```
+
+For an idea, they are:
+
+```text
+You run one step of a lets-go run: shape, for an idea.
+Issue: none yet. The idea is: <idea>. Branch: <default>.
+```
+
+The rest of the frame is the same for every step.
 
 ````text
 You run one step of a lets-go run: <step>, for the change <name>.
@@ -350,7 +385,8 @@ here can answer.
 When you need a decision, stop. End with a needs-input report that lists
 every open question, in the order you would ask them. Give a
 recommendation where you have one. Give none for a question that asks
-the user to confirm something, such as a brainstorm ledger.
+the user to confirm something, such as a brainstorm ledger or an issue
+packet.
 
 A resumed step ends with an `## Answers` section. Each answer settles its
 question, so never ask it again. An answer that ends with "(lets-go
@@ -385,12 +421,14 @@ reason: The tests fail on main before any change.
 ```
 
 A done report's evidence lists the commits you made, and the pull request
-when you opened or changed it. Write the report last. Quote a line that
+when you opened or changed it. For shape, its first line is the issue,
+as `issue #<n>: <title>`. Write the report last. Quote a line that
 holds `#` or `: `. Put no other step-report block in the message.
 ````
 
 | Step | What to run |
 |---|---|
+| `shape` | Run the `lets-shape` skill's *Shape one issue* to its end, including its second comment fetch, its reply and its glossary handoff. For an issue: shape #<i>. For an idea: lets-go has searched for it, and the user confirmed that no open issue is the same work. Skip the search in step 1, and create the issue. Create no change and no change branch. A glossary holding branch that `lets-shape` makes is allowed. End on the branch `<default>` with a clean tree. The packet confirmation in step 7 is a confirmation question: give it no recommendation. When the work is Size L or XL, too large for one issue, end with a failed report that says so and names `lets-shape` discovery. A done report's first evidence line is `issue #<n>: <title>`. |
 | `propose` | Invoke the `openspec-propose` skill for the change `<name>`, for issue #<i>. Give it this route line for the proposal's commit message: `<route line>`. When the route is `lets-minimal` and the flow's schema is not, say to use the schema `lets-minimal`. If the change exists, continue it. Stop when the plan is ready: do not build it, and offer no handoff. |
 | `apply` | Run the `lets-build` skill on the branch `<name>`. Stop when every task is ticked. Do not run its *Finish the change*. |
 | `apply-review` | Run the *Finish the change* section of the `lets-build` skill on the branch `<name>`. |
@@ -446,7 +484,7 @@ prompt, with any answers added.
 
 1. Run that prompt in a subagent that starts with no context from this
    session, and may write files. It works in the repository root, on the
-   branch `<name>`.
+   branch `<name>`. For shape, it works on the default branch.
 2. Read the last `step-report` block in the subagent's final message, by
    the rules `lets` uses:
    - The block opens with a line of three or more backticks followed by
@@ -469,9 +507,19 @@ prompt, with any answers added.
 
 ## Read the report
 
-Read `outcome` from `.workspace/lets-go/<name>-<step>-report.json`:
+Read `outcome` from `.workspace/lets-go/<name>-<step>-report.json`.
 
-- **`done`**: go on to the next step. After `propose`, print propose
+A shape step's `done` report must name its issue. Its first evidence line
+is `issue #<n>: <title>`, and `<n>` is `<i>`. When the line is not in
+that form, the report is `failed`, and its reason is that the shape step
+named no issue. Once shape reports `done` or `failed`, remove
+`.workspace/lets-go/<name>-shape-answers.yaml`. Nothing resumes a
+finished shape, and a later idea or a second shape of the same issue
+must start with no answers.
+
+- **`done`**: after `shape`, go back to *Start*, as
+  [Run the shape step](#run-the-shape-step) says. After any other step,
+  go on to the next step. After `propose`, print propose
   review's line from [Print the skip lines](#print-the-skip-lines)
   before you run `apply`: the `Done` form, or the `lets-minimal` line. After `apply-review`, go to [End of the run](#end-of-the-run).
 - **`needs-input`**: [relay its questions](#relay-the-questions).
@@ -479,6 +527,9 @@ Read `outcome` from `.workspace/lets-go/<name>-<step>-report.json`:
   the steps so far, ending with the failed one. Name the step and the
   branch `<name>`, and say that running `lets-build` on that branch
   carries the change on. Stop. Never run a failed step again.
+- **`failed`, for shape**: there is no branch yet. Print
+  `Failed shape: <reason>`. Say to run `lets-shape` on the idea, or on
+  #<i>, and name no branch. Stop.
 
 ## Relay the questions
 
