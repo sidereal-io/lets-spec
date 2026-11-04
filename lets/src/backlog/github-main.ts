@@ -6,7 +6,7 @@ import { Claims } from './claims.ts';
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import { join } from 'node:path';
-import { validateRequest, validateResponse, MUTATIONS } from './protocol.ts';
+import { validateRequest, validateResponse, parseRequest, MUTATIONS } from './protocol.ts';
 import { GitHub, fail } from './github.ts';
 import type { Context, Query } from './github.ts';
 import { ghQuery } from './gh.ts';
@@ -62,7 +62,7 @@ export async function main() {
   let request: any;
   try {
     const input = await readStdin();
-    try { request = JSON.parse(input); validateRequest(request as unknown); } catch { fail('invalid_request', 'invalid protocol request'); }
+    request = parseRequest(input);
     const response = { protocol: 1, ok: true, result: await dispatch(request) };
     validateResponse(response as unknown, 0, request.operation); process.stdout.write(JSON.stringify(response) + '\n');
   } catch (error) {
