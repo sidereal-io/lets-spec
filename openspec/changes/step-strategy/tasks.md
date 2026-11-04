@@ -33,3 +33,8 @@ Before pushing, also run `nix flake check`, as AGENTS.md requires.
 ## Deviations Ledger
 
 <!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-03, task 2.1: `readReport` tracks every fenced block, not only `step-report` ones. So a `step-report` fence quoted inside a longer fence of another kind opens no report. This follows CommonMark, and narrows the risk in design.md of a quoted block read as the report.
+- 2026-11-03, task 2.1: YAML reads ` #` as the start of a comment, so an unquoted `- pull request #164` loses its number. The tests quote such lines, and `docs/resolvers.md` tells a step to quote them.
+- 2026-11-03, task 2.2: a `needs-input` question whose `recommendation` is null reads as one with no recommendation, as an empty `recommendation:` line in YAML gives null.
+- 2026-11-03, task 1.1: `Config.delegate` gained `step?: unknown` in task 1.1, not 1.2, so the type check passes once `Strategy` widens. Task 1.2 made `parseConfig` keep the key.
