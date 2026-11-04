@@ -16,14 +16,24 @@ every command below from the repo root.
 
 ## Start
 
-1. Take the issue number the user gave as `<i>`. If they gave none, say
-   that `lets-go` needs an issue number, and stop.
-2. Find the default branch as `lets-build` does, and run
-   `git branch --show-current`. If you are on another branch, say that
-   `lets-go` starts only on the default branch. When the branch has a
-   change, `openspec/changes/<branch>/`, also say that running
-   `lets-build` on it carries the change on, and that #150 adds resuming
-   a run. Stop.
+1. Find the default branch as `lets-build` does, and run
+   `git branch --show-current`.
+2. Find the issue, `<i>`:
+   - **On the default branch**, take the issue number the user gave. If
+     they gave none, say that `lets-go` needs an issue number, and stop.
+   - **On another branch**, `<branch>`, search for the change's issue:
+
+     ```bash
+     gh issue list --state open --search "<branch> in:title" --json number,title
+     ```
+
+     Keep the issues whose title starts with `<branch> — `. When the
+     user gave a number, it must be one of them. If it is not, say that
+     the issue and the branch do not match, and stop. When they gave
+     none, exactly one match is the issue. If none matches, say that
+     `lets-go` runs on the default branch or on a change's branch, and
+     needs the issue number on a change's branch. Stop. If several
+     match, say that `lets-go` needs the issue number, and stop.
 3. Run `lets-build`'s *Find the source of demand* for the named issue,
    then its *Confirm the packet*. A stop either section makes stands, as
    `lets-build` reports it. A packet that fails sends the user to
@@ -46,20 +56,47 @@ every command below from the repo root.
    gh issue view <i> --json createdAt --jq .createdAt
    ```
 
-6. Run `lets-build`'s *Route*, then its *Claim*. Keep the route line: the
-   propose step needs it. A stop *Claim* makes stands. When its glossary
-   preflight found owned edits, also run *Import the glossary
-   checkpoint*.
-7. *Claim* creates the change's branch, `<name>`. Switch to it if you are
-   not on it, and stay on it for the whole run.
-8. Print the interactivity level:
+6. Run `lets-build`'s *Route*. Keep the route line: the propose step
+   needs it. `<name>` is the change's name, as *Claim* names it. On a
+   change's branch, it is `<branch>`.
+7. On the default branch, look for the change's branch, here and on
+   `origin`:
 
-   ```text
-   Interactivity: recommend, because #<i> is a Chore.
+   ```bash
+   git branch --list <name>
+   git ls-remote --heads origin <name>
    ```
 
-   At `recommend`, this session answers each question that has a
-   recommendation, and asks the user the rest.
+   - **Neither prints a line:** run `lets-build`'s *Claim*. A stop it
+     makes stands. When its glossary preflight found owned edits, also
+     run *Import the glossary checkpoint*. *Claim* creates the branch.
+   - **Either prints a line:** the change has started. Do not run
+     *Claim*. Run `git switch <name>`.
+
+   Stay on `<name>` for the whole run.
+8. When `origin` has the branch, bring it up to date before you read any
+   record. On a change's branch, run the `git ls-remote` above to check.
+
+   ```bash
+   git fetch origin <name>
+   git merge --ff-only origin/<name>
+   ```
+
+   If the merge cannot fast-forward, the branch and `origin` have
+   diverged. Print `Records disagree:`, say so, and say to reconcile the
+   two by hand. Stop. If any command here fails for another reason, show
+   the user its error, and stop.
+9. Set `<schema>`. When `openspec/changes/<name>/.openspec.yaml` exists,
+   it is that file's `schema:` line. Otherwise it is the schema *Route*
+   picked.
+10. Print the interactivity level:
+
+    ```text
+    Interactivity: recommend, because #<i> is a Chore.
+    ```
+
+    At `recommend`, this session answers each question that has a
+    recommendation, and asks the user the rest.
 
 *Start* runs in this session. It is not a step, and has no step report.
 
@@ -74,7 +111,7 @@ step gets its own prompt, and runs as [Run a step](#run-a-step) says.
 Create the folder first, if it is missing: `mkdir -p .workspace/lets-go`.
 Then write the frame below to `.workspace/lets-go/<name>-<step>-prompt.md`.
 Fill in each `<...>`, and put the step's row from the table under
-*What to run*. `<schema>` is the schema *Route* picked.
+*What to run*. `<schema>` is the schema *Start* set.
 
 ````text
 You run one step of a lets-go run: <step>, for the change <name>.
