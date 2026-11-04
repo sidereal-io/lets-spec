@@ -111,8 +111,9 @@ language and release schedule without loading provider dependencies into `lets`.
 This extension goal carries the cost of a versioned protocol, separate
 installation and conformance checks. Third-party adoption remains unproven.
 
-Process isolation does not sandbox an adapter: installing its executable is a
-repository trust decision.
+Process isolation is not a sandbox. An adapter can access inherited credentials
+and local resources; separating runtime dependencies does not confine that
+access. Installing its executable is a repository trust decision.
 
 ## Operation semantics
 
