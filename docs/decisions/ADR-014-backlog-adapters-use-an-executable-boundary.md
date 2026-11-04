@@ -78,3 +78,13 @@ to backlog adapters; ADR-010 continues to govern delegation resolvers.
   configuration and availability management, including for local backlogs.
 - **Why not**: the request/response workflow does not justify those operational
   requirements. The executable contract needs no separately managed service.
+
+### Alternative 4: Skills call provider tools directly
+
+- **Pros**: uses provider tools without an adapter protocol or separate adapter
+  installation.
+- **Cons**: each skill repeats provider commands, output parsing and workflow
+  policy for every supported provider.
+- **Why not**: adding a provider would require changes across the skills, and
+  duplicated policy could drift between providers. The adapter boundary keeps
+  workflow decisions shared while provider translation changes independently.
