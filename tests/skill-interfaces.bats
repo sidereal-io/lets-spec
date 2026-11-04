@@ -279,6 +279,7 @@ skill_says() {
   skill_says lets-go '--for shape'
   skill_says lets-go 'Failed shape:'
   skill_says lets-go 'at most once'
+  skill_says lets-go 'holds another idea'
   for phrase in '#153 adds' '`lets-go` needs an issue number, and stop'; do
     ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
       { echo "lets-go still says: $phrase"; false; }

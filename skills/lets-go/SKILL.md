@@ -179,8 +179,14 @@ stop that *Confirm the packet* makes stands.
    Interactivity: ask, because shape has not run yet.
    ```
 
-2. Run the `shape` step, as [Run a step](#run-a-step) says.
-3. When it reports `done`, [Read the report](#read-the-report) gives
+2. For an idea, check that the answers file is this idea's. Two ideas
+   can share their first five words, and so their `<name>`. When
+   `.workspace/lets-go/<name>-shape-prompt.md` exists and holds another
+   idea, an earlier run stopped part way on that one. Remove
+   `.workspace/lets-go/<name>-shape-answers.yaml` before you write the
+   prompt.
+3. Run the `shape` step, as [Run a step](#run-a-step) says.
+4. When it reports `done`, [Read the report](#read-the-report) gives
    `<i>`. Go on from step 3 with it, as for an issue number.
 
 ## Find the first unfinished step
