@@ -17,3 +17,12 @@ description: Architecture decision record (ADR) for keeping lets-build as the sk
 ## Decision
 
 `lets-build` stays. It is the skill that does one session's share of the workflow, and `lets-go` runs it across sessions. Its handoff offer goes: the question whether to build the plan in a new session, and the `lets delegate handoff` commands behind it. `lets-go` on the change's branch does the same job, and adds a step report, a relay for the step's questions, and a resume. When the plan is ready, `lets-build` names the two ways on: run `lets-build` on the branch to build it here, or run `lets-go` to build it in fresh sessions. The routing table keeps both skills.
+
+## Consequences
+
+- Easier: one way to build a plan in fresh sessions, not two. A user who wants that runs `lets-go`, and gets its reports and resume.
+- Easier: `lets-go` keeps a stable base. The sections it names stay in `lets-build`, and a fix to one reaches both skills.
+- Easier: the `handoff` strategy loses its one caller, so a change of its own can remove it: the `lets delegate handoff` commands, the `start` adapter method, the `delegate.handoff` config key, and their specs and tests. The adapter contract shrinks to `run` and `step`.
+- Harder: the trim is its own change, and touches several files: `skills/lets-build/SKILL.md`, the README's `lets-build` section and its section on reviews in a fresh session, `docs/resolvers.md`, and the tests that pin the handoff text.
+- Harder: until the `handoff` strategy is removed, it ships with no caller.
+- Harder: a user who used the offer to start a session in another harness by hand loses that path. They start it themselves with `lets-build` on the branch.
