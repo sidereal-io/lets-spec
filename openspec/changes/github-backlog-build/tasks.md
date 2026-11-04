@@ -5,7 +5,7 @@
 
 ## 2. GitHub build operations [depends-on: 1]
 
-- [ ] 2.1 [complex] Read complete repository-scoped GitHub packets through the executable, including linked Project discovery/checking, native mappings, capability gaps, parents, comments and directional blocker pagination (verify: node --test tests/lets/backlog/github-read.test.ts)
+- [x] 2.1 [complex] Read complete repository-scoped GitHub packets through the executable, including linked Project discovery/checking, native mappings, capability gaps, parents, comments and directional blocker pagination (✓ mise exec -- node --test tests/lets/backlog/github-read.test.ts passed: 12 tests; typecheck passed; read-only discovery and mappings verified against the designated live fixture)
 - [ ] 2.2 [medium] Select eligible named or next work using shared ranking and complete readiness evidence, preserving numeric GitHub order and rejecting owned or blocked items (verify: node --test tests/lets/backlog/selection.test.ts)
 - [ ] 2.3 [complex] Acquire a verified best-effort GitHub claim with Project provenance, a fresh explicit continuation handle and durable mutation state; reject competing sessions and assignment-only progress (verify: node --test tests/lets/backlog/claim.test.ts)
 - [ ] 2.4 [complex] Reconcile interrupted claim mutations before allowing progression or replay, checking current provenance rather than trusting journal history (verify: node --test tests/lets/backlog/recovery.test.ts)
