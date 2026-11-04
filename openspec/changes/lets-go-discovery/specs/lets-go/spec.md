@@ -1,7 +1,9 @@
 ## ADDED Requirements
 
 ### Requirement: The shape step asks before it runs discovery
-When the shape step finds the work too large for one issue, Size L or XL, or finds that the input holds a large idea, it SHALL NOT fail and SHALL NOT start discovery on its own. It SHALL end its round with a `needs-input` report that holds the question `The work is Size <L or XL>, too large for one issue. Run discovery on it?` with the recommendation `yes`. `lets-go` SHALL relay that question as it relays any other, at the run's level. When the answer is `yes`, the resumed step SHALL run `lets-shape`'s discovery with the idea or #<i> as its input, every phase from Ingest to Finalize, including the glossary handoff. Each phase's confirmation, and the story table in Phase 5, SHALL be a confirmation question with no recommendation. When an open parent issue says `Discovery status: in-progress` and names this input, the resumed step SHALL resume it, as `lets-shape`'s *Resume mode* says, rather than start a second run. For an idea, the prompt SHALL say to write the idea's words in the parent's `Input:` line, so a resumed round can match it. The step SHALL create no change and no change branch; the parent issue, the stories and a glossary holding branch are `lets-shape`'s own. When the answer is anything but `yes`, the step SHALL end with a `failed` report that says the work is too large for one issue and discovery was declined. The shape prompt SHALL say all of this, and SHALL recommend the first story in dependency order as the owner of glossary edits made in discovery.
+The shape step SHALL NOT fail, and SHALL NOT start discovery on its own, when it finds the work too large for one issue. Too large means Size L or XL, or an input that holds a large idea. It SHALL end its round with a `needs-input` report that holds the question `The work is Size <L or XL>, too large for one issue. Run discovery on it?` with the recommendation `yes`. `lets-go` SHALL relay that question as it relays any other, at the run's level. When the answer is `yes`, the resumed step SHALL run `lets-shape`'s discovery with the idea or #<i> as its input. It SHALL run every phase from Ingest to Finalize, including the glossary handoff. Each phase's confirmation, and the story table in Phase 5, SHALL be a confirmation question with no recommendation. The parent's `Input:` line SHALL hold the idea's words for an idea, or `#<i>` for an issue, so a later round can match it. When the answer is anything but `yes`, the step SHALL end with a `failed` report that says the work is too large for one issue and discovery was declined. The step SHALL create no change and no change branch; the parent issue, the stories and a glossary holding branch are `lets-shape`'s own.
+
+The shape prompt SHALL say all of this. It SHALL order the step's entry points, so a fresh round does not re-enter *Shape one issue*. First: when an open parent issue says `Discovery status: in-progress` and its `Input:` line names this input, run *Resume mode* on it, and start no second run. Second: when the `## Answers` section answers the discovery question with `yes`, run discovery from Ingest. Otherwise: run *Shape one issue*. It SHALL say that the phases the `## Answers` section confirmed are settled, so *Resume mode* goes straight to the parent's recorded next phase and asks no confirmation of its restatement. It SHALL recommend the first story in dependency order as the owner of glossary edits made in discovery.
 
 #### Scenario: A too-large idea asks
 - **WHEN** the shape step for the idea `rewrite the backlog around a plugin model` sizes it XL
@@ -12,8 +14,16 @@ When the shape step finds the work too large for one issue, Size L or XL, or fin
 - **THEN** the resumed step runs discovery from Ingest with the idea as its input, and ends its next round with Ingest's questions and the parent issue's confirmation, which has no recommendation
 
 #### Scenario: A resumed round finds the parent
-- **WHEN** the answers file holds the discovery question answered `yes`, and the open parent issue `Epic: plugin backlog` says `Discovery status: in-progress — next phase: moscow` with `Input: conversation, 2026-11-05`
-- **THEN** the resumed step resumes that parent at MoSCoW, and creates no second parent
+- **WHEN** the idea is `rewrite the backlog around a plugin model`, the answers file holds the discovery question answered `yes` and Ingest's confirmation, and the open parent issue `Epic: plugin backlog` says `Discovery status: in-progress — next phase: moscow` with `Input: rewrite the backlog around a plugin model`
+- **THEN** the resumed step resumes that parent at MoSCoW, asks no confirmation of where discovery stopped, and creates no second parent
+
+#### Scenario: A resumed round for an issue
+- **WHEN** the shape step is for `#180`, and an open parent issue says `Discovery status: in-progress` with `Input: #180`
+- **THEN** the resumed step resumes that parent, and does not shape #180 as one issue
+
+#### Scenario: The prompt orders the entry points
+- **WHEN** `lets-go` writes the shape prompt
+- **THEN** the file names *Resume mode* first, discovery from Ingest second, and *Shape one issue* otherwise, and says a confirmed phase is settled
 
 #### Scenario: The user declines
 - **WHEN** the answers file holds that question with the answer `no`
@@ -39,7 +49,7 @@ When discovery filed stories, the shape step's `done` report SHALL hold, as its 
 - **THEN** `lets-go` treats the step as `failed`, with a reason that says the shape step named no story, and stops
 
 ### Requirement: lets-go picks the first ready story
-After a shape report that names a parent and stories, `lets-go` SHALL pick one story by naming `lets-build`'s *Find the source of demand*, its third case, `next`. The candidates SHALL be the report's stories and no other issue. That case's two commands, its rank of Must, then Should, then Could, then the lowest issue number, and its *Check the prerequisite* on each candidate in rank order SHALL run as `lets-build` writes them. `lets-go` SHALL print `Picked #<n>: <title>, the first ready story under #<p>.` and go on from Start's blocker read with that story as `<i>`, as for an issue number. When no candidate is ready, `lets-go` SHALL print the `Done shape` line, say that no story under #<p> is ready, name each story and why it was left out, say to run `lets-go` with a story's number once it is ready, and stop. It SHALL claim nothing and create no branch in that case.
+After a shape report that names a parent and stories, `lets-go` SHALL pick one story by naming `lets-build`'s *Find the source of demand*, its third case, `next`. The candidates SHALL be the report's stories and no other issue. That case's two commands SHALL run as `lets-build` writes them. So SHALL its rank, Must, then Should, then Could, then the lowest issue number, and its *Check the prerequisite* on each candidate in rank order. `lets-go` SHALL print `Picked #<n>: <title>, the first ready story under #<p>.` It SHALL then go on from Start's blocker read with that story as `<i>`, as for an issue number. When no candidate is ready, `lets-go` SHALL print the `Done shape` line and say that no story under #<p> is ready. It SHALL name each story and why it was left out, say to run `lets-go` with a story's number once it is ready, and stop. It SHALL claim nothing and create no branch in that case.
 
 #### Scenario: The walking skeleton is picked
 - **WHEN** the report names stories #191, #192 and #193, all Todo with Priority Must, #192 and #193 are blocked by #191, and nobody is assigned to any
@@ -57,8 +67,23 @@ After a shape report that names a parent and stories, `lets-go` SHALL pick one s
 - **WHEN** every story the report names is blocked by a documentation chore that owns the glossary edits
 - **THEN** `lets-go` prints the `Done shape` line, says no story under #190 is ready, names each story and its blocker, says to run `lets-go` with a story's number once it is ready, and stops with no branch
 
+### Requirement: A stopped discovery resumes from its parent issue
+A discovery can stop between rounds, or before *Claim*, when no story is ready. For an idea, before the title search of *Start from an idea*, `lets-go` SHALL look for an open parent issue that says `Discovery status: in-progress` and whose `Input:` line holds the idea's words. It SHALL use `lets-shape`'s own query, `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`. When one exists, `lets-go` SHALL say that a discovery of this idea is in progress at #<p>, skip the title search, and run the shape step for the idea. The step resumes that discovery, as *The shape step asks before it runs discovery* says. For an issue, no check is needed: the stops of *Confirm the packet* send #<i> to the shape step, which finds the parent whose `Input:` is `#<i>`. The answers file rules of *The shape step shapes an idea or an unshaped issue* SHALL stand: an idea retyped word for word keeps its answers, and a reworded idea starts with none and is a new input. The phases the parent already recorded are not lost either way.
+
+#### Scenario: The same idea again
+- **WHEN** a run for `rewrite the backlog around a plugin model` stopped at MoSCoW, the open parent `Epic: plugin backlog` says `Discovery status: in-progress` with `Input: rewrite the backlog around a plugin model`, and the user runs `lets-go rewrite the backlog around a plugin model` again
+- **THEN** `lets-go` says a discovery of this idea is in progress at that parent, runs no title search, and runs the shape step, whose round resumes the parent at MoSCoW
+
+#### Scenario: A reworded idea
+- **WHEN** the user runs `lets-go rewrite the backlog around a plugin system` instead, and no parent's `Input:` line holds those words
+- **THEN** `lets-go` runs the title search as usual, and a yes on `Epic: plugin backlog` stops at the Epic stop, as `lets-build` does
+
+#### Scenario: An issue's discovery again
+- **WHEN** the user runs `lets-go` for `#180` again, #180 still has no Kind, and an open parent says `Discovery status: in-progress` with `Input: #180`
+- **THEN** *Confirm the packet* sends #180 to the shape step, whose round resumes that parent
+
 ### Requirement: lets-go commits the discovery map on the story's branch
-Discovery edits `openspec/discovery.md` in the working tree on the default branch. The shape step SHALL end on the default branch with the tree clean, except `openspec/discovery.md` when discovery ran. After *Claim* creates the picked story's branch, and before *Find the first unfinished step* reads the tree, `lets-go` SHALL commit that file alone on the branch, with `git add openspec/discovery.md` and a `docs:` commit whose message is `docs: the discovery map from #<p>`. It SHALL commit no other path. When `openspec/discovery.md` is unchanged, it SHALL make no commit. When the run stops after discovery and before *Claim*, `lets-go` SHALL say that `openspec/discovery.md` holds the discovery's map, uncommitted on the default branch.
+Discovery edits `openspec/discovery.md` in the working tree on the default branch. Before it runs the shape step, `lets-go` SHALL run `git status --porcelain`. When that lists `openspec/discovery.md`, `lets-go` SHALL say the map has uncommitted edits, say to commit or discard them, and stop. The shape step SHALL end on the default branch with the tree clean, except `openspec/discovery.md` when discovery ran. When the shape step ran in this run and *Claim* created the picked story's branch, `lets-go` SHALL commit that file alone on the branch before *Find the first unfinished step* reads the tree. The commit is `git add openspec/discovery.md` and a `docs:` commit whose message is `docs: the discovery map from #<p>`. `<p>` is the parent's number, or the story's when the parent became the one story. It SHALL commit no other path. When `openspec/discovery.md` is unchanged, or no shape step ran in this run, it SHALL make no commit. When the run stops after discovery and before *Claim*, `lets-go` SHALL say that `openspec/discovery.md` holds the discovery's map, uncommitted on the default branch. It SHALL say to commit or discard it before the next run, because a run stops on a dirty tree.
 
 #### Scenario: The map is committed
 - **WHEN** discovery changed `openspec/discovery.md`, and *Claim* created the branch `plugin-contract`
@@ -70,7 +95,19 @@ Discovery edits `openspec/discovery.md` in the working tree on the default branc
 
 #### Scenario: The run stops before Claim
 - **WHEN** no story is ready, and `openspec/discovery.md` is modified
-- **THEN** `lets-go` says the map is uncommitted on the default branch, and commits nothing
+- **THEN** `lets-go` says the map is uncommitted on the default branch, says to commit or discard it before the next run, and commits nothing
+
+#### Scenario: A dirty map before the shape step
+- **WHEN** `git status --porcelain` lists ` M openspec/discovery.md` before the shape step runs
+- **THEN** `lets-go` says the map has uncommitted edits, says to commit or discard them, and runs no step
+
+#### Scenario: A later run with no shape step
+- **WHEN** the user runs `lets-go #191` after the map was committed by hand, #191's packet is complete, and *Claim* creates the branch
+- **THEN** `lets-go` makes no map commit
+
+#### Scenario: A discovery that fits one story
+- **WHEN** discovery edited the map and the parent became story #190, and *Claim* created #190's branch
+- **THEN** `lets-go` commits the map as `docs: the discovery map from #190`
 
 ## MODIFIED Requirements
 
@@ -82,7 +119,8 @@ Discovery edits `openspec/discovery.md` in the working tree on the default branc
 - the issue search of *lets-go takes one issue number or an idea*;
 - `git branch --list <name>` and `git ls-remote --heads origin refs/heads/<name>`, to find the change's branch, and the fetch, switch and fast-forward above;
 - the Git and GitHub reads of *lets-go finds the first unfinished step* and *A skipped step's line carries its evidence and date*;
-- the commit of `openspec/discovery.md` that *lets-go commits the discovery map on the story's branch* says.
+- the in-progress parent query of *A stopped discovery resumes from its parent issue*, run only for an idea;
+- the `git status --porcelain` before the shape step, and the commit of `openspec/discovery.md`, that *lets-go commits the discovery map on the story's branch* says.
 
 Start SHALL not be a step: it SHALL run no `lets delegate step` command of its own and SHALL produce no step report. The shape step it runs is a step, and has a report.
 
@@ -127,7 +165,7 @@ Start SHALL not be a step: it SHALL run no `lets delegate step` command of its o
 - **THEN** `lets-go` names `lets-build`'s `next` case, with the three stories as the only candidates, and adds no command of its own for the pick
 
 ### Requirement: The shape step shapes an idea or an unshaped issue
-`lets-go` SHALL run a step named `shape` when the request is an idea that no existing issue matches. It SHALL also run it when *Confirm the packet* stops on the default branch with a remedy of running `lets-shape` on #<i>. It SHALL run that step as *Each step runs through lets delegate step* says, with `--for shape`, on the default branch, before any branch or change exists. The shape step SHALL run at most once per run. After it, a stop that *Confirm the packet* makes SHALL stand. `<name>` for the shape step SHALL be `issue-<i>` for an existing issue, and `idea-<slug>` for an idea. `<slug>` SHALL be built this way: split the idea on white space; lower-case each word; keep only its letters and digits; drop a word left empty; join the first five words with hyphens, or all of them when there are fewer. Once the shape step reports `done` or `failed`, `lets-go` SHALL remove `.workspace/lets-go/<name>-shape-answers.yaml`. Before it writes the shape prompt for an idea, when `.workspace/lets-go/<name>-shape-prompt.md` exists and holds another idea, `lets-go` SHALL remove that answers file too. The shape prompt SHALL say to run `lets-shape`'s *Shape one issue* to its end, including its second comment fetch, its reply, and its glossary handoff. For an idea, it SHALL give the idea word for word. It SHALL say that Start has searched and the user confirmed no open issue is the same work, so the step skips the search and creates the issue. For an existing issue, it SHALL name #<i> and say to shape it. It SHALL say to create no change and no change branch, and to end on the default branch with a clean tree, except `openspec/discovery.md` when discovery ran; a glossary holding branch that `lets-shape` makes is allowed. It SHALL say that the packet confirmation is a confirmation question, with no recommendation. It SHALL say that the first evidence line of a `done` report is `issue #<n>: <title>` for one issue, and `epic #<p>: <title>` followed by `story #<n>: <title>` lines when discovery filed stories. It SHALL say that work too large for one issue, Size L or XL, or an input that holds a large idea, ends the round with the discovery question, as *The shape step asks before it runs discovery* says. When the step reports `done` for one issue, `lets-go` SHALL read `<i>` from that first evidence line. When it reports `done` for a parent and stories, `lets-go` SHALL pick `<i>` as *lets-go picks the first ready story* says. A `done` report whose first evidence line is in neither form SHALL count as `failed`, with a reason that says the shape step named no issue. After a `done` report, Start SHALL go on from its blocker read with `<i>`, as for an issue number, and the shape line SHALL be `Done shape: <date>. <evidence>`. When the step reports `failed`, `lets-go` SHALL print `Failed shape: <reason>`, say to run `lets-shape` on the idea or the issue, name no branch, and stop. When exit 3 sends the step to a subagent, the subagent SHALL work on the default branch.
+`lets-go` SHALL run a step named `shape` when the request is an idea that no existing issue matches. It SHALL also run it when *Confirm the packet* stops on the default branch with a remedy of running `lets-shape` on #<i>. It SHALL run that step as *Each step runs through lets delegate step* says, with `--for shape`, on the default branch, before any branch or change exists. The shape step SHALL run at most once per run. After it, a stop that *Confirm the packet* makes SHALL stand. `<name>` for the shape step SHALL be `issue-<i>` for an existing issue, and `idea-<slug>` for an idea. `<slug>` SHALL be built this way: split the idea on white space; lower-case each word; keep only its letters and digits; drop a word left empty; join the first five words with hyphens, or all of them when there are fewer. Once the shape step reports `done` or `failed`, `lets-go` SHALL remove `.workspace/lets-go/<name>-shape-answers.yaml`. Before it writes the shape prompt for an idea, when `.workspace/lets-go/<name>-shape-prompt.md` exists and holds another idea, `lets-go` SHALL remove that answers file too. The shape prompt SHALL say to run `lets-shape`'s *Shape one issue* to its end, including its second comment fetch, its reply, and its glossary handoff. For an idea, it SHALL give the idea word for word. It SHALL say that Start has searched and the user confirmed no open issue is the same work, so the step skips the search and creates the issue. For an existing issue, it SHALL name #<i> and say to shape it. It SHALL say to create no change and no change branch, and to end on the default branch with a clean tree, except `openspec/discovery.md` when discovery ran; a glossary holding branch that `lets-shape` makes is allowed. It SHALL say that the packet confirmation is a confirmation question, with no recommendation. It SHALL say what the first evidence line of a `done` report is: `issue #<n>: <title>` for one issue. When discovery filed stories, it is `epic #<p>: <title>`, followed by `story #<n>: <title>` lines. It SHALL say that work too large for one issue, Size L or XL, or an input that holds a large idea, ends the round with the discovery question, as *The shape step asks before it runs discovery* says. When the step reports `done` for one issue, `lets-go` SHALL read `<i>` from that first evidence line. When it reports `done` for a parent and stories, `lets-go` SHALL pick `<i>` as *lets-go picks the first ready story* says. A `done` report whose first evidence line is in neither form SHALL count as `failed`, with a reason that says the shape step named no issue. After a `done` report, Start SHALL go on from its blocker read with `<i>`, as for an issue number, and the shape line SHALL be `Done shape: <date>. <evidence>`. When the step reports `failed`, `lets-go` SHALL print `Failed shape: <reason>`, say to run `lets-shape` on the idea or the issue, name no branch, and stop. When exit 3 sends the step to a subagent, the subagent SHALL work on the default branch.
 
 #### Scenario: An idea no issue matches
 - **WHEN** the user runs `lets-go add a --quiet flag to lets sync`, and the search finds no open issue
@@ -230,6 +268,8 @@ Each step prompt SHALL name the step, the change, the issue, the branch and the 
 - `Picked #<n>: <title>, the first ready story under #<p>.`
 - `docs: the discovery map from #<p>`
 - `Discovery status: in-progress`
+- `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`
+- `*Resume mode*`
 - `issue-<i>`
 - `idea-<slug>`
 - `openspec instructions apply --change <name> --json`
