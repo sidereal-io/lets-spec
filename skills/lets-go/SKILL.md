@@ -186,8 +186,38 @@ stop that *Confirm the packet* makes stands.
    `.workspace/lets-go/<name>-shape-answers.yaml` before you write the
    prompt.
 3. Run the `shape` step, as [Run a step](#run-a-step) says.
-4. When it reports `done`, [Read the report](#read-the-report) gives
-   `<i>`. Go on from step 3 with it, as for an issue number.
+4. When it reports `done`, [Read the report](#read-the-report) says
+   what it shaped:
+   - **One issue:** that issue is `<i>`. Go on from step 3 with it, as
+     for an issue number.
+   - **A parent and its stories:**
+     [pick the first ready story](#pick-the-first-ready-story).
+
+### Pick the first ready story
+
+Discovery filed a parent issue, `#<p>`, and its stories. Build one of
+them in this run.
+
+1. Run `lets-build`'s *Find the source of demand*, its third case,
+   `next`, with one narrowing: the candidates are the stories the report
+   named, and no other issue. Run that case's two commands as
+   `lets-build` writes them. Rank as it does: Must, then Should, then
+   Could, then the lowest issue number. Run its *Check the prerequisite*
+   on each candidate, in rank order. A ready story is one that `next`
+   would take.
+2. When a story is ready, print:
+
+   ```text
+   Picked #<n>: <title>, the first ready story under #<p>.
+   ```
+
+   That story is `<i>`. Go on from step 3 with it, as for an issue
+   number.
+3. When no story is ready, print the `Done shape` line of *Start*, step 5. Say
+   that no story under #<p> is ready. Name each story, and why it was
+   left out: for example, its blocker, its assignee, or an unresolved
+   prerequisite. Say to run `lets-go` with a story's number once it is
+   ready. Then stop. Claim nothing, and create no branch.
 
 ## Find the first unfinished step
 
@@ -574,10 +604,18 @@ prompt, with any answers added.
 
 Read `outcome` from `.workspace/lets-go/<name>-<step>-report.json`.
 
-A shape step's `done` report must name its issue. Its first evidence line
-is `issue #<n>: <title>`, and `<n>` is `<i>`. When the line is not in
-that form, the report is `failed`, and its reason is that the shape step
-named no issue. Once shape reports `done` or `failed`, remove
+A shape step's `done` report must name what it shaped. Its first
+evidence line is one of these:
+
+- `issue #<n>: <title>`: one issue, and `<n>` is `<i>`.
+- `epic #<p>: <title>`: the parent issue of a discovery, and `<p>` is its
+  number. Each `story #<n>: <title>` line after it names one story, in
+  the order discovery created them.
+
+When the first line is in neither form, the report is `failed`, and its
+reason is that the shape step named no issue. When it is an `epic` line
+and no `story` line follows, the report is `failed`, and its reason is
+that the shape step named no story. Once shape reports `done` or `failed`, remove
 `.workspace/lets-go/<name>-shape-answers.yaml`. Nothing resumes a
 finished shape, and a later idea or a second shape of the same issue
 must start with no answers.
