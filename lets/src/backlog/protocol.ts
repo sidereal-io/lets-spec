@@ -1,3 +1,4 @@
+import { AdapterFailure } from './errors.ts';
 import type { BacklogRequest, BacklogResponse } from './types.ts';
 import { validateItem, METADATA } from './items.ts';
 import { isAbsolute } from 'node:path';
@@ -323,4 +324,24 @@ function validateNestedResult(operation: string, result: Record<string, unknown>
           `capabilities.${name}.guarantee`,
         );
     }
+}
+
+// Adapter-side stdin boundary. Caller-side validation remains independent.
+export function parseRequest(text: string): BacklogRequest {
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw new AdapterFailure('invalid_request', 'none', 'malformed request JSON');
+  }
+  if (!value || typeof value !== 'object' ||
+      (value as Record<string, unknown>).protocol !== PROTOCOL) {
+    throw new AdapterFailure('unsupported', 'none', 'unsupported protocol');
+  }
+  try {
+    validateRequest(value);
+  } catch (error) {
+    throw new AdapterFailure('invalid_request', 'none', String(error));
+  }
+  return value;
 }

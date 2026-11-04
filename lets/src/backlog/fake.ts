@@ -7,15 +7,14 @@ import { AdapterFailure } from './errors.ts';
 /** Executable representative simulation. No provider SDK, credentials or network. */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { validateRequest, ERRORS } from './protocol.ts';
+import { validateRequest, parseRequest, ERRORS } from './protocol.ts';
 import { profile } from './profiles.ts';
 import { identityKey, updateMapped, readMapped, validateItem } from './items.ts';
 import { requireCapability } from './capabilities.ts';
 let text = '';
 for await (const chunk of process.stdin) text += chunk;
 try {
-  const request: unknown = JSON.parse(text);
-  validateRequest(request);
+  const request = parseRequest(text);
   const { context, input, operation, mutationId } = request;
   const { capabilities, mappings } = profile(context.provider);
   const fault = process.argv[2];
