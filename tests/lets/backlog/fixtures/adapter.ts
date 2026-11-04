@@ -1,3 +1,6 @@
+import { realIo } from '../../../../lets/src/io.ts';
+import { validateResponse } from '../../../../lets/src/backlog/protocol.ts';
+import { AdapterFailure } from '../../../../lets/src/backlog/errors.ts';
 import type { Operation, ResultMap } from '../../../../lets/src/backlog/types.ts';
 import { readState } from '../../../../lets/src/backlog/state.ts';
 import type { SimulationState } from '../../../../lets/src/backlog/state.ts';
@@ -21,7 +24,7 @@ export async function withAdapter<T>(
       operation: O,
       input?: Record<string, unknown>,
       key?: string,
-      options?: { context?: Partial<Context>; fault?: string },
+      options?: { context?: Partial<Context>; fault?: string; raw?: boolean },
     ) => Promise<ResultMap[O]>;
     state: () => SimulationState;
   }) => Promise<T>,
@@ -38,29 +41,24 @@ export async function withAdapter<T>(
     session: 'worker',
   };
   const call = async <O extends Operation>(
-    operation: O,
-    input: Record<string, unknown> = {},
-    key?: string,
-    options: { context?: Partial<Context>; fault?: string } = {},
-  ) =>
-    (
-      await invoke(
-        process.execPath,
-        {
-          protocol: 1,
-          operation,
-          input,
-          context: { ...context, ...options.context },
-          ...(key ? { mutationId: key } : {}),
-        },
-        {
-          args: [
-            fileURLToPath(new URL('../../../../lets/src/backlog/fake.ts', import.meta.url)),
-            ...(options.fault ? [options.fault] : []),
-          ],
-        },
-      )
-    ).result as ResultMap[O];
+    operation: O, input: Record<string, unknown> = {}, key?: string,
+    options: { context?: Partial<Context>; fault?: string; raw?: boolean } = {},
+  ): Promise<ResultMap[O]> => {
+    const request = { protocol: 1, operation, input,
+      context: { ...context, ...options.context }, ...(key ? { mutationId: key } : {}) };
+    const args = [fileURLToPath(new URL('../../../../lets/src/backlog/fake.ts', import.meta.url)),
+      ...(options.fault ? [options.fault] : [])];
+    if (options.raw) {
+      const result = await realIo().execFile(process.execPath, args, {
+        input: JSON.stringify(request), timeoutMs: 5000, maxBytes: 1024 * 1024, killSignal: 'SIGKILL',
+      });
+      const response: unknown = JSON.parse(result.stdout);
+      validateResponse(response, result.code ?? 1, operation);
+      if (!response.ok) throw new AdapterFailure(response.error.category, response.error.effects, response.error.message);
+      return response.result as ResultMap[O];
+    }
+    return (await invoke(process.execPath, request, { args })).result as ResultMap[O];
+  };
   try {
     if (selected)
       context.backlog = (

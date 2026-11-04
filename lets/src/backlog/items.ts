@@ -1,3 +1,4 @@
+import { AdapterFailure } from './errors.ts';
 import { object, validateIdentity } from './protocol.ts';
 import type { Identity } from './protocol.ts';
 export const METADATA = {
@@ -48,31 +49,31 @@ export function validateMappings(mappings: Mappings): void {
   object(mappings, 'invalid_configuration: mappings');
   for (const key of Object.keys(mappings))
     if (!Object.hasOwn(METADATA, key))
-      throw new Error(`invalid_configuration: unknown mapping ${key}`);
+      throw new AdapterFailure('invalid_configuration', 'none', `unknown mapping ${key}`);
   const used = new Set<string>();
   const storage = new Map<string, string>();
   for (const [field, values] of Object.entries(METADATA)) {
     const mapping = mappings[field];
     if (!mapping || typeof mapping.field !== 'string' || !mapping.field)
-      throw new Error(`invalid_configuration: mapping ${field} missing field`);
+      throw new AdapterFailure('invalid_configuration', 'none', `mapping ${field} missing field`);
     if (
       !['one', 'many'].includes(mapping.cardinality) ||
       (storage.has(mapping.field) &&
         (mapping.cardinality !== 'many' || storage.get(mapping.field) !== 'many'))
     )
-      throw new Error(`invalid_configuration: conflicting cardinality for ${mapping.field}`);
+      throw new AdapterFailure('invalid_configuration', 'none', `conflicting cardinality for ${mapping.field}`);
     storage.set(mapping.field, mapping.cardinality);
     object(mapping.values, `invalid_configuration: mapping ${field}.values`);
     for (const key of Object.keys(mapping.values))
       if (!(values as readonly string[]).includes(key))
-        throw new Error(`invalid_configuration: unknown mapping ${field}.${key}`);
+        throw new AdapterFailure('invalid_configuration', 'none', `unknown mapping ${field}.${key}`);
     for (const value of values) {
       const stored = mapping.values?.[value];
       if (typeof stored !== 'string' || !stored)
-        throw new Error(`invalid_configuration: mapping ${field}.${value} missing`);
+        throw new AdapterFailure('invalid_configuration', 'none', `mapping ${field}.${value} missing`);
       const key = JSON.stringify([mapping.field, stored]);
       if (used.has(key))
-        throw new Error(`invalid_configuration: ambiguous mapping ${field}.${value}`);
+        throw new AdapterFailure('invalid_configuration', 'none', `ambiguous mapping ${field}.${value}`);
       used.add(key);
     }
   }
@@ -98,7 +99,7 @@ export function updateMapped(
         ? !Array.isArray(previous)
         : typeof previous !== 'string')
     )
-      throw new Error(`invalid_configuration: storage cardinality for ${mapping.field}`);
+      throw new AdapterFailure('invalid_configuration', 'none', `storage cardinality for ${mapping.field}`);
     result[mapping.field] =
       mapping.cardinality === 'many'
         ? [
@@ -118,12 +119,12 @@ export function readMapped(data: Record<string, unknown>, mappings: Mappings): M
   for (const [field, mapping] of Object.entries(mappings)) {
     const stored = data[mapping.field];
     if (mapping.cardinality === 'many' ? !Array.isArray(stored) : typeof stored !== 'string')
-      throw new Error(`invalid_configuration: storage cardinality for ${mapping.field}`);
+      throw new AdapterFailure('invalid_configuration', 'none', `storage cardinality for ${mapping.field}`);
     const matches = Object.entries(mapping.values).filter(([, value]) =>
       Array.isArray(stored) ? stored.includes(value) : stored === value,
     );
     if (matches.length !== 1)
-      throw new Error(`invalid_configuration: ambiguous or missing ${field} value`);
+      throw new AdapterFailure('invalid_configuration', 'none', `ambiguous or missing ${field} value`);
     result[field] = matches[0][0];
   }
   return result as Metadata;

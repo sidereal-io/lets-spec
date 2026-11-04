@@ -1,10 +1,11 @@
+import { AdapterFailure } from './errors.ts';
 import { METADATA } from './items.ts';
 import type { Mappings } from './items.ts';
 import type { Capabilities } from './capabilities.ts';
 export const PROVIDERS = ['github', 'jira', 'linear', 'beads'] as const;
 export function profile(provider: string): { capabilities: Capabilities; mappings: Mappings } {
   if (!(PROVIDERS as readonly string[]).includes(provider))
-    throw new Error('invalid_configuration: unknown simulated profile');
+    throw new AdapterFailure('invalid_configuration', 'none', 'unknown simulated profile');
   const capabilities: Capabilities = Object.fromEntries(
     ['hierarchy', 'blockers', 'claims', 'metadata', 'references', 'completion'].map((name) => [
       name,

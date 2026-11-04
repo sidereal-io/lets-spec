@@ -1,3 +1,4 @@
+import { AdapterFailure } from './errors.ts';
 import type { Identity } from './protocol.ts';
 import type { Item } from './items.ts';
 export type Capability = {
@@ -9,15 +10,15 @@ export type Capabilities = Record<string, Capability>;
 export function requireCapability(capabilities: Capabilities, name: string): Capability {
   const capability = capabilities[name];
   if (!capability || capability.support === 'unsupported')
-    throw new Error(`unsupported: required capability ${name}`);
+    throw new AdapterFailure('unsupported', 'none', `required capability ${name}`);
   if (
     !['native', 'emulated'].includes(capability.support) ||
     typeof capability.limits !== 'string' ||
     (capability.support === 'emulated' && !capability.limits)
   )
-    throw new Error(`invalid capability ${name}`);
+    throw new AdapterFailure('invalid_request', 'none', `invalid capability ${name}`);
   if (name === 'claims' && !['atomic', 'best-effort'].includes(capability.guarantee as string))
-    throw new Error('invalid claims guarantee');
+    throw new AdapterFailure('invalid_request', 'none', 'invalid claims guarantee');
   return capability;
 }
 export type Candidate = Item & {
@@ -26,7 +27,7 @@ export type Candidate = Item & {
 };
 export function readyWork(items: Candidate[], repository: string): Candidate[] {
   if (items.some((item) => item.repository === repository && !item.blockers.complete))
-    throw new Error('unsupported: incomplete blocker enumeration');
+    throw new AdapterFailure('unsupported', 'none', 'incomplete blocker enumeration');
   return items
     .filter(
       (item) =>
