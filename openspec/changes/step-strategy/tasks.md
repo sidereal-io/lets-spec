@@ -3,7 +3,7 @@
 Types and lookup that every later task builds on. `Kind` and `Intent` widen, `Adapter` gains an optional `step`, and the fake adapter in `tests/lets/delegate/fixtures/command-deps.ts` gains a `step` behaviour and a switch that leaves `step` out.
 
 - [x] 1.1 [medium] `STRATEGIES.step` serves `shape`, `propose`, `propose-review`, `apply` and `apply-review` and sends `step`, and `pick('step')` skips an adapter without `step` as it skips one without `start` (verify: node --test tests/lets/delegate/strategies.test.ts tests/lets/delegate/lookup.test.ts) (✓ node --test tests/lets/delegate/strategies.test.ts tests/lets/delegate/lookup.test.ts passed)
-- [ ] 1.2 [easy] `parseConfig` keeps `delegate.step`, `guidanceFor` reads `delegate.step.<step>.guidance` and nothing from `handoff`, and `step instructions` probes for the `step` kind and prints `"strategy":"step"` (verify: node --test tests/lets/delegate/config.test.ts tests/lets/delegate/instructions.test.ts)
+- [x] 1.2 [easy] `parseConfig` keeps `delegate.step`, `guidanceFor` reads `delegate.step.<step>.guidance` and nothing from `handoff`, and `step instructions` probes for the `step` kind and prints `"strategy":"step"` (verify: node --test tests/lets/delegate/config.test.ts tests/lets/delegate/instructions.test.ts) (✓ node --test tests/lets/delegate/config.test.ts tests/lets/delegate/instructions.test.ts passed)
 
 ## 2. The report [depends-on: 1]
 
