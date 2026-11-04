@@ -24,3 +24,10 @@ do not substitute for that review. No tests should mirror the document wording.
 - 2026-11-03: Claude Opus 5.5 independently reviewed 7621cc7. Restored the
   direct-provider-tools alternative, aligned the ADR manifest status and made
   adoption wording durable. No architecture or protocol guarantees changed.
+
+- 2026-11-03: Reviewer feedback on PR #163 said the decision named only a JSON
+  format and did not say what an adapter is or point to its contract. Rewrote
+  the Decision section of ADR-014 to name the adapter, its responsibilities, the
+  contract as the only coupling and the per-operation process boundary. It still
+  leaves fields, operations and configuration to the contract. No architecture
+  or protocol guarantees changed.
