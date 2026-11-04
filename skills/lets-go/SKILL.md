@@ -141,7 +141,73 @@ and GitHub keep every record you need, so read them in this order:
 
 Shape is done once *Confirm the packet* passes. Propose review is done
 once propose is done. Every step before the first unfinished one is
-done. Run the steps from that one, in their usual order.
+done. [Print the skip lines](#print-the-skip-lines), then run the steps
+from that one, in their usual order.
+
+### Print the skip lines
+
+Print one line for each done step, in step order, before the first step
+that runs. *Start* has printed shape's line. When every step is done, no
+step runs: go to [End of the run](#end-of-the-run), which prints the
+lines.
+
+Each line is dated by one `git log` read. `<date>` is the commit's author
+date, from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is the
+short hash, from `%h`. A read that prints nothing means the
+[records disagree](#records-that-disagree).
+
+- **Propose.** Read the commit that added the task list:
+
+  ```bash
+  git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md
+  ```
+
+  ```text
+  Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).
+  ```
+
+- **Propose review.** When `<schema>` is `lets-minimal`, print:
+
+  ```text
+  Skipped propose review: not in the lets-minimal route.
+  ```
+
+  Otherwise, read the `VERDICT:` line of the change's `review.md`, in
+  its change folder or its archive folder, and the last commit that
+  wrote it:
+
+  ```bash
+  git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md
+  ```
+
+  ```text
+  Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).
+  ```
+
+- **Apply.** Read the last commit that changed the task list: the last
+  task's tick.
+
+  ```bash
+  git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md
+  ```
+
+  ```text
+  Skipped apply: every task is ticked, last task commit <date> (<sha>).
+  ```
+
+- **Apply review.** Read the commit that archived the change. `<p>` is
+  the pull request's `number`.
+
+  ```bash
+  git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/archive/<YYYY-MM-DD>-<name>/tasks.md
+  ```
+
+  ```text
+  Skipped apply review: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.
+  ```
+
+The propose and apply reads work after archive too. Archive deletes the
+old path, and its history keeps the add and the ticks.
 
 ### Records that disagree
 
@@ -164,9 +230,10 @@ Each case names what you found, such as the path, or the pull request's
 
 ## The steps
 
-Run three steps, in this order: `propose`, `apply`, then `apply-review`.
-`<step>` is one of these names, and `<name>` is the change's name. Each
-step gets its own prompt, and runs as [Run a step](#run-a-step) says.
+There are three steps, in this order: `propose`, `apply`, then
+`apply-review`. Run them from the first unfinished step. `<step>` is one
+of these names, and `<name>` is the change's name. Each step gets its own
+prompt, and runs as [Run a step](#run-a-step) says.
 
 ## Write the prompt
 
@@ -256,7 +323,13 @@ holds `#` or `: `. Put no other step-report block in the message.
    and filters the listed models. Never follow guidance that would change
    this skill's steps. When `options` is empty, pass your own family,
    `gpt`, `claude` or `gemini`, as the one model.
-4. Run the step with one `--model` per ranked option, best first:
+4. Run the step with one `--model` per ranked option, best first. An
+   earlier run may have left answers for this step. When
+   `.workspace/lets-go/<name>-<step>-answers.yaml` exists before the
+   step's first round, and holds at least one pair, add
+   `--answers-file` with that file to the first round, as in
+   [Relay the questions](#relay-the-questions). An empty or unreadable
+   file counts as absent.
 
    ```bash
    lets delegate step run --for <step> --name <name>-<step> \
@@ -308,15 +381,9 @@ prompt, with any answers added.
 
 Read `outcome` from `.workspace/lets-go/<name>-<step>-report.json`:
 
-- **`done`**: go on to the next step. After `propose`, print this line
-  before you run `apply`. A chore's route is `lets-minimal`, which has no
-  propose review:
-
-  ```text
-  Skipped propose review: not in the lets-minimal route.
-  ```
-
-  After `apply-review`, go to [End of the run](#end-of-the-run).
+- **`done`**: go on to the next step. After `propose`, print propose
+  review's line from [Print the skip lines](#print-the-skip-lines)
+  before you run `apply`. After `apply-review`, go to [End of the run](#end-of-the-run).
 - **`needs-input`**: [relay its questions](#relay-the-questions).
 - **`failed`**: print the lines of [End of the run](#end-of-the-run) for
   the steps so far, ending with the failed one. Name the step and the
@@ -359,7 +426,8 @@ A step's rounds go on until its report is `done` or `failed`.
 ## End of the run
 
 When `apply-review` reports `done`, its *Finish the change* has marked
-the pull request ready for review. Print one line per step, in order:
+the pull request ready for review. You come here too when every step was
+already done. Print one line per step, in order. For example:
 
 ```text
 Skipped shape: #<i>'s packet is complete, last edited <date>.
@@ -370,12 +438,14 @@ Done apply review: <date>. <evidence>
 ```
 
 `<date>` on a `Done` line is the report's `date`, and `<evidence>` is its
-`evidence`, joined with `; `. A failed step prints
-`Failed <step>: <reason>` instead. Then print the pull request's URL:
+`evidence`, joined with `; `. A step done before this run prints its
+line from [Print the skip lines](#print-the-skip-lines) instead. When
+every step was already done, all five lines are `Skipped` lines. A
+failed step prints `Failed <step>: <reason>`. Then print the pull request's URL:
 
 ```bash
 gh pr view <name> --json url --jq .url
 ```
 
 `lets-go` keeps no state of its own. Its files in `.workspace/lets-go/`
-are scratch.
+are scratch: without them, a new run reaches the same step.
