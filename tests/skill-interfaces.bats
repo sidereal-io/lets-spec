@@ -258,6 +258,7 @@ skill_says() {
   skill_says lets-go 'Interactivity: <level>, because you asked for it.'
   skill_says lets-go 'Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
   skill_says lets-go 'gh issue view <i> --json title,blockedBy'
+  skill_says lets-go 'its *Check the prerequisite* still runs, and its stop stands'
   skill_says lets-go 'The interactivity level is <level>.'
   skill_says lets-go 'Write the answer as the user gave it, with no marker'
   for phrase in '#152 adds' 'chores only'; do

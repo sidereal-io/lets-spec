@@ -47,8 +47,9 @@ unfinished step.
    a blocker is open, look for the change's branch before you stop, as
    step 7 does:
    - **The branch exists**, here or on `origin`: the user has stacked it
-     by hand. Name the open blockers by number, and go on. On a change's
-     branch, it exists: you are on it.
+     by hand. Name the open blockers by number, and go on with the rest
+     of the section: its *Check the prerequisite* still runs, and its stop
+     stands. On a change's branch, the branch exists: you are on it.
    - **It does not exist:** the stop stands, as `lets-build` reports it.
 
    Any other stop in that section stands as `lets-build` reports it.
