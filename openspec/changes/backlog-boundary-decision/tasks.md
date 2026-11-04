@@ -16,4 +16,7 @@ do not substitute for that review. No tests should mirror the document wording.
 
 ## Deviations Ledger
 
-None.
+- 2026-11-03: User requested durable decision wording in ADR-014. Removed the
+  implementation-status snapshot and adoption-status observation, and described
+  the protocol as the chosen boundary rather than an existing artifact. The
+  architecture decision and its guarantees are unchanged.

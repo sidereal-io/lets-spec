@@ -12,19 +12,18 @@ description: Architecture decision record for independently installed backlog ad
 
 Let's Spec separates planning policy from the program that stores a project's
 backlog. It aims to support GitHub, Jira Cloud, Linear, local Beads and adapters
-written independently for other programs. The existing contract and offline kit
-describe that boundary; no production backlog dispatcher is installed yet.
+written independently for other programs.
 
 [ADR-010](ADR-010-the-resolvers-are-built-into-lets.md) moved delegation resolvers
 into `lets` because outside resolvers were neither used nor expected. It removed
 a protocol, separate bundles and installation paths whose cost had no expected
-beneficiary. Independent backlog adapters are an explicit extension goal, though
-third-party adoption is not yet proven. Requiring every adapter to share the
-caller's runtime and release would constrain that goal.
+beneficiary. Independent backlog adapters are an explicit extension goal.
+Requiring every adapter to share the caller's runtime and release would constrain
+that goal.
 
 ## Decision
 
-Backlog adapters use the existing versioned JSON executable contract: one request
+Backlog adapters use a versioned JSON executable contract: one request
 on stdin and one response on stdout per invocation, with diagnostics on stderr.
 The shared caller owns workflow policy, adapters translate provider operations,
 and the code host owns branch and pull request operations. This decision applies
