@@ -11,7 +11,7 @@ do not substitute for that review. No tests should mirror the document wording.
 ## 2. Validate and finish documentation [depends-on: 1]
 
 - [x] 2.1 [easy] Verify the documentation preserves the Node, type and shell checks (✓ pnpm test passed: 498 Node tests, type check, 130 shell tests)
-- [ ] 2.2 [easy] Verify the documentation preserves every flow and release check (verify: nix flake check)
+- [x] 2.2 [easy] Verify the documentation preserves every flow and release check (✓ nix flake check passed: all five x86_64-linux checks)
 - [ ] 2.3 [easy] Complete the repository-required code review and verification, then mark ADR-014 accepted when the change is ready for user review; leave the merge to the user (verify: openspec validate backlog-boundary-decision --strict)
 
 ## Deviations Ledger
