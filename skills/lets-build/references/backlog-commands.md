@@ -21,7 +21,7 @@ inputs repeat them. The command table names the additional fields.
 | `lets backlog select` | optional `reference`, such as `#136`; omit for next | `context`, provisional `item`, and ranked eligible `candidates`; packet/comment/glossary policy remains pending |
 | `lets backlog packet` | scoped `item`, numeric `reference`, or `change` path | normalized `item`, `parent`, `lastEditedAt`, complete `comments` |
 | `lets backlog claim` | scoped `item`; optional original `handle` to reconcile an interrupted claim | fresh private continuation `handle` and freshly verified `claim` |
-| `lets backlog release` | original `handle` | `released`; restores Todo only for that session |
+| `lets backlog release` | original `handle` | `released`; requires original local continuation and current native ownership |
 | `lets backlog bind` | `handle`, `change` path, explicitly confirmed scoped `item` | immutable versioned identity written to `change/backlog.json` |
 | `lets backlog resume` | original `handle`, `change` path | verified recorded `identity` and `handle` |
 | `lets backlog reference` | `handle`, `change`, exact PR URL in `reference` | stored PR reference; preserves GitHub closing line |
@@ -55,7 +55,7 @@ or release of proven partial progress. To recover an interrupted claim, repeat
 `lets backlog claim` with that explicit handle: it reconciles the original key
 and freshly verifies ownership before returning. It never creates a new session
 for this continuation. Losing it requires manual reconciliation;
-an assigned issue is never enough to adopt a claim. The private handle differs from the published session and token. Raw
+an assigned issue is never enough to adopt a claim. The private handle differs from the session and token correlation values. Raw
 `request` mutations also require the original private `handle` as a caller-only
 field; it is checked locally and omitted from the adapter envelope.
 A new session gets new
