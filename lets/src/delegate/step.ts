@@ -1,0 +1,59 @@
+// lets delegate step run: run a prompt in a fresh session that may write
+// files, wait for its final message, and print the step report it ends
+// with. There is no tree check: a step is meant to change files. No process
+// access here; everything comes through deps.
+import type { Deps } from '../io.ts';
+import { readConfig } from './config.ts';
+import { EXIT } from '../resolvers/kit/errors.ts';
+import { repoRoot } from './git.ts';
+import { guarded } from './guarded.ts';
+import { checkModels, pick, withModels } from './lookup.ts';
+import { readPromptFile } from './prompt-file.ts';
+import { readReport } from './report.ts';
+import { normalizeName } from '../resolvers/kit/adapter.ts';
+import { parseModel } from '../resolvers/kit/families.ts';
+import type { Effort } from '../resolvers/kit/families.ts';
+import type { Intent } from './strategies.ts';
+
+// How long a step may run, in minutes, at every effort. A step such as
+// apply runs far longer than a review.
+export const STEP_TIMEOUT_MINUTES = 120;
+
+// for: the step, recorded in the record line. models: each <family> or
+// <family>/<model>, best first, asked for one at a time until one is not
+// refused.
+export type StepOptions = { for: Intent; name: string; promptFile: string; effort: Effort; models: string[]; timeoutMinutes?: number };
+
+// The exit code: 0 a report is on stdout, whatever its outcome, 2 usage,
+// 3 every model refused, 4 the outcome is unknown, 6 timeout.
+export function run(options: StepOptions, deps: Deps): Promise<number> {
+  return guarded(deps, () => step(options, deps));
+}
+
+async function step({ for: intent, name, promptFile, effort, models, timeoutMinutes }: StepOptions, deps: Deps) {
+  const { io } = deps;
+  const started = io.now();
+  checkModels(models);
+  const config = readConfig(deps);
+  const prompt = readPromptFile(promptFile, deps);
+  const cwd = await repoRoot(deps.cwd, io);
+
+  const adapter = await pick('step', { ...deps, config });
+  const timeoutMs = (timeoutMinutes ?? STEP_TIMEOUT_MINUTES) * 60000;
+  const { value: { handle, text }, model: sent } = await withModels(models, (model) =>
+    adapter.step!({ name: normalizeName(name), prompt, cwd, ...parseModel(model)!, effort }, { timeoutMs }));
+  const { family, model } = parseModel(sent)!;
+  const report = readReport(text);
+
+  const printed = report.outcome === 'done' ? { ...report, date: isoSeconds(io.now()) } : report;
+  deps.stdout(`${JSON.stringify(printed)}\n`);
+  const durationSeconds = Math.round((io.now() - started) / 1000);
+  // The model that ran, else the --model value, when it names only a family.
+  deps.stderr(`${JSON.stringify({ for: intent, resolver: adapter.name, family, model: model ?? sent, handle, durationSeconds })}\n`);
+  return EXIT.ok;
+}
+
+// ms as ISO 8601 UTC, to the second, such as 2026-11-04T09:30:00Z.
+function isoSeconds(ms: number): string {
+  return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
