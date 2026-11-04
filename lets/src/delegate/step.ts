@@ -4,13 +4,15 @@
 // access here; everything comes through deps.
 import type { Deps } from '../io.ts';
 import { readConfig } from './config.ts';
-import { EXIT } from '../resolvers/kit/errors.ts';
+import { EXIT, SessionFailed } from '../resolvers/kit/errors.ts';
 import { repoRoot } from './git.ts';
 import { guarded } from './guarded.ts';
-import { checkModels, pick, withModels } from './lookup.ts';
+import { checkModels, finishSession, pick, withModels } from './lookup.ts';
 import { readPromptFile } from './prompt-file.ts';
 import { readReport } from './report.ts';
+import type { Report } from './report.ts';
 import { normalizeName } from '../resolvers/kit/adapter.ts';
+import type { Handle } from '../resolvers/kit/adapter.ts';
 import { parseModel } from '../resolvers/kit/families.ts';
 import type { Effort } from '../resolvers/kit/families.ts';
 import type { Intent } from './strategies.ts';
@@ -40,10 +42,21 @@ async function step({ for: intent, name, promptFile, effort, models, timeoutMinu
 
   const adapter = await pick('step', { ...deps, config });
   const timeoutMs = (timeoutMinutes ?? STEP_TIMEOUT_MINUTES) * 60000;
-  const { value: { handle, text }, model: sent } = await withModels(models, (model) =>
-    adapter.step!({ name: normalizeName(name), prompt, cwd, ...parseModel(model)!, effort }, { timeoutMs }));
+  // A session the resolver reports failed is a failed report, not an exit
+  // code, so the caller reads every outcome in one place. The resolver gives
+  // no handle for it, and keeps the session itself.
+  const { value: { handle, report }, model: sent } = await withModels(models, async (model): Promise<{ handle: Handle | null; report: Report }> => {
+    try {
+      const { handle, text } = await adapter.step!({ name: normalizeName(name), prompt, cwd, ...parseModel(model)!, effort }, { timeoutMs });
+      return { handle, report: readReport(text) };
+    } catch (error) {
+      if (!(error instanceof SessionFailed)) throw error;
+      return { handle: null, report: { outcome: 'failed', reason: error.message } };
+    }
+  });
   const { family, model } = parseModel(sent)!;
-  const report = readReport(text);
+  // Only a done step is cleaned up. Any other is kept for a person to read.
+  if (handle !== null) await finishSession(adapter, handle, { cwd, ok: report.outcome === 'done', deps });
 
   const printed = report.outcome === 'done' ? { ...report, date: isoSeconds(io.now()) } : report;
   deps.stdout(`${JSON.stringify(printed)}\n`);

@@ -2,7 +2,7 @@
 // the user's delegate config names, that does not decline. With no config,
 // or a config with no chain, the chain is the default, subagent. Every
 // resolver is built into lets, so nothing is run or looked up on PATH.
-import type { Adapter } from '../resolvers/kit/adapter.ts';
+import type { Adapter, Handle } from '../resolvers/kit/adapter.ts';
 import type { Deps } from '../io.ts';
 import { configPath } from './config.ts';
 import type { Config } from './config.ts';
@@ -68,5 +68,16 @@ export async function inAdapter<T>(fn: () => Promise<T>): Promise<T> {
   } catch (error) {
     if (exitCodeOf(error) !== null) throw error;
     throw new SpawnError(error instanceof Error ? error.message : String(error));
+  }
+}
+
+// Tell the adapter that made the session that lets is done with it. ok
+// false keeps the session for a person to read. A failure here does not undo
+// the review or the step, so it is reported and nothing more.
+export async function finishSession(adapter: Adapter, handle: Handle, { cwd, ok, deps }: { cwd: string; ok: boolean; deps: Deps }) {
+  try {
+    await inAdapter(() => adapter.finish(handle, ok, { cwd }));
+  } catch (error) {
+    deps.stderr(`lets delegate: could not finish ${handle.kind} ${handle.id}: ${(error as Error).message}\n`);
   }
 }
