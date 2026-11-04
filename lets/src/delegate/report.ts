@@ -6,23 +6,73 @@ import { parse } from 'yaml';
 // has one.
 export type Question = { question: string; recommendation?: string };
 
+// A failed report that lets wrote, because the session gave none it could
+// read, also holds the session's final message as message.
 export type Report =
   | { outcome: 'done'; evidence: string[] }
   | { outcome: 'needs-input'; questions: Question[] }
-  | { outcome: 'failed'; reason: string };
+  | { outcome: 'failed'; reason: string; message?: string };
 
-// The report in the last step-report block of text.
+const OUTCOMES = ['done', 'needs-input', 'failed'];
+
+// The report in the last step-report block of text. When there is none, or
+// it is not a valid report, a failed report that says what is wrong.
 export function readReport(text: string): Report {
-  const value = parse(lastBlock(text)!);
-  switch (value.outcome) {
-    case 'done':
-      return { outcome: 'done', evidence: value.evidence };
-    case 'needs-input':
-      return { outcome: 'needs-input', questions: value.questions.map(({ question, recommendation }: Question) =>
-        (recommendation === undefined ? { question } : { question, recommendation })) };
-    default:
-      return { outcome: 'failed', reason: value.reason };
+  try {
+    return checked(lastBlock(text));
+  } catch (error) {
+    if (!(error instanceof Unreadable)) throw error;
+    return { outcome: 'failed', reason: error.message, message: text };
   }
+}
+
+class Unreadable extends Error {}
+
+function checked(block: string | null): Report {
+  if (block === null) throw new Unreadable('the final message has no step-report block');
+  let value: unknown;
+  try {
+    value = parse(block);
+  } catch (error) {
+    throw new Unreadable(`the step-report block is not YAML: ${(error as Error).message.split('\n')[0].replace(/:$/, '')}`);
+  }
+  if (!isObject(value)) throw new Unreadable('the step-report block must hold a mapping');
+  const { outcome } = value;
+  if (!OUTCOMES.includes(outcome as string)) {
+    throw new Unreadable(`the step-report outcome must be done, needs-input or failed, got ${JSON.stringify(outcome) ?? String(outcome)}`);
+  }
+  if (outcome === 'done') {
+    const { evidence } = value;
+    if (!Array.isArray(evidence) || evidence.length === 0 || !evidence.every((line) => typeof line === 'string')) {
+      throw new Unreadable('a done step-report must hold evidence, a non-empty list of strings');
+    }
+    return { outcome, evidence };
+  }
+  if (outcome === 'needs-input') {
+    const { questions } = value;
+    if (!Array.isArray(questions) || questions.length === 0) {
+      throw new Unreadable('a needs-input step-report must hold questions, a non-empty list');
+    }
+    return { outcome, questions: questions.map(question) };
+  }
+  if (typeof value.reason !== 'string') throw new Unreadable('a failed step-report must hold a reason, a string');
+  return { outcome: 'failed', reason: value.reason };
+}
+
+// One entry of a needs-input report's questions. A null recommendation is
+// none.
+function question(entry: unknown, i: number): Question {
+  if (!isObject(entry) || typeof entry.question !== 'string') {
+    throw new Unreadable(`questions[${i}] must be a mapping with a question, a string`);
+  }
+  const { recommendation } = entry;
+  if (recommendation === undefined || recommendation === null) return { question: entry.question };
+  if (typeof recommendation !== 'string') throw new Unreadable(`questions[${i}].recommendation must be a string`);
+  return { question: entry.question, recommendation };
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 // The body of the last fenced block tagged step-report, or null. A block

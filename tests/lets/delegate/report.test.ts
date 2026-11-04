@@ -53,3 +53,30 @@ test('a step-report fence inside another fenced block opens no report', () => {
   const quoted = '````markdown\n```step-report\noutcome: failed\nreason: quoted\n```\n````\n';
   assert.deepEqual(readReport(`${ending('outcome: failed\nreason: real\n')}\n${quoted}`), { outcome: 'failed', reason: 'real' });
 });
+
+// Final messages with no valid report, and a word the reason must name.
+const UNREADABLE: [string, string, string][] = [
+  ['no block', 'All done, I think.\n', 'step-report'],
+  ['an unclosed block', '```step-report\noutcome: done\nevidence: [x]\n', 'step-report'],
+  ['a block that is not YAML', ending('outcome: [done\n'), 'YAML'],
+  ['a block that is not a mapping', ending('- done\n'), 'mapping'],
+  ['an unknown outcome', ending('outcome: partial\n'), 'partial'],
+  ['done without evidence', ending('outcome: done\n'), 'evidence'],
+  ['done with empty evidence', ending('outcome: done\nevidence: []\n'), 'evidence'],
+  ['done with evidence that is not text', ending('outcome: done\nevidence:\n  - 42\n'), 'evidence'],
+  ['needs-input without questions', ending('outcome: needs-input\n'), 'questions'],
+  ['needs-input with no questions', ending('outcome: needs-input\nquestions: []\n'), 'questions'],
+  ['a question with no question', ending('outcome: needs-input\nquestions:\n  - recommendation: x\n'), 'question'],
+  ['a question that is not a mapping', ending('outcome: needs-input\nquestions:\n  - Which?\n'), 'question'],
+  ['a recommendation that is not text', ending('outcome: needs-input\nquestions:\n  - question: Which?\n    recommendation: [a]\n'), 'recommendation'],
+  ['failed without a reason', ending('outcome: failed\n'), 'reason'],
+];
+
+for (const [name, text, named] of UNREADABLE) {
+  test(`${name} is a failed report that names ${named}, holding the message`, () => {
+    const report = readReport(text);
+    assert.equal(report.outcome, 'failed');
+    assert.ok('message' in report && report.message === text, 'message is the final message');
+    assert.match((report as { reason: string }).reason, new RegExp(named));
+  });
+}
