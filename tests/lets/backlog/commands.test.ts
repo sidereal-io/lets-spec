@@ -13,3 +13,11 @@ test('workflow CLI carries explicit claim authority through bind and resume', ()
   assert.equal(command('packet', { change }).result.item.body, 'full packet');
   assert.equal(command('release', { handle }).status, 0);
 }));
+test('claim command explicitly continues an interrupted original session', () => withGithub(async ({ command, set, state }) => {
+  set('_fault', 'after:FieldStatus');
+  const interrupted = command('claim', { item }); assert.equal(interrupted.status, 1); assert.ok(interrupted.result.handle);
+  set('_fault', null);
+  const recovered = command('claim', { item, handle: interrupted.result.handle });
+  assert.equal(recovered.status, 0); assert.equal(recovered.result.handle, interrupted.result.handle);
+  assert.equal(state().calls.filter((call: any) => call.name === 'FieldText').length, 1);
+}));

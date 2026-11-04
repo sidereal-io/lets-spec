@@ -4,13 +4,14 @@ import { join } from 'node:path';
 import { parse } from 'yaml';
 import { Client } from './client.ts';
 import { select } from './selection.ts';
-import { acquireSession, loadSession } from './sessions.ts';
+import { acquireSession, loadSession, recoverSession } from './sessions.ts';
 import { bind, resume, readIdentity, checkSelection } from './identity.ts';
 import { Store, hash, mutationName } from './store.ts';
 import { referenceChange, completeChange, reconcileWrite } from './host.ts';
 import { GitHub, fail } from './github.ts';
 import { ghQuery } from './gh.ts';
 import { AdapterFailure } from './errors.ts';
+import { identityKey } from './items.ts';
 import { requireCapability } from './capabilities.ts';
 import { validateRequest } from './protocol.ts';
 import { invoke } from './transport.ts';
@@ -31,6 +32,12 @@ export async function execute(command: string, input: Record<string, any>, cwd: 
   if (command === 'claim') {
     const { capabilities } = await call('capability.read');
     requireCapability(capabilities, 'claims'); requireCapability(capabilities, 'blockers'); requireCapability(capabilities, 'metadata');
+    if (input.handle) {
+      const session = loadSession(context, input.handle);
+      if (input.item && identityKey(input.item) !== identityKey(session.item)) fail('conflict', 'continuation item differs from original claim');
+      await recoverSession(context, input.handle, connect);
+      return { handle: input.handle, claim: (await connect(input.handle)('claim.read', { item: session.item })).claim };
+    }
     return acquireSession(context, input.item, connect);
   }
   if (command === 'release') {

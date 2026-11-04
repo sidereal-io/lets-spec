@@ -19,7 +19,7 @@ inputs repeat them. The command table names the additional fields.
 |---|---|---|
 | `lets backlog select` | optional `reference`, such as `#136`; omit for next | `context`, provisional `item`, and ranked eligible `candidates`; packet/comment/glossary policy remains pending |
 | `lets backlog packet` | scoped `item`, numeric `reference`, or `change` path | normalized `item`, `parent`, `lastEditedAt`, complete `comments` |
-| `lets backlog claim` | scoped `item` | fresh private continuation `handle` and freshly verified `claim` |
+| `lets backlog claim` | scoped `item`; optional original `handle` to reconcile an interrupted claim | fresh private continuation `handle` and freshly verified `claim` |
 | `lets backlog release` | original `handle` | `released`; restores Todo only for that session |
 | `lets backlog bind` | `handle`, `change` path, explicitly confirmed scoped `item` | immutable versioned identity written to `change/backlog.json` |
 | `lets backlog resume` | original `handle`, `change` path | verified recorded `identity` and `handle` |
@@ -50,7 +50,10 @@ lets backlog claim < .workspace/backlog-claim.json
 
 Retain the returned handle in a private input file for bind, resume, release
 and handoff. A failed claim can also return `handle`: keep it for reconciliation
-or release of proven partial progress. Losing it requires manual reconciliation;
+or release of proven partial progress. To recover an interrupted claim, repeat
+`lets backlog claim` with that explicit handle: it reconciles the original key
+and freshly verifies ownership before returning. It never creates a new session
+for this continuation. Losing it requires manual reconciliation;
 an assigned issue is never enough to adopt a claim. A new session gets new
 authority only through deliberate continuation with the original handle.
 
