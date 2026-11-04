@@ -33,7 +33,7 @@ merged completion and fixture cleanup passed on the rebuilt final source.
 
 ---
 
-> Historical evidence for the pre-revision implementation. Native reconciliation revision is pending fresh validation and review.
+> Historical evidence for the pre-revision implementation; later review results are recorded above.
 
 # Code review
 

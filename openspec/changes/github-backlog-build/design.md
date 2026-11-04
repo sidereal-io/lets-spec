@@ -1,6 +1,6 @@
 ## Context
 
-`lets/src/main.ts` uses Commander and injected IO for delegation and sync. YAML is already a runtime dependency. `lets/src/sync/config.ts` reads only the schema line. It must keep doing so; backlog configuration needs a separate reader. The adapter kit publishes protocol validators and simulations under `contrib/`, outside the Nix workspace source set. It supplies no production implementation.
+`lets/src/main.ts` uses Commander and injected IO for delegation and sync. YAML is already a runtime dependency. `lets/src/sync/config.ts` reads only the schema line. It must keep doing so; backlog configuration needs a separate reader. The adapter kit now lives under `lets/src/backlog/` with its tests under `tests/lets/backlog/`. Its fake supplies no production implementation.
 
 Build currently embeds provider commands in its source skill. Both schemas use GitHub issue numbers during brainstorm and PR creation. The issue-comment and glossary rules remain shared policy. The shared glossary defines Packet as the issue body and Fold as a shaping-only operation. This change introduces no new glossary meanings.
 
@@ -26,7 +26,13 @@ Build currently embeds provider commands in its source skill. Both schemas use G
 
 Add `lets/src/backlog/` for configuration, protocol transport, shared selection and change identity. Add GitHub translation beneath it, with a separate `lets-backlog-github` entry. Ship that executable beside `lets` in tarballs and Nix PATH. Missing explicit executables are errors. The default name also resolves through PATH; packaging must make it available rather than bypassing the process boundary.
 
-Promote dependency-free protocol/item validators into the production backlog module and make the contrib kit re-export them. Include them within `lets/` so Nix builds do not depend on excluded contrib files. Keep the public kit import paths stable. Do not import the simulated adapter or its journal. This shares validation while avoiding two drifting protocol copies. The standalone distribution also ships the promoted dependency-free validator modules and their complete import closure at the repository-relative paths used by the contrib re-exports. It does not require a source checkout or node_modules. Keep the existing kit round-trip smoke test, and run packaged conformance from an isolated release directory.
+Reuse main's dependency-free protocol/item validators in the production backlog
+module. Keep the fake adapter and conformance helpers as source-checkout tools,
+following main's kit cleanup. Runtime releases ship the bundled CLI and GitHub
+adapter, not kit source or tests. Do not import the fake or its journal into the
+production runtime. Keep the kit's normalized configuration example checker in
+config.ts; the production YAML and executable reader lives in repository-config.ts.
+Keep GitHub process tests distinct from the kit's simulation tests so both run.
 
 Use a production transport with no optional argv escape hatch, a positive timeout (default five seconds), a combined 1 MiB output bound and safe diagnostics. Treat spawn-before-execution failure as no effects; any mutation failure after execution that cannot prove effects is unknown. Preserve valid structured error categories instead of reclassifying them as parse errors. Bound read retries; never blindly retry unknown mutations. Follow pagination to completion, checking repeated cursors and scope on every page.
 
@@ -86,7 +92,7 @@ Update source `skills/lets-build/SKILL.md`, its references, both schemas and ove
 
 ### 7. Test the new flow against the prepared fixtures
 
-Automated tests drive each behavior through the CLI/process seam and scripted GitHub faults. Include cursor loops, mapping errors, same-account session conflicts, lost responses, assignment-only progress, replaced ownership, branch failure release, archived identity and unmerged completion. Existing kit tests must still pass after validator promotion. Run the packaged conformance suite from an isolated release directory to prove the standalone import closure as well as the adapter executable layout.
+Automated tests drive each behavior through the CLI/process seam and scripted GitHub faults. Include cursor loops, mapping errors, same-account session conflicts, lost responses, assignment-only progress, replaced ownership, branch failure release, archived identity and unmerged completion. Both the moved kit tests and GitHub process tests must pass. Release checks prove the bundled adapter executable layout; conformance runs from the source checkout, following main’s packaging policy.
 
 Live acceptance uses `mstelz/test-repo-pls-ignore` and `https://github.com/users/mstelz/projects/7`. Prepare test packets with fixture commands, then perform selection/claim/bind/resume/reference/completion through the new flow. Initialize the empty repository with a minimal commit for a test PR. Prove blocked/owned exclusions using test-only items and inject a lost response at the real adapter boundary after a real mutation. Exercise branch failure through the caller's release path. Record before/after evidence and cleanup only owned fixtures. Ask the user to merge the test PR; until then completion acceptance remains pending. Fixture creation and manual `gh` calls do not substitute for lifecycle evidence.
 

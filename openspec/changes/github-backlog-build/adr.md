@@ -5,7 +5,7 @@
 
 ## Review Summary
 
-Reviewed every existing record. The executable protocol is already fixed by the backlog adapter contract. The new durable fork is storage of change identity separately from private recovery state. Native assignees, Status and PR links replace Project provenance fields. Private continuation remains local; ADR-014 still governs immutable change identity.
+Reviewed every existing record. The executable protocol is already fixed by the backlog adapter contract. The new durable fork is storage of change identity separately from private recovery state. Native assignees, Status and PR links replace Project provenance fields. Private continuation remains local; ADR-015 still governs immutable change identity.
 
 ## In-Force ADRs Reviewed
 
@@ -14,4 +14,4 @@ Reviewed every existing record. The executable protocol is already fixed by the 
 
 ## New Durable ADRs Created
 
-- [ADR-014: Persist backlog identity with the change](../../../docs/decisions/ADR-014-persist-backlog-identity-with-the-change.md).
+- [ADR-015: Persist backlog identity with the change](../../../docs/decisions/ADR-015-persist-backlog-identity-with-the-change.md).

@@ -36,3 +36,12 @@ Live acceptance evidence is a required supplement to task 4.1's automated comman
 - [x] 5.2 [complex] Replace Project PR association fields with fully paginated native closing links and exact merge gating; test mismatch and interrupted operations. (✓ focused completion/release suite passed: 11 tests; pnpm test and nix flake check passed)
 - [x] 5.3 [medium] Reconcile contract, kit expectations, capabilities, source instructions and fixtures with actor-level native limits; remove machine-state field prerequisites. (✓ pnpm test passed; openspec validate --all --strict passed: 10 items)
 - [x] 5.4 [complex] Run required repository checks, new independent review, revised live acceptance and verification before archiving and marking ready. Prior evidence covers only the old implementation. (✓ post-review pnpm test passed: 572 Node tests, typecheck, 133 Bats checks; nix flake check and strict OpenSpec validation passed; independent review findings fixed/refuted; revised live native lifecycle, fault recovery and cleanup passed)
+
+## 6. Integration with main
+
+- [x] 6.1 [complex] Reconcile main's moved, typed adapter kit with the GitHub runtime, preserve both test suites and runtime-only packaging, and resolve the ADR number collision. (✓ pnpm check passed; integrated Node suite passed: 617 tests)
+- [ ] 6.2 [complex] Run both repository checks, review the integrated branch against current main, verify, archive and restore PR readiness.
+
+Main's kit cleanup supersedes earlier standalone-kit packaging work in tasks 1.1
+and 3.4. The source conformance suite remains; runtime releases exclude its
+sources and tests. Production executables remain bundled and release-tested.

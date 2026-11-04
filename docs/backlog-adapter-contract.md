@@ -5,6 +5,9 @@ GitHub build implementation is described in [Backlog build commands](backlog-bui
 The kit tests representative simulations; passing them does not establish
 provider support. Production support also requires the live acceptance below.
 
+Shared Backlog, Work item and Packet meanings are in the
+[project glossary](../openspec/glossary.md).
+
 ## Workflow inventory
 
 The inventory table test checks structure and required mapping names; it does
@@ -18,7 +21,7 @@ data and operations; the code host owns branches and pull requests.
 
 | Behavior | Owner | Preserved outcome |
 |---|---|---|
-| Project discovery | adapter | Enumerate open backlogs linked in either direction; deduplicate scoped identities. Shared policy requires exactly one. |
+| Project discovery | adapter | Enumerate open candidate backlogs linked in either direction; deduplicate scoped identities. Shared policy requires exactly one. |
 | Project creation | adapter | Create and link a backlog for the repository owner; report permission failures. |
 | Field validation | adapter | Read and validate Kind, Priority, Size and Status mappings with exact shared meanings; preserve extra fields/options. Shared policy requires approval before destructive repair. |
 | Item search | adapter | Search and read complete issue bodies, owners, metadata, parents and shared decisions within the selected repository/backlog. |
@@ -61,17 +64,32 @@ envelope field and never journal or replay their results. Context requires `cwd`
 require `backlog`; backlog.list and backlog.create must omit it. mutation.read
 also omits it when reconciling a preselection creation; otherwise it uses the
 original selected backlog. Actor identifies the
-authenticated account; session identifies this worker, even when two workers
-share an account. Backlog and item IDs are opaque, provider-scoped strings.
-An item identity is `{provider, backlog, id}`. A display reference is required
-on returned items; a browser URL is optional.
+authenticated account. A **Worker session** is one worker identity, distinct from
+that account; the wire field `session` carries it, even when workers share an
+account. Backlog and item IDs are opaque, provider-scoped strings.
+An item identity is `{provider, backlog, id}`. A **Display reference** is a
+human-readable item label, distinct from that scoped identity and optional URL.
+The wire field `item.reference` carries the display reference on returned items;
+a browser URL is optional.
 
-`contrib/backlog-adapter-kit/protocol.ts` publishes executable required/optional
+`lets/src/backlog/protocol.ts` publishes executable required/optional
 field definitions in `INPUTS` and `OUTPUTS`; a trailing `?` marks an optional
 field. Unknown operation input and result fields are rejected. Those definitions
 are the machine-checkable protocol surface. The validators are dependency-free
 and usable by adapter authors. Nested item, capability and claim meanings are
 specified in the following sections and checked by the scenario suite.
+
+At the adapter's stdin boundary, malformed JSON and unknown operations return
+`invalid_request` with effects `none`. Unsupported request protocol versions
+return `unsupported` with effects `none`. Local caller validation rejects invalid
+requests or invocation limits as `invalid_request`/`none` before execution.
+Transport start failures, signal termination, deadlines, output overflow and
+invalid responses expose `unknown_outcome`/`unknown`. The caller attempts only
+the supplied executable. The kit uses SIGKILL for deadline and output limits;
+this stops the launched process, not detached descendants or accepted provider
+writes. Combined stdout/stderr limits count raw bytes before UTF-8 decoding.
+Unexpected simulation implementation errors also report `unknown_outcome` with
+unknown effects; category words in their messages never determine classification.
 
 Success is `{protocol:1, ok:true, result:{...}}` with exit 0. Failure is
 `{protocol:1, ok:false, error:{category,message,effects}}` with nonzero exit.
@@ -105,17 +123,21 @@ Example enumeration response:
 {"protocol":1,"ok":true,"result":{"items":[],"complete":true,"nextCursor":null}}
 ```
 
-The executable boundary permits independently shipped adapters in any language,
-using provider login tools without loading their dependencies into lets. An
-in-process plugin would couple runtime versions and credentials to the caller.
-Direct provider commands in skills duplicate policy and parsing. A long-running
-service adds deployment and lifecycle requirements. Process isolation does not
-sandbox an adapter: installing its executable is a repository trust decision.
+[ADR-014](decisions/ADR-014-backlog-adapters-use-an-executable-boundary.md)
+records why backlog adapters use an executable boundary while delegation
+resolvers remain built into `lets`. Independent authors can choose their
+language and release schedule without loading provider dependencies into `lets`.
+This extension goal carries the cost of a versioned protocol, separate
+installation and conformance checks.
+
+Process isolation is not a sandbox. An adapter can access inherited credentials
+and local resources; separating runtime dependencies does not confine that
+access. Installing its executable is a repository trust decision.
 
 ## Operation semantics
 
 Every operation is confined to context.repository and context.provider. Backlog
-discovery lists linked identities in that scope; creation returns a new identity.
+discovery lists linked candidate identities in that scope; creation returns a new identity.
 The caller selects exactly one and supplies context.backlog on subsequent item
 operations. Those operations, including enumeration, are confined to that backlog. Reads
 have no effects. Mutations require a key scoped to provider, backlog, repository, actor and session, bound to the
@@ -240,6 +262,9 @@ claim acquire/release and merge-gated completion own status transitions.
 
 ## Claim guarantees
 
+A **Claim** is a worker's recorded ownership of an item, with the backlog
+adapter's stated concurrency guarantee.
+
 A claim reports actor, session, token, status and guarantee (atomic or
 best-effort). Adapters must state whether ownership verification is session-level
 or actor-level. Session and token may correlate local continuation; they must
@@ -270,6 +295,12 @@ of GitHub session isolation. No adapter may advertise atomic claims without a
 provider primitive enforcing ownership under concurrent attempts.
 
 ## Completion evidence
+
+A **Pull request reference** is the code-host link associated with an item. It
+is distinct from the item's display reference; `reference.write` and merge
+evidence use the pull request reference.
+
+**Completion** means moving work to Done after the code host confirms merge.
 
 The caller confirms merge through its code-host integration for the associated
 PR reference, then passes that evidence to completion.write. The executable scenarios substitute

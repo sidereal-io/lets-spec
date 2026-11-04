@@ -9,7 +9,7 @@ base remains on origin/main; the reviewed head remains an ancestor.
 |---|---|
 | Completeness | 16/16 tasks complete; seven planning artifacts present; 8 added requirements mapped. |
 | Correctness | All 8 requirements and 18 scenarios checked against implementation and automated coverage, supplemented by live native reconciliation. |
-| Coherence | Native actor-level ownership, private continuation journals, executable transport, immutable identity and merge-gated completion follow the revised design and ADR-014. |
+| Coherence | Native actor-level ownership, private continuation journals, executable transport, immutable identity and merge-gated completion follow the revised design and ADR-015. |
 
 | Requirement | Implementation and evidence |
 |---|---|

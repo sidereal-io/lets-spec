@@ -162,15 +162,6 @@
         # one release for every flow. Its release.json is the one lets-cli
         # carries.
         dist = pkgs.runCommand "lets-spec-dist" { } ''
-          mkdir -p $out/contrib $out/tests $out/docs
-          mkdir -p $out/lets/src/backlog
-          cp ${./lets/src/backlog/protocol.ts} $out/lets/src/backlog/protocol.ts
-          cp ${./lets/src/backlog/items.ts} $out/lets/src/backlog/items.ts
-          cp ${./lets/src/backlog/errors.ts} $out/lets/src/backlog/errors.ts
-          cp ${./lets/src/backlog/capabilities.ts} $out/lets/src/backlog/capabilities.ts
-          cp -R ${./contrib/backlog-adapter-kit} $out/contrib/backlog-adapter-kit
-          cp -R ${./tests/backlog-adapter-kit} $out/tests/backlog-adapter-kit
-          cp ${./docs/backlog-adapter-contract.md} $out/docs/backlog-adapter-contract.md
           mkdir -p $out/bin $out/releases
           cp ${lets-cli}/libexec/lets $out/bin/lets
           cp ${github-adapter}/libexec/lets-backlog-github $out/bin/lets-backlog-github
@@ -295,24 +286,12 @@
             [ -x ${dist}/bin/lets ]
             [ "$(head -n 1 ${dist}/bin/lets)" = '#!/usr/bin/env node' ]
             [ ! -e ${dist}/node_modules ]
-            [ "$(ls ${dist}/contrib)" = backlog-adapter-kit ]
-            # The resolvers stay built into lets; contrib holds only the offline kit.
+            [ ! -e ${dist}/contrib ]
+            [ ! -e ${dist}/tests ]
+            [ ! -e ${dist}/docs/backlog-adapter-contract.md ]
             [ ! -e ${dist}/resolvers ]
             [ "$(ls ${dist}/releases)" = "${names}" ]
             [ "$(jq -r .openspec ${dist}/release.json)" = "${pkgs.openspec.version}" ]
-            # Run the complete standalone suite from an isolated release directory.
-            mkdir isolated
-            cd isolated
-            node --test "${dist}/tests/backlog-adapter-kit/*.test.ts"
-            cd ..
-            # Keep the representative standalone round-trip smoke check too.
-            node --input-type=module <<'JS'
-            import { withAdapter, story } from '${dist}/tests/backlog-adapter-kit/fixtures/adapter.ts';
-            await withAdapter(async ({ call }) => {
-              const { item } = await call('item.create', story, 'smoke');
-              if ((await call('item.read', { item: item.identity })).item.title !== story.title) throw new Error('packaged kit round trip failed');
-            });
-            JS
             mkdir project
             cd project
             git init --quiet

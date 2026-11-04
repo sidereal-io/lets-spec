@@ -1,5 +1,10 @@
 # Native reconciliation live acceptance, 2026-11-04
 
+This is a report of one-off live acceptance runs, not a checked-in live test
+suite. The checked-in `tests/lets/backlog/github-*.test.ts` tests use process
+fixtures and do not contact GitHub. The live cases below did contact the
+designated repository and Project, and their test issues were closed afterward.
+
 Final source under test: `2b73619`, built with `pnpm build`. The initial native
 lifecycle also passed before the review fixes; the final build repeats it.
 Fixtures remain mstelz/test-repo-pls-ignore, Project
@@ -32,7 +37,7 @@ and archive-continuation observations; it does not prove native reconciliation.
 
 ---
 
-> Historical evidence for the pre-revision implementation. Native reconciliation revision is pending fresh validation and review.
+> Historical evidence for the pre-revision implementation; current native results are recorded above.
 
 # Live acceptance evidence
 

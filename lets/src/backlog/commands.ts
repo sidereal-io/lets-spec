@@ -17,7 +17,7 @@ import { validateRequest, MUTATIONS } from './protocol.ts';
 import { invoke } from './transport.ts';
 export async function execute(command: string, input: Record<string, any>, cwd: string) {
   if (command === 'request') {
-    validateRequest(input);
+    validateRequest(input as unknown);
     if (input.context.cwd !== cwd) fail('invalid_request', 'request cwd must match current repository cwd');
     const client = new Client(cwd, input.context);
     if (client.context.provider !== input.context.provider) fail('invalid_configuration', 'provider differs from current selection');

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { readConfiguration } from './config.ts';
-import type { Selection } from './config.ts';
+import { readConfiguration } from './repository-config.ts';
+import type { Selection } from './repository-config.ts';
 import { invoke } from './transport.ts';
 import { enumerate } from './selection.ts';
 import type { Context } from './github.ts';

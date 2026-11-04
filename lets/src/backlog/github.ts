@@ -1,10 +1,11 @@
 import { METADATA, readMapped, validateMappings } from './items.ts';
 import type { Item, Mappings } from './items.ts';
 import { AdapterFailure } from './errors.ts';
+import type { ErrorCategory } from './errors.ts';
 
 export type Context = { cwd: string; repository: string; provider: string; actor: string; session: string; backlog?: string };
 export type Query = (name: string, variables: Record<string, unknown>) => Promise<any>;
-export function fail(category: string, message: string): never { throw new AdapterFailure(category, 'none', message); }
+export function fail(category: ErrorCategory, message: string): never { throw new AdapterFailure(category, 'none', message); }
 export class GitHub {
   readonly context: Context;
   readonly query: Query;

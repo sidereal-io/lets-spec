@@ -12,7 +12,7 @@ import { ghQuery } from './gh.ts';
 import { AdapterFailure } from './errors.ts';
 import type { Mappings } from './items.ts';
 export async function dispatch(request: Record<string, any>, query: Query = ghQuery(request.context.cwd)): Promise<any> {
-  validateRequest(request);
+  validateRequest(request as unknown);
   const context = request.context as Context;
   const github = new GitHub(context, query);
   const document = parse(readFileSync(join(context.cwd, 'openspec/config.yaml'), 'utf8'));
@@ -61,9 +61,9 @@ export async function main() {
   let request: any;
   try {
     let input = ''; for await (const chunk of process.stdin) { input += chunk; if (Buffer.byteLength(input) > 1024 * 1024) fail('invalid_request', 'request exceeds input limit'); }
-    try { request = JSON.parse(input); validateRequest(request); } catch { fail('invalid_request', 'invalid protocol request'); }
+    try { request = JSON.parse(input); validateRequest(request as unknown); } catch { fail('invalid_request', 'invalid protocol request'); }
     const response = { protocol: 1, ok: true, result: await dispatch(request) };
-    validateResponse(response, 0, request.operation); process.stdout.write(JSON.stringify(response) + '\n');
+    validateResponse(response as unknown, 0, request.operation); process.stdout.write(JSON.stringify(response) + '\n');
   } catch (error) {
     const failure = error instanceof AdapterFailure ? error : MUTATIONS.includes(request?.operation)
       ? new AdapterFailure('unknown_outcome', 'unknown', 'GitHub mutation could not return a validated result; reconcile before retry')

@@ -4,7 +4,7 @@ import { AdapterFailure } from './errors.ts';
 
 /** Each invocation crosses the protocol boundary with no shell or extra argv. */
 export async function invoke(executable: string, request: Record<string, any>, options: { timeoutMs?: number; maxBytes?: number } = {}): Promise<Record<string, any>> {
-  validateRequest(request);
+  validateRequest(request as unknown);
   for (const item of [request.input.item, request.input.target]) if (item && (item.provider !== request.context.provider || item.backlog !== request.context.backlog)) throw new AdapterFailure('invalid_request', 'none', 'input identity differs from request scope');
   const timeoutMs = options.timeoutMs ?? 5000;
   const maxBytes = options.maxBytes ?? 1024 * 1024;
@@ -33,7 +33,7 @@ export async function invoke(executable: string, request: Record<string, any>, o
         if (signal || code === null) throw new Error('signal termination');
         stdout = Buffer.concat(chunks).toString('utf8');
         response = JSON.parse(stdout);
-        validateResponse(response, code, request.operation);
+        validateResponse(response as unknown, code, request.operation);
         if (response.ok) {
           const scoped = (identity: any) => {
             if (identity.provider !== request.context.provider || identity.backlog !== request.context.backlog) throw new Error('response identity differs from request scope');
