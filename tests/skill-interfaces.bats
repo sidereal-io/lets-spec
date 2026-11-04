@@ -247,10 +247,21 @@ skill_says() {
   done
   skill_says lets-go 'gh issue view <i> --json createdAt'
   skill_says lets-go "Skipped shape: #<i>'s packet is complete, last edited <date>."
-  skill_says lets-go 'Interactivity: recommend, because #<i> is a Chore.'
   # lets-build's Claim sets the Status; lets-go sets no Project field itself.
   run grep -n 'gh project item-edit' "$repo/skills/lets-go/SKILL.md"
   [ "$status" -eq 1 ] || { echo "lets-go sets a Project field: $output"; false; }
+}
+
+@test "lets-go picks the level from the Kind and relays at ask" {
+  local phrase
+  skill_says lets-go 'Interactivity: <level>, because #<i> is a <Kind>.'
+  skill_says lets-go 'Interactivity: <level>, because you asked for it.'
+  skill_says lets-go 'Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
+  skill_says lets-go 'gh issue view <i> --json title,blockedBy'
+  for phrase in '#152 adds' 'chores only'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
+      { echo "lets-go still says: $phrase"; false; }
+  done
 }
 
 @test "lets-go runs each step through lets delegate step" {
