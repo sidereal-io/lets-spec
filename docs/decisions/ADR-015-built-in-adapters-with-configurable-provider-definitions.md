@@ -263,6 +263,73 @@ for that evidence. Completion remains idempotent; archive/readiness leave work
 In Progress until confirmed merge. This decision does not reopen the settled
 native-state/private-local-journal design.
 
+## Packaging, release evidence and migration
+
+Lets ships core policy, request/result and evidence validators, sequencing and
+private local recovery plus the supported provider-definition catalog. Custom
+definitions may be configured independently; they do not require an adapter
+executable or a runtime plugin loader. Backend CLIs, MCP servers and services
+remain external tool dependencies with declared availability/version/authentication
+requirements. Installing a tool neither registers an adapter nor establishes
+provider support. Retiring standalone adapters changes user setup and authoring;
+provide actionable configuration migration rather than silently running or
+ignoring the old executable settings.
+
+Runtime packages include production-consumed code and shipped definitions. Keep
+unused conformance source, fixtures and contract documentation out of runtime
+releases; keep offline conformance runnable in the repository. One release
+contains one execution path for an integration; do not ship built-in execution
+and a recipe implementation in parallel as two sources of provider behavior.
+
+GitHub remains the default. #52's release requires GitHub Issues/Projects, Jira
+Cloud, Linear and local Beads. Each integration needs repeatable automated tests
+and real end-to-end acceptance for its declared versions/configurations before
+support is claimed. Offline doubles, schema checks and a definition in a catalog
+do not establish live support. Test tool translation, independently verifiable
+evidence, uncertain effects and recovery, not just well-formed agent reports.
+
+### Contract migration inventory
+
+This chore documents the architecture; it does not change runtime behavior or
+main specs. The executable kit, `openspec/specs/backlog-adapter-contract/spec.md`
+and `docs/backlog-adapter-contract.md` remain migration inputs. Their behavioral
+guarantees remain in force; transport-specific requirements must be replaced,
+not treated as already satisfied by this decision.
+
+| Existing requirement or surface | Required target migration | Guarantees retained |
+|---|---|---|
+| **Contract validation leaves production integrations unchanged**; offline executable harness | Exercise policy/action requests, simulated agent/tool submissions and independent verifier evidence; keep checks offline and credentials-free. | No production mutation from conformance; deliberate negative cases must fail. |
+| **Executable boundary separates responsibilities**; stdin/stdout JSON, stderr, exit/result pairs, signals and startup | Replace adapter process transport with a versioned bounded-action/submission contract. Test malformed, mismatched, stale, replayed and missing results plus unavailable tools. | Shared policy remains in lets; backend translation stays in definitions; code host owns branches/PRs; untrusted reports cannot authorize progression. |
+| That requirement's deadline, SIGKILL and byte-limit scenarios; **Protocol 1** | Replace process supervision with core request expiry/bounded waits and declared bounded tool calls/results. Test ignored cancellation, overflow, late effects and late submissions. | Timeout never proves rollback or effects none; unknown outcomes block retry/progression. A tool that cannot meet required limits is unavailable for that action. |
+| **Configuration separates shared settings from authentication**; executable resolution and default | Select shipped or explicit custom definitions; implement schema/source/version checks, machine tool options and actionable rejection of obsolete executable keys. | One backlog; GitHub default; no silent selection fallback; external auth; mappings and local storage/tracking checked before mutation. |
+| **Mutation errors support safe recovery**; protocol/JSON failures | Validate requests/submissions and independently check required evidence. Retain typed errors and effect certainty; test forged/unverifiable receipts and same-agent repeated observations. | No error-message inference; original mutation identity, deduplication and reconciliation; no blind repeated create or session launch. |
+| **Four-provider evidence qualifies conformance claims**; profiles and evidence matrix | Distinguish policy tests, agent/tool translation tests, independent verification tests and live acceptance for each provider/configuration. | All four providers remain release requirements; offline profiles are not production integrations. |
+| **Runtime releases exclude unused conformance payloads**; executable bundles | Package core validators/recovery and production definitions; remove obsolete adapter-executable bundles and declare backend-tool dependencies separately. | Offline checks remain runnable; unused kit source, fixtures and docs remain outside runtime packages. |
+| Operation inventory, identity, metadata, capabilities and discovery | Carry complete behavioral scenarios through the request/result boundary, with operation-specific evidence requirements. | Scoped opaque identities, optional URLs, targeted field updates, pagination and complete blocker evidence, native/emulated/unsupported declarations and deterministic ranking. |
+| Claims and recovery | Model dispatch uncertainty, partial acquisition, reconciliation and fresh independent ownership/status checks before progression; preserve private local journals. | Native state is authoritative; session-safe release, no stronger locks, best-effort stays best-effort. A journal replay is not current ownership proof. |
+| References and completion | Verify the exact associated code-host PR merge independently before completion requests; test native auto-close and lost responses. | Exact merged reference/commit, merge-gated completion, idempotence and In Progress until confirmed merge. |
+
+#180 implements the GitHub build migration after #179 and #136. It must migrate
+the production caller, contract, conformance invocation and packaging and prove
+its own equivalence. #137–#144 retain their provider outcomes and acceptance
+obligations; #145 covers definition authoring for both capabilities.
+
+Delegation needs its own runtime migration under #174. Current built-in
+`t3`/`cli`/`subagent` implementations and lookup are not the target's custom
+definition registry. Provider-definition objects, bounded action submission and
+independent evidence verification do not yet exist there. Existing T3 launch/
+dispatch, token issuance and Git helper deadline gaps also remain. Shape that
+follow-up before implementing it; #180's GitHub work neither implements delegation
+nor proves project-wide compliance. No new runtime story is silently included
+in this documentation correction.
+
+Preserve the native-state/private-local-journal production design. PR #172
+remains ready/unmerged under user control; do not rewrite or merge it. Its
+completed native acceptance is historical evidence for its implementation;
+never repeat those mutations. Fixture PR #14 was user-merged. Recording this
+architecture requires no acceptance mutations. Later migrated behavior needs
+separate scoped equivalence evidence before a support claim.
+
 ## Consequences
 
 - Independent authors can integrate another backend for existing operations
