@@ -25,3 +25,20 @@ Neither `review` nor `handoff` folds into `step`. Each kind of session stays its
 - Easier: a resolver may share one private function between `run` and `step`, with a read-only switch. The contract does not see it.
 - Harder: `lets` keeps three command modules that look much alike: each looks up a resolver, tries the ranked models and prints a result. A fix to one may be needed in the others.
 - Harder: `handoff` is kept for one caller, the offer to build a planned change in a new session. If that caller goes, `handoff` goes with it, and `start` leaves the contract.
+
+## Alternatives Considered
+
+### Alternative 1: Fold `review` into `step`
+- **Pros**: one strategy and one command module for every session that `lets` waits for.
+- **Cons**: a review must not write and prints the reviewer's text as it is; a step may write and must end with a step report. One strategy would need its tree check, output and exit codes to change with the intent.
+- **Why not**: ADR-007 makes the strategy fix those things and the intent pick only the guidance. Folding would break that rule.
+
+### Alternative 2: Fold `handoff` into `step`
+- **Pros**: one fewer strategy, and one fewer adapter method.
+- **Cons**: a handoff returns at once with a handle, and the user drives the session; a step blocks until its report. One command would print either a handle or a report.
+- **Why not**: a caller could not tell from the command what it gets back, and the one handoff caller needs no report.
+
+### Alternative 3: One adapter method with a read-only switch, in place of `run` and `step`
+- **Pros**: a shorter contract, and resolvers already share most of the code.
+- **Cons**: a resolver that can run reviews but not steps would accept the call and refuse it at run time. Today `lets` skips that resolver because it has no `step` method.
+- **Why not**: a missing method is a check `lets` makes before it starts a session; a switch moves the check into every resolver.
