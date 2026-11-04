@@ -1,7 +1,7 @@
 ## 1. Shared runtime
 
 - [x] 1.1 [medium] Return validated protocol-1 responses through the production no-shell executable transport, preserving structured failures and uncertain mutation outcomes; promote the shared validators with stable kit re-exports (✓ node --test tests/lets/backlog/transport.test.ts and adapter-kit suite passed: 128 tests; mise exec -- pnpm check passed)
-- [ ] 1.2 [medium] Resolve implicit GitHub or explicit repository backlog configuration without fallback, rejecting invalid executable paths and mappings before effects (verify: node --test tests/lets/backlog/config.test.ts)
+- [x] 1.2 [medium] Resolve implicit GitHub or explicit repository backlog configuration without fallback, rejecting invalid executable paths and mappings before effects (✓ mise exec -- node --test tests/lets/backlog/config.test.ts passed: 10 tests; full-suite typecheck passed)
 
 ## 2. GitHub build operations [depends-on: 1]
 
