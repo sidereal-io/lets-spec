@@ -269,6 +269,16 @@ skill_says() {
   done
 }
 
+@test "lets-go reads go.level before it asks GitHub for anything" {
+  local skill="$repo/skills/lets-go/SKILL.md" first_level first_gh
+  skill_says lets-go 'Interactivity: <level>, because your lets config sets go.level.'
+  skill_says lets-go 'lets go level'
+  first_level=$(grep -n 'lets go level' "$skill" | head -1 | cut -d: -f1)
+  first_gh=$(grep -nE '`gh |lets-build. does' "$skill" | head -1 | cut -d: -f1)
+  [ "$first_level" -lt "$first_gh" ] ||
+    { echo "lets go level is on line $first_level, after a GitHub call on line $first_gh"; false; }
+}
+
 @test "lets-go runs a shape step for an idea or an unshaped issue" {
   local phrase
   skill_says lets-go 'Done shape: <date>. <evidence>'
