@@ -233,8 +233,12 @@ interactivity levels:
   step's recommendation as the suggested answer.
 
 To use the other level, name it with the issue number or the idea, such
-as `lets-go #152 recommend`. The level holds for that run only. The run
-ends when the pull request is ready for review, with one line per step.
+as `lets-go #152 recommend`. The level holds for that run only. To set a
+default for every run, add `go.level` to your `lets` config, as
+[Set up delegation](#set-up-delegation) shows. It replaces the Kind's
+level, and a level you name still wins. A `go.level` other than `ask` or
+`recommend` stops the run before it claims anything. The run ends when
+the pull request is ready for review, with one line per step.
 
 If a run stops, run `lets-go` again, on the default branch or on the
 change's branch. It reads from Git and GitHub which steps are done, and
@@ -249,9 +253,9 @@ first searches the open issues for the same work, and asks you whether
 one matches. If none does, a shape step runs `lets-shape` on the idea in
 a fresh session, and creates one issue. An issue whose packet is not
 complete, or has comments shaping has not read, gets the same shape
-step. The shape step runs at `ask`, unless you name a level, because
-there is no Kind yet. After it, the run goes on as for an issue number.
-An idea too large for one issue runs discovery, once you say yes. The
+step. The shape step runs at `ask`, unless you name a level or set
+`go.level`, because there is no Kind yet. After it, the run goes on as
+for an issue number. An idea too large for one issue runs discovery, once you say yes. The
 shape step runs `lets-shape`'s discovery one phase per round, and you
 confirm each phase. Discovery files a parent issue and its stories. The
 run then picks the first ready story, as `lets-build` picks the next
@@ -420,6 +424,8 @@ delegate:
   step:
     apply:
       guidance: Prefer claude/claude-opus-5-5.
+go:
+  level: recommend
 ```
 
 `delegate.resolvers` is the chain. List the resolvers for your harnesses
@@ -436,8 +442,12 @@ which models to use. Its parts are the command that reads it and a value
 `step.<step>` for one of the five steps, such as `step.apply`. The skill
 uses it only to rank and leave out models. A value that is not a string makes `instructions` exit 2.
 
-Other keys are ignored, so a later `lets` can add settings beside
-`delegate`.
+`go` holds the settings for `lets-go`. `go.level` is `ask` or
+`recommend`, and is optional. `lets-go` reads it through
+`lets go level`. The `lets delegate` commands ignore `go`, and
+`lets go level` ignores `delegate`.
+
+Other keys are ignored, so a later `lets` can add settings beside these.
 
 ### The resolvers
 

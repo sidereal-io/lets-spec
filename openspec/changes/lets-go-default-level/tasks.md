@@ -9,7 +9,7 @@
 ## 2. The skill and the README [depends-on: 1]
 
 - [x] 2.1 [medium] `skills/lets-go/SKILL.md`: *Start* step 2 runs `lets go level` once, before any GitHub call, and stops on a non-zero exit showing its stderr; step 10 and *Run the shape step* step 2 pick the request's level, then the kept config level, then the Kind's or `ask`, and print the matching line, including `Interactivity: <level>, because your lets config sets go.level.`; the skill-interfaces test checks the two new fixed lines (verify: `bats tests/skill-interfaces.bats`) (✓ `bats tests/skill-interfaces.bats` passed)
-- [ ] 2.2 [parallel] [easy] `README.md`: the `lets-go` section says how `go.level` sets a default and that a named level still wins; the config example under *Set up delegation* gains `go.level`, and the section's closing sentence says `go` is read by `lets go level` and other keys are ignored (verify: `grep -q 'go.level' README.md && bats tests/skill-interfaces.bats`)
+- [x] 2.2 [parallel] [easy] `README.md`: the `lets-go` section says how `go.level` sets a default and that a named level still wins; the config example under *Set up delegation* gains `go.level`, and the section's closing sentence says `go` is read by `lets go level` and other keys are ignored (verify: `grep -q 'go.level' README.md && bats tests/skill-interfaces.bats`) (✓ `grep -q 'go.level' README.md && bats tests/skill-interfaces.bats` passed)
 
 ## 3. Integration [depends-on: 2]
 
