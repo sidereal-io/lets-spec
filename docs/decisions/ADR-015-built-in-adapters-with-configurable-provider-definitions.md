@@ -66,6 +66,97 @@ remain. ADR-011's user configuration ownership remains, with repository backlog
 selection separately scoped below. Existing implementations and runtime specs
 are migration inputs, not evidence that this target is already implemented.
 
+## Configuration, definitions and discovery
+
+Only lets reads and validates lets configuration, then supplies the selected,
+validated definition and scoped action inputs to the agent. Definitions and
+backend output are integration data, not authority to override core policy.
+Backend tools retain their own login configuration.
+
+| Scope | Authoritative home | Contents |
+|---|---|---|
+| User and machine | `$XDG_CONFIG_HOME/lets/config.yaml`, otherwise `~/.config/lets/config.yaml` | Explicit delegation resolver chain and command-shaped settings; machine-local tool availability, endpoint/connection options and private paths for delegation and backlog tools. |
+| Repository | `lets.backlog` in `openspec/config.yaml` | One backlog provider/definition selection, repository/backlog context, field/status mappings and explicit local storage/tracking policy. |
+| Provider definition | Shipped catalog or explicitly configured custom definition source | Supported-operation tool usage, input/result mappings, prerequisite/tool versions, capability declarations, limits and evidence requirements compatible with core policy. |
+
+Machine-local backlog options belong in the existing user file under its backlog
+command group. They cannot override repository provider/backlog selection,
+mappings or storage/tracking policy. Known misplaced selection keys are errors,
+not ignored settings or fallback to GitHub. Credentials stay in backend login
+tools, private credential stores or environment variables, never committed
+configuration/definitions. Private recovery journals are runtime data, not config.
+This defines ownership; exact new machine option keys are a runtime contract to
+implement and test, not existing parser behavior.
+
+Select definitions explicitly by stable name/source and version from the shipped
+catalog or configured custom sources. Custom definitions must implement only the
+operations/core guarantees supported by the running release. Unknown names,
+ambiguous sources, duplicate conflicting names and incompatible versions fail
+with actionable errors before requesting backend mutation. Loading a custom
+definition must not run install hooks, discover adapter executables on PATH or
+load arbitrary code into lets. A selected backend CLI may itself resolve through
+normal tool lookup; that is distinct from adapter discovery.
+
+Keep ADR-005's explicit resolver order: ask only the configured chain, append
+nothing and retain `subagent` as the no-config default. A resolver may decline
+when it does not apply. Refusal and ranked-model retry remain governed by core
+policy. Custom delegation definitions extend the available names without changing
+that ordering rule. Backlogs select one provider, defaulting to the shipped GitHub
+definition when selection is absent. An invalid explicit selection never silently
+becomes a default or another provider. No matching available tool means an
+explicit prerequisite failure, not permission to substitute another backend.
+
+Definition discovery lists the shipped catalog and explicitly configured sources.
+Backend discovery is a separate bounded read action: available models, linked
+backlogs, field IDs, permissions and allowed transitions within configured scope.
+It neither installs definitions nor authorizes new operations. Backlog discovery
+may precede selection of a backlog ID; item operations require exactly one
+selected backlog. Ambiguity needs explicit resolution. A capability declaration
+cannot upgrade a best-effort primitive to atomic support or make incomplete
+pagination/blocker evidence complete.
+
+### Validation and compatibility
+
+The release owns supported operations, request/result validators and compatible
+definition schemas. Definition authors own tool usage and mappings; users own
+selected sources and configured values. Shipped and custom definitions use the
+same validation and conformance rules. No provider-specific workflow policy or
+second implementation of operations belongs in the definition.
+
+Use an explicit provider-definition schema version, initially 1 for this target,
+and declare supported lets operation-contract versions and backend API/tool
+versions. This is distinct from the existing user-file version (currently 3),
+repository `lets.backlog.version` (initial target version 1) and OpenSpec's
+workflow `schema:` key. Missing/unsupported definition or explicit repository
+versions require an actionable migration error before mutation; absent backlog
+selection uses validated release defaults. Breaking changes to an owning format
+increment that format's version and document migration. Do not silently interpret
+a newer definition under older semantics.
+
+Provider-definition objects for delegation do not exist in the current runtime.
+The resolver chain and user guidance are not such objects. The migration must
+implement and document their schema, source registration and consumed options;
+this ADR does not claim that adding keys to today's config enables the target.
+Repository backlog versioning likewise remains implementation work in #180.
+
+Validate consumed definition structure, required tool/context inputs, operation
+names, result/evidence mappings, option types, cardinality, ambiguous field/value
+mappings, allowed transitions, capabilities and limits. Validate local facts
+before requesting backend actions; backend-dependent facts need bounded read
+actions and independently checkable evidence for required guarantees before
+mutation. Reject unknown options within consumed objects. Preserve ADR-011's
+tolerance for unrelated future settings, including unrelated delegation keys;
+known misplaced selections and obsolete executable settings remain errors.
+
+Reject obsolete adapter executable/path settings with the file/key and supported
+migration action; do not run them, interpret their shell syntax or silently ignore
+them. Migrating an existing integration means extracting its backend translation
+into a provider definition and using the shared request/result path, not keeping
+the old executor behind a new name. Backend CLI dependencies may remain.
+Invalid local configuration has no mutation effects. Missing tools, login or
+permissions name the selected integration and remedy without fallback. Errors
+must not expose credentials or private journal contents.
+
 ## Bounded actions, submissions and evidence
 
 These are target contract rules, not current runtime compliance claims. Before
