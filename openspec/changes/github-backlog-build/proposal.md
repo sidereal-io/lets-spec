@@ -7,7 +7,7 @@ The agreed backlog contract has only simulated adapters; build still embeds GitH
 - Add production `lets backlog` dispatch and the default GitHub executable for existing-story build operations.
 - Resolve repository selection and mappings under `lets.backlog`, preserving unconfigured GitHub discovery (D2).
 - Move GitHub translation behind the boundary while retaining shared readiness, packet and routing policy (D3).
-- Persist scoped item identity and session ownership for planning, resumption, PR association, release and merge-gated completion (D4).
+- Persist scoped item identity and native actor ownership and private continuation for planning, resumption, PR association, release and merge-gated completion (D4).
 - Migrate the build and finishing instructions in both flows; keep setup and shaping unchanged.
 - Add automated failure checks and live acceptance through the implemented flow using the agreed test repository and Project (D5, D6).
 

@@ -79,8 +79,11 @@ claims are best-effort snapshots; another Project writer can race after a
 successful check. Setup and shaping writes are unsupported here.
 
 GitHub needs existing single-select Kind, Priority, Size and Status fields,
-plus `Lets claim` and `Lets reference` text fields for writes. The adapter
-reports missing fields as capability gaps; build never creates them. Explicit
+with native issue assignees and PR closing links. Private local journals and
+explicit continuation handles record attempted operations. No machine-state
+Project fields or shared coordinator are required. GitHub cannot distinguish
+remote sessions using the same actor or detect reassignment between reads.
+Current native ownership and Status must match before progression. Explicit
 selection in `lets.backlog` requires provider, executable, id, and complete
 native mappings. Missing selection discovers exactly one open linked Project.
 No lifecycle operation posts comments or advances shaping's read marker.

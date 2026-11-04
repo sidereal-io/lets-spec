@@ -20,3 +20,12 @@ https://github.com/sidereal-io/lets-spec/issues/136
 None. The test repository and Project are acceptance fixtures; their manual setup does not count as evidence that the new flow works.
 
 Confirmed by user: yes
+
+## Authorized revision, 2026-11-04
+
+The user chose native GitHub features plus adapter reconciliation and private
+local journals/continuation. Assignees represent ownership, Status progress, and
+native PR links plus exact merge evidence completion. No machine-state Project
+fields, metadata branch, repository coordinator or external coordinator. This
+replaces earlier remote session-provenance decisions. Same-actor remote sessions
+cannot be distinguished; ownership is actor-level and best-effort.

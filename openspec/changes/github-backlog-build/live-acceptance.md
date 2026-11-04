@@ -1,3 +1,5 @@
+> Historical evidence for the pre-revision implementation. Native reconciliation revision is pending fresh validation and review.
+
 # Live acceptance evidence
 
 Status: complete. The user merged the test PR; verified completion and its

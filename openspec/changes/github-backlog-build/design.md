@@ -18,7 +18,7 @@ Build currently embeds provider commands in its source skill. Both schemas use G
 ## Scrutiny Tier & Blast Radius
 
 - **Tier:** high
-- **Blast radius:** repository configuration, external processes, GitHub writes, persistent claim provenance, both flows' build/resume/finishing instructions and release packaging.
+- **Blast radius:** repository configuration, external processes, GitHub writes, local recovery and native ownership, both flows' build/resume/finishing instructions and release packaging.
 
 ## Decisions
 
@@ -54,17 +54,33 @@ Store private sessions and mutation journals under the Git common directory's `l
 
 Claim creates a new opaque local session handle and returns it to the caller. Bind records its association privately. Resume requires that handle explicitly; it never selects a session solely from change name, item identity or shared Git directory. A restarted caller or authorized apply handoff deliberately passes the original handle to continue that worker's claim. A new worker without the handle receives no claim authority and stops for manual reconciliation. Tokens remain private and never enter planning artifacts.
 
-### 5. Use visible GitHub provenance with best-effort claims
+### 5. Reconcile native ownership using local continuation
 
-Assignment cannot distinguish two sessions sharing an account. Use a pre-existing Project text field named `Lets claim` to record claim generation, actor, session and token, then assignment and Project status. Tokens are correlation values, not secrets or authorization. Validate the exact record schema and scoped identity, and authenticate the requested actor against gh before writes. Project writers are inside the provider trust boundary; a changed or malformed record invalidates the claim. A local lock serializes this machine's scope; GitHub remains best-effort across machines. Document that fresh verification is a snapshot rather than exclusive execution.
+Use native issue assignees and Project Status. No machine-state Project fields,
+metadata branch, repository coordinator or external coordinator is required.
+Keep attempted operations, exact inputs, session correlation and tokens in the
+private local journal. These records permit deliberate continuation but never
+prove current remote ownership. Require fresh assignment and Status reads before
+progression. Reject acquire on any assigned item, including the same actor.
 
-Before every provider mutation, persist operation, exact input, scope, key and intended effect. Replay keys only for identical inputs. Acquire rechecks unowned state, records provenance, assigns and changes Status, then rereads provenance record, all owners and Status. The caller always follows success or reconciliation with fresh claim.read. Any competing provenance record, owner or status change invalidates progression. A provenance-write timeout cannot prove absence: mutation.read returns unknown unless the exact provenance record and resulting state prove application. No replacement provenance record is written while unknown.
+GitHub cannot distinguish sessions using the same actor, nor detect assignment
+removal and reassignment between snapshots. Declare actor-level best-effort
+verification explicitly. A local handle is continuation intent, not a distributed
+lock. Never automatically adopt an existing assignment without original local
+state. Unknown partial writes stay unknown until current native state satisfies
+the attempted operation; conflicting owners or status stop recovery. Release
+requires original local intent and current sole actor ownership; recheck between
+unassignment and restoring Todo. Do not overwrite detected intervening changes.
 
-Release verifies current actor/session/token plus assignment and status, records release intent, removes only that actor and restores Todo. Recheck between writes; on any ownership change stop with partial/conflict rather than overwriting another worker. Partial acquire may be repaired or released only with proven current provenance. Store released state remotely so a stale acquire replay cannot authorize work. Recovery reports applied, absent only with conclusive pre-write evidence, or unknown; journal presence alone is not proof that ownership is current. Capability limits explain Project field permissions, visible provenance and races.
+### 6. Keep completion behind native links and verified merge
 
-### 6. Keep completion behind verified code-host merge
-
-`reference` writes an idempotent association in a pre-existing Project text field named `Lets reference` to the exact PR URL and preserves `Closes #n` in the PR body. `complete` reads that association, queries the code host for matching repository/PR and merged commit, and only then sends completion.write. Raw protocol merge evidence is trusted-caller input, not authentication. The GitHub adapter checks evidence matches its association; it does not accept issue-body claims of merge. Update only mapped Status to Done, preserving other fields; already Done succeeds after merge verification. Ready/archive leave In Progress.
+Use the PR's native closing-issue links to verify the exact issue association.
+Preserve the existing PR body while adding its closing reference. Read complete
+native closing links before accepting reference.write or completion.write.
+Record attempted operations locally; never write PR associations into Project
+text fields or issue comments. Completion still requires exact repository, PR,
+merged=true and nonempty matching merge commit from the code host, including
+when automation already set Done. Ready and archive leave In Progress.
 
 Update source `skills/lets-build/SKILL.md`, its references, both schemas and overlay rules so commands carry recorded identity through propose, resume, archive and post-merge completion. Planning skills that read the packet use the normalized read path when a record exists. Keep Git commands and code-host PR commands outside the backlog adapter. Leave shaping/setup behavior unchanged, including GitHub closing references; do not edit generated installed copies. Both flows pass the local session handle through the existing authorized planning-to-apply handoff. Document callable command inputs for creating, binding and explicitly resuming that handle, including failure when it is unavailable.
 
@@ -76,12 +92,12 @@ Live acceptance uses `mstelz/test-repo-pls-ignore` and `https://github.com/users
 
 ## Risks / Trade-offs
 
-- [Cross-machine claims can race] → Declare best-effort, use visible session provenance, reread before work and stop uncertain recovery. Do not advertise exclusivity.
-- [Provenance fields are absent] → Declare the required capability unavailable before writes. Fixture setup creates `Lets claim` and `Lets reference` text fields; production setup instructions describe this prerequisite without silently creating fields during build. No lifecycle operation writes issue comments or changes comment watermarks.
+- [Cross-machine claims can race] → Declare best-effort, use native actor-level checks, reread before work and stop uncertain recovery. Do not advertise exclusivity.
+- [Native ownership cannot identify sessions] → Declare that limit. Require deliberate local continuation and fresh remote reads. No lifecycle operation writes machine-state fields or issue comments.
 - [External changes invalidate cached results] → Revalidate configuration and remote claim state; never treat a local journal as authority.
 - [New executable omitted from a release] → Exercise tarball and Nix install layouts in release checks.
 - [Live PR remains unmerged] → Report acceptance pending and keep the product PR draft until evidence is complete.
 
 ## Migration & Rollback
 
-No issue migration is required. Existing repositories retain implicit GitHub selection. Existing change folders gain identity only after explicit confirmation. Release CLI, adapter and source instructions together. Roll back the release and instructions together; retain existing backlog.json records and private journals for manual reconciliation. Do not clear remote assignments or provenance during rollback.
+No issue migration is required. Existing repositories retain implicit GitHub selection. Existing change folders gain identity only after explicit confirmation. Release CLI, adapter and source instructions together. Roll back the release and instructions together; retain existing backlog.json records and private journals for manual reconciliation. Do not clear remote assignments during rollback.

@@ -24,8 +24,15 @@
 
 Live evidence: [live-acceptance.md](live-acceptance.md). Selection, claim, bind, resume, release, reference, unmerged rejection and archive retention passed against the designated fixture. The user merged test PR https://github.com/mstelz/test-repo-pls-ignore/pull/7; merge-gated completion, idempotent replay and owned-fixture cleanup passed.
 
-Live acceptance evidence is a required supplement to task 4.1's automated command. Fixture preparation alone never satisfies that task. Add the prerequisite `Lets claim` and `Lets reference` text fields to the test Project during fixture preparation. Use the built runtime for selection, claim, bind, resume, release, reference and completion. Do not mark task 4.1 complete while merge or any required live case remains pending. Run both `pnpm test` and `nix flake check` before pushing implementation.
+Live acceptance evidence is a required supplement to task 4.1's automated command. Fixture preparation alone never satisfies that task. Revised fixture preparation uses only native assignees, Status and closing links; do not create machine-state fields. Use the built runtime for selection, claim, bind, resume, release, reference and completion. Do not mark task 4.1 complete while merge or any required live case remains pending. Run both `pnpm test` and `nix flake check` before pushing implementation.
 
 ## Deviations Ledger
 
 - Ship the promoted validator import closure with task 1.1 rather than waiting for 3.4: the existing isolated distribution smoke check failed immediately after promotion. Adapter executable packaging and full packaged conformance remain in 3.4.
+
+## 5. Native reconciliation revision
+
+- [ ] 5.1 [complex] Replace remote claim provenance with native assignees/Status and local intent, preserving unknown-outcome guards and explicit continuation; test assignment-only partial state, replay, release and same-actor limits.
+- [ ] 5.2 [complex] Replace Project PR association fields with fully paginated native closing links and exact merge gating; test mismatch and interrupted operations.
+- [ ] 5.3 [medium] Reconcile contract, kit expectations, capabilities, source instructions and fixtures with actor-level native limits; remove machine-state field prerequisites.
+- [ ] 5.4 [complex] Run required repository checks, new independent review, revised live acceptance and verification before archiving and marking ready. Prior evidence covers only the old implementation.

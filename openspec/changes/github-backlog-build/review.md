@@ -1,3 +1,5 @@
+> Historical evidence for the pre-revision implementation. Native reconciliation revision is pending fresh validation and review.
+
 ## Review Metadata
 
 - **Review round**: 1

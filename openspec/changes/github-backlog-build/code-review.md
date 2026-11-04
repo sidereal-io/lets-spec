@@ -1,3 +1,5 @@
+> Historical evidence for the pre-revision implementation. Native reconciliation revision is pending fresh validation and review.
+
 # Code review
 
 Reviewed: main a0aef6b64081bca8f250d031a6dc81ea8d5ba850..397647efb5511c3fa653e3989675bf7d7e1f9e2e

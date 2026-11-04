@@ -5,7 +5,7 @@
 
 ## Review Summary
 
-Reviewed every existing record. The executable protocol is already fixed by the backlog adapter contract. The new durable fork is storage of change identity separately from private recovery state. Project provenance fields are a GitHub emulation detail under that contract, documented in the design.
+Reviewed every existing record. The executable protocol is already fixed by the backlog adapter contract. The new durable fork is storage of change identity separately from private recovery state. Native assignees, Status and PR links replace Project provenance fields. Private continuation remains local; ADR-014 still governs immutable change identity.
 
 ## In-Force ADRs Reviewed
 

@@ -41,11 +41,11 @@ The shared workflow SHALL retain existing packet validation, comment watermark c
 - **WHEN** the requested item is already assigned
 - **THEN** build reports the owner and stops without replacing ownership
 
-### Requirement: Claims expose and verify session ownership
-GitHub claims SHALL report best-effort guarantees. Acquire SHALL check unowned state, establish actor/session/token provenance, assign, transition to In Progress and verify current ownership. Before work, including resume and replay, the caller SHALL freshly read and require matching actor, session, token and In Progress. Assignment alone SHALL NOT authorize work. Uncertain or conflicting provenance SHALL require reconciliation without clearing another worker's claim.
+### Requirement: Claims reconcile native actor ownership
+GitHub claims SHALL report actor-level best-effort guarantees and explicitly disclose that remote sessions using the same actor cannot be distinguished. No machine-state Project fields or shared coordinator SHALL be required. Acquire SHALL check unowned state, journal local continuation intent, assign, transition to In Progress and verify current ownership. Before work, including resume and replay, the caller SHALL freshly read and require matching local continuation and current native sole actor ownership and In Progress. Assignment alone SHALL NOT authorize work. Uncertain or conflicting native state SHALL require reconciliation without clearing another worker's claim.
 
 #### Scenario: Same account uses a second session
-- **WHEN** another session sharing the authenticated account attempts to acquire or release a claimed item
+- **WHEN** a new session without original local continuation attempts to acquire or release an assigned item
 - **THEN** it receives a conflict and the first session's ownership remains intact
 
 #### Scenario: Resume requires explicit continuation
@@ -64,7 +64,7 @@ After branch creation fails, the workflow SHALL release using the original scope
 - **THEN** release removes this worker's assignment and restores Todo
 
 #### Scenario: Claim was replaced
-- **WHEN** branch failure recovery finds another session's current claim
+- **WHEN** branch failure recovery finds another actor's assignment
 - **THEN** it reports conflict without changing assignment or status
 
 ### Requirement: Retain immutable identity through the change lifecycle
@@ -79,7 +79,7 @@ The workflow SHALL persist provider/backlog/item identity, repository and displa
 - **THEN** the recorded identity remains available for later completion
 
 ### Requirement: Associate PRs and complete only after merge
-The workflow SHALL store an idempotent association to the exact code-host PR, preserving GitHub closing references. It SHALL leave ready and archived work In Progress. Completion SHALL require the trusted code-host caller to verify that associated PR merged and supply its nonempty merge commit. It SHALL reconcile already-Done automation after merge and reject a different PR or unmerged evidence.
+The workflow SHALL verify an idempotent native closing-issue association to the exact code-host PR, preserving GitHub closing references. It SHALL leave ready and archived work In Progress. Completion SHALL require the trusted code-host caller to verify that associated PR merged and supply its nonempty merge commit. It SHALL reconcile already-Done automation after merge and reject a different PR or unmerged evidence.
 
 #### Scenario: Ready PR is unmerged
 - **WHEN** a PR is ready for review but remains unmerged

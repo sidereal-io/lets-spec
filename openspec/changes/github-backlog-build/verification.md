@@ -1,3 +1,5 @@
+> Historical evidence for the pre-revision implementation. Native reconciliation revision is pending fresh validation and review.
+
 # Verification: github-backlog-build
 
 Using change: github-backlog-build, schema lets-standard, repository-local root.

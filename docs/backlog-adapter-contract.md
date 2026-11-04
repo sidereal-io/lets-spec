@@ -241,27 +241,33 @@ claim acquire/release and merge-gated completion own status transitions.
 ## Claim guarantees
 
 A claim reports actor, session, token, status and guarantee (atomic or
-best-effort). Existing ownership is a conflict, including another session using
-the same account. Acquire checks ownership, assigns, moves to In Progress and
-verifies the result. Only matching ownership and In Progress permit build.
-Lost responses require mutation reconciliation before another acquire. A journal
-result proves a write happened, not that ownership is still current. Always run
-a fresh claim.read before starting work, including after a successful acquire,
-a replay or mutation.read; require matching actor, session, token and In Progress.
-Acquire replay and claim mutation reconciliation report conflict when the
-original claim has been released, replaced or completed. Assignment without the status transition is partial progress and
-cannot authorize a build. Repair or release only after proving current ownership.
+best-effort). Adapters must state whether ownership verification is session-level
+or actor-level. Session and token may correlate local continuation; they must
+not be presented as remote session ownership when the provider lacks it.
 
-Release requires the original actor, session and token and restores Todo. A
-provider without durable session provenance cannot safely distinguish workers
-sharing an account: declare that limitation and stop uncertain release or claim
-recovery for manual reconciliation. Never remove another worker's ownership.
+The native GitHub profile uses assignees and Project Status with private local
+journals and explicit continuation handles. It requires no machine-state fields,
+metadata branch, repository coordinator or external service. Acquire rejects any
+existing assignment, including the same actor. Before work, freshly read sole
+actor assignment and In Progress and require original local continuation intent.
+Missing local intent never authorizes adopting an assigned item. Assignment
+alone without In Progress cannot authorize work.
 
-Best-effort verification is a snapshot, not exclusive execution: another worker
-may race after verification. Do not advertise atomic guarantees for a sequence
-of assignment and status writes. The executable fake tests best-effort
-outcomes; a production atomic profile requires evidence of a provider primitive
-that enforces the declared ownership condition under concurrent attempts.
+Record exact attempted operations before writes. Lost responses require
+mutation reconciliation before replay. Applied means current native state
+satisfies the recorded operation, not proof that this session caused the state.
+Absent requires conclusive pre-write or no-effects evidence. Partial native
+state remains unknown. A journal alone never proves current ownership.
+Release requires original local actor/session/token intent and checks current
+native ownership between mutations; conflicting owners or Status stop writes.
+
+GitHub cannot distinguish remote sessions sharing the same actor or detect
+assignment removal and reassignment between reads. Release and recovery therefore
+provide actor-level best-effort snapshots, never session-level distributed locks.
+Other adapters with remote session primitives may enforce stronger provenance.
+The simulated kit exercises that stronger profile; its results are not proof
+of GitHub session isolation. No adapter may advertise atomic claims without a
+provider primitive enforcing ownership under concurrent attempts.
 
 ## Completion evidence
 
@@ -290,7 +296,7 @@ completion tests cover negative and uncertain outcomes.
 
 | Profile | Primary-source facts | Simulated classification and assumptions | Remaining live acceptance |
 |---|---|---|---|
-| GitHub Issues/Projects | [Dependencies](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/creating-issue-dependencies) distinguish blocked-by and blocking and require triage permission. [Sub-issues](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/adding-sub-issues) support hierarchy. [Single-select fields](https://docs.github.com/en/issues/planning-and-tracking-with-projects/understanding-fields/about-single-select-fields) provide configurable options. | Identity N (issue node ID plus Project scope); hierarchy/blockers N; shared metadata E through Project fields; claim E best-effort; PR reference/completion E through caller evidence. Atomic claim U. Project discovery must inspect both repository and owner listings. | Verify scopes, Project linkage in both directions, full pagination, field IDs/options, sub-issue and dependency direction, assignment/status partial writes, durable session provenance, create reconciliation and merge closing automation. |
+| GitHub Issues/Projects | [Dependencies](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/creating-issue-dependencies) distinguish blocked-by and blocking and require triage permission. [Sub-issues](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/adding-sub-issues) support hierarchy. [Single-select fields](https://docs.github.com/en/issues/planning-and-tracking-with-projects/understanding-fields/about-single-select-fields) provide configurable options. | Identity N (issue node ID plus Project scope); hierarchy/blockers N; shared metadata E through Project fields; claim E best-effort; PR reference/completion E through caller evidence. Atomic claim U. Project discovery must inspect both repository and owner listings. | Verify scopes, Project linkage in both directions, full pagination, field IDs/options, sub-issue and dependency direction, assignment/status partial writes, actor-level limits, local continuation, create reconciliation and merge closing automation. |
 | Jira Cloud REST v3 | [Issues API](https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/) documents issue fields, parent relationships, assignment and workflow transitions. [Issue links](https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-links/) use inward/outward issues and link types. | Identity N (tenant/project plus opaque ID); hierarchy/blockers N when configured; shared metadata E through native/custom fields; claim E best-effort; references/completion E. Atomic claim U. Tenant permissions and issue-type hierarchy are prerequisites; generic related links are insufficient. | Verify actual parent hierarchy, configured Blocks link direction, field schemas, permitted transitions, account IDs, permissions, pagination, retried link writes, partial claim recovery and merge-triggered automation. |
 | Linear GraphQL | [Issue properties](https://linear.app/docs/issue-properties-home) include status, priority, labels, estimates and directional relations. [Parent/sub-issues](https://linear.app/docs/parent-and-sub-issues) represent hierarchy. [Developer API](https://linear.app/developers/graphql) provides authenticated GraphQL access. | Identity N (workspace/team scope plus opaque ID); hierarchy/blockers N; four shared fields E via configured fields/labels; claims E best-effort; references/completion E. Atomic claim U. Wont and Size meanings must be explicit mappings rather than guessed numeric priority or estimates. | Verify workspace/team membership, cursor traversal, relation direction, all mapped values, unrelated label preservation, account/session ownership, rate limits, create deduplication and GitHub automation behavior. |
 | Local Beads | [Upstream CLI reference](https://raw.githubusercontent.com/gastownhall/beads/main/docs/CLI_REFERENCE.md), redirected upstream to gastownhall/beads, documents local IDs, child listing, dependency commands, assignment, updates, labels and close operations. | Identity N without browser URL; hierarchy/blockers N for selected CLI version; metadata E through labels/fields; claims E best-effort conservatively; references/completion E. Stronger claims U until version-specific primitives are verified. Storage/tracking policy is explicit. | Pin bd version and storage engine; verify JSON outputs, dependency orientation and related-link distinction, native claim behavior, session provenance, concurrent writers, interrupted writes, close retries and every generated file's tracking policy. |
