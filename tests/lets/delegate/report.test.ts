@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { readReport } from '../../../lets/src/delegate/report.ts';
+import { readAnswers, readReport, withAnswers } from '../../../lets/src/delegate/report.ts';
+import { UsageError } from '../../../lets/src/resolvers/kit/errors.ts';
 
 // A final message that ends with a step-report block holding yaml.
 const ending = (yaml: string, fence = '```') => `${fence}step-report\n${yaml}${fence}\n`;
@@ -80,3 +81,49 @@ for (const [name, text, named] of UNREADABLE) {
     assert.match((report as { reason: string }).reason, new RegExp(named));
   });
 }
+
+test('readAnswers reads each question and its answer, in order', () => {
+  const text = '- question: Which schema?\n  answer: lets-minimal\n- question: Split it?\n  answer: no\n';
+  assert.deepEqual(readAnswers(text, 'a.yaml'), [{ question: 'Which schema?', answer: 'lets-minimal' }, { question: 'Split it?', answer: 'no' }]);
+});
+
+// Answers files that are not a non-empty list of pairs with text in both.
+const BAD_ANSWERS: [string, string][] = [
+  ['not YAML', '- question: [x\n'],
+  ['a mapping', 'question: Which?\nanswer: x\n'],
+  ['an empty list', '[]\n'],
+  ['an empty file', ''],
+  ['an entry that is not a mapping', '- Which?\n'],
+  ['a pair with no answer', '- question: Which?\n'],
+  ['a pair with no question', '- answer: x\n'],
+  ['a blank answer', '- question: Which?\n  answer: "  "\n'],
+  ['a blank question', '- question: ""\n  answer: x\n'],
+  ['an answer that is not text', '- question: Which?\n  answer: [a]\n'],
+];
+
+for (const [name, text] of BAD_ANSWERS) {
+  test(`an answers file holding ${name} is a usage error naming --answers-file`, () => {
+    assert.throws(() => readAnswers(text, 'a.yaml'), (error) => error instanceof UsageError && /--answers-file a\.yaml/.test(error.message));
+  });
+}
+
+test('withAnswers appends the answers section after the prompt', () => {
+  assert.equal(withAnswers('PROMPT TEXT\n', [{ question: 'Which schema?', answer: 'lets-minimal' }]),
+    'PROMPT TEXT\n\n## Answers\n\nThese questions from the last step report are settled. Do not ask them again.\n\n- Q: Which schema?\n  A: lets-minimal\n');
+});
+
+test('withAnswers keeps the pairs in order', () => {
+  const prompt = withAnswers('P', [{ question: 'First?', answer: '1' }, { question: 'Second?', answer: '2' }]);
+  assert.ok(prompt.indexOf('First?') < prompt.indexOf('Second?'));
+});
+
+test('withAnswers keeps a multi-line answer inside its item', () => {
+  const prompt = withAnswers('P', [{ question: 'Which?', answer: 'one\n- Q: two\nthree\n' }]);
+  assert.ok(prompt.endsWith('- Q: Which?\n  A: one\n  - Q: two\n  three\n'), prompt);
+  assert.equal(prompt.match(/^- Q:/gm)?.length, 1);
+});
+
+test('withAnswers keeps a multi-line question inside its item', () => {
+  const prompt = withAnswers('P', [{ question: 'Which\nschema?', answer: 'x' }]);
+  assert.ok(prompt.endsWith('- Q: Which\n  schema?\n  A: x\n'), prompt);
+});

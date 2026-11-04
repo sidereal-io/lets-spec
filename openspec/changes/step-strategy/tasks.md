@@ -11,7 +11,7 @@ Types and lookup that every later task builds on. `Kind` and `Intent` widen, `Ad
 
 - [x] 2.1 [medium] `readReport` reads the last `step-report` block by the fence rule, a shorter fence inside does not close it, text before and after is ignored, and the result is a typed `done`, `needs-input` or `failed` report with questions in order and optional recommendations (verify: node --test tests/lets/delegate/report.test.ts) (✓ node --test tests/lets/delegate/report.test.ts passed)
 - [x] 2.2 [medium] `readReport` answers a `failed` report whose reason names what is wrong and whose `message` is the text, for no block, a block that is not YAML, an unknown outcome, `done` without evidence, `needs-input` without questions and `failed` without a reason (verify: node --test tests/lets/delegate/report.test.ts) (✓ node --test tests/lets/delegate/report.test.ts passed)
-- [ ] 2.3 [medium] `readAnswers` accepts a non-empty list of pairs with text in both fields and throws a `UsageError` naming `--answers-file` otherwise, and `withAnswers` appends the `## Answers` section with one item per pair and every further line indented (verify: node --test tests/lets/delegate/report.test.ts)
+- [x] 2.3 [medium] `readAnswers` accepts a non-empty list of pairs with text in both fields and throws a `UsageError` naming `--answers-file` otherwise, and `withAnswers` appends the `## Answers` section with one item per pair and every further line indented (verify: node --test tests/lets/delegate/report.test.ts) (✓ node --test tests/lets/delegate/report.test.ts passed)
 
 ## 3. The command [depends-on: 2]
 

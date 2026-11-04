@@ -1,6 +1,7 @@
 // The step report: how a step's session says it ended. The session writes
 // it last in its final message, as a fenced step-report block of YAML.
 import { parse } from 'yaml';
+import { UsageError } from '../resolvers/kit/errors.ts';
 
 // A question a step needs answered, with the answer it would pick, when it
 // has one.
@@ -69,6 +70,38 @@ function question(entry: unknown, i: number): Question {
   if (recommendation === undefined || recommendation === null) return { question: entry.question };
   if (typeof recommendation !== 'string') throw new Unreadable(`questions[${i}].recommendation must be a string`);
   return { question: entry.question, recommendation };
+}
+
+// A question from a needs-input report, and the user's answer to it.
+export type Answer = { question: string; answer: string };
+
+// The pairs in text, the answers file at path. Throws a UsageError naming
+// --answers-file unless it is a non-empty list of pairs with text in both.
+export function readAnswers(text: string, path: string): Answer[] {
+  const fail = (message: string) => new UsageError(`--answers-file ${path} ${message}`);
+  let value: unknown;
+  try {
+    value = parse(text);
+  } catch (error) {
+    throw fail(`is not YAML: ${(error as Error).message.split('\n')[0].replace(/:$/, '')}`);
+  }
+  if (!Array.isArray(value) || value.length === 0) throw fail('must be a non-empty list of question and answer pairs');
+  return value.map((entry: unknown, i: number) => {
+    const hasText = (field: string) => isObject(entry) && typeof entry[field] === 'string' && entry[field].trim() !== '';
+    if (!hasText('question') || !hasText('answer')) throw fail(`entry ${i + 1} must hold a question and an answer, each with text`);
+    const { question, answer } = entry as Answer;
+    return { question, answer };
+  });
+}
+
+// prompt, then a section that settles each question with its answer. Each
+// further line of a question or answer is indented, so it stays inside its
+// item, and a line such as "- Q:" in an answer cannot pass as a new pair.
+export function withAnswers(prompt: string, answers: Answer[]): string {
+  const indented = (text: string) => text.replace(/\s+$/, '').replaceAll('\n', '\n  ');
+  const items = answers.map(({ question, answer }) => `- Q: ${indented(question)}\n  A: ${indented(answer)}\n`);
+  const head = prompt.endsWith('\n') ? prompt : `${prompt}\n`;
+  return `${head}\n## Answers\n\nThese questions from the last step report are settled. Do not ask them again.\n\n${items.join('')}`;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
