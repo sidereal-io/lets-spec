@@ -14,7 +14,7 @@
 ## 3. Lifecycle integration [depends-on: 2]
 
 - [x] 3.1 [medium] Bind immutable versioned change identity and resume it only with matching selection and an explicit continuation handle; preserve identity through archive and reject automatic legacy adoption (✓ mise exec -- node --test tests/lets/backlog/identity.test.ts passed: 3 tests; typecheck passed)
-- [ ] 3.2 [complex] Complete only the recorded item's associated merged PR, with idempotent reference and Done reconciliation that leave unmerged work In Progress (verify: node --test tests/lets/backlog/completion.test.ts)
+- [x] 3.2 [complex] Complete only the recorded item's associated merged PR, with idempotent reference and Done reconciliation that leave unmerged work In Progress (✓ mise exec -- node --test tests/lets/backlog/completion.test.ts passed: 4 tests; typecheck passed)
 - [ ] 3.3 [medium] Route both source flows through documented callable backlog commands and explicit handoff handles, retaining packet/comment/glossary policy and targeted glossary body updates (verify: bats tests/skill-interfaces.bats)
 - [ ] 3.4 [complex] Run the default adapter and standalone conformance kit from packaged releases, shipping executable permissions and the complete promoted validator import closure in tarballs and Nix (verify: nix flake check)
 

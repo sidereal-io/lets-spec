@@ -5,6 +5,9 @@ const info = 'pageInfo { hasNextPage endCursor }';
 const project = 'id title url closed';
 const issue = 'id number title body url closed lastEditedAt repository { nameWithOwner } parent { id number body closed repository { nameWithOwner } }';
 export const QUERIES: Record<string, string> = {
+  PullRequest: 'query PullRequest($owner:String!,$name:String!,$number:Int!) { repository(owner:$owner,name:$name) { pullRequest(number:$number) { id url body merged mergeCommit { oid } repository { nameWithOwner } } } }',
+  UpdatePRBody: 'mutation UpdatePRBody($id:ID!,$body:String!) { updatePullRequest(input:{pullRequestId:$id,body:$body}) { pullRequest { id } } }',
+
   FieldText: 'mutation FieldText($project:ID!,$item:ID!,$field:ID!,$text:String!) { updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{text:$text}}) { projectV2Item { id } } }',
   FieldStatus: 'mutation FieldStatus($project:ID!,$item:ID!,$field:ID!,$option:String!) { updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{singleSelectOptionId:$option}}) { projectV2Item { id } } }',
   Unassign: 'mutation Unassign($issue:ID!,$actor:ID!) { removeAssigneesFromAssignable(input:{assignableId:$issue,assigneeIds:[$actor]}) { assignable { id } } }',
