@@ -13,7 +13,7 @@
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [easy] The whole suite, the type check and the flake pass with the new command and the edited skill (verify: `pnpm test && nix flake check`)
+- [x] 3.1 [easy] The whole suite, the type check and the flake pass with the new command and the edited skill (verify: `pnpm test && nix flake check`) (✓ `pnpm test && nix flake check` passed: 615 Node tests, the type check, 139 bats tests, all flake checks)
 
 ## Deviations Ledger
 
