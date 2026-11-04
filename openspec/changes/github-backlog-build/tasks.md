@@ -48,7 +48,7 @@ sources and tests. Production executables remain bundled and release-tested.
 
 ## 7. Fresh native acceptance fixtures
 
-- [ ] 7.1 [complex] Remove acceptance-owned machine-state fields after checking scope, create fresh issues using shared metadata and native relationships, and demonstrate selection, claim, continuation, fault recovery and release. Leave fixtures visible for inspection.
+- [x] 7.1 [complex] Remove acceptance-owned machine-state fields after checking scope, create fresh issues using shared metadata and native relationships, and demonstrate selection, claim, continuation, fault recovery and release. Leave fixtures visible for inspection. (✓ verified legacy fields absent; fresh issues #8–#13 created; built CLI passed blocked/owned/next selection, branch-failure release, lost-response recovery, claim/bind/resume; all fresh fixtures remain visible)
 - [ ] 7.2 [complex] Associate a new test PR natively, reject unmerged completion, and wait for the user's explicit test-PR merge before recording merged completion, verification and re-archival.
 
 The user rejected reused fixtures as clean native-state evidence. Earlier live
