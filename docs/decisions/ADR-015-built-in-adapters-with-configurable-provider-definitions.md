@@ -111,6 +111,79 @@ have no mutation effects. Missing backend tools, login or permissions name the
 selected provider and the remedy; they do not trigger provider fallback. Sanitize
 errors so neither credentials nor private journal content appears in diagnostics.
 
+## Execution, deadlines and recovery
+
+Built-in code validates operation inputs and results, enforces workflow
+preconditions, and reports typed errors with effect certainty. Keep the backlog
+categories invalid_request, invalid_configuration, authentication, permission,
+not_found, unsupported, conflict, transient and unknown_outcome. Preserve the
+existing delegation distinction between decline, refusal and an unknown outcome;
+a common architecture does not require identical command result formats.
+Unexpected exceptions are unknown outcomes, not classifications inferred from
+words in an error message.
+
+Every external operation has a finite code-enforced deadline. Adapter code must
+propagate cancellation to backend requests and bound subprocess output and
+waiting where it uses backend tools. A timeout must return control without
+accepting a later result as permission to progress. A synchronous operation that
+cannot be bounded cannot satisfy this contract by merely racing a timer around
+it. Process termination and request cancellation do not prove that the backend
+rolled back a write or that detached work stopped.
+
+Rejecting input before execution can prove effects `none`. For mutations,
+partial progress is `partial` and uncertainty is `unknown`; a deadline, lost
+response or unexpected error after dispatch must not promise `none`. Reconcile
+before retry or progression using the original operation identity and scope.
+Retry bounded read failures or mutations with proven no effects according to
+code-owned policy. Never repeat an uncertain creation simply because the caller
+stopped waiting. If available evidence cannot resolve it safely, stop for manual
+reconciliation rather than guess, change provider or remove someone else's work.
+Delegation likewise must expose any known session handle when execution may
+have started; it must not start another session merely because waiting failed.
+
+Changing packaging does not change the settled state model. Native ownership
+and status remain authoritative; a private local journal records recovery
+provenance and uncertain operations, not a replacement backlog or proof of
+current ownership. Keep journals private and outside committed project state.
+Retain scoped mutation identity, deduplication, current ownership verification,
+session-safe release and partial-claim recovery. Best-effort claims remain
+best-effort; sequential assignment and status updates do not become atomic
+because they now run inside `lets`.
+
+The code host supplies exact associated pull request merge evidence, including
+the merged reference and merge commit. A ready PR, archive, issue text or journal
+entry cannot substitute for confirmed merge. Completion remains idempotent,
+requires merge confirmation even after native closing automation, and leaves
+work In Progress until that confirmation. This decision does not reopen claim
+or journal storage design.
+
+## Packaging and release evidence
+
+Adapter implementations, supported-definition validation and operation rules
+ship as part of `lets`. There are no separately installed adapter packages,
+PATH-based adapter lookup or runtime plugin loaders. This does not forbid an
+adapter from calling a backend CLI or service. A backend tool such as `gh` or
+`bd` remains a separately available dependency where that integration uses it;
+it is not an independently installed `lets` adapter. Built-in code constructs
+and validates those calls, checks supported backend versions and availability,
+and applies the same deadlines and recovery rules. Installing a backend tool
+does not register an adapter or make an unsupported provider supported.
+
+Runtime packages include the code their production commands consume. Keep
+unused conformance source, test fixtures and contract documentation outside
+runtime releases; the repository must retain runnable offline conformance.
+Internal calls remove adapter wire-protocol packaging, not backend dependency
+constraints, authentication requirements or release evidence.
+
+GitHub remains the default. The multi-backlog release still requires GitHub
+Issues/Projects, Jira Cloud, Linear and local Beads. Every adapter needs
+repeatable automated checks and a real end-to-end test of its supported version
+and configuration before release support is claimed. Offline doubles test shared
+behavior and deliberately broken cases; they establish no live support. Backend
+boundary tests and scoped live acceptance must prove that migrated behavior
+still meets those obligations. Neither this decision nor a packaging change
+waives them.
+
 ## Consequences
 
 - Users install one adapter implementation with `lets`. Supported field and
