@@ -71,7 +71,8 @@ step gets its own prompt, and runs as [Run a step](#run-a-step) says.
 
 ## Write the prompt
 
-Write the frame below to `.workspace/lets-go/<name>-<step>-prompt.md`.
+Create the folder first, if it is missing: `mkdir -p .workspace/lets-go`.
+Then write the frame below to `.workspace/lets-go/<name>-<step>-prompt.md`.
 Fill in each `<...>`, and put the step's row from the table under
 *What to run*. `<schema>` is the schema *Route* picked.
 
