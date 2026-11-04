@@ -4,6 +4,7 @@
       "schemas": ["lets-standard", "lets-minimal"],
       "skills": [
         "lets-build",
+        "lets-go",
         "lets-brainstorm",
         "lets-write-specs",
         "lets-write-adrs",
@@ -19,6 +20,7 @@
       "schemas": ["lets-minimal"],
       "skills": [
         "lets-build",
+        "lets-go",
         "lets-brainstorm",
         "lets-write-specs",
         "lets-write-tasks",

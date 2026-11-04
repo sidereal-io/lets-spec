@@ -48,6 +48,7 @@ These rules come from lets-spec, and apply to every agent.
 | A large idea, or work that needs splitting or prioritizing | The `lets-shape` skill |
 | A bug, a chore or a single story with no issue yet, or an issue with no packet | The `lets-shape` skill |
 | Start the next story, or move the current branch's change on | The `lets-build` skill |
+| Take a shaped chore to a ready pull request in one run | The `lets-go` skill |
 | Set up or check this repository's backlog | The `lets-setup-backlog` skill |
 
 ### Domain language

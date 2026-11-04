@@ -7,14 +7,17 @@ This section is for anyone wondering what Let's Spec does.
 Let's Spec (`lets-spec`) is a planning workflow for AI coding agents, built
 on [OpenSpec](https://github.com/Fission-AI/OpenSpec). It gives each of
 your projects the same agent skills, OpenSpec schema and working rules.
-You talk to it through two skills:
+You talk to it through three skills:
 
 - **`lets-shape`** shapes a big idea, or one bug, chore or story, into
   issues on the repository's GitHub Project.
 - **`lets-build`** takes the next one from that backlog and moves it
   through planning, building, review and archive.
+- **`lets-go`** takes one shaped chore to a pull request ready for
+  review, in one run, and asks you every question in the conversation
+  you started.
 
-A third skill, **`lets-setup-backlog`**, creates that Project once per
+A fourth skill, **`lets-setup-backlog`**, creates that Project once per
 repository. The `lets sync` command copies the skills, schemas and rules
 into your project, and keeps them up to date. You install it with a Nix
 flake, or with [mise](https://mise.jdx.dev) from a release on GitHub. It
@@ -22,7 +25,7 @@ is a personal, unofficial project, and not part of OpenSpec.
 
 - [🚀 Quick start](#-quick-start): from nothing to a committed setup
 - [📦 Set it up](#-set-it-up): the requirements, and the details for Nix or mise
-- [⚙️ Usage](#️-usage): the backlog, the three skills and the flows
+- [⚙️ Usage](#️-usage): the backlog, the skills and the flows
 - [🧵 Reviews in a fresh session](#-reviews-in-a-fresh-session): reviews by another model family
 - [📜 The working rules](#-the-working-rules) and [🔄 Updating](#-updating)
 - [🛠️ Development](#️-development): working on Let's Spec itself
@@ -170,6 +173,7 @@ them to `lets-shape`.
 | Split or prioritize a large idea | `lets-shape` |
 | File a bug, a chore or a single story, or finish an issue that has no packet | `lets-shape` |
 | Start the next story, or carry on the change on your current branch | `lets-build` |
+| Take a shaped chore to a ready pull request in one run | `lets-go` |
 | Set up or check this repository's backlog | `lets-setup-backlog` |
 
 ### `lets-setup-backlog`: create or check the Project
@@ -210,6 +214,19 @@ The next issue is the unassigned, unblocked Todo with the highest
 priority. Chores and most XS or S stories use the `lets-minimal` schema;
 [the skill](skills/lets-build/SKILL.md#route) says the exact rule. You
 merge the pull request: agents never merge unless you ask.
+
+### `lets-go`: a chore in one run
+
+Run `lets-go` on the default branch with a shaped chore's issue number.
+It claims the issue as `lets-build` does, then runs propose, apply and
+apply review, each in a fresh session through `lets delegate step run`.
+A step never asks you anything in its own session. It reports its
+questions, and `lets-go` answers each one that has a recommendation,
+tells you what it answered, and asks you the rest. The run ends when the
+pull request is ready for review, with one line per step.
+
+`lets-go` takes chores only. For a story or a bug, or to carry on a
+change on its branch, use `lets-build`.
 
 ### The Project fields
 
