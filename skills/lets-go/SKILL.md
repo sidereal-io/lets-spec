@@ -69,7 +69,7 @@ unfinished step.
 
    ```bash
    git branch --list <name>
-   git ls-remote --heads origin <name>
+   git ls-remote --heads origin refs/heads/<name>
    ```
 
    - **Neither prints a line:** run `lets-build`'s *Claim*. A stop it
