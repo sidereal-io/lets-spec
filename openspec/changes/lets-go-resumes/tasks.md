@@ -1,7 +1,7 @@
 ## 1. The test seam
 
 - [x] 1.1 [easy] A new test `lets-go resumes a change at its first unfinished step` fails: `skills/lets-go/SKILL.md` must hold `openspec instructions apply --change <name> --json`, `git status --porcelain`, `git fetch origin <name>`, `git merge --ff-only origin/<name>`, `git switch <name>`, `gh issue list --state open --search "<branch> in:title" --json number,title` and `Records disagree:`, and must no longer say `#150 adds resuming` (verify: bats tests/skill-interfaces.bats --filter "lets-go resumes") (✓ bats --filter "lets-go resumes" failed as expected: lets-go does not say: openspec instructions apply --change <name> --json)
-- [ ] 1.2 [easy] A new test `lets-go dates each skipped step from Git and GitHub` fails: the skill must hold the propose, propose review, apply and apply review skip lines from the spec's *The prose holds the fixed lines the tests check*, and the three `git log -1 --diff-filter=` commands on `tasks.md` and `review.md` (verify: bats tests/skill-interfaces.bats --filter "lets-go dates")
+- [x] 1.2 [easy] A new test `lets-go dates each skipped step from Git and GitHub` fails: the skill must hold the propose, propose review, apply and apply review skip lines from the spec's *The prose holds the fixed lines the tests check*, and the three `git log -1 --diff-filter=` commands on `tasks.md` and `review.md` (verify: bats tests/skill-interfaces.bats --filter "lets-go dates") (✓ bats --filter "lets-go dates" failed as expected: lets-go does not say: Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).)
 
 ## 2. The skill and the README [depends-on: 1]
 

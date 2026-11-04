@@ -280,6 +280,16 @@ skill_says() {
   [ "$status" -eq 1 ] || { echo "lets-go still defers resuming to #150: $output"; false; }
 }
 
+@test "lets-go dates each skipped step from Git and GitHub" {
+  skill_says lets-go 'Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).'
+  skill_says lets-go 'Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
+  skill_says lets-go 'Skipped apply: every task is ticked, last task commit <date> (<sha>).'
+  skill_says lets-go 'Skipped apply review: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.'
+  skill_says lets-go "git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md"
+  skill_says lets-go "git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md"
+  skill_says lets-go "git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md"
+}
+
 @test "lets-shape posts its reply with the gh command gh issue comment --body-file" {
   skill_says lets-shape 'gh issue comment <i> --body-file <file>'
 }
