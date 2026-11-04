@@ -1,0 +1,27 @@
+## 1. Source layout and types
+
+- [ ] 1.1 [easy] Preserve all executable conformance cases when moving source to lets/src/backlog and tests to tests/lets/backlog, updating imports, scripts and docs paths (verify: pnpm test:backlog)
+- [ ] 1.2 [complex] Validate external and persisted values through typed protocol/state boundaries without any, preserving wire fields and using qualified internal reference/session names (verify: pnpm test:backlog)
+
+## 2. Process execution and failure semantics [depends-on: 1]
+
+- [ ] 2.1 [medium] Return explicit unsupported/none for unsupported fake request versions and invalid_request/none for malformed JSON or unknown operations, with raw-stdin executable regressions (verify: node --test tests/lets/backlog/protocol.test.ts)
+- [ ] 2.2 [complex] Enforce an optional shared-I/O combined raw-byte limit with explicit overflow/signal results and configurable kill signal while preserving delegate defaults, testing SIGTERM-resistant children, UTF-8 and buffer ceilings (verify: node --test tests/lets/io.test.ts)
+- [ ] 2.3 [medium] Invoke backlog executables through shared I/O with SIGKILL limits and consistent AdapterFailure categories/effects for pre-launch, spawn, signal and invalid-output failures (verify: node --test tests/lets/backlog/process.test.ts)
+- [ ] 2.4 [complex] Preserve every expected fake failure category/effect using structured errors and a real-executable table, including all cases listed in design Test Seams (verify: pnpm test:backlog)
+- [ ] 2.5 [medium] Report unexpected fake implementation errors as unknown_outcome/unknown without substring classification, retaining lost/partial-write and claim-replay recovery including the four named prior fixes (verify: pnpm test:backlog)
+
+## 3. Release and documentation [depends-on: 2]
+
+- [ ] 3.1 [medium] Exclude unused kit source, fixtures and copied contract from runtime releases, restoring dist absence assertions and removing the released-fixture smoke test (verify: nix flake check)
+- [ ] 3.2 [easy] Define the five agreed contract concepts beside their guarantees and document error classifications without duplicating shared glossary definitions (verify: git diff --check)
+- [ ] 3.3 [easy] State ongoing capability guarantees and correct discovery to current GitHub behavior, restoring Change support without dropping #145/#146 from the backlog (verify: openspec validate backlog-kit-cleanup --strict)
+
+## 4. Integration [depends-on: 3]
+
+- [ ] 4.1 [medium] Verify complete Node, type and shell coverage after comparing the moved test inventory and checking readable house style (verify: pnpm test)
+- [ ] 4.2 [medium] Verify all flow and release builds after the final implementation (verify: nix flake check)
+
+## Deviations Ledger
+
+None.
