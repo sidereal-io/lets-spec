@@ -312,7 +312,11 @@ not treated as already satisfied by this decision.
 #180 implements the GitHub build migration after #179 and #136. It must migrate
 the production caller, contract, conformance invocation and packaging and prove
 its own equivalence. #137–#144 retain their provider outcomes and acceptance
-obligations; #145 covers definition authoring for both capabilities.
+obligations; #145 covers definition authoring for both capabilities. Its delegation
+part requires the delegation runtime migration below, not merely #180. Until that
+follow-up is shaped and its prerequisite is resolved, #145 is not ready for its
+full scope. When shaping the follow-up, request a direct blocked-by link on #145;
+absence of that link does not make the prerequisite resolved.
 
 Delegation needs its own runtime migration under #174. Current built-in
 `t3`/`cli`/`subagent` implementations and lookup are not the target's custom
