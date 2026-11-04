@@ -24,6 +24,7 @@ function letsIn({ cwd, env = {} }: { cwd?: string; env?: Record<string, string> 
 
 const REVIEW = ['delegate', 'review', 'run', '--for', 'code', '--name', 'x', '--prompt-file', 'p.md', '--source-family', 'claude', '--effort', 'low', '--model', 'gpt'];
 const HANDOFF = ['delegate', 'handoff', 'run', '--for', 'apply', '--name', 'x', '--prompt-file', 'p.md', '--model', 'claude'];
+const STEP = ['delegate', 'step', 'run', '--for', 'propose', '--name', 'x', '--prompt-file', 'p.md', '--effort', 'high', '--model', 'claude'];
 
 test('every old command is rejected by name', async () => {
   for (const command of ['critique', 'detect', 'setup', 'conformance', 'verify']) {
@@ -240,4 +241,86 @@ test('instructions --help names its output and exit codes', async () => {
   const text = (await lets('delegate', 'review', 'instructions', '--help')).stdout.replace(/\s+/g, ' ');
   assert.match(text, /strategy, for, resolver, options and guidance/);
   assert.match(text, /delegate\.<strategy>\.<intent>\.guidance/);
+});
+
+test('step --help names instructions and run', async () => {
+  const { code, stdout } = await lets('delegate', 'step', '--help');
+  assert.equal(code, 0);
+  assert.match(stdout, /^ {2}instructions\b/m);
+  assert.match(stdout, /^ {2}run\b/m);
+});
+
+test('step --help names the five steps', async () => {
+  const text = (await lets('delegate', 'step', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /shape, propose, propose-review, apply and apply-review/);
+});
+
+test('step run and step instructions take the five steps as intents', async () => {
+  for (const argv of [['delegate', 'step', 'run', '--help'], ['delegate', 'step', 'instructions', '--help']]) {
+    assert.match((await lets(...argv)).stdout.replace(/\s+/g, ' '), /choices: "shape", "propose", "propose-review", "apply", "apply-review"/, argv.join(' '));
+  }
+});
+
+test('step run --help lists exit codes 0, 2, 3, 4 and 6, and says exit 0 carries a report whatever its outcome', async () => {
+  const { code, stdout } = await lets('delegate', 'step', 'run', '--help');
+  assert.equal(code, 0);
+  const text = stdout.replace(/\s+/g, ' ');
+  assert.match(text, /0 a step report is on stdout, whatever its outcome/);
+  assert.match(text, /2 usage error, or every resolver in the config declined/);
+  assert.match(text, /3 no fresh session can run here on any model given/);
+  assert.match(text, /4 the outcome is unknown/);
+  assert.match(text, /6 the session did not finish in time/);
+  assert.doesNotMatch(text, / [57] {1,2}the session/);
+});
+
+test('step run --help gives the 120-minute default and --answers-file', async () => {
+  const text = (await lets('delegate', 'step', 'run', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /--timeout-minutes <minutes> .*default: 120/);
+  assert.match(text, /--answers-file <path>/);
+});
+
+test('step run takes no --source-family', async () => {
+  const { code, stderr } = await lets(...STEP, '--source-family', 'claude');
+  assert.equal(code, 2);
+  assert.match(stderr, /unknown option '--source-family'/);
+});
+
+test('step run without --model or with a bad one is a usage error that names it', async () => {
+  for (const extra of [[], ['--model', 'llama/llama-4']]) {
+    const { code, stderr } = await lets(...STEP.slice(0, -2), ...extra);
+    assert.equal(code, 2, extra.join(' '));
+    assert.match(stderr, /--model/, extra.join(' '));
+  }
+});
+
+test('a review intent under step is a usage error that names --for', async () => {
+  const { code, stdout, stderr } = await letsIn(repo(), 'delegate', 'step', 'instructions', '--for', 'code');
+  assert.equal(code, 2);
+  assert.equal(stdout, '');
+  assert.match(stderr, /--for/);
+});
+
+test('delegate --help names the three strategies', async () => {
+  const { stdout } = await lets('delegate', '--help');
+  for (const strategy of ['review', 'handoff', 'step']) assert.match(stdout, new RegExp(`^ {2}${strategy}\\b`, 'm'), strategy);
+});
+
+test('delegate --help shows a step guidance in its example', async () => {
+  const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /handoff: apply: guidance: .* step: apply: guidance: /);
+});
+
+test('with no config, step run saves the prompt and is exit 3', async () => {
+  const r = repo();
+  const { code, stdout, stderr } = await letsIn(r, ...STEP.slice(0, 6), 'plan-x', ...STEP.slice(7));
+  assert.equal(code, 3);
+  assert.equal(stdout, '');
+  assert.match(stderr, /\.workspace\/lets-delegate\/plan-x\.prompt\.md/);
+  assert.equal(readFileSync(join(r.cwd, '.workspace/lets-delegate/plan-x.prompt.md'), 'utf8'), 'PROMPT');
+});
+
+test('with no config, step instructions prints one JSON line from subagent', async () => {
+  const { code, stdout } = await letsIn(repo(), 'delegate', 'step', 'instructions', '--for', 'apply');
+  assert.equal(code, 0);
+  assert.deepEqual(JSON.parse(stdout), { strategy: 'step', for: 'apply', resolver: 'subagent', options: [], guidance: null });
 });
