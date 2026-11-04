@@ -49,11 +49,15 @@ const LISTINGS: Partial<Record<Family, { args: string[]; read: (stdout: string) 
 export type Mode = 'read-only' | 'write';
 
 const MODE_ARGS: Record<Mode, Record<Family, string[]>> = {
-  'read-only': { gpt: ['-s', 'read-only'], claude: ['--permission-mode', 'plan'], gemini: ['--mode', 'plan'] },
-  write: {
-    gpt: ['--dangerously-bypass-approvals-and-sandbox'],
+  'read-only': {
+    gpt: ['-s', 'read-only'],
     claude: ['--permission-mode', 'plan'],
     gemini: ['--mode', 'plan'],
+  },
+  write: {
+    gpt: ['--dangerously-bypass-approvals-and-sandbox'],
+    claude: ['--permission-mode', 'bypassPermissions'],
+    gemini: ['--mode', 'accept-edits', '--dangerously-skip-permissions'],
   },
 };
 
@@ -73,11 +77,11 @@ export function runCommand({ mode, family, model, effort, prompt, lastMessagePat
     };
   }
   if (family === 'claude') {
-    return { cmd, args: ['-p', '--permission-mode', 'plan', '--effort', effort, ...modelArgs('--model', model)], input: prompt, readResultFrom: 'stdout' };
+    return { cmd, args: ['-p', ...modeArgs, '--effort', effort, ...modelArgs('--model', model)], input: prompt, readResultFrom: 'stdout' };
   }
   return {
     cmd,
-    args: ['--mode', 'plan', '--effort', effort, ...modelArgs('--model', model && withEffort(model, effort)),
+    args: [...modeArgs, '--effort', effort, ...modelArgs('--model', model && withEffort(model, effort)),
       '--print-timeout', `${timeoutMinutes}m`, '-p', prompt],
     input: undefined,
     readResultFrom: 'stdout',

@@ -5,7 +5,7 @@
 `runCommand` in `lets/src/resolvers/cli/cli.ts` gains a `mode` of `read-only` or `write`. The tests are in `tests/lets/resolvers/cli/cli.test.ts`, beside the read-only ones.
 
 - [x] 1.1 [medium] `runCommand({ mode: 'read-only', … })` returns what it returns today, so every existing test passes with the new field; and in `write`, codex gets `exec`, `--dangerously-bypass-approvals-and-sandbox`, `-c model_reasoning_effort="<effort>"`, `-m <model>` when there is one, `-o <last-message path>` and `-`, with no `-s`, the prompt on stdin, and the result read from the file (verify: `node --test tests/lets/resolvers/cli/cli.test.ts`) (✓ `node --test tests/lets/resolvers/cli/cli.test.ts` passed)
-- [ ] 1.2 [easy] In `write`, claude gets `-p`, `--permission-mode bypassPermissions`, `--effort <effort>` and `--model <model>` when there is one, with the prompt on stdin and the result from stdout; agy gets `--mode accept-edits`, `--dangerously-skip-permissions`, `--effort <effort>`, `--model <model>-<effort>` when there is one, `--print-timeout <n>m` and the prompt as the argument of `-p` (verify: `node --test tests/lets/resolvers/cli/cli.test.ts`)
+- [x] 1.2 [easy] In `write`, claude gets `-p`, `--permission-mode bypassPermissions`, `--effort <effort>` and `--model <model>` when there is one, with the prompt on stdin and the result from stdout; agy gets `--mode accept-edits`, `--dangerously-skip-permissions`, `--effort <effort>`, `--model <model>-<effort>` when there is one, `--print-timeout <n>m` and the prompt as the argument of `-p` (verify: `node --test tests/lets/resolvers/cli/cli.test.ts`) (✓ `node --test tests/lets/resolvers/cli/cli.test.ts` passed)
 
 ## 2. A step through lets delegate [depends-on: 1]
 
