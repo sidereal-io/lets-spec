@@ -21,8 +21,12 @@ export async function invoke(
   let input: string;
   try {
     validateRequest(request);
-    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 ||
-        !Number.isSafeInteger(maxBytes) || maxBytes <= 0) {
+    if (
+      !Number.isFinite(timeoutMs) ||
+      timeoutMs <= 0 ||
+      !Number.isSafeInteger(maxBytes) ||
+      maxBytes <= 0
+    ) {
       throw new Error('invalid process limits');
     }
     input = JSON.stringify(request);
@@ -33,28 +37,49 @@ export async function invoke(
   let execution;
   try {
     execution = await io.execFile(executable, options.args ?? [], {
-      cwd: request.context.cwd, input, timeoutMs, maxBytes, killSignal: 'SIGKILL',
+      cwd: request.context.cwd,
+      input,
+      timeoutMs,
+      maxBytes,
+      killSignal: 'SIGKILL',
     });
   } catch (error) {
     throw new AdapterFailure('unknown_outcome', 'unknown', String(error));
   }
   const { stdout, stderr, code, signal, timedOut, outputLimitExceeded } = execution;
-  const transport = timedOut ? 'timeout' : outputLimitExceeded ? 'output limit' :
-    signal ? `signal termination ${signal}` : code === null ? 'adapter could not start' : undefined;
+  const transport = timedOut
+    ? 'timeout'
+    : outputLimitExceeded
+      ? 'output limit'
+      : signal
+        ? `signal termination ${signal}`
+        : code === null
+          ? 'adapter could not start'
+          : undefined;
   if (transport) {
-    throw new AdapterFailure('unknown_outcome', 'unknown',
-      `${transport}; reconcile mutation before retry`);
+    throw new AdapterFailure(
+      'unknown_outcome',
+      'unknown',
+      `${transport}; reconcile mutation before retry`,
+    );
   }
   let response: unknown;
   try {
     response = JSON.parse(stdout);
     validateResponse(response, code!, request.operation);
   } catch (error) {
-    throw new AdapterFailure('unknown_outcome', 'unknown',
-      `${String(error)}; adapter stderr: ${stderr}`);
+    throw new AdapterFailure(
+      'unknown_outcome',
+      'unknown',
+      `${String(error)}; adapter stderr: ${stderr}`,
+    );
   }
   if (!response.ok) {
-    throw new AdapterFailure(response.error.category, response.error.effects, response.error.message);
+    throw new AdapterFailure(
+      response.error.category,
+      response.error.effects,
+      response.error.message,
+    );
   }
   return response;
 }

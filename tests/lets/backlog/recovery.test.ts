@@ -5,7 +5,9 @@ import { recoverMutation } from '../../../lets/src/backlog/recovery.ts';
 import { withAdapter, story } from './fixtures/adapter.ts';
 test('lost creation is reconciled without creating another item', () =>
   withAdapter(async ({ call }) => {
-    const result = await recoverMutation<{ item: import('../../../lets/src/backlog/items.ts').Item }>(
+    const result = await recoverMutation<{
+      item: import('../../../lets/src/backlog/items.ts').Item;
+    }>(
       () => call('item.create', story, 'create', { fault: 'error-unknown_outcome' }),
       async () => {
         const recovered = await call('mutation.read', { mutationId: 'create' });

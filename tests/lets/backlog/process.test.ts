@@ -78,7 +78,14 @@ test('transport timeout reaches mutation reconciliation', async () => {
 });
 
 for (const [name, executable, input, options, category, effects] of [
-  ['missing executable', '/missing-backlog-adapter', request, {}, 'unknown_outcome', 'unknown'],
+  [
+    'missing executable',
+    '/missing-backlog-adapter',
+    request,
+    {},
+    'unknown_outcome',
+    'unknown',
+  ],
   ['invalid request', process.execPath, {}, {}, 'invalid_request', 'none'],
   ['invalid limits', process.execPath, request, { timeoutMs: -1 }, 'invalid_request', 'none'],
 ] as const) {
@@ -94,14 +101,20 @@ for (const [name, executable, input, options, category, effects] of [
 import type { ExecOptions } from '../../../lets/src/io.ts';
 test('invocation uses only the supplied executable through shared I/O', async () => {
   const calls: string[] = [];
-  const result = await invoke('chosen-adapter', request, { io: {
-    async execFile(executable: string, args: string[], options?: ExecOptions) {
-      calls.push(executable);
-      assert.equal(options?.killSignal, 'SIGKILL');
-      assert.equal(options?.maxBytes, 1024 * 1024);
-      return { stdout: JSON.stringify({ protocol: 1, ok: true, result: { valid: true, gaps: [] } }), stderr: '', code: 0 };
+  const result = await invoke('chosen-adapter', request, {
+    io: {
+      async execFile(executable: string, args: string[], options?: ExecOptions) {
+        calls.push(executable);
+        assert.equal(options?.killSignal, 'SIGKILL');
+        assert.equal(options?.maxBytes, 1024 * 1024);
+        return {
+          stdout: JSON.stringify({ protocol: 1, ok: true, result: { valid: true, gaps: [] } }),
+          stderr: '',
+          code: 0,
+        };
+      },
     },
-  } });
+  });
   assert.deepEqual(calls, ['chosen-adapter']);
   assert.deepEqual(result.result, { valid: true, gaps: [] });
 });

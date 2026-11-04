@@ -263,9 +263,11 @@ for (const [input, category] of [
   [JSON.stringify({ protocol: 1, operation: 'invented' }), 'invalid_request'],
 ] as const) {
   test(`fake classifies raw request ${input}`, async () => {
-    const result = await realIo().execFile(process.execPath, [
-      fileURLToPath(new URL('../../../lets/src/backlog/fake.ts', import.meta.url)),
-    ], { input, timeoutMs: 5000 });
+    const result = await realIo().execFile(
+      process.execPath,
+      [fileURLToPath(new URL('../../../lets/src/backlog/fake.ts', import.meta.url))],
+      { input, timeoutMs: 5000 },
+    );
     assert.equal(result.code, 1);
     const response = JSON.parse(result.stdout);
     assert.equal(response.error.category, category);

@@ -81,7 +81,12 @@ export type BacklogCall = <O extends Operation>(
 
 export type BacklogResponse =
   | { protocol: 1; ok: true; result: Record<string, unknown> }
-  | { protocol: 1; ok: false; error: {
-      category: import('./errors.ts').ErrorCategory;
-      message: string; effects: 'none' | 'partial' | 'unknown';
-    } };
+  | {
+      protocol: 1;
+      ok: false;
+      error: {
+        category: import('./errors.ts').ErrorCategory;
+        message: string;
+        effects: 'none' | 'partial' | 'unknown';
+      };
+    };

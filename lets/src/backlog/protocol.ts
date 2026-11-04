@@ -132,7 +132,11 @@ export const ERRORS = [
   'transient',
   'unknown_outcome',
 ] as const;
-export function validateResponse(value: unknown, exitCode: number, operation?: string): asserts value is BacklogResponse {
+export function validateResponse(
+  value: unknown,
+  exitCode: number,
+  operation?: string,
+): asserts value is BacklogResponse {
   const response = value as Record<string, unknown> | null;
   if (!response || response.protocol !== PROTOCOL)
     throw new Error('unsupported response protocol');
@@ -334,8 +338,11 @@ export function parseRequest(text: string): BacklogRequest {
   } catch {
     throw new AdapterFailure('invalid_request', 'none', 'malformed request JSON');
   }
-  if (!value || typeof value !== 'object' ||
-      (value as Record<string, unknown>).protocol !== PROTOCOL) {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    (value as Record<string, unknown>).protocol !== PROTOCOL
+  ) {
     throw new AdapterFailure('unsupported', 'none', 'unsupported protocol');
   }
   try {

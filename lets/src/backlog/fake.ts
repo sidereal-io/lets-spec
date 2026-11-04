@@ -18,9 +18,11 @@ try {
   const { context, input, operation, mutationId } = request;
   const { capabilities, mappings } = profile(context.provider);
   const fault = process.argv[2];
-  if (fault?.startsWith('programming-')) throw new Error(`${fault.slice(12)}: injected implementation bug`);
+  if (fault?.startsWith('programming-'))
+    throw new Error(`${fault.slice(12)}: injected implementation bug`);
   const injected = new Map<string, 'authentication' | 'permission' | 'transient'>([
-    ['error-authentication', 'authentication'], ['error-permission', 'permission'],
+    ['error-authentication', 'authentication'],
+    ['error-permission', 'permission'],
     ['error-transient', 'transient'],
   ]).get(fault);
   if (injected) throw new AdapterFailure(injected, 'none', 'simulated provider failure');
@@ -55,7 +57,8 @@ try {
     if (identity.provider !== context.provider || identity.backlog !== context.backlog)
       throw new AdapterFailure('invalid_request', 'none', 'item outside selected scope');
     const found = state.items[identityKey(identity)];
-    if (!found || found.repository !== context.repository) throw new AdapterFailure('not_found', 'none', 'item');
+    if (!found || found.repository !== context.repository)
+      throw new AdapterFailure('not_found', 'none', 'item');
     return found;
   };
   const normalized = (record: StoredItem) => {
@@ -84,7 +87,11 @@ try {
       current.token !== object(entry.result?.claim, 'stored claim').token ||
       normalized(record).metadata.Status !== 'In Progress'
     )
-      throw new AdapterFailure('conflict', 'none', 'claim replay no longer has current ownership');
+      throw new AdapterFailure(
+        'conflict',
+        'none',
+        'claim replay no longer has current ownership',
+      );
   };
   const page = (items: unknown[]) => ({ items, complete: true, nextCursor: null });
   let result: Record<string, unknown>;
@@ -251,7 +258,11 @@ try {
           status: normalized(record).metadata.Status,
         };
         if (operation !== 'claim.read' && claim.status === 'Done')
-          throw new AdapterFailure('conflict', 'none', 'completed item cannot be claimed or released');
+          throw new AdapterFailure(
+            'conflict',
+            'none',
+            'completed item cannot be claimed or released',
+          );
         if (operation === 'claim.acquire') {
           if (claim.actor && fault !== 'overwrite-owner')
             throw new AdapterFailure('conflict', 'none', 'existing ownership');
@@ -268,7 +279,11 @@ try {
             claim.session !== context.session ||
             claim.token !== input.token
           )
-            throw new AdapterFailure('conflict', 'none', 'release requires original actor, session and token');
+            throw new AdapterFailure(
+              'conflict',
+              'none',
+              'release requires original actor, session and token',
+            );
           claim = { ...claim, actor: null, session: null, token: null, status: 'Todo' };
         }
         result = operation === 'claim.release' ? { released: true } : { claim };
@@ -297,7 +312,11 @@ try {
       case 'completion.write': {
         const record = find(input.item);
         if (record.pullRequestReference !== input.merge.reference)
-          throw new AdapterFailure('invalid_request', 'none', 'merge reference not associated');
+          throw new AdapterFailure(
+            'invalid_request',
+            'none',
+            'merge reference not associated',
+          );
         if (input.merge.merged !== true || !input.merge.commit)
           throw new AdapterFailure('invalid_request', 'none', 'unmerged code-host evidence');
         if (normalized(record).metadata.Status !== 'Done') {
@@ -323,14 +342,28 @@ try {
     if (mutationId) state.journal[key] = { fingerprint, result };
     if (mutationId) writeFileSync(path, JSON.stringify(state));
     if (mutationId && fault === 'error-unknown_outcome')
-      throw new AdapterFailure('unknown_outcome', 'unknown', 'response lost after persisted mutation');
+      throw new AdapterFailure(
+        'unknown_outcome',
+        'unknown',
+        'response lost after persisted mutation',
+      );
   }
   process.stdout.write(JSON.stringify({ protocol: 1, ok: true, result }));
- } catch (error) {
-  const failure = error instanceof AdapterFailure ? error :
-    new AdapterFailure('unknown_outcome', 'unknown', String(error));
-  process.stdout.write(JSON.stringify({ protocol: 1, ok: false, error: {
-    category: failure.category, message: failure.message, effects: failure.effects,
-  } }));
+} catch (error) {
+  const failure =
+    error instanceof AdapterFailure
+      ? error
+      : new AdapterFailure('unknown_outcome', 'unknown', String(error));
+  process.stdout.write(
+    JSON.stringify({
+      protocol: 1,
+      ok: false,
+      error: {
+        category: failure.category,
+        message: failure.message,
+        effects: failure.effects,
+      },
+    }),
+  );
   process.exitCode = 1;
 }

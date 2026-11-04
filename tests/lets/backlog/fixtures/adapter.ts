@@ -41,20 +41,37 @@ export async function withAdapter<T>(
     session: 'worker',
   };
   const call = async <O extends Operation>(
-    operation: O, input: Record<string, unknown> = {}, key?: string,
+    operation: O,
+    input: Record<string, unknown> = {},
+    key?: string,
     options: { context?: Partial<Context>; fault?: string; raw?: boolean } = {},
   ): Promise<ResultMap[O]> => {
-    const request = { protocol: 1, operation, input,
-      context: { ...context, ...options.context }, ...(key ? { mutationId: key } : {}) };
-    const args = [fileURLToPath(new URL('../../../../lets/src/backlog/fake.ts', import.meta.url)),
-      ...(options.fault ? [options.fault] : [])];
+    const request = {
+      protocol: 1,
+      operation,
+      input,
+      context: { ...context, ...options.context },
+      ...(key ? { mutationId: key } : {}),
+    };
+    const args = [
+      fileURLToPath(new URL('../../../../lets/src/backlog/fake.ts', import.meta.url)),
+      ...(options.fault ? [options.fault] : []),
+    ];
     if (options.raw) {
       const result = await realIo().execFile(process.execPath, args, {
-        input: JSON.stringify(request), timeoutMs: 5000, maxBytes: 1024 * 1024, killSignal: 'SIGKILL',
+        input: JSON.stringify(request),
+        timeoutMs: 5000,
+        maxBytes: 1024 * 1024,
+        killSignal: 'SIGKILL',
       });
       const response: unknown = JSON.parse(result.stdout);
       validateResponse(response, result.code ?? 1, operation);
-      if (!response.ok) throw new AdapterFailure(response.error.category, response.error.effects, response.error.message);
+      if (!response.ok)
+        throw new AdapterFailure(
+          response.error.category,
+          response.error.effects,
+          response.error.message,
+        );
       return response.result as ResultMap[O];
     }
     return (await invoke(process.execPath, request, { args })).result as ResultMap[O];
