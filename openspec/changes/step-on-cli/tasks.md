@@ -1,0 +1,32 @@
+<!-- One task is one behavior, its test, and the code that passes it. Tests first: write the test, see it fail, make it pass. -->
+
+## 1. The command in write mode
+
+`runCommand` in `lets/src/resolvers/cli/cli.ts` gains a `mode` of `read-only` or `write`. The tests are in `tests/lets/resolvers/cli/cli.test.ts`, beside the read-only ones.
+
+- [ ] 1.1 [medium] `runCommand({ mode: 'read-only', … })` returns what it returns today, so every existing test passes with the new field; and in `write`, codex gets `exec`, `--dangerously-bypass-approvals-and-sandbox`, `-c model_reasoning_effort="<effort>"`, `-m <model>` when there is one, `-o <last-message path>` and `-`, with no `-s`, the prompt on stdin, and the result read from the file (verify: `node --test tests/lets/resolvers/cli/cli.test.ts`)
+- [ ] 1.2 [easy] In `write`, claude gets `-p`, `--permission-mode bypassPermissions`, `--effort <effort>` and `--model <model>` when there is one, with the prompt on stdin and the result from stdout; agy gets `--mode accept-edits`, `--dangerously-skip-permissions`, `--effort <effort>`, `--model <model>-<effort>` when there is one, `--print-timeout <n>m` and the prompt as the argument of `-p` (verify: `node --test tests/lets/resolvers/cli/cli.test.ts`)
+
+## 2. A step through lets delegate [depends-on: 1]
+
+The adapter gains `step`, and `run` and `step` share one private runner that differs only in the mode (design D-1). The tests drive `lets delegate step run` through `commandDeps` with the real adapter on `fakeIo`, in `tests/lets/resolvers/cli/delegate.test.ts`. The two tests there that pin "a step declines" and "step instructions skip cli" go, replaced by 2.1 and 2.6.
+
+- [ ] 2.1 [medium] With `[cli]` and codex on `PATH`, `step run --for apply --name build-x --effort high --model gpt/gpt-6-luna` runs codex with the write-mode arguments of 1.1 and `-o /repo/.workspace/lets-delegate/build-x.last-message.md`, exits 0 when the fake codex writes a `done` report there, prints that report on stdout, and the record on stderr has `resolver` `cli`, `family` `gpt`, `model` `gpt-6-luna` and the handle `{ kind: 'process', id: 'build-x' }` (verify: `node --test tests/lets/resolvers/cli/delegate.test.ts`)
+- [ ] 2.2 [easy] A step on the bare family `claude` runs claude with the write-mode arguments and no `--model`, in `/repo`, with the prompt on stdin, a `timeoutMs` of 120 minutes and no `CLAUDECODE` in its environment, and a `needs-input` final message gives exit 0 with `"outcome":"needs-input"`; a step on `gemini/gemini-3.8-flash` at `medium` with `--timeout-minutes 30` runs agy with `--mode accept-edits`, `--dangerously-skip-permissions`, `--effort medium`, `--model gemini-3.8-flash-medium` and `--print-timeout 30m` (verify: `node --test tests/lets/resolvers/cli/delegate.test.ts`)
+- [ ] 2.3 [medium] A claude that prints half an answer and exits 2 with `rate limited` on stderr gives exit 0, a `failed` report whose `reason` holds `claude failed: exit 2: rate limited`, and `"handle":null` on stderr; a codex that exits 0 without writing its last-message file gives exit 0 and a `failed` report whose `reason` names `step-report`; a CLI still running after `--timeout-minutes 3` gives exit 6, an empty stdout, and `did not finish in 3 minutes` on stderr (verify: `node --test tests/lets/resolvers/cli/delegate.test.ts`)
+- [ ] 2.4 [medium] With `--model gpt/gpt-6-astra --model claude`, a codex that exits 1 with nothing on stdout is a refusal: claude runs next, the command exits 0, and stderr has a line starting `lets delegate: gpt/gpt-6-astra: ` and a record with `"family":"claude"`; a claude on `PATH` that cannot be started gives exit 3, an empty stdout, and `claude` on stderr (verify: `node --test tests/lets/resolvers/cli/delegate.test.ts`)
+- [ ] 2.5 [easy] A codex step named `build-x` that ends with a `done` report leaves no `/repo/.workspace/lets-delegate/build-x.last-message.md`, and the same step ending with a `needs-input` report leaves it in place (verify: `node --test tests/lets/resolvers/cli/delegate.test.ts`)
+- [ ] 2.6 [easy] With `[cli, subagent]` and codex on `PATH` listing `gpt-6-luna`, `step instructions --for apply` answers `"strategy":"step"`, `"resolver":"cli"` and `"options":["gpt/gpt-6-luna"]`; with `codex debug models` exiting 1 and claude also on `PATH`, it answers `"options":["gpt","claude"]` and names `codex` on stderr; with no family CLI on `PATH`, `step run --name build-x` exits 3 through `subagent`, names `.workspace/lets-delegate/build-x.prompt.md` on stderr, and starts no process (verify: `node --test tests/lets/resolvers/cli/delegate.test.ts`)
+
+## 3. The docs [depends-on: 1]
+
+- [ ] 3.1 [parallel] [easy] `docs/resolvers.md` says `cli` runs a step: the resolver table's step cell reads "A child process of that CLI, in its write mode", the `cli` section drops "It runs no step either" and gains a "How a step runs" table with the three commands and one sentence that a step runs with your own rights, which listing `cli` opts into; the bats check still passes (verify: `bats tests/skill-interfaces.bats`)
+- [ ] 3.2 [parallel] [easy] The README's resolver table has the same step cell for `cli`, and the bats check still passes (verify: `bats tests/skill-interfaces.bats`)
+
+## 4. The whole [depends-on: 2, 3]
+
+- [ ] 4.1 [easy] Every test, the type check and the flake pass, with the main spec's step scenarios for `cli` covered by the tests above (verify: `pnpm test && nix flake check`)
+
+## Deviations Ledger
+
+<!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
