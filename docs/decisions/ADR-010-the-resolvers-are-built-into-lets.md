@@ -6,6 +6,11 @@ title: 'ADR-010: The resolvers are built into lets, and the config names them'
 description: Architecture decision record (ADR) for running the t3, cli and subagent resolvers inside lets, chosen by name in the delegate config, in place of separate programs that speak a JSON protocol
 ---
 
+
+> Extended by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md): built-in execution also applies to backlogs.
+> Resolver names, explicit selection and the absence of independently installed
+> adapters remain. Supported provider definitions configure data and options;
+> execution, validation, deadlines and recovery remain in shipped code.
 # ADR-010: The resolvers are built into lets, and the config names them
 
 ## Context

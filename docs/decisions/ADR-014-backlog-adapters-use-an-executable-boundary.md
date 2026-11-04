@@ -1,11 +1,16 @@
 ---
 id: adr-014
 date: 2026-11-03
-status: accepted
+status: superseded by ADR-015
 title: 'ADR-014: Backlog adapters use an executable boundary'
 description: Architecture decision record for independently installed backlog adapters using a versioned JSON process boundary
 ---
 
+
+> Superseded by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md): delegation and backlogs use built-in
+> execution with configurable provider definitions. The executable model below
+> records the earlier decision; the runtime and contract migration is separate.
+> Behavioral guarantees, native state and private local recovery remain in force.
 # ADR-014: Backlog adapters use an executable boundary
 
 ## Context
