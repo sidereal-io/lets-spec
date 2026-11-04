@@ -225,6 +225,19 @@ skill_says() {
   skill_says lets-build "If it exits 3, every model was refused: show the user its stderr, and stop."
 }
 
+@test "lets-go's Start names lets-build's sections and adds one command" {
+  local section
+  for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Claim'; do
+    skill_says lets-go "*$section*"
+  done
+  skill_says lets-go 'gh issue view <i> --json createdAt'
+  skill_says lets-go "Skipped shape: #<i>'s packet is complete, last edited <date>."
+  skill_says lets-go 'Interactivity: recommend, because #<i> is a Chore.'
+  # lets-build's Claim sets the Status; lets-go sets no Project field itself.
+  run grep -n 'gh project item-edit' "$repo/skills/lets-go/SKILL.md"
+  [ "$status" -eq 1 ] || { echo "lets-go sets a Project field: $output"; false; }
+}
+
 @test "lets-shape posts its reply with the gh command gh issue comment --body-file" {
   skill_says lets-shape 'gh issue comment <i> --body-file <file>'
 }
