@@ -1,32 +1,101 @@
+import type { Operation, ResultMap } from '../../../../lets/src/backlog/types.ts';
+import { readState } from '../../../../lets/src/backlog/state.ts';
+import type { SimulationState } from '../../../../lets/src/backlog/state.ts';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { invoke } from '../../../../lets/src/backlog/process.ts';
 export const metadata = { Kind: 'Story', Priority: 'Must', Size: 'S', Status: 'Todo' };
 export const story = { title: 'Contract item', body: '', metadata };
-type Context = { cwd: string; provider: string; repository: string; backlog?: string; actor: string; session: string };
-export async function withAdapter<T>(run: (fixture: {
-  call: (operation: string, input?: Record<string, unknown>, key?: string, options?: { context?: Partial<Context>; fault?: string }) => Promise<Record<string, any>>;
-  state: () => any;
-}) => Promise<T>, provider = 'beads', selected = true): Promise<T> {
+type Context = {
+  cwd: string;
+  provider: string;
+  repository: string;
+  backlog?: string;
+  actor: string;
+  session: string;
+};
+export async function withAdapter<T>(
+  run: (fixture: {
+    call: <O extends Operation>(
+      operation: O,
+      input?: Record<string, unknown>,
+      key?: string,
+      options?: { context?: Partial<Context>; fault?: string },
+    ) => Promise<ResultMap[O]>;
+    state: () => SimulationState;
+  }) => Promise<T>,
+  provider = 'beads',
+  selected = true,
+): Promise<T> {
   mkdirSync('.workspace', { recursive: true });
   const cwd = mkdtempSync(join(process.cwd(), '.workspace/backlog-'));
-  const context: Context = { cwd, provider, repository: 'fixture', actor: 'me', session: 'worker' };
-  const call = async (operation: string, input = {}, key?: string, options: { context?: Partial<Context>; fault?: string } = {}) => (await invoke(process.execPath, {
-    protocol: 1, operation, input, context: { ...context, ...options.context }, ...(key ? { mutationId: key } : {}),
-  }, { args: [fileURLToPath(new URL('../../../../lets/src/backlog/fake.ts', import.meta.url)), ...(options.fault ? [options.fault] : [])] })).result;
+  const context: Context = {
+    cwd,
+    provider,
+    repository: 'fixture',
+    actor: 'me',
+    session: 'worker',
+  };
+  const call = async <O extends Operation>(
+    operation: O,
+    input: Record<string, unknown> = {},
+    key?: string,
+    options: { context?: Partial<Context>; fault?: string } = {},
+  ) =>
+    (
+      await invoke(
+        process.execPath,
+        {
+          protocol: 1,
+          operation,
+          input,
+          context: { ...context, ...options.context },
+          ...(key ? { mutationId: key } : {}),
+        },
+        {
+          args: [
+            fileURLToPath(new URL('../../../../lets/src/backlog/fake.ts', import.meta.url)),
+            ...(options.fault ? [options.fault] : []),
+          ],
+        },
+      )
+    ).result as ResultMap[O];
   try {
-    if (selected) context.backlog = (await call('backlog.create', { title: 'Acceptance' }, 'setup')).backlog;
-    return await run({ call, state: () => JSON.parse(readFileSync(join(cwd, 'simulation.json'), 'utf8')) }); }
-  finally { rmSync(cwd, { recursive: true, force: true }); }
+    if (selected)
+      context.backlog = (
+        await call('backlog.create', { title: 'Acceptance' }, 'setup')
+      ).backlog;
+    return await run({
+      call,
+      state: () => readState(JSON.parse(readFileSync(join(cwd, 'simulation.json'), 'utf8'))),
+    });
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
 }
 export async function runWorkflow(fault?: string): Promise<void> {
   const { workflowOutcomes } = await import('../../../../lets/src/backlog/conformance.ts');
-  await withAdapter(async ({ call, state }) => workflowOutcomes(
-    (operation, input, key, worker) => call(operation, input, key, { fault, context: worker }), 'beads',
-    { actor: 'me', session: 'worker', inspectUnrelated: async identity => {
-      const data = state().items[JSON.stringify([identity.provider, identity.backlog, identity.id])].data;
-      return { custom: data.custom, labels: data.labels.filter((label: string) => !/^(Kind|Priority|Size|Status):/.test(label)) };
-    } },
-  ));
+  await withAdapter(async ({ call, state }) =>
+    workflowOutcomes(
+      (operation, input, key, worker) =>
+        call(operation, input, key, { fault, context: worker }),
+      'beads',
+      {
+        actor: 'me',
+        session: 'worker',
+        inspectUnrelated: async (identity) => {
+          const data =
+            state().items[JSON.stringify([identity.provider, identity.backlog, identity.id])]
+              .data;
+          return {
+            custom: data.custom,
+            labels: (data.labels as string[]).filter(
+              (label: string) => !/^(Kind|Priority|Size|Status):/.test(label),
+            ),
+          };
+        },
+      },
+    ),
+  );
 }
