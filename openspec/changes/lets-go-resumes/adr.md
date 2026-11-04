@@ -19,6 +19,6 @@ ADR review completed for this change.
 
 ## New Durable ADRs Created
 
-- [ADR-017](../../../docs/decisions/ADR-017-lets-go-reads-where-a-run-stands-from-git-and-github.md): `lets-go` reads where a run stands from Git and GitHub, keeps no log of its own, and stops on a disagreement instead of repairing it. Design decisions D-1, D-2 and D-4, and the epic's shared decision on skip dates.
+- [ADR-017](../../../docs/decisions/ADR-017-lets-go-reads-where-a-run-stands-from-git-and-github.md): `lets-go` reads where a run stands from Git and GitHub, and keeps no log of its own. It stops on a disagreement instead of repairing it. Design decisions D-1, D-2 and D-4, and the epic's shared decision on skip dates.
 
 The other design decisions are recoverable from the skill's text: finding the branch and the issue (D-3), reusing the answers file (D-5), the skip line form (D-6) and the dated propose review line (D-7). None gets a record.

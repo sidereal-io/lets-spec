@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: lets-go takes one issue number
-`lets-go` SHALL take one issue number. On the default branch, when it is given none, it SHALL say that it needs an issue number, and stop. On a change's branch, when it is given none, it SHALL find the issue by the branch name: it SHALL run `gh issue list --state open --search "<branch> in:title" --json number,title` and keep the issues whose title starts with `<branch> — `. Exactly one match SHALL be the issue. Otherwise it SHALL say that it needs the issue number, and stop. When it is given a number on a change's branch, that issue's title SHALL start with `<branch> — `, or `lets-go` SHALL say the issue and the branch do not match, and stop. It SHALL take the issue as `lets-build`'s *Find the source of demand* takes a named issue, and SHALL name that section rather than restate it.
+`lets-go` SHALL take one issue number. On the default branch, when it is given none, it SHALL say that it needs an issue number, and stop. On a change's branch, when it is given none, it SHALL find the issue by the branch name. It SHALL run `gh issue list --state open --search "<branch> in:title" --json number,title` and keep the issues whose title starts with `<branch> — `. Exactly one match SHALL be the issue. Otherwise it SHALL say that it needs the issue number, and stop. When it is given a number on a change's branch, that issue's title SHALL start with `<branch> — `. If it does not, `lets-go` SHALL say the issue and the branch do not match, and stop. It SHALL take the issue as `lets-build`'s *Find the source of demand* takes a named issue, and SHALL name that section rather than restate it.
 
 #### Scenario: No issue number
 - **WHEN** the user runs `lets-go` with no issue number on the default branch
@@ -39,7 +39,14 @@
 - **THEN** `lets-go` names #152, says to run `lets-build`, reads no parent epic, and claims nothing
 
 ### Requirement: Start reuses lets-build
-`lets-go` SHALL run `lets-build`'s *Find the source of demand*, *Confirm the packet* and *Route* in its own session on every run, by naming those sections. It SHALL run *Claim* only when no branch with the change's name exists, locally or on `origin`. When the change's branch exists and `lets-go` is on the default branch, it SHALL fetch, run `git switch <name>`, and go on as on a change's branch. It SHALL add no check of its own to `lets-build`'s sections other than the Kind check. It SHALL add these commands of its own: `gh issue view <i> --json createdAt`, run only when the issue's `lastEditedAt` is null; the issue search of *lets-go takes one issue number*; `git branch --list <name>` and `git ls-remote --heads origin <name>`, to find the change's branch; and the Git and GitHub reads of *lets-go finds the first unfinished step* and *A skipped step's line carries its evidence and date*. Start SHALL not be a step: it SHALL run no `lets delegate step` command and SHALL produce no step report.
+`lets-go` SHALL run `lets-build`'s *Find the source of demand*, *Confirm the packet* and *Route* in its own session on every run, by naming those sections. It SHALL run *Claim* only when no branch with the change's name exists, locally or on `origin`. When the change's branch exists and `lets-go` is on the default branch, it SHALL run `git switch <name>`, and go on as on a change's branch. On a change's branch that `origin` has, it SHALL run `git fetch origin <name>` before it reads any record. A local branch behind `origin/<name>` SHALL be fast-forwarded with `git merge --ff-only origin/<name>`. A local branch that has diverged from `origin/<name>` is a disagreement. `lets-go` SHALL add no check of its own to `lets-build`'s sections other than the Kind check. The commands it adds of its own are:
+
+- `gh issue view <i> --json createdAt`, run only when the issue's `lastEditedAt` is null;
+- the issue search of *lets-go takes one issue number*;
+- `git branch --list <name>` and `git ls-remote --heads origin <name>`, to find the change's branch, and the fetch, switch and fast-forward above;
+- the Git and GitHub reads of *lets-go finds the first unfinished step* and *A skipped step's line carries its evidence and date*.
+
+Start SHALL not be a step: it SHALL run no `lets delegate step` command and SHALL produce no step report.
 
 #### Scenario: The skill names the sections
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
@@ -47,14 +54,18 @@
 
 #### Scenario: The branch exists
 - **WHEN** `lets-go` runs for #149 on the default branch, and `origin` has a branch `lets-go-chore`
-- **THEN** `lets-go` does not run *Claim*, switches to `lets-go-chore`, and finds the first unfinished step there
+- **THEN** `lets-go` does not run *Claim*, switches to `lets-go-chore`, fetches it, and finds the first unfinished step there
+
+#### Scenario: A stale local branch
+- **WHEN** the local branch `lets-go-chore` is two commits behind `origin/lets-go-chore`, and has no commit of its own
+- **THEN** `lets-go` fast-forwards it before it reads the change state
 
 #### Scenario: Claim fails
 - **WHEN** `lets-build`'s *Claim* finds that someone else has the issue
 - **THEN** `lets-go` says who has it and stops, as `lets-build` does, and runs no step
 
 ### Requirement: Propose review is reported as not in the route
-When the schema is `lets-minimal`, `lets-go` SHALL print `Skipped propose review: not in the lets-minimal route.` after the propose step is done, and before the apply step. That line SHALL carry no date. When the schema is not `lets-minimal`, and propose is done, `lets-go` SHALL print `Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).` `<verdict>` SHALL be the value of the `VERDICT:` line in `openspec/changes/<name>/review.md`, and `<date>` and `<sha>` SHALL come from `git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md`. The schema SHALL be the `schema:` line of the change's `.openspec.yaml` when the change folder exists, and the route's schema when it does not.
+When the schema is `lets-minimal`, `lets-go` SHALL print `Skipped propose review: not in the lets-minimal route.` after the propose step is done, and before the apply step. That line SHALL carry no date. When the schema is not `lets-minimal`, and propose is done, `lets-go` SHALL print `Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).` `<verdict>` SHALL be the value of the `VERDICT:` line in `openspec/changes/<name>/review.md`. `<date>` and `<sha>` SHALL come from `git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md`. The schema SHALL be the `schema:` line of the change's `.openspec.yaml` when the change folder exists, and the route's schema when it does not.
 
 #### Scenario: A chore's route
 - **WHEN** the schema is `lets-minimal` and the propose step reports `done`
@@ -65,7 +76,7 @@ When the schema is `lets-minimal`, `lets-go` SHALL print `Skipped propose review
 - **THEN** `lets-go` prints `Skipped propose review: review.md says VERDICT: APPROVE_WITH_CHANGES, committed 2026-11-03 (7d16565).`
 
 ### Requirement: Each step runs through lets delegate step
-`lets-go` SHALL run propose, apply and apply review, in that order, starting at the first unfinished step that *lets-go finds the first unfinished step* found. For each step it SHALL write the prompt to `.workspace/lets-go/<name>-<step>-prompt.md`. `<name>` is the change's name, and `<step>` is `propose`, `apply` or `apply-review`. It SHALL run `lets delegate step instructions --for <step>` and read `options` and `guidance`. It SHALL rank the options by the guidance first, then the order the options came in. It SHALL leave out a model the guidance rules out. The guidance SHALL only rank and filter the listed models. When `options` is empty, it SHALL pass its own family as the one model. It SHALL then run `lets delegate step run --for <step> --name <name>-<step> --prompt-file <that file> --effort high`, with one `--model` per ranked option, best first. When `.workspace/lets-go/<name>-<step>-answers.yaml` exists before the step's first round, that round SHALL add `--answers-file` with that file, as a resumed round does. Stdout SHALL go to `.workspace/lets-go/<name>-<step>-report.json` and stderr to `.workspace/lets-go/<name>-<step>-meta.txt`. When `step instructions` exits non-zero, or `step run` exits non-zero other than 3, it SHALL show the user the command's stderr and stop.
+`lets-go` SHALL run propose, apply and apply review, in that order, starting at the first unfinished step that *lets-go finds the first unfinished step* found. For each step it SHALL write the prompt to `.workspace/lets-go/<name>-<step>-prompt.md`. `<name>` is the change's name, and `<step>` is `propose`, `apply` or `apply-review`. It SHALL run `lets delegate step instructions --for <step>` and read `options` and `guidance`. It SHALL rank the options by the guidance first, then the order the options came in. It SHALL leave out a model the guidance rules out. The guidance SHALL only rank and filter the listed models. When `options` is empty, it SHALL pass its own family as the one model. It SHALL then run `lets delegate step run --for <step> --name <name>-<step> --prompt-file <that file> --effort high`, with one `--model` per ranked option, best first. When `.workspace/lets-go/<name>-<step>-answers.yaml` exists before the step's first round and holds at least one pair, that round SHALL add `--answers-file` with that file, as a resumed round does. An empty or unreadable answers file SHALL count as absent. Stdout SHALL go to `.workspace/lets-go/<name>-<step>-report.json` and stderr to `.workspace/lets-go/<name>-<step>-meta.txt`. When `step instructions` exits non-zero, or `step run` exits non-zero other than 3, it SHALL show the user the command's stderr and stop.
 
 #### Scenario: The skill names both commands
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
@@ -80,8 +91,12 @@ When the schema is `lets-minimal`, `lets-go` SHALL print `Skipped propose review
 - **THEN** `lets-go` writes no propose prompt, and the first `step run` is `--for apply`
 
 #### Scenario: An answers file from an interrupted run
-- **WHEN** `.workspace/lets-go/lets-go-chore-propose-answers.yaml` exists before the propose step's first round
+- **WHEN** `.workspace/lets-go/lets-go-chore-propose-answers.yaml` exists with one pair before the propose step's first round
 - **THEN** that round's `step run` carries `--answers-file .workspace/lets-go/lets-go-chore-propose-answers.yaml`
+
+#### Scenario: An empty answers file
+- **WHEN** `.workspace/lets-go/lets-go-chore-propose-answers.yaml` exists and is empty
+- **THEN** the first round's `step run` carries no `--answers-file`
 
 #### Scenario: A timeout
 - **WHEN** `step run` exits 6
@@ -99,7 +114,31 @@ The apply review step SHALL run `lets-build`'s *Finish the change*: the project'
 - **THEN** `lets-go` runs no step, prints five `Skipped` lines, then the pull request's URL
 
 ### Requirement: The prose holds the fixed lines the tests check
-`skills/lets-go/SKILL.md` SHALL hold these strings, so the skill-interfaces test can check them: `Skipped shape: #<i>'s packet is complete, last edited <date>.`, `Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).`, `Skipped propose review: not in the lets-minimal route.`, `Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).`, `Skipped apply: every task is ticked, last task commit <date> (<sha>).`, `Skipped apply review: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.`, `Records disagree:`, `Interactivity: recommend, because #<i> is a Chore.`, `openspec instructions apply --change <name> --json`, `git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md`, `git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md`, `git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md`, `git status --porcelain`, `git switch <name>`, `.workspace/lets-go/<name>-<step>-prompt.md`, `.workspace/lets-go/<name>-<step>-answers.yaml`, `--answers-file`, `.workspace/lets-delegate/<name>-<step>.prompt.md`, `step-report`, `asked a settled question again`, and `**3**: no fresh session can run here`.
+`skills/lets-go/SKILL.md` SHALL hold these strings, so the skill-interfaces test can check them:
+
+- `Skipped shape: #<i>'s packet is complete, last edited <date>.`
+- `Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).`
+- `Skipped propose review: not in the lets-minimal route.`
+- `Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).`
+- `Skipped apply: every task is ticked, last task commit <date> (<sha>).`
+- `Skipped apply review: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.`
+- `Records disagree:`
+- `Interactivity: recommend, because #<i> is a Chore.`
+- `openspec instructions apply --change <name> --json`
+- `git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md`
+- `git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md`
+- `git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md`
+- `git status --porcelain`
+- `git fetch origin <name>`
+- `git merge --ff-only origin/<name>`
+- `git switch <name>`
+- `.workspace/lets-go/<name>-<step>-prompt.md`
+- `.workspace/lets-go/<name>-<step>-answers.yaml`
+- `--answers-file`
+- `.workspace/lets-delegate/<name>-<step>.prompt.md`
+- `step-report`
+- `asked a settled question again`
+- `**3**: no fresh session can run here`
 
 #### Scenario: The fixed lines
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
@@ -108,7 +147,7 @@ The apply review step SHALL run `lets-build`'s *Finish the change*: the project'
 ## ADDED Requirements
 
 ### Requirement: lets-go finds the first unfinished step
-After Start, on the change's branch, `lets-go` SHALL find the first unfinished step from the records Git and GitHub keep, and SHALL run the steps from there. It SHALL read them in this order. First, `git status --porcelain`: a line for a path outside `.workspace/` is a disagreement. Then the pull request for the branch, with `gh pr view <name> --json number,url,state,isDraft,body`: a missing pull request is noted, not a stop. Then the archive folder, `openspec/changes/archive/<date>-<name>`: when it exists, every step is done. Otherwise `openspec instructions apply --change <name> --json`, read as `lets-build`'s *Find where you are* reads it: no change folder or `state` `blocked` means propose is the first unfinished step; `ready` means apply; `all_done` means apply review. Any other `state` SHALL show the CLI's `instruction` and stop. Shape SHALL count as done when *Confirm the packet* passed. Propose review SHALL count as done when propose is done.
+After Start, on the change's branch, `lets-go` SHALL find the first unfinished step from the records Git and GitHub keep, and SHALL run the steps from there. It SHALL read the records in this order. First, `git status --porcelain`: a line for a path outside `.workspace/` is a disagreement. Second, the pull request for the branch, with `gh pr view <name> --json number,url,state,isDraft,body`. A missing pull request is noted, not a stop. Third, the archive folder, whose whole name is `<YYYY-MM-DD>-<name>` in `openspec/changes/archive/`. When it exists, every step is done. Fourth, `openspec instructions apply --change <name> --json`, read as `lets-build`'s *Find where you are* reads it. No change folder, or `state` `blocked`, means propose is the first unfinished step. `ready` means apply. `all_done` means apply review. Any other `state` SHALL show the CLI's `instruction` and stop. Shape SHALL count as done when *Confirm the packet* passed. Propose review SHALL count as done when propose is done.
 
 #### Scenario: A branch with no change
 - **WHEN** the branch `lets-go-chore` has no `openspec/changes/lets-go-chore/` folder and no archive folder
@@ -130,8 +169,18 @@ After Start, on the change's branch, `lets-go` SHALL find the first unfinished s
 - **WHEN** `openspec/changes/archive/2026-11-04-lets-go-chore` exists, and no `openspec/changes/lets-go-chore/` folder does
 - **THEN** every step is done, and `lets-go` runs none
 
+#### Scenario: A name that ends another change's name
+- **WHEN** the change is `go-chore`, and the archive holds `2026-11-04-lets-go-chore` and no folder `<YYYY-MM-DD>-go-chore`
+- **THEN** `lets-go` finds no archive folder for `go-chore`
+
 ### Requirement: A skipped step's line carries its evidence and date
-Each skipped step SHALL print one line, in step order, before the first step that runs. `<date>` SHALL be the author date of the commit named, as `YYYY-MM-DD`, from `git log`'s `%as`, and `<sha>` its short hash from `%h`. Propose: `Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).`, from `git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md`. Apply: `Skipped apply: every task is ticked, last task commit <date> (<sha>).`, from `git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md`. Apply review: `Skipped apply review: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.`, from `git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/archive/<date>-<name>/tasks.md` and the pull request read earlier. The same `git log` commands SHALL date propose and apply after archive, because the old path's history holds the add and the ticks. The shape line and the propose review line are set by their own requirements.
+Each skipped step SHALL print one line, in step order, before the first step that runs. `<date>` SHALL be the author date of the commit named, as `YYYY-MM-DD`, from `git log`'s `%as`. `<sha>` SHALL be its short hash, from `%h`. The lines and their reads are:
+
+- Propose: `Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).`, from `git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md`.
+- Apply: `Skipped apply: every task is ticked, last task commit <date> (<sha>).`, from `git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md`.
+- Apply review: `Skipped apply review: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.`, from `git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/archive/<date>-<name>/tasks.md` and the pull request read earlier.
+
+The same `git log` commands SHALL date propose and apply after archive, because the old path's history holds the add and the ticks. The shape line and the propose review line are set by their own requirements.
 
 #### Scenario: A skipped propose
 - **WHEN** commit `2bbc7d0` of 2026-11-03 added `openspec/changes/lets-go-chore/tasks.md`
@@ -150,19 +199,30 @@ Each skipped step SHALL print one line, in step order, before the first step tha
 - **THEN** the apply skip line's date is the commit's author date, not today
 
 ### Requirement: Records that disagree stop the run
-When the records disagree, `lets-go` SHALL print `Records disagree:` and what it found, say what to fix by hand, and stop before any step. It SHALL repair nothing. These are disagreements: `git status --porcelain` lists a path outside `.workspace/`; a change folder and an archive folder exist for the same name; an archive folder exists but the pull request is missing, is a draft, or has no `Code review` section; the state is `ready` or `all_done` but the branch has no open pull request; a `git log` read for a skipped step finds no commit.
+When the records disagree, `lets-go` SHALL print `Records disagree:` and what it found, say what to fix by hand, and stop before any step. It SHALL repair nothing. These are disagreements:
+
+- `git status --porcelain` lists a path outside `.workspace/`;
+- the local branch and `origin/<name>` have diverged;
+- a change folder and an archive folder exist for the same name;
+- an archive folder exists but the pull request is missing, is a draft, or has no `Code review` section;
+- `openspec/changes/<name>/brainstorm.md` is committed but the branch has no open pull request;
+- a `git log` read for a skipped step finds no commit.
 
 #### Scenario: A dirty tree
 - **WHEN** `git status --porcelain` lists `skills/lets-go/SKILL.md`
 - **THEN** `lets-go` prints `Records disagree:`, names the path, says to commit or discard it, and runs no step
 
+#### Scenario: A diverged branch
+- **WHEN** the local branch `lets-go-chore` and `origin/lets-go-chore` each have a commit the other lacks
+- **THEN** `lets-go` prints `Records disagree:`, says the branch and `origin` have diverged, and runs no step
+
 #### Scenario: Archived, but the pull request is a draft
 - **WHEN** the archive folder exists and `gh pr view` says `isDraft` is `true`
 - **THEN** `lets-go` prints `Records disagree:`, says the change is archived but the pull request is a draft, and runs no step
 
-#### Scenario: A ready plan with no pull request
-- **WHEN** the state is `ready` and `gh pr view <name>` finds no pull request
-- **THEN** `lets-go` prints `Records disagree:`, says the plan is committed but the branch has no pull request, and runs no step
+#### Scenario: A committed brainstorm with no pull request
+- **WHEN** `openspec/changes/lets-go-chore/brainstorm.md` is committed, the state is `blocked`, and `gh pr view lets-go-chore` finds no pull request
+- **THEN** `lets-go` prints `Records disagree:`, says the brainstorm is committed but the branch has no pull request, and runs no step
 
 #### Scenario: A read that finds no commit
 - **WHEN** the state is `ready`, the tree is clean, and `git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md` prints nothing

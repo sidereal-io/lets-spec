@@ -10,7 +10,7 @@ description: Architecture decision record (ADR) for how the workflow entry point
 
 ## Context
 
-`lets-go` runs a workflow of steps: shape, propose, propose review, apply and apply review. A run can stop at any point: a session dies, a laptop closes, a step fails. The user restarts the same command, and `lets-go` must skip the steps already done, say why it skipped each one, and say when it was completed. The steps already leave records: the issue's packet and its last edit on GitHub, one commit per planning artifact, one commit per task tick, a `Code review` section in the pull request, and an archive commit. Each step may run in a different session, harness or machine, so a file one session writes is not there for the next.
+`lets-go` runs a workflow of steps: shape, propose, propose review, apply and apply review. A run can stop at any point: a session dies, a laptop closes, a step fails. The user restarts the same command, and `lets-go` must skip the steps already done, say why it skipped each one, and say when it was completed. The steps already leave records. On GitHub: the issue's packet and its last edit, and a `Code review` section in the pull request. In Git: one commit per planning artifact, one per task tick, and an archive commit. Each step may run in a different session, harness or machine, so a file one session writes is not there for the next.
 
 ## Decision
 
@@ -29,7 +29,7 @@ description: Architecture decision record (ADR) for how the workflow entry point
 
 ### Alternative 1: A step log under `.workspace/` or in the repository
 - **Pros**: one file says where the run stands; the dates are exact; no `git log` reads.
-- **Cons**: a file under `.workspace/` is on one machine and gone after a clean checkout; a file in the repository adds a commit to every step and can disagree with the commits it describes.
+- **Cons**: a file under `.workspace/` is on one machine and gone after a clean checkout. A file in the repository adds a commit to every step, and can disagree with the commits it describes.
 - **Why not**: the log would be a second record of what Git already records, and the two could drift.
 
 ### Alternative 2: Record each step's completion as an issue comment
