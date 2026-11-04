@@ -12,7 +12,7 @@ mutate production backlogs or migrate the production workflow.
 - **AND** no production provider calls or workflow migrations occur
 
 ### Requirement: Executable boundary separates responsibilities
-The contract SHALL define versioned JSON requests on stdin and responses on stdout for executable backlog adapters, with diagnostic stderr, supported operations, operation-specific invocation context, protocol compatibility, process exit behavior and timeout handling. It SHALL assign workflow policy to the shared caller, provider translation to adapters and branch/pull request operations to the code host.
+The contract SHALL define versioned JSON requests on stdin and responses on stdout for executable backlog adapters, with diagnostic stderr, supported operations, operation-specific invocation context, protocol compatibility, process exit behavior, start failures, signal termination, combined stdout/stderr byte limits and timeout handling. It SHALL assign workflow policy to the shared caller, provider translation to adapters and branch/pull request operations to the code host.
 
 #### Scenario: Fake adapter handles a request
 - **WHEN** the harness invokes a fake adapter with a supported protocol and operation
@@ -24,17 +24,21 @@ The contract SHALL define versioned JSON requests on stdin and responses on stdo
 
 #### Scenario: Executable cannot start
 - **WHEN** the configured adapter executable cannot be started
-- **THEN** invocation rejects with a structured adapter failure rather than a raw runtime error
-- **AND** the caller does not switch providers
+- **THEN** invocation rejects with category unknown_outcome and effects unknown
+- **AND** only the supplied executable is attempted
 
 #### Scenario: Combined diagnostic and response output exceeds its limit
 - **WHEN** adapter stdout and stderr together exceed the configured byte limit
-- **THEN** the caller terminates the invocation and reports an unknown outcome
+- **THEN** the caller stops the adapter with SIGKILL and reports an unknown outcome
 - **AND** mutation retry or progression requires reconciliation
 
 #### Scenario: Signal interrupts an invocation
 - **WHEN** an adapter prints a valid response and then terminates by signal
 - **THEN** the caller rejects the invocation as an unknown outcome rather than accepting the response
+
+#### Scenario: Adapter ignores graceful termination
+- **WHEN** an adapter ignores SIGTERM and exceeds its deadline
+- **THEN** the invocation stops the adapter with SIGKILL and reports unknown_outcome with unknown effects
 
 ### Requirement: Mutation errors support safe recovery
 The contract SHALL distinguish invalid requests/configuration, authentication, permission, missing items, unsupported capabilities, ownership conflicts, transient failures and unknown mutation outcomes. It SHALL define reconciliation and retry behavior for each mutation, including duplicate creation prevention and relationship/update retries. Unknown outcomes SHALL NOT be reported as confirmed failure with no side effects.
@@ -46,6 +50,14 @@ The contract SHALL distinguish invalid requests/configuration, authentication, p
 #### Scenario: Permission failure
 - **WHEN** a provider denies an update
 - **THEN** the error identifies the permission failure and does not trigger fallback to another provider
+
+#### Scenario: Unsupported request protocol
+- **WHEN** the representative adapter receives a request using an unsupported protocol version
+- **THEN** it returns category unsupported with effects none
+
+#### Scenario: Invalid request input
+- **WHEN** the representative adapter receives malformed JSON or an unknown operation
+- **THEN** it returns category invalid_request with effects none
 
 #### Scenario: Unexpected adapter implementation error
 - **WHEN** the representative adapter encounters an unexpected programming error whose message contains a known error-category word
