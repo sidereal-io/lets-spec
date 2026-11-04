@@ -45,3 +45,11 @@ Live acceptance evidence is a required supplement to task 4.1's automated comman
 Main's kit cleanup supersedes earlier standalone-kit packaging work in tasks 1.1
 and 3.4. The source conformance suite remains; runtime releases exclude its
 sources and tests. Production executables remain bundled and release-tested.
+
+## 7. Fresh native acceptance fixtures
+
+- [ ] 7.1 [complex] Remove acceptance-owned machine-state fields after checking scope, create fresh issues using shared metadata and native relationships, and demonstrate selection, claim, continuation, fault recovery and release. Leave fixtures visible for inspection.
+- [ ] 7.2 [complex] Associate a new test PR natively, reject unmerged completion, and wait for the user's explicit test-PR merge before recording merged completion, verification and re-archival.
+
+The user rejected reused fixtures as clean native-state evidence. Earlier live
+records are historical; fresh issues and a new PR now own acceptance.
