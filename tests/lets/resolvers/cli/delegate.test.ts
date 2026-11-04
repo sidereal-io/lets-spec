@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import { run as handoff } from '../../../../lets/src/delegate/handoff.ts';
 import { run as instructions } from '../../../../lets/src/delegate/instructions.ts';
 import { run as review } from '../../../../lets/src/delegate/review.ts';
+import { run as step } from '../../../../lets/src/delegate/step.ts';
 import type { ReviewOptions } from '../../../../lets/src/delegate/review.ts';
 import { createAdapter } from '../../../../lets/src/resolvers/cli/cli.ts';
 import { commandDeps } from '../../delegate/fixtures/command-deps.ts';
@@ -75,6 +76,23 @@ test('handoff instructions skip cli with codex on PATH, running nothing, and the
   const io = fakeIo({ commands: ['codex'] });
   const t = withCli(io, 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n');
   assert.equal(await instructions(handoffInstructions, t.deps), 0);
+  assert.equal(JSON.parse(t.stdout()).resolver, 'subagent');
+  assert.deepEqual(io.calls, []);
+});
+
+test('a step declines with every family CLI on PATH, starting nothing', async () => {
+  const io = fakeIo({ commands: ['codex', 'claude', 'agy'] });
+  const t = withCli(io);
+  assert.equal(await step({ for: 'apply', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['claude'] }, t.deps), 2);
+  assert.equal(t.stdout(), '');
+  assert.match(t.stderr(), /every resolver declined/);
+  assert.deepEqual(io.calls, []);
+});
+
+test('step instructions skip cli with codex on PATH, running nothing, and the default answers', async () => {
+  const io = fakeIo({ commands: ['codex'] });
+  const t = withCli(io, 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n');
+  assert.equal(await instructions({ strategy: 'step', for: 'apply' }, t.deps), 0);
   assert.equal(JSON.parse(t.stdout()).resolver, 'subagent');
   assert.deepEqual(io.calls, []);
 });
