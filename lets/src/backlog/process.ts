@@ -1,96 +1,60 @@
-import type { BacklogResponse } from './types.ts';
+import { realIo } from '../io.ts';
+import type { Io } from '../io.ts';
 import { AdapterFailure } from './errors.ts';
-import { spawn } from 'node:child_process';
 import { validateRequest, validateResponse } from './protocol.ts';
+import type { BacklogResponse } from './types.ts';
+
+export type InvokeOptions = {
+  args?: string[];
+  timeoutMs?: number;
+  maxBytes?: number;
+  io?: Pick<Io, 'execFile'>;
+};
+
 export async function invoke(
   executable: string,
-  request: Record<string, unknown>,
-  options: { args?: string[]; timeoutMs?: number; maxBytes?: number } = {},
+  request: unknown,
+  options: InvokeOptions = {},
 ): Promise<Extract<BacklogResponse, { ok: true }>> {
-  validateRequest(request);
   const timeoutMs = options.timeoutMs ?? 5000;
   const maxBytes = options.maxBytes ?? 1024 * 1024;
-  if (
-    !Number.isFinite(timeoutMs) ||
-    timeoutMs <= 0 ||
-    !Number.isInteger(maxBytes) ||
-    maxBytes <= 0
-  )
-    throw new Error('invalid process limits');
-  return new Promise((resolve, reject) => {
-    const child = spawn(executable, options.args ?? [], {
-      cwd: request.context.cwd,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      shell: false,
+  let input: string;
+  try {
+    validateRequest(request);
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 ||
+        !Number.isSafeInteger(maxBytes) || maxBytes <= 0) {
+      throw new Error('invalid process limits');
+    }
+    input = JSON.stringify(request);
+  } catch (error) {
+    throw new AdapterFailure('invalid_request', 'none', String(error));
+  }
+  const io = options.io ?? realIo();
+  let execution;
+  try {
+    execution = await io.execFile(executable, options.args ?? [], {
+      cwd: request.context.cwd, input, timeoutMs, maxBytes, killSignal: 'SIGKILL',
     });
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL');
-      reject(
-        new AdapterFailure(
-          'unknown_outcome',
-          'unknown',
-          'timeout; reconcile mutation before retry',
-        ),
-      );
-    }, timeoutMs);
-    let stdout = '';
-    let stderr = '';
-    let bytes = 0;
-    const count = (chunk: string) => {
-      bytes += Buffer.byteLength(chunk);
-      if (bytes > maxBytes) {
-        child.kill('SIGKILL');
-        clearTimeout(timer);
-        reject(
-          new AdapterFailure(
-            'unknown_outcome',
-            'unknown',
-            'output limit; reconcile mutation before retry',
-          ),
-        );
-        return false;
-      }
-      return true;
-    };
-    child.stderr.setEncoding('utf8');
-    child.stderr.on('data', (chunk) => {
-      if (count(chunk)) stderr += chunk;
-    });
-    child.stdout.setEncoding('utf8');
-    child.stdout.on('data', (chunk) => {
-      if (count(chunk)) stdout += chunk;
-    });
-    child.on('error', (error) => {
-      clearTimeout(timer);
-      reject(error);
-    });
-    child.on('close', (code, signal) => {
-      clearTimeout(timer);
-      try {
-        if (signal || code === null)
-          throw new Error(`contract failure: signal termination ${signal}`);
-        const response: unknown = JSON.parse(stdout);
-        validateResponse(response, code ?? -1, request.operation);
-        if (!response.ok)
-          reject(
-            new AdapterFailure(
-              response.error.category,
-              response.error.effects,
-              response.error.message,
-            ),
-          );
-        else resolve(response);
-      } catch (error) {
-        reject(
-          new AdapterFailure(
-            'unknown_outcome',
-            'unknown',
-            `${String(error)}; adapter stderr: ${stderr}`,
-          ),
-        );
-      }
-    });
-    child.stdin.on('error', () => {});
-    child.stdin.end(JSON.stringify(request));
-  });
+  } catch (error) {
+    throw new AdapterFailure('unknown_outcome', 'unknown', String(error));
+  }
+  const { stdout, stderr, code, signal, timedOut, outputLimitExceeded } = execution;
+  const transport = timedOut ? 'timeout' : outputLimitExceeded ? 'output limit' :
+    signal ? `signal termination ${signal}` : code === null ? 'adapter could not start' : undefined;
+  if (transport) {
+    throw new AdapterFailure('unknown_outcome', 'unknown',
+      `${transport}; reconcile mutation before retry`);
+  }
+  let response: unknown;
+  try {
+    response = JSON.parse(stdout);
+    validateResponse(response, code!, request.operation);
+  } catch (error) {
+    throw new AdapterFailure('unknown_outcome', 'unknown',
+      `${String(error)}; adapter stderr: ${stderr}`);
+  }
+  if (!response.ok) {
+    throw new AdapterFailure(response.error.category, response.error.effects, response.error.message);
+  }
+  return response;
 }
