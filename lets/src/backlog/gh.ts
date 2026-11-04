@@ -5,6 +5,7 @@ const info = 'pageInfo { hasNextPage endCursor }';
 const project = 'id title url closed';
 const issue = 'id number title body url closed lastEditedAt repository { nameWithOwner } parent { id number body closed repository { nameWithOwner } }';
 export const QUERIES: Record<string, string> = {
+  PullClosingIssues: `query PullClosingIssues($owner:String!,$name:String!,$number:Int!,$cursor:String) { repository(owner:$owner,name:$name) { pullRequest(number:$number) { closingIssuesReferences(first:100,after:$cursor) { nodes { id repository { nameWithOwner } } ${info} } } } }`,
   UpdateIssueBody: 'mutation UpdateIssueBody($id:ID!,$body:String!) { updateIssue(input:{id:$id,body:$body}) { issue { id } } }',
   PullRequest: 'query PullRequest($owner:String!,$name:String!,$number:Int!) { repository(owner:$owner,name:$name) { pullRequest(number:$number) { id url body merged mergeCommit { oid } repository { nameWithOwner } } } }',
   UpdatePRBody: 'mutation UpdatePRBody($id:ID!,$body:String!) { updatePullRequest(input:{pullRequestId:$id,body:$body}) { pullRequest { id } } }',
