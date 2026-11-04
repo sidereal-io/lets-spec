@@ -43,16 +43,31 @@ const LISTINGS: Partial<Record<Family, { args: string[]; read: (stdout: string) 
   },
 };
 
-type RunCommandInput = { family: Family; model: string | null; effort: Effort; prompt: string; lastMessagePath: string; timeoutMinutes: number };
+// A review runs read-only. A step writes: it commits, pushes and runs gh,
+// headless, so it needs the mode in which the CLI never prompts. Any mode
+// that would prompt denies the command instead.
+export type Mode = 'read-only' | 'write';
 
-// The command for a read-only run, what goes on its stdin, and where its
-// final message comes from: stdout, or a file.
-export function runCommand({ family, model, effort, prompt, lastMessagePath, timeoutMinutes }: RunCommandInput) {
+const MODE_ARGS: Record<Mode, Record<Family, string[]>> = {
+  'read-only': { gpt: ['-s', 'read-only'], claude: ['--permission-mode', 'plan'], gemini: ['--mode', 'plan'] },
+  write: {
+    gpt: ['--dangerously-bypass-approvals-and-sandbox'],
+    claude: ['--permission-mode', 'plan'],
+    gemini: ['--mode', 'plan'],
+  },
+};
+
+type RunCommandInput = { mode: Mode; family: Family; model: string | null; effort: Effort; prompt: string; lastMessagePath: string; timeoutMinutes: number };
+
+// The command for a run in the given mode, what goes on its stdin, and where
+// its final message comes from: stdout, or a file.
+export function runCommand({ mode, family, model, effort, prompt, lastMessagePath, timeoutMinutes }: RunCommandInput) {
   const cmd = HEADLESS_EXECUTOR[family];
+  const modeArgs = MODE_ARGS[mode][family];
   if (family === 'gpt') {
     return {
       cmd,
-      args: ['exec', '-s', 'read-only', '-c', `model_reasoning_effort="${effort}"`, ...modelArgs('-m', model), '-o', lastMessagePath, '-'],
+      args: ['exec', ...modeArgs, '-c', `model_reasoning_effort="${effort}"`, ...modelArgs('-m', model), '-o', lastMessagePath, '-'],
       input: prompt,
       readResultFrom: lastMessagePath,
     };
@@ -103,7 +118,7 @@ export function createAdapter(io: Io): Adapter {
     async run({ name, cwd, prompt, family, model, effort }, { timeoutMs }) {
       io.mkdirp(join(cwd, SCRATCH));
       const timeoutMinutes = Math.ceil(timeoutMs / 60000);
-      const { cmd, args, input, readResultFrom } = runCommand({ family, model, effort, prompt, timeoutMinutes, lastMessagePath: lastMessagePath(cwd, name) });
+      const { cmd, args, input, readResultFrom } = runCommand({ mode: 'read-only', family, model, effort, prompt, timeoutMinutes, lastMessagePath: lastMessagePath(cwd, name) });
       // A file from an earlier run with this name would hide a refusal.
       if (readResultFrom !== 'stdout' && io.exists(readResultFrom)) io.removeFile(readResultFrom);
       const result = await io.execFile(cmd, args, { cwd, env: scrubbedEnv(io.env), input, timeoutMs }).catch((error: Error) => {

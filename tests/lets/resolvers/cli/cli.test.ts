@@ -10,7 +10,7 @@ const LAST = '/r/.workspace/lets-delegate/x.last-message.md';
 const OK = { stdout: '', stderr: '', code: 0 };
 
 const command = (over: Partial<Parameters<typeof runCommand>[0]>) =>
-  runCommand({ family: 'gpt', model: null, effort: 'high', prompt: TRICKY, lastMessagePath: LAST, timeoutMinutes: 45, ...over });
+  runCommand({ mode: 'read-only', family: 'gpt', model: null, effort: 'high', prompt: TRICKY, lastMessagePath: LAST, timeoutMinutes: 45, ...over });
 
 test('codex runs exec in its read-only sandbox, with the prompt on stdin and its last message in a file', () => {
   assert.deepEqual(command({}), {
@@ -43,6 +43,19 @@ test('agy runs in plan mode, with the prompt as the argument of -p', () => {
 test('agy takes the reviewer\'s model with the effort added', () => {
   assert.deepEqual(command({ family: 'gemini', effort: 'high', model: 'gemini-3.8-flash' }).args,
     ['--mode', 'plan', '--effort', 'high', '--model', 'gemini-3.8-flash-high', '--print-timeout', '45m', '-p', TRICKY]);
+});
+
+test('codex writes in its bypass mode, with no sandbox, the prompt on stdin and its last message in a file', () => {
+  assert.deepEqual(command({ mode: 'write' }), {
+    cmd: 'codex',
+    args: ['exec', '--dangerously-bypass-approvals-and-sandbox', '-c', 'model_reasoning_effort="high"', '-o', LAST, '-'],
+    input: TRICKY,
+    readResultFrom: LAST,
+  });
+});
+test('codex takes the step\'s model with -m', () => {
+  assert.deepEqual(command({ mode: 'write', model: 'gpt-6-luna' }).args,
+    ['exec', '--dangerously-bypass-approvals-and-sandbox', '-c', 'model_reasoning_effort="high"', '-m', 'gpt-6-luna', '-o', LAST, '-']);
 });
 
 // What codex debug models and agy models print, trimmed to the fields read.
