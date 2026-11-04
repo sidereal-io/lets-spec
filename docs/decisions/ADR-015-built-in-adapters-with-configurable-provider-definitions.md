@@ -113,6 +113,10 @@ errors so neither credentials nor private journal content appears in diagnostics
 
 ## Execution, deadlines and recovery
 
+These are target architecture rules, not a claim that every current delegation
+call meets them. Built-in delegation execution already exists; complete deadline
+coverage does not. The migration inventory below records the remaining gaps.
+
 Built-in code validates operation inputs and results, enforces workflow
 preconditions, and reports typed errors with effect certainty. Keep the backlog
 categories invalid_request, invalid_configuration, authentication, permission,
@@ -206,6 +210,14 @@ Use the following inventory when migrating
 | **Four-provider evidence qualifies conformance claims**; shared executable scenarios and evidence matrix | Move the behavioral lifecycle to internal invocation without reducing the provider variation cases; revise the matrix to distinguish internal tests, backend-boundary tests and live evidence. | GitHub, Jira Cloud, Linear and local Beads remain required. Offline simulations never establish live support. |
 | **Runtime releases exclude unused conformance payloads**; standalone adapter bundles and installation | Remove adapter-executable packaging and include only production-consumed built-in code; retain separate backend-tool dependency declarations and version checks. | Repository conformance remains runnable; unused kit source, fixtures and contract docs stay outside runtime releases. |
 | Operation inventory, identity, metadata, capabilities, claims, discovery and completion sections | Carry their existing behavioral scenarios through the invocation change; update executable wording where necessary. | Scoped opaque identities and optional URLs, complete pagination/blocker evidence, targeted updates, native/emulated/unsupported declarations, ranking, fresh ownership reads, session-safe release, exact merge evidence and idempotent completion. |
+
+Delegation also needs deadline follow-up under the common architecture epic
+(#174), separately from #180's GitHub backlog scope. Current T3 launch/dispatch
+requests do not pass a deadline; token issuance and Git helpers also have paths
+without timeouts. Their ticket fetches, backend calls and cleanup must become
+bounded and test stalled calls, late results and unknown session outcomes before
+delegation can claim full compliance with the deadline rule. This ADR records
+that implementation gap; it neither fixes it nor treats it as completed by #180.
 
 The older requirement names above identify migration targets, not exceptions to
 this decision. In particular, protocol version errors disappear only with the

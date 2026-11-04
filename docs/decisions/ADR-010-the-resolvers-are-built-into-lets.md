@@ -10,7 +10,8 @@ description: Architecture decision record (ADR) for running the t3, cli and suba
 > Extended by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md): built-in execution also applies to backlogs.
 > Resolver names, explicit selection and the absence of independently installed
 > adapters remain. Supported provider definitions configure data and options;
-> execution, validation, deadlines and recovery remain in shipped code.
+> execution, validation, deadlines and recovery belong in shipped code. Full
+> deadline coverage is a target rule; ADR-015 records existing delegation gaps.
 # ADR-010: The resolvers are built into lets, and the config names them
 
 ## Context
