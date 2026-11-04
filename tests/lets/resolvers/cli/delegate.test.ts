@@ -322,6 +322,18 @@ test('a step whose CLI cannot start is a refusal, exit 3, naming the CLI', async
   assert.match(t.stderr(), /claude/);
 });
 
+test('a done codex step removes its last-message file', async () => {
+  const io = stepping(DONE_REPORT);
+  assert.equal(await step(stepOptions(), withCli(io).deps), 0);
+  assert.equal(io.exists(STEP_LAST_MESSAGE), false);
+});
+
+test('a codex step that needs input keeps its last-message file', async () => {
+  const io = stepping(NEEDS_INPUT_REPORT);
+  assert.equal(await step(stepOptions(), withCli(io).deps), 0);
+  assert.equal(io.exists(STEP_LAST_MESSAGE), true);
+});
+
 // The adapter itself: the chain only ever finishes a handle the adapter
 // made, so these cases cannot be reached through a command.
 
