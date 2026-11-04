@@ -20,7 +20,7 @@
 ## 4. Integration [depends-on: 3]
 
 - [x] 4.1 [medium] Verify complete Node, type and shell coverage after comparing the moved test inventory and checking readable house style (✓ pnpm test passed: 543 Node tests, type check, 130 shell tests; original test inventory retained)
-- [ ] 4.2 [medium] Verify all flow and release builds after the final implementation (verify: nix flake check)
+- [x] 4.2 [medium] Verify all flow and release builds after the final implementation (✓ nix flake check passed: all five x86_64-linux checks after review fixes)
 
 ## Deviations Ledger
 
