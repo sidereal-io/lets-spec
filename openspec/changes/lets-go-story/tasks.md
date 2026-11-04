@@ -1,0 +1,20 @@
+## 1. The test seam
+
+- [ ] 1.1 [easy] The test `lets-go ships in both flows with a routing row` fails: its `request` becomes `Take a shaped story, bug or chore to a ready pull request in one run`, and it also asserts that neither `overlays/AGENTS.md` nor `README.md` keeps a row whose request is `Take a shaped chore to a ready pull request in one run` (verify: bats tests/skill-interfaces.bats --filter "routing row")
+- [ ] 1.2 [easy] A new test `lets-go picks the level from the Kind and relays at ask` fails: `skills/lets-go/SKILL.md` must hold `Interactivity: <level>, because #<i> is a <Kind>.`, `Interactivity: <level>, because you asked for it.`, `Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).` and `gh issue view <i> --json title,blockedBy`, and must not hold `#152 adds` or `chores only`; the test `lets-go's Start names lets-build's sections and adds one command` drops its `Interactivity: recommend, because #<i> is a Chore.` line (verify: bats tests/skill-interfaces.bats --filter "lets-go picks")
+
+## 2. The skill, the spec's Purpose, the overlay and the README [depends-on: 1]
+
+- [ ] 2.1 [medium] *Start* as design D-1 and D-4 and the spec's *lets-go runs for a Chore, a Bug or a Story*, *Start reuses lets-build* and *lets-go picks the interactivity level and says why* say: the Kind gate and its "#152 adds" line go; a Story's parent is read as *Confirm the packet* says; the blocker read is `gh issue view <i> --json title,blockedBy`, the branch is looked up before the open-blocker stop, and an existing branch names the blockers and goes on; the level is the user's `ask` or `recommend` when named, else `recommend` for a Chore or a Bug and `ask` for a Story; step 10 prints the level line in both forms (verify: grep -c 'because you asked for it' skills/lets-go/SKILL.md)
+- [ ] 2.2 [medium] The prompt frame and the relay as design D-1 and D-2 and the spec's *The step prompt says what to run, the level, and how to report*, *lets-go relays a needs-input report at the recommend level* and *lets-go relays a needs-input report at the ask level* say: the `## Questions` section names `<level>` and says what the `lets-go` session does at each level; *Relay the questions* branches on the level, and at `ask` asks every question with the recommendation shown and writes the answer with no marker; 1.2 passes (verify: bats tests/skill-interfaces.bats --filter "lets-go picks")
+- [ ] 2.3 [easy] The propose review line as design D-3 and the spec's *Propose review is reported as not in the route* and *Apply review ends the run* say: after a propose step that reported `done` in this run, *Read the report* and *End of the run* print `Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).`, and the `Skipped` form stays for a propose done before the run; the skill shows both strings (verify: grep -c 'Done propose review:' skills/lets-go/SKILL.md)
+- [ ] 2.4 [easy] [parallel] The routing row in `overlays/AGENTS.md` and the README's usage table read `Take a shaped story, bug or chore to a ready pull request in one run`; the README's `lets-go` section and the skill's frontmatter description say it takes a Chore, a Bug or a Story, name the two levels and how to name one, and no longer say chores only; 1.1 passes (verify: bats tests/skill-interfaces.bats --filter "routing row")
+- [ ] 2.5 [easy] [parallel] The main spec's `## Purpose` in `openspec/specs/lets-go/spec.md` says what `lets-go` does for a shaped Chore, Bug or Story, edited directly as the schema allows (verify: ! grep -q 'for a shaped chore' openspec/specs/lets-go/spec.md)
+
+## 3. Integration [depends-on: 2]
+
+- [ ] 3.1 [easy] The whole suite and the flake pass, including every `lets-go` test, the `gh` command check and the `lets delegate step` phrasing check (verify: pnpm test && nix flake check)
+
+## Deviations Ledger
+
+<!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
