@@ -1,12 +1,12 @@
 ## Context
 
-`lets/src/resolvers/cli/cli.ts` is one adapter. Its `runCommand` builds the read-only command for a family: `codex exec -s read-only`, `claude -p --permission-mode plan`, or `agy --mode plan`, each with the effort, the model, and where the final message comes from. `run` makes the scratch folder, removes a stale last-message file, runs the command through `io.execFile` with the scrubbed environment, and maps the result: a start failure or a silent non-zero exit to `Refused`, a non-zero exit after output to `SessionFailed`, a timeout to `TimeoutError`. `finish` removes the last-message file on ok. The adapter has no `start` and no `step`, so `pick` skips it for handoffs and steps.
+`lets/src/resolvers/cli/cli.ts` is one adapter. Its `runCommand` builds the read-only command for a family: `codex exec -s read-only`, `claude -p --permission-mode plan`, or `agy --mode plan`, each with the effort, the model, and where the final message comes from. `run` makes the scratch folder, removes a stale last-message file, and runs the command through `io.execFile` with the scrubbed environment. Then it maps the result: a start failure or a silent non-zero exit to `Refused`, a non-zero exit after output to `SessionFailed`, a timeout to `TimeoutError`. `finish` removes the last-message file on ok. The adapter has no `start` and no `step`, so `pick` skips it for handoffs and steps.
 
 `lets/src/delegate/step.ts` already calls `adapter.step` with a `StepInput`, which is a `RunInput`, and a `timeoutMs` of 120 minutes by default. It maps `SessionFailed` to a `failed` report at exit 0 with no handle, reads the report from the text it gets, and finishes with ok only on `done`. `Refused`, `TimeoutError` and `SpawnError` keep their exit codes. Nothing in `step.ts`, `lookup.ts` or the kit needs to change.
 
 The three CLIs on this machine offer these headless modes. `codex exec` takes `-s read-only|workspace-write|danger-full-access`, `--approve-for-me` and `--dangerously-bypass-approvals-and-sandbox`. `claude -p` takes `--permission-mode` with `plan`, `acceptEdits`, `auto`, `bypassPermissions`, `manual` and `dontAsk`, and denies anything that would prompt when nobody answers prompts. `agy -p` takes `--mode plan|accept-edits|auto` and `--dangerously-skip-permissions`.
 
-Tests drive the adapter two ways: `tests/lets/resolvers/cli/cli.test.ts` pins `runCommand`'s output and the adapter's `options` and `run` on `fakeIo`; `tests/lets/resolvers/cli/delegate.test.ts` runs each command through `commandDeps` with the real adapter on `fakeIo`, whose `commands` say which CLIs are on `PATH` and whose `results` script what each child process does. Two of those tests pin that `cli` declines steps.
+Tests drive the adapter two ways. `tests/lets/resolvers/cli/cli.test.ts` pins `runCommand`'s output and the adapter's `options` and `run` on `fakeIo`. `tests/lets/resolvers/cli/delegate.test.ts` runs each command through `commandDeps` with the real adapter on `fakeIo`. There, `commands` says which CLIs are on `PATH`, and `results` scripts what each child process does. Two of those tests pin that `cli` declines steps.
 
 ## Goals / Non-Goals
 
@@ -42,13 +42,15 @@ Alternatives: a second builder `stepCommand` that copies `runCommand`. Rejected:
 
 A step is `lets-build` or `lets-shape` in a session: it commits, pushes, runs `gh`, and runs the project's checks. Headless, a CLI cannot ask, so any mode that would prompt either fails the command or denies it. For `claude -p`, `acceptEdits` auto-approves edits but every Bash command would prompt, and with nobody to answer it is denied, so `git commit` fails. For codex, `workspace-write` blocks the network, so `git push` and `gh` fail, and keeps the `.git/` folder read-only, so `git commit` fails too. `--approve-for-me` routes each escalation through codex's automatic reviewer, whose verdicts differ by version and are not something a test can pin. For agy, `accept-edits` names the mode that writes files, and `--dangerously-skip-permissions` approves the commands; `auto` is documented only by its name.
 
-So the write mode is the bypass mode of each CLI (D2). A CLI that refuses to start in that mode, for example `claude` under a managed setting that disables bypass, or as root, exits non-zero with nothing printed, which is already a refusal: the command tries the next `--model`, and exits 3 when none is left. The docs say plainly that a step through `cli` runs with the user's rights, and that listing `cli` in `delegate.resolvers` is the opt-in (D3). This is the one decision in this change a reviewer should weigh. It is not costly to reverse: three flags in one table, and the tests that pin them.
+So the write mode is the bypass mode of each CLI (D2). Some CLIs refuse to start in that mode, for example `claude` under a managed setting that disables bypass, or as root. Such a CLI exits non-zero with nothing printed, which is already a refusal. The command tries the next `--model`, and exits 3 when none is left. The docs say plainly that a step through `cli` runs with the user's rights, and that listing `cli` in `delegate.resolvers` is the opt-in (D3). This is the one decision in this change a reviewer should weigh. It is not costly to reverse: three flags in one table, and the tests that pin them.
 
 ### D-3. Errors map as the review's do, and the empty message is left to the report reader
 
 `execute` throws the same classes in the same cases. `step.ts` already turns `SessionFailed` into a `failed` report at exit 0 with `handle: null`, and `Refused` and `TimeoutError` into exits 3 and 6. An empty final message needs no new check: `readReport('')` returns a `failed` report whose reason names `step-report`. So the `failed: exit N: <stderr>` message that `review run` prints on stderr at exit 5 is, for a step, the report's `reason`.
 
 Alternative: throw a `SessionFailed` for an empty message, as `review.ts` does. Rejected: it would put the same case on two paths with two reasons, and ADR-014 wants one place to read a failure.
+
+The `printed` test stays the review's: output on stdout or in the last-message file means the model ran, so a non-zero exit after it is a failed session, not a refusal. The plan review asked whether codex should count only its last-message file, since codex also prints progress on stdout. No: the `delegate-resolvers` spec pins that a CLI which prints and then exits non-zero is exit 5 for a review, the shared function serves both, and #156 asks for the review's exit codes. An empty final message at exit 0 drops the CLI's stderr, for a step as for a review today. The caller still sees `failed` with a reason, and the CLI's own log when it keeps one.
 
 ### D-4. The step's files are the review's files
 
@@ -65,6 +67,7 @@ The last-message file for codex is `.workspace/lets-delegate/<name>.last-message
 - [agy's `accept-edits` with `--dangerously-skip-permissions` still prompts for something headless] → the step ends as a failed session or a timeout, both visible to the caller with agy's stderr; the mode is one cell in the table to change.
 - [A step and a review with the same `--name` share one last-message path] → the names come from `lets-go`, which suffixes the step, and the stale file is removed before each run.
 - [A step's final message is long, and claude or agy print it on stdout] → `execFile` already allows 64 MiB.
+- [The time limit kills only the CLI's own process, and a child it started, such as a hung `nix flake check`, lives on with write access] → the kit's `execFile` has done this for reviews since it was written, and a CLI with its write mode starts more children. The fix is to kill the process group in `lets/src/resolvers/kit/io.ts`, which serves every resolver and is outside this story. Until then, agy stops itself through `--print-timeout`, and the caller sees exit 6 and can inspect the tree.
 
 ## Migration & Rollback
 

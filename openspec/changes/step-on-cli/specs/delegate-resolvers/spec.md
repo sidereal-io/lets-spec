@@ -1,11 +1,14 @@
 ## ADDED Requirements
 
 ### Requirement: The cli resolver runs a step headless
-When `cli` answers `lets delegate step run`, it SHALL run the CLI of the `--model` family as a child process in the repository, in the mode that lets it write files and run commands without a prompt. That is `codex exec --dangerously-bypass-approvals-and-sandbox` for `gpt`, `claude -p --permission-mode bypassPermissions` for `claude`, or `agy -p --mode accept-edits --dangerously-skip-permissions` for `gemini`. It SHALL pass the prompt, the model, the effort and the time limit as it does for a review. It SHALL wait for the CLI's final message and hand it to `lets delegate step run` as the session's final message, so the step report is read from it. The process SHALL run without the session markers in its environment. The command's JSON line on stderr SHALL have the `--model` family as `family`, and a handle of kind `process`.
+When `cli` answers `lets delegate step run`, it SHALL run the CLI of the `--model` family as a child process in the repository, in the mode that lets it write files and run commands without a prompt. That is `codex exec --dangerously-bypass-approvals-and-sandbox` for `gpt`, `claude -p --permission-mode bypassPermissions` for `claude`, or `agy --mode accept-edits --dangerously-skip-permissions` for `gemini`. It SHALL pass the prompt, the model, the effort and the time limit as it does for a review. It SHALL wait for the CLI's final message and hand it to `lets delegate step run` as the session's final message, so the step report is read from it. The process SHALL run without the session markers in its environment. The command's JSON line on stderr SHALL have the `--model` family as `family`, and a handle of kind `process`.
 
 #### Scenario: A step with codex
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex` is on `PATH`, the user runs `lets delegate step run --for apply --name build-x --prompt-file p.md --effort high --model gpt/gpt-6-luna`, and codex writes a final message that ends with a `done` step report
-- **THEN** codex runs with `exec`, `--dangerously-bypass-approvals-and-sandbox`, `-c model_reasoning_effort="high"`, `-m gpt-6-luna` and `-o .workspace/lets-delegate/build-x.last-message.md`, with the prompt on stdin and no `-s` option, the command exits 0, stdout is one JSON line with `"outcome":"done"`, and the JSON line on stderr has `"family":"gpt"`, `"model":"gpt-6-luna"` and a `handle` of kind `process`
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex` is on `PATH`, and the user runs `lets delegate step run --for apply --name build-x --prompt-file p.md --effort high --model gpt/gpt-6-luna`
+- **AND** codex writes a final message that ends with a `done` step report
+- **THEN** codex runs with `exec`, `--dangerously-bypass-approvals-and-sandbox`, `-c model_reasoning_effort="high"`, `-m gpt-6-luna` and `-o .workspace/lets-delegate/build-x.last-message.md`, with the prompt on stdin and no `-s` option
+- **AND** the command exits 0, and stdout is one JSON line with `"outcome":"done"`
+- **AND** the JSON line on stderr has `"family":"gpt"`, `"model":"gpt-6-luna"` and a `handle` of kind `process`
 
 #### Scenario: A step with claude on a bare family
 - **WHEN** the config's `delegate.resolvers` is `[cli]`, `claude` is on `PATH`, the user runs `lets delegate step run --for propose --effort high --model claude` with the other required options, and claude prints a final message that ends with a `needs-input` step report
@@ -54,6 +57,17 @@ When a step that `cli` answered ends with a `done` report, `cli` SHALL remove th
 
 ## MODIFIED Requirements
 
+### Requirement: The cli resolver lists the bare family when a listing fails
+A family's model listing can fail: it exits non-zero, runs past its time limit, or prints what `cli` cannot read. Then `lets delegate review instructions` and `lets delegate step instructions` SHALL list the bare family in that family's place in `options`, and still exit 0. They SHALL name the CLI and the failure on stderr.
+
+#### Scenario: codex is signed out
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex` and `claude` are on `PATH`, `codex debug models` exits 1, and the user runs `lets delegate review instructions --for code`
+- **THEN** it exits 0, its JSON line has `"options":["gpt","claude"]`, and stderr names `codex`
+
+#### Scenario: codex is signed out, and the user asks for a step
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex` and `claude` are on `PATH`, `codex debug models` exits 1, and the user runs `lets delegate step instructions --for apply`
+- **THEN** it exits 0, its JSON line has `"options":["gpt","claude"]`, and stderr names `codex`
+
 ### Requirement: The cli resolver declines when no family CLI is on PATH
 When none of `codex`, `claude` or `agy` is on `PATH`, `cli` SHALL decline every review, every step and their instructions, and SHALL start no process. The next resolver in the chain answers, or the command exits 2 when none is left.
 
@@ -77,8 +91,10 @@ When `t3` or `cli` answers, the harness or the account can say no before the mod
 - **THEN** it exits 3, and stderr holds the end of codex's stderr
 
 #### Scenario: The CLI refuses the model for a step
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, the user runs `lets delegate step run --for apply --model gpt/gpt-6-astra --model claude` with the other required options, codex exits 1 with nothing on stdout, and claude prints a final message with a `done` report
-- **THEN** claude runs, the command exits 0, and stderr has a line that starts `lets delegate: gpt/gpt-6-astra: ` and the record's `"family":"claude"`
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, and the user runs `lets delegate step run --for apply --model gpt/gpt-6-astra --model claude` with the other required options
+- **AND** codex exits 1 with nothing on stdout, and claude prints a final message with a `done` report
+- **THEN** claude runs, and the command exits 0
+- **AND** stderr has a line that starts `lets delegate: gpt/gpt-6-astra: `, and the record's `"family"` is `claude`
 
 #### Scenario: The CLI cannot start a step
 - **WHEN** the config's `delegate.resolvers` is `[cli]`, the user runs `lets delegate step run --for apply --model claude` with the other required options, and `claude` is on `PATH` but cannot be started

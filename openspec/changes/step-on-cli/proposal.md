@@ -5,7 +5,7 @@
 ## What Changes
 
 - The `cli` resolver gains a `step` method, and nothing else in its contract changes (D1).
-- A step runs the CLI of the `--model` family as a child process, in the mode that lets it write files and run commands without a prompt: `codex exec --dangerously-bypass-approvals-and-sandbox`, `claude -p --permission-mode bypassPermissions`, or `agy -p --mode accept-edits --dangerously-skip-permissions` (D2). `lets` adds no sandbox of its own (D3).
+- A step runs the CLI of the `--model` family as a child process, in the mode that lets it write files and run commands without a prompt: `codex exec --dangerously-bypass-approvals-and-sandbox`, `claude -p --permission-mode bypassPermissions`, or `agy --mode accept-edits --dangerously-skip-permissions` with the prompt as the argument of `-p` (D2). `lets` adds no sandbox of its own (D3).
 - The prompt, the final message, the model, the effort, the time limit, the handle and the environment follow the review's path (D4, D6, D7, D8, D11). The session's final message is what `lets delegate step run` reads the step report from (D4).
 - The adapter throws the same errors as for a review, so a step through `cli` gives the exit codes the `delegate-step` spec fixes: 3 for a refusal, 6 for a timeout, and a `failed` report at exit 0 for a session that fails after it prints (D5).
 - `cli` answers a step, and `step instructions`, wherever one family CLI is on `PATH`, as it does for a review. The requirement that `cli` declines every step is removed (D9).
