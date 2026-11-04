@@ -1,6 +1,6 @@
 ## 1. The test seam
 
-- [ ] 1.1 [easy] The test `lets-go runs a shape step for an idea or an unshaped issue` fails: `skills/lets-go/SKILL.md` must hold `Run discovery on it?`, `epic #<p>: <title>`, `story #<n>: <title>`, `Picked #<n>: <title>, the first ready story under #<p>.`, `docs: the discovery map from #<p>`, `Discovery status: in-progress`, `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body` and `*Resume mode*`; it must not hold `end with a failed report that says so and names` or `#154 adds`; and `README.md` must not hold `An idea too large for one issue stops the run` (verify: bats tests/skill-interfaces.bats --filter "shape step")
+- [x] 1.1 [easy] The test `lets-go runs a shape step for an idea or an unshaped issue` fails: `skills/lets-go/SKILL.md` must hold `Run discovery on it?`, `epic #<p>: <title>`, `story #<n>: <title>`, `Picked #<n>: <title>, the first ready story under #<p>.`, `docs: the discovery map from #<p>`, `Discovery status: in-progress`, `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body` and `*Resume mode*`; it must not hold `end with a failed report that says so and names` or `#154 adds`; and `README.md` must not hold `An idea too large for one issue stops the run` (verify: bats tests/skill-interfaces.bats --filter "shape step") (✓ the test fails: lets-go does not say: Run discovery on it?)
 
 ## 2. The skill, the spec's Purpose and the README [depends-on: 1]
 
