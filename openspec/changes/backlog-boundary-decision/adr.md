@@ -24,4 +24,4 @@ One new record explains the choice without superseding ADR-010.
 
 ## New Durable ADRs Created
 
-- [ADR-014: Backlog adapters use an executable boundary](../../../docs/decisions/ADR-014-backlog-adapters-use-an-executable-boundary.md) — proposed; acceptance remains subject to review and the user-owned merge.
+- [ADR-014: Backlog adapters use an executable boundary](../../../docs/decisions/ADR-014-backlog-adapters-use-an-executable-boundary.md) — accepted during apply; the merge remains user-owned.
