@@ -9,6 +9,7 @@ Says what the `lets-go` skill does for a shaped Chore, Bug or Story, or for an i
 ### Requirement: Start reuses lets-build
 `lets-go` SHALL run `lets-build`'s *Find the source of demand*, *Confirm the packet* and *Route* in its own session on every run, by naming those sections. It SHALL run *Claim* only when no branch with the change's name exists, locally or on `origin`. When the change's branch exists and `lets-go` is on the default branch, it SHALL run `git switch <name>`, and go on as on a change's branch. On a change's branch that `origin` has, it SHALL run `git fetch origin <name>` before it reads any record. A local branch behind `origin/<name>` SHALL be fast-forwarded with `git merge --ff-only origin/<name>`. A local branch that has diverged from `origin/<name>` is a disagreement. When *Find the source of demand* finds an open blocker, `lets-go` SHALL look for the change's branch before it stops. For that, its blocker read SHALL be `gh issue view <i> --json title,blockedBy`, so the change's name is known as *Claim* names it, before *Confirm the packet* reads the title. When the branch exists, locally or on `origin`, it SHALL name the open blockers and go on: the user has stacked the branch by hand. When no such branch exists, the stop stands. For an idea, `lets-go` SHALL run that section's second case, described work with no issue: the search for an existing issue. It SHALL show the user the matches and ask, at either level, whether one is the same work. A yes SHALL make that issue `<i>`. On a no, or when none matches, the case's stop, to run `lets-shape`, SHALL be set aside: the shape step runs for the idea. After a shape report that names a parent and stories, `lets-go` SHALL run that section's third case, `next`, with the candidates narrowed to the report's stories, as *lets-go picks the first ready story* says. On the default branch, when *Confirm the packet* stops with a remedy of running `lets-shape` on #<i>, that stop SHALL be set aside too: the shape step runs for #<i>. It SHALL be set aside once per run: after a shape step, the stop stands. On a change's branch, that stop SHALL stand, because the shape step runs only before any branch exists. The Epic stop SHALL stand. `lets-go` SHALL add no other check of its own to `lets-build`'s sections. The commands it adds of its own are:
 
+- `lets go level`, run once when it reads the request, as *lets-go picks the interactivity level and says why* says;
 - `title` beside `blockedBy` in the blocker read above;
 - `gh issue view <i> --json createdAt`, run only when the issue's `lastEditedAt` is null;
 - the issue search of *lets-go takes one issue number or an idea*;
@@ -94,7 +95,7 @@ When the schema is `lets-minimal`, `lets-go` SHALL print `Skipped propose review
 - **THEN** `lets-go` prints `Skipped propose review: review.md says VERDICT: APPROVE, committed 2026-11-03 (7d16565).`
 
 ### Requirement: lets-go picks the interactivity level and says why
-Before the first step, `lets-go` SHALL pick the interactivity level from the Kind: `recommend` for a Chore or a Bug, `ask` for a Story. It SHALL print `Interactivity: <level>, because #<i> is a <Kind>.` When the user named `ask` or `recommend` in the request that started the run, that level SHALL win. The line SHALL then read `Interactivity: <level>, because you asked for it.` Before a shape step, the Kind is not settled. The level for the shape step SHALL be the user's, when named, and `ask` otherwise, and the line SHALL read `Interactivity: ask, because shape has not run yet.` After the shape step, `lets-go` SHALL pick the level again from the packet's Kind, unless the user named one, and print its line. `lets-go` SHALL never ask the user which level to use. The level SHALL hold for the whole run and SHALL not be kept for a later run. It SHALL put the level, and what it means for the step, into every step prompt.
+In *Start*, when it reads the request and before it asks GitHub for anything, `lets-go` SHALL run `lets go level` from the repo root, once per run. When the command exits non-zero, `lets-go` SHALL show the user its stderr and stop. It SHALL then claim nothing and run no step. Otherwise it SHALL keep the `level` the command printed for the whole run. Each time it picks the level, it SHALL take the first of these that is set. First, the level the user named in the request. Then the kept `level`, when it is not `null`. Then the Kind's default: `recommend` for a Chore or a Bug, `ask` for a Story. It SHALL print the line for the source it used. For the request's level: `Interactivity: <level>, because you asked for it.` For the config's: `Interactivity: <level>, because your lets config sets go.level.` For the Kind's: `Interactivity: <level>, because #<i> is a <Kind>.` Before a shape step, the Kind is not settled. The level for the shape step SHALL be the request's, when named; else the config's, when set; else `ask`. In that last case the line SHALL read `Interactivity: ask, because shape has not run yet.` After the shape step, `lets-go` SHALL pick the level again, in the same order, and print its line. `lets-go` SHALL never ask the user which level to use. The level SHALL hold for the whole run and SHALL not be kept for a later run. It SHALL put the level, and what it means for the step, into every step prompt.
 
 #### Scenario: The level line
 - **WHEN** issue `#149` is a Chore and Start has passed
@@ -127,6 +128,26 @@ Before the first step, `lets-go` SHALL pick the interactivity level from the Kin
 #### Scenario: A named level holds through shape
 - **WHEN** the user runs `lets-go recommend add a --quiet flag to lets sync`, and the shape step writes a Story
 - **THEN** `lets-go` prints `Interactivity: recommend, because you asked for it.` before the shape step and again before propose
+
+#### Scenario: The config sets the level
+- **WHEN** the `lets` config holds `go.level: recommend`, issue `#152` is a Story, the user named no level, and Start has passed
+- **THEN** `lets-go` prints `Interactivity: recommend, because your lets config sets go.level.` before it runs propose, and relays at `recommend`
+
+#### Scenario: The request's level beats the config's
+- **WHEN** the `lets` config holds `go.level: recommend`, and the user runs `lets-go` for `#152`, a Story, and says `ask`
+- **THEN** `lets-go` prints `Interactivity: ask, because you asked for it.`
+
+#### Scenario: The config's level before shape
+- **WHEN** the `lets` config holds `go.level: recommend`, and the user runs `lets-go add a --quiet flag to lets sync` without naming a level
+- **THEN** `lets-go` prints `Interactivity: recommend, because your lets config sets go.level.` before the shape step, and again before propose
+
+#### Scenario: The config holds no level
+- **WHEN** `lets go level` prints `{"level":null}`, issue `#152` is a Story, and the user named no level
+- **THEN** `lets-go` prints `Interactivity: ask, because #152 is a Story.`
+
+#### Scenario: lets go level fails
+- **WHEN** the `lets` config holds `go.level: loud`, and the user runs `lets-go` for `#152`
+- **THEN** `lets-go` shows the user the command's stderr, which names `go.level`, claims nothing, and runs no step
 
 ### Requirement: Each step runs through lets delegate step
 `lets-go` SHALL run shape, when it is needed, then propose, apply and apply review, in that order, starting at the first unfinished step that *lets-go finds the first unfinished step* found. For each step it SHALL write the prompt to `.workspace/lets-go/<name>-<step>-prompt.md`. `<name>` is the change's name, and `<step>` is `shape`, `propose`, `apply` or `apply-review`. For the shape step, `<name>` is `issue-<i>` or `idea-<slug>`, as *The shape step shapes an idea or an unshaped issue* says. It SHALL run `lets delegate step instructions --for <step>` and read `options` and `guidance`. It SHALL rank the options by the guidance first, then the order the options came in. It SHALL leave out a model the guidance rules out. The guidance SHALL only rank and filter the listed models. When `options` is empty, it SHALL pass its own family as the one model. It SHALL then run `lets delegate step run --for <step> --name <name>-<step> --prompt-file <that file> --effort high`, with one `--model` per ranked option, best first. When `.workspace/lets-go/<name>-<step>-answers.yaml` exists before the step's first round and holds at least one pair, that round SHALL add `--answers-file` with that file, as a resumed round does. An empty or unreadable answers file SHALL count as absent. Stdout SHALL go to `.workspace/lets-go/<name>-<step>-report.json` and stderr to `.workspace/lets-go/<name>-<step>-meta.txt`. When `step instructions` exits non-zero, or `step run` exits non-zero other than 3, it SHALL show the user the command's stderr and stop.
@@ -257,6 +278,8 @@ The apply review step SHALL run `lets-build`'s *Finish the change*: the project'
 - `Interactivity: <level>, because #<i> is a <Kind>.`
 - `Interactivity: <level>, because you asked for it.`
 - `Interactivity: ask, because shape has not run yet.`
+- `Interactivity: <level>, because your lets config sets go.level.`
+- `lets go level`
 - `issue #<n>: <title>`
 - `epic #<p>: <title>`
 - `story #<n>: <title>`
