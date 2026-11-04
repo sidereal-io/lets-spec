@@ -20,8 +20,10 @@ every command below from the repo root.
    that `lets-go` needs an issue number, and stop.
 2. Find the default branch as `lets-build` does, and run
    `git branch --show-current`. If you are on another branch, say that
-   running `lets-build` on it carries its change on, and that #150 adds
-   resuming a run. Stop.
+   `lets-go` starts only on the default branch. When the branch has a
+   change, `openspec/changes/<branch>/`, also say that running
+   `lets-build` on it carries the change on, and that #150 adds resuming
+   a run. Stop.
 3. Run `lets-build`'s *Find the source of demand* for the named issue,
    then its *Confirm the packet*. A stop either section makes stands, as
    `lets-build` reports it. A packet that fails sends the user to
