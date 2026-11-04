@@ -258,6 +258,8 @@ skill_says() {
   skill_says lets-go 'Interactivity: <level>, because you asked for it.'
   skill_says lets-go 'Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
   skill_says lets-go 'gh issue view <i> --json title,blockedBy'
+  skill_says lets-go 'The interactivity level is <level>.'
+  skill_says lets-go 'Write the answer as the user gave it, with no marker'
   for phrase in '#152 adds' 'chores only'; do
     ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
       { echo "lets-go still says: $phrase"; false; }

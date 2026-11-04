@@ -270,7 +270,7 @@ prompt, and runs as [Run a step](#run-a-step) says.
 Create the folder first, if it is missing: `mkdir -p .workspace/lets-go`.
 Then write the frame below to `.workspace/lets-go/<name>-<step>-prompt.md`.
 Fill in each `<...>`, and put the step's row from the table under
-*What to run*. `<schema>` is the schema *Start* set.
+*What to run*. `<schema>` and `<level>` are the ones *Start* set.
 
 ````text
 You run one step of a lets-go run: <step>, for the change <name>.
@@ -282,9 +282,11 @@ Issue: #<i>, <issue URL>. Branch: <name>. Schema: <schema>.
 
 ## Questions
 
-The interactivity level is recommend. The lets-go session answers each
-question that has a recommendation, and asks the user the rest. Never
-decide a question yourself. Never ask the user in this session: nobody
+The interactivity level is <level>. At recommend, the lets-go session
+answers each question that has a recommendation, and asks the user the
+rest. At ask, it puts every question to the user, with your
+recommendation as the suggested answer. Your rules are the same at both
+levels. Never decide a question yourself. Never ask the user in this session: nobody
 here can answer.
 
 When you need a decision, stop. End with a needs-input report that lists
@@ -428,13 +430,18 @@ file per step.
 1. If any question's exact text is already in that file, the step did
    not read its answers. Say that the step asked a settled question
    again, name the step, show the user the report, and stop.
-2. Go through the questions in the report's order:
-   - **With a `recommendation`**: take it as the answer. Tell the user
-     the question and the answer you gave. Write the answer as the
-     recommendation followed by
+2. Go through the questions in the report's order, as `<level>` says:
+   - **At `recommend`, with a `recommendation`**: take it as the answer.
+     Tell the user the question and the answer you gave. Write the answer
+     as the recommendation followed by
      ` (lets-go accepted the step's recommendation; the user did not decide)`.
-   - **Without one**: ask the user that question alone. Wait for the
-     answer before the next question.
+   - **At `recommend`, without one**: ask the user that question alone.
+     Wait for the answer before the next question.
+   - **At `ask`**: ask the user every question, one at a time. Show the
+     `recommendation`, when there is one, as the suggested answer. Wait
+     for each answer before the next question. Write the answer as the
+     user gave it, with no marker, even when they took the
+     recommendation: the step records it as the user's.
 3. Append each pair, in order, to the answers file. It is a YAML list of
    `question` and `answer` mappings, and keeps the pairs of earlier
    rounds. Quote each value, so YAML keeps it whole:
