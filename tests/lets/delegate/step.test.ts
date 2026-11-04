@@ -232,3 +232,13 @@ for (const [name, answers] of [['missing', undefined], ['a mapping', 'question: 
     assert.deepEqual(t.adapterCalls(), []);
   });
 }
+
+test('with no config, the default saves the composed prompt and is exit 3', async () => {
+  const t = commandDeps({ files: { [PROMPT_FILE]: 'Run propose on x', '/repo/a.yaml': '- question: Which schema?\n  answer: lets-minimal\n' } });
+  assert.equal(await run(options({ for: 'propose', name: 'plan-x', models: ['claude'], answersFile: 'a.yaml' }), t.deps), 3);
+  assert.equal(t.stdout(), '');
+  const saved = t.savedFile('.workspace/lets-delegate/plan-x.prompt.md');
+  assert.ok(saved?.startsWith('Run propose on x\n') && saved.includes('Which schema?') && saved.includes('lets-minimal'), saved ?? 'no file');
+  assert.match(t.stderr(), /no resolver.*subagent.*\.workspace\/lets-delegate\/plan-x\.prompt\.md/);
+  assert.doesNotMatch(t.stderr(), /installed/);
+});

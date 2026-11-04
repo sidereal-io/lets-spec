@@ -158,3 +158,9 @@ test('handoff guidance does not reach a step', async () => {
   assert.equal(await run({ strategy: 'step', for: 'apply' }, t.deps), 0);
   assert.equal(JSON.parse(t.stdout()).guidance, null);
 });
+
+test('with no config, step instructions answer as the default with no options', async () => {
+  const t = commandDeps();
+  assert.equal(await run({ strategy: 'step', for: 'apply' }, t.deps), 0);
+  assert.deepEqual(JSON.parse(t.stdout()), { strategy: 'step', for: 'apply', resolver: 'subagent', options: [], guidance: null });
+});

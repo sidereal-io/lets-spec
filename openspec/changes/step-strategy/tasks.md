@@ -24,7 +24,7 @@ Types and lookup that every later task builds on. `Kind` and `Intent` widen, `Ad
 
 ## 4. The default, the command line and the docs [depends-on: 3]
 
-- [ ] 4.1 [easy] `subagent.step` saves the composed prompt to `.workspace/lets-delegate/<name>.prompt.md`, starts no process, and refuses with a message that names the file and says to run the step in a subagent, so `step run` exits 3 and `step instructions` lists no models (verify: node --test tests/lets/resolvers/subagent/subagent.test.ts tests/lets/delegate/step.test.ts)
+- [x] 4.1 [easy] `subagent.step` saves the composed prompt to `.workspace/lets-delegate/<name>.prompt.md`, starts no process, and refuses with a message that names the file and says to run the step in a subagent, so `step run` exits 3 and `step instructions` lists no models (verify: node --test tests/lets/resolvers/subagent/subagent.test.ts tests/lets/delegate/step.test.ts) (✓ node --test tests/lets/resolvers/subagent/subagent.test.ts tests/lets/delegate/step.test.ts passed)
 - [ ] 4.2 [medium] `lets delegate step instructions|run` exist in `main.ts`: `step --help` names both commands and the five intents, `step run --help` lists exit codes 0, 2, 3, 4 and 6 and says exit 0 carries a report whatever its outcome, `--source-family` is unknown, and `delegate --help` names the three strategies (verify: node --test tests/lets/delegate/cli.test.ts)
 - [ ] 4.3 [medium] `docs/resolvers.md` and the README's delegation section describe the step, the report block, `--answers-file` and `delegate.step.<step>.guidance`, the bats checks accept `lets delegate step` with `instructions` or `run`, and the whole suite passes (verify: pnpm test)
 
