@@ -11,8 +11,8 @@ export const QUERIES: Record<string, string> = {
 
   FieldText: 'mutation FieldText($project:ID!,$item:ID!,$field:ID!,$text:String!) { updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{text:$text}}) { projectV2Item { id } } }',
   FieldStatus: 'mutation FieldStatus($project:ID!,$item:ID!,$field:ID!,$option:String!) { updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{singleSelectOptionId:$option}}) { projectV2Item { id } } }',
-  Unassign: 'mutation Unassign($issue:ID!,$actor:ID!) { removeAssigneesFromAssignable(input:{assignableId:$issue,assigneeIds:[$actor]}) { assignable { id } } }',
-  Assign: 'mutation Assign($issue:ID!,$actor:ID!) { addAssigneesToAssignable(input:{assignableId:$issue,assigneeIds:[$actor]}) { assignable { id } } }',
+  Unassign: 'mutation Unassign($issue:ID!,$actor:ID!) { removeAssigneesFromAssignable(input:{assignableId:$issue,assigneeIds:[$actor]}) { assignable { ... on Issue { id } } } }',
+  Assign: 'mutation Assign($issue:ID!,$actor:ID!) { addAssigneesToAssignable(input:{assignableId:$issue,assigneeIds:[$actor]}) { assignable { ... on Issue { id } } } }',
 
   Actor: 'query Actor($owner:String!,$name:String!) { viewer { login id } repository(owner:$owner,name:$name) { nameWithOwner viewerPermission } }',
   RepositoryProjects: `query RepositoryProjects($owner:String!,$name:String!,$cursor:String) { repository(owner:$owner,name:$name) { projectsV2(first:100,after:$cursor) { nodes { ${project} } ${info} } } }`,

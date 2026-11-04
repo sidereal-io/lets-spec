@@ -5,6 +5,7 @@ const path = process.env.BACKLOG_TEST_STATE;
 const state = JSON.parse(readFileSync(path, 'utf8')); const { responses } = state;
 state.calls.push({ name, variables: request.variables });
 const variables = request.variables;
+if (['Assign','Unassign'].includes(name) && /assignable\s*\{\s*id/.test(request.query)) { console.log(JSON.stringify({errors:[{type:'GRAPHQL_VALIDATION_FAILED'}]})); process.exit(1); }
 if (responses._fault === 'before:' + name) { writeFileSync(path, JSON.stringify(state)); console.log(JSON.stringify({errors:[{type:'FORBIDDEN'}]})); process.exit(1); }
 if (name === 'FieldText' || name === 'FieldStatus') {
   const nodes = responses.ItemValues.node.fieldValues.nodes;

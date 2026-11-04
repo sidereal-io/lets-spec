@@ -25,3 +25,11 @@ test('released acquire replay cannot authorize work', () => withGithub(async ({ 
   await call('claim.release', { item, token: claim.token }, 'release');
   await assert.rejects(call('claim.acquire', { item }, 'acquire'), /conflict/);
 }));
+test('provenance-only partial acquire can be safely released', () => withGithub(async ({ call, set, state }) => {
+  set('_fault', 'before:Assign');
+  await assert.rejects(call('claim.acquire', { item }, 'acquire'));
+  set('_fault', null);
+  const record = JSON.parse(state().responses.ItemValues.node.fieldValues.nodes.find((value: any) => value.field.id === 'F-claim').text);
+  assert.deepEqual(await call('claim.release', { item, token: record.token }, 'release'), { released: true });
+  assert.equal((await call('claim.read', { item })).claim.actor, null);
+}));

@@ -119,13 +119,14 @@ export class Claims {
       }
       if (previous) throw new AdapterFailure('unknown_outcome', 'unknown', 'release requires mutation reconciliation before retry');
       if (record.state !== 'active') fail('conflict', 'claim is no longer active');
-      this.require(initial, record, [record.actor], ['Todo', 'In Progress']);
+      const originalOwners = initial.status === 'Todo' && initial.owners.length === 0 ? [] : [record.actor];
+      this.require(initial, record, originalOwners, ['Todo', 'In Progress']);
       const entry = { request, state: 'pending', intent: record, phase: 'prepared', result: undefined as any }; store.write(name, entry);
       try {
         entry.phase = 'writing'; store.write(name, entry);
         const actor = (await github.query('Actor', github.variables())).viewer;
         if (actor.login !== record.actor || !actor.id) fail('authentication', 'authenticated actor changed');
-        await github.query('Unassign', { issue: id, actor: actor.id });
+        if (originalOwners.length) await github.query('Unassign', { issue: id, actor: actor.id });
         this.require(await this.snapshot(id), record, [], [initial.status]);
         if (initial.status !== 'Todo') await github.query('FieldStatus', { project: github.context.backlog, item: initial.projectItem, field: initial.config.mappings.Status.field, option: initial.config.mappings.Status.values.Todo });
         this.require(await this.snapshot(id), record, [], ['Todo']);
