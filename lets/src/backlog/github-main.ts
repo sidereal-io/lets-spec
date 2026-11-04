@@ -20,6 +20,7 @@ export async function dispatch(request: Record<string, any>, query: Query = ghQu
   if (item && (item.provider !== context.provider || item.backlog !== context.backlog)) fail('invalid_request', 'item scope differs from request context');
   const page = (items: any[]) => ({ items, complete: true, nextCursor: null });
   switch (request.operation) {
+    case 'mutation.read': return new Claims(github, mappings).reconcile(request.input.mutationId);
     case 'claim.acquire': return new Claims(github, mappings).acquire(request);
     case 'claim.read': return new Claims(github, mappings).read(item.id);
     case 'backlog.list': return page(await github.discover());

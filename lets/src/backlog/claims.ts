@@ -48,7 +48,7 @@ export class Claims {
     const store = new Store(github.context.cwd); const name = mutationName(request);
     return store.lock(scope(github.context), async () => {
       const previous = store.read(name);
-      if (previous) {
+      if (previous && previous.state !== 'absent') {
         if (JSON.stringify(previous.request) !== JSON.stringify(request)) fail('invalid_request', 'mutation key cannot be rebound');
         if (previous.state !== 'applied') throw new AdapterFailure('unknown_outcome', 'unknown', 'acquire requires mutation reconciliation before retry');
         const state = await this.snapshot(id); this.require(state, previous.intent, [github.context.actor], ['In Progress']);
@@ -56,7 +56,7 @@ export class Claims {
       }
       const initial = await this.writable(id);
       if (initial.issue.closed || initial.owners.length || initial.status !== 'Todo' || initial.provenance?.state === 'active') fail('conflict', 'item is already owned or not Todo');
-      const record: Provenance = { version: 1, provider: 'github', repository: github.context.repository, backlog: github.context.backlog!, item: id, generation: randomUUID(), actor: github.context.actor, session: github.context.session, token: randomUUID(), state: 'active' };
+      const record: Provenance = previous?.intent ?? { version: 1, provider: 'github', repository: github.context.repository, backlog: github.context.backlog!, item: id, generation: randomUUID(), actor: github.context.actor, session: github.context.session, token: randomUUID(), state: 'active' };
       const entry = { request, state: 'pending', intent: record, phase: 'prepared', result: undefined as any };
       store.write(name, entry);
       let started = false;
@@ -76,6 +76,24 @@ export class Claims {
         if (error instanceof AdapterFailure) throw new AdapterFailure(error.category, started ? error.effects === 'unknown' ? 'unknown' : 'partial' : 'none', error.message);
         throw new AdapterFailure('unknown_outcome', 'unknown', 'claim interrupted; reconcile mutation before progression');
       }
+    });
+  }
+
+  async reconcile(mutationId: string) {
+    const context = this.github.context; const store = new Store(context.cwd);
+    const name = mutationName({ context, mutationId });
+    return store.lock(scope(context), async () => {
+      const entry = store.read(name);
+      if (!entry) return { state: 'unknown' };
+      const id = entry.request.input.item.id;
+      const current = await this.snapshot(id);
+      if (entry.request.operation !== 'claim.acquire') return { state: 'unknown' };
+      if (entry.phase === 'prepared') { entry.state = 'absent'; store.write(name, entry); return { state: 'absent' }; }
+      if (current.provenance && JSON.stringify(current.provenance) !== JSON.stringify(entry.intent)) fail('conflict', 'mutation claim was replaced or released');
+      if (!current.provenance || !current.owners.length || current.status === 'Todo') return { state: 'unknown' };
+      this.require(current, entry.intent, [context.actor], ['In Progress']);
+      const result = await this.read(id); entry.state = 'applied'; entry.result = result; store.write(name, entry);
+      return { state: 'applied', result };
     });
   }
 }
