@@ -1,0 +1,19 @@
+## 1. The test seam
+
+- [ ] 1.1 [easy] A new test `lets-go's Start names lets-build's sections and adds one command` fails: `skills/lets-go/SKILL.md` does not exist, so it cannot name *Find the source of demand*, *Confirm the packet*, *Route* and *Claim*, hold `gh issue view <i> --json createdAt`, hold the shape skip line and the level line, and hold no `gh project item-edit` (verify: bats tests/skill-interfaces.bats --filter "lets-go's Start")
+- [ ] 1.2 [easy] A new test `lets-go runs each step through lets delegate step` fails, and `lets-go` joins the loops of the three tests that check every skill that delegates: it must say `lets delegate step instructions --for <step>`, `lets delegate step run --for <step>`, `delegate.step.<step>.guidance`, the ranking sentence, the empty-options sentence, `.workspace/lets-go/<name>-<step>-prompt.md`, `.workspace/lets-delegate/<name>-<step>.prompt.md`, `step-report` and `**3**: no fresh session can run here` (verify: bats tests/skill-interfaces.bats --filter "lets-go runs each step")
+- [ ] 1.3 [easy] A new test `lets-go relays a step's questions` fails: the skill must hold `.workspace/lets-go/<name>-<step>-answers.yaml`, `--answers-file`, `lets-go accepted the step's recommendation; the user did not decide`, `asked a settled question again` and `Skipped propose review: not in the lets-minimal route.` (verify: bats tests/skill-interfaces.bats --filter "lets-go relays")
+- [ ] 1.4 [easy] A new test `lets-go ships in both flows with a routing row` fails: `flows.json` must list `lets-go` under both flows, and `overlays/AGENTS.md` and `README.md` must each hold a row whose request is `Take a shaped chore to a ready pull request in one run` and whose answer names `lets-go`; `lets-go` joins the entry-point case of the flow-ships test (verify: bats tests/skill-interfaces.bats --filter "lets-go ships")
+
+## 2. The skill, the flows and the docs [depends-on: 1]
+
+- [ ] 2.1 [medium] `skills/lets-go/SKILL.md` has its frontmatter and a *Start* section as design D-1 says: the issue-number and default-branch gates, `lets-build`'s four sections by name, the Kind gate where the Project fields are read, the `createdAt` command, the shape skip line and the level line; 1.1 passes (verify: bats tests/skill-interfaces.bats --filter "lets-go's Start")
+- [ ] 2.2 [medium] The skill's *Run a step* section as design D-2, D-5 and D-6 say: the prompt frame with the `## Answers` rule and the report rules, the what-to-run table for the three steps, `step instructions`, the ranking, `step run` with its files and effort, the exit codes, and the exit 3 subagent step with the per-outcome report checks; 1.2 passes (verify: bats tests/skill-interfaces.bats --filter "lets-go runs each step")
+- [ ] 2.3 [medium] The skill's *Relay* and *End of the run* sections as design D-3 and D-4 say: answering a recommended question with the marker, asking the rest one at a time, the growing answers file, the resume, the repeated-question and `failed` stops, the propose review skip line, and the one-line-per-step report with the pull request URL; 1.3 passes (verify: bats tests/skill-interfaces.bats --filter "lets-go relays")
+- [ ] 2.4 [easy] [parallel] `flows.json` lists `lets-go` in both flows, `overlays/AGENTS.md` gets the routing row in its table's form, and the README gets the row in its usage table, `lets-go` in its skill list, and a short `lets-go` section under *Usage*; 1.4 passes (verify: bats tests/skill-interfaces.bats --filter "lets-go ships")
+
+## 3. Integration [depends-on: 2]
+
+- [ ] 3.1 [easy] The whole suite and the flake pass, including the flow-ships test with `lets-go` as an entry point, the `gh` command check and the `lets delegate step` phrasing check (verify: pnpm test && nix flake check)
+
+## Deviations Ledger
