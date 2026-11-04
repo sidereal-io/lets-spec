@@ -27,6 +27,18 @@ Says how `lets go level` reads the user's default interactivity level, `go.level
 - **WHEN** the file holds `version: 3` and a line `go:` with nothing under it
 - **THEN** `lets go level` exits 0, and stdout is `{"level":null}`
 
+#### Scenario: A null level
+- **WHEN** the file holds `version: 3` and `go.level: null`
+- **THEN** `lets go level` exits 0, and stdout is `{"level":null}`
+
+#### Scenario: A go key with no level
+- **WHEN** the file holds `version: 3` and `go.verbose: true`, and no `go.level`
+- **THEN** `lets go level` exits 0, and stdout is `{"level":null}`
+
+#### Scenario: No resolver is asked
+- **WHEN** the file holds `version: 3`, `delegate.resolvers: [t3]` and `go.level: recommend`, and the user runs `lets go level`
+- **THEN** no resolver is asked to detect, run, start or finish a session
+
 #### Scenario: The file under XDG_CONFIG_HOME
 - **WHEN** `XDG_CONFIG_HOME` is `/cfg`, and `/cfg/lets/config.yaml` holds `version: 3` and `go.level: recommend`
 - **THEN** `lets go level` prints `{"level":"recommend"}`
@@ -43,7 +55,7 @@ Says how `lets go level` reads the user's default interactivity level, `go.level
 - **THEN** `lets go level` exits 0, and stdout is `{"level":"ask"}`
 
 ### Requirement: A bad go.level stops the command
-`lets go level` SHALL exit 2, print nothing on stdout, and name the config file and the bad key on stderr when `go` is present and is not a mapping, or when `go.level` is present and is not `ask` or `recommend`. When the file is not a valid config as *delegate-config*'s *The config file* says for the document and its `version`, it SHALL exit 2 and name the file and the bad value, the same way.
+`lets go level` SHALL exit 2 and print nothing on stdout in each of these cases: `go` is present and is not a mapping; `go.level` is present and is not `ask` or `recommend`; the document or its `version` is invalid, as *delegate-config*'s *The config file* says. Stderr SHALL name the config file and the bad key or value.
 
 #### Scenario: A level lets does not know
 - **WHEN** the file holds `version: 3` and `go.level: loud`
@@ -70,4 +82,4 @@ Says how `lets go level` reads the user's default interactivity level, `go.level
 
 #### Scenario: The command's help
 - **WHEN** the user runs `lets go level --help`
-- **THEN** the output names `go.level`, `ask` and `recommend`
+- **THEN** the output names `config.yaml`, `go.level`, `ask` and `recommend`, and the exit codes `0` and `2`

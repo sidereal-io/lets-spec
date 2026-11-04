@@ -6,7 +6,7 @@
 
 - A new key in the `lets` config, `go.level`, holds the user's default interactivity level, `ask` or `recommend` (D1, D3).
 - A new command, `lets go level`, reads the key and prints it as one JSON line. It is the only `lets go` command this change adds (D2). A bad value makes it exit 2 and name the file and the key (D3). The `lets delegate` commands keep ignoring `go` (D4).
-- `lets-go` runs `lets go level` when it sets the level. A level named in the request still wins. Then the config's level. Then the Kind's default, or `ask` before a shape step (D5, D6). When the config picked the level, the line reads `Interactivity: <level>, because your lets config sets go.level.` (D7). When the command fails, `lets-go` shows its stderr and stops (D8).
+- `lets-go` runs `lets go level` once, when it reads the request, before it asks GitHub for anything. A level named in the request still wins. Then the config's level. Then the Kind's default, or `ask` before a shape step (D5, D6). When the config picked the level, the line reads `Interactivity: <level>, because your lets config sets go.level.` (D7). When the command fails, `lets-go` shows its stderr and stops (D8).
 - The README says how to set a default, and the config example shows `go.level` (D10).
 - The config version stays `3` (D9). No ADR (D11). No new glossary term (D12).
 
@@ -17,13 +17,13 @@
 
 ### Modified Capabilities
 - `delegate-config`: *The config file* may hold a `go` section, which the `lets delegate` commands ignore.
-- `lets-go`: *lets-go picks the interactivity level and says why* gains the config's level between the request's and the Kind's, and the new line. *The prose holds the fixed lines the tests check* gains the new line and the command.
+- `lets-go`: *lets-go picks the interactivity level and says why* gains the command, the config's level between the request's and the Kind's, and the new line. *Start reuses lets-build* lists `lets go level` among the commands Start adds. *The prose holds the fixed lines the tests check* gains the new line and the command.
 
 ## Impact
 
-- `lets/src/delegate/config.ts`: keep `go` as written, and read `go.level` through a checked reader.
+- `lets/src/delegate/config.ts`: split the document check out of `parseConfig`, and add a reader for `go.level`.
 - `lets/src/go/level.ts`, new: the command. `lets/src/main.ts`: the `lets go` group and its help.
-- `skills/lets-go/SKILL.md`: *Start* step 10 and *Run the shape step* step 2.
-- `README.md`: the `lets-go` section and the config example under *Set up delegation*.
+- `skills/lets-go/SKILL.md`: *Start* steps 2 and 10, and *Run the shape step* step 2.
+- `README.md`: the `lets-go` section, and the config example and closing sentence under *Set up delegation*.
 - Tests: `tests/lets/delegate/config.test.ts`, `tests/lets/delegate/cli.test.ts`, a new `tests/lets/go/level.test.ts`, and `tests/skill-interfaces.bats`.
 - No dependency, API or data change. Nothing breaks for a config without `go`.
