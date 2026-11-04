@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Says what the `lets-go` skill does for a shaped Chore, Bug or Story: where it starts, what it skips and how it says so, which interactivity level it picks, how it runs each step and reads its report, how it relays a step's questions to the user, and how the run ends.
+Says what the `lets-go` skill does for a shaped Chore, Bug or Story, or for an idea in words: where it starts, how it shapes an idea or an unshaped issue, what it skips and how it says so, which interactivity level it picks, how it runs each step and reads its report, how it relays a step's questions to the user, and how the run ends.
 
 ## Requirements
 
