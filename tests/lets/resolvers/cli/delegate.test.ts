@@ -81,6 +81,32 @@ test('handoff instructions skip cli with codex on PATH, running nothing, and the
   assert.deepEqual(io.calls, []);
 });
 
+const stepInstructions = { strategy: 'step', for: 'apply' } as const;
+const CLI_THEN_DEFAULT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
+
+test('step instructions answer cli with the models codex lists', async () => {
+  const listing = { stdout: JSON.stringify({ models: [{ slug: 'gpt-6-luna', visibility: 'list' }] }), stderr: '', code: 0 };
+  const t = withCli(fakeIo({ commands: ['codex'], results: [listing] }), CLI_THEN_DEFAULT);
+  assert.equal(await instructions(stepInstructions, t.deps), 0);
+  const { strategy, resolver, options } = JSON.parse(t.stdout());
+  assert.deepEqual({ strategy, resolver, options }, { strategy: 'step', resolver: 'cli', options: ['gpt/gpt-6-luna'] });
+});
+
+test('step instructions list the bare family when codex is signed out, and warn naming codex', async () => {
+  const t = withCli(fakeIo({ commands: ['codex', 'claude'], results: [{ stdout: '', stderr: 'not logged in', code: 1 }] }));
+  assert.equal(await instructions(stepInstructions, t.deps), 0);
+  assert.deepEqual(JSON.parse(t.stdout()).options, ['gpt', 'claude']);
+  assert.match(t.stderr(), /^lets delegate: .*codex/);
+});
+
+test('with no family CLI on PATH, the default answers a step next, starting nothing', async () => {
+  const io = fakeIo({ commands: [] });
+  const t = withCli(io, CLI_THEN_DEFAULT);
+  assert.equal(await step({ for: 'apply', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['claude'] }, t.deps), 3);
+  assert.match(t.stderr(), /\.workspace\/lets-delegate\/build-x\.prompt\.md/);
+  assert.deepEqual(io.calls, []);
+});
+
 // An io with every CLI on PATH, whose one run prints FINDINGS: codex in its
 // last-message file, the others on stdout.
 const answering = () => {
