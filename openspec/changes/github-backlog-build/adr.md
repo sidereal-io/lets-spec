@@ -14,4 +14,4 @@ Reviewed every existing record. The executable protocol is already fixed by the 
 
 ## New Durable ADRs Created
 
-- [ADR-015: Persist backlog identity with the change](../../../../docs/decisions/ADR-015-persist-backlog-identity-with-the-change.md).
+- [ADR-015: Persist backlog identity with the change](../../../docs/decisions/ADR-015-persist-backlog-identity-with-the-change.md).
