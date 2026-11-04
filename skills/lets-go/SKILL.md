@@ -201,3 +201,79 @@ prompt, with any answers added.
    `date -u +%Y-%m-%dT%H:%M:%SZ`.
 5. Write the report as one JSON line, `outcome` first, to
    `.workspace/lets-go/<name>-<step>-report.json`.
+
+## Read the report
+
+Read `outcome` from `.workspace/lets-go/<name>-<step>-report.json`:
+
+- **`done`**: go on to the next step. After `propose`, print this line
+  before you run `apply`. A chore's route is `lets-minimal`, which has no
+  propose review:
+
+  ```text
+  Skipped propose review: not in the lets-minimal route.
+  ```
+
+  After `apply-review`, go to [End of the run](#end-of-the-run).
+- **`needs-input`**: [relay its questions](#relay-the-questions).
+- **`failed`**: print the lines of [End of the run](#end-of-the-run) for
+  the steps so far, ending with the failed one. Name the step and the
+  branch `<name>`, and say that running `lets-build` on that branch
+  carries the change on. Stop. Never run a failed step again.
+
+## Relay the questions
+
+The answers go in `.workspace/lets-go/<name>-<step>-answers.yaml`, one
+file per step.
+
+1. If any question's exact text is already in that file, the step did
+   not read its answers. Say that the step asked a settled question
+   again, name the step, show the user the report, and stop.
+2. Go through the questions in the report's order:
+   - **With a `recommendation`**: take it as the answer. Tell the user
+     the question and the answer you gave. Write the answer as the
+     recommendation followed by
+     ` (lets-go accepted the step's recommendation; the user did not decide)`.
+   - **Without one**: ask the user that question alone. Wait for the
+     answer before the next question.
+3. Append each pair, in order, to the answers file. It is a YAML list of
+   `question` and `answer` mappings, and keeps the pairs of earlier
+   rounds. Quote each value, so YAML keeps it whole:
+
+   ```yaml
+   - question: "Which schema should the change use?"
+     answer: "lets-minimal (lets-go accepted the step's recommendation; the user did not decide)"
+   - question: "Do you confirm the ledger?"
+     answer: "yes"
+   ```
+
+4. [Run the step](#run-a-step) again with the same prompt file. Add
+   `--answers-file .workspace/lets-go/<name>-<step>-answers.yaml` to
+   `lets delegate step run`. Ask for the options again, and rank them
+   again. Exit 3 goes to the subagent step as before.
+
+A step's rounds go on until its report is `done` or `failed`.
+
+## End of the run
+
+When `apply-review` reports `done`, its *Finish the change* has marked
+the pull request ready for review. Print one line per step, in order:
+
+```text
+Skipped shape: #<i>'s packet is complete, last edited <date>.
+Done propose: <date>. <evidence>
+Skipped propose review: not in the lets-minimal route.
+Done apply: <date>. <evidence>
+Done apply review: <date>. <evidence>
+```
+
+`<date>` on a `Done` line is the report's `date`, and `<evidence>` is its
+`evidence`, joined with `; `. A failed step prints
+`Failed <step>: <reason>` instead. Then print the pull request's URL:
+
+```bash
+gh pr view <name> --json url --jq .url
+```
+
+`lets-go` keeps no state of its own. Its files in `.workspace/lets-go/`
+are scratch.
