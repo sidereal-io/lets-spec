@@ -39,10 +39,11 @@ export function readConfig(deps: ConfigDeps): Config | null {
   return text === null ? null : parseConfig(text, path);
 }
 
-// The config in text, read from path. Throws as readConfig does.
-export function parseConfig(text: string, path: string): Config {
+// The document in text, read from path, with every key as written. Throws a
+// UsageError that names the file when it is not YAML, not a mapping, or not
+// version 3. Each command group checks only its own section of it.
+export function parseDocument(text: string, path: string): Record<string, unknown> {
   const fail = (message: string) => new UsageError(`${path}: ${message}.`);
-  const show = (value: unknown) => JSON.stringify(value) ?? String(value);
   let value: unknown;
   try {
     value = parse(text);
@@ -51,6 +52,13 @@ export function parseConfig(text: string, path: string): Config {
   }
   if (!isObject(value)) throw fail(`must be a mapping with version, got ${show(value)}`);
   if (value.version !== CONFIG_VERSION) throw fail(`version must be ${CONFIG_VERSION}, got ${show(value.version)}`);
+  return value;
+}
+
+// The config in text, read from path. Throws as readConfig does.
+export function parseConfig(text: string, path: string): Config {
+  const fail = (message: string) => new UsageError(`${path}: ${message}.`);
+  const value = parseDocument(text, path);
   const delegate = value.delegate ?? {};
   if (!isObject(delegate)) throw fail(`delegate must be a mapping, got ${show(delegate)}`);
   const config: Config = { version: CONFIG_VERSION, delegate: {} };
@@ -86,6 +94,10 @@ export function guidanceFor(config: Config | null, strategy: Strategy, intent: I
   if (guidance === undefined || guidance === null) return null;
   if (typeof guidance !== 'string') throw fail(`delegate.${strategy}.${intent}.guidance`, 'a string', guidance);
   return guidance;
+}
+
+function show(value: unknown): string {
+  return JSON.stringify(value) ?? String(value);
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
