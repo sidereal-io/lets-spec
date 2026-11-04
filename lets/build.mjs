@@ -10,7 +10,7 @@ import { chmodSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { build } from 'esbuild';
 
-const outfile = join(resolve(process.argv[2] ?? 'dist'), 'lets');
+const outputDirectory = resolve(process.argv[2] ?? 'dist');
 const banner = `#!/usr/bin/env node
 import { createRequire as __letsCreateRequire } from 'node:module';
 const require = __letsCreateRequire(import.meta.url);
@@ -19,8 +19,10 @@ if (Number(process.versions.node.split('.')[0]) < 26) {
   process.exit(1);
 }`;
 
+for (const [name, entry] of [['lets', 'src/main.ts'], ['lets-backlog-github', 'src/backlog/github-entry.ts']]) {
+const outfile = join(outputDirectory, name);
 await build({
-  entryPoints: ['src/main.ts'],
+  entryPoints: [entry],
   outfile,
   bundle: true,
   platform: 'node',
@@ -30,3 +32,5 @@ await build({
   logLevel: 'warning',
 });
 chmodSync(outfile, 0o755);
+
+}

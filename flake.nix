@@ -124,6 +124,7 @@
 
         # The lets bundle.
         lets-bundle = program "lets";
+        github-adapter = program "lets-backlog-github";
 
         # The release's version, the OpenSpec CLI that generated its
         # openspec-* skills, and the commit it was built from.
@@ -143,7 +144,8 @@
             install -Dm755 ${lets-bundle}/libexec/lets $out/libexec/lets
             install -Dm644 ${releaseJson} $out/release.json
             makeWrapper ${pkgs.nodejs_26}/bin/node $out/bin/lets \
-              --add-flags $out/libexec/lets
+              --add-flags $out/libexec/lets \
+              --prefix PATH : ${lib.makeBinPath [ github-adapter pkgs.git pkgs.gh ]}
           '';
 
         # lets, bound to one release.
@@ -171,6 +173,7 @@
           cp ${./docs/backlog-adapter-contract.md} $out/docs/backlog-adapter-contract.md
           mkdir -p $out/bin $out/releases
           cp ${lets-cli}/libexec/lets $out/bin/lets
+          cp ${github-adapter}/libexec/lets-backlog-github $out/bin/lets-backlog-github
           ${lib.concatMapStringsSep "\n" (flow: "cp -R ${release flow} $out/releases/${flow}") (lib.attrNames flows)}
           cp ${lets-cli}/release.json $out/release.json
         '';
@@ -179,10 +182,10 @@
         # Node for lets, and the gh the skills call.
         bundle = flow: pkgs.buildEnv {
           name = "lets-spec-${flow}";
-          paths = [ openspec (lets flow) pkgs.gh pkgs.nodejs_26 ];
+          paths = [ openspec (lets flow) github-adapter pkgs.gh pkgs.nodejs_26 ];
         };
       in
-        { inherit openspec openspec-skills lets-cli dist; default = bundle "standard"; }
+        { inherit openspec openspec-skills lets-cli github-adapter dist; default = bundle "standard"; }
         // lib.genAttrs (lib.attrNames flows) bundle);
 
       apps = forAllSystems (pkgs: {
@@ -287,7 +290,8 @@
           { nativeBuildInputs = [ pkgs.nodejs_26 pkgs.git pkgs.jq (packagesFor pkgs).openspec ]; }
           ''
             export HOME="$TMPDIR"
-            [ "$(ls ${dist}/bin)" = lets ]
+            [ "$(ls ${dist}/bin)" = "$(printf 'lets\nlets-backlog-github')" ]
+            [ -x ${dist}/bin/lets-backlog-github ]
             [ -x ${dist}/bin/lets ]
             [ "$(head -n 1 ${dist}/bin/lets)" = '#!/usr/bin/env node' ]
             [ ! -e ${dist}/node_modules ]
@@ -296,7 +300,12 @@
             [ ! -e ${dist}/resolvers ]
             [ "$(ls ${dist}/releases)" = "${names}" ]
             [ "$(jq -r .openspec ${dist}/release.json)" = "${pkgs.openspec.version}" ]
-            # One standalone kit smoke check; node-tests runs the full suite.
+            # Run the complete standalone suite from an isolated release directory.
+            mkdir isolated
+            cd isolated
+            node --test "${dist}/tests/backlog-adapter-kit/*.test.ts"
+            cd ..
+            # Keep the representative standalone round-trip smoke check too.
             node --input-type=module <<'JS'
             import { withAdapter, story } from '${dist}/tests/backlog-adapter-kit/fixtures/adapter.ts';
             await withAdapter(async ({ call }) => {

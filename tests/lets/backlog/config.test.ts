@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { METADATA } from '../../../lets/src/backlog/items.ts';
 const mappings = Object.fromEntries(Object.entries(METADATA).map(([field, values]) => [field, { field, cardinality: 'one', values: Object.fromEntries(values.map(value => [value, value])) }]));
 function fixture(run: (cwd: string) => void) {
+  mkdirSync(join(process.cwd(), '.workspace'), { recursive: true });
   const cwd = mkdtempSync(join(process.cwd(), '.workspace/config-'));
   try {
     mkdirSync(join(cwd, 'bin')); writeFileSync(join(cwd, 'bin/lets-backlog-github'), '#!/bin/sh\nexit 0\n'); chmodSync(join(cwd, 'bin/lets-backlog-github'), 0o700);

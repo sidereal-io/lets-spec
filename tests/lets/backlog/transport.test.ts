@@ -1,10 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, chmod, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, writeFile, chmod, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { invoke } from '../../../lets/src/backlog/transport.ts';
 const request = { protocol: 1, operation: 'backlog.check', context: { cwd: process.cwd(), provider: 'github', backlog: 'b', repository: 'r', actor: 'a', session: 's' }, input: {} };
 async function adapter(source: string, run: (path: string) => Promise<void>) {
+  await mkdir(join(process.cwd(), '.workspace'), { recursive: true });
   const dir = await mkdtemp(join(process.cwd(), '.workspace/transport-'));
   try {
     const path = join(dir, 'adapter');
