@@ -6,7 +6,7 @@ definitions and an offline executable conformance harness. Running conformance
 SHALL require neither provider credentials nor network access and SHALL NOT
 mutate production backlogs or migrate the production workflow.
 
-#### Scenario: Offline conformance runs
+#### Scenario: Contract work ships
 - **WHEN** a maintainer runs the conformance suite without provider credentials or network access
 - **THEN** the suite exercises local fixtures successfully
 - **AND** no production provider calls or workflow migrations occur
