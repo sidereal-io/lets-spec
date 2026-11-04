@@ -270,6 +270,36 @@ test('a gemini step at medium effort runs agy in its write mode, with the step\'
     '--model', 'gemini-3.8-flash-medium', '--print-timeout', '30m', '-p', 'PROMPT TEXT']]]);
 });
 
+// A step on models, with 3 minutes, whose CLIs answer with results in order.
+const scriptedStep = async (models: string[], results: NonNullable<Parameters<typeof fakeIo>[0]>['results'], commands = ['codex', 'claude']) => {
+  const t = withCli(fakeIo({ commands, results }));
+  const code = await step(stepOptions({ models, timeoutMinutes: 3 }), t.deps);
+  return { code, stdout: t.stdout(), stderr: t.stderr() };
+};
+
+test('a step whose CLI prints and then exits non-zero is a failed report, with no handle', async () => {
+  const answer = await scriptedStep(['claude'], [{ stdout: 'half an answer', stderr: 'rate limited', code: 2 }]);
+  assert.equal(answer.code, 0);
+  const { outcome, reason } = JSON.parse(answer.stdout);
+  assert.equal(outcome, 'failed');
+  assert.match(reason, /claude failed: exit 2: rate limited/);
+  assert.equal(JSON.parse(answer.stderr).handle, null);
+});
+
+test('a codex step that writes no last message is a failed report naming step-report', async () => {
+  const answer = await scriptedStep(['gpt'], [{ stdout: 'working...', stderr: '', code: 0 }]);
+  assert.equal(answer.code, 0);
+  const { outcome, reason } = JSON.parse(answer.stdout);
+  assert.equal(outcome, 'failed');
+  assert.match(reason, /step-report/);
+});
+
+test('a step whose CLI runs past its time limit is stopped, and is exit 6', async () => {
+  const answer = await scriptedStep(['claude'], [{ stdout: '', stderr: '', code: 1, timedOut: true }]);
+  assert.deepEqual([answer.code, answer.stdout], [6, '']);
+  assert.match(answer.stderr, /claude did not finish in 3 minutes/);
+});
+
 // The adapter itself: the chain only ever finishes a handle the adapter
 // made, so these cases cannot be reached through a command.
 
