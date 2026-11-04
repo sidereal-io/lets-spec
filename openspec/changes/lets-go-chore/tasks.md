@@ -14,7 +14,7 @@
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [easy] The whole suite and the flake pass, including the flow-ships test with `lets-go` as an entry point, the `gh` command check and the `lets delegate step` phrasing check (verify: pnpm test && nix flake check)
+- [x] 3.1 [easy] The whole suite and the flake pass, including the flow-ships test with `lets-go` as an entry point, the `gh` command check and the `lets delegate step` phrasing check (verify: pnpm test && nix flake check) (✓ pnpm test passed: 598 node tests, 134 bats tests; nix flake check passed)
 
 ## Deviations Ledger
 
