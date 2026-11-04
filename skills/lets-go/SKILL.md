@@ -1,6 +1,6 @@
 ---
 name: lets-go
-description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. Shape, propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation; a story or a shape runs at ask, where the user answers every question. Name ask or recommend to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, says lets-go, or runs lets-go again after a run stopped.
+description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation; a story or a shape runs at ask, where the user answers every question. Name ask or recommend to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, says lets-go, or runs lets-go again after a run stopped.
 ---
 
 # Let's go
@@ -9,7 +9,8 @@ Take one story, bug or chore to a pull request ready for review, in one
 run. Start from its issue number, or from an idea in words. *Start*
 claims the issue in this session. Then each step runs in a fresh
 session: shape when the issue needs it, then propose, apply and apply
-review. A step never
+review. An idea too large for one issue runs discovery in the shape
+step, and the run builds the first ready story it files. A step never
 asks the user. It ends with a report. This session answers its questions
 or asks the user, as the interactivity level says. Run every command
 below from the repo root.

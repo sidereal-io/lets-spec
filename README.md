@@ -251,8 +251,14 @@ a fresh session, and creates one issue. An issue whose packet is not
 complete, or has comments shaping has not read, gets the same shape
 step. The shape step runs at `ask`, unless you name a level, because
 there is no Kind yet. After it, the run goes on as for an issue number.
-An idea too large for one issue stops the run: shape it with
-`lets-shape` instead.
+An idea too large for one issue runs discovery, once you say yes. The
+shape step runs `lets-shape`'s discovery one phase per round, and you
+confirm each phase. Discovery files a parent issue and its stories. The
+run then picks the first ready story, as `lets-build` picks the next
+one, and builds it. The discovery map, `openspec/discovery.md`, is
+committed on that story's branch, so it reaches the default branch with
+that story's pull request. When no story is ready, the run says why, and
+stops.
 
 An open blocker stops a run until the change's branch exists. Once you
 have stacked the branch by hand, `lets-go` names the open blockers and
