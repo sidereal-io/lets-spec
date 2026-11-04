@@ -23,6 +23,7 @@ export async function invoke(
     validateRequest(request);
     if (
       !Number.isFinite(timeoutMs) ||
+      timeoutMs > 2 ** 31 - 1 ||
       timeoutMs <= 0 ||
       !Number.isSafeInteger(maxBytes) ||
       maxBytes <= 0

@@ -126,3 +126,19 @@ test('large Unicode packets survive executable stdin chunk boundaries', () =>
     assert.equal(item.body, body);
   }));
 
+test('timer-overflow deadlines are rejected before launching an adapter', async () => {
+  let launched = false;
+  await assert.rejects(invoke('unused', request, {
+    timeoutMs: 3e9,
+    io: { async execFile() {
+      launched = true;
+      return { stdout: '', stderr: '', code: 0 };
+    } },
+  }), (error: unknown) => {
+    assert.ok(error instanceof AdapterFailure);
+    assert.equal(error.category, 'invalid_request');
+    assert.equal(error.effects, 'none');
+    return true;
+  });
+  assert.equal(launched, false);
+});
