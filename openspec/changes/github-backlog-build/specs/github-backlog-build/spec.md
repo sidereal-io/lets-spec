@@ -48,6 +48,10 @@ GitHub claims SHALL report best-effort guarantees. Acquire SHALL check unowned s
 - **WHEN** another session sharing the authenticated account attempts to acquire or release a claimed item
 - **THEN** it receives a conflict and the first session's ownership remains intact
 
+#### Scenario: Resume requires explicit continuation
+- **WHEN** two local callers address the same change, but only one supplies its original continuation handle
+- **THEN** only that caller can resume the recorded session; the other cannot adopt it from shared private storage
+
 #### Scenario: Status update fails after assignment
 - **WHEN** assignment succeeds but moving to In Progress fails
 - **THEN** acquire reports partial effects and build does not start
