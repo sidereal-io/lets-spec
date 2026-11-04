@@ -162,5 +162,8 @@ build_bundles() {
   [ "$(head -n 1 "$bin")" = '#!/usr/bin/env node' ]
   run bash -c 'printf "{}" | node "$1"' _ "$bin"
   [ "$status" -eq 1 ]
+  jq -e '.ok == false and .error.category == "unsupported" and .error.effects == "none"' <<<"$output"
+  run bash -c 'printf "{\"protocol\":1}" | node "$1"' _ "$bin"
+  [ "$status" -eq 1 ]
   jq -e '.ok == false and .error.category == "invalid_request" and .error.effects == "none"' <<<"$output"
 }
