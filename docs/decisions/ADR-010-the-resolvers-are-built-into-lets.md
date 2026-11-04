@@ -9,7 +9,7 @@ description: Architecture decision record (ADR) for running the t3, cli and suba
 # ADR-010: The resolvers are built into lets, and the config names them
 
 > Execution and extension boundary replaced by
-> [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md):
+> [ADR-015](ADR-015-lets-requests-actions-and-validates-results.md):
 > lets checks policy, requests bounded actions and validates results after agent
 > tool execution across delegation and backlogs. Shipped/custom provider definitions
 > replace the closed built-in registry as the target. Explicit selection/order and

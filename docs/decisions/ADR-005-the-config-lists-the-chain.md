@@ -8,7 +8,7 @@ description: Architecture decision record (ADR) for lets asking only the resolve
 
 # ADR-005: The config lists the resolvers to ask, in order, and lets detects nothing
 
-> Reconciled by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md):
+> Reconciled by [ADR-015](ADR-015-lets-requests-actions-and-validates-results.md):
 > explicit resolver ordering, no implicit fallback and no adapter lookup on PATH
 > remain. The target permits shipped and explicitly configured custom provider
 > definitions; the agent executes bounded tool actions requested by lets.

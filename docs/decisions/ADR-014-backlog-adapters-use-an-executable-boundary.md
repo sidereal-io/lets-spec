@@ -8,7 +8,7 @@ description: Architecture decision record for independently installed backlog ad
 
 # ADR-014: Backlog adapters use an executable boundary
 
-> Superseded by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md):
+> Superseded by [ADR-015](ADR-015-lets-requests-actions-and-validates-results.md):
 > the execution hybrid spans delegation and backlogs. lets owns policy, bounded
 > action requests, sequencing, private local recovery and result validation; the
 > agent calls backend tools using shipped or custom provider definitions.

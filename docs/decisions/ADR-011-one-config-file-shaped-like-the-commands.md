@@ -8,7 +8,7 @@ description: Architecture decision record (ADR) for keeping every lets setting i
 
 # ADR-011: lets has one config file, shaped like its commands
 
-> Scoped by [ADR-015](ADR-015-built-in-adapters-with-configurable-provider-definitions.md):
+> Scoped by [ADR-015](ADR-015-lets-requests-actions-and-validates-results.md):
 > this user file owns machine settings, including delegation and machine-local
 > backlog tool options. Repository backlog selection, mappings and storage policy
 > belong under `lets.backlog` in `openspec/config.yaml`; machine options cannot

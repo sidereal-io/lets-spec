@@ -20,7 +20,8 @@ was the agreement recorded in #174/#179 and PR #181 at a912eec. The latest user
 clarification supersedes that selection with the execution hybrid below. The
 two choices are not equivalent. Earlier reviews approved the earlier choice;
 they do not approve this correction. Git history preserves the original record.
-The filename is retained so existing links continue to resolve.
+The file is renamed to match the corrected decision; the earlier name remains
+in Git history.
 
 The shared glossary's original code-only Adapter definition came from published
 checkpoint ae72942bb6546d3694a339196ad3083cee6b3a05, imported as
