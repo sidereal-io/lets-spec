@@ -109,7 +109,7 @@ records why backlog adapters use an executable boundary while delegation
 resolvers remain built into `lets`. Independent authors can choose their
 language and release schedule without loading provider dependencies into `lets`.
 This extension goal carries the cost of a versioned protocol, separate
-installation and conformance checks. Third-party adoption remains unproven.
+installation and conformance checks.
 
 Process isolation is not a sandbox. An adapter can access inherited credentials
 and local resources; separating runtime dependencies does not confine that

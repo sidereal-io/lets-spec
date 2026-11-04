@@ -49,8 +49,8 @@ to backlog adapters; ADR-010 continues to govern delegation resolvers.
   still require reconciliation before retry or progression. Process startup and
   serialization add cost to each operation.
 - Harder: protocol and packaging costs remain even if third-party adoption is
-  limited. Future maintainers must weigh that evidence before changing this
-  boundary, including the migration cost for existing external adapters.
+  limited. Before changing this boundary, maintainers must weigh how many
+  independent adapters use it and the cost of migrating them.
 
 ## Alternatives Considered
 
