@@ -245,6 +245,31 @@ test('a step with codex runs it in its write mode, and prints the report from it
   assert.deepEqual({ resolver, family, model, handle }, { resolver: 'cli', family: 'gpt', model: 'gpt-6-luna', handle: { kind: 'process', id: 'build-x' } });
 });
 
+const NEEDS_INPUT_REPORT = 'Stuck.\n\n```step-report\noutcome: needs-input\nquestions:\n  - question: Which base?\n```\n';
+
+test('a step on the bare family claude runs claude in its write mode, with no model, and prints a needs-input report', async () => {
+  const io = stepping(NEEDS_INPUT_REPORT);
+  const t = withCli(io);
+  assert.equal(await step(stepOptions({ models: ['claude'] }), t.deps), 0);
+  assert.deepEqual(argsOf(io), [['claude', ['-p', '--permission-mode', 'bypassPermissions', '--effort', 'high']]]);
+  assert.equal(JSON.parse(t.stdout()).outcome, 'needs-input');
+});
+
+test('a step runs the CLI in the repository, with the prompt on stdin, 120 minutes and no session markers', async () => {
+  const io = stepping(DONE_REPORT);
+  assert.equal(await step(stepOptions({ models: ['claude'] }), withCli(io).deps), 0);
+  const [, , { cwd, input, timeoutMs, env }] = io.calls[0];
+  assert.deepEqual([cwd, input, timeoutMs], ['/repo', 'PROMPT TEXT', 120 * 60000]);
+  assert.equal(env?.CLAUDECODE, undefined);
+});
+
+test('a gemini step at medium effort runs agy in its write mode, with the step\'s time limit', async () => {
+  const io = stepping(DONE_REPORT);
+  assert.equal(await step(stepOptions({ models: ['gemini/gemini-3.8-flash'], effort: 'medium', timeoutMinutes: 30 }), withCli(io).deps), 0);
+  assert.deepEqual(argsOf(io), [['agy', ['--mode', 'accept-edits', '--dangerously-skip-permissions', '--effort', 'medium',
+    '--model', 'gemini-3.8-flash-medium', '--print-timeout', '30m', '-p', 'PROMPT TEXT']]]);
+});
+
 // The adapter itself: the chain only ever finishes a handle the adapter
 // made, so these cases cannot be reached through a command.
 
