@@ -20,6 +20,12 @@ your own.
 
 ## Find where you are
 
+If the caller asks to finish a merged change or supplies its explicit completion
+handoff, run [Complete an archived change](#complete-an-archived-change)
+before finding new demand, even on the default branch. Continue only with the
+original private input deliberately supplied by that caller or authorized
+handoff. Never discover a handle by scanning shared Git storage.
+
 1. Find the default branch:
    `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`.
 2. Run `git branch --show-current`.
@@ -30,7 +36,7 @@ your own.
    original claim reconciliation; never infer it from title or assignment.
 4. If the branch has a folder `openspec/changes/<branch>/`, run
    `openspec instructions apply --change <branch> --json` and read `state`.
-4. Take the first row that matches:
+5. Take the first row that matches:
 
 | The current branch | `state` | Do |
 |---|---|---|
@@ -39,7 +45,7 @@ your own.
 | has a change folder | `ready` | [Apply](#apply): tasks are left |
 | has a change folder | `all_done` | [Finish the change](#finish-the-change): every task is ticked |
 | has a change folder | anything else | OpenSpec has a state this skill does not know. Show the user the `instruction` from the CLI's output, and stop. |
-| has an archived folder whose whole name is `<date>-<branch>` in `openspec/changes/archive/` | — | Say the change is archived and its pull request is ready for review. Stop. |
+| has an archived folder whose whole name is `<date>-<branch>` in `openspec/changes/archive/` | — | [Complete an archived change](#complete-an-archived-change). |
 | anything else | — | Say that `lets-build` works on the default branch, or on a change's branch, which has the change's name. Stop. |
 
 ## Find the source of demand
@@ -194,7 +200,10 @@ adds.
    [Glossary preflight](#glossary-preflight) against the proposed base.
 3. Run `lets backlog claim` with the selected scoped identity. It checks
    capabilities, creates a fresh session, journals writes and verifies the
-   claim again before work. Keep the returned continuation handle privately.
+   claim again before work. Keep the returned continuation handle privately in
+   `.workspace/<name>-backlog-continuation.json`, with repository and actor.
+   Add the change path after bind and exact PR URL after reference. This is
+   deliberate continuation input, never shared artifact data.
    Conflict, partial progress or uncertainty never authorizes implementation.
    Reconcile the original mutation before any replay. Assignment alone is
    insufficient, including another session using the same account.
@@ -327,6 +336,29 @@ ready.
    associated PR, run `lets backlog complete` with its active or archived
    change path and handle. It verifies the exact PR's merge commit through the
    code host before Done; never merge on the user's behalf.
+
+
+## Complete an archived change
+
+Use the original `.workspace/<name>-backlog-continuation.json` only when the
+caller deliberately supplies it or the authorized prior handoff passes it.
+Require its repository, actor, original handle, exact associated PR reference,
+and current archived change path. If it is missing, ask for the original
+continuation input; assignment or a published session value grants no authority.
+
+Run `lets backlog complete` with that private JSON input. It verifies the exact
+PR through the code host before reconciliation. If the PR is unmerged, report
+that it still awaits the user's merge and stop without changing Status. If it
+is merged, reconcile Done idempotently and report the recorded merge evidence.
+Conflicting identity or unknown effects stop progression without a fresh claim.
+Never merge on the user's behalf. This completion route also runs on the
+default branch when the caller supplies the explicit completion handoff.
+
+When marking a PR ready in Finish, update the retained input's change path to
+its archive path and save a private follow-up prompt under `.workspace/`:
+`Run lets-build to complete <name> using .workspace/<name>-backlog-continuation.json after its PR merges`.
+Give the user that prompt and the exact `lets backlog complete` command with
+its input file. Keep the input and follow-up out of Git, issues and PR bodies.
 
 ## Rules
 

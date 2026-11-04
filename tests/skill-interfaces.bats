@@ -353,3 +353,10 @@ load support/release
     grep -q "lets backlog $command" <<<"$output" || { echo "$output"; false; }
   done
 }
+
+@test "build routes explicit post-merge continuation before new demand" {
+  skill_says lets-build 'Complete an archived change'
+  skill_says lets-build 'before finding new demand, even on the default branch'
+  skill_says lets-build '.workspace/<name>-backlog-continuation.json'
+  skill_says lets-build 'Never discover a handle by scanning shared Git storage'
+}
