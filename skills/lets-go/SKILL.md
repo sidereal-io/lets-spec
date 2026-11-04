@@ -1,6 +1,6 @@
 ---
 name: lets-go
-description: Take one shaped chore from its issue to a pull request ready for review, in one run. Start claims the issue here; propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user names a chore issue and wants it built end to end, says lets-go with an issue number, or runs lets-go again after a run stopped.
+description: Take one shaped story, bug or chore from its issue to a pull request ready for review, in one run. Start claims the issue here; propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. A chore or a bug runs at the recommend level, where lets-go answers each question that has a recommendation; a story runs at ask, where the user answers every question. Name ask or recommend with the issue number to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user names a shaped issue and wants it built end to end, says lets-go with an issue number, or runs lets-go again after a run stopped.
 ---
 
 # Let's go
