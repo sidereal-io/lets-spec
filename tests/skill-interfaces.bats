@@ -145,8 +145,8 @@ flow_texts() {
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
-@test "the review skills say exit 3 also means no resolver started a session" {
-  for skill in lets-review-code lets-review-plan; do
+@test "each skill that delegates to a subagent says exit 3 also means no resolver started a session" {
+  for skill in lets-review-code lets-review-plan lets-go; do
     grep -q '\*\*3\*\*: no fresh session can run here, for example because no resolver started one' \
       "$repo/skills/$skill/SKILL.md" || { echo "$skill"; false; }
   done
@@ -211,7 +211,7 @@ skill_says() {
 }
 
 @test "each skill that delegates lets the guidance only rank and filter models" {
-  for skill in lets-review-code lets-review-plan lets-build; do
+  for skill in lets-review-code lets-review-plan lets-build lets-go; do
     skill_says "$skill" "The guidance only ranks and filters the listed models"
   done
 }
@@ -236,6 +236,17 @@ skill_says() {
   # lets-build's Claim sets the Status; lets-go sets no Project field itself.
   run grep -n 'gh project item-edit' "$repo/skills/lets-go/SKILL.md"
   [ "$status" -eq 1 ] || { echo "lets-go sets a Project field: $output"; false; }
+}
+
+@test "lets-go runs each step through lets delegate step" {
+  skill_says lets-go 'lets delegate step instructions --for <step>'
+  skill_says lets-go 'lets delegate step run --for <step>'
+  skill_says lets-go 'delegate.step.<step>.guidance'
+  skill_says lets-go 'the guidance first, then the order the options came in'
+  skill_says lets-go 'When `options` is empty, pass your own family'
+  skill_says lets-go '.workspace/lets-go/<name>-<step>-prompt.md'
+  skill_says lets-go '.workspace/lets-delegate/<name>-<step>.prompt.md'
+  skill_says lets-go 'step-report'
 }
 
 @test "lets-shape posts its reply with the gh command gh issue comment --body-file" {
