@@ -300,6 +300,28 @@ test('a step whose CLI runs past its time limit is stopped, and is exit 6', asyn
   assert.match(answer.stderr, /claude did not finish in 3 minutes/);
 });
 
+test('a codex that refuses a step\'s model hands it to the next --model', async () => {
+  const io = fakeIo({ commands: ['codex', 'claude'], results: [
+    { stdout: '', stderr: 'error: model gpt-6-astra not available', code: 1 },
+    { stdout: DONE_REPORT, stderr: '', code: 0 },
+  ] });
+  const t = withCli(io);
+  assert.equal(await step(stepOptions({ models: ['gpt/gpt-6-astra', 'claude'] }), t.deps), 0);
+  assert.deepEqual(io.calls.map(([cmd]) => cmd), ['codex', 'claude']);
+  assert.equal(JSON.parse(t.stdout()).outcome, 'done');
+  assert.equal(metadata(t).family, 'claude');
+});
+
+test('a step whose CLI cannot start is a refusal, exit 3, naming the CLI', async () => {
+  const io = fakeIo({ commands: ['claude'], execFile: async (cmd) => {
+    throw new Error(`cannot run ${cmd}: spawn ${cmd} EACCES`);
+  } });
+  const t = withCli(io);
+  assert.equal(await step(stepOptions({ models: ['claude'] }), t.deps), 3);
+  assert.equal(t.stdout(), '');
+  assert.match(t.stderr(), /claude/);
+});
+
 // The adapter itself: the chain only ever finishes a handle the adapter
 // made, so these cases cannot be reached through a command.
 

@@ -93,8 +93,8 @@ When `t3` or `cli` answers, the harness or the account can say no before the mod
 #### Scenario: The CLI refuses the model for a step
 - **WHEN** the config's `delegate.resolvers` is `[cli]`, and the user runs `lets delegate step run --for apply --model gpt/gpt-6-astra --model claude` with the other required options
 - **AND** codex exits 1 with nothing on stdout, and claude prints a final message with a `done` report
-- **THEN** claude runs, and the command exits 0
-- **AND** stderr has a line that starts `lets delegate: gpt/gpt-6-astra: `, and the record's `"family"` is `claude`
+- **THEN** codex runs first and claude second, and the command exits 0
+- **AND** the record on stderr has `"family"` `claude`
 
 #### Scenario: The CLI cannot start a step
 - **WHEN** the config's `delegate.resolvers` is `[cli]`, the user runs `lets delegate step run --for apply --model claude` with the other required options, and `claude` is on `PATH` but cannot be started
