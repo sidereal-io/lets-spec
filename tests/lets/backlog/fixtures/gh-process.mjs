@@ -12,6 +12,12 @@ if (name === 'FieldText' || name === 'FieldStatus') {
   const replacement = { field: { id: variables.field }, ...(name === 'FieldText' ? { text: variables.text } : { optionId: variables.option }) };
   if (value) Object.assign(value, replacement); else nodes.push(replacement);
 }
+if (name === 'Unassign') responses.IssueOwners.node.assignees.nodes = [];
+if (name === 'Unassign' && responses._replaceAfterUnassign) {
+  const value = responses.ItemValues.node.fieldValues.nodes.find(value => value.field.id === 'F-claim');
+  value.text = JSON.stringify({...JSON.parse(value.text), session:'replacement'});
+  responses.IssueOwners.node.assignees.nodes = [{login:'me'}];
+}
 if (name === 'Assign') responses.IssueOwners.node.assignees.nodes = [{ login: 'me', id: variables.actor }];
 writeFileSync(path, JSON.stringify(state));
 if (responses._fault === 'after:' + name) process.exit(1);

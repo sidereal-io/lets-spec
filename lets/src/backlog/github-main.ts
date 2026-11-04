@@ -22,6 +22,7 @@ export async function dispatch(request: Record<string, any>, query: Query = ghQu
   switch (request.operation) {
     case 'mutation.read': return new Claims(github, mappings).reconcile(request.input.mutationId);
     case 'claim.acquire': return new Claims(github, mappings).acquire(request);
+    case 'claim.release': return new Claims(github, mappings).release(request);
     case 'claim.read': return new Claims(github, mappings).read(item.id);
     case 'backlog.list': return page(await github.discover());
     case 'backlog.check': await github.project(mappings); return { valid: true, gaps: [] };

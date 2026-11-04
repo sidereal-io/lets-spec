@@ -87,6 +87,15 @@ export class Claims {
       if (!entry) return { state: 'unknown' };
       const id = entry.request.input.item.id;
       const current = await this.snapshot(id);
+      if (entry.request.operation === 'claim.release') {
+        const released = { ...entry.intent, state: 'released' };
+        if (JSON.stringify(current.provenance) === JSON.stringify(released)) {
+          this.require(current, released, [], ['Todo']); entry.state = 'applied'; entry.result = { released: true }; store.write(name, entry);
+          return { state: 'applied', result: entry.result };
+        }
+        if (current.provenance && JSON.stringify(current.provenance) !== JSON.stringify(entry.intent)) fail('conflict', 'release ownership was replaced');
+        return { state: 'unknown' };
+      }
       if (entry.request.operation !== 'claim.acquire') return { state: 'unknown' };
       if (entry.phase === 'prepared') { entry.state = 'absent'; store.write(name, entry); return { state: 'absent' }; }
       if (current.provenance && JSON.stringify(current.provenance) !== JSON.stringify(entry.intent)) fail('conflict', 'mutation claim was replaced or released');
@@ -94,6 +103,39 @@ export class Claims {
       this.require(current, entry.intent, [context.actor], ['In Progress']);
       const result = await this.read(id); entry.state = 'applied'; entry.result = result; store.write(name, entry);
       return { state: 'applied', result };
+    });
+  }
+
+  async release(request: Record<string, any>) {
+    const github = this.github; const id = request.input.item.id;
+    const store = new Store(github.context.cwd); const name = mutationName(request);
+    return store.lock(scope(github.context), async () => {
+      const previous = store.read(name);
+      if (previous && JSON.stringify(previous.request) !== JSON.stringify(request)) fail('invalid_request', 'mutation key cannot be rebound');
+      const initial = await this.writable(id); const record = initial.provenance;
+      if (!record || record.actor !== github.context.actor || record.session !== github.context.session || record.token !== request.input.token) fail('conflict', 'release requires original actor, session and token');
+      if (previous?.state === 'applied') {
+        this.require(initial, { ...previous.intent, state: 'released' }, [], ['Todo']); return { released: true };
+      }
+      if (previous) throw new AdapterFailure('unknown_outcome', 'unknown', 'release requires mutation reconciliation before retry');
+      if (record.state !== 'active') fail('conflict', 'claim is no longer active');
+      this.require(initial, record, [record.actor], ['Todo', 'In Progress']);
+      const entry = { request, state: 'pending', intent: record, phase: 'prepared', result: undefined as any }; store.write(name, entry);
+      try {
+        entry.phase = 'writing'; store.write(name, entry);
+        const actor = (await github.query('Actor', github.variables())).viewer;
+        if (actor.login !== record.actor || !actor.id) fail('authentication', 'authenticated actor changed');
+        await github.query('Unassign', { issue: id, actor: actor.id });
+        this.require(await this.snapshot(id), record, [], [initial.status]);
+        if (initial.status !== 'Todo') await github.query('FieldStatus', { project: github.context.backlog, item: initial.projectItem, field: initial.config.mappings.Status.field, option: initial.config.mappings.Status.values.Todo });
+        this.require(await this.snapshot(id), record, [], ['Todo']);
+        await github.query('FieldText', { project: github.context.backlog, item: initial.projectItem, field: initial.config.claimField, text: JSON.stringify({ ...record, state: 'released' }) });
+        this.require(await this.snapshot(id), { ...record, state: 'released' }, [], ['Todo']);
+        entry.state = 'applied'; entry.result = { released: true }; store.write(name, entry); return entry.result;
+      } catch (error) {
+        if (error instanceof AdapterFailure) throw new AdapterFailure(error.category, error.effects === 'unknown' ? 'unknown' : 'partial', error.message);
+        throw new AdapterFailure('unknown_outcome', 'unknown', 'release interrupted; reconcile before retry');
+      }
     });
   }
 }
