@@ -110,6 +110,7 @@ unfinished step.
    - **Neither prints a line:** run `lets-build`'s *Claim*. A stop it
      makes stands. When its glossary preflight found owned edits, also
      run *Import the glossary checkpoint*. *Claim* creates the branch.
+     Then [commit the discovery map](#commit-the-discovery-map).
    - **Either prints a line:** the change has started. Do not run
      *Claim*. When `git ls-remote` printed it, run
      `git fetch origin <name>` first: `git switch` finds a branch on
@@ -153,25 +154,42 @@ The shape step it runs is a step, and has a report.
 
 ### Start from an idea
 
-1. Run `lets-build`'s *Find the source of demand*, its second case: the
+1. Look for a discovery of this idea that an earlier run started. Use
+   `lets-shape`'s own query:
+
+   ```bash
+   gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body
+   ```
+
+   When a parent's `Input:` line holds the idea word for word, say that a
+   discovery of this idea is in progress at #<p>. Skip the search below,
+   and [run the shape step](#run-the-shape-step) for the idea: its round
+   resumes that parent.
+2. Run `lets-build`'s *Find the source of demand*, its second case: the
    user described work but named no issue. It searches open issue titles
    for the idea's words. Show the user the matches, and ask whether one
    is the same work. Ask at either level: a wrong yes builds someone
    else's issue.
-2. On a yes, that issue is `<i>`. Go on from step 3.
-3. On a no, or when nothing matches, set aside that case's stop, which
+3. On a yes, that issue is `<i>`. Go on from step 3.
+4. On a no, or when nothing matches, set aside that case's stop, which
    says to run `lets-shape`. [Run the shape step](#run-the-shape-step)
    for the idea.
 
 ### Run the shape step
 
 The shape step turns an idea, or an issue whose packet is not complete,
-into one shaped issue. It runs on the default branch, before any branch
-or change exists. On a change's branch, the `lets-shape` stops of
-*Confirm the packet* stand. It runs at most once per run: after it, a
-stop that *Confirm the packet* makes stands.
+into one shaped issue. When the work is too large for one issue, it runs
+discovery instead, which files a parent issue and its stories. It runs
+on the default branch, before any branch or change exists. On a change's
+branch, the `lets-shape` stops of *Confirm the packet* stand. It runs at
+most once per run: after it, a stop that *Confirm the packet* makes
+stands.
 
-1. Print the level line. When the user named a level, it is
+1. Check the discovery map. Run `git status --porcelain`. When it lists
+   `openspec/discovery.md`, say that the map has uncommitted edits, and
+   to commit or discard them. Stop, and run no step. Otherwise a
+   discovery's commit could sweep those edits in.
+2. Print the level line. When the user named a level, it is
    `Interactivity: <level>, because you asked for it.` Otherwise the level
    is `ask`, because there is no Kind yet:
 
@@ -179,14 +197,14 @@ stop that *Confirm the packet* makes stands.
    Interactivity: ask, because shape has not run yet.
    ```
 
-2. For an idea, check that the answers file is this idea's. Two ideas
+3. For an idea, check that the answers file is this idea's. Two ideas
    can share their first five words, and so their `<name>`. When
    `.workspace/lets-go/<name>-shape-prompt.md` exists and holds another
    idea, an earlier run stopped part way on that one. Remove
    `.workspace/lets-go/<name>-shape-answers.yaml` before you write the
    prompt.
-3. Run the `shape` step, as [Run a step](#run-a-step) says.
-4. When it reports `done`, [Read the report](#read-the-report) says
+4. Run the `shape` step, as [Run a step](#run-a-step) says.
+5. When it reports `done`, [Read the report](#read-the-report) says
    what it shaped:
    - **One issue:** that issue is `<i>`. Go on from step 3 with it, as
      for an issue number.
@@ -218,6 +236,30 @@ them in this run.
    left out: for example, its blocker, its assignee, or an unresolved
    prerequisite. Say to run `lets-go` with a story's number once it is
    ready. Then stop. Claim nothing, and create no branch.
+
+A run that stops after discovery and before *Claim*, for any reason,
+leaves the map's edits on the default branch. When
+`git status --porcelain` lists `openspec/discovery.md`, say that it
+holds the discovery's map, uncommitted on the default branch. Say to commit or
+discard it before the next run, because the next run stops on it.
+
+### Commit the discovery map
+
+Discovery edits `openspec/discovery.md` on the default branch, and the
+new branch carries the edits with it. Commit them there, before
+[Find the first unfinished step](#find-the-first-unfinished-step) reads
+the tree. Do this only when a shape step ran in this run, and
+`git status --porcelain` lists `openspec/discovery.md`. Otherwise make
+no commit.
+
+```bash
+git add openspec/discovery.md
+git commit -m "docs: the discovery map from #<p>" -- openspec/discovery.md
+```
+
+`<p>` is the parent's number, or the story's when the parent became the
+one story. Commit no other path. This is the one commit `lets-go` makes
+itself, beside the glossary import.
 
 ## Find the first unfinished step
 
