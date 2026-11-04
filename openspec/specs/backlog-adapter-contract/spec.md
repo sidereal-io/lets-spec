@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define and validate the shared backlog adapter boundary before production integrations are built, preserving the existing GitHub workflow while accommodating GitHub, Jira Cloud, Linear and local Beads.
+Define the shared backlog adapter boundary and its conformance guarantees, preserving the GitHub workflow while accommodating GitHub, Jira Cloud, Linear and local Beads.
 
 ## Requirements
 

@@ -15,7 +15,7 @@
 
 - [ ] 3.1 [medium] Exclude unused kit source, fixtures and copied contract from runtime releases, restoring dist absence assertions and removing the released-fixture smoke test (verify: nix flake check)
 - [x] 3.2 [easy] Define the five agreed contract concepts beside their guarantees and document error classifications without duplicating shared glossary definitions (✓ git diff --check passed; agreed definitions and error categories reviewed)
-- [ ] 3.3 [easy] State ongoing capability guarantees and correct discovery to current GitHub behavior, restoring Change support without dropping #145/#146 from the backlog (verify: openspec validate backlog-kit-cleanup --strict)
+- [x] 3.3 [easy] State ongoing capability guarantees and correct discovery to current GitHub behavior, restoring Change support without dropping #145/#146 from the backlog (✓ openspec validate backlog-kit-cleanup --strict passed; main requirement changes sync at archive)
 
 ## 4. Integration [depends-on: 3]
 
