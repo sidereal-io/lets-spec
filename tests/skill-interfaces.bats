@@ -92,7 +92,7 @@ flow_texts() {
 }
 
 @test "lets-go ships in both flows with a routing row" {
-  local flow file request='Take a shaped story, bug or chore to a ready pull request in one run'
+  local flow file request='Take a shaped story, bug or chore, or an idea in words, to a ready pull request in one run'
   for flow in standard minimal; do
     flow_skills "$flow" | grep -qx lets-go || { echo "$flow does not ship lets-go"; false; }
   done
@@ -103,6 +103,8 @@ flow_texts() {
   for file in overlays/AGENTS.md README.md; do
     run grep -nF '| Take a shaped chore to a ready pull request in one run |' "$repo/$file"
     [ "$status" -eq 1 ] || { echo "$file keeps the chore-only row: $output"; false; }
+    run grep -nF '| Take a shaped story, bug or chore to a ready pull request in one run |' "$repo/$file"
+    [ "$status" -eq 1 ] || { echo "$file keeps the row without the idea: $output"; false; }
   done
 }
 
