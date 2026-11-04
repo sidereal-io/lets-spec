@@ -23,25 +23,27 @@ This repository runs the pinned `lets` 0.7.0, which has no `step` command. `lets
 
 ## Test Seams
 
-- **Primary test seam:** `tests/skill-interfaces.bats`. New tests grep `skills/lets-go/SKILL.md` for the commands, the ranking rules, the skip and level lines, the section names of `lets-build` it reuses, and the absence of `gh project item-edit`. The entry-point case in the flow-ships test gains `lets-go`.
-- **Existing seams reused:** `tests/sync-rules.bats` for the routing row `lets sync` writes; the flow-ships test, which reads `flows.json`, for both flows shipping `lets-go`; the existing checks that every `lets delegate step` the prose names is followed by `instructions` or `run`, and that every `gh` command the prose names is one `gh` knows.
+- **Primary test seam:** `tests/skill-interfaces.bats`, for every new check. New tests grep `skills/lets-go/SKILL.md` for the commands, the ranking rules, the fixed lines the spec lists, the section names of `lets-build` it reuses, and the absence of `gh project item-edit`. One new test greps `overlays/AGENTS.md` and `README.md` for the routing row, each in its own table's form. The entry-point case in the flow-ships test gains `lets-go`.
+- **Existing seams reused:** the flow-ships test, which reads `flows.json`, for both flows shipping `lets-go`. The existing checks that every `lets delegate step` the prose names is followed by `instructions` or `run`, and that every `gh` command the prose names is one `gh` knows. `tests/sync-rules.bats` is not touched.
 
 ## Scrutiny Tier & Blast Radius
 
 - **Tier:** medium. One new skill on the patterns of `lets-build`'s handoff and the step contract from #162. No code, no data, no new dependency. The relay is a new contract between `lets-go` and every step prompt, which #150 and #152 extend.
-- **Blast radius:** `skills/lets-go/`, `flows.json`, `overlays/AGENTS.md`, `README.md`, `tests/skill-interfaces.bats`, `tests/sync-rules.bats`.
+- **Blast radius:** `skills/lets-go/`, `flows.json`, `overlays/AGENTS.md`, `README.md`, `tests/skill-interfaces.bats`.
 
 ## Decisions
 
 ### D-1. Start names `lets-build`'s sections instead of repeating them
 
-`lets-go`'s *Start* section says: run `lets-build`'s *Find the source of demand* for the named issue, then *Confirm the packet*, *Route* and *Claim*, and come back here. It adds the two gates of its own that come before them: the default branch, and Kind Chore. It repeats none of the `gh` commands.
+`lets-go`'s *Start* section says: run `lets-build`'s *Find the source of demand* for the named issue, then *Confirm the packet*, *Route* and *Claim*, and come back here. It adds two gates of its own. The default-branch gate comes before *Find the source of demand*. The Kind gate sits inside *Confirm the packet*, right after `lets-build` reads the issue's fields from the Project, because that is the first point where the Kind is known. A Story or a Bug stops there, before the parent epic is read. A stop `lets-build` makes earlier, such as an unresolved glossary prerequisite, stands as `lets-build` reports it. `lets-go` repeats none of the `gh` commands. It adds one: `gh issue view <i> --json createdAt`, only when the thread query returned a null `lastEditedAt`, because neither `lets-build` nor the thread query reads the issue's creation date.
 
 Alternative: copy the four sections into `lets-go`. Rejected: two copies of the claim rules drift, and #136 would then have two places to change when the backlog adapters land. Alternative: make `lets-build` the step runner and have `lets-go` only call it. Rejected: `lets-build`'s table runs *Propose* in the session, and #157 has not decided its future yet.
 
 ### D-2. One prompt frame, three "what to run" rows
 
-The skill holds one prompt frame, with the fields every step gets: the step, the change, the issue, the branch, the schema, the interactivity level and what it means, the rule that the step never asks in its session, the report rules, and what `done` evidence holds. A table gives each step's "what to run" paragraph: propose runs `openspec-propose` for the change with the route line and does not offer the handoff; apply runs `lets-build` on the branch and stops when every task is ticked; apply review runs `lets-build`'s *Finish the change*. `lets-go` writes the frame and the row to `.workspace/lets-go/<name>-<step>-prompt.md`.
+The skill holds one prompt frame with the fields every step gets. They are the step, the change, the issue, the branch, the schema, the interactivity level and what it means, the rule that the step never asks in its session, how to read an `## Answers` section, the report rules, and what `done` evidence holds. A table gives each step's "what to run" paragraph. Propose runs `openspec-propose` for the change with the route line, and does not offer the handoff. Apply runs `lets-build` on the branch, and stops when every task is ticked. Apply review runs `lets-build`'s *Finish the change*. `lets-go` writes the frame and the row to `.workspace/lets-go/<name>-<step>-prompt.md`.
+
+The `## Answers` rule matters for the brainstorm. A resumed propose step sees only the prompt and the answers, so it cannot tell which answers the user gave. `lets-go` marks an answer it took from a recommendation with ` (lets-go accepted the step's recommendation; the user did not decide)`. The frame tells the step to record a marked answer as `Assumption`, any other answer as `User`, and an answer of yes to the confirmation question as the user's confirmation of the ledger.
 
 Alternative: three whole prompts. Rejected: the report rules and the level would be stated three times, and a fix in one would miss the others.
 
@@ -59,7 +61,7 @@ Alternative: a fixed number of rounds. Rejected: a brainstorm may need several r
 
 ### D-5. On exit 3, `lets-go` reads the block itself
 
-When `step run` exits 3, `lets` is out of the loop. `lets-go` runs the saved prompt in a subagent that may write files, and reads the last `step-report` block from its final message by the rules in ADR-014: three or more backticks and `step-report` to open, at least as many backticks alone to close, one YAML mapping with `outcome`. It writes what it read to the same report file a `lets` run would have produced, and stamps a `done` report's date itself.
+When `step run` exits 3, `lets` is out of the loop. `lets-go` runs the saved prompt in a subagent that may write files. It reads the last `step-report` block from the final message by the rules in ADR-014 and the `delegate-step` spec. The block opens with three or more backticks and `step-report`, and closes with at least as many backticks alone. It holds one YAML mapping whose `outcome` is one of the three. A `done` report needs non-empty `evidence`, a `needs-input` report non-empty `questions`, and a `failed` report a string `reason`. Anything else is a `failed` report with a reason. `lets-go` writes what it read to the same report file a `lets` run would have produced, and stamps a `done` report's date itself.
 
 Alternative: ask the subagent to write a JSON file. Rejected in ADR-014: a stale file can be read as this run's report, and the final message cannot be stale.
 
@@ -73,7 +75,7 @@ Start checks out the change's branch in the repository, as `lets-build`'s *Claim
 
 ## Risks / Trade-offs
 
-- [A step session asks the user anyway, despite the prompt] → With the default resolver, the subagent has no way to ask. With a resolver that reports the session failed, `lets-go` shows the reason and names the step and the branch; `lets-build` on the branch carries on.
+- [A step session asks the user anyway, despite the prompt] → With the default resolver, the subagent has no way to ask. A resolver that reports the session failed gives `lets-go` a `failed` report. `lets-go` shows the reason and names the step and the branch, and `lets-build` on the branch carries on.
 - [A resumed brainstorm runs from the start each round, so a long brainstorm costs several sessions] → The prompt carries every answer, and `lets-brainstorm` skips a question whose answer is known. A chore's brainstorm is short.
 - [The step's `done` evidence is free text, so `lets-go` cannot check it] → `lets-go` reports it as given. The archive commit and the pull request's state are the real evidence, and apply review reaches them.
 - [`lets-go` cannot run on this repository until the next release] → The tests check the prose. The first real run is the dogfood after the release.

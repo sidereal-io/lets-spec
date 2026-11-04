@@ -35,5 +35,5 @@ A step never asks the user in its session. When it needs a decision, it ends wit
 
 ### Alternative 2: A step that has a user asks directly
 - **Pros**: no round trip when the step runs in a thread the user can see.
-- **Cons**: a subagent has no user, so two paths would exist for one thing; a thread that stops to ask is a failed session to the caller, which waits for a final message.
+- **Cons**: a subagent has no user, so two paths would exist for one thing. A thread that stops to ask is a failed session to the caller, which waits for a final message.
 - **Why not**: one path works everywhere; the second works in one harness.

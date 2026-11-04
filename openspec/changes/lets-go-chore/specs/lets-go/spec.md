@@ -1,6 +1,6 @@
 ## Purpose
 
-Says what the `lets-go` skill does for a shaped chore: where it starts, what it skips and how it says so, which interactivity level it picks, how it runs each step through `lets delegate step` and reads the report, how it relays a step's questions to the user, and how the run ends.
+Says what the `lets-go` skill does for a shaped chore: where it starts, what it skips and how it says so, which interactivity level it picks, how it runs each step and reads its report, how it relays a step's questions to the user, and how the run ends.
 
 ## ADDED Requirements
 
@@ -16,36 +16,36 @@ Says what the `lets-go` skill does for a shaped chore: where it starts, what it 
 - **THEN** `lets-go` reads issue `#149` as `lets-build`'s *Find the source of demand* does for a named issue
 
 ### Requirement: lets-go runs on the default branch, for a Chore
-`lets-go` SHALL run only on the repository's default branch, and only for an issue whose Kind is Chore. On any other branch it SHALL say that `lets-build` carries that branch's change on, and that #150 adds resuming a run, and stop. For an issue whose Kind is Story or Bug it SHALL say that #152 adds those Kinds, point to `lets-build`, and stop.
+`lets-go` SHALL run only on the repository's default branch. On any other branch it SHALL say that `lets-build` carries that branch's change on, say that #150 adds resuming a run, and stop. It SHALL run only for an issue whose Kind is Chore. It SHALL check the Kind where `lets-build`'s *Confirm the packet* has just read the issue's fields from the Project, before any later check of that section. For a Story or a Bug it SHALL say that #152 adds those Kinds, point to `lets-build`, and stop. A stop that `lets-build` makes earlier, such as an unresolved glossary prerequisite, SHALL stand as `lets-build` reports it.
 
 #### Scenario: A change's branch
 - **WHEN** the current branch is `lets-go-chore`, not the default branch
 - **THEN** `lets-go` says to run `lets-build` on that branch, names #150, and claims nothing
 
 #### Scenario: A Story
-- **WHEN** the issue's Kind on the Project is Story
-- **THEN** `lets-go` names #152, says to run `lets-build`, and claims nothing
+- **WHEN** *Confirm the packet* reads the issue's fields and its Kind is Story
+- **THEN** `lets-go` names #152, says to run `lets-build`, reads no parent epic, and claims nothing
 
 ### Requirement: Start reuses lets-build
-`lets-go` SHALL run `lets-build`'s *Find the source of demand*, *Confirm the packet*, *Route* and *Claim* in its own session, by naming those sections. It SHALL add no check and no `gh` command of its own to them. Start SHALL not be a step: it SHALL run no `lets delegate step` command and SHALL produce no step report.
+`lets-go` SHALL run `lets-build`'s *Find the source of demand*, *Confirm the packet*, *Route* and *Claim* in its own session, by naming those sections. It SHALL add no check of its own to them other than the Kind check. It SHALL add one command of its own: `gh issue view <i> --json createdAt`, run only when the issue's `lastEditedAt` is null. Start SHALL not be a step: it SHALL run no `lets delegate step` command and SHALL produce no step report.
 
 #### Scenario: The skill names the sections
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
-- **THEN** it finds *Find the source of demand*, *Confirm the packet*, *Route* and *Claim* named as sections of `lets-build`, and finds no `gh project item-edit` command
+- **THEN** it finds *Find the source of demand*, *Confirm the packet*, *Route* and *Claim* named as sections of `lets-build`, finds `gh issue view <i> --json createdAt`, and finds no `gh project item-edit` command
 
 #### Scenario: Claim fails
 - **WHEN** `lets-build`'s *Claim* finds that someone else has the issue
 - **THEN** `lets-go` says who has it and stops, as `lets-build` does, and runs no step
 
 ### Requirement: A complete packet means shape is skipped, and the skip line says when
-When *Confirm the packet* passes, `lets-go` SHALL print `Skipped shape: #<i>'s packet is complete, last edited <date>.` where `<date>` is the day of the issue's `lastEditedAt`, or of its `createdAt` when the body was never edited, as `YYYY-MM-DD`. When *Confirm the packet* fails, `lets-go` SHALL say to run `lets-shape` on #<i>, as `lets-build` does, and stop. It SHALL not run shape as a step.
+When *Confirm the packet* passes, `lets-go` SHALL print `Skipped shape: #<i>'s packet is complete, last edited <date>.` `<date>` SHALL be the day of the issue's `lastEditedAt`, which the thread query in *Confirm the packet* returns, as `YYYY-MM-DD`. When `lastEditedAt` is null, `<date>` SHALL be the day of the issue's `createdAt`, read with `gh issue view <i> --json createdAt`. When *Confirm the packet* fails, `lets-go` SHALL say to run `lets-shape` on #<i>, as `lets-build` does, and stop. It SHALL not run shape as a step.
 
 #### Scenario: An edited packet
 - **WHEN** issue `#149`'s body was last edited on 2026-11-04
 - **THEN** `lets-go` prints `Skipped shape: #149's packet is complete, last edited 2026-11-04.`
 
 #### Scenario: A packet never edited
-- **WHEN** the issue's `lastEditedAt` is null and it was created on 2026-11-03
+- **WHEN** the issue's `lastEditedAt` is null and `gh issue view <i> --json createdAt` says it was created on 2026-11-03
 - **THEN** the skip line's date is `2026-11-03`
 
 #### Scenario: A packet with a missing line
@@ -67,7 +67,7 @@ Before the first step, `lets-go` SHALL print `Interactivity: recommend, because 
 - **THEN** `lets-go` prints `Interactivity: recommend, because #149 is a Chore.` before it runs propose
 
 ### Requirement: Each step runs through lets delegate step
-For propose, apply and apply review, in that order, `lets-go` SHALL write the step's prompt to `.workspace/lets-go/<name>-<step>-prompt.md`, where `<name>` is the change's name and `<step>` is `propose`, `apply` or `apply-review`. It SHALL run `lets delegate step instructions --for <step>` and read `options` and `guidance`. It SHALL rank the options by the guidance first, then the order the options came in, leaving out a model the guidance rules out. The guidance SHALL only rank and filter the listed models. When `options` is empty, it SHALL pass its own family as the one model. It SHALL then run `lets delegate step run --for <step> --name <name>-<step> --prompt-file <that file> --effort high` with one `--model` per ranked option, best first, stdout to `.workspace/lets-go/<name>-<step>-report.json` and stderr to `.workspace/lets-go/<name>-<step>-meta.txt`. When `step instructions` exits non-zero, or `step run` exits non-zero other than 3, it SHALL show the user the command's stderr and stop.
+`lets-go` SHALL run propose, apply and apply review, in that order. For each step it SHALL write the prompt to `.workspace/lets-go/<name>-<step>-prompt.md`. `<name>` is the change's name, and `<step>` is `propose`, `apply` or `apply-review`. It SHALL run `lets delegate step instructions --for <step>` and read `options` and `guidance`. It SHALL rank the options by the guidance first, then the order the options came in. It SHALL leave out a model the guidance rules out. The guidance SHALL only rank and filter the listed models. When `options` is empty, it SHALL pass its own family as the one model. It SHALL then run `lets delegate step run --for <step> --name <name>-<step> --prompt-file <that file> --effort high`, with one `--model` per ranked option, best first. Stdout SHALL go to `.workspace/lets-go/<name>-<step>-report.json` and stderr to `.workspace/lets-go/<name>-<step>-meta.txt`. When `step instructions` exits non-zero, or `step run` exits non-zero other than 3, it SHALL show the user the command's stderr and stop.
 
 #### Scenario: The skill names both commands
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
@@ -82,7 +82,7 @@ For propose, apply and apply review, in that order, `lets-go` SHALL write the st
 - **THEN** `lets-go` shows the user the meta file, names the step, and stops without running the step again
 
 ### Requirement: Exit 3 runs the step in a subagent
-When `step run` exits 3, `lets-go` SHALL run the step in a subagent that starts with no context from the `lets-go` session and may write files, with the prompt `lets` saved in `.workspace/lets-delegate/<name>-<step>.prompt.md`. It SHALL read the last `step-report` block from the subagent's final message by the rules `lets` uses: the block opens with three or more backticks and `step-report`, closes with at least as many backticks alone on a line, and holds one YAML mapping with `outcome`. A final message with no valid block SHALL count as a `failed` report whose reason says so. For a `done` report `lets-go` SHALL stamp the date itself, as the current time in ISO 8601 UTC. It SHALL write the report it read to `.workspace/lets-go/<name>-<step>-report.json`.
+When `step run` exits 3, `lets-go` SHALL run the step in a subagent. The subagent SHALL start with no context from the `lets-go` session, and may write files. Its prompt SHALL be the file `lets` saved, `.workspace/lets-delegate/<name>-<step>.prompt.md`. `lets-go` SHALL read the last `step-report` block from the subagent's final message by the rules `lets` uses. The block opens with three or more backticks and `step-report`. It closes with at least as many backticks alone on a line. It holds one YAML mapping whose `outcome` is `done`, `needs-input` or `failed`. A `done` report holds `evidence`, a non-empty list of strings. A `needs-input` report holds `questions`, a non-empty list of mappings, each with a string `question` and an optional string `recommendation`. A `failed` report holds a string `reason`. A final message that breaks any of these rules SHALL count as a `failed` report whose reason says what is missing or wrong. For a `done` report `lets-go` SHALL stamp the date itself, as the current time in ISO 8601 UTC. It SHALL write the report it read to `.workspace/lets-go/<name>-<step>-report.json`.
 
 #### Scenario: The subagent step
 - **WHEN** `step run --for apply` exits 3 and its stderr names `.workspace/lets-delegate/lets-go-chore-apply.prompt.md`
@@ -92,12 +92,16 @@ When `step run` exits 3, `lets-go` SHALL run the step in a subagent that starts 
 - **WHEN** the subagent's final message holds no `step-report` block
 - **THEN** `lets-go` treats the step as `failed`, with a reason that names `step-report`, and stops
 
+#### Scenario: A done report with no evidence
+- **WHEN** the subagent's block holds `outcome: done` and no `evidence`
+- **THEN** `lets-go` treats the step as `failed`, with a reason that names `evidence`, and stops
+
 ### Requirement: The step prompt says what to run, the level, and how to report
-Each step prompt SHALL name the step, the change, the issue, the branch and the schema. It SHALL say what to run: for propose, the `openspec-propose` skill for the change, for the issue, with the route line, continuing the change when it already exists, and without offering the handoff; for apply, the `lets-build` skill on the branch, stopping when every task is ticked and without finishing the change; for apply review, the *Finish the change* section of the `lets-build` skill. It SHALL say the interactivity level, and that the step never asks the user in its session: when it needs a decision, it ends with a `needs-input` report listing every open question, with a `recommendation` where it has one, and no recommendation for a question that asks the user to confirm something. It SHALL give the report rules: write the report last, quote a line that holds `#` or `: `, and put no other `step-report` block in the message. It SHALL say what a `done` report's evidence holds: the commits made, and the pull request when the step opened or changed it.
+Each step prompt SHALL name the step, the change, the issue, the branch and the schema. It SHALL say what to run. For propose: the `openspec-propose` skill for the change, for the issue, with the route line. It continues the change when it already exists, and does not offer the handoff. For apply: the `lets-build` skill on the branch. It stops when every task is ticked, and does not finish the change. For apply review: the *Finish the change* section of the `lets-build` skill. The prompt SHALL say the interactivity level. It SHALL say that the step never asks the user in its session. When the step needs a decision, it ends with a `needs-input` report that lists every open question, with a `recommendation` where it has one. A question that asks the user to confirm something SHALL carry no recommendation. The prompt SHALL say how to read an `## Answers` section: each answer settles its question; an answer marked as accepted by `lets-go` is recorded as `Assumption` in a brainstorm ledger, and any other answer as `User`; an answer of yes to the confirmation question lets the brainstorm set `Confirmed by user: yes`. The prompt SHALL give the report rules: write the report last, quote a line that holds `#` or `: `, and put no other `step-report` block in the message. It SHALL say what a `done` report's evidence holds: the commits made, and the pull request when the step opened or changed it.
 
 #### Scenario: The propose prompt
 - **WHEN** `lets-go` writes the propose prompt for change `lets-go-chore`, issue `#149`, route `lets-minimal`
-- **THEN** the file names `openspec-propose`, `lets-go-chore`, `#149`, the route line, `recommend`, `needs-input`, `recommendation` and `step-report`
+- **THEN** the file names `openspec-propose`, `lets-go-chore`, `#149`, the route line, `recommend`, `needs-input`, `recommendation`, `## Answers`, `Assumption`, `User` and `step-report`
 
 #### Scenario: The apply prompt stops short of finishing
 - **WHEN** `lets-go` writes the apply prompt
@@ -108,11 +112,11 @@ Each step prompt SHALL name the step, the change, the issue, the branch and the 
 - **THEN** its `needs-input` report lists that question with no `recommendation`
 
 ### Requirement: lets-go relays a needs-input report at the recommend level
-When a report's outcome is `needs-input`, `lets-go` SHALL go through its questions in order. For a question with a `recommendation`, it SHALL take the recommendation as the answer, and tell the user the question and the answer it gave. For a question without one, it SHALL ask the user that question alone, and wait for the answer before the next. It SHALL append every pair, in order, to `.workspace/lets-go/<name>-<step>-answers.yaml`, a YAML list of `question` and `answer` mappings that keeps the pairs of earlier rounds. It SHALL then run the step again with the same `--prompt-file` and `--answers-file <that file>`, through the same `step instructions`, `step run` and exit 3 rules.
+When a report's outcome is `needs-input`, `lets-go` SHALL go through its questions in order. For a question with a `recommendation`, it SHALL take the recommendation as the answer, and tell the user the question and the answer it gave. It SHALL write that answer as the recommendation followed by ` (lets-go accepted the step's recommendation; the user did not decide)`. For a question without one, it SHALL ask the user that question alone, and wait for the answer before the next. It SHALL append every pair, in order, to `.workspace/lets-go/<name>-<step>-answers.yaml`. That file is a YAML list of `question` and `answer` mappings, and keeps the pairs of earlier rounds. `lets-go` SHALL then run the step again with the same `--prompt-file` and `--answers-file <that file>`, through the same `step instructions`, `step run` and exit 3 rules.
 
 #### Scenario: A mixed report
 - **WHEN** the propose step reports `needs-input` with `Which schema?` recommended `lets-minimal`, then `Confirm the ledger?` with no recommendation
-- **THEN** `lets-go` tells the user it answered `Which schema?` with `lets-minimal`, asks the user `Confirm the ledger?`, writes both pairs to the answers file, and runs `step run --for propose` again with `--answers-file .workspace/lets-go/lets-go-chore-propose-answers.yaml`
+- **THEN** `lets-go` tells the user it answered `Which schema?` with `lets-minimal`, asks the user `Confirm the ledger?`, writes both pairs to the answers file with the first marked as accepted by `lets-go`, and runs `step run --for propose` again with `--answers-file .workspace/lets-go/lets-go-chore-propose-answers.yaml`
 
 #### Scenario: A second round
 - **WHEN** the resumed step reports `needs-input` with one new question
@@ -130,19 +134,26 @@ When a report's outcome is `needs-input`, `lets-go` SHALL go through its questio
 - **THEN** `lets-go` stops and says the step asked a settled question again
 
 ### Requirement: Apply review ends the run
-The apply review step SHALL run `lets-build`'s *Finish the change*: the project's finishing rules, verify, archive, and marking the pull request ready. When it reports `done`, `lets-go` SHALL print one line per step, in order: `Skipped <step>: <reason>` with its date where it has one, `Done <step>: <date>` followed by the report's evidence, or `Failed <step>: <reason>`. It SHALL then print the pull request's URL and stop. `lets-go` SHALL keep no state of its own outside `.workspace/`.
+The apply review step SHALL run `lets-build`'s *Finish the change*: the project's finishing rules, verify, archive, and marking the pull request ready. When it reports `done`, `lets-go` SHALL print one line per step, in order. A skipped step prints `Skipped <step>: <reason>`, with its date where it has one. A done step prints `Done <step>: <date>` followed by the report's evidence. A failed step prints `Failed <step>: <reason>`. `lets-go` SHALL then print the pull request's URL and stop. It SHALL keep no state of its own outside `.workspace/`.
 
 #### Scenario: A finished run
 - **WHEN** apply review reports `done` with evidence `archive commit 9a1b2c3` and `pull request #167 ready`
 - **THEN** `lets-go` prints a line for shape, propose, propose review, apply and apply review, then the pull request's URL
 
+### Requirement: The prose holds the fixed lines the tests check
+`skills/lets-go/SKILL.md` SHALL hold these strings, so the skill-interfaces test can check them: `Skipped shape: #<i>'s packet is complete, last edited <date>.`, `Skipped propose review: not in the lets-minimal route.`, `Interactivity: recommend, because #<i> is a Chore.`, `.workspace/lets-go/<name>-<step>-prompt.md`, `.workspace/lets-go/<name>-<step>-answers.yaml`, `--answers-file`, `.workspace/lets-delegate/<name>-<step>.prompt.md`, `step-report`, `asked a settled question again`, and `**3**: no fresh session can run here`.
+
+#### Scenario: The fixed lines
+- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
+- **THEN** it finds every string this requirement lists
+
 ### Requirement: lets-go ships in both flows as an entry point
-Both flows in `flows.json` SHALL ship `lets-go`. The routing table that `lets sync` writes SHALL hold a row `Take a shaped chore to a ready pull request in one run` that starts with the `lets-go` skill. The README's usage table SHALL hold the same row. The skill-interfaces test SHALL count `lets-go` as an entry point, which no schema, config or skill needs to name.
+Both flows in `flows.json` SHALL ship `lets-go`. The routing table in `overlays/AGENTS.md` SHALL hold a row whose request is `Take a shaped chore to a ready pull request in one run` and whose answer is `The \`lets-go\` skill`, in that table's form. The README's usage table SHALL hold a row with the same request and the answer `\`lets-go\``, in that table's form. The skill-interfaces test SHALL count `lets-go` as an entry point, which no schema, config or skill needs to name.
 
 #### Scenario: The flows
-- **WHEN** the release-build test reads `flows.json`
+- **WHEN** the skill-interfaces test reads `flows.json`
 - **THEN** `standard` and `minimal` both list `lets-go` in `skills`
 
-#### Scenario: The routing row
-- **WHEN** the sync-rules test reads the rules `lets sync` writes
-- **THEN** it finds a row that names a shaped chore and the `lets-go` skill
+#### Scenario: The routing rows
+- **WHEN** the skill-interfaces test reads `overlays/AGENTS.md` and `README.md`
+- **THEN** each holds a row whose request is `Take a shaped chore to a ready pull request in one run` and whose answer names `lets-go`

@@ -22,4 +22,4 @@ ADR review completed for this change.
 
 - [ADR-015](../../../docs/decisions/ADR-015-a-step-asks-through-its-report.md): a step asks the user through its report, never in its session, and the caller answers a recommended question at `recommend`. Design decision D-3.
 
-The other design decisions are recoverable from the skill's text: naming `lets-build`'s sections (D-1), one prompt frame (D-2), the growing answers file and the repeated-question stop (D-4), reading the block on exit 3 (D-5), the effort (D-6) and the checkout (D-7). None gets a record.
+The other design decisions are recoverable from the skill's text. They are naming `lets-build`'s sections (D-1), one prompt frame (D-2), the growing answers file and the repeated-question stop (D-4), reading the block on exit 3 (D-5), the effort (D-6) and the checkout (D-7). None gets a record.
