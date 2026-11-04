@@ -11,8 +11,9 @@ import { validateRequest, parseRequest } from './protocol.ts';
 import { profile } from './profiles.ts';
 import { identityKey, updateMapped, readMapped, validateItem } from './items.ts';
 import { requireCapability } from './capabilities.ts';
-let text = '';
-for await (const chunk of process.stdin) text += chunk;
+const chunks: Buffer[] = [];
+for await (const chunk of process.stdin) chunks.push(chunk);
+const text = Buffer.concat(chunks).toString('utf8');
 try {
   const request = parseRequest(text);
   const { context, input, operation, mutationId } = request;

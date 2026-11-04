@@ -1,6 +1,7 @@
 // Deliberately small process-boundary fixture. Never contacts a provider.
-let input = '';
-for await (const chunk of process.stdin) input += chunk;
+const chunks: Buffer[] = [];
+for await (const chunk of process.stdin) chunks.push(chunk);
+const input = Buffer.concat(chunks).toString('utf8');
 const request = JSON.parse(input);
 const mode = process.argv[2];
 if (mode === 'signal')

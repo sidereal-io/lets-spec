@@ -118,3 +118,11 @@ test('invocation uses only the supplied executable through shared I/O', async ()
   assert.deepEqual(calls, ['chosen-adapter']);
   assert.deepEqual(result.result, { valid: true, gaps: [] });
 });
+
+test('large Unicode packets survive executable stdin chunk boundaries', () =>
+  withAdapter(async ({ call }) => {
+    const body = 'a'.repeat(65535) + 'é—😀'.repeat(20000);
+    const { item } = await call('item.create', { ...story, body }, 'unicode');
+    assert.equal(item.body, body);
+  }));
+
