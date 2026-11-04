@@ -14,7 +14,7 @@ export class Client {
     if (typeof input.repository !== 'string' || !input.repository || typeof input.actor !== 'string' || !input.actor) fail('invalid_request', 'repository and authenticated actor are required');
     this.context = { cwd, provider: this.selection.provider, repository: input.repository, actor: input.actor, session: input.session ?? randomUUID(), ...(this.selection.backlog ? { backlog: this.selection.backlog } : {}) };
     this.timeoutMs = input.timeoutMs ?? (this.selection.provider === 'github' ? 180000 : 5000);
-    if (!Number.isFinite(this.timeoutMs) || this.timeoutMs <= 0) fail('invalid_request', 'positive timeoutMs required');
+    if (!Number.isFinite(this.timeoutMs) || this.timeoutMs <= 0 || this.timeoutMs > 2_147_483_647) fail('invalid_request', 'timeoutMs must be positive and at most 2147483647');
   }
   call = async (operation: string, input: Record<string, any> = {}, mutationId?: string, session = this.context.session) => {
     return (await invoke(this.selection.executable, { protocol: 1, operation, context: { ...this.context, session }, input, ...(mutationId ? { mutationId } : {}) }, { timeoutMs: this.timeoutMs })).result;

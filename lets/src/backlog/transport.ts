@@ -8,7 +8,7 @@ export async function invoke(executable: string, request: Record<string, any>, o
   for (const item of [request.input.item, request.input.target]) if (item && (item.provider !== request.context.provider || item.backlog !== request.context.backlog)) throw new AdapterFailure('invalid_request', 'none', 'input identity differs from request scope');
   const timeoutMs = options.timeoutMs ?? 5000;
   const maxBytes = options.maxBytes ?? 1024 * 1024;
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || !Number.isInteger(maxBytes) || maxBytes <= 0) throw new Error('invalid process limits');
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 2_147_483_647 || !Number.isInteger(maxBytes) || maxBytes <= 0) throw new AdapterFailure('invalid_request', 'none', 'invalid process limits');
   const interrupted = (reason: string) => new AdapterFailure(MUTATIONS.includes(request.operation) ? 'unknown_outcome' : 'transient', MUTATIONS.includes(request.operation) ? 'unknown' : 'none', `adapter ${reason}; reconcile mutations before retry`);
   return new Promise((resolve, reject) => {
     const child = spawn(executable, [], { cwd: request.context.cwd, shell: false, stdio: ['pipe', 'pipe', 'pipe'] });

@@ -42,3 +42,8 @@ test('response cannot substitute an item from another backlog', () => adapter(`c
 test('read timeout reports no mutation effects', () => adapter(`setInterval(()=>{},1000);`, async path => {
   await assert.rejects(invoke(path, request, { timeoutMs: 100 }), (error: any) => error.category === 'transient' && error.effects === 'none');
 }));
+for (const timeoutMs of [0, Infinity, 3_000_000_000]) {
+  test(`invalid production deadline ${timeoutMs} fails before invocation`, async () => {
+    await assert.rejects(invoke('/nonexistent/adapter', request, { timeoutMs }), (error: any) => error.category === 'invalid_request' && error.effects === 'none');
+  });
+}

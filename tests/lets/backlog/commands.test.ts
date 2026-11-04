@@ -32,3 +32,9 @@ test('raw mutation cannot adopt published claim correlation values', () => withG
   assert.equal(raw.status, 1); assert.match(raw.result.error.message, /continuation handle/);
   assert.equal(command('release', { handle: acquired.result.handle }).status, 0);
 }));
+test('workflow rejects overflowing deadline before claim', () => withGithub(async ({ command, state }) => {
+  const result = command('claim', { item, timeoutMs: 3_000_000_000 });
+  assert.equal(result.status, 2);
+  assert.equal(result.result.error.category, 'invalid_request');
+  assert.equal(state().calls.some((call: any) => call.name === 'Assign'), false);
+}));
