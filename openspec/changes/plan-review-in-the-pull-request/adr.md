@@ -1,0 +1,32 @@
+# ADR Review Manifest
+
+- Status: completed
+- Review date: 2026-11-04
+
+## Review Summary
+
+ADR review completed for this change. Of the nine decisions in design.md, eight are prose choices in skills and tests that another edit can undo. One passes the skill's test: where a review records. Many readers bind to it, the skills, the tests, `lets-go`'s reads and the people who read pull requests, and an engineer reading the schema alone could add a review artifact back without knowing why it left. That decision gets ADR-019.
+
+## In-Force ADRs Reviewed
+
+- [ADR-001](../../../docs/decisions/ADR-001-default-delegate-starts-no-session.md) The default delegate starts no session
+- [ADR-002](../../../docs/decisions/ADR-002-lets-owns-the-delegate-config.md) lets owns the delegate config
+- [ADR-005](../../../docs/decisions/ADR-005-the-config-lists-the-chain.md) The config lists the chain
+- [ADR-006](../../../docs/decisions/ADR-006-the-caller-chooses-the-model.md) The caller chooses the model
+- [ADR-007](../../../docs/decisions/ADR-007-delegations-by-strategy-and-intent.md) Delegations by strategy and intent. The plan review keeps the `review` strategy and the `plan` intent.
+- [ADR-008](../../../docs/decisions/ADR-008-lets-tries-the-ranked-models.md) lets tries the ranked models
+- [ADR-010](../../../docs/decisions/ADR-010-the-resolvers-are-built-into-lets.md) The resolvers are built into lets
+- [ADR-011](../../../docs/decisions/ADR-011-one-config-file-shaped-like-the-commands.md) One config file shaped like the commands
+- [ADR-012](../../../docs/decisions/ADR-012-issue-comments-are-evidence.md) Issue comments are evidence. ADR-019's third alternative loses to this record.
+- [ADR-013](../../../docs/decisions/ADR-013-the-reply-is-the-read-marker.md) The reply is the read marker
+- [ADR-014](../../../docs/decisions/ADR-014-a-step-reports-through-its-final-message.md) A step reports through its final message
+- [ADR-015](../../../docs/decisions/ADR-015-a-step-asks-through-its-report.md) A step asks through its report
+- [ADR-016](../../../docs/decisions/ADR-016-review-and-handoff-stay-apart-from-step.md) Review and handoff stay apart from step. The plan review still runs through the `review` strategy, read-only.
+- [ADR-017](../../../docs/decisions/ADR-017-lets-go-reads-where-a-run-stands-from-git-and-github.md) lets-go reads where a run stands from Git and GitHub. The review plan line now reads a pull request section and a commit date, both records this ADR allows. ADR-019 builds on it.
+- [ADR-018](../../../docs/decisions/ADR-018-lets-build-stays-and-loses-its-handoff.md) lets-build stays and loses its handoff. The gate this change adds to `lets-build`'s *Apply* stays with it when `lets-plan-and-lets-build` moves its other sections.
+
+ADR-010 supersedes ADR-003, ADR-004 and ADR-009, so this review skipped them.
+
+## New Durable ADRs Created
+
+- [ADR-019](../../../docs/decisions/ADR-019-reviews-record-in-the-pull-request.md) Reviews record in the pull request, and the schema holds only the plan.
