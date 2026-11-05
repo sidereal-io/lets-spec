@@ -235,6 +235,7 @@ skill_says() {
   skill_says lets-review-plan 'git log --oneline <sha>..HEAD -- openspec/changes/<name>/ docs/decisions/'
   skill_says lets-review-plan "':(exclude)openspec/changes/<name>/tasks.md'"
   skill_says lets-review-plan '`openspec-update-change` skill'
+  skill_says lets-review-plan 'each fix commit holds up'
   for phrase in 'review.md' '`review` artifact' '`review` instruction'; do
     ! tr -s '[:space:]' ' ' < "$repo/skills/lets-review-plan/SKILL.md" | grep -qF -- "$phrase" ||
       { echo "lets-review-plan still says: $phrase"; false; }
