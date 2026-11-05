@@ -740,7 +740,9 @@ old path, and its history keeps the add and the ticks.
   same name, so it finds its answers file.
 
 So the shape step runs with `--for shape` and `--name <name>-shape`,
-such as `--name idea-fix-letssync-quiet-output-shape`.
+such as `--name idea-fix-letssync-quiet-output-shape`. The other steps
+use the change's name: the review plan step runs with
+`--for review-plan` and `--name <name>-review-plan`.
 
 ## Write the prompt
 
@@ -833,7 +835,9 @@ reason: The tests fail on main before any change.
 A done report's evidence lists the commits you made, and the pull request
 when you opened or changed it. For shape, its first line is the issue,
 as `issue #<n>: <title>`, or the parent, as `epic #<p>: <title>`, with a
-`story #<n>: <title>` line for each story. Write the report last. Quote a line that
+`story #<n>: <title>` line for each story. For review plan, its first
+line is the verdict and the commit reviewed, as
+`Plan review: <verdict> for <sha>`. Write the report last. Quote a line that
 holds `#` or `: `. Put no other step-report block in the message.
 ````
 

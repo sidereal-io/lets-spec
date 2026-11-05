@@ -551,8 +551,14 @@ review_build_start() {
   skill_says lets-go 'gh pr view <name> --json number,body'
 }
 
-# Review plan runs inside build, and reads the Plan review section in the
-# pull request, not review.md.
+@test "lets-go runs review plan as a step of its own" {
+  skill_says lets-go '--for review-plan'
+  skill_says lets-go '--name <name>-review-plan'
+  skill_says lets-go 'Plan review: <verdict> for <sha>'
+}
+
+# Review plan is a step of its own, and its record is the Plan review
+# section in the pull request, not review.md.
 @test "lets-go reads review plan from the pull request" {
   local phrase
   skill_says lets-go '## Plan review'
