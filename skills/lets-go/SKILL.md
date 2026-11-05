@@ -190,7 +190,7 @@ The shape step that *Start* runs is a step, and has a report. After
 Parallel sessions share the backlog, so claim the issue before you
 create anything.
 
-Find the Project linked to this repository first:
+First, find the Project linked to this repository:
 
 ```bash
 gh api graphql -F owner='{owner}' -F name='{repo}' -f query='
@@ -209,28 +209,33 @@ query($owner: String!, $name: String!) {
       | map(select(.closed | not) | {number, title, url, owner: .owner.login}) | unique_by(.owner, .number))}'
 ```
 
-The query lists the Projects linked to the repository, and the owner's Projects that link back to it. A user-owned Project can be missing from the repository's own listing for a while after it is linked, so neither list alone is enough.
+The query lists the Projects linked to the repository, and the
+owner's Projects that link back to it. A user-owned Project can be
+missing from the repository's own listing for a while after it is
+linked, so neither list alone is enough.
 
 - **One Project:** use its `number` as `<n>` and its `owner` as
-  `<owner>` in every `gh project` command below. `repo` is the
-  repository, as `owner/name`.
+  `<owner>` in every `gh project` command below. The query's `repo` is
+  the repository, as `owner/name`.
 - **None:** say to run the `lets-setup-backlog` skill, and stop.
-- **Two or more:** list each one's title and URL, ask the user to unlink
-  the extras, and stop. Never pick one yourself.
+- **Two or more:** list each Project's title and URL, ask the user to
+  unlink the extras, and stop. Never pick one yourself.
 
 Then take the first case that applies:
 
-1. **The user named an issue.** Use it. If an open issue blocks it, say
-   so and stop: `gh issue view <i> --json blockedBy` lists its blockers,
-   and any with `state` `OPEN` counts. The user stacks it on the
-   blocker's branch by hand.
-2. **The user described work but named no issue.** Search for it:
+1. **The user named an issue.** Use that issue. If an open issue
+   blocks it, say so and stop. `gh issue view <i> --json blockedBy`
+   lists the blockers, and a blocker whose `state` is `OPEN` counts.
+   The user stacks the named issue on the blocker's branch by hand.
+2. **The user described work but named no issue.** Search the open
+   issue titles for the work:
    `gh issue list --state open --search "<words> in:title" --json number,title`.
-   If one matches, confirm with the user that it is the same work. If
-   none does, say to run the `lets-shape` skill on it, and stop.
-3. **Otherwise, take `next`.** List the Todo, prioritized candidates on
-   the Project. Any Kind but Epic counts, and items from other
-   repositories are left out:
+   If an issue matches, confirm with the user that it is the same work.
+   If none matches, say to run the `lets-shape` skill on the work, and
+   stop.
+3. **Otherwise, take `next`.** List the candidates: the Todo items on
+   the Project whose priority is Must, Should or Could. Any Kind but
+   Epic counts. The command leaves out items from other repositories:
 
    ```bash
    gh project item-list <n> --owner <owner> --format json --limit 500 \
@@ -247,18 +252,19 @@ Then take the first case that applies:
 
    `next` comes from the candidates whose number is in the second list.
    Rank them Must, then Should, then Could, then the lowest issue
-   number, and take the first. A Wont is never a candidate. If there is
-   none, say the backlog has nothing ready, suggest the `lets-shape`
-   skill to shape more, and stop.
+   number, and take the first. A Wont is never a candidate. If no
+   candidate is in the second list, say the backlog has nothing ready,
+   suggest the `lets-shape` skill to shape more, and stop.
 
-Before you select `next`, run only
+Before you pick `next`, run only
 [Check the prerequisite](#check-the-prerequisite) on each candidate, in
-rank order. Fetching, the commit checks and the rehearsal wait for Claim,
-and only for the candidate you select. Skip a candidate with an unresolved
-prerequisite. If none is left, say the backlog has nothing ready, suggest
-the `lets-shape` skill, and stop, without selecting a candidate or
-confirming a packet. For a named issue, report the unresolved owner or
-checkpoint, and stop. Otherwise, go on to [Confirm the packet](#confirm-the-packet).
+rank order. Fetching, the commit checks and the rehearsal wait for
+*Claim*, and run only for the candidate you pick. Skip a candidate with
+an unresolved prerequisite. If no candidate is left, say the backlog
+has nothing ready, suggest the `lets-shape` skill, and stop. Pick no
+candidate, and confirm no packet. When a named issue has an unresolved
+prerequisite, report the unresolved owner or checkpoint, and stop.
+Otherwise, go on to [Confirm the packet](#confirm-the-packet).
 
 ### Confirm the packet
 
@@ -272,12 +278,12 @@ gh project item-list <n> --owner <owner> --format json --limit 500 \
 
 - If the second command prints nothing, or no `kind`, the issue is not
   shaped. Say to run the `lets-shape` skill on #<i>, and stop.
-- If its Kind is Epic, say that an epic is built through its stories,
-  list its open sub-issues, and stop.
+- If the issue's Kind is Epic, say that an epic is built through its
+  stories, list its open sub-issues, and stop.
 
-Read the whole body. Check that every required line for its Kind is
-there and filled in. These are the lines of the `lets-shape` skill's
-issue templates:
+Read the whole body. Check that every required line for the issue's
+Kind is there and filled in. The required lines come from the issue
+templates of the `lets-shape` skill:
 
 | Kind | Required lines |
 |---|---|
@@ -286,27 +292,31 @@ issue templates:
 | Story, and any Kind this table does not name | the one-line outcome, **Persona served**, **Journey segment**, **MoSCoW**, **Why this story / why now**, **Depends on**, **Scope**, **Relevant code** |
 
 If a line is missing, or still holds a placeholder in angle brackets,
-name it, say to run the `lets-shape` skill on #<i>, and stop. Never write
-or fix the packet yourself.
+name the line, say to run the `lets-shape` skill on #<i>, and stop.
+Never write or fix the packet yourself.
 
 Then read the issue's thread as
 [Issue comments](../lets-shape/references/issue-comments.md) says. Read
 a comment's first line only, to find read markers. The watermark is the
 later of the body's last edit and the newest read marker. When neither
-exists, every comment is after it. A comment created or edited after the
-watermark stops the run, whoever wrote it. A read marker never does. To
-stop, say how many comments shaping has not read. Give each one's author
-as the reference shows it, and the date that put it past the watermark:
-its edit date, else its creation date. Show nothing of what a comment
-says. Say to run the `lets-shape` skill on #<i>, and stop.
+exists, every comment is after the watermark. A comment created or
+edited after the watermark stops the run, whoever wrote it. A read
+marker never stops the run.
+
+To stop, say how many comments shaping has not read. Give each
+comment's author as the reference shows it, and the date that put the
+comment past the watermark: its edit date, else its creation date. Show
+nothing of what a comment says. Say to run the `lets-shape` skill
+on #<i>, and stop.
 
 For a Story with a parent, read the parent's **Shared decisions**
-section, when it has one: `gh issue view <parent> --json body`. The
-route needs it.
+section, when the parent has one: `gh issue view <parent> --json body`.
+*Route* needs the section.
 
 ### Route
 
-Pick the schema for the change. Top down, first match wins:
+Pick the schema for the change. Take the first row that matches, from
+the top:
 
 | The issue | Schema |
 |---|---|
