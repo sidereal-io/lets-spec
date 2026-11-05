@@ -72,8 +72,8 @@ flow_texts() {
 }
 
 # A skill no schema step calls is still reachable when another skill the
-# flow ships calls it. lets-review-build is reached through lets-build's
-# *Finish the change*.
+# flow ships calls it. lets-review-build is reached through lets-go's
+# review build row.
 @test "each skill a flow ships, other than an entry point, is named by its schema, its config or a skill the flow ships" {
   local flow skill shipped named text
   for flow in standard minimal; do
@@ -292,20 +292,45 @@ skill_says() {
   skill_says lets-build 'On `lets-standard`, the build has the plan reviewed first.'
 }
 
-# finish_section: lets-build's Finish the change section, on one line.
-finish_section() {
-  awk '/^## Finish the change$/ { on = 1; next } /^## / { on = 0 } on' "$repo/skills/lets-build/SKILL.md" | tr -s '[:space:]' ' '
+# review_build_start: lets-review-build's Start section, on one line.
+review_build_start() {
+  awk '/^## Start$/ { on = 1; next } /^## / { on = 0 } on' "$repo/skills/lets-review-build/SKILL.md" | tr -s '[:space:]' ' '
 }
 
-@test "lets-build finishes through lets-review-build when the flow's schema is lets-standard" {
+@test "lets-review-build reviews the code when the flow's schema is lets-standard" {
   local phrase
-  for phrase in 'openspec/config.yaml' '`lets-standard`' '`lets-review-build` skill'; do
-    grep -qF -- "$phrase" <<<"$(finish_section)" || { echo "Finish the change does not say: $phrase"; false; }
+  for phrase in 'openspec/config.yaml' '`lets-standard`' '[run the review](#run-the-review)'; do
+    grep -qF -- "$phrase" <<<"$(review_build_start)" || { echo "lets-review-build's Start does not say: $phrase"; false; }
   done
 }
 
-@test "lets-build's own finish archives with the openspec-archive-change skill" {
-  grep -qF -- '`openspec-archive-change` skill' <<<"$(finish_section)"
+@test "lets-review-build finishes at once on any other schema" {
+  grep -qF -- 'On any other schema, go straight to [Finish the change](#finish-the-change)' <<<"$(review_build_start)"
+}
+
+@test "lets-review-build assumes no flow in its description or its finish" {
+  local phrase
+  for phrase in 'on the standard flow' 'Finish once the **Code review** section covers the branch'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-review-build/SKILL.md" | grep -qF -- "$phrase" ||
+      { echo "lets-review-build still says: $phrase"; false; }
+  done
+}
+
+@test "both flows ship lets-review-build" {
+  local flow
+  for flow in standard minimal; do
+    flow_skills "$flow" | grep -qx lets-review-build || { echo "$flow does not ship lets-review-build"; false; }
+  done
+}
+
+@test "lets-go's review build row runs the lets-review-build skill" {
+  grep -qF '`lets-review-build` skill' <<<"$(step_row review-build)" || { echo "the review build row does not run lets-review-build"; false; }
+  ! grep -qF 'Finish the change' <<<"$(step_row review-build)" || { echo "the review build row names a section"; false; }
+}
+
+@test "the README's minimal flow adds lets-review-build" {
+  grep -E '^\| Skills it adds \|' "$repo/README.md" | awk -F'|' '{ print $(NF-1) }' | grep -qF '`lets-review-build`' ||
+    { echo "README.md's minimal Skills it adds cell does not name lets-review-build"; false; }
 }
 
 @test "lets-build gives the code review's session to lets-review-build" {

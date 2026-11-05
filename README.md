@@ -301,7 +301,7 @@ one, and also gets `lets-minimal` for chores and small stories.
 | Independent plan review | Yes | No |
 | Building | One commit per task, test-first | One commit per task, test-first |
 | Independent code review | Yes | No |
-| Skills it adds | `lets-brainstorm`, `lets-write-specs`, `lets-write-adrs`, `lets-write-tasks`, `lets-test-first`, `lets-review-plan`, `lets-review-build` | `lets-brainstorm`, `lets-write-specs`, `lets-write-tasks`, `lets-test-first` |
+| Skills it adds | `lets-brainstorm`, `lets-write-specs`, `lets-write-adrs`, `lets-write-tasks`, `lets-test-first`, `lets-review-plan`, `lets-review-build` | `lets-brainstorm`, `lets-write-specs`, `lets-write-tasks`, `lets-test-first`, `lets-review-build` |
 
 The `standard` flow, stage by stage:
 

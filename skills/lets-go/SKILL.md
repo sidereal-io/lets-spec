@@ -569,7 +569,7 @@ holds `#` or `: `. Put no other step-report block in the message.
 | `shape` | The text of [What shape runs](#what-shape-runs). |
 | `plan` | Invoke the `lets-plan` skill for the change `<name>`, for issue #<i>. Give it this route line: `<route line>`. If the change exists, continue it. Stop when the plan is ready: do not build it, and offer no handoff. |
 | `build` | Run the `lets-build` skill on the branch `<name>`. Stop when every task is ticked. Do not run its *Finish the change*. |
-| `review-build` | Run the *Finish the change* section of the `lets-build` skill on the branch `<name>`. |
+| `review-build` | Invoke the `lets-review-build` skill for the change `<name>`. |
 
 ### What shape runs
 
