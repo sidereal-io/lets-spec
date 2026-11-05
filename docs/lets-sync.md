@@ -25,10 +25,14 @@ Each time `lets sync` runs, it:
 - removes the links that older versions made, even under the skills' old
   names, and the section that listed them in git's local exclude file. So
   git sees the copies, and no old skill is left beside a new one
-- warns about anything to fix: the wrong `schema:`, a marker without its
-  pair, a `CLAUDE.md` or `.claude/skills` that is not the expected link,
-  or an OpenSpec CLI on `PATH` that differs from the one the release's
-  `openspec-*` skills were generated from
+- warns about anything to fix: the wrong `schema:`, a config that still
+  names `lets-review-code`, a marker without its pair, a `CLAUDE.md` or
+  `.claude/skills` that is not the expected link, or an OpenSpec CLI on
+  `PATH` that differs from the one the release's `openspec-*` skills were
+  generated from. Earlier releases put a code review rule naming
+  `lets-review-code` in `openspec/config.yaml`. Delete its
+  `operations.archive` entry: the `lets-review-build` skill runs the code
+  review now.
 
 A copy is mode 0755 when the release's file is executable, and 0644
 otherwise. So the skills' scripts stay executable.
