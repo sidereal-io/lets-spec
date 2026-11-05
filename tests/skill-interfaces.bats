@@ -292,7 +292,7 @@ skill_says() {
   local phrase
   skill_says lets-go 'Interactivity: <level>, because #<i> is a <Kind>.'
   skill_says lets-go 'Interactivity: <level>, because you asked for it.'
-  skill_says lets-go 'Done review plan: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
+  skill_says lets-go 'Done review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.'
   skill_says lets-go 'gh issue view <i> --json title,blockedBy'
   skill_says lets-go 'its *Check the prerequisite* still runs, and its stop stands'
   skill_says lets-go 'The interactivity level is <level>.'
@@ -377,12 +377,25 @@ skill_says() {
 
 @test "lets-go dates each skipped step from Git and GitHub" {
   skill_says lets-go 'Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).'
-  skill_says lets-go 'Skipped review plan: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
+  skill_says lets-go 'Skipped review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.'
   skill_says lets-go 'Skipped build: every task is ticked, last task commit <date> (<sha>).'
   skill_says lets-go 'Skipped review build: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.'
   skill_says lets-go "git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md"
   skill_says lets-go "git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md"
-  skill_says lets-go "git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md"
+  skill_says lets-go 'git log -1 --format=%as <sha>'
+  skill_says lets-go 'gh pr view <name> --json number,body'
+}
+
+# Review plan runs inside build, and reads the Plan review section in the
+# pull request, not review.md.
+@test "lets-go reads review plan from the pull request" {
+  local phrase
+  skill_says lets-go '## Plan review'
+  skill_says lets-go '- **Verdict:** '
+  for phrase in 'review.md' 'VERDICT:' 'runs inside plan'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
+      { echo "lets-go still says: $phrase"; false; }
+  done
 }
 
 @test "lets-go names the five steps, and no old step name" {
