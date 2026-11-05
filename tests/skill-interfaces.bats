@@ -451,6 +451,35 @@ finish_section() {
   done
 }
 
+# step_row <step>: lets-go's row for the step in its table of steps.
+step_row() {
+  grep -E "^\| \`$1\` \|" "$repo/skills/lets-go/SKILL.md"
+}
+
+@test "lets-plan runs openspec-propose and reads the change state when it stops" {
+  skill_says lets-plan '`openspec-propose` skill'
+  skill_says lets-plan 'openspec instructions apply --change <name> --json'
+  skill_says lets-plan 'gh issue list --state open --search "<branch> in:title" --json number,title'
+}
+
+@test "lets-plan offers no handoff" {
+  run grep -nF 'lets delegate' "$repo/skills/lets-plan/SKILL.md"
+  [ "$status" -eq 1 ] || { echo "lets-plan says lets delegate: $output"; false; }
+}
+
+@test "both flows ship lets-plan" {
+  local flow
+  for flow in standard minimal; do
+    flow_skills "$flow" | grep -qx lets-plan || { echo "$flow does not ship lets-plan"; false; }
+  done
+}
+
+@test "lets-go's plan row runs the lets-plan skill with the route line" {
+  grep -qF '`lets-plan` skill' <<<"$(step_row plan)" || { echo "the plan row does not run lets-plan"; false; }
+  grep -qF '<route line>' <<<"$(step_row plan)" || { echo "the plan row gives no route line"; false; }
+  ! grep -qF 'openspec-propose' <<<"$(step_row plan)" || { echo "the plan row still names openspec-propose"; false; }
+}
+
 @test "lets-shape posts its reply with the gh command gh issue comment --body-file" {
   skill_says lets-shape 'gh issue comment <i> --body-file <file>'
 }

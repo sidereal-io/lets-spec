@@ -567,7 +567,7 @@ holds `#` or `: `. Put no other step-report block in the message.
 | Step | What to run |
 |---|---|
 | `shape` | The text of [What shape runs](#what-shape-runs). |
-| `plan` | Invoke the `openspec-propose` skill for the change `<name>`, for issue #<i>. Give it this route line for the proposal's commit message: `<route line>`. When the route is `lets-minimal` and the flow's schema is not, say to use the schema `lets-minimal`. If the change exists, continue it. Stop when the plan is ready: do not build it, and offer no handoff. |
+| `plan` | Invoke the `lets-plan` skill for the change `<name>`, for issue #<i>. Give it this route line: `<route line>`. If the change exists, continue it. Stop when the plan is ready: do not build it, and offer no handoff. |
 | `build` | Run the `lets-build` skill on the branch `<name>`. Stop when every task is ticked. Do not run its *Finish the change*. |
 | `review-build` | Run the *Finish the change* section of the `lets-build` skill on the branch `<name>`. |
 
