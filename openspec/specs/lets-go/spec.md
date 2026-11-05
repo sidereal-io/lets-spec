@@ -6,10 +6,11 @@ Says what the `lets-go` skill does for a shaped Chore, Bug or Story, or for an i
 
 ## Requirements
 
-### Requirement: Start reuses lets-build
-`lets-go` SHALL run `lets-build`'s *Find the source of demand*, *Confirm the packet* and *Route* in its own session on every run, by naming those sections. It SHALL run *Claim* only when no branch with the change's name exists, locally or on `origin`. When the change's branch exists and `lets-go` is on the default branch, it SHALL run `git switch <name>`, and go on as on a change's branch. On a change's branch that `origin` has, it SHALL run `git fetch origin <name>` before it reads any record. A local branch behind `origin/<name>` SHALL be fast-forwarded with `git merge --ff-only origin/<name>`. A local branch that has diverged from `origin/<name>` is a disagreement. When *Find the source of demand* finds an open blocker, `lets-go` SHALL look for the change's branch before it stops. For that, its blocker read SHALL be `gh issue view <i> --json title,blockedBy`, so the change's name is known as *Claim* names it, before *Confirm the packet* reads the title. When the branch exists, locally or on `origin`, it SHALL name the open blockers and go on: the user has stacked the branch by hand. When no such branch exists, the stop stands. For an idea, `lets-go` SHALL run that section's second case, described work with no issue: the search for an existing issue. It SHALL show the user the matches and ask, at either level, whether one is the same work. A yes SHALL make that issue `<i>`. On a no, or when none matches, the case's stop, to run `lets-shape`, SHALL be set aside: the shape step runs for the idea. After a shape report that names a parent and stories, `lets-go` SHALL run that section's third case, `next`, with the candidates narrowed to the report's stories, as *lets-go picks the first ready story* says. On the default branch, when *Confirm the packet* stops with a remedy of running `lets-shape` on #<i>, that stop SHALL be set aside too: the shape step runs for #<i>. It SHALL be set aside once per run: after a shape step, the stop stands. On a change's branch, that stop SHALL stand, because the shape step runs only before any branch exists. The Epic stop SHALL stand. `lets-go` SHALL add no other check of its own to `lets-build`'s sections. The commands it adds of its own are:
+### Requirement: Start finds, confirms, routes and claims the issue
+`lets-go` SHALL hold *Find the source of demand*, *Confirm the packet*, *Route*, *Glossary preflight*, *Claim* and *Import the glossary checkpoint* as sections of its own, under *Start*. It SHALL name no section of `lets-build`. It SHALL run *Find the source of demand*, *Confirm the packet* and *Route* in its own session on every run. It SHALL run *Claim* only when no branch with the change's name exists, locally or on `origin`. *Claim* sets the issue's Status with `gh project item-edit`, so `lets-go` sets that field itself. When the change's branch exists and `lets-go` is on the default branch, it SHALL run `git switch <name>`, and go on as on a change's branch. On a change's branch that `origin` has, it SHALL run `git fetch origin <name>` before it reads any record. A local branch behind `origin/<name>` SHALL be fast-forwarded with `git merge --ff-only origin/<name>`. A local branch that has diverged from `origin/<name>` is a disagreement. When *Find the source of demand* finds an open blocker, `lets-go` SHALL look for the change's branch before it stops. For that, its blocker read SHALL be `gh issue view <i> --json title,blockedBy`, so the change's name is known as *Claim* names it, before *Confirm the packet* reads the title. When the branch exists, locally or on `origin`, it SHALL name the open blockers and go on: the user has stacked the branch by hand. When no such branch exists, the stop stands. For an idea, `lets-go` SHALL run that section's second case, described work with no issue: the search for an existing issue. It SHALL show the user the matches and ask, at either level, whether one is the same work. A yes SHALL make that issue `<i>`. On a no, or when none matches, the case's stop, to run `lets-shape`, SHALL be set aside: the shape step runs for the idea. With no number and no idea, `lets-go` SHALL run that section's third case, `next`, as *lets-go takes one issue number or an idea* says. After a shape report that names a parent and stories, `lets-go` SHALL run that third case again. The candidates SHALL be the report's stories, as *lets-go picks the first ready story* says. When *Claim* finds that another session took an issue `next` picked, `lets-go` SHALL run `next` again with the same candidates. It SHALL go on from its blocker read with the new issue. On the default branch, when *Confirm the packet* stops with a remedy of running `lets-shape` on #<i>, that stop SHALL be set aside too: the shape step runs for #<i>. It SHALL be set aside once per run: after a shape step, the stop stands. On a change's branch, that stop SHALL stand, because the shape step runs only before any branch exists. The Epic stop SHALL stand. Beside the commands those sections hold, Start SHALL run only:
 
 - `lets go level`, run once when it reads the request, as *lets-go picks the interactivity level and says why* says;
+- `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` and `git branch --show-current`, run once after it, to find the default branch and the current one;
 - `title` beside `blockedBy` in the blocker read above;
 - `gh issue view <i> --json createdAt`, run only when the issue's `lastEditedAt` is null;
 - the issue search of *lets-go takes one issue number or an idea*;
@@ -22,7 +23,11 @@ Start SHALL not be a step: it SHALL run no `lets delegate step` command of its o
 
 #### Scenario: The skill names the sections
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
-- **THEN** it finds *Find the source of demand*, *Confirm the packet*, *Route* and *Claim* named as sections of `lets-build`, finds `gh issue view <i> --json createdAt`, and finds no `gh project item-edit` command
+- **THEN** it finds *Find the source of demand*, *Confirm the packet*, *Route*, *Glossary preflight*, *Claim* and *Import the glossary checkpoint* as headings of `lets-go`. It finds `gh issue view <i> --json createdAt`, `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` and `gh project item-edit`, and no section named as `lets-build`'s
+
+#### Scenario: A lost race on next
+- **WHEN** `lets-go` ran alone, `next` picked #149, and *Claim* finds that #149 has an assignee
+- **THEN** `lets-go` runs `next` again over the same candidates, prints a new `Picked` line, and runs the blocker read, *Confirm the packet* and *Route* for the new issue
 
 #### Scenario: The branch exists
 - **WHEN** `lets-go` runs for #149 on the default branch, and `origin` has a branch `lets-go-chore`
@@ -33,8 +38,8 @@ Start SHALL not be a step: it SHALL run no `lets delegate step` command of its o
 - **THEN** `lets-go` fast-forwards it before it reads the change state
 
 #### Scenario: Claim fails
-- **WHEN** `lets-build`'s *Claim* finds that someone else has the issue
-- **THEN** `lets-go` says who has it and stops, as `lets-build` does, and runs no step
+- **WHEN** *Claim* finds that someone else has the issue
+- **THEN** `lets-go` says who has it and stops, and runs no step
 
 #### Scenario: A blocked story on its own branch
 - **WHEN** `lets-go` runs for #152, which #149 blocks and #149 is open, and the branch `lets-go-story` exists on `origin`
@@ -42,7 +47,7 @@ Start SHALL not be a step: it SHALL run no `lets delegate step` command of its o
 
 #### Scenario: A blocked story with no branch
 - **WHEN** `lets-go` runs for #152 on the default branch, #149 is open, and no branch `lets-go-story` exists locally or on `origin`
-- **THEN** `lets-go` says #149 blocks it, as `lets-build` does, and claims nothing
+- **THEN** `lets-go` says #149 blocks it, and claims nothing
 
 #### Scenario: The search finds the same work
 - **WHEN** the user runs `lets-go add a --quiet flag to lets sync`, the search finds `#181 lets-sync-quiet — lets sync takes a --quiet flag`, and the user says it is the same work
@@ -58,7 +63,7 @@ Start SHALL not be a step: it SHALL run no `lets delegate step` command of its o
 
 #### Scenario: The pick names next
 - **WHEN** the shape step reports an epic and three stories
-- **THEN** `lets-go` names `lets-build`'s `next` case, with the three stories as the only candidates, and adds no command of its own for the pick
+- **THEN** `lets-go` runs its own `next` case, with the three stories as the only candidates, and adds no command of its own for the pick
 
 ### Requirement: A complete packet means shape is skipped, and the skip line says when
 When *Confirm the packet* passes, and no shape step ran in this run, `lets-go` SHALL print `Skipped shape: #<i>'s packet is complete, last edited <date>.` `<date>` SHALL be the day of the issue's `lastEditedAt`, which the thread query in *Confirm the packet* returns, as `YYYY-MM-DD`. When `lastEditedAt` is null, `<date>` SHALL be the day of the issue's `createdAt`, read with `gh issue view <i> --json createdAt`. When *Confirm the packet* passes after a shape step reported `done` in this run, `lets-go` SHALL print `Done shape: <date>. <evidence>` instead, with the report's `date` and its `evidence` joined with `; `. When *Confirm the packet* fails with a remedy of running `lets-shape` on #<i>, `lets-go` SHALL run the shape step, as *The shape step shapes an idea or an unshaped issue* says, and print no skip line.
@@ -80,7 +85,7 @@ When *Confirm the packet* passes, and no shape step ran in this run, `lets-go` S
 - **THEN** `lets-go` prints `Done shape: 2026-11-05T09:30:00Z.` followed by the report's evidence, and no `Skipped shape` line
 
 ### Requirement: Review plan is reported as not in the route
-When the schema is `lets-minimal`, review plan never runs. `lets-go` SHALL print `Skipped review plan: not in the lets-minimal route.` after the plan step is done, and before the build step. That line SHALL carry no date. Review plan SHALL not run as a step of its own. When the schema is not `lets-minimal`, it runs inside the build step: `lets-build`'s *Apply* has the plan reviewed before it builds, and `lets-review-plan` records the review in the pull request description under **Plan review**. When build is done, `lets-go` SHALL print a review plan line before build's line. Its evidence is `the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.` `<p>` SHALL be the pull request's number. `<sha>` and `<verdict>` SHALL come from the **Plan review** section of the pull request's body. `lets-go` SHALL find the `## Plan review` heading first, and read the section up to the next `## ` heading or the end of the body. Inside it, `<sha>` SHALL come from the line that starts `Reviewed: `, and `<verdict>` from the line that starts `- **Verdict:** `. After the build step, `lets-go` SHALL read the body again with `gh pr view <name> --json number,body`, because the step just wrote it. When build was done before this run, it SHALL use the body read in *lets-go finds the first unfinished step*. `<date>` SHALL be `<sha>`'s author date, as `YYYY-MM-DD`, from `git log -1 --format=%as <sha>`. When the build step reported `done` in this run, the line SHALL start `Done review plan:`. When build was done before this run, it SHALL start `Skipped review plan:`. When the build step reports `failed`, `lets-go` SHALL print no review plan line. The schema SHALL be the `schema:` line of the change's `.openspec.yaml` when the change folder exists, and the route's schema when it does not.
+When the schema is `lets-minimal`, review plan never runs. `lets-go` SHALL print `Skipped review plan: not in the lets-minimal route.` after the plan step is done, and before the build step. That line SHALL carry no date. Review plan SHALL not run as a step of its own. When the schema is not `lets-minimal`, it runs inside the build step. That step runs the `lets-review-plan` skill before `lets-build`, as *The step prompt says what to run, the level, and how to report* says. `lets-review-plan` records the review in the pull request description under **Plan review**. When build is done, `lets-go` SHALL print a review plan line before build's line. Its evidence is `the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.` `<p>` SHALL be the pull request's number. `<sha>` and `<verdict>` SHALL come from the **Plan review** section of the pull request's body. `lets-go` SHALL find the `## Plan review` heading first, and read the section up to the next `## ` heading or the end of the body. Inside it, `<sha>` SHALL come from the line that starts `Reviewed: `, and `<verdict>` from the line that starts `- **Verdict:** `. After the build step, `lets-go` SHALL read the body again with `gh pr view <name> --json number,body`, because the step just wrote it. When build was done before this run, it SHALL use the body read in *lets-go finds the first unfinished step*. `<date>` SHALL be `<sha>`'s author date, as `YYYY-MM-DD`, from `git log -1 --format=%as <sha>`. When the build step reported `done` in this run, the line SHALL start `Done review plan:`. When build was done before this run, it SHALL start `Skipped review plan:`. When the build step reports `failed`, `lets-go` SHALL print no review plan line. The schema SHALL be the `schema:` line of the change's `.openspec.yaml` when the change folder exists, and the route's schema when it does not.
 
 #### Scenario: A chore's route
 - **WHEN** the schema is `lets-minimal` and the plan step reports `done`
@@ -196,19 +201,27 @@ When `step run` exits 3, `lets-go` SHALL run the step in a subagent. The subagen
 - **THEN** `lets-go` treats the step as `failed`, with a reason that names `evidence`, and stops
 
 ### Requirement: The step prompt says what to run, the level, and how to report
-Each step prompt SHALL name the step, the change, the issue, the branch and the schema. For the shape step, the issue is `#<i>`, or `none yet` with the idea; the branch is the default branch; and the schema is left out, because *Route* has not run. It SHALL say what to run. For shape: `lets-shape`'s *Shape one issue*, as *The shape step shapes an idea or an unshaped issue* says, and its discovery when the work is too large for one issue, as *The shape step asks before it runs discovery* says. For plan: the `openspec-propose` skill for the change, for the issue, with the route line. It continues the change when it already exists, and does not offer the handoff. For build: the `lets-build` skill on the branch. It stops when every task is ticked, and does not finish the change. For review build: the *Finish the change* section of the `lets-build` skill. The prompt SHALL say the interactivity level, and what the `lets-go` session does with it. At `recommend`, that session answers each question that has a recommendation, and asks the user the rest. At `ask`, it puts every question to the user, with the step's recommendation. The step's own rules SHALL be the same at both levels. It SHALL say that the step never asks the user in its session. When the step needs a decision, it ends with a `needs-input` report that lists every open question, with a `recommendation` where it has one. A question that asks the user to confirm something, such as a brainstorm ledger, an issue packet or a discovery phase, SHALL carry no recommendation. The prompt SHALL say how to read an `## Answers` section. Each answer settles its question. An answer marked as accepted by `lets-go` is recorded as `Assumption` in a brainstorm ledger, and any other answer as `User`. An answer of yes to the confirmation question lets the brainstorm set `Confirmed by user: yes`. The prompt SHALL give the report rules: write the report last, quote a line that holds `#` or `: `, and put no other `step-report` block in the message. It SHALL say what a `done` report's evidence holds: the commits made, and the pull request when the step opened or changed it; for shape, the issue first, as `issue #<n>: <title>`, or the parent and the stories, as `epic #<p>: <title>` and `story #<n>: <title>` lines.
+Each step prompt SHALL name the step, the change, the issue, the branch and the schema. For the shape step, the issue is `#<i>`, or `none yet` with the idea; the branch is the default branch; and the schema is left out, because *Route* has not run. It SHALL say what to run. For shape: `lets-shape`'s *Shape one issue*, as *The shape step shapes an idea or an unshaped issue* says, and its discovery when the work is too large for one issue, as *The shape step asks before it runs discovery* says. For plan: the `lets-plan` skill for the change, for the issue, with the route line. It continues the change when it already exists, and offers no handoff. For build: on `lets-standard`, the `lets-review-plan` skill first. With no **Plan review** section in the pull request it reviews the plan; otherwise its *Check an earlier review* decides. `lets-build` runs only when the review is finished. On any other schema, the `lets-build` skill at once. The build step stops when every task is ticked, and does not finish the change. For review build: the `lets-review-build` skill for the change. The prompt SHALL say the interactivity level, and what the `lets-go` session does with it. At `recommend`, that session answers each question that has a recommendation, and asks the user the rest. At `ask`, it puts every question to the user, with the step's recommendation. The step's own rules SHALL be the same at both levels. It SHALL say that the step never asks the user in its session. When the step needs a decision, it ends with a `needs-input` report that lists every open question, with a `recommendation` where it has one. A question that asks the user to confirm something, such as a brainstorm ledger, an issue packet or a discovery phase, SHALL carry no recommendation. The prompt SHALL say how to read an `## Answers` section. Each answer settles its question. An answer marked as accepted by `lets-go` is recorded as `Assumption` in a brainstorm ledger, and any other answer as `User`. An answer of yes to the confirmation question lets the brainstorm set `Confirmed by user: yes`. The prompt SHALL give the report rules: write the report last, quote a line that holds `#` or `: `, and put no other `step-report` block in the message. It SHALL say what a `done` report's evidence holds: the commits made, and the pull request when the step opened or changed it; for shape, the issue first, as `issue #<n>: <title>`, or the parent and the stories, as `epic #<p>: <title>` and `story #<n>: <title>` lines.
 
 #### Scenario: The propose prompt
 - **WHEN** `lets-go` writes the plan prompt for change `lets-go-chore`, issue `#149`, route `lets-minimal`, at `recommend`
-- **THEN** the file names `openspec-propose`, `lets-go-chore`, `#149`, the route line, `recommend`, `needs-input`, `recommendation`, `## Answers`, `Assumption`, `User` and `step-report`
+- **THEN** the file names `lets-plan`, `lets-go-chore`, `#149`, the route line, `recommend`, `needs-input`, `recommendation`, `## Answers`, `Assumption`, `User` and `step-report`, and does not name `openspec-propose`
 
 #### Scenario: The propose prompt at ask
 - **WHEN** `lets-go` writes the plan prompt for change `lets-go-story`, issue `#152`, at `ask`
 - **THEN** the file says the level is `ask`, says the `lets-go` session puts every question to the user, and still says to list every open question with a recommendation where the step has one
 
 #### Scenario: The apply prompt stops short of finishing
-- **WHEN** `lets-go` writes the build prompt
-- **THEN** the file says to stop when every task is ticked, and not to run *Finish the change*
+- **WHEN** `lets-go` writes the build prompt for a change whose schema is `lets-standard`
+- **THEN** the file names `lets-review-plan` before `lets-build`, says to stop when every task is ticked, and does not name `lets-review-build`
+
+#### Scenario: The build prompt on lets-minimal
+- **WHEN** `lets-go` writes the build prompt for a change whose schema is `lets-minimal`
+- **THEN** the file names `lets-build` and does not name `lets-review-plan`
+
+#### Scenario: The review build prompt
+- **WHEN** `lets-go` writes the review build prompt
+- **THEN** the file names the `lets-review-build` skill for the change, and names no section of `lets-build`
 
 #### Scenario: A confirmation
 - **WHEN** a step's brainstorm needs the user to confirm the ledger
@@ -234,11 +247,11 @@ When a report's outcome is `needs-input`, `lets-go` SHALL go through its questio
 - **THEN** the answers file holds the earlier pairs and the new one, in order, and the step runs a third time with it
 
 ### Requirement: A run ends on done, failed, or a repeated question
-`lets-go` SHALL run a step's rounds until its report is `done` or `failed`. When a `needs-input` report holds a question that is already in the answers file, `lets-go` SHALL stop, say the step asked a settled question again, and show the report. On a `failed` report it SHALL show the reason, name the step and the branch, say that running `lets-build` on the branch carries on, and stop. For a failed shape step there is no branch: it SHALL say to run `lets-shape` on the idea or the issue instead. It SHALL not run a failed step again.
+`lets-go` SHALL run a step's rounds until its report is `done` or `failed`. When a `needs-input` report holds a question that is already in the answers file, `lets-go` SHALL stop, say the step asked a settled question again, and show the report. On a `failed` report it SHALL show the reason, name the step and the branch, and stop. It SHALL say that running `lets-go` again on the branch carries on from the first unfinished step. For a failed shape step there is no branch: it SHALL say to run `lets-shape` on the idea or the issue instead. It SHALL not run a failed step again in the same run.
 
 #### Scenario: A failed apply
 - **WHEN** the build step reports `failed` with reason `tests fail on main`
-- **THEN** `lets-go` shows `tests fail on main`, names `build` and the branch, says to run `lets-build` on the branch, and runs no review build
+- **THEN** `lets-go` shows `tests fail on main`, names `build` and the branch, says to run `lets-go` again on the branch, and runs no review build
 
 #### Scenario: A repeated question
 - **WHEN** the resumed plan step asks `Which schema?` again, and that question is in the answers file
@@ -249,7 +262,7 @@ When a report's outcome is `needs-input`, `lets-go` SHALL go through its questio
 - **THEN** `lets-go` prints `Failed shape:` with the reason, says to run `lets-shape`, names no branch, and runs no plan
 
 ### Requirement: Review build ends the run
-The review build step SHALL run `lets-build`'s *Finish the change*: the project's finishing rules, verify, archive, and marking the pull request ready. When it reports `done`, or when *lets-go finds the first unfinished step* found every step done, `lets-go` SHALL print one line per step, in order. A skipped step prints its skip line from *A skipped step's line carries its evidence and date*. A done step prints `Done`, the step's spoken name, a colon, the report's `date` and its evidence: `Done build: <date>. <evidence>`. Review plan prints the line *Review plan is reported as not in the route* sets. A failed step prints `Failed`, the spoken name, a colon and the reason: `Failed review build: <reason>`. The spoken name has a space, never a hyphen. `lets-go` SHALL then print the pull request's URL and stop. It SHALL keep no state of its own outside `.workspace/`, and SHALL need none: without its files in `.workspace/lets-go/`, a run reaches the same step.
+The review build step SHALL run the `lets-review-build` skill. On `lets-standard` that skill reviews the code first. On every flow it then follows the project's finishing rules, verifies, archives, and marks the pull request ready. When it reports `done`, or when *lets-go finds the first unfinished step* found every step done, `lets-go` SHALL print one line per step, in order. A skipped step prints its skip line from *A skipped step's line carries its evidence and date*. A done step prints `Done`, the step's spoken name, a colon, the report's `date` and its evidence: `Done build: <date>. <evidence>`. Review plan prints the line *Review plan is reported as not in the route* sets. A failed step prints `Failed`, the spoken name, a colon and the reason: `Failed review build: <reason>`. The spoken name has a space, never a hyphen. `lets-go` SHALL then print the pull request's URL and stop. It SHALL keep no state of its own outside `.workspace/`, and SHALL need none: without its files in `.workspace/lets-go/`, a run reaches the same step.
 
 #### Scenario: A finished run
 - **WHEN** review build reports `done` with evidence `archive commit 9a1b2c3` and `pull request #167 ready`
@@ -288,6 +301,7 @@ The review build step SHALL run `lets-build`'s *Finish the change*: the project'
 - `story #<n>: <title>`
 - `Run discovery on it?`
 - `Picked #<n>: <title>, the first ready story under #<p>.`
+- `Picked #<n>: <title>, the next ready issue.`
 - `docs: the discovery map from #<p>`
 - `Discovery status: in-progress`
 - `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`
@@ -311,29 +325,29 @@ The review build step SHALL run `lets-build`'s *Finish the change*: the project'
 - `asked a settled question again`
 - `**3**: no fresh session can run here`
 
-It SHALL not hold `review.md`, `VERDICT:`, `#152 adds`, `#153 adds` or `#154 adds`. It SHALL not say that `lets-go` takes chores only, that `lets-go` needs an issue number on the default branch, or that review plan runs inside plan. It SHALL not say that a too-large idea ends the shape step with a `failed` report. The README's `lets-go` section SHALL not say that an idea too large for one issue stops the run.
+It SHALL not hold `review.md`, `VERDICT:`, `#152 adds`, `#153 adds` or `#154 adds`. It SHALL not say that `lets-go` takes chores only, or that `lets-go` needs an issue number on the default branch. It SHALL not say that review plan runs inside plan, or that `lets-go` reuses the `lets-build` skill. It SHALL not say that a too-large idea ends the shape step with a `failed` report. The README's `lets-go` section SHALL not say that an idea too large for one issue stops the run.
 
 #### Scenario: The fixed lines
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
-- **THEN** it finds every string this requirement lists, and does not find `review.md`, `VERDICT:`, `#152 adds`, `#153 adds` or `#154 adds`
+- **THEN** it finds every string this requirement lists, and does not find `review.md`, `VERDICT:`, `#152 adds`, `#153 adds`, `#154 adds` or `reuses the \`lets-build\` skill`
 
 #### Scenario: The too-large idea
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and `README.md`
 - **THEN** the skill does not say `end with a failed report that says so and names`, and the README does not say `An idea too large for one issue stops the run`
 
 ### Requirement: lets-go ships in both flows as an entry point
-Both flows in `flows.json` SHALL ship `lets-go`. The routing table in `overlays/AGENTS.md` SHALL hold a row whose request is `Take a shaped story, bug or chore, or an idea in words, to a ready pull request in one run`. Its answer SHALL be `The \`lets-go\` skill`, in that table's form. The README's usage table SHALL hold a row with the same request and the answer `\`lets-go\``, in that table's form. Neither table SHALL keep a row whose request is `Take a shaped story, bug or chore to a ready pull request in one run`. The `lets-shape` rows SHALL stay: shaping alone is still a request. The skill-interfaces test SHALL count `lets-go` as an entry point, which no schema, config or skill needs to name.
+Both flows in `flows.json` SHALL ship `lets-go` and `lets-plan`. The routing table in `overlays/AGENTS.md` SHALL hold a row whose request is `Take a shaped story, bug or chore, or an idea in words, to a ready pull request in one run`, and a row whose request is `Start the next story, or move the current branch's change on`. Each row's answer SHALL be `The \`lets-go\` skill`, in that table's form. The README's usage table SHALL hold a row with the first request, and a row whose request is `Start the next story, or carry on the change on your current branch`, each with the answer `\`lets-go\``, in that table's form. Neither table SHALL keep a row whose request is `Take a shaped story, bug or chore to a ready pull request in one run`, and neither SHALL point a row at `lets-build`. The `lets-shape` rows SHALL stay: shaping alone is still a request. The skill-interfaces test SHALL count `lets-go` as an entry point, which no schema, config or skill needs to name.
 
 #### Scenario: The flows
 - **WHEN** the skill-interfaces test reads `flows.json`
-- **THEN** `standard` and `minimal` both list `lets-go` in `skills`
+- **THEN** `standard` and `minimal` both list `lets-go` and `lets-plan` in `skills`
 
 #### Scenario: The routing rows
 - **WHEN** the skill-interfaces test reads `overlays/AGENTS.md` and `README.md`
-- **THEN** each holds a row whose request is `Take a shaped story, bug or chore, or an idea in words, to a ready pull request in one run` and whose answer names `lets-go`, and neither holds the row without the idea
+- **THEN** each holds a row whose request is `Take a shaped story, bug or chore, or an idea in words, to a ready pull request in one run` and whose answer names `lets-go`. Each holds its next-story row with the answer `lets-go`. Neither holds the row without the idea, or a row that names `lets-build`
 
 ### Requirement: lets-go finds the first unfinished step
-After Start, on the change's branch, `lets-go` SHALL find the first unfinished step from the records Git and GitHub keep, and SHALL run the steps from there. It SHALL read the records in this order. First, `git status --porcelain`: a line for a path outside `.workspace/` is a disagreement. Second, the pull request for the branch, with `gh pr view <name> --json number,url,state,isDraft,body`. A missing pull request is noted, not a stop. Third, the archive folder, whose whole name is `<YYYY-MM-DD>-<name>` in `openspec/changes/archive/`. When it exists, every step is done. Fourth, `openspec instructions apply --change <name> --json`, read as `lets-build`'s *Find where you are* reads it. No change folder, or `state` `blocked`, means plan is the first unfinished step. `ready` means build. `all_done` means review build. Any other `state` SHALL show the CLI's `instruction` and stop. Shape SHALL count as done when *Confirm the packet* passed. On `lets-minimal`, review plan SHALL count as done when plan is done. On any other schema, it SHALL count as done when build is done, because it runs inside build.
+After Start, on the change's branch, `lets-go` SHALL find the first unfinished step from the records Git and GitHub keep, and SHALL run the steps from there. It SHALL read the records in this order. First, `git status --porcelain`: a line for a path outside `.workspace/` is a disagreement. Second, the pull request for the branch, with `gh pr view <name> --json number,url,state,isDraft,body`. A missing pull request is noted, not a stop. Third, the archive folder, whose whole name is `<YYYY-MM-DD>-<name>` in `openspec/changes/archive/`. When it exists, every step is done. Fourth, `openspec instructions apply --change <name> --json`, and its `state`. No change folder, or `state` `blocked`, means plan is the first unfinished step. `ready` means build. `all_done` means review build. Any other `state` SHALL show the CLI's `instruction` and stop. Shape SHALL count as done when *Confirm the packet* passed. On `lets-minimal`, review plan SHALL count as done when plan is done. On any other schema, it SHALL count as done when build is done, because it runs inside build.
 
 #### Scenario: A branch with no change
 - **WHEN** the branch `lets-go-chore` has no `openspec/changes/lets-go-chore/` folder and no archive folder
@@ -435,7 +449,7 @@ When the pull request's `state` is `MERGED`, `lets-go` SHALL say the change is m
 - **THEN** `lets-go` says the change was rejected, and runs no step
 
 ### Requirement: lets-go runs for a Chore, a Bug or a Story
-`lets-go` SHALL run on the repository's default branch, or on a change's branch. A change's branch is a branch named after the change, whose issue `lets-go` finds as *lets-go takes one issue number or an idea* says. On any other branch it SHALL say that `lets-go` runs on the default branch or on a change's branch, and stop. It SHALL run for an issue whose Kind is Chore, Bug or Story, and for an idea or an unshaped issue, which the shape step turns into one. It SHALL add no Kind check of its own: an Epic stops where `lets-build`'s *Confirm the packet* says an epic is built through its stories. For a Story with a parent, it SHALL read the parent's **Shared decisions** as *Confirm the packet* says, because *Route* needs them. A stop that `lets-build` makes, such as an unresolved glossary prerequisite, SHALL stand as `lets-build` reports it, except the open-blocker stop and the `lets-shape` stops that *Start reuses lets-build* sets aside.
+`lets-go` SHALL run on the repository's default branch, or on a change's branch. A change's branch is a branch named after the change, whose issue `lets-go` finds as *lets-go takes one issue number or an idea* says. On any other branch it SHALL say that `lets-go` runs on the default branch or on a change's branch, and stop. It SHALL run for an issue whose Kind is Chore, Bug or Story, and for an idea or an unshaped issue, which the shape step turns into one. It SHALL add no Kind check of its own: an Epic stops where *Confirm the packet* says an epic is built through its stories. For a Story with a parent, it SHALL read the parent's **Shared decisions** as *Confirm the packet* says, because *Route* needs them. A stop that one of *Start*'s sections makes, such as an unresolved glossary prerequisite, SHALL stand as that section reports it. The exceptions are the open-blocker stop and the `lets-shape` stops that *Start finds, confirms, routes and claims the issue* sets aside.
 
 #### Scenario: A change's branch
 - **WHEN** the current branch is `lets-go-chore`, and issue #149's title starts with `lets-go-chore — `
@@ -451,7 +465,7 @@ When the pull request's `state` is `MERGED`, `lets-go` SHALL say the change is m
 
 #### Scenario: An Epic
 - **WHEN** the issue's Kind is Epic
-- **THEN** `lets-go` stops as `lets-build`'s *Confirm the packet* does, lists the epic's open sub-issues, and claims nothing
+- **THEN** `lets-go` stops as *Confirm the packet* says, lists the epic's open sub-issues, and claims nothing
 
 #### Scenario: A branch with no issue
 - **WHEN** the current branch is `fix-typo`, and no open issue's title starts with `fix-typo — `
@@ -459,7 +473,7 @@ When the pull request's `state` is `MERGED`, `lets-go` SHALL say the change is m
 
 #### Scenario: A glossary prerequisite still stops
 - **WHEN** the issue's **Glossary handoff** names an owner whose pull request has not merged
-- **THEN** `lets-go` stops as `lets-build`'s *Check the prerequisite* does, and runs no step
+- **THEN** `lets-go` stops as *Check the prerequisite* says, and runs no step
 
 ### Requirement: lets-go relays a needs-input report at the ask level
 At the `ask` level, when a report's outcome is `needs-input`, `lets-go` SHALL ask the user every question, one at a time, in the report's order. It SHALL wait for each answer before the next question. For a question with a `recommendation`, it SHALL show the recommendation as the suggested answer. It SHALL write each answer as the user gave it, even when the user took the recommendation. It SHALL add no ` (lets-go accepted the step's recommendation; the user did not decide)` marker. It SHALL append every pair, in order, to `.workspace/lets-go/<name>-<step>-answers.yaml`. It SHALL then run the step again, as *lets-go relays a needs-input report at the recommend level* says.
@@ -477,15 +491,19 @@ At the `ask` level, when a report's outcome is `needs-input`, `lets-go` SHALL as
 - **THEN** `lets-go` asks the user that question alone, as it does at `recommend`
 
 ### Requirement: lets-go takes one issue number or an idea
-`lets-go` SHALL take one issue number, or an idea in words. A request names an issue when it holds `#<n>` or is a bare number. A leading or trailing `ask` or `recommend` names the level and SHALL not count as part of the idea. On the default branch, every other request SHALL be the idea, kept word for word. On the default branch, when the request holds neither a number nor words, `lets-go` SHALL say that it needs an issue number or an idea, and stop. On a change's branch, when it is given no number, it SHALL find the issue by the branch name. It SHALL run `gh issue list --state open --search "<branch> in:title" --json number,title` and keep the issues whose title starts with `<branch> — `. Exactly one match SHALL be the issue. Otherwise it SHALL say that it needs the issue number, and stop. When it is given a number on a change's branch, that issue's title SHALL start with `<branch> — `. If it does not, `lets-go` SHALL say the issue and the branch do not match, and stop. When it is given words on a change's branch, it SHALL say that an idea needs the default branch, and stop. It SHALL take an issue number as `lets-build`'s *Find the source of demand* takes a named issue. It SHALL take an idea as that section takes described work. It SHALL name that section rather than restate it.
+`lets-go` SHALL take one issue number, or an idea in words, or nothing. A request names an issue when it holds `#<n>` or is a bare number. A leading or trailing `ask` or `recommend` names the level and SHALL not count as part of the idea. On the default branch, every other request with words SHALL be the idea, kept word for word. On the default branch, when the request holds neither a number nor words, `lets-go` SHALL take `next`: the third case of *Find the source of demand*, over the whole backlog. That case keeps its rank and its *Check the prerequisite* on each candidate. `lets-go` SHALL print `Picked #<n>: <title>, the next ready issue.` and go on from the blocker read with that issue as `<i>`. When no candidate is ready, it SHALL say the backlog has nothing ready, suggest the `lets-shape` skill, and stop, claiming nothing. On a change's branch, when it is given no number, it SHALL find the issue by the branch name. It SHALL run `gh issue list --state open --search "<branch> in:title" --json number,title` and keep the issues whose title starts with `<branch> — `. Exactly one match SHALL be the issue. Otherwise it SHALL say that it needs the issue number, and stop. When it is given a number on a change's branch, that issue's title SHALL start with `<branch> — `. If it does not, `lets-go` SHALL say the issue and the branch do not match, and stop. When it is given words on a change's branch, it SHALL say that an idea needs the default branch, and stop. It SHALL take an issue number as *Find the source of demand* takes a named issue. It SHALL take an idea as that section takes described work.
 
 #### Scenario: Neither a number nor words
-- **WHEN** the user runs `lets-go` alone on the default branch
-- **THEN** `lets-go` says it needs an issue number or an idea, and claims nothing
+- **WHEN** the user runs `lets-go` alone on the default branch, and `next` finds `#149 lets-go-chore — ...` as the first ready issue
+- **THEN** `lets-go` prints `Picked #149: lets-go-chore — ..., the next ready issue.` and goes on to its blocker read with #149
+
+#### Scenario: Nothing is ready
+- **WHEN** the user runs `lets-go` alone on the default branch, and no Todo issue is unassigned, unblocked and ready
+- **THEN** `lets-go` says the backlog has nothing ready, suggests `lets-shape`, and claims nothing
 
 #### Scenario: An issue number
 - **WHEN** the user runs `lets-go` for `#149`
-- **THEN** `lets-go` reads issue `#149` as `lets-build`'s *Find the source of demand* does for a named issue
+- **THEN** `lets-go` reads issue `#149` as *Find the source of demand* does for a named issue
 
 #### Scenario: An idea
 - **WHEN** the user runs `lets-go add a --quiet flag to lets sync` on the default branch
@@ -619,7 +637,7 @@ When discovery filed stories, the shape step's `done` report SHALL hold, as its 
 - **THEN** `lets-go` treats the step as `failed`, with a reason that says the shape step named no story, and stops
 
 ### Requirement: lets-go picks the first ready story
-After a shape report that names a parent and stories, `lets-go` SHALL pick one story by naming `lets-build`'s *Find the source of demand*, its third case, `next`. The candidates SHALL be the report's stories and no other issue. That case's two commands SHALL run as `lets-build` writes them. So SHALL its rank, Must, then Should, then Could, then the lowest issue number, and its *Check the prerequisite* on each candidate in rank order. `lets-go` SHALL print `Picked #<n>: <title>, the first ready story under #<p>.` It SHALL then go on from Start's blocker read with that story as `<i>`, as for an issue number. When no candidate is ready, `lets-go` SHALL print the `Done shape` line and say that no story under #<p> is ready. It SHALL name each story and why it was left out, say to run `lets-go` with a story's number once it is ready, and stop. It SHALL claim nothing and create no branch in that case.
+After a shape report that names a parent and stories, `lets-go` SHALL pick one story with its own `next` case, the third case of *Find the source of demand*. The candidates SHALL be the report's stories and no other issue. That case's two commands SHALL run as the section writes them. So SHALL its rank, Must, then Should, then Could, then the lowest issue number, and its *Check the prerequisite* on each candidate in rank order. `lets-go` SHALL print `Picked #<n>: <title>, the first ready story under #<p>.` It SHALL then go on from Start's blocker read with that story as `<i>`, as for an issue number. When no candidate is ready, `lets-go` SHALL print the `Done shape` line and say that no story under #<p> is ready. It SHALL name each story and why it was left out, say to run `lets-go` with a story's number once it is ready, and stop. It SHALL claim nothing and create no branch in that case.
 
 #### Scenario: The walking skeleton is picked
 - **WHEN** the report names stories #191, #192 and #193, all Todo with Priority Must, #192 and #193 are blocked by #191, and nobody is assigned to any
