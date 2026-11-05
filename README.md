@@ -15,7 +15,7 @@ You talk to it through three skills:
   through planning, building, review and archive.
 - **`lets-go`** takes one shaped chore to a pull request ready for
   review, in one run, and asks you every question in the conversation
-  you started.
+  you started. Run it again and it picks up where it stopped.
 
 A fourth skill, **`lets-setup-backlog`**, creates that Project once per
 repository. The `lets sync` command copies the skills, schemas and rules
@@ -225,8 +225,15 @@ questions, and `lets-go` answers each one that has a recommendation,
 tells you what it answered, and asks you the rest. The run ends when the
 pull request is ready for review, with one line per step.
 
-`lets-go` takes chores only. For a story or a bug, or to carry on a
-change on its branch, use `lets-build`.
+If a run stops, run `lets-go` again, on the default branch or on the
+change's branch. It reads from Git and GitHub which steps are done, and
+skips them. Each skip prints one line with its evidence and date, such
+as `Skipped apply: every task is ticked, last task commit 2026-11-03
+(3222c70).` It then goes on from the first unfinished step. When the
+records disagree, for example on a branch with uncommitted changes, it
+says what to fix, and stops.
+
+`lets-go` takes chores only. For a story or a bug, use `lets-build`.
 
 ### The Project fields
 

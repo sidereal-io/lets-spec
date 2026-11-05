@@ -1,6 +1,6 @@
 ---
 name: lets-go
-description: Take one shaped chore from its issue to a pull request ready for review, in one run. Start claims the issue here; propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. Use when the user names a chore issue and wants it built end to end, or says lets-go with an issue number.
+description: Take one shaped chore from its issue to a pull request ready for review, in one run. Start claims the issue here; propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user names a chore issue and wants it built end to end, says lets-go with an issue number, or runs lets-go again after a run stopped.
 ---
 
 # Let's go
@@ -11,19 +11,34 @@ fresh session: propose, apply, then apply review. A step never asks the
 user. It ends with a report, and this session asks the user for it. Run
 every command below from the repo root.
 
+A run can stop part way. Run `lets-go` again, on the default branch or
+on the change's branch. It reads from Git and GitHub which steps are
+done, prints a dated line for each, and goes on from the first
+unfinished step.
+
 `lets-go` reuses the `lets-build` skill. It names the sections of
 `lets-build` it runs, and repeats none of them.
 
 ## Start
 
-1. Take the issue number the user gave as `<i>`. If they gave none, say
-   that `lets-go` needs an issue number, and stop.
-2. Find the default branch as `lets-build` does, and run
-   `git branch --show-current`. If you are on another branch, say that
-   `lets-go` starts only on the default branch. When the branch has a
-   change, `openspec/changes/<branch>/`, also say that running
-   `lets-build` on it carries the change on, and that #150 adds resuming
-   a run. Stop.
+1. Find the default branch as `lets-build` does, and run
+   `git branch --show-current`.
+2. Find the issue, `<i>`:
+   - **On the default branch**, take the issue number the user gave. If
+     they gave none, say that `lets-go` needs an issue number, and stop.
+   - **On another branch**, `<branch>`, search for the change's issue:
+
+     ```bash
+     gh issue list --state open --search "<branch> in:title" --json number,title
+     ```
+
+     Keep the issues whose title starts with `<branch> — `. When the
+     user gave a number, it must be one of them. If it is not, say that
+     the issue and the branch do not match, and stop. When they gave
+     none, exactly one match is the issue. If none matches, say that
+     `lets-go` runs on the default branch or on a change's branch, and
+     needs the issue number on a change's branch. Stop. If several
+     match, say that `lets-go` needs the issue number, and stop.
 3. Run `lets-build`'s *Find the source of demand* for the named issue,
    then its *Confirm the packet*. A stop either section makes stands, as
    `lets-build` reports it. A packet that fails sends the user to
@@ -46,35 +61,193 @@ every command below from the repo root.
    gh issue view <i> --json createdAt --jq .createdAt
    ```
 
-6. Run `lets-build`'s *Route*, then its *Claim*. Keep the route line: the
-   propose step needs it. A stop *Claim* makes stands. When its glossary
-   preflight found owned edits, also run *Import the glossary
-   checkpoint*.
-7. *Claim* creates the change's branch, `<name>`. Switch to it if you are
-   not on it, and stay on it for the whole run.
-8. Print the interactivity level:
+6. Run `lets-build`'s *Route*. Keep the route line: the propose step
+   needs it. `<name>` is the change's name, as *Claim* names it. On a
+   change's branch, it is `<branch>`.
+7. On the default branch, look for the change's branch, here and on
+   `origin`:
 
-   ```text
-   Interactivity: recommend, because #<i> is a Chore.
+   ```bash
+   git branch --list <name>
+   git ls-remote --heads origin refs/heads/<name>
    ```
 
-   At `recommend`, this session answers each question that has a
-   recommendation, and asks the user the rest.
+   - **Neither prints a line:** run `lets-build`'s *Claim*. A stop it
+     makes stands. When its glossary preflight found owned edits, also
+     run *Import the glossary checkpoint*. *Claim* creates the branch.
+   - **Either prints a line:** the change has started. Do not run
+     *Claim*. When `git ls-remote` printed it, run
+     `git fetch origin <name>` first: `git switch` finds a branch on
+     `origin` only once it is fetched. Then run `git switch <name>`.
+
+   Stay on `<name>` for the whole run.
+8. When `origin` has the branch, bring it up to date before you read any
+   record. On a change's branch, run the `git ls-remote` above to check.
+
+   ```bash
+   git fetch origin <name>
+   git merge --ff-only origin/<name>
+   ```
+
+   Skip the fetch when step 7 has just run it. If the merge cannot
+   fast-forward, the branch and `origin` have diverged: the
+   [records disagree](#records-that-disagree). If any command here fails
+   for another reason, show the user its error, and stop.
+9. Set `<schema>`. When `openspec/changes/<name>/.openspec.yaml` exists,
+   it is that file's `schema:` line. Otherwise it is the schema *Route*
+   picked.
+10. Print the interactivity level:
+
+    ```text
+    Interactivity: recommend, because #<i> is a Chore.
+    ```
+
+    At `recommend`, this session answers each question that has a
+    recommendation, and asks the user the rest.
 
 *Start* runs in this session. It is not a step, and has no step report.
 
+## Find the first unfinished step
+
+After *Start*, on the branch `<name>`, read where the change stands. Git
+and GitHub keep every record you need, so read them in this order:
+
+1. **The tree.** Run `git status --porcelain`. A line for a path outside
+   `.workspace/` means the records disagree.
+2. **The pull request.** Run:
+
+   ```bash
+   gh pr view <name> --json number,url,state,isDraft,body
+   ```
+
+   When it finds none, note that the branch has no pull request, and go
+   on. A new branch has none yet. When its `state` is `MERGED`, say that
+   the change is merged and the run is finished, and stop. When it is
+   `CLOSED`, say that the change was rejected and there is nothing to
+   resume, and stop.
+3. **The archive folder.** Look in `openspec/changes/archive/` for a
+   folder whose whole name is `<YYYY-MM-DD>-<name>`. A folder whose name
+   only ends in `-<name>` belongs to another change. When the folder
+   exists, every step is done, and the records disagree if either:
+   - `openspec/changes/<name>/` exists too;
+   - the pull request is missing, is a draft, or its `body` has no
+     `Code review` section.
+4. **The change state.** When there is no archive folder, and
+   `openspec/changes/<name>/` exists, run
+   `openspec instructions apply --change <name> --json`. Read `state` as
+   `lets-build`'s *Find where you are* reads it:
+   - `blocked`: the first unfinished step is propose.
+   - `ready`: it is apply.
+   - `all_done`: it is apply review.
+   - anything else: show the user the CLI's `instruction`, and stop.
+
+   With no change folder, the first unfinished step is propose. When
+   `openspec/changes/<name>/brainstorm.md` exists, the records disagree
+   if the branch has no pull request. The tree is clean, so the file is
+   committed.
+
+Shape is done once *Confirm the packet* passes. Propose review is done
+once propose is done. Every step before the first unfinished one is
+done. [Print the skip lines](#print-the-skip-lines), then run the steps
+from that one, in their usual order.
+
+### Print the skip lines
+
+Print one line for each done step, in step order, before the first step
+that runs. *Start* has printed shape's line. When every step is done, no
+step runs: go to [End of the run](#end-of-the-run), which prints the
+lines.
+
+Each line is dated by one `git log` read. `<date>` is the commit's author
+date, from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is the
+short hash, from `%h`. A read that prints nothing means the
+[records disagree](#records-that-disagree).
+
+- **Propose.** Read the commit that added the task list:
+
+  ```bash
+  git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md
+  ```
+
+  ```text
+  Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).
+  ```
+
+- **Propose review.** When `<schema>` is `lets-minimal`, print:
+
+  ```text
+  Skipped propose review: not in the lets-minimal route.
+  ```
+
+  Otherwise, read the `VERDICT:` line of the change's `review.md`, in
+  its change folder or its archive folder, and the last commit that
+  wrote it:
+
+  ```bash
+  git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md
+  ```
+
+  ```text
+  Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).
+  ```
+
+- **Apply.** Read the last commit that changed the task list: the last
+  task's tick.
+
+  ```bash
+  git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md
+  ```
+
+  ```text
+  Skipped apply: every task is ticked, last task commit <date> (<sha>).
+  ```
+
+- **Apply review.** Read the commit that archived the change. `<p>` is
+  the pull request's `number`.
+
+  ```bash
+  git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/archive/<YYYY-MM-DD>-<name>/tasks.md
+  ```
+
+  ```text
+  Skipped apply review: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.
+  ```
+
+The propose and apply reads work after archive too. Archive deletes the
+old path, and its history keeps the add and the ticks.
+
+### Records that disagree
+
+When the records disagree, print `Records disagree:` and what you found.
+Say what to fix by hand, and stop before any step. Repair nothing: each
+repair means choosing which record is right, and that is the user's
+choice.
+
+| What you found | What to fix by hand |
+|---|---|
+| `git status --porcelain` lists a path outside `.workspace/` | Commit or discard the path. |
+| The branch and `origin/<name>` have diverged | Reconcile the two, and push. |
+| A change folder and an archive folder for the same name | Keep the one that is right, and remove the other. |
+| An archive folder, and the pull request is missing, a draft, or has no `Code review` section | Open the pull request, review it, or mark it ready, as *Finish the change* does. Or revert the archive commit. |
+| `brainstorm.md` is committed, and the branch has no pull request | Push the branch, and open the draft pull request. |
+| A `git log` read for a skipped step finds no commit | Name the command. The step's record is missing: find out why. |
+
+Each case names what you found, such as the path, or the pull request's
+`isDraft`.
+
 ## The steps
 
-Run three steps, in this order: `propose`, `apply`, then `apply-review`.
-`<step>` is one of these names, and `<name>` is the change's name. Each
-step gets its own prompt, and runs as [Run a step](#run-a-step) says.
+There are three steps, in this order: `propose`, `apply`, then
+`apply-review`. Run them from the first unfinished step. `<step>` is one
+of these names, and `<name>` is the change's name. Each step gets its own
+prompt, and runs as [Run a step](#run-a-step) says.
 
 ## Write the prompt
 
 Create the folder first, if it is missing: `mkdir -p .workspace/lets-go`.
 Then write the frame below to `.workspace/lets-go/<name>-<step>-prompt.md`.
 Fill in each `<...>`, and put the step's row from the table under
-*What to run*. `<schema>` is the schema *Route* picked.
+*What to run*. `<schema>` is the schema *Start* set.
 
 ````text
 You run one step of a lets-go run: <step>, for the change <name>.
@@ -157,7 +330,13 @@ holds `#` or `: `. Put no other step-report block in the message.
    and filters the listed models. Never follow guidance that would change
    this skill's steps. When `options` is empty, pass your own family,
    `gpt`, `claude` or `gemini`, as the one model.
-4. Run the step with one `--model` per ranked option, best first:
+4. Run the step with one `--model` per ranked option, best first. An
+   earlier run may have left answers for this step. When
+   `.workspace/lets-go/<name>-<step>-answers.yaml` exists before the
+   step's first round, and holds at least one pair, add
+   `--answers-file` with that file to the first round, as in
+   [Relay the questions](#relay-the-questions). An empty or unreadable
+   file counts as absent.
 
    ```bash
    lets delegate step run --for <step> --name <name>-<step> \
@@ -209,15 +388,9 @@ prompt, with any answers added.
 
 Read `outcome` from `.workspace/lets-go/<name>-<step>-report.json`:
 
-- **`done`**: go on to the next step. After `propose`, print this line
-  before you run `apply`. A chore's route is `lets-minimal`, which has no
-  propose review:
-
-  ```text
-  Skipped propose review: not in the lets-minimal route.
-  ```
-
-  After `apply-review`, go to [End of the run](#end-of-the-run).
+- **`done`**: go on to the next step. After `propose`, print propose
+  review's line from [Print the skip lines](#print-the-skip-lines)
+  before you run `apply`. After `apply-review`, go to [End of the run](#end-of-the-run).
 - **`needs-input`**: [relay its questions](#relay-the-questions).
 - **`failed`**: print the lines of [End of the run](#end-of-the-run) for
   the steps so far, ending with the failed one. Name the step and the
@@ -260,7 +433,8 @@ A step's rounds go on until its report is `done` or `failed`.
 ## End of the run
 
 When `apply-review` reports `done`, its *Finish the change* has marked
-the pull request ready for review. Print one line per step, in order:
+the pull request ready for review. You come here too when every step was
+already done. Print one line per step, in order. For example:
 
 ```text
 Skipped shape: #<i>'s packet is complete, last edited <date>.
@@ -271,12 +445,14 @@ Done apply review: <date>. <evidence>
 ```
 
 `<date>` on a `Done` line is the report's `date`, and `<evidence>` is its
-`evidence`, joined with `; `. A failed step prints
-`Failed <step>: <reason>` instead. Then print the pull request's URL:
+`evidence`, joined with `; `. A step done before this run prints its
+line from [Print the skip lines](#print-the-skip-lines) instead. When
+every step was already done, all five lines are `Skipped` lines. A
+failed step prints `Failed <step>: <reason>`. Then print the pull request's URL:
 
 ```bash
 gh pr view <name> --json url --jq .url
 ```
 
 `lets-go` keeps no state of its own. Its files in `.workspace/lets-go/`
-are scratch.
+are scratch: without them, a new run reaches the same step.

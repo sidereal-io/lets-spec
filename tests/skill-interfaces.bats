@@ -268,6 +268,28 @@ skill_says() {
   skill_says lets-go 'Skipped propose review: not in the lets-minimal route.'
 }
 
+@test "lets-go resumes a change at its first unfinished step" {
+  skill_says lets-go 'openspec instructions apply --change <name> --json'
+  skill_says lets-go 'git status --porcelain'
+  skill_says lets-go 'git fetch origin <name>'
+  skill_says lets-go 'git merge --ff-only origin/<name>'
+  skill_says lets-go 'git switch <name>'
+  skill_says lets-go 'gh issue list --state open --search "<branch> in:title" --json number,title'
+  skill_says lets-go 'Records disagree:'
+  run grep -n '#150 adds resuming' "$repo/skills/lets-go/SKILL.md"
+  [ "$status" -eq 1 ] || { echo "lets-go still defers resuming to #150: $output"; false; }
+}
+
+@test "lets-go dates each skipped step from Git and GitHub" {
+  skill_says lets-go 'Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).'
+  skill_says lets-go 'Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
+  skill_says lets-go 'Skipped apply: every task is ticked, last task commit <date> (<sha>).'
+  skill_says lets-go 'Skipped apply review: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.'
+  skill_says lets-go "git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md"
+  skill_says lets-go "git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md"
+  skill_says lets-go "git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md"
+}
+
 @test "lets-shape posts its reply with the gh command gh issue comment --body-file" {
   skill_says lets-shape 'gh issue comment <i> --body-file <file>'
 }
