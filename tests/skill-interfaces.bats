@@ -84,11 +84,22 @@ flow_texts() {
       for skill in $shipped; do named_skills "$repo/skills/$skill/SKILL.md"; done
     )"
     for skill in $shipped; do
-      case "$skill" in lets-build | lets-shape | lets-setup-backlog) continue ;; esac
+      case "$skill" in lets-build | lets-go | lets-shape | lets-setup-backlog) continue ;; esac
       grep -qx "$skill" <<<"$named" ||
         { echo "$flow ships $skill, but none of its schema, config or skills name it"; false; }
     done
   done
+}
+
+@test "lets-go ships in both flows with a routing row" {
+  local flow request='Take a shaped chore to a ready pull request in one run'
+  for flow in standard minimal; do
+    flow_skills "$flow" | grep -qx lets-go || { echo "$flow does not ship lets-go"; false; }
+  done
+  grep -qxF "| $request | The \`lets-go\` skill |" "$repo/overlays/AGENTS.md" ||
+    { echo "overlays/AGENTS.md has no routing row for lets-go"; false; }
+  grep -qxF "| $request | \`lets-go\` |" "$repo/README.md" ||
+    { echo "README.md has no usage row for lets-go"; false; }
 }
 
 @test "each skill a schema or config names is one its flow ships, or a generated OpenSpec skill" {
@@ -145,8 +156,8 @@ flow_texts() {
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
-@test "the review skills say exit 3 also means no resolver started a session" {
-  for skill in lets-review-code lets-review-plan; do
+@test "each skill that delegates to a subagent says exit 3 also means no resolver started a session" {
+  for skill in lets-review-code lets-review-plan lets-go; do
     grep -q '\*\*3\*\*: no fresh session can run here, for example because no resolver started one' \
       "$repo/skills/$skill/SKILL.md" || { echo "$skill"; false; }
   done
@@ -211,7 +222,7 @@ skill_says() {
 }
 
 @test "each skill that delegates lets the guidance only rank and filter models" {
-  for skill in lets-review-code lets-review-plan lets-build; do
+  for skill in lets-review-code lets-review-plan lets-build lets-go; do
     skill_says "$skill" "The guidance only ranks and filters the listed models"
   done
 }
@@ -223,6 +234,38 @@ skill_says() {
   skill_says lets-build "the guidance first, then the order the options came in"
   skill_says lets-build "When \`options\` is empty, pass your own family"
   skill_says lets-build "If it exits 3, every model was refused: show the user its stderr, and stop."
+}
+
+@test "lets-go's Start names lets-build's sections and adds one command" {
+  local section
+  for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Claim'; do
+    skill_says lets-go "*$section*"
+  done
+  skill_says lets-go 'gh issue view <i> --json createdAt'
+  skill_says lets-go "Skipped shape: #<i>'s packet is complete, last edited <date>."
+  skill_says lets-go 'Interactivity: recommend, because #<i> is a Chore.'
+  # lets-build's Claim sets the Status; lets-go sets no Project field itself.
+  run grep -n 'gh project item-edit' "$repo/skills/lets-go/SKILL.md"
+  [ "$status" -eq 1 ] || { echo "lets-go sets a Project field: $output"; false; }
+}
+
+@test "lets-go runs each step through lets delegate step" {
+  skill_says lets-go 'lets delegate step instructions --for <step>'
+  skill_says lets-go 'lets delegate step run --for <step>'
+  skill_says lets-go 'delegate.step.<step>.guidance'
+  skill_says lets-go 'the guidance first, then the order the options came in'
+  skill_says lets-go 'When `options` is empty, pass your own family'
+  skill_says lets-go '.workspace/lets-go/<name>-<step>-prompt.md'
+  skill_says lets-go '.workspace/lets-delegate/<name>-<step>.prompt.md'
+  skill_says lets-go 'step-report'
+}
+
+@test "lets-go relays a step's questions" {
+  skill_says lets-go '.workspace/lets-go/<name>-<step>-answers.yaml'
+  skill_says lets-go '--answers-file'
+  skill_says lets-go "lets-go accepted the step's recommendation; the user did not decide"
+  skill_says lets-go 'asked a settled question again'
+  skill_says lets-go 'Skipped propose review: not in the lets-minimal route.'
 }
 
 @test "lets-shape posts its reply with the gh command gh issue comment --body-file" {
