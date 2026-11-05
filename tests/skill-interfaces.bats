@@ -292,6 +292,31 @@ skill_says() {
   skill_says lets-build 'On `lets-standard`, the build has the plan reviewed first.'
 }
 
+# finish_section: lets-build's Finish the change section, on one line.
+finish_section() {
+  awk '/^## Finish the change$/ { on = 1; next } /^## / { on = 0 } on' "$repo/skills/lets-build/SKILL.md" | tr -s '[:space:]' ' '
+}
+
+@test "lets-build finishes through lets-review-build when the flow's schema is lets-standard" {
+  local phrase
+  for phrase in 'openspec/config.yaml' '`lets-standard`' '`lets-review-build` skill'; do
+    grep -qF -- "$phrase" <<<"$(finish_section)" || { echo "Finish the change does not say: $phrase"; false; }
+  done
+}
+
+@test "lets-build's own finish archives with the openspec-archive-change skill" {
+  grep -qF -- '`openspec-archive-change` skill' <<<"$(finish_section)"
+}
+
+@test "lets-build gives the code review's session to lets-review-build" {
+  skill_says lets-build "the code review's is the \`lets-review-build\` skill's"
+}
+
+@test "nothing lets-spec ships names lets-review-code" {
+  run grep -rn lets-review-code "$repo/skills" "$repo/schemas" "$repo/overlays" "$repo/flows.json"
+  [ "$status" -eq 1 ] || { echo "$output"; false; }
+}
+
 @test "lets-go's Start names lets-build's sections and adds one command" {
   local section
   for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Claim'; do

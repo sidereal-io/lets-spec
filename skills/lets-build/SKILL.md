@@ -371,9 +371,15 @@ The schema's apply instruction works the tasks, then comes to
 ## Finish the change
 
 The schema's apply instruction comes here when every task is done, and so
-does the `all_done` state above. Finishing goes in this order: the
-project's finishing rules, verify, archive, then mark the pull request
-ready.
+does the `all_done` state above.
+
+Read the `schema:` line of `openspec/config.yaml`, the flow's schema, as
+[Route](#route) does. On `lets-standard`, invoke the `lets-review-build`
+skill for the change `<branch>`. It reviews the code, then finishes the
+change. Stop when it is done.
+
+On any other schema, finish in this order: the project's finishing
+rules, verify, archive, then mark the pull request ready.
 
 1. Run `openspec instructions archive --change <branch> --json`. If it
    exits non-zero or its output is not JSON, stop, and show the user the
@@ -383,7 +389,8 @@ ready.
    key. Treat each one as a step, not advice.
 2. Run the `openspec-verify-change` skill. If it reports a problem, stop
    and show it to the user.
-3. Archive the change, then commit it on its own as `chore:`.
+3. Archive the change with the `openspec-archive-change` skill, then
+   commit it on its own as `chore:`.
 4. Mark the pull request ready for review.
 
 ## Rules
@@ -397,7 +404,7 @@ ready.
 - One issue per run.
 - The handoff is the only new session this skill starts, and only after
   the user says yes. The plan review's session is the `lets-review-plan`
-  skill's.
+  skill's, and the code review's is the `lets-review-build` skill's.
 - Change requests on a pull request are not yours to handle. If the
   user is fixing them, as the workflow rules in `AGENTS.md` describe,
   run only after every fix is committed.
