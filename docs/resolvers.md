@@ -285,4 +285,4 @@ or answer makes the command exit 2.
 
 `lets delegate step instructions --for <step>` gives the guidance at
 `delegate.step.<step>.guidance` in your `lets` config, such as
-`delegate.step.apply.guidance`. It does not read the handoff's guidance.
+`delegate.step.build.guidance`. It does not read the handoff's guidance.

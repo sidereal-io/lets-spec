@@ -9,7 +9,7 @@
 ## 2. The skill, the docs and the bats test [depends-on: 1]
 
 - [x] 2.1 [medium] `skills/lets-go/SKILL.md` names the five steps: *The steps* lists them in order and says review plan runs inside plan on `lets-standard` until a later story separates it; the prompt, answers and report file names, `--for` and `--name` values, the step table and the `Done`, `Skipped` and `Failed` lines use the new names in their spoken or kebab-case form as design decision 3 says; the description line too. The bats test pins `Skipped plan:`, `Skipped review plan:` (both forms), `Done review plan:`, `Skipped build:`, `Skipped review build:`, `Done plan: <date>. <evidence>`, `Done build: <date>. <evidence>` and `Done review build: <date>. <evidence>`, and fails on `Skipped propose`, `Skipped apply`, `propose review`, `apply review`, `propose-review`, `apply-review`, `--for propose` and `--for apply`. (verify: `bats tests/skill-interfaces.bats`) (✓ `bats tests/skill-interfaces.bats` passed)
-- [ ] 2.2 [parallel] [easy] `README.md` says the new names in the `lets-go` section and its skip example, the delegation glossary's *Step* entry, the `--for <step>` list, the config example (`step: build:`), the `step.<step>` guidance paragraph, and heads the flow table's first column *Stage*; `docs/resolvers.md` names `delegate.step.build.guidance`. (verify: `bats tests/skill-interfaces.bats`)
+- [x] 2.2 [parallel] [easy] `README.md` says the new names in the `lets-go` section and its skip example, the delegation glossary's *Step* entry, the `--for <step>` list, the config example (`step: build:`), the `step.<step>` guidance paragraph, and heads the flow table's first column *Stage*; `docs/resolvers.md` names `delegate.step.build.guidance`. (verify: `bats tests/skill-interfaces.bats`) (✓ `bats tests/skill-interfaces.bats` passed)
 
 ## 3. Sweep and whole-suite check [depends-on: 2]
 
@@ -19,3 +19,5 @@
 ## Deviations Ledger
 
 <!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-04, task 2.2: the README's comparison table also says *Planning stages*, not *Planning steps*, and the flow table's lead-in says *stage by stage*. Design decision 7 wants *Step* to mean one thing in the README; these two used it for the flow's stages.
