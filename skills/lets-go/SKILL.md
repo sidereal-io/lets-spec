@@ -1,6 +1,6 @@
 ---
 name: lets-go
-description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Given nothing, it takes the next ready issue on the backlog. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, plan, build and review build each run in a fresh session, and review plan runs inside build. Every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation; a story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, wants to start the next story or carry on the change on the current branch, says lets-go, or runs lets-go again after a run stopped.
+description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Given nothing, it takes the next ready issue on the backlog. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, plan, review plan, build and review build each run in a fresh session, and lets-minimal skips review plan. Every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation; a story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, wants to start the next story or carry on the change on the current branch, says lets-go, or runs lets-go again after a run stopped.
 ---
 
 # Let's go
@@ -9,8 +9,8 @@ Take one story, bug or chore to a pull request ready for review, in one
 run. Start from its issue number, from an idea in words, or from
 nothing, which takes the next ready issue. *Start*
 claims the issue in this session. Then each step runs in a fresh
-session: shape when the issue needs it, then plan, build and review
-build. Review plan runs inside build. An idea too large for one issue
+session: shape when the issue needs it, then plan, review plan, build
+and review build. `lets-minimal` skips review plan. An idea too large for one issue
 runs discovery in the shape step, and the run builds the first ready
 story it files. A step never asks the user. It ends with a report. This
 session answers its questions or asks the user, as the interactivity
@@ -170,7 +170,8 @@ unfinished step.
     user every question.
 
 *Start* runs in this session. It is not a step, and has no step report.
-The shape step it runs is a step, and has a report.
+The shape step it runs is a step, and has a report. After *Start*,
+[walk the step table](#walk-the-step-table).
 
 ### Find the source of demand
 
@@ -398,7 +399,7 @@ adds, beside [the discovery map commit](#commit-the-discovery-map).
 ### Import the glossary checkpoint
 
 Run this after *Claim* created the branch, before
-[Find the first unfinished step](#find-the-first-unfinished-step) reads
+[Walk the step table](#walk-the-step-table) reads
 the tree, and only when [Glossary preflight](#glossary-preflight) found
 owned edits. A resumed change has its glossary edits committed already,
 and needs no transfer and no new claim.
@@ -538,7 +539,7 @@ the map before the next run, because the next run stops on it.
 
 Discovery edits `openspec/discovery.md` on the default branch, and the
 new branch carries the edits with it. Commit them there, before
-[Find the first unfinished step](#find-the-first-unfinished-step) reads
+[Walk the step table](#walk-the-step-table) reads
 the tree. Do this only when a shape step ran in this run, and
 `git status --porcelain` lists `openspec/discovery.md`. Otherwise make
 no commit.
@@ -552,10 +553,10 @@ git commit -m "docs: the discovery map from #<p>" -- openspec/discovery.md
 one story. Commit no other path. This is the one commit `lets-go` makes
 itself, beside the glossary import.
 
-## Find the first unfinished step
+## Walk the step table
 
-After *Start*, on the branch `<name>`, read where the change stands. Git
-and GitHub keep every record you need, so read them in this order:
+After *Start*, on the branch `<name>`, read three records first, in this
+order:
 
 1. **The tree.** Run `git status --porcelain`. A line for a path outside
    `.workspace/` means the records disagree.
@@ -573,59 +574,65 @@ and GitHub keep every record you need, so read them in this order:
 3. **The archive folder.** Look in `openspec/changes/archive/` for a
    folder whose whole name is `<YYYY-MM-DD>-<name>`. A folder whose name
    only ends in `-<name>` belongs to another change. When the folder
-   exists, every step is done, and the records disagree if either:
+   exists, every step is done, and the records disagree if any of these
+   is true:
    - `openspec/changes/<name>/` exists too;
-   - the pull request is missing, is a draft, or its `body` has no
-     `Code review` section.
-4. **The change state.** When there is no archive folder, and
-   `openspec/changes/<name>/` exists, run
-   `openspec instructions apply --change <name> --json`. Read its
-   `state`:
-   - `blocked`: the first unfinished step is plan.
-   - `ready`: it is build.
-   - `all_done`: it is review build.
-   - anything else: show the user the CLI's `instruction`, and stop.
+   - the pull request is missing or is a draft;
+   - the flow's schema, the `schema:` line of `openspec/config.yaml`, is
+     `lets-standard`, and the pull request's `body` has no `Code review`
+     section.
 
-   With no change folder, the first unfinished step is plan. When
-   `openspec/changes/<name>/brainstorm.md` exists, the records disagree
-   if the branch has no pull request. The tree is clean, so the file is
-   committed.
+Then walk [The step table](#the-step-table) from the top row. At each
+row, find out whether the step is done:
 
-Shape is done once *Confirm the packet* passes, whether or not a shape
-step ran in this run. On `lets-minimal`, review plan is done once plan
-is done. On any other schema, review plan runs inside build, so it is
-done once build is done. Then the pull request's `body` must have a
-**Plan review** section with a `Reviewed:` line and a `- **Verdict:**`
-line, or the records disagree. Every step before the first unfinished
-one is done. [Print the skip lines](#print-the-skip-lines), then run the steps
-from that one, in their usual order.
+- **Shape** is done: *Start* passed *Confirm the packet*.
+- **Plan.** When the archive folder exists, plan is done. When
+  `openspec/changes/<name>/` does not exist, plan is not done.
+  Otherwise run `openspec instructions apply --change <name> --json`,
+  and read its `state`. Plan is done when it is `ready` or `all_done`,
+  and not done when it is `blocked`. For any other `state`, show the
+  user the CLI's `instruction`, and stop. When
+  `openspec/changes/<name>/brainstorm.md` exists and the branch has no
+  pull request, the records disagree. The tree is clean, so the file is
+  committed.
+- **Review plan.** On `lets-minimal`, it is done once plan is done. When
+  the archive folder exists, it is done. Otherwise read the pull
+  request's body again, because a step in this run can have opened or
+  changed it:
 
-### Print the skip lines
+  ```bash
+  gh pr view <name> --json number,body
+  ```
 
-Print one line for each done step, in step order, before the first step
-that runs. *Start* has printed shape's line: the `Done` form when a shape
-step ran in this run, and the `Skipped` form otherwise. When every step is done, no
-step runs: go to [End of the run](#end-of-the-run), which prints the
-lines.
+  Review plan is done when the **Plan review** section covers the plan.
+  Follow *Check an earlier review* in the `lets-review-plan` skill. Its
+  four rules say when a new round is needed. It then says when the
+  review is finished, with the fix commits under `APPROVE_WITH_CHANGES`.
+  Review plan is done when no rule calls for a new round and the review
+  is finished. Its reads change nothing:
+  `git merge-base --is-ancestor`, `git log` and `git show`. When review
+  plan is not done, run it, whatever the state.
+- **Build.** When the archive folder exists, build is done. Otherwise
+  run `openspec instructions apply --change <name> --json` again, even
+  when the plan row has run it. A review plan round can add a task to a
+  built change. Build is done when the `state` is `all_done`. Any
+  `state` other than `blocked`, `ready` or `all_done` stops the run, as
+  for plan.
+- **Review build** is done when the archive folder exists.
 
-Each line is the step's Skip line in [The step table](#the-step-table),
-filled from the reads in [Read the records](#read-the-records).
+Read a row's record when you reach the row, not before. A step that runs
+in this walk changes the records the next row reads.
 
-On a schema other than `lets-minimal`, review plan runs inside build.
-When build was done before this run, use the body that
-[Find the first unfinished step](#find-the-first-unfinished-step)
-read. When the build step reported `done` in this run, the step has
-just written the section, so read the body again:
+Then settle the row:
 
-```bash
-gh pr view <name> --json number,body
-```
+- **Done:** print its Skip line from the table, filled from
+  [Read the records](#read-the-records). *Start* has printed shape's
+  line already. Go on to the next row.
+- **Not done:** run the step, as [Run a step](#run-a-step) says. Then
+  [read its report](#read-the-report), which says what to print and
+  whether the walk goes on.
 
-The line then starts `Done` instead:
-
-```text
-Done review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.
-```
+When no row is left, go to [End of the run](#end-of-the-run).
 
 ### Records that disagree
 
@@ -639,13 +646,14 @@ choice.
 | `git status --porcelain` lists a path outside `.workspace/` | Commit or discard the path. |
 | The branch and `origin/<name>` have diverged | Reconcile the two, and push. |
 | A change folder and an archive folder for the same name | Keep the one that is right, and remove the other. |
-| An archive folder, and the pull request is missing, a draft, or has no `Code review` section | Open the pull request, review it, or mark it ready, as `lets-review-build` does. Or revert the archive commit. |
+| An archive folder, and the pull request is missing or a draft, or has no `Code review` section on `lets-standard` | Open the pull request, review it, or mark it ready, as `lets-review-build` does. Or revert the archive commit. |
 | `brainstorm.md` is committed, and the branch has no pull request | Push the branch, and open the draft pull request. |
 | A `git log` read for a skipped step finds no commit | Name the command. The step's record is missing: find out why. |
-| Build is done on a schema other than `lets-minimal`, and the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line | Review the plan with lets-review-plan, which writes the section. |
 
 Each case names what you found, such as the path, or the pull request's
-`isDraft`.
+`isDraft`. A built change whose pull request has no **Plan review**
+section is not a disagreement. The walk reaches review plan first, and
+runs it.
 
 ## The step table
 
@@ -983,18 +991,15 @@ must start with no answers.
 
 - **`done`**: after `shape`, go back to *Start*, as
   [Run the shape step](#run-the-shape-step) says. After any other step,
-  go on to the next step. Review plan's line comes from
-  [Print the skip lines](#print-the-skip-lines). On `lets-minimal`,
-  print its `lets-minimal` line after `plan`, before you run `build`. On
-  any other schema, print its `Done` form after `build`, before build's
-  own line. After `review-build`, go to
-  [End of the run](#end-of-the-run).
+  print its `Done` line, as [End of the run](#end-of-the-run) says, and
+  go on to the next row of the
+  [walk](#walk-the-step-table).
 - **`needs-input`**: [relay its questions](#relay-the-questions).
-- **`failed`**: print the lines of [End of the run](#end-of-the-run) for
-  the steps so far, ending with the failed one. After a failed build,
-  print no review plan line on a schema other than `lets-minimal`. Name the step and the
-  branch `<name>`, and say that running `lets-go` again on that branch
-  carries on from the first unfinished step. Stop. Never run a failed step again.
+- **`failed`**: print its `Failed` line, as
+  [End of the run](#end-of-the-run) says. The walk ends here. Name the
+  step and the branch `<name>`, and say that running `lets-go` again on
+  that branch carries on from the first unfinished step. Print the pull
+  request's URL. Stop. Never run a failed step again.
 - **`failed`, for shape**: there is no branch yet. Print
   `Failed shape: <reason>`. Say to run `lets-shape` on the idea, or on
   #<i>, and name no branch. Stop.
@@ -1039,9 +1044,10 @@ A step's rounds go on until its report is `done` or `failed`.
 
 ## End of the run
 
-When `review-build` reports `done`, its *Finish the change* has marked
-the pull request ready for review. You come here too when every step was
-already done. Print one line per step, in order. For example:
+The walk prints each row's line when it settles the row: `Skipped` when
+the step was done before this run, `Done` after a `done` report, and
+`Failed` after a `failed` one. A step can take an hour, so print each
+line as it comes. A run's lines look like this:
 
 ```text
 Skipped shape: #<i>'s packet is complete, last edited <date>.
@@ -1059,17 +1065,20 @@ Done shape: <date>. <evidence>
 ```
 
 `<date>` on a `Done` line is the report's `date`, and `<evidence>` is its
-`evidence`, joined with `; `. Review plan has no report of its own.
-On a schema other than `lets-minimal`, when build ran in this run, its
-line is
-`Done review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.`
-When build failed, there is no review plan line. A step done before
-this run prints its line from
-[Print the skip lines](#print-the-skip-lines) instead. When
-every step was already done, all five lines are `Skipped` lines. A
+`evidence`, joined with `; `. Review plan's line is the same form as the
+others:
+
+```text
+Done review plan: <date>. <evidence>
+```
+
+When every step was already done, all five lines are `Skipped` lines. A
 failed step prints `Failed`, the step's name, a colon and the reason,
-such as `Failed review build: <reason>`. A line names a step with a
-space, never a hyphen. Then print the pull
+such as `Failed review build: <reason>`, and ends the walk. A line names
+a step with a space, never a hyphen.
+
+When `review-build` reports `done`, its *Finish the change* has marked
+the pull request ready for review. When the walk is over, print the pull
 request's URL. A failed shape has none: there is no branch yet.
 
 ```bash

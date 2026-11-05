@@ -456,7 +456,6 @@ review_build_start() {
   local phrase
   skill_says lets-go 'Interactivity: <level>, because #<i> is a <Kind>.'
   skill_says lets-go 'Interactivity: <level>, because you asked for it.'
-  skill_says lets-go 'Done review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.'
   skill_says lets-go 'gh issue view <i> --json title,blockedBy'
   skill_says lets-go 'its *Check the prerequisite* still runs, and its stop stands'
   skill_says lets-go 'The interactivity level is <level>.'
@@ -579,6 +578,36 @@ review_build_start() {
 @test "each step prompt carries the route line and stops where its skill stops" {
   skill_says lets-go 'Schema: <schema>. <route line>'
   skill_says lets-go 'and stop where it stops'
+}
+
+# walk_section: lets-go's Walk the step table section, on one line.
+walk_section() {
+  awk '/^## Walk the step table$/ { on = 1; next } /^## / { on = 0 } on' "$repo/skills/lets-go/SKILL.md" | tr -s '[:space:]' ' '
+}
+
+@test "lets-go walks the step table and reads each row when it reaches it" {
+  local phrase
+  for phrase in '[The step table](#the-step-table)' 'openspec instructions apply --change <name> --json' \
+    'gh pr view <name> --json number,body' '*Check an earlier review*' 'not before'; do
+    grep -qF -- "$phrase" <<<"$(walk_section)" || { echo "the walk does not say: $phrase"; false; }
+  done
+}
+
+@test "a review plan step that ran prints its line from its report" {
+  local phrase
+  skill_says lets-go 'Done review plan: <date>. <evidence>'
+  for phrase in 'Done review plan: the Plan review' 'runs inside build' '#find-the-first-unfinished-step' '#print-the-skip-lines'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
+      { echo "lets-go still says: $phrase"; false; }
+  done
+}
+
+@test "lets-go asks for a Code review section only on lets-standard" {
+  local row
+  row="$(grep -E '^\| An archive folder' "$repo/skills/lets-go/SKILL.md")"
+  grep -qF '`lets-standard`' <<<"$row" || { echo "the archive row asks every flow for a Code review section"; false; }
+  run grep -nE '^\|.*no \*\*Plan review\*\* section' "$repo/skills/lets-go/SKILL.md"
+  [ "$status" -eq 1 ] || { echo "a built change with no Plan review is still a disagreement: $output"; false; }
 }
 
 # step_row <step>: lets-go's row for the step in its table of steps.
