@@ -354,10 +354,7 @@ Read the `schema:` line of `openspec/changes/<branch>/.openspec.yaml`,
 and take the first case that applies:
 
 1. **Any schema but `lets-standard`.** Go straight to apply.
-2. **A task is ticked.** `progress.complete` is above 0 in the output
-   that *Find where you are* read. The build started after the review.
-   Go straight to apply.
-3. **`schema: lets-standard`.** Read the pull request's body with
+2. **`schema: lets-standard`.** Read the pull request's body with
    `gh pr view --json body`. When it has no **Plan review** section, run
    the `lets-review-plan` skill on the change. Otherwise, follow that
    skill's *Check an earlier review*, and run the skill again only when

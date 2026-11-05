@@ -23,8 +23,8 @@
 
 - 2026-11-04, task 1.1: the `apply` instruction names the `lets-review-plan` skill as well as `lets-build`. Without the name, no text the standard flow ships would name the skill between tasks 1.1 and 2.2, and the flow-ships test would fail. The design template's tier note says "plan review" too.
 
-- 2026-11-04, task 2.1: *Check an earlier review* says to run the check before the first task is built. Each task commit ticks tasks.md, so rule 4 would otherwise call for a new review on every resumed build. Task 2.2 has `lets-build` skip the check once a task is ticked.
+- 2026-11-04, task 2.1: each task commit ticks tasks.md, so rule 4 of *Check an earlier review* would call for a new review on every resumed build. Once a task is ticked, rule 4 leaves tasks.md out. An earlier version had `lets-build` skip the check instead. The code review found that a later plan edit then went unchecked.
 
-- 2026-11-04, task 2.2: *Apply* goes straight to apply once a task is ticked, as the 2.1 note says. Its *Rules* say the plan review's session belongs to `lets-review-plan`, so the rule that the handoff is the only new session stays true.
+- 2026-11-04, task 2.2: *Rules* say the plan review's session belongs to `lets-review-plan`, so the rule that the handoff is the only new session stays true.
 
 - 2026-11-04, task 3.2: the merged `lets-go` spec names `review.md` twice, both in the delta's own list of strings the skill must not hold. No requirement relies on the file.

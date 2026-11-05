@@ -184,6 +184,6 @@ A **Plan review** section in the pull request says which commit an earlier revie
 3. The reviewed commit is no longer in the branch's history: `git merge-base --is-ancestor <sha> HEAD` fails. The branch was rebased or squashed after the review.
 4. A commit after `<sha>` changes the plan and is not a fix. `git log --oneline <sha>..HEAD -- openspec/changes/<name>/ docs/decisions/` lists the commits that change the plan. A fix is a commit that the section's rebuttals name. Before you treat one as a fix, read its diff with `git show <fix-sha>`. It must touch only `openspec/changes/<name>/` and `docs/decisions/`. If it touches anything else, it is not a fix.
 
-Run the check before the first task is built. Each task's commit ticks tasks.md, so rule 4 fires on every commit of the build.
+Once a task is ticked, add `':(exclude)openspec/changes/<name>/tasks.md'` to rule 4's pathspec. Each task's commit ticks tasks.md, and a tick does not change the plan. A later edit to any other plan file still calls for a new round.
 
 The review is finished, and build may start, when the verdict is `APPROVE`. It is finished under `APPROVE_WITH_CHANGES` when the rebuttal of each required change names its fix commit. A `REVISE` verdict, or a required change with no fix commit, means it is not finished.
