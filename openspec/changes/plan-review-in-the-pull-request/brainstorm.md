@@ -1,0 +1,34 @@
+## Story
+
+#183 plan-review-in-the-pull-request — the plan review leaves the schema
+and records in the pull request under Plan review, as the code review does,
+and build waits for it.
+https://github.com/sidereal-io/lets-spec/issues/183
+
+## Decisions
+
+| # | Question | Answer | Source |
+|---|---|---|---|
+| D1 | Where does `lets-standard` end? | At `tasks`. The `review` artifact and `templates/review.md` go. `tasks` requires `adr` and `specs`: `openspec-propose` builds the required set by walking `requires` edges, so `specs` must stay on `tasks`'s edge or it drops out of the plan. | Evidence: #183 packet, Scope; `openspec-propose` step 6b |
+| D2 | What does the plan review cover? | brainstorm.md, proposal.md, specs/, design.md, adr.md and tasks.md, at one commit of a clean tree. The reviewer also checks the tasks: each names one behavior and a verify command the project has, and the list covers the specs' scenarios. | Evidence: #183 packet (brainstorm through tasks); the tasks check is an Assumption |
+| D3 | Where and how does the review record? | In the pull request description, under a `## Plan review` heading, as the code review does under `## Code review`. Its first line is `Reviewed: <sha>`, the short hash the reviewer saw. Then: the reviewer, its context (`fresh context, other family` and so on), whether it was independent, the round and the prior round's verdict, the vocabulary inputs, a line `Verdict: <verdict>` with `APPROVE`, `APPROVE_WITH_CHANGES` or `REVISE`, the findings with their checks, the required changes, and the rebuttals. `review.md`'s injection heading folds into the findings. | Evidence: #183 packet (`Reviewed: <sha>`, verdict, findings, rebuttals); the rest is an Assumption |
+| D4 | When is the review finished, so build may start? | When the verdict is `APPROVE`, or `APPROVE_WITH_CHANGES` and each required change's rebuttal names its fix commit. `REVISE`, or a required change with no fix commit, means unfinished. `CHANGES_APPLIED:` goes: nothing reads it. | Assumption |
+| D5 | When does an earlier review need a new round? | As `lets-review-code`'s *Check an earlier review*, less its base rule: the pull request has no **Plan review** section or no `Reviewed:` line; the verdict is `REVISE`; `<sha>` is not in the branch's history; or a commit after `<sha>` changes `openspec/changes/<name>/` and is not a fix commit the rebuttals name, whose diff touches only the plan. The base rule stays out: the plan lives in the change folder, and a new base adds no plan commit. | Assumption |
+| D6 | Who runs the review, and when? | `lets-build`'s *Apply*, before it invokes `openspec-apply-change`, when `openspec/changes/<name>/.openspec.yaml` says `schema: lets-standard`. Any other schema skips it, as `lets-minimal` does today. With no **Plan review** section it runs `lets-review-plan`; otherwise it checks the section as D5 says and runs the skill only when the check says to. It goes on to apply only when D4 holds. | Evidence: #183 packet, Scope; `skills/lets-go/SKILL.md` step 9 reads the schema the same way |
+| D7 | Who fixes the plan after `REVISE`? | The session that ran the review: it revises the plan with `openspec-update-change`, commits, and runs a new round. After two `REVISE` verdicts in a row it stops and asks the user, as the skill already says. | Assumption |
+| D8 | Where do the schema's extra review checks go? | Into `lets-review-plan`, as a list for an OpenSpec change: Assumption rows, scenario testability, test seams, scope, contradictions, and D2's tasks check. The skill owns the method; `lets-build` adds no check of its own. | Assumption |
+| D9 | What stops reading a verdict? | The schema's `tasks` step: it no longer reads review.md, and no longer says a design change voids the review. The `design` step says the plan review, not the review step, uses the tier. `lets-write-tasks` holds no verdict text; its description says a plan, not an approved plan. | Evidence: #183 packet; grep of `skills/lets-write-tasks/SKILL.md` finds no verdict |
+| D10 | Under `lets-go`, where does review plan run until #186? | Inside build: the build step runs `lets-build`, whose *Apply* reviews first. Review plan counts as done when build is done. After build reports `done`, `lets-go` prints review plan's line, then build's. The resume reads do not change otherwise. | Evidence: D6, and #148's Shared decisions (the step of its own is #186) |
+| D11 | What do `lets-go`'s review plan lines say? | `Skipped review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.` and the same after `Done review plan:`. `<verdict>` and `<sha>` come from the section in the pull request's body; `<date>` is `<sha>`'s author date, from `git log -1 --format=%as <sha>`. The `lets-minimal` line stays. | Assumption |
+| D12 | Does the schema's `apply` step say anything about the review? | One line: start from `lets-build`, which has the plan reviewed before this step runs on `lets-standard`. So a change built outside `lets-build` is told what it skipped. | Assumption |
+| D13 | What does the README say? | The planning stages lose `review`. The flows table gets a `plan review` row between `tasks` and `apply`, with output `A **Plan review** section in the pull request`, and renumbers. The `lets-build` row says that in `standard` it has the plan reviewed first. The `lets-go` section says review plan runs inside build. The sentence that says `review.md` records how the review ran names the section instead. | Evidence: #183 packet (the README's flows table); the wording is an Assumption |
+| D14 | How do the tests pin the change? | In `tests/skill-interfaces.bats`: the marker test keeps `Confirmed by user:` only; no schema or template holds `VERDICT:`, `CHANGES_APPLIED:` or `review.md`; `lets-review-plan` says `Reviewed: <sha>` and `**Plan review**`; `lets-build` names the `lets-review-plan` skill, `openspec-apply-change` and `schema: lets-standard`; `lets-go` pins D11's lines and the `git log -1 --format=%as <sha>` read, and no skill or schema says `review.md`. | Assumption |
+| D15 | Which main specs change? | `lets-go` only. No spec covers `lets-build`, `lets-review-plan` or the schemas, and this change adds none: the bats tests pin them. | Evidence: `openspec list --specs` |
+| D16 | Do dated records change? | No. Archived changes keep their `review.md`, and no decision record changes. | Assumption |
+
+## Changes from the story
+
+None. The user delegated this run on 2026-11-04 and asked not to wait for
+the ledger's confirmation. The agent did not put the Assumption rows to them.
+
+Confirmed by user: yes
