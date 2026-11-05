@@ -34,7 +34,6 @@ the earlier choice, not this correction.
 | C5 | What scope changes first? | Reconcile #174/#179/#180 and architecture clauses in #137–#145 before correcting the ADR; retain provider outcomes, dependencies and #52 release obligations; no #180 runtime implementation or unrelated backlog changes. | User |
 | C6 | What remains settled? | Native ownership/status, exact merge evidence and private local journals; best-effort claims do not become atomic; do not touch or merge #172 or repeat its completed acceptance mutations. | User |
 | C7 | How does the ready PR reopen? | Mark draft, git revert the archive commit, commit fixes, run required review/verification/checks, archive in a separate last commit and mark ready; leave merge to the user. | User |
-
 | C8 | Which independent evidence channel is selected? | Trusted tool-host/generic-runner capture records actual agent-initiated tool requests/results outside the editable report; lets retrieves/verifies action-bound records through that channel, using one definition per integration; #180 must prove fresh claims and exact merge evidence before support claims. | User |
 | C9 | What happens without required evidence? | Pause automatic retry/progression and ask the user how to reconcile or whether to stop; approval alone is not remote-state proof; no silent direct-read execution fallback. | User |
 

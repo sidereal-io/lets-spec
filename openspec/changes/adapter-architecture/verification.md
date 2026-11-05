@@ -1,10 +1,65 @@
-# Correction verification: pending
+# Verification: adapter-architecture correction
 
-The report below covers the superseded built-in execution decision at a912eec.
-It is historical evidence, not verification of the execution hybrid. Replace
-this heading with current findings after the correction review and checks.
+## Current result
 
-# Verification: adapter-architecture
+- Completeness: 10/10 tracked tasks complete, including 5 historical tasks and all 5 correction tasks. The historical implementation is superseded by the current ledger, not represented as the execution hybrid.
+- Correctness: spec coverage, requirement mapping and scenario coverage are not applicable because this documentation chore intentionally retains `skip_specs: true` and changes no runtime behavior or main specs.
+- Coherence: the current ledger C1–C9, glossary, ADR-015 and ADR-005/010/011/014 notices agree on agent tool execution with core policy/sequencing/recovery/validation, open definitions, trusted capture and the ask-user fallback. Documentation title/metadata, notices, links and provenance were checked. Design adherence is not applicable: lets-minimal defines no design artifact.
+
+The current record is `docs/decisions/ADR-015-lets-requests-actions-and-validates-results.md`.
+It distinguishes the earlier built-in execution decision from the clarified
+execution hybrid. The recovered glossary checkpoint ae72942bb6546d3694a339196ad3083cee6b3a05
+and import 1b791a0597d538a1ea15f0f76d2e73e5bbd79e01 remain provenance. The only
+current difference from that checkpoint is the explicitly approved Adapter
+revision in glossary-only commit d695d02fa3fa135d3b3c322eed2cf7f7868eb3de,
+parent eeb74e9b6d6bd6c873c87154bcf85f48ce5622f9. Resolver, Backend and
+Extension remain unchanged. The separate discovery commit was not imported.
+#179 / PR #181 remains the sole glossary owner.
+
+## Required correction review
+
+Claude Opus 5.5 independently reviewed main at
+7d8cec46eac454573418b114e994ad085c07e968 through
+e982c77cf535237c599da3b738906fe23b65d8a5 in fresh context, read-only.
+The working tree remained clean; no REVIEW.md exists. Three findings were confirmed:
+
+1. High — unnamed independent evidence channel: b56bcd8 specifies trusted capture, the trust boundary, semantic limits and pause-and-ask-user fallback. The user selected this channel and fallback. The runtime must prove it; today's tools are not claimed compliant.
+2. Medium — missing delegation prerequisite for #145: 9f91155 and the updated packet state it is unresolved until the separately shaped delegation runtime exists. A direct blocker must be requested when that follow-up is shaped; #180 does not implement delegation.
+3. Low — misleading ADR filename: 51d252b renames ADR-015 and updates all four notices.
+
+Each fix diff was checked against its finding. Later ledger/verification edits
+record the agreed choices and evidence; no runtime changes were added.
+Earlier reviews approved only the earlier architecture and remain historical.
+
+## Scope and verification evidence
+
+The migration inventory retains all 13 backlog-contract requirements' behavioral
+guarantees, while identifying transport-specific replacements. Native state,
+private local journals, best-effort limits and exact merge evidence remain.
+The four-provider release obligations remain. #180 retains GitHub runtime work;
+delegation migration is an unresolved follow-up under #174. Shaping reconciled
+#174/#179/#180 and architecture clauses in #137–#145 without changing their
+provider outcomes or dependency links. No acceptance mutation ran; PR #172 and
+its completed acceptance remain untouched.
+
+`openspec validate adapter-architecture --strict` and `git diff --check` pass.
+Final `pnpm test` passed after the review fixes (543 Node tests, type check,
+130 Bats checks). Final `nix flake check` passed for x86_64-linux, including
+14 flake checks and the flow/release builds.
+
+Documentation verification found no remaining critical issues, warnings or
+suggestions. All applicable documentation checks and required repository checks passed. Ready
+for archive. Runtime
+implementation, trusted-channel availability and live conformance are not verified
+by this documentation chore and remain migration acceptance obligations.
+
+---
+
+The following report is retained only as historical evidence for the earlier
+built-in execution choice at a912eec. Its exact-match glossary statement and
+readiness assessment applied then; they are superseded by the current report.
+
+# Historical verification of the superseded built-in decision
 
 | Dimension | Result |
 |---|---|
