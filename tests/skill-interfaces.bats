@@ -258,7 +258,7 @@ skill_says() {
   local phrase
   skill_says lets-go 'Interactivity: <level>, because #<i> is a <Kind>.'
   skill_says lets-go 'Interactivity: <level>, because you asked for it.'
-  skill_says lets-go 'Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
+  skill_says lets-go 'Done review plan: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
   skill_says lets-go 'gh issue view <i> --json title,blockedBy'
   skill_says lets-go 'its *Check the prerequisite* still runs, and its stop stands'
   skill_says lets-go 'The interactivity level is <level>.'
@@ -326,7 +326,7 @@ skill_says() {
   skill_says lets-go '--answers-file'
   skill_says lets-go "lets-go accepted the step's recommendation; the user did not decide"
   skill_says lets-go 'asked a settled question again'
-  skill_says lets-go 'Skipped propose review: not in the lets-minimal route.'
+  skill_says lets-go 'Skipped review plan: not in the lets-minimal route.'
 }
 
 @test "lets-go resumes a change at its first unfinished step" {
@@ -342,13 +342,25 @@ skill_says() {
 }
 
 @test "lets-go dates each skipped step from Git and GitHub" {
-  skill_says lets-go 'Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).'
-  skill_says lets-go 'Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
-  skill_says lets-go 'Skipped apply: every task is ticked, last task commit <date> (<sha>).'
-  skill_says lets-go 'Skipped apply review: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.'
+  skill_says lets-go 'Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).'
+  skill_says lets-go 'Skipped review plan: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
+  skill_says lets-go 'Skipped build: every task is ticked, last task commit <date> (<sha>).'
+  skill_says lets-go 'Skipped review build: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.'
   skill_says lets-go "git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md"
   skill_says lets-go "git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md"
   skill_says lets-go "git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md"
+}
+
+@test "lets-go names the five steps, and no old step name" {
+  local phrase
+  skill_says lets-go 'Done plan: <date>. <evidence>'
+  skill_says lets-go 'Done build: <date>. <evidence>'
+  skill_says lets-go 'Done review build: <date>. <evidence>'
+  for phrase in 'Skipped propose' 'Skipped apply' 'propose review' 'apply review' \
+    'propose-review' 'apply-review' '--for propose' '--for apply'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qiF -- "$phrase" ||
+      { echo "lets-go still says: $phrase"; false; }
+  done
 }
 
 @test "lets-shape posts its reply with the gh command gh issue comment --body-file" {

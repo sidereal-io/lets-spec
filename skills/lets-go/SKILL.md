@@ -1,6 +1,6 @@
 ---
 name: lets-go
-description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation; a story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, says lets-go, or runs lets-go again after a run stopped.
+description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, plan, build and review build each run in a fresh session, and review plan runs inside plan. Every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation; a story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, says lets-go, or runs lets-go again after a run stopped.
 ---
 
 # Let's go
@@ -8,12 +8,12 @@ description: Take one story, bug or chore, or an idea in words, to a pull reques
 Take one story, bug or chore to a pull request ready for review, in one
 run. Start from its issue number, or from an idea in words. *Start*
 claims the issue in this session. Then each step runs in a fresh
-session: shape when the issue needs it, then propose, apply and apply
-review. An idea too large for one issue runs discovery in the shape
-step, and the run builds the first ready story it files. A step never
-asks the user. It ends with a report. This session answers its questions
-or asks the user, as the interactivity level says. Run every command
-below from the repo root.
+session: shape when the issue needs it, then plan, build and review
+build. Review plan runs inside plan. An idea too large for one issue
+runs discovery in the shape step, and the run builds the first ready
+story it files. A step never asks the user. It ends with a report. This
+session answers its questions or asks the user, as the interactivity
+level says. Run every command below from the repo root.
 
 A run can stop part way. Run `lets-go` again, on the default branch or
 on the change's branch. It reads from Git and GitHub which steps are
@@ -109,8 +109,8 @@ unfinished step.
    gh issue view <i> --json createdAt --jq .createdAt
    ```
 
-6. Run `lets-build`'s *Route*. Keep the route line: the propose step
-   needs it.
+6. Run `lets-build`'s *Route*. Keep the route line: the plan step needs
+   it.
 7. On the default branch, look for the change's branch, here and on
    `origin`:
 
@@ -321,19 +321,19 @@ and GitHub keep every record you need, so read them in this order:
    `openspec/changes/<name>/` exists, run
    `openspec instructions apply --change <name> --json`. Read `state` as
    `lets-build`'s *Find where you are* reads it:
-   - `blocked`: the first unfinished step is propose.
-   - `ready`: it is apply.
-   - `all_done`: it is apply review.
+   - `blocked`: the first unfinished step is plan.
+   - `ready`: it is build.
+   - `all_done`: it is review build.
    - anything else: show the user the CLI's `instruction`, and stop.
 
-   With no change folder, the first unfinished step is propose. When
+   With no change folder, the first unfinished step is plan. When
    `openspec/changes/<name>/brainstorm.md` exists, the records disagree
    if the branch has no pull request. The tree is clean, so the file is
    committed.
 
 Shape is done once *Confirm the packet* passes, whether or not a shape
-step ran in this run. Propose review is done
-once propose is done. Every step before the first unfinished one is
+step ran in this run. Review plan is done
+once plan is done. Every step before the first unfinished one is
 done. [Print the skip lines](#print-the-skip-lines), then run the steps
 from that one, in their usual order.
 
@@ -350,20 +350,20 @@ date, from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is the
 short hash, from `%h`. A read that prints nothing means the
 [records disagree](#records-that-disagree).
 
-- **Propose.** Read the commit that added the task list:
+- **Plan.** Read the commit that added the task list:
 
   ```bash
   git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md
   ```
 
   ```text
-  Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).
+  Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).
   ```
 
-- **Propose review.** When `<schema>` is `lets-minimal`, print:
+- **Review plan.** When `<schema>` is `lets-minimal`, print:
 
   ```text
-  Skipped propose review: not in the lets-minimal route.
+  Skipped review plan: not in the lets-minimal route.
   ```
 
   Otherwise, read the `VERDICT:` line of the change's `review.md`, in
@@ -375,17 +375,17 @@ short hash, from `%h`. A read that prints nothing means the
   ```
 
   ```text
-  Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).
+  Skipped review plan: review.md says VERDICT: <verdict>, committed <date> (<sha>).
   ```
 
-  When the propose step reported `done` in this run, the review ran in
-  it, so the line starts `Done` instead, with the same reads:
+  When the plan step reported `done` in this run, the review ran in it,
+  so the line starts `Done` instead, with the same reads:
 
   ```text
-  Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).
+  Done review plan: review.md says VERDICT: <verdict>, committed <date> (<sha>).
   ```
 
-- **Apply.** Read the last commit that changed the task list: the last
+- **Build.** Read the last commit that changed the task list: the last
   task's tick.
 
   ```bash
@@ -393,10 +393,10 @@ short hash, from `%h`. A read that prints nothing means the
   ```
 
   ```text
-  Skipped apply: every task is ticked, last task commit <date> (<sha>).
+  Skipped build: every task is ticked, last task commit <date> (<sha>).
   ```
 
-- **Apply review.** Read the commit that archived the change. `<p>` is
+- **Review build.** Read the commit that archived the change. `<p>` is
   the pull request's `number`.
 
   ```bash
@@ -404,10 +404,10 @@ short hash, from `%h`. A read that prints nothing means the
   ```
 
   ```text
-  Skipped apply review: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.
+  Skipped review build: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.
   ```
 
-The propose and apply reads work after archive too. Archive deletes the
+The plan and build reads work after archive too. Archive deletes the
 old path, and its history keeps the add and the ticks.
 
 ### Records that disagree
@@ -431,11 +431,17 @@ Each case names what you found, such as the path, or the pull request's
 
 ## The steps
 
-There are four steps, in this order: `shape`, `propose`, `apply`, then
-`apply-review`. Shape runs only inside *Start*, as
-[Run the shape step](#run-the-shape-step) says. Run the others from the
-first unfinished step. `<step>` is one of these names. Each step gets its
-own prompt, and runs as [Run a step](#run-a-step) says.
+There are five steps, in this order: shape, plan, review plan, build
+and review build. Prose and printed lines use these names. `--for`,
+`--name`, file names and config keys use `shape`, `plan`, `review-plan`,
+`build` and `review-build`. `<step>` is one of these.
+
+Shape runs only inside *Start*, as
+[Run the shape step](#run-the-shape-step) says. Until review plan runs
+as a step of its own, it runs inside plan on `lets-standard`, as the
+schema's `review` artifact. It has no prompt and no report. Run the
+other steps from the first unfinished one. Each gets its own prompt, and
+runs as [Run a step](#run-a-step) says.
 
 `<name>` is the change's name. Shape runs before there is one, so its
 `<name>` comes from what it shapes:
@@ -543,9 +549,9 @@ holds `#` or `: `. Put no other step-report block in the message.
 | Step | What to run |
 |---|---|
 | `shape` | The text of [What shape runs](#what-shape-runs). |
-| `propose` | Invoke the `openspec-propose` skill for the change `<name>`, for issue #<i>. Give it this route line for the proposal's commit message: `<route line>`. When the route is `lets-minimal` and the flow's schema is not, say to use the schema `lets-minimal`. If the change exists, continue it. Stop when the plan is ready: do not build it, and offer no handoff. |
-| `apply` | Run the `lets-build` skill on the branch `<name>`. Stop when every task is ticked. Do not run its *Finish the change*. |
-| `apply-review` | Run the *Finish the change* section of the `lets-build` skill on the branch `<name>`. |
+| `plan` | Invoke the `openspec-propose` skill for the change `<name>`, for issue #<i>. Give it this route line for the proposal's commit message: `<route line>`. When the route is `lets-minimal` and the flow's schema is not, say to use the schema `lets-minimal`. If the change exists, continue it. Stop when the plan is ready: do not build it, and offer no handoff. |
+| `build` | Run the `lets-build` skill on the branch `<name>`. Stop when every task is ticked. Do not run its *Finish the change*. |
+| `review-build` | Run the *Finish the change* section of the `lets-build` skill on the branch `<name>`. |
 
 ### What shape runs
 
@@ -701,9 +707,10 @@ must start with no answers.
 
 - **`done`**: after `shape`, go back to *Start*, as
   [Run the shape step](#run-the-shape-step) says. After any other step,
-  go on to the next step. After `propose`, print propose
-  review's line from [Print the skip lines](#print-the-skip-lines)
-  before you run `apply`: the `Done` form, or the `lets-minimal` line. After `apply-review`, go to [End of the run](#end-of-the-run).
+  go on to the next step. After `plan`, print review plan's line from
+  [Print the skip lines](#print-the-skip-lines) before you run `build`:
+  the `Done` form, or the `lets-minimal` line. After `review-build`, go
+  to [End of the run](#end-of-the-run).
 - **`needs-input`**: [relay its questions](#relay-the-questions).
 - **`failed`**: print the lines of [End of the run](#end-of-the-run) for
   the steps so far, ending with the failed one. Name the step and the
@@ -753,16 +760,16 @@ A step's rounds go on until its report is `done` or `failed`.
 
 ## End of the run
 
-When `apply-review` reports `done`, its *Finish the change* has marked
+When `review-build` reports `done`, its *Finish the change* has marked
 the pull request ready for review. You come here too when every step was
 already done. Print one line per step, in order. For example:
 
 ```text
 Skipped shape: #<i>'s packet is complete, last edited <date>.
-Done propose: <date>. <evidence>
-Skipped propose review: not in the lets-minimal route.
-Done apply: <date>. <evidence>
-Done apply review: <date>. <evidence>
+Done plan: <date>. <evidence>
+Skipped review plan: not in the lets-minimal route.
+Done build: <date>. <evidence>
+Done review build: <date>. <evidence>
 ```
 
 When a shape step ran in this run, the first line is its `Done` form
@@ -773,13 +780,15 @@ Done shape: <date>. <evidence>
 ```
 
 `<date>` on a `Done` line is the report's `date`, and `<evidence>` is its
-`evidence`, joined with `; `. Propose review has no report of its own.
-When propose ran in this run on a schema with a review, its line is
-`Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).`
+`evidence`, joined with `; `. Review plan has no report of its own.
+When plan ran in this run on a schema with a review, its line is
+`Done review plan: review.md says VERDICT: <verdict>, committed <date> (<sha>).`
 A step done before this run prints its line from
 [Print the skip lines](#print-the-skip-lines) instead. When
 every step was already done, all five lines are `Skipped` lines. A
-failed step prints `Failed <step>: <reason>`. Then print the pull
+failed step prints `Failed`, the step's name, a colon and the reason,
+such as `Failed review build: <reason>`. A line names a step with a
+space, never a hyphen. Then print the pull
 request's URL. A failed shape has none: there is no branch yet.
 
 ```bash
