@@ -608,83 +608,24 @@ step ran in this run, and the `Skipped` form otherwise. When every step is done,
 step runs: go to [End of the run](#end-of-the-run), which prints the
 lines.
 
-Each line is dated by one `git log` read. `<date>` is the commit's author
-date, from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is the
-short hash, from `%h`. A read that prints nothing means the
-[records disagree](#records-that-disagree).
+Each line is the step's Skip line in [The step table](#the-step-table),
+filled from the reads in [Read the records](#read-the-records).
 
-- **Plan.** Read the commit that added the task list:
+On a schema other than `lets-minimal`, review plan runs inside build.
+When build was done before this run, use the body that
+[Find the first unfinished step](#find-the-first-unfinished-step)
+read. When the build step reported `done` in this run, the step has
+just written the section, so read the body again:
 
-  ```bash
-  git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md
-  ```
+```bash
+gh pr view <name> --json number,body
+```
 
-  ```text
-  Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).
-  ```
+The line then starts `Done` instead:
 
-- **Review plan.** When `<schema>` is `lets-minimal`, print:
-
-  ```text
-  Skipped review plan: not in the lets-minimal route.
-  ```
-
-  On any other schema, review plan ran inside build, and the
-  `lets-review-plan` skill recorded it in the pull request's `body`.
-  Find the `## Plan review` heading, and read the section up to the next
-  `## ` heading or the end of the body. Inside it, `<sha>` comes from
-  the line that starts `Reviewed: `, and `<verdict>` from the line that
-  starts `- **Verdict:** `. Do not search the whole body: a **Code
-  review** section has a `Reviewed:` line too. `<p>` is the pull
-  request's `number`. Date the line by the reviewed commit:
-
-  ```bash
-  git log -1 --format=%as <sha>
-  ```
-
-  ```text
-  Skipped review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.
-  ```
-
-  When build was done before this run, use the body that
-  [Find the first unfinished step](#find-the-first-unfinished-step)
-  read. When the build step reported `done` in this run, the step has
-  just written the section, so read the body again:
-
-  ```bash
-  gh pr view <name> --json number,body
-  ```
-
-  The line then starts `Done` instead:
-
-  ```text
-  Done review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.
-  ```
-
-- **Build.** Read the last commit that changed the task list: the last
-  task's tick.
-
-  ```bash
-  git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md
-  ```
-
-  ```text
-  Skipped build: every task is ticked, last task commit <date> (<sha>).
-  ```
-
-- **Review build.** Read the commit that archived the change. `<p>` is
-  the pull request's `number`.
-
-  ```bash
-  git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/archive/<YYYY-MM-DD>-<name>/tasks.md
-  ```
-
-  ```text
-  Skipped review build: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.
-  ```
-
-The plan and build reads work after archive too. Archive deletes the
-old path, and its history keeps the add and the ticks.
+```text
+Done review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.
+```
 
 ### Records that disagree
 
@@ -706,7 +647,7 @@ choice.
 Each case names what you found, such as the path, or the pull request's
 `isDraft`.
 
-## The steps
+## The step table
 
 There are five steps, in this order: shape, plan, review plan, build
 and review build. Prose and printed lines use these names. `--for`,
@@ -714,13 +655,70 @@ and review build. Prose and printed lines use these names. `--for`,
 `build` and `review-build`. `<step>` is one of these.
 
 Shape runs only inside *Start*, as
-[Run the shape step](#run-the-shape-step) says. Until review plan runs
-as a step of its own, it runs inside build on `lets-standard`: the build
-step has the plan reviewed with `lets-review-plan` before it runs
-`lets-build`. On
-`lets-minimal`, it never runs. It has no prompt and no report. Run the
-other steps from the first unfinished one. Each gets its own prompt, and
-runs as [Run a step](#run-a-step) says.
+[Run the shape step](#run-the-shape-step) says. Every other step runs in
+a fresh session, as [Run a step](#run-a-step) says. On `lets-minimal`,
+review plan never runs.
+
+Each row says which skill the step runs, when the step is done, which
+record shows it, and the line to print when it was done before this run.
+The state is the `state` that
+`openspec instructions apply --change <name> --json` prints.
+
+| Step | Skill | Done when | Record | Skip line |
+|---|---|---|---|---|
+| `shape` | the `lets-shape` skill, as [What shape runs](#what-shape-runs) says | *Confirm the packet* passes | The issue's last edit | `Skipped shape: #<i>'s packet is complete, last edited <date>.` |
+| `plan` | the `lets-plan` skill | The state is `ready` or `all_done`, or the archive folder exists | The commit that added `tasks.md` | `Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).` |
+| `review-plan` | the `lets-review-plan` skill | The **Plan review** section covers the plan. On `lets-minimal`, plan is done | The section's `Reviewed:` commit | `Skipped review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.` On `lets-minimal`: `Skipped review plan: not in the lets-minimal route.` |
+| `build` | the `lets-build` skill | The state is `all_done`, or the archive folder exists | The last commit that changed `tasks.md` | `Skipped build: every task is ticked, last task commit <date> (<sha>).` |
+| `review-build` | the `lets-review-build` skill | The archive folder exists | The commit that added the archive's `tasks.md`, and the pull request | `Skipped review build: archived <date> (<sha>); pull request #<p> is ready for review.` |
+
+### Read the records
+
+Each skip line is dated by one read. `<date>` is the commit's author
+date, from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is the
+short hash, from `%h`. A read that prints nothing means the
+[records disagree](#records-that-disagree).
+
+- **Shape.** *Start* step 5 reads the issue's last edit, and prints the
+  line.
+- **Plan.** Read the commit that added the task list:
+
+  ```bash
+  git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md
+  ```
+
+- **Review plan.** On `lets-minimal`, there is no record, and the line
+  has no date. On any other schema, the `lets-review-plan` skill records
+  the review in the pull request's `body`. Find the `## Plan review`
+  heading, and read the section up to the next `## ` heading or the end
+  of the body. Inside it, `<sha>` comes from the line that starts
+  `Reviewed: `, and `<verdict>` from the line that starts
+  `- **Verdict:** `. Do not search the whole body: a **Code review**
+  section has a `Reviewed:` line too. `<p>` is the pull request's
+  `number`. Date the line by the reviewed commit:
+
+  ```bash
+  git log -1 --format=%as <sha>
+  ```
+
+- **Build.** Read the last commit that changed the task list: the last
+  task's tick.
+
+  ```bash
+  git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md
+  ```
+
+- **Review build.** Read the commit that archived the change. `<p>` is
+  the pull request's `number`.
+
+  ```bash
+  git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/archive/<YYYY-MM-DD>-<name>/tasks.md
+  ```
+
+The plan and build reads work after archive too. Archive deletes the
+old path, and its history keeps the add and the ticks.
+
+### The change's name
 
 `<name>` is the change's name. Shape runs before there is one, so its
 `<name>` comes from what it shapes:
@@ -740,14 +738,20 @@ such as `--name idea-fix-letssync-quiet-output-shape`.
 
 Create the folder first, if it is missing: `mkdir -p .workspace/lets-go`.
 Then write the frame below to `.workspace/lets-go/<name>-<step>-prompt.md`.
-Fill in each `<...>`, and put the step's row from the table under
-*What to run*. For build, take the row for `<schema>`. For shape, put the text of
-[What shape runs](#what-shape-runs) there instead. `<schema>` and
-`<level>` are the ones *Start* set.
+Fill in each `<...>`. `<schema>`, `<level>` and `<route line>` are the
+ones *Start* set. Under *What to run*, put this sentence. `<skill>` is
+the skill in the step's row of [The step table](#the-step-table):
+
+```text
+Invoke the `<skill>` skill for the change `<name>`, for issue #<i>, and stop where it stops.
+```
+
+For shape, put the text of [What shape runs](#what-shape-runs) there
+instead.
 
 For shape, the first two lines differ. There is no change, the branch is
 the default branch, `<default>`, and *Route* has not run, so there is no
-schema. For an issue, they are:
+schema and no route line. For an issue, they are:
 
 ```text
 You run one step of a lets-go run: shape, for issue #<i>.
@@ -765,11 +769,11 @@ The rest of the frame is the same for every step.
 
 ````text
 You run one step of a lets-go run: <step>, for the change <name>.
-Issue: #<i>, <issue URL>. Branch: <name>. Schema: <schema>.
+Issue: #<i>, <issue URL>. Branch: <name>. Schema: <schema>. <route line>
 
 ## What to run
 
-<the step's row from the table>
+<the sentence above>
 
 ## Questions
 
@@ -824,14 +828,6 @@ as `issue #<n>: <title>`, or the parent, as `epic #<p>: <title>`, with a
 `story #<n>: <title>` line for each story. Write the report last. Quote a line that
 holds `#` or `: `. Put no other step-report block in the message.
 ````
-
-| Step | What to run |
-|---|---|
-| `shape` | The text of [What shape runs](#what-shape-runs). |
-| `plan` | Invoke the `lets-plan` skill for the change `<name>`, for issue #<i>. Give it this route line: `<route line>`. If the change exists, continue it. Stop when the plan is ready: do not build it, and offer no handoff. |
-| `build`, on `lets-standard` | First run the `lets-review-plan` skill on the change `<name>`. With no **Plan review** section in the pull request, it reviews the plan. Otherwise its *Check an earlier review* decides. It runs its own rounds. Run the `lets-build` skill on the branch `<name>` only when the review is finished. Stop when every task is ticked. |
-| `build`, on any other schema | Run the `lets-build` skill on the branch `<name>`. Stop when every task is ticked. |
-| `review-build` | Invoke the `lets-review-build` skill for the change `<name>`. |
 
 ### What shape runs
 

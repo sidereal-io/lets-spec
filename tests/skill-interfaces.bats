@@ -354,19 +354,19 @@ skill_says() {
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
-@test "lets-go's build row has the plan reviewed before lets-build on lets-standard" {
-  local row phrase
-  row="$(grep -E '^\| `build`, on `lets-standard` \|' "$repo/skills/lets-go/SKILL.md")"
-  for phrase in '`lets-review-plan` skill' '**Plan review**' '*Check an earlier review*' '`lets-build` skill'; do
-    grep -qF -- "$phrase" <<<"$row" || { echo "the lets-standard build row does not say: $phrase"; false; }
-  done
+@test "lets-go keeps its steps in one table, under the pinned header" {
+  skill_says lets-go '| Step | Skill | Done when | Record | Skip line |'
+  run grep -cxF '| Step | Skill | Done when | Record | Skip line |' "$repo/skills/lets-go/SKILL.md"
+  [ "$output" -eq 1 ] || { echo "lets-go has $output step tables"; false; }
 }
 
-@test "lets-go's build row on any other schema runs lets-build at once" {
-  local row
-  row="$(grep -E '^\| `build`, on any other schema \|' "$repo/skills/lets-go/SKILL.md")"
-  grep -qF '`lets-build` skill' <<<"$row" || { echo "the other build row does not run lets-build"; false; }
-  ! grep -qF 'lets-review-plan' <<<"$row" || { echo "the other build row names lets-review-plan"; false; }
+@test "lets-go's review plan row runs the lets-review-plan skill" {
+  grep -qF '`lets-review-plan` skill' <<<"$(step_row review-plan)" || { echo "the review plan row does not run lets-review-plan"; false; }
+}
+
+@test "lets-go's build row runs the lets-build skill on every schema" {
+  grep -qF '`lets-build` skill' <<<"$(step_row build)" || { echo "the build row does not run lets-build"; false; }
+  ! grep -qF 'lets-review-plan' <<<"$(step_row build)" || { echo "the build row names lets-review-plan"; false; }
 }
 
 # review_build_start: lets-review-build's Start section, on one line.
@@ -543,7 +543,9 @@ review_build_start() {
   skill_says lets-go 'Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).'
   skill_says lets-go 'Skipped review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.'
   skill_says lets-go 'Skipped build: every task is ticked, last task commit <date> (<sha>).'
-  skill_says lets-go 'Skipped review build: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.'
+  skill_says lets-go 'Skipped review build: archived <date> (<sha>); pull request #<p> is ready for review.'
+  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- 'with a Code review section' ||
+    { echo "lets-go still asks every flow for a Code review section"; false; }
   skill_says lets-go "git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md"
   skill_says lets-go "git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md"
   skill_says lets-go 'git log -1 --format=%as <sha>'
@@ -574,6 +576,11 @@ review_build_start() {
   done
 }
 
+@test "each step prompt carries the route line and stops where its skill stops" {
+  skill_says lets-go 'Schema: <schema>. <route line>'
+  skill_says lets-go 'and stop where it stops'
+}
+
 # step_row <step>: lets-go's row for the step in its table of steps.
 step_row() {
   grep -E "^\| \`$1\` \|" "$repo/skills/lets-go/SKILL.md"
@@ -597,9 +604,8 @@ step_row() {
   done
 }
 
-@test "lets-go's plan row runs the lets-plan skill with the route line" {
+@test "lets-go's plan row runs the lets-plan skill" {
   grep -qF '`lets-plan` skill' <<<"$(step_row plan)" || { echo "the plan row does not run lets-plan"; false; }
-  grep -qF '<route line>' <<<"$(step_row plan)" || { echo "the plan row gives no route line"; false; }
   ! grep -qF 'openspec-propose' <<<"$(step_row plan)" || { echo "the plan row still names openspec-propose"; false; }
 }
 
