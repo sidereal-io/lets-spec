@@ -92,7 +92,7 @@ flow_texts() {
 }
 
 @test "lets-go ships in both flows with a routing row" {
-  local flow file request='Take a shaped story, bug or chore to a ready pull request in one run'
+  local flow file request='Take a shaped story, bug or chore, or an idea in words, to a ready pull request in one run'
   for flow in standard minimal; do
     flow_skills "$flow" | grep -qx lets-go || { echo "$flow does not ship lets-go"; false; }
   done
@@ -103,6 +103,8 @@ flow_texts() {
   for file in overlays/AGENTS.md README.md; do
     run grep -nF '| Take a shaped chore to a ready pull request in one run |' "$repo/$file"
     [ "$status" -eq 1 ] || { echo "$file keeps the chore-only row: $output"; false; }
+    run grep -nF '| Take a shaped story, bug or chore to a ready pull request in one run |' "$repo/$file"
+    [ "$status" -eq 1 ] || { echo "$file keeps the row without the idea: $output"; false; }
   done
 }
 
@@ -262,6 +264,23 @@ skill_says() {
   skill_says lets-go 'The interactivity level is <level>.'
   skill_says lets-go 'Write the answer as the user gave it, with no marker'
   for phrase in '#152 adds' 'chores only'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
+      { echo "lets-go still says: $phrase"; false; }
+  done
+}
+
+@test "lets-go runs a shape step for an idea or an unshaped issue" {
+  local phrase
+  skill_says lets-go 'Done shape: <date>. <evidence>'
+  skill_says lets-go 'Interactivity: ask, because shape has not run yet.'
+  skill_says lets-go 'issue #<n>: <title>'
+  skill_says lets-go 'issue-<i>'
+  skill_says lets-go 'idea-<slug>'
+  skill_says lets-go '--for shape'
+  skill_says lets-go 'Failed shape:'
+  skill_says lets-go 'at most once'
+  skill_says lets-go 'holds another idea'
+  for phrase in '#153 adds' '`lets-go` needs an issue number, and stop'; do
     ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
       { echo "lets-go still says: $phrase"; false; }
   done
