@@ -1,97 +1,105 @@
 ---
 name: lets-go
-description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Given nothing, it takes the next ready issue on the backlog. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, plan, review plan, build and review build each run in a fresh session, and lets-minimal skips review plan. Every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation; a story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, wants to start the next story or carry on the change on the current branch, says lets-go, or runs lets-go again after a run stopped.
+description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Given nothing, it takes the next ready issue on the backlog. Its Start section claims the issue in this session. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, plan, review plan, build and review build each run in a fresh session. lets-minimal skips review plan. Every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation. A story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch, it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, or wants to start the next story. Also use when the user wants to carry on the change on the current branch, says lets-go, or runs it again after a run stopped.
 ---
 
 # Let's go
 
 Take one story, bug or chore to a pull request ready for review, in one
 run. Start from its issue number, from an idea in words, or from
-nothing, which takes the next ready issue. *Start*
-claims the issue in this session. Then each step runs in a fresh
-session: shape when the issue needs it, then plan, review plan, build
-and review build. `lets-minimal` skips review plan. An idea too large for one issue
-runs discovery in the shape step, and the run builds the first ready
-story it files. A step never asks the user. It ends with a report. This
-session answers its questions or asks the user, as the interactivity
-level says. Run every command below from the repo root.
+nothing. With nothing, the run takes the next ready issue. *Start*, the
+first section below, claims the issue in this session. Then each step
+runs in a fresh session: shape when the issue needs it, then plan,
+review plan, build and review build. `lets-minimal` skips review plan.
+An idea too large for one issue runs discovery in the shape step, and
+the run builds the first ready story it files. A step never asks the
+user: it ends with a report. This session answers the step's questions,
+or asks the user, as the interactivity level says. Run every command
+below from the repo root.
 
 A run can stop part way. Run `lets-go` again, on the default branch or
-on the change's branch. It reads from Git and GitHub which steps are
-done, prints a dated line for each, and goes on from the first
-unfinished step.
+on the change's branch. The new run reads from Git and GitHub which
+steps are done. It prints a dated line for each, and goes on from the
+first unfinished step.
 
 ## Start
 
-1. Read the user's default level. Run this once, before anything asks
-   GitHub:
+1. Read the user's default level. Run this once, before any command
+   asks GitHub:
 
    ```bash
    lets go level
    ```
 
-   It prints one JSON line, such as `{"level":"recommend"}`. Keep its
-   `level` for the whole run: `ask`, `recommend`, or `null` when the
-   `lets` config sets none. If it exits non-zero, show the user its
-   stderr, and stop: claim nothing, and run no step. Then find the
-   default branch with
+   It prints one JSON line, such as `{"level":"recommend"}`. Keep the
+   `level` it prints for the whole run: `ask`, `recommend`, or `null`
+   when the `lets` config sets none. If the command exits non-zero, show
+   the user its stderr and stop: claim nothing, and run no step. Then
+   find the default branch with
    `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`,
    and run `git branch --show-current`.
 2. Read the request. A leading or trailing `ask` or `recommend` names
-   the level: take it off, and keep it for step 10. What is left is one
-   of these:
-   - **A number:** it holds `#<n>`, or is a bare number. It names the
-     issue.
+   the level: take it off, and keep it for step 10, which sets the
+   level. What is left is one of these:
+   - **A number:** the request holds `#<n>`, or is a bare number. The
+     number names the issue.
    - **Words:** anything else. They are an idea, kept word for word.
    - **Nothing.**
 
    Then find the issue, `<i>`:
    - **On the default branch**, a number is `<i>`. An idea goes to
-     [Start from an idea](#start-from-an-idea). With nothing, run
-     [Find the source of demand](#find-the-source-of-demand), its third
-     case, `next`, over the whole backlog. When it selects an issue,
-     print `Picked #<n>: <title>, the next ready issue.` That issue is
-     `<i>`. When nothing is ready, that case's stop stands.
-   - **On another branch**, `<branch>`, given words, say that an idea
-     needs the default branch, and stop. Otherwise search for the
-     change's issue:
+     [Start from an idea](#start-from-an-idea). With nothing, run the
+     third case, `next`, of
+     [Find the source of demand](#find-the-source-of-demand), over the
+     whole backlog. When `next` picks an issue, print
+     `Picked #<n>: <title>, the next ready issue.` That issue is `<i>`.
+     When nothing is ready, the stop in `next` stands.
+   - **On another branch**, `<branch>`: when the request is words, say
+     that an idea needs the default branch, and stop. Otherwise search
+     for the change's issue:
 
      ```bash
      gh issue list --state open --search "<branch> in:title" --json number,title
      ```
 
      Keep the issues whose title starts with `<branch> — `. When the
-     user gave a number, it must be one of them. If it is not, say that
-     the issue and the branch do not match, and stop. When they gave
-     none, exactly one match is the issue. If none matches, say that
-     `lets-go` runs on the default branch or on a change's branch, and
-     needs the issue number on a change's branch. Stop. If several
-     match, say that `lets-go` needs the issue number, and stop.
+     user gave a number, that number must be one of them. If it is not,
+     say that the issue and the branch do not match, and stop. When the
+     user gave no number, exactly one match is the issue. If none
+     matches, say that `lets-go` runs on the default branch or on a
+     change's branch, and needs the issue number on a change's branch.
+     Stop. If several match, say that `lets-go` needs the issue number,
+     and stop.
 3. Run [Find the source of demand](#find-the-source-of-demand) for
-   `<i>`, as for a named issue.
-   Read its blockers with `gh issue view <i> --json title,blockedBy`, so
-   you have the title too. `<name>` is the change's name, as *Claim*
-   names it from the title. On a change's branch, it is `<branch>`. When
-   a blocker is open, look for the change's branch before you stop, as
-   step 7 does:
+   `<i>`, as for a named issue. Read the issue's blockers with
+   `gh issue view <i> --json title,blockedBy`, which gives the title
+   too. `<name>` is the change's name, which *Claim* takes from the
+   title. On a change's branch, `<name>` is `<branch>`. When a blocker
+   is open, look for the change's branch before you stop, as step 7
+   does:
    - **The branch exists**, here or on `origin`: the user has stacked it
      by hand. Name the open blockers by number, and go on with the rest
-     of the section: its *Check the prerequisite* still runs, and its stop
-     stands. On a change's branch, the branch exists: you are on it.
-   - **It does not exist:** the stop stands, as the section reports it.
+     of *Find the source of demand*: its *Check the prerequisite* still
+     runs, and its stop stands. On a change's branch, the branch exists:
+     you are on it.
+   - **The branch does not exist:** the stop stands, as *Find the source
+     of demand* reports it.
 
-   Any other stop in that section stands as the section reports it.
-4. Run [Confirm the packet](#confirm-the-packet). Three of its stops say to
-   run `lets-shape` on #<i>: the issue is not shaped, a line is missing
-   or a placeholder, or comments are unread. On the default branch, when
-   no shape step has run in this run, set that stop aside, and
-   [run the shape step](#run-the-shape-step) for #<i>. Any other stop
-   stands, as the section reports it. An Epic stops there: it is built
-   through its stories. For a Story with a parent, it reads the parent's
-   **Shared decisions**: *Route* needs them.
+   Any other stop in *Find the source of demand* stands as that section
+   reports it.
+4. Run [Confirm the packet](#confirm-the-packet). Three of its stops say
+   to run `lets-shape` on #<i>: the issue is not shaped, a line is
+   missing or a placeholder, or comments are unread. On the default
+   branch, when no shape step has run in this run, set that stop aside
+   and [run the shape step](#run-the-shape-step) for #<i>. Any other
+   stop stands, as *Confirm the packet* reports it. An Epic stops there,
+   because an epic is built through its stories. For a Story with a
+   parent, *Confirm the packet* reads the parent's **Shared decisions**,
+   because *Route* needs them.
 5. When *Confirm the packet* passes, shape is done. When a shape step
-   reported `done` in this run, print its line. `<date>` is the report's
-   `date`, and `<evidence>` is its `evidence`, joined with `; `:
+   reported `done` in this run, print the shape step's line. `<date>` is
+   the report's `date`, and `<evidence>` is its `evidence`, joined with
+   `; `:
 
    ```text
    Done shape: <date>. <evidence>
@@ -104,15 +112,16 @@ unfinished step.
    ```
 
    Here `<date>` is the day of the issue's `lastEditedAt`, from the thread
-   query in *Confirm the packet*, as `YYYY-MM-DD`. When it is null, the
-   body was never edited. Use the day the issue was created:
+   query in *Confirm the packet*, as `YYYY-MM-DD`. When `lastEditedAt`
+   is null, the body was never edited. Use the day the issue was
+   created:
 
    ```bash
    gh issue view <i> --json createdAt --jq .createdAt
    ```
 
-6. Run [Route](#route). Keep the route line: the plan step needs
-   it.
+6. Run [Route](#route). Keep the route line, because the plan step
+   needs it.
 7. On the default branch, look for the change's branch, here and on
    `origin`:
 
@@ -121,19 +130,21 @@ unfinished step.
    git ls-remote --heads origin refs/heads/<name>
    ```
 
-   - **Neither prints a line:** run [Claim](#claim). A stop it
-     makes stands. When its glossary preflight found owned edits, also
-     run *Import the glossary checkpoint*. *Claim* creates the branch.
-     Then [commit the discovery map](#commit-the-discovery-map).
+   - **Neither prints a line:** run [Claim](#claim), which creates the
+     branch. A stop in *Claim* stands. When the glossary preflight in
+     *Claim* found owned edits, also run *Import the glossary
+     checkpoint*. Then [commit the discovery map](#commit-the-discovery-map).
    - **Either prints a line:** the change has started. Do not run
-     *Claim*. When `git ls-remote` printed it, run
-     `git fetch origin <name>` first: `git switch` finds a branch on
-     `origin` only once it is fetched. Then run `git switch <name>`.
+     *Claim*. When the line came from `git ls-remote`, run
+     `git fetch origin <name>` first, because `git switch` finds a
+     branch on `origin` only once it is fetched. Then run
+     `git switch <name>`.
 
-   When step 3 has looked already, use what it found. Stay on `<name>`
-   for the whole run.
+   When step 3 has looked for the branch already, use what it found.
+   Stay on `<name>` for the whole run.
 8. When `origin` has the branch, bring it up to date before you read any
-   record. On a change's branch, run the `git ls-remote` above to check.
+   record. On a change's branch, check with the `git ls-remote` command
+   in step 7.
 
    ```bash
    git fetch origin <name>
@@ -142,11 +153,11 @@ unfinished step.
 
    Skip the fetch when step 7 has just run it. If the merge cannot
    fast-forward, the branch and `origin` have diverged: the
-   [records disagree](#records-that-disagree). If any command here fails
-   for another reason, show the user its error, and stop.
+   [records disagree](#records-that-disagree). If any command in this
+   step fails for another reason, show the user its error, and stop.
 9. Set `<schema>`. When `openspec/changes/<name>/.openspec.yaml` exists,
-   it is that file's `schema:` line. Otherwise it is the schema *Route*
-   picked.
+   `<schema>` is that file's `schema:` line. Otherwise `<schema>` is the
+   schema *Route* picked in step 6.
 10. Set `<level>`, the interactivity level. Take the first of these
     that is set:
     1. The level the user named in the request that started the run.
@@ -155,9 +166,9 @@ unfinished step.
     3. The Kind's: `recommend` for a Chore or a Bug, `ask` for a Story.
 
     Never ask the user which level to use. The level holds for this run
-    only. After a shape step, set it again here, in the same order: the
-    Kind is settled now. Do not run `lets go level` again. Print the line
-    for the source you used:
+    only. After a shape step, set the level again here, in the same
+    order, because the Kind is settled now. Do not run `lets go level`
+    again. Print the line for the source you used:
 
     ```text
     Interactivity: <level>, because you asked for it.
@@ -166,11 +177,12 @@ unfinished step.
     ```
 
     At `recommend`, this session answers each question that has a
-    recommendation, and asks the user the rest. At `ask`, it asks the
-    user every question.
+    recommendation, and asks the user the rest. At `ask`, this session
+    asks the user every question.
 
 *Start* runs in this session. It is not a step, and has no step report.
-The shape step it runs is a step, and has a report. After *Start*,
+The shape step that *Start* runs is a step, and has a report. After
+*Start*,
 [walk the step table](#walk-the-step-table).
 
 ### Find the source of demand
