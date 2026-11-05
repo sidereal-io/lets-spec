@@ -558,6 +558,18 @@ review_build_start() {
   skill_says lets-go 'gh pr view <name> --json number,body'
 }
 
+# readme_lets_go: the README's lets-go section, on one line.
+readme_lets_go() {
+  awk '/^### `lets-go`/ { on = 1; next } /^### / { on = 0 } on' "$repo/README.md" | tr -s '[:space:]' ' '
+}
+
+@test "the README says each lets-go step runs in a fresh session" {
+  grep -qF 'plan, review plan, build and review build, each in a fresh session' <<<"$(readme_lets_go)" ||
+    { echo "the README's lets-go section does not list review plan as a step"; false; }
+  ! grep -qF 'runs inside build' <<<"$(readme_lets_go)" ||
+    { echo "the README still says review plan runs inside build"; false; }
+}
+
 @test "lets-go runs review plan as a step of its own" {
   skill_says lets-go '--for review-plan'
   skill_says lets-go '--name <name>-review-plan'

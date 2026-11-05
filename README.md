@@ -204,9 +204,10 @@ Run `lets-go` on the default branch with the issue number of a story,
 bug or chore, with an idea in words, or with nothing. Given nothing, it
 takes the next issue: the unassigned, unblocked Todo with the highest
 priority. It checks the issue's packet, assigns it to you, sets it In
-Progress and creates its branch. Then it runs plan, build and review
-build, each in a fresh session through `lets delegate step run`. On `lets-standard`,
-review plan runs inside build. A step never asks you anything in its own session. It
+Progress and creates its branch. Then it runs plan, review plan, build
+and review build, each in a fresh session through
+`lets delegate step run`. Review plan runs on `lets-standard` only. A
+step never asks you anything in its own session. It
 reports its questions, and `lets-go` handles them at one of two
 interactivity levels:
 
