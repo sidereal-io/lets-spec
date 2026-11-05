@@ -146,6 +146,45 @@ flow_texts() {
   done
 }
 
+# schema_step <flow> <id>: the step's block in the flow's schema, on one line.
+schema_step() {
+  awk -v id="$2" '$0 == "  - id: " id || $0 == id ":" { on = 1; next } /^  - id: |^[a-z]+:/ { on = 0 } on' \
+    "$repo/schemas/lets-$1/schema.yaml" | tr -s '[:space:]' ' '
+}
+
+@test "each flow's brainstorm says a change starts from lets-go" {
+  local flow
+  for flow in standard minimal; do
+    grep -qF '`lets-go` picked and claimed it' <<<"$(schema_step "$flow" brainstorm)" ||
+      { echo "the $flow brainstorm does not say lets-go claimed the story"; false; }
+    grep -qF 'a change starts from the `lets-go` skill' <<<"$(schema_step "$flow" brainstorm)" ||
+      { echo "the $flow brainstorm does not send a missing story to lets-go"; false; }
+  done
+}
+
+@test "each flow's apply says lets-build runs it, and lets-review-build finishes the change" {
+  local flow
+  for flow in standard minimal; do
+    grep -qF 'The `lets-build` skill runs this step.' <<<"$(schema_step "$flow" apply)" ||
+      { echo "the $flow apply does not name lets-build"; false; }
+    grep -qF 'When every task is done, stop. The `lets-review-build` skill finishes the change.' <<<"$(schema_step "$flow" apply)" ||
+      { echo "the $flow apply does not stop for lets-review-build"; false; }
+  done
+  grep -qF '`lets-go` has the plan reviewed with the `lets-review-plan` skill' <<<"$(schema_step standard apply)" ||
+    { echo "the standard apply does not say lets-go has the plan reviewed"; false; }
+}
+
+@test "no schema names Finish the change" {
+  run grep -rnF 'Finish the change' "$repo/schemas"
+  [ "$status" -eq 1 ] || { echo "$output"; false; }
+}
+
+@test "lets-review-plan runs in lets-go's build step" {
+  skill_says lets-review-plan "\`lets-go\`'s build step"
+  run grep -nF 'lets-build' "$repo/skills/lets-review-plan/SKILL.md"
+  [ "$status" -eq 1 ] || { echo "lets-review-plan still names lets-build: $output"; false; }
+}
+
 @test "each flow's brainstorm says comments are evidence" {
   local flow step
   for flow in standard minimal; do
