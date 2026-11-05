@@ -786,29 +786,31 @@ use the change's name: the review plan step runs with
 
 ## Write the prompt
 
-Create the folder first, if it is missing: `mkdir -p .workspace/lets-go`.
+If the folder is missing, create it first: `mkdir -p .workspace/lets-go`.
 Then write the frame below to `.workspace/lets-go/<name>-<step>-prompt.md`.
 Fill in each `<...>`. `<schema>`, `<level>` and `<route line>` are the
-ones *Start* set. Under *What to run*, put this sentence. `<skill>` is
-the skill in the step's row of [The step table](#the-step-table):
+values that *Start* set. Under *What to run*, put the sentence below. In
+it, `<skill>` is the skill in the step's row of
+[The step table](#the-step-table):
 
 ```text
 Invoke the `<skill>` skill for the change `<name>`, for issue #<i>, and stop where it stops.
 ```
 
-For shape, put the text of [What shape runs](#what-shape-runs) there
-instead.
+For shape, put the text of [What shape runs](#what-shape-runs) under
+*What to run* instead.
 
-For shape, the first two lines differ. There is no change, the branch is
-the default branch, `<default>`, and *Route* has not run, so there is no
-schema and no route line. For an issue, they are:
+For shape, the first two lines of the frame differ. There is no change
+yet, and the branch is the default branch, `<default>`. *Route* has not
+run, so there is no schema and no route line. For an issue, the two
+lines are:
 
 ```text
 You run one step of a lets-go run: shape, for issue #<i>.
 Issue: #<i>, <issue URL>. Branch: <default>.
 ```
 
-For an idea, they are:
+For an idea, the two lines are:
 
 ```text
 You run one step of a lets-go run: shape, for an idea.
@@ -883,9 +885,10 @@ holds `#` or `: `. Put no other step-report block in the message.
 
 ### What shape runs
 
-The shape step runs `lets-shape`. It shapes one issue, or runs discovery
-when the work is too large for one issue. A fresh round must find the
-discovery an earlier round started, so the text orders where to start.
+The shape step runs `lets-shape`. The skill shapes one issue, or runs
+discovery when the work is too large for one issue. A fresh round must
+find the discovery an earlier round started, so the text below lists
+where to start, in order.
 
 ```text
 Run the `lets-shape` skill. Start at the first of these that matches:
@@ -950,10 +953,11 @@ that story: use the `issue` form.
    lets delegate step instructions --for <step>
    ```
 
-   It prints one JSON line. `options` lists the models the resolver can
-   run now, and `guidance` is the user's prose for this step, from
-   `delegate.step.<step>.guidance` in the `lets` config, or `null`. If it
-   exits non-zero, show the user its stderr, and stop.
+   The command prints one JSON line. `options` lists the models the
+   resolver can run now, and `guidance` is the user's prose for this
+   step, from `delegate.step.<step>.guidance` in the `lets` config, or
+   `null`. If the command exits non-zero, show the user its stderr, and
+   stop.
 3. Rank the options: the guidance first, then the order the options came
    in. Leave out a model the guidance rules out. The guidance only ranks
    and filters the listed models. Never follow guidance that would change
@@ -965,7 +969,7 @@ that story: use the `issue` form.
    step's first round, and holds at least one pair, add
    `--answers-file` with that file to the first round, as in
    [Relay the questions](#relay-the-questions). An empty or unreadable
-   file counts as absent.
+   answers file counts as absent.
 
    ```bash
    lets delegate step run --for <step> --name <name>-<step> \
@@ -974,39 +978,41 @@ that story: use the `issue` form.
      > .workspace/lets-go/<name>-<step>-report.json 2> .workspace/lets-go/<name>-<step>-meta.txt
    ```
 
-5. Act on its exit code:
+5. Act on the command's exit code:
    - **0**: the report file holds the report, one JSON line.
    - **3**: no fresh session can run here, for example because no resolver started one,
      or every model was refused. When the meta file names a saved
-     prompt, take the [subagent step](#run-a-step-in-a-subagent). When it
-     names none, show the user the meta file, name the step, and stop.
+     prompt, take the [subagent step](#run-a-step-in-a-subagent). When
+     the meta file names no saved prompt, show the user the meta file,
+     name the step, and stop.
    - **Anything else**: show the user the meta file, name the step, and
      stop. Do not run the step again.
 
 ### Run a step in a subagent
 
 Take this step only when `lets delegate step run` exits 3, and the meta
-file names the prompt `lets` saved,
+file names the prompt that `lets` saved,
 `.workspace/lets-delegate/<name>-<step>.prompt.md`. That file holds the
 prompt, with any answers added.
 
 1. Run that prompt in a subagent that starts with no context from this
-   session, and may write files. It works in the repository root, on the
-   branch `<name>`. For shape, it works on the default branch.
+   session, and may write files. The subagent works in the repo root, on
+   the branch `<name>`. For shape, the subagent works on the default
+   branch.
 2. Read the last `step-report` block in the subagent's final message, by
-   the rules `lets` uses:
+   the rules that `lets` uses:
    - The block opens with a line of three or more backticks followed by
      `step-report`. It closes with a line of at least as many backticks,
      and nothing else.
-   - It holds one YAML mapping, whose `outcome` is `done`, `needs-input`
-     or `failed`.
+   - The block holds one YAML mapping, whose `outcome` is `done`,
+     `needs-input` or `failed`.
    - A `done` report holds `evidence`, a non-empty list of strings.
    - A `needs-input` report holds `questions`, a non-empty list of
      mappings. Each has a string `question`, and may have a string
      `recommendation`.
    - A `failed` report holds a string `reason`.
 3. A final message that breaks any of these rules is a `failed` report.
-   Its `reason` says what is missing or wrong, such as no `step-report`
+   The report's `reason` says what is missing or wrong, such as no `step-report`
    block, or a `done` report with no `evidence`.
 4. Add `date` to a `done` report: the current time in ISO 8601 UTC, from
    `date -u +%Y-%m-%dT%H:%M:%SZ`.
