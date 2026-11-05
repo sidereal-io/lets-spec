@@ -72,6 +72,40 @@ load support/project
   [[ "$output" == *"openspec/config.yaml sets no schema"* ]]
 }
 
+# The config release 0.7.0 wrote, whose code review rule names lets-review-code.
+config_0_7_0="$repo/tests/lets/sync/fixtures/config-0.7.0.yaml"
+stale_rule='openspec/config.yaml names lets-review-code, which this release does not ship. Delete the operations.archive entry that names it: the lets-review-build skill runs the code review now.'
+
+@test "sync lists the code review rule release 0.7.0 wrote, once" {
+  cp "$config_0_7_0" openspec/config.yaml
+  run sync_project
+  [ "$status" -eq 0 ]
+  [ "$(grep -cF -- "- $stale_rule" <<<"$output")" -eq 1 ] || { echo "$output"; false; }
+}
+
+@test "sync ignores lets-review-code in the config's comments" {
+  printf 'schema: lets-standard\n# lets-review-code\nx: 1 # lets-review-code\n' >openspec/config.yaml
+  run sync_project
+  [ "$status" -eq 0 ]
+  [[ "$output" != *lets-review-code* ]] || { echo "$output"; false; }
+}
+
+@test "sync lists a wrong schema beside the code review rule" {
+  cp "$config_0_7_0" openspec/config.yaml
+  edit_config '.schema = "spec-driven"'
+  run sync_project
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"openspec/config.yaml sets schema to 'spec-driven'; it must be lets-standard"* ]]
+  [[ "$output" == *"$stale_rule"* ]]
+}
+
+@test "sync --check passes on a config that names lets-review-code" {
+  init_project
+  cp "$config_0_7_0" openspec/config.yaml
+  run sync_project --check
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+}
+
 @test "sync keeps a config link that points nowhere, and warns" {
   rm openspec/config.yaml
   ln -s ../nowhere.yaml openspec/config.yaml
