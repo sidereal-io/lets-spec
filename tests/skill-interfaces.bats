@@ -283,13 +283,19 @@ skill_says() {
   skill_says lets-build "If it exits 3, every model was refused: show the user its stderr, and stop."
 }
 
-@test "lets-build has the plan reviewed before it builds on lets-standard" {
-  skill_says lets-build 'schema: lets-standard'
-  skill_says lets-build 'openspec/changes/<branch>/.openspec.yaml'
-  skill_says lets-build '`lets-review-plan` skill'
-  skill_says lets-build "*Check an earlier review*"
-  skill_says lets-build '`openspec-apply-change` skill'
-  skill_says lets-build 'On `lets-standard`, the build has the plan reviewed first.'
+@test "lets-go's build row has the plan reviewed before lets-build on lets-standard" {
+  local row phrase
+  row="$(grep -E '^\| `build`, on `lets-standard` \|' "$repo/skills/lets-go/SKILL.md")"
+  for phrase in '`lets-review-plan` skill' '**Plan review**' '*Check an earlier review*' '`lets-build` skill'; do
+    grep -qF -- "$phrase" <<<"$row" || { echo "the lets-standard build row does not say: $phrase"; false; }
+  done
+}
+
+@test "lets-go's build row on any other schema runs lets-build at once" {
+  local row
+  row="$(grep -E '^\| `build`, on any other schema \|' "$repo/skills/lets-go/SKILL.md")"
+  grep -qF '`lets-build` skill' <<<"$row" || { echo "the other build row does not run lets-build"; false; }
+  ! grep -qF 'lets-review-plan' <<<"$row" || { echo "the other build row names lets-review-plan"; false; }
 }
 
 # review_build_start: lets-review-build's Start section, on one line.
@@ -342,16 +348,41 @@ review_build_start() {
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
-@test "lets-go's Start names lets-build's sections and adds one command" {
+@test "lets-go's Start holds the sections that find, confirm, route and claim the issue" {
   local section
-  for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Claim'; do
-    skill_says lets-go "*$section*"
+  for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Glossary preflight' 'Claim' 'Import the glossary checkpoint'; do
+    grep -qx "### $section" "$repo/skills/lets-go/SKILL.md" || { echo "lets-go has no heading: $section"; false; }
+  done
+  for section in 'Check the prerequisite' 'Check the checkpoint' 'Import the commits' 'Recover from a failed import'; do
+    grep -qx "#### $section" "$repo/skills/lets-go/SKILL.md" || { echo "lets-go has no heading: $section"; false; }
   done
   skill_says lets-go 'gh issue view <i> --json createdAt'
+  skill_says lets-go 'gh repo view --json defaultBranchRef --jq .defaultBranchRef.name'
   skill_says lets-go "Skipped shape: #<i>'s packet is complete, last edited <date>."
-  # lets-build's Claim sets the Status; lets-go sets no Project field itself.
-  run grep -n 'gh project item-edit' "$repo/skills/lets-go/SKILL.md"
-  [ "$status" -eq 1 ] || { echo "lets-go sets a Project field: $output"; false; }
+  # Claim sets the Status, so lets-go sets that field itself.
+  skill_says lets-go 'gh project item-edit'
+}
+
+@test "lets-go names no section of lets-build" {
+  local phrase
+  for phrase in "\`lets-build\`'s *" 'reuses the `lets-build` skill' 'as `lets-build` does'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
+      { echo "lets-go still says: $phrase"; false; }
+  done
+}
+
+@test "lets-go with nothing takes the next ready issue" {
+  skill_says lets-go 'Picked #<n>: <title>, the next ready issue.'
+  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- '`lets-go` needs an issue number or an idea' ||
+    { echo "lets-go still stops with nothing"; false; }
+}
+
+@test "lets-go runs next again with the same candidates after a lost race" {
+  skill_says lets-go 'run `next` again with the same candidates, and go on from *Start* step 3 with the new issue'
+}
+
+@test "lets-go sends a failed step back to lets-go" {
+  skill_says lets-go 'running `lets-go` again on that branch carries on from the first unfinished step'
 }
 
 @test "lets-go picks the level from the Kind and relays at ask" {
@@ -374,7 +405,7 @@ review_build_start() {
   skill_says lets-go 'Interactivity: <level>, because your lets config sets go.level.'
   skill_says lets-go 'lets go level'
   first_level=$(grep -n 'lets go level' "$skill" | head -1 | cut -d: -f1)
-  first_gh=$(grep -nE '`gh |lets-build. does' "$skill" | head -1 | cut -d: -f1)
+  first_gh=$(grep -nE '`gh ' "$skill" | head -1 | cut -d: -f1)
   [ "$first_level" -lt "$first_gh" ] ||
     { echo "lets go level is on line $first_level, after a GitHub call on line $first_gh"; false; }
 }
@@ -538,8 +569,8 @@ assert_reference_links() {
   grep -qF '](references/issue-comments.md)' "$repo/skills/lets-shape/SKILL.md"
 }
 
-@test "build links its issue-comments reference" {
-  grep -qF '](../lets-shape/references/issue-comments.md)' "$repo/skills/lets-build/SKILL.md"
+@test "lets-go links its issue-comments reference" {
+  grep -qF '](../lets-shape/references/issue-comments.md)' "$repo/skills/lets-go/SKILL.md"
 }
 
 @test "brainstorm links the issue-comments reference" {
@@ -550,12 +581,12 @@ assert_reference_links() {
   skill_says lets-brainstorm 'Evidence: #<n> comment (<author>, <date>)'
 }
 
-@test "build links resolve inside the source skills" {
-  assert_reference_links "$repo/skills/lets-build/SKILL.md" "$repo/skills"
+@test "lets-go's links resolve inside the source skills" {
+  assert_reference_links "$repo/skills/lets-go/SKILL.md" "$repo/skills"
 }
 
-@test "build states its watermark" {
-  skill_says lets-build "The watermark is the later of the body's last edit and the newest read marker"
+@test "lets-go states its watermark" {
+  skill_says lets-go "The watermark is the later of the body's last edit and the newest read marker"
 }
 
 # prose() deduplicates matches, and SKILL.md already names gh api graphql, so
@@ -612,7 +643,7 @@ load support/release
     out="$BATS_TEST_TMPDIR/$flow"
     schemas="$(jq -r --arg flow "$flow" '.flows[$flow].schemas | join(",")' "$repo/flows.json")"
     build "$out" "$schemas" $(flow_skills "$flow")
-    for skill in lets-shape lets-brainstorm lets-write-specs lets-build; do
+    for skill in lets-shape lets-brainstorm lets-write-specs lets-go; do
       assert_reference_links "$out/overlay/.agents/skills/$skill/SKILL.md" "$out/overlay"
     done
     for schema in $(jq -r --arg flow "$flow" '.flows[$flow].schemas[]' "$repo/flows.json"); do
