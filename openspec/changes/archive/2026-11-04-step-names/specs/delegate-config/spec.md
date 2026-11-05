@@ -1,0 +1,195 @@
+## MODIFIED Requirements
+
+### Requirement: The config file
+The config SHALL be one YAML document at `$XDG_CONFIG_HOME/lets/config.yaml` when `XDG_CONFIG_HOME` is set and not empty, and at `~/.config/lets/config.yaml` otherwise. It SHALL be a mapping that holds `version` `3`. It MAY hold `delegate`, a mapping of the settings for `lets delegate`. `delegate` MAY hold `resolvers`, the chain: a list of the resolvers to ask, in order. Each entry SHALL be the name of a resolver built into `lets`: `t3`, `cli` or `subagent`. The list MAY be empty. `delegate` MAY hold `review`, `handoff` and `step`, which only `instructions` reads. The document MAY hold `go`, a mapping of the settings for `lets go`, which only `lets go level` reads; *go-level* says what it holds. A `delegate` or `delegate.resolvers` that is null SHALL count as absent. Every `lets delegate review`, `lets delegate handoff` and `lets delegate step` command SHALL ignore any other key, at the top level or under `delegate`. They SHALL exit 2 with a message that names the file and the bad value in each of these cases:
+
+- the document is not YAML, or is not a mapping
+- `version` is not the number `3`
+- `delegate` is present and is not a mapping
+- `delegate.resolvers` is present and is not a list
+
+#### Scenario: A valid config
+- **WHEN** the file holds `version: 3` and `delegate.resolvers` listing `t3` and `subagent`, and `t3` declines
+- **THEN** `lets delegate review run --for code` reads it without error, and asks `t3`, then the default, in that order
+
+#### Scenario: The file under XDG_CONFIG_HOME
+- **WHEN** `XDG_CONFIG_HOME` is `/cfg`, and `/cfg/lets/config.yaml` holds `version: 3` and `delegate.resolvers: [cli]`
+- **THEN** `lets delegate review run --for code` asks `cli`
+
+#### Scenario: The file under the home folder
+- **WHEN** `XDG_CONFIG_HOME` is the empty string, and `~/.config/lets/config.yaml` holds `version: 3` and `delegate.resolvers: [cli]`
+- **THEN** `lets delegate review run --for code` asks `cli`
+
+#### Scenario: An invalid config
+- **WHEN** the file's `delegate.resolvers` holds `bin/old-resolver`
+- **THEN** `lets delegate review run --for code` exits 2, and stderr names the file and `bin/old-resolver`
+
+#### Scenario: The old version
+- **WHEN** the file holds `version: 2`
+- **THEN** `lets delegate review run --for code` exits 2, and stderr names the file and says the version must be `3`
+
+#### Scenario: A delegate key that is not a mapping
+- **WHEN** the file holds `version: 3` and `delegate: [t3]`
+- **THEN** `lets delegate review run --for code` exits 2, and stderr names the file and `delegate`
+
+#### Scenario: An empty delegate key
+- **WHEN** the file holds `version: 3` and a line `delegate:` with nothing under it
+- **THEN** `lets delegate handoff run --for apply` reads it without error, and the JSON line has `"resolver":"subagent"`
+
+#### Scenario: Resolvers that are not a list
+- **WHEN** the file holds `version: 3` and `delegate.resolvers: t3`
+- **THEN** `lets delegate review run --for code` exits 2, and stderr names the file and `delegate.resolvers`
+
+#### Scenario: A key from a later lets
+- **WHEN** the file holds `version: 3`, a valid `delegate.resolvers`, a top-level key `sync`, and a key `telemetry` under `delegate`, which this `lets` does not know
+- **THEN** `lets delegate review run --for code` reads it without error and asks the listed resolvers
+
+#### Scenario: run ignores the guidance
+- **WHEN** the file holds `delegate.review.code.guidance: 42`
+- **THEN** `lets delegate review run --for code` reads it without error and asks the listed resolvers
+
+#### Scenario: step run ignores the step guidance
+- **WHEN** the file holds `delegate.step.build.guidance: 42`
+- **THEN** `lets delegate step run --for build` reads it without error and asks the listed resolvers
+
+#### Scenario: A go key under a delegate command
+- **WHEN** the file holds `version: 3`, a valid `delegate.resolvers`, and `go.level: loud`
+- **THEN** `lets delegate review run --for code` reads it without error and asks the listed resolvers
+
+### Requirement: A request from lets carries the model the user gave
+`lets delegate review run`, `lets delegate handoff run` and `lets delegate step run` SHALL require at least one `--model <family[/model]>`. The family SHALL be `gpt`, `claude` or `gemini`. They SHALL ask the resolver for that family and that model. Without `--model`, or when any `--model` is not of that form, they SHALL exit 2 and ask no resolver.
+
+#### Scenario: A review with a model
+- **WHEN** the user runs `lets delegate review run --for code --model gpt/gpt-6-luna` with the other required options
+- **THEN** the resolver is asked for the family `gpt` and the model `gpt-6-luna`
+
+#### Scenario: A handoff with a bare family
+- **WHEN** the user runs `lets delegate handoff run --for apply --name build-x --prompt-file p.md --model claude`
+- **THEN** the resolver is asked for the family `claude` and no particular model
+
+#### Scenario: A step with a model
+- **WHEN** the user runs `lets delegate step run --for build --model claude/claude-opus-5-5` with the other required options
+- **THEN** the resolver is asked for the family `claude` and the model `claude-opus-5-5`
+
+#### Scenario: No model
+- **WHEN** the user runs `lets delegate review run --for code` without `--model`
+- **THEN** it exits 2, stderr names `--model`, and no resolver is asked
+
+#### Scenario: An unknown family
+- **WHEN** the user runs `lets delegate review run --for code --model gpt --model llama/llama-4` with the other required options
+- **THEN** it exits 2, stderr names `llama/llama-4`, and no resolver is asked
+
+### Requirement: Every delegation names its intent
+`instructions` and `run` SHALL require `--for <intent>`. Under `review`, the intent SHALL be `plan` or `code`. Under `handoff`, it SHALL be `apply`. Under `step`, it SHALL be one of the five steps: `shape`, `plan`, `review-plan`, `build` or `review-build`. Without `--for`, or with any other value, they SHALL exit 2, name `--for` on stderr, and ask no resolver.
+
+#### Scenario: No intent
+- **WHEN** the user runs `lets delegate handoff run --name build-x --prompt-file p.md --model claude`
+- **THEN** it exits 2, stderr names `--for`, and no resolver is asked
+
+#### Scenario: An intent from the other strategy
+- **WHEN** the user runs `lets delegate review instructions --for apply`
+- **THEN** it exits 2, stderr names `--for`, and no resolver is asked
+
+#### Scenario: The one handoff intent
+- **WHEN** the user runs `lets delegate handoff run --for apply --name build-x --prompt-file p.md --model claude`
+- **THEN** the resolver is asked to start an interactive session
+
+#### Scenario: Each step is an intent
+- **WHEN** the user runs `lets delegate step instructions --for <step>` once for each of `shape`, `plan`, `review-plan`, `build` and `review-build`
+- **THEN** each exits 0, and its JSON line has `"for"` equal to that step
+
+#### Scenario: A review intent under step
+- **WHEN** the user runs `lets delegate step instructions --for code`
+- **THEN** it exits 2, stderr names `--for`, and no resolver is asked
+
+#### Scenario: An old step name under step
+- **WHEN** the user runs `lets delegate step instructions --for apply`
+- **THEN** it exits 2, stderr names `--for`, and no resolver is asked
+
+### Requirement: A refused model passes to the next
+`run` SHALL take `--model` one or more times, as a ranked list. It SHALL ask the resolver that answers for the first model. While that resolver refuses, `run` SHALL ask the same resolver for the next model, and SHALL stop at the first answer that is not a refusal. It SHALL NOT ask a later resolver in the chain after a refusal. When every model is refused, `run` SHALL exit 3, print nothing on stdout, and print on stderr one line per model, `<model>: <reason>`. This holds for `review run`, `handoff run` and `step run`. The review's and the step's JSON line on stderr SHALL name, as `model`, the model the resolver ran, or the `--model` value `lets` asked for when that value names only a family.
+
+#### Scenario: The first model is refused
+- **WHEN** the user runs `lets delegate review run --for code --model gpt/gpt-6-astra --model gemini` with the other required options, and the resolver refuses `gpt/gpt-6-astra` and answers for `gemini`
+- **THEN** the resolver is asked twice, the second time for the family `gemini`, and the command exits 0 with the second answer
+
+#### Scenario: Every model is refused
+- **WHEN** the resolver refuses both `--model gpt/gpt-6-astra` and `--model gemini`
+- **THEN** `lets delegate review run` exits 3, stdout is empty, and stderr has a line starting `gpt/gpt-6-astra: ` and a line starting `gemini: `
+
+#### Scenario: A failure that is not a refusal
+- **WHEN** the session fails for the first of two models
+- **THEN** `lets delegate review run` exits 5, and the resolver is not asked for the second model
+
+#### Scenario: A refusal never moves down the chain
+- **WHEN** the config lists `t3` then `cli`, and `t3` refuses every model of a review
+- **THEN** `lets delegate review run` exits 3, and `cli` is not asked
+
+#### Scenario: The review names the model that ran
+- **WHEN** the resolver refuses `gpt/gpt-6-astra`, then answers for `gemini/gemini-3-pro`
+- **THEN** the JSON line on stderr has `"model":"gemini-3-pro"`
+
+#### Scenario: The resolver reports a null model
+- **WHEN** the resolver answers for `--model claude`, and reports no model of its own
+- **THEN** the JSON line on stderr has `"model":"claude"`
+
+#### Scenario: A step's first model is refused
+- **WHEN** the user runs `lets delegate step run --for build --model gpt/gpt-6-astra --model gemini` with the other required options, and the resolver refuses `gpt/gpt-6-astra` and answers for `gemini` with a valid report
+- **THEN** the resolver is asked twice, the second time for the family `gemini`, and the command exits 0 with the report
+
+#### Scenario: A step's refusal never moves down the chain
+- **WHEN** the config lists `t3` then `subagent`, and `t3` runs steps but refuses every model of a step
+- **THEN** `lets delegate step run` exits 3, and `subagent` is not asked
+
+### Requirement: An unknown resolver name stops the command
+An entry of the config's `delegate.resolvers` that is not `t3`, `cli` or `subagent` SHALL stop every `lets delegate review`, `lets delegate handoff` and `lets delegate step` command before it asks any resolver. The command SHALL exit 2 and print nothing on stdout. Stderr SHALL name the config file, the entry, and the three names. An absolute path is such an entry: `lets` SHALL NOT rewrite it to a name.
+
+#### Scenario: A path from an older lets
+- **WHEN** the config lists `/opt/r/old-resolver`
+- **THEN** `lets delegate review run --for code` exits 2, and stderr contains the config file's path, `/opt/r/old-resolver`, `t3`, `cli` and `subagent`
+
+#### Scenario: A name lets does not know
+- **WHEN** the config lists `codex`
+- **THEN** `lets delegate handoff run --for apply` exits 2, stdout is empty, and stderr contains `codex` and the config file's path
+
+#### Scenario: A bad entry after one that would answer
+- **WHEN** the config lists `subagent`, then `/opt/r/old-resolver`
+- **THEN** `lets delegate handoff run --for apply` exits 2, and no prompt is saved under `.workspace/lets-delegate/`
+
+#### Scenario: A step with a name lets does not know
+- **WHEN** the config lists `codex`
+- **THEN** `lets delegate step run --for build` exits 2, stdout is empty, and stderr contains `codex` and the config file's path
+
+### Requirement: An unexpected failure inside a resolver exits 4
+When a resolver fails in a way it does not report as a decline, a refusal, a failed session or a timeout, `lets delegate review run`, `lets delegate handoff run` and `lets delegate step run` SHALL exit 4, print nothing on stdout, and print the failure's message on stderr. Exit 4 means the outcome is unknown.
+
+#### Scenario: A review that breaks
+- **WHEN** the resolver that answers a review fails with the message `boom`
+- **THEN** `lets delegate review run --for code` exits 4, stdout is empty, and stderr contains `boom`
+
+#### Scenario: A handoff that breaks
+- **WHEN** the resolver that answers a handoff fails with the message `boom`
+- **THEN** `lets delegate handoff run --for apply` exits 4, stdout is empty, and stderr contains `boom`
+
+#### Scenario: A step that breaks
+- **WHEN** the resolver that answers a step fails with the message `boom`
+- **THEN** `lets delegate step run --for build` exits 4, stdout is empty, and stderr contains `boom`
+
+### Requirement: The chain is the names the config lists
+`lets delegate` SHALL ask the resolvers the config's `delegate.resolvers` names, in the order listed, and no others. A resolver declines when it cannot run here, one that cannot start interactive sessions declines every handoff, and one that cannot run a `step` session declines every step. The first that does not decline SHALL answer, and no later one is asked.
+
+#### Scenario: The first declines
+- **WHEN** the config lists `t3` then `cli`, and `t3` declines the review
+- **THEN** `cli` is asked, and `lets delegate review run --for code` exits 0 with `cli`'s answer
+
+#### Scenario: The first answers
+- **WHEN** the config lists `t3` then `cli`, and `t3` answers the review
+- **THEN** `lets delegate review run --for code` prints `t3`'s answer, and `cli` is not asked
+
+#### Scenario: A headless resolver and a handoff
+- **WHEN** the config lists `cli` then `subagent`, `cli` can run here, and the user runs `lets delegate handoff run --for apply`
+- **THEN** `cli` starts nothing, and the JSON line has `"resolver":"subagent"`
+
+#### Scenario: A resolver without steps and a step
+- **WHEN** the config lists `cli` then `subagent`, `cli` can run here but runs no step, and the user runs `lets delegate step instructions --for build`
+- **THEN** `cli` is not asked for its models, and the JSON line has `"resolver":"subagent"`

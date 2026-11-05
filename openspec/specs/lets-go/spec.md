@@ -79,31 +79,31 @@ When *Confirm the packet* passes, and no shape step ran in this run, `lets-go` S
 - **WHEN** the shape step reported `done` in this run with the date `2026-11-05T09:30:00Z`, and *Confirm the packet* passes for the issue it named
 - **THEN** `lets-go` prints `Done shape: 2026-11-05T09:30:00Z.` followed by the report's evidence, and no `Skipped shape` line
 
-### Requirement: Propose review is reported as not in the route
-When the schema is `lets-minimal`, `lets-go` SHALL print `Skipped propose review: not in the lets-minimal route.` after the propose step is done, and before the apply step. That line SHALL carry no date. When the schema is not `lets-minimal`, and propose is done, `lets-go` SHALL print a propose review line. Its evidence is `review.md says VERDICT: <verdict>, committed <date> (<sha>).` `<verdict>` SHALL be the value of the `VERDICT:` line in the change's `review.md`. That file is `openspec/changes/<name>/review.md`, or `openspec/changes/archive/<YYYY-MM-DD>-<name>/review.md` once the change is archived. `<date>` and `<sha>` SHALL come from `git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md`. When the propose step reported `done` in this run, the line SHALL start `Done propose review:`. When propose was done before this run, it SHALL start `Skipped propose review:`. Propose review SHALL not run as a step of its own. On `lets-standard` it runs inside the propose step, as the schema's `review` artifact. The schema SHALL be the `schema:` line of the change's `.openspec.yaml` when the change folder exists, and the route's schema when it does not.
+### Requirement: Review plan is reported as not in the route
+When the schema is `lets-minimal`, `lets-go` SHALL print `Skipped review plan: not in the lets-minimal route.` after the plan step is done, and before the build step. That line SHALL carry no date. When the schema is not `lets-minimal`, and plan is done, `lets-go` SHALL print a review plan line. Its evidence is `review.md says VERDICT: <verdict>, committed <date> (<sha>).` `<verdict>` SHALL be the value of the `VERDICT:` line in the change's `review.md`. That file is `openspec/changes/<name>/review.md`, or `openspec/changes/archive/<YYYY-MM-DD>-<name>/review.md` once the change is archived. `<date>` and `<sha>` SHALL come from `git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md`. When the plan step reported `done` in this run, the line SHALL start `Done review plan:`. When plan was done before this run, it SHALL start `Skipped review plan:`. Review plan SHALL not run as a step of its own. On `lets-standard` it runs inside the plan step, as the schema's `review` artifact. The schema SHALL be the `schema:` line of the change's `.openspec.yaml` when the change folder exists, and the route's schema when it does not.
 
 #### Scenario: A chore's route
-- **WHEN** the schema is `lets-minimal` and the propose step reports `done`
-- **THEN** `lets-go` prints `Skipped propose review: not in the lets-minimal route.` and goes on to apply
+- **WHEN** the schema is `lets-minimal` and the plan step reports `done`
+- **THEN** `lets-go` prints `Skipped review plan: not in the lets-minimal route.` and goes on to build
 
 #### Scenario: A review that ran in this run
-- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, the propose step reported `done` in this run, and `review.md` says `VERDICT: APPROVE_WITH_CHANGES` in commit `7d16565` of 2026-11-03
-- **THEN** `lets-go` prints `Done propose review: review.md says VERDICT: APPROVE_WITH_CHANGES, committed 2026-11-03 (7d16565).`
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, the plan step reported `done` in this run, and `review.md` says `VERDICT: APPROVE_WITH_CHANGES` in commit `7d16565` of 2026-11-03
+- **THEN** `lets-go` prints `Done review plan: review.md says VERDICT: APPROVE_WITH_CHANGES, committed 2026-11-03 (7d16565).`
 
 #### Scenario: A schema with a review
-- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, propose was done before this run, and `review.md` says `VERDICT: APPROVE` in commit `7d16565` of 2026-11-03
-- **THEN** `lets-go` prints `Skipped propose review: review.md says VERDICT: APPROVE, committed 2026-11-03 (7d16565).`
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, plan was done before this run, and `review.md` says `VERDICT: APPROVE` in commit `7d16565` of 2026-11-03
+- **THEN** `lets-go` prints `Skipped review plan: review.md says VERDICT: APPROVE, committed 2026-11-03 (7d16565).`
 
 ### Requirement: lets-go picks the interactivity level and says why
 In *Start*, when it reads the request and before it asks GitHub for anything, `lets-go` SHALL run `lets go level` from the repo root, once per run. When the command exits non-zero, `lets-go` SHALL show the user its stderr and stop. It SHALL then claim nothing and run no step. Otherwise it SHALL keep the `level` the command printed for the whole run. Each time it picks the level, it SHALL take the first of these that is set. First, the level the user named in the request. Then the kept `level`, when it is not `null`. Then the Kind's default: `recommend` for a Chore or a Bug, `ask` for a Story. It SHALL print the line for the source it used. For the request's level: `Interactivity: <level>, because you asked for it.` For the config's: `Interactivity: <level>, because your lets config sets go.level.` For the Kind's: `Interactivity: <level>, because #<i> is a <Kind>.` Before a shape step, the Kind is not settled. The level for the shape step SHALL be the request's, when named; else the config's, when set; else `ask`. In that last case the line SHALL read `Interactivity: ask, because shape has not run yet.` After the shape step, `lets-go` SHALL pick the level again, in the same order, and print its line. `lets-go` SHALL never ask the user which level to use. The level SHALL hold for the whole run and SHALL not be kept for a later run. It SHALL put the level, and what it means for the step, into every step prompt.
 
 #### Scenario: The level line
 - **WHEN** issue `#149` is a Chore and Start has passed
-- **THEN** `lets-go` prints `Interactivity: recommend, because #149 is a Chore.` before it runs propose
+- **THEN** `lets-go` prints `Interactivity: recommend, because #149 is a Chore.` before it runs plan
 
 #### Scenario: A Story
 - **WHEN** issue `#152` is a Story and Start has passed
-- **THEN** `lets-go` prints `Interactivity: ask, because #152 is a Story.` before it runs propose
+- **THEN** `lets-go` prints `Interactivity: ask, because #152 is a Story.` before it runs plan
 
 #### Scenario: A Bug
 - **WHEN** the issue is a Bug
@@ -123,15 +123,15 @@ In *Start*, when it reads the request and before it asks GitHub for anything, `l
 
 #### Scenario: The level after shape
 - **WHEN** the shape step wrote `#181` as a Chore, and the user named no level
-- **THEN** `lets-go` prints `Interactivity: recommend, because #181 is a Chore.` before it runs propose
+- **THEN** `lets-go` prints `Interactivity: recommend, because #181 is a Chore.` before it runs plan
 
 #### Scenario: A named level holds through shape
 - **WHEN** the user runs `lets-go recommend add a --quiet flag to lets sync`, and the shape step writes a Story
-- **THEN** `lets-go` prints `Interactivity: recommend, because you asked for it.` before the shape step and again before propose
+- **THEN** `lets-go` prints `Interactivity: recommend, because you asked for it.` before the shape step and again before plan
 
 #### Scenario: The config sets the level
 - **WHEN** the `lets` config holds `go.level: recommend`, issue `#152` is a Story, the user named no level, and Start has passed
-- **THEN** `lets-go` prints `Interactivity: recommend, because your lets config sets go.level.` before it runs propose, and relays at `recommend`
+- **THEN** `lets-go` prints `Interactivity: recommend, because your lets config sets go.level.` before it runs plan, and relays at `recommend`
 
 #### Scenario: The request's level beats the config's
 - **WHEN** the `lets` config holds `go.level: recommend`, and the user runs `lets-go` for `#152`, a Story, and says `ask`
@@ -139,7 +139,7 @@ In *Start*, when it reads the request and before it asks GitHub for anything, `l
 
 #### Scenario: The config's level before shape
 - **WHEN** the `lets` config holds `go.level: recommend`, and the user runs `lets-go add a --quiet flag to lets sync` without naming a level
-- **THEN** `lets-go` prints `Interactivity: recommend, because your lets config sets go.level.` before the shape step, and again before propose
+- **THEN** `lets-go` prints `Interactivity: recommend, because your lets config sets go.level.` before the shape step, and again before plan
 
 #### Scenario: The config holds no level
 - **WHEN** `lets go level` prints `{"level":null}`, issue `#152` is a Story, and the user named no level
@@ -150,26 +150,26 @@ In *Start*, when it reads the request and before it asks GitHub for anything, `l
 - **THEN** `lets-go` shows the user the command's stderr, which names `go.level`, claims nothing, and runs no step
 
 ### Requirement: Each step runs through lets delegate step
-`lets-go` SHALL run shape, when it is needed, then propose, apply and apply review, in that order, starting at the first unfinished step that *lets-go finds the first unfinished step* found. For each step it SHALL write the prompt to `.workspace/lets-go/<name>-<step>-prompt.md`. `<name>` is the change's name, and `<step>` is `shape`, `propose`, `apply` or `apply-review`. For the shape step, `<name>` is `issue-<i>` or `idea-<slug>`, as *The shape step shapes an idea or an unshaped issue* says. It SHALL run `lets delegate step instructions --for <step>` and read `options` and `guidance`. It SHALL rank the options by the guidance first, then the order the options came in. It SHALL leave out a model the guidance rules out. The guidance SHALL only rank and filter the listed models. When `options` is empty, it SHALL pass its own family as the one model. It SHALL then run `lets delegate step run --for <step> --name <name>-<step> --prompt-file <that file> --effort high`, with one `--model` per ranked option, best first. When `.workspace/lets-go/<name>-<step>-answers.yaml` exists before the step's first round and holds at least one pair, that round SHALL add `--answers-file` with that file, as a resumed round does. An empty or unreadable answers file SHALL count as absent. Stdout SHALL go to `.workspace/lets-go/<name>-<step>-report.json` and stderr to `.workspace/lets-go/<name>-<step>-meta.txt`. When `step instructions` exits non-zero, or `step run` exits non-zero other than 3, it SHALL show the user the command's stderr and stop.
+`lets-go` SHALL run shape, when it is needed, then plan, build and review build, in that order, starting at the first unfinished step that *lets-go finds the first unfinished step* found. For each step it SHALL write the prompt to `.workspace/lets-go/<name>-<step>-prompt.md`. `<name>` is the change's name, and `<step>` is `shape`, `plan`, `build` or `review-build`. For the shape step, `<name>` is `issue-<i>` or `idea-<slug>`, as *The shape step shapes an idea or an unshaped issue* says. It SHALL run `lets delegate step instructions --for <step>` and read `options` and `guidance`. It SHALL rank the options by the guidance first, then the order the options came in. It SHALL leave out a model the guidance rules out. The guidance SHALL only rank and filter the listed models. When `options` is empty, it SHALL pass its own family as the one model. It SHALL then run `lets delegate step run --for <step> --name <name>-<step> --prompt-file <that file> --effort high`, with one `--model` per ranked option, best first. `.workspace/lets-go/<name>-<step>-answers.yaml` can exist before the step's first round. When it holds at least one pair, that round SHALL add `--answers-file` with that file, as a resumed round does. An empty or unreadable answers file SHALL count as absent. Stdout SHALL go to `.workspace/lets-go/<name>-<step>-report.json` and stderr to `.workspace/lets-go/<name>-<step>-meta.txt`. When `step instructions` exits non-zero, or `step run` exits non-zero other than 3, it SHALL show the user the command's stderr and stop.
 
 #### Scenario: The skill names both commands
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
 - **THEN** it finds `lets delegate step instructions --for <step>`, `lets delegate step run --for <step>`, `delegate.step.<step>.guidance`, `the guidance first, then the order the options came in`, `The guidance only ranks and filters the listed models` and `When \`options\` is empty, pass your own family`
 
 #### Scenario: A step with a resolver
-- **WHEN** `step instructions --for propose` lists `claude/claude-opus-5-5` and `gpt/gpt-6-luna`, and the guidance prefers `gpt`
-- **THEN** `lets-go` runs `step run --for propose --name lets-go-chore-propose` with `--model gpt/gpt-6-luna --model claude/claude-opus-5-5`
+- **WHEN** `step instructions --for plan` lists `claude/claude-opus-5-5` and `gpt/gpt-6-luna`, and the guidance prefers `gpt`
+- **THEN** `lets-go` runs `step run --for plan --name lets-go-chore-plan` with `--model gpt/gpt-6-luna --model claude/claude-opus-5-5`
 
 #### Scenario: A run that starts at apply
-- **WHEN** the first unfinished step is apply
-- **THEN** `lets-go` writes no propose prompt, and the first `step run` is `--for apply`
+- **WHEN** the first unfinished step is build
+- **THEN** `lets-go` writes no plan prompt, and the first `step run` is `--for build`
 
 #### Scenario: An answers file from an interrupted run
-- **WHEN** `.workspace/lets-go/lets-go-chore-propose-answers.yaml` exists with one pair before the propose step's first round
-- **THEN** that round's `step run` carries `--answers-file .workspace/lets-go/lets-go-chore-propose-answers.yaml`
+- **WHEN** `.workspace/lets-go/lets-go-chore-plan-answers.yaml` exists with one pair before the plan step's first round
+- **THEN** that round's `step run` carries `--answers-file .workspace/lets-go/lets-go-chore-plan-answers.yaml`
 
 #### Scenario: An empty answers file
-- **WHEN** `.workspace/lets-go/lets-go-chore-propose-answers.yaml` exists and is empty
+- **WHEN** `.workspace/lets-go/lets-go-chore-plan-answers.yaml` exists and is empty
 - **THEN** the first round's `step run` carries no `--answers-file`
 
 #### Scenario: A timeout
@@ -184,7 +184,7 @@ In *Start*, when it reads the request and before it asks GitHub for anything, `l
 When `step run` exits 3, `lets-go` SHALL run the step in a subagent. The subagent SHALL start with no context from the `lets-go` session, and may write files. Its prompt SHALL be the file `lets` saved, `.workspace/lets-delegate/<name>-<step>.prompt.md`. `lets-go` SHALL read the last `step-report` block from the subagent's final message by the rules `lets` uses. The block opens with three or more backticks and `step-report`. It closes with at least as many backticks alone on a line. It holds one YAML mapping whose `outcome` is `done`, `needs-input` or `failed`. A `done` report holds `evidence`, a non-empty list of strings. A `needs-input` report holds `questions`, a non-empty list of mappings, each with a string `question` and an optional string `recommendation`. A `failed` report holds a string `reason`. A final message that breaks any of these rules SHALL count as a `failed` report whose reason says what is missing or wrong. For a `done` report `lets-go` SHALL stamp the date itself, as the current time in ISO 8601 UTC. It SHALL write the report it read to `.workspace/lets-go/<name>-<step>-report.json`.
 
 #### Scenario: The subagent step
-- **WHEN** `step run --for apply` exits 3 and its stderr names `.workspace/lets-delegate/lets-go-chore-apply.prompt.md`
+- **WHEN** `step run --for build` exits 3 and its stderr names `.workspace/lets-delegate/lets-go-chore-build.prompt.md`
 - **THEN** `lets-go` runs a subagent with that prompt file, and reads the `step-report` block at the end of its final message
 
 #### Scenario: A subagent with no block
@@ -196,18 +196,18 @@ When `step run` exits 3, `lets-go` SHALL run the step in a subagent. The subagen
 - **THEN** `lets-go` treats the step as `failed`, with a reason that names `evidence`, and stops
 
 ### Requirement: The step prompt says what to run, the level, and how to report
-Each step prompt SHALL name the step, the change, the issue, the branch and the schema. For the shape step, the issue is `#<i>`, or `none yet` with the idea; the branch is the default branch; and the schema is left out, because *Route* has not run. It SHALL say what to run. For shape: `lets-shape`'s *Shape one issue*, as *The shape step shapes an idea or an unshaped issue* says, and its discovery when the work is too large for one issue, as *The shape step asks before it runs discovery* says. For propose: the `openspec-propose` skill for the change, for the issue, with the route line. It continues the change when it already exists, and does not offer the handoff. For apply: the `lets-build` skill on the branch. It stops when every task is ticked, and does not finish the change. For apply review: the *Finish the change* section of the `lets-build` skill. The prompt SHALL say the interactivity level, and what the `lets-go` session does with it. At `recommend`, that session answers each question that has a recommendation, and asks the user the rest. At `ask`, it puts every question to the user, with the step's recommendation. The step's own rules SHALL be the same at both levels. It SHALL say that the step never asks the user in its session. When the step needs a decision, it ends with a `needs-input` report that lists every open question, with a `recommendation` where it has one. A question that asks the user to confirm something, such as a brainstorm ledger, an issue packet or a discovery phase, SHALL carry no recommendation. The prompt SHALL say how to read an `## Answers` section. Each answer settles its question. An answer marked as accepted by `lets-go` is recorded as `Assumption` in a brainstorm ledger, and any other answer as `User`. An answer of yes to the confirmation question lets the brainstorm set `Confirmed by user: yes`. The prompt SHALL give the report rules: write the report last, quote a line that holds `#` or `: `, and put no other `step-report` block in the message. It SHALL say what a `done` report's evidence holds: the commits made, and the pull request when the step opened or changed it; for shape, the issue first, as `issue #<n>: <title>`, or the parent and the stories, as `epic #<p>: <title>` and `story #<n>: <title>` lines.
+Each step prompt SHALL name the step, the change, the issue, the branch and the schema. For the shape step, the issue is `#<i>`, or `none yet` with the idea; the branch is the default branch; and the schema is left out, because *Route* has not run. It SHALL say what to run. For shape: `lets-shape`'s *Shape one issue*, as *The shape step shapes an idea or an unshaped issue* says, and its discovery when the work is too large for one issue, as *The shape step asks before it runs discovery* says. For plan: the `openspec-propose` skill for the change, for the issue, with the route line. It continues the change when it already exists, and does not offer the handoff. For build: the `lets-build` skill on the branch. It stops when every task is ticked, and does not finish the change. For review build: the *Finish the change* section of the `lets-build` skill. The prompt SHALL say the interactivity level, and what the `lets-go` session does with it. At `recommend`, that session answers each question that has a recommendation, and asks the user the rest. At `ask`, it puts every question to the user, with the step's recommendation. The step's own rules SHALL be the same at both levels. It SHALL say that the step never asks the user in its session. When the step needs a decision, it ends with a `needs-input` report that lists every open question, with a `recommendation` where it has one. A question that asks the user to confirm something, such as a brainstorm ledger, an issue packet or a discovery phase, SHALL carry no recommendation. The prompt SHALL say how to read an `## Answers` section. Each answer settles its question. An answer marked as accepted by `lets-go` is recorded as `Assumption` in a brainstorm ledger, and any other answer as `User`. An answer of yes to the confirmation question lets the brainstorm set `Confirmed by user: yes`. The prompt SHALL give the report rules: write the report last, quote a line that holds `#` or `: `, and put no other `step-report` block in the message. It SHALL say what a `done` report's evidence holds: the commits made, and the pull request when the step opened or changed it; for shape, the issue first, as `issue #<n>: <title>`, or the parent and the stories, as `epic #<p>: <title>` and `story #<n>: <title>` lines.
 
 #### Scenario: The propose prompt
-- **WHEN** `lets-go` writes the propose prompt for change `lets-go-chore`, issue `#149`, route `lets-minimal`, at `recommend`
+- **WHEN** `lets-go` writes the plan prompt for change `lets-go-chore`, issue `#149`, route `lets-minimal`, at `recommend`
 - **THEN** the file names `openspec-propose`, `lets-go-chore`, `#149`, the route line, `recommend`, `needs-input`, `recommendation`, `## Answers`, `Assumption`, `User` and `step-report`
 
 #### Scenario: The propose prompt at ask
-- **WHEN** `lets-go` writes the propose prompt for change `lets-go-story`, issue `#152`, at `ask`
+- **WHEN** `lets-go` writes the plan prompt for change `lets-go-story`, issue `#152`, at `ask`
 - **THEN** the file says the level is `ask`, says the `lets-go` session puts every question to the user, and still says to list every open question with a recommendation where the step has one
 
 #### Scenario: The apply prompt stops short of finishing
-- **WHEN** `lets-go` writes the apply prompt
+- **WHEN** `lets-go` writes the build prompt
 - **THEN** the file says to stop when every task is ticked, and not to run *Finish the change*
 
 #### Scenario: A confirmation
@@ -226,8 +226,8 @@ Each step prompt SHALL name the step, the change, the issue, the branch and the 
 When a report's outcome is `needs-input`, `lets-go` SHALL go through its questions in order. For a question with a `recommendation`, it SHALL take the recommendation as the answer, and tell the user the question and the answer it gave. It SHALL write that answer as the recommendation followed by ` (lets-go accepted the step's recommendation; the user did not decide)`. For a question without one, it SHALL ask the user that question alone, and wait for the answer before the next. It SHALL append every pair, in order, to `.workspace/lets-go/<name>-<step>-answers.yaml`. That file is a YAML list of `question` and `answer` mappings, and keeps the pairs of earlier rounds. `lets-go` SHALL then run the step again with the same `--prompt-file` and `--answers-file <that file>`, through the same `step instructions`, `step run` and exit 3 rules.
 
 #### Scenario: A mixed report
-- **WHEN** the propose step reports `needs-input` with `Which schema?` recommended `lets-minimal`, then `Confirm the ledger?` with no recommendation
-- **THEN** `lets-go` tells the user it answered `Which schema?` with `lets-minimal`, asks the user `Confirm the ledger?`, writes both pairs to the answers file with the first marked as accepted by `lets-go`, and runs `step run --for propose` again with `--answers-file .workspace/lets-go/lets-go-chore-propose-answers.yaml`
+- **WHEN** the plan step reports `needs-input` with `Which schema?` recommended `lets-minimal`, then `Confirm the ledger?` with no recommendation
+- **THEN** `lets-go` tells the user it answered `Which schema?` with `lets-minimal`, asks the user `Confirm the ledger?`, writes both pairs to the answers file with the first marked as accepted by `lets-go`, and runs `step run --for plan` again with `--answers-file .workspace/lets-go/lets-go-chore-plan-answers.yaml`
 
 #### Scenario: A second round
 - **WHEN** the resumed step reports `needs-input` with one new question
@@ -237,27 +237,27 @@ When a report's outcome is `needs-input`, `lets-go` SHALL go through its questio
 `lets-go` SHALL run a step's rounds until its report is `done` or `failed`. When a `needs-input` report holds a question that is already in the answers file, `lets-go` SHALL stop, say the step asked a settled question again, and show the report. On a `failed` report it SHALL show the reason, name the step and the branch, say that running `lets-build` on the branch carries on, and stop. For a failed shape step there is no branch: it SHALL say to run `lets-shape` on the idea or the issue instead. It SHALL not run a failed step again.
 
 #### Scenario: A failed apply
-- **WHEN** the apply step reports `failed` with reason `tests fail on main`
-- **THEN** `lets-go` shows `tests fail on main`, names `apply` and the branch, says to run `lets-build` on the branch, and runs no apply review
+- **WHEN** the build step reports `failed` with reason `tests fail on main`
+- **THEN** `lets-go` shows `tests fail on main`, names `build` and the branch, says to run `lets-build` on the branch, and runs no review build
 
 #### Scenario: A repeated question
-- **WHEN** the resumed propose step asks `Which schema?` again, and that question is in the answers file
+- **WHEN** the resumed plan step asks `Which schema?` again, and that question is in the answers file
 - **THEN** `lets-go` stops and says the step asked a settled question again
 
 #### Scenario: A failed shape
 - **WHEN** the shape step reports `failed`
-- **THEN** `lets-go` prints `Failed shape:` with the reason, says to run `lets-shape`, names no branch, and runs no propose
+- **THEN** `lets-go` prints `Failed shape:` with the reason, says to run `lets-shape`, names no branch, and runs no plan
 
-### Requirement: Apply review ends the run
-The apply review step SHALL run `lets-build`'s *Finish the change*: the project's finishing rules, verify, archive, and marking the pull request ready. When it reports `done`, or when *lets-go finds the first unfinished step* found every step done, `lets-go` SHALL print one line per step, in order. A skipped step prints its skip line from *A skipped step's line carries its evidence and date*. A done step prints `Done <step>: <date>` followed by the report's evidence. Propose review prints the line *Propose review is reported as not in the route* sets. A failed step prints `Failed <step>: <reason>`. `lets-go` SHALL then print the pull request's URL and stop. It SHALL keep no state of its own outside `.workspace/`, and SHALL need none: without its files in `.workspace/lets-go/`, a run reaches the same step.
+### Requirement: Review build ends the run
+The review build step SHALL run `lets-build`'s *Finish the change*: the project's finishing rules, verify, archive, and marking the pull request ready. When it reports `done`, or when *lets-go finds the first unfinished step* found every step done, `lets-go` SHALL print one line per step, in order. A skipped step prints its skip line from *A skipped step's line carries its evidence and date*. A done step prints `Done`, the step's spoken name, a colon, the report's `date` and its evidence: `Done build: <date>. <evidence>`. Review plan prints the line *Review plan is reported as not in the route* sets. A failed step prints `Failed`, the spoken name, a colon and the reason: `Failed review build: <reason>`. The spoken name has a space, never a hyphen. `lets-go` SHALL then print the pull request's URL and stop. It SHALL keep no state of its own outside `.workspace/`, and SHALL need none: without its files in `.workspace/lets-go/`, a run reaches the same step.
 
 #### Scenario: A finished run
-- **WHEN** apply review reports `done` with evidence `archive commit 9a1b2c3` and `pull request #167 ready`
-- **THEN** `lets-go` prints a line for shape, propose, propose review, apply and apply review, then the pull request's URL
+- **WHEN** review build reports `done` with evidence `archive commit 9a1b2c3` and `pull request #167 ready`
+- **THEN** `lets-go` prints a line for shape, plan, review plan, build and review build, then the pull request's URL
 
 #### Scenario: A finished run on lets-standard
-- **WHEN** the propose step ran in this run on `lets-standard`, and apply review reports `done`
-- **THEN** the third line starts `Done propose review: review.md says VERDICT:`
+- **WHEN** the plan step ran in this run on `lets-standard`, and review build reports `done`
+- **THEN** the third line starts `Done review plan: review.md says VERDICT:`
 
 #### Scenario: Every step was already done
 - **WHEN** Start finds the archive folder `openspec/changes/archive/2026-11-04-lets-go-chore`, and pull request #167 is ready for review with a `Code review` section
@@ -268,12 +268,15 @@ The apply review step SHALL run `lets-build`'s *Finish the change*: the project'
 
 - `Skipped shape: #<i>'s packet is complete, last edited <date>.`
 - `Done shape: <date>. <evidence>`
-- `Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).`
-- `Skipped propose review: not in the lets-minimal route.`
-- `Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).`
-- `Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).`
-- `Skipped apply: every task is ticked, last task commit <date> (<sha>).`
-- `Skipped apply review: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.`
+- `Done plan: <date>. <evidence>`
+- `Done build: <date>. <evidence>`
+- `Done review build: <date>. <evidence>`
+- `Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).`
+- `Skipped review plan: not in the lets-minimal route.`
+- `Skipped review plan: review.md says VERDICT: <verdict>, committed <date> (<sha>).`
+- `Done review plan: review.md says VERDICT: <verdict>, committed <date> (<sha>).`
+- `Skipped build: every task is ticked, last task commit <date> (<sha>).`
+- `Skipped review build: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.`
 - `Records disagree:`
 - `Interactivity: <level>, because #<i> is a <Kind>.`
 - `Interactivity: <level>, because you asked for it.`
@@ -329,23 +332,23 @@ Both flows in `flows.json` SHALL ship `lets-go`. The routing table in `overlays/
 - **THEN** each holds a row whose request is `Take a shaped story, bug or chore, or an idea in words, to a ready pull request in one run` and whose answer names `lets-go`, and neither holds the row without the idea
 
 ### Requirement: lets-go finds the first unfinished step
-After Start, on the change's branch, `lets-go` SHALL find the first unfinished step from the records Git and GitHub keep, and SHALL run the steps from there. It SHALL read the records in this order. First, `git status --porcelain`: a line for a path outside `.workspace/` is a disagreement. Second, the pull request for the branch, with `gh pr view <name> --json number,url,state,isDraft,body`. A missing pull request is noted, not a stop. Third, the archive folder, whose whole name is `<YYYY-MM-DD>-<name>` in `openspec/changes/archive/`. When it exists, every step is done. Fourth, `openspec instructions apply --change <name> --json`, read as `lets-build`'s *Find where you are* reads it. No change folder, or `state` `blocked`, means propose is the first unfinished step. `ready` means apply. `all_done` means apply review. Any other `state` SHALL show the CLI's `instruction` and stop. Shape SHALL count as done when *Confirm the packet* passed. Propose review SHALL count as done when propose is done.
+After Start, on the change's branch, `lets-go` SHALL find the first unfinished step from the records Git and GitHub keep, and SHALL run the steps from there. It SHALL read the records in this order. First, `git status --porcelain`: a line for a path outside `.workspace/` is a disagreement. Second, the pull request for the branch, with `gh pr view <name> --json number,url,state,isDraft,body`. A missing pull request is noted, not a stop. Third, the archive folder, whose whole name is `<YYYY-MM-DD>-<name>` in `openspec/changes/archive/`. When it exists, every step is done. Fourth, `openspec instructions apply --change <name> --json`, read as `lets-build`'s *Find where you are* reads it. No change folder, or `state` `blocked`, means plan is the first unfinished step. `ready` means build. `all_done` means review build. Any other `state` SHALL show the CLI's `instruction` and stop. Shape SHALL count as done when *Confirm the packet* passed. Review plan SHALL count as done when plan is done.
 
 #### Scenario: A branch with no change
 - **WHEN** the branch `lets-go-chore` has no `openspec/changes/lets-go-chore/` folder and no archive folder
-- **THEN** the first unfinished step is propose, and `lets-go` prints only the shape skip line before it
+- **THEN** the first unfinished step is plan, and `lets-go` prints only the shape skip line before it
 
 #### Scenario: A plan in progress
 - **WHEN** `openspec instructions apply --change lets-go-chore --json` says `blocked`
-- **THEN** the first unfinished step is propose
+- **THEN** the first unfinished step is plan
 
 #### Scenario: A ready plan
 - **WHEN** the state is `ready`
-- **THEN** the first unfinished step is apply, and `lets-go` prints the shape, propose and propose review skip lines before it
+- **THEN** the first unfinished step is build, and `lets-go` prints the shape, plan and review plan skip lines before it
 
 #### Scenario: Every task ticked
 - **WHEN** the state is `all_done`
-- **THEN** the first unfinished step is apply review, and `lets-go` prints four skip lines before it
+- **THEN** the first unfinished step is review build, and `lets-go` prints four skip lines before it
 
 #### Scenario: An archived change
 - **WHEN** `openspec/changes/archive/2026-11-04-lets-go-chore` exists, and no `openspec/changes/lets-go-chore/` folder does
@@ -358,27 +361,27 @@ After Start, on the change's branch, `lets-go` SHALL find the first unfinished s
 ### Requirement: A skipped step's line carries its evidence and date
 Each skipped step SHALL print one line, in step order, before the first step that runs. `<date>` SHALL be the author date of the commit named, as `YYYY-MM-DD`, from `git log`'s `%as`. `<sha>` SHALL be its short hash, from `%h`. The lines and their reads are:
 
-- Propose: `Skipped propose: the plan is ready, tasks.md committed <date> (<sha>).`, from `git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md`.
-- Apply: `Skipped apply: every task is ticked, last task commit <date> (<sha>).`, from `git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md`.
-- Apply review: `Skipped apply review: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.`, from `git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/archive/<date>-<name>/tasks.md` and the pull request read earlier.
+- Plan: `Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).`, from `git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md`.
+- Build: `Skipped build: every task is ticked, last task commit <date> (<sha>).`, from `git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md`.
+- Review build: `Skipped review build: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.`, from `git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/archive/<date>-<name>/tasks.md` and the pull request read earlier.
 
-The same `git log` commands SHALL date propose and apply after archive, because the old path's history holds the add and the ticks. The shape line and the propose review line are set by their own requirements.
+The same `git log` commands SHALL date plan and build after archive, because the old path's history holds the add and the ticks. The shape line and the review plan line are set by their own requirements.
 
 #### Scenario: A skipped propose
 - **WHEN** commit `2bbc7d0` of 2026-11-03 added `openspec/changes/lets-go-chore/tasks.md`
-- **THEN** `lets-go` prints `Skipped propose: the plan is ready, tasks.md committed 2026-11-03 (2bbc7d0).`
+- **THEN** `lets-go` prints `Skipped plan: the plan is ready, tasks.md committed 2026-11-03 (2bbc7d0).`
 
 #### Scenario: A skipped apply
 - **WHEN** the last commit that modified `openspec/changes/lets-go-chore/tasks.md` is `3222c70` of 2026-11-03
-- **THEN** `lets-go` prints `Skipped apply: every task is ticked, last task commit 2026-11-03 (3222c70).`
+- **THEN** `lets-go` prints `Skipped build: every task is ticked, last task commit 2026-11-03 (3222c70).`
 
 #### Scenario: A skipped apply review
 - **WHEN** commit `1d253bd` of 2026-11-04 added `openspec/changes/archive/2026-11-04-lets-go-chore/tasks.md`, and pull request #167 is open, not a draft, with a `Code review` section
-- **THEN** `lets-go` prints `Skipped apply review: archived 2026-11-04 (1d253bd); pull request #167 is ready for review with a Code review section.`
+- **THEN** `lets-go` prints `Skipped review build: archived 2026-11-04 (1d253bd); pull request #167 is ready for review with a Code review section.`
 
 #### Scenario: A rebased branch
 - **WHEN** the branch was rebased after the last task commit, so its committer date is today
-- **THEN** the apply skip line's date is the commit's author date, not today
+- **THEN** the build skip line's date is the commit's author date, not today
 
 ### Requirement: Records that disagree stop the run
 When the records disagree, `lets-go` SHALL print `Records disagree:` and what it found, say what to fix by hand, and stop before any step. It SHALL repair nothing. These are disagreements:
@@ -412,7 +415,7 @@ When the records disagree, `lets-go` SHALL print `Records disagree:` and what it
 
 #### Scenario: A new branch with no pull request
 - **WHEN** the branch has no change folder and no pull request
-- **THEN** `lets-go` prints no disagreement, and the first unfinished step is propose
+- **THEN** `lets-go` prints no disagreement, and the first unfinished step is plan
 
 ### Requirement: A closed pull request ends the run
 When the pull request's `state` is `MERGED`, `lets-go` SHALL say the change is merged and the run is finished, and stop. When its `state` is `CLOSED`, `lets-go` SHALL say the change was rejected and there is nothing to resume, and stop. Neither SHALL count as a disagreement, and neither SHALL run a step.
@@ -456,7 +459,7 @@ When the pull request's `state` is `MERGED`, `lets-go` SHALL say the change is m
 At the `ask` level, when a report's outcome is `needs-input`, `lets-go` SHALL ask the user every question, one at a time, in the report's order. It SHALL wait for each answer before the next question. For a question with a `recommendation`, it SHALL show the recommendation as the suggested answer. It SHALL write each answer as the user gave it, even when the user took the recommendation. It SHALL add no ` (lets-go accepted the step's recommendation; the user did not decide)` marker. It SHALL append every pair, in order, to `.workspace/lets-go/<name>-<step>-answers.yaml`. It SHALL then run the step again, as *lets-go relays a needs-input report at the recommend level* says.
 
 #### Scenario: A recommended question at ask
-- **WHEN** the level is `ask` and the propose step reports `needs-input` with `Which schema?` recommended `lets-minimal`
+- **WHEN** the level is `ask` and the plan step reports `needs-input` with `Which schema?` recommended `lets-minimal`
 - **THEN** `lets-go` asks the user `Which schema?`, shows `lets-minimal` as the suggested answer, and writes the user's answer with no marker
 
 #### Scenario: The user takes the recommendation at ask

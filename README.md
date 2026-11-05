@@ -220,9 +220,9 @@ merge the pull request: agents never merge unless you ask.
 
 Run `lets-go` on the default branch with the issue number of a story,
 bug or chore, or with an idea in words. It claims the issue as
-`lets-build` does, then runs propose, apply and apply review, each in a
-fresh session through `lets delegate step run`. On `lets-standard`, the plan review runs
-inside propose. A step never asks you anything in its own session. It
+`lets-build` does, then runs plan, build and review build, each in a
+fresh session through `lets delegate step run`. On `lets-standard`,
+review plan runs inside plan. A step never asks you anything in its own session. It
 reports its questions, and `lets-go` handles them at one of two
 interactivity levels:
 
@@ -243,7 +243,7 @@ the pull request is ready for review, with one line per step.
 If a run stops, run `lets-go` again, on the default branch or on the
 change's branch. It reads from Git and GitHub which steps are done, and
 skips them. Each skip prints one line with its evidence and date, such
-as `Skipped apply: every task is ticked, last task commit 2026-11-03
+as `Skipped build: every task is ticked, last task commit 2026-11-03
 (3222c70).` It then goes on from the first unfinished step. When the
 records disagree, for example on a branch with uncommitted changes, it
 says what to fix, and stops.
@@ -297,15 +297,15 @@ one, and also gets `lets-minimal` for chores and small stories.
 | | `standard` | `minimal` |
 |---|---|---|
 | Use it for | Normal feature work | Small changes |
-| Planning steps | brainstorm → proposal → specs → design → ADR → review → tasks | brainstorm → specs → tasks |
+| Planning stages | brainstorm → proposal → specs → design → ADR → review → tasks | brainstorm → specs → tasks |
 | Independent plan review | Yes | No |
 | Building | One commit per task, test-first | One commit per task, test-first |
 | Independent code review | Yes, a rule in `openspec/config.yaml` ([how](#turning-the-code-review-off)) | No |
 | Skills it adds | `lets-brainstorm`, `lets-write-specs`, `lets-write-adrs`, `lets-write-tasks`, `lets-test-first`, `lets-review-plan`, `lets-review-code` | `lets-brainstorm`, `lets-write-specs`, `lets-write-tasks`, `lets-test-first` |
 
-The `standard` flow, step by step:
+The `standard` flow, stage by stage:
 
-| # | Step | What the agent does | Output |
+| # | Stage | What the agent does | Output |
 |---|---|---|---|
 | 1. | brainstorm | Questions you one at a time about scope, behavior and acceptance, and records each answer and its source. A comment on the issue counts as evidence only when you confirm it. | `brainstorm.md` |
 | 2. | proposal | States why the change is needed and what it changes | `proposal.md` |
@@ -356,8 +356,8 @@ session that shares no context with the author. These words come up:
 - **Chain:** the resolvers your config lists, which `lets` asks in order.
 - **Review:** a read-only session. `lets` waits for its final message.
 - **Handoff:** an interactive session that builds a planned change.
-- **Step:** one stage of the workflow, such as propose or apply, in a
-  session that may write files. `lets` waits for its step report.
+- **Step:** one stage of the workflow that `lets-go` runs, such as plan
+  or build, in a session that may write files. `lets` waits for its step report.
 - **Decline:** a resolver cannot work here, so the next one is asked.
 - **Refuse:** a resolver will not run the model it was given, so `lets`
   sends it the next model.
@@ -382,8 +382,8 @@ all. `review.md` records which ran, such as `fresh context, other family`.
 
 ### What a step returns
 
-`lets delegate step run --for <step>` runs one step: `shape`, `propose`,
-`propose-review`, `apply` or `apply-review`. The session may change files,
+`lets delegate step run --for <step>` runs one step: `shape`, `plan`,
+`review-plan`, `build` or `review-build`. The session may change files,
 and has 120 minutes unless `--timeout-minutes` says otherwise. It ends its
 final message with a step report, a fenced `step-report` block of YAML,
 and `lets` prints that report as one JSON line:
@@ -422,7 +422,7 @@ delegate:
     apply:
       guidance: Prefer claude. Use a small model for a chore.
   step:
-    apply:
+    build:
       guidance: Prefer claude/claude-opus-5-5.
 go:
   level: recommend
@@ -439,7 +439,7 @@ answers.
 `delegate.<strategy>.<intent>.guidance` is your advice, in plain words, on
 which models to use. Its parts are the command that reads it and a value
 `--for` takes: `review.plan`, `review.code`, `handoff.apply`, or
-`step.<step>` for one of the five steps, such as `step.apply`. The skill
+`step.<step>` for one of the five steps, such as `step.build`. The skill
 uses it only to rank and leave out models. A value that is not a string makes `instructions` exit 2.
 
 `go` holds the settings for `lets-go`. `go.level` is `ask` or

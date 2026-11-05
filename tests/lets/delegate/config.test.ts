@@ -65,8 +65,8 @@ test('review and handoff under delegate are kept as written, unchecked', () => {
 });
 
 test('step under delegate is kept as written, unchecked', () => {
-  const text = 'version: 3\ndelegate:\n  step:\n    apply:\n      guidance: 42\n';
-  assert.deepEqual(readConfig(depsWith(text)), { version: 3, delegate: { step: { apply: { guidance: 42 } } } });
+  const text = 'version: 3\ndelegate:\n  step:\n    build:\n      guidance: 42\n';
+  assert.deepEqual(readConfig(depsWith(text)), { version: 3, delegate: { step: { build: { guidance: 42 } } } });
 });
 
 const CONFIG = '/c/config.yaml';
@@ -78,13 +78,13 @@ test('guidanceFor gives the guidance for the strategy and the intent', () => {
 });
 
 test('guidanceFor gives the guidance for a step', () => {
-  const config = withDelegate('delegate:\n  step:\n    apply:\n      guidance: Use claude/claude-opus-5-5.\n');
-  assert.equal(guidanceFor(config, 'step', 'apply', CONFIG), 'Use claude/claude-opus-5-5.');
+  const config = withDelegate('delegate:\n  step:\n    build:\n      guidance: Use claude/claude-opus-5-5.\n');
+  assert.equal(guidanceFor(config, 'step', 'build', CONFIG), 'Use claude/claude-opus-5-5.');
 });
 
 test('guidanceFor gives a step no guidance from handoff', () => {
   const config = withDelegate('delegate:\n  handoff:\n    apply:\n      guidance: Prefer claude.\n');
-  assert.equal(guidanceFor(config, 'step', 'apply', CONFIG), null);
+  assert.equal(guidanceFor(config, 'step', 'build', CONFIG), null);
 });
 
 test('guidanceFor keeps a multi-line block whole', () => {

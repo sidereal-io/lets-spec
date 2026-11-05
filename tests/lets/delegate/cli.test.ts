@@ -24,7 +24,7 @@ function letsIn({ cwd, env = {} }: { cwd?: string; env?: Record<string, string> 
 
 const REVIEW = ['delegate', 'review', 'run', '--for', 'code', '--name', 'x', '--prompt-file', 'p.md', '--source-family', 'claude', '--effort', 'low', '--model', 'gpt'];
 const HANDOFF = ['delegate', 'handoff', 'run', '--for', 'apply', '--name', 'x', '--prompt-file', 'p.md', '--model', 'claude'];
-const STEP = ['delegate', 'step', 'run', '--for', 'propose', '--name', 'x', '--prompt-file', 'p.md', '--effort', 'high', '--model', 'claude'];
+const STEP = ['delegate', 'step', 'run', '--for', 'plan', '--name', 'x', '--prompt-file', 'p.md', '--effort', 'high', '--model', 'claude'];
 
 test('every old command is rejected by name', async () => {
   for (const command of ['critique', 'detect', 'setup', 'conformance', 'verify']) {
@@ -252,12 +252,12 @@ test('step --help names instructions and run', async () => {
 
 test('step --help names the five steps', async () => {
   const text = (await lets('delegate', 'step', '--help')).stdout.replace(/\s+/g, ' ');
-  assert.match(text, /shape, propose, propose-review, apply and apply-review/);
+  assert.match(text, /shape, plan, review-plan, build and review-build/);
 });
 
 test('step run and step instructions take the five steps as intents', async () => {
   for (const argv of [['delegate', 'step', 'run', '--help'], ['delegate', 'step', 'instructions', '--help']]) {
-    assert.match((await lets(...argv)).stdout.replace(/\s+/g, ' '), /choices: "shape", "propose", "propose-review", "apply", "apply-review"/, argv.join(' '));
+    assert.match((await lets(...argv)).stdout.replace(/\s+/g, ' '), /choices: "shape", "plan", "review-plan", "build", "review-build"/, argv.join(' '));
   }
 });
 
@@ -307,7 +307,7 @@ test('delegate --help names the three strategies', async () => {
 
 test('delegate --help shows a step guidance in its example', async () => {
   const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
-  assert.match(text, /handoff: apply: guidance: .* step: apply: guidance: /);
+  assert.match(text, /handoff: apply: guidance: .* step: build: guidance: /);
 });
 
 test('with no config, step run saves the prompt and is exit 3', async () => {
@@ -320,9 +320,18 @@ test('with no config, step run saves the prompt and is exit 3', async () => {
 });
 
 test('with no config, step instructions prints one JSON line from subagent', async () => {
-  const { code, stdout } = await letsIn(repo(), 'delegate', 'step', 'instructions', '--for', 'apply');
-  assert.equal(code, 0);
-  assert.deepEqual(JSON.parse(stdout), { strategy: 'step', for: 'apply', resolver: 'subagent', options: [], guidance: null });
+  for (const intent of ['build', 'plan']) {
+    const { code, stdout } = await letsIn(repo(), 'delegate', 'step', 'instructions', '--for', intent);
+    assert.equal(code, 0, intent);
+    assert.deepEqual(JSON.parse(stdout), { strategy: 'step', for: intent, resolver: 'subagent', options: [], guidance: null });
+  }
+});
+
+test('an old step name is a usage error that names --for', async () => {
+  const { code, stdout, stderr } = await letsIn(repo(), 'delegate', 'step', 'instructions', '--for', 'apply');
+  assert.equal(code, 2);
+  assert.equal(stdout, '');
+  assert.match(stderr, /--for/);
 });
 
 test('go --help names level', async () => {

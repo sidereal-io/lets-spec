@@ -17,8 +17,8 @@ Says how a skill asks `lets delegate` what can run for a delegation before it ru
 - **THEN** it exits 0, and its JSON line has `"strategy":"handoff"`, `"for":"apply"`, `"resolver":"subagent"` and `"options":[]`
 
 #### Scenario: Step instructions from a resolver with models
-- **WHEN** the config lists `t3`, which runs steps and can run `gpt/gpt-6-luna` and `claude`, and the user runs `lets delegate step instructions --for propose`
-- **THEN** it exits 0, and stdout is one JSON line with `"strategy":"step"`, `"for":"propose"`, `"resolver":"t3"` and `"options":["gpt/gpt-6-luna","claude"]`
+- **WHEN** the config lists `t3`, which runs steps and can run `gpt/gpt-6-luna` and `claude`, and the user runs `lets delegate step instructions --for plan`
+- **THEN** it exits 0, and stdout is one JSON line with `"strategy":"step"`, `"for":"plan"`, `"resolver":"t3"` and `"options":["gpt/gpt-6-luna","claude"]`
 
 #### Scenario: Nothing is started
 - **WHEN** the user runs `lets delegate review instructions --for plan`
@@ -36,7 +36,7 @@ Says how a skill asks `lets delegate` what can run for a delegation before it ru
 - **THEN** its JSON line has `"resolver":"subagent"` and `"options":[]`
 
 #### Scenario: A resolver that runs no step
-- **WHEN** the config lists `t3`, which runs reviews here but no step, then `subagent`, and the user runs `lets delegate step instructions --for apply`
+- **WHEN** the config lists `t3`, which runs reviews here but no step, then `subagent`, and the user runs `lets delegate step instructions --for build`
 - **THEN** its JSON line has `"resolver":"subagent"` and `"options":[]`
 
 ### Requirement: The guidance comes from the config
@@ -55,11 +55,11 @@ Says how a skill asks `lets delegate` what can run for a delegation before it ru
 - **THEN** its JSON line has `"guidance":null`
 
 #### Scenario: Guidance for a step
-- **WHEN** the config holds `delegate.step.apply.guidance` `Use claude/claude-opus-5-5.`, and the user runs `lets delegate step instructions --for apply`
+- **WHEN** the config holds `delegate.step.build.guidance` `Use claude/claude-opus-5-5.`, and the user runs `lets delegate step instructions --for build`
 - **THEN** its JSON line has `"guidance":"Use claude/claude-opus-5-5."`
 
 #### Scenario: Handoff guidance does not reach a step
-- **WHEN** the config holds `delegate.handoff.apply.guidance` and no `delegate.step`, and the user runs `lets delegate step instructions --for apply`
+- **WHEN** the config holds `delegate.handoff.apply.guidance` and no `delegate.step`, and the user runs `lets delegate step instructions --for build`
 - **THEN** its JSON line has `"guidance":null`
 
 #### Scenario: A multi-line block
