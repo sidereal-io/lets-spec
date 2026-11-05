@@ -1,6 +1,6 @@
 ---
 name: lets-review-plan
-description: Use when someone asks for an independent review of a plan, design, spec, architecture decision record (ADR), or skill, or when `lets-go`'s build step is about to build an OpenSpec change on `lets-standard`. Another model family reviews the work read-only, and the findings come back ranked.
+description: Use when someone asks for an independent review of a plan, design, spec, architecture decision record (ADR), or skill, or when `lets-go`'s review plan step reviews an OpenSpec change on `lets-standard`. Another model family reviews the work read-only, and the findings come back ranked.
 ---
 
 # Peer Plan Review
@@ -9,18 +9,38 @@ Have a different model family attack a plan before anyone builds on it. A review
 
 ## When to apply
 
-- **Before build.** `lets-go`'s build step runs this skill before it builds an OpenSpec change on `lets-standard`. The plan is finished, brainstorm.md through tasks.md. [For an OpenSpec change](#for-an-openspec-change) says what to review.
+- **Before build.** `lets-go`'s review plan step runs this skill before the build step builds an OpenSpec change on `lets-standard`. The plan is finished, brainstorm.md through tasks.md. [Start](#start) says where to begin, and [For an OpenSpec change](#for-an-openspec-change) says what to review.
 - **On request.** Someone asks for a review of a plan, design, spec, ADR, or skill.
 
 This skill does not fire on its own when someone writes one of these. Each run costs a cross-model review.
+
+## Start
+
+For an OpenSpec change on its branch, read the pull request's body with `gh pr view --json body`.
+
+- **No Plan review section:** [run the review](#run-the-review).
+- **A Plan review section:** follow [Check an earlier review](#check-an-earlier-review).
+  - When one of its rules calls for a new round, run one, as [Rounds](#rounds) says.
+  - When none does and the review is finished, say so, and stop.
+  - When none does, but a required change has no fix commit that holds up, apply the change as [Severity and verdict](#severity-and-verdict) says. Name its commit in the rebuttals, and stop. The reviewer does not run again.
+
+For any other plan, run the review.
 
 ## Find the author
 
 Find who wrote the plan. First answer wins:
 
 - **A provenance note** on the plan.
+- **The commits' trailers**, for an OpenSpec change. Each family named in the `Co-Authored-By` lines of the plan's commits is an author. `<base>` is the pull request's base, from `gh pr view --json baseRefName`:
+
+  ```bash
+  git log --format='%(trailers:key=Co-Authored-By,valueonly)' <base>..HEAD -- openspec/changes/<name>/ docs/decisions/ | sort -u
+  ```
+
 - **This session** — you wrote or shaped the plan here.
 - **Ask the author.** Do not guess. A wrong answer turns the review into a rubber stamp.
+
+A session that cannot ask, such as `lets-go`'s review plan step, takes its own family as the author's when nothing above answers. It usually runs in the same harness as the plan step, so its own family is its best estimate. The report then says that the plan's author was not recorded.
 
 ## Run the review
 
@@ -150,7 +170,7 @@ Each full review replaces the previous one and increments the round counter. Car
 
 ## Report
 
-List every finding with its check, most severe first. Name the family that reviewed, how the review ran, and whether it was independent.
+List every finding with its check, most severe first. Name the family that reviewed, how the review ran, and whether it was independent. When *Find the author* took your own family, say that the plan's author was not recorded.
 
 For an OpenSpec change, also put the review in the pull request description, under **Plan review**. The person who merges sees it there, and a later session checks it there. Read the body with `gh pr view --json body` just before you write it. The section runs from its `## Plan review` heading to the next `## ` heading, or to the end of the body. Replace only that span. When there is no section, add it at the end. Keep the rest of the body, such as `Closes #<n>` and a **Code review** section. Write the body back with `gh pr edit --body-file`.
 
