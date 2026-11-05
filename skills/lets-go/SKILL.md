@@ -700,16 +700,16 @@ disagreement. The walk reaches review plan first, and runs that step.
 There are five steps, in this order: shape, plan, review plan, build
 and review build. Prose and printed lines use these names. `--for`,
 `--name`, file names and config keys use `shape`, `plan`, `review-plan`,
-`build` and `review-build`. `<step>` is one of these.
+`build` and `review-build`. `<step>` is one of these hyphenated names.
 
 Shape runs only inside *Start*, as
 [Run the shape step](#run-the-shape-step) says. Every other step runs in
 a fresh session, as [Run a step](#run-a-step) says. On `lets-minimal`,
 review plan never runs.
 
-Each row says which skill the step runs, when the step is done, which
-record shows it, and the line to print when it was done before this run.
-The state is the `state` that
+Each row says which skill the step runs, when the step is done, and
+which record shows that it is done. The row also gives the line to
+print when the step was done before this run. In the table, the state is the `state` that
 `openspec instructions apply --change <name> --json` prints.
 
 | Step | Skill | Done when | Record | Skip line |
@@ -722,9 +722,9 @@ The state is the `state` that
 
 ### Read the records
 
-Each skip line is dated by one read. `<date>` is the commit's author
-date, from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is the
-short hash, from `%h`. A read that prints nothing means the
+One read dates each skip line. `<date>` is the commit's author date,
+from `%as`, as `YYYY-MM-DD`. A rebase keeps the author date. `<sha>` is
+the short hash, from `%h`. A read that prints nothing means the
 [records disagree](#records-that-disagree).
 
 - **Shape.** *Start* step 5 reads the issue's last edit, and prints the
@@ -739,7 +739,7 @@ short hash, from `%h`. A read that prints nothing means the
   has no date. On any other schema, the `lets-review-plan` skill records
   the review in the pull request's `body`. Find the `## Plan review`
   heading, and read the section up to the next `## ` heading or the end
-  of the body. Inside it, `<sha>` comes from the line that starts
+  of the body. Inside the section, `<sha>` comes from the line that starts
   `Reviewed: `, and `<verdict>` from the line that starts
   `- **Verdict:** `. Do not search the whole body: a **Code review**
   section has a `Reviewed:` line too. `<p>` is the pull request's
@@ -763,13 +763,13 @@ short hash, from `%h`. A read that prints nothing means the
   git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/archive/<YYYY-MM-DD>-<name>/tasks.md
   ```
 
-The plan and build reads work after archive too. Archive deletes the
-old path, and its history keeps the add and the ticks.
+The plan and build reads work after archive too. Archive removes the
+old path, but the path's history keeps the add and the ticks.
 
 ### The change's name
 
-`<name>` is the change's name. Shape runs before there is one, so its
-`<name>` comes from what it shapes:
+`<name>` is the change's name. Shape runs before the change has a
+name, so the shape step's `<name>` comes from what it shapes:
 
 - **An issue:** `issue-<i>`, such as `issue-180`.
 - **An idea:** `idea-<slug>`. To make `<slug>`, split the idea on white
@@ -777,7 +777,7 @@ old path, and its history keeps the add and the ticks.
   Drop a word left empty. Join the first five words with hyphens, or all
   of them when there are fewer. `fix lets-sync — quiet output` becomes
   `idea-fix-letssync-quiet-output`. The same idea typed again gets the
-  same name, so it finds its answers file.
+  same name, so a new run finds the idea's answers file.
 
 So the shape step runs with `--for shape` and `--name <name>-shape`,
 such as `--name idea-fix-letssync-quiet-output-shape`. The other steps
