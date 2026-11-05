@@ -95,7 +95,7 @@ write it by hand:
       apply:
         guidance: Prefer claude.
     step:
-      apply:
+      build:
         guidance: Prefer claude/claude-opus-5-5.
 
 Each entry under delegate.resolvers is t3, cli or subagent. With no
@@ -148,8 +148,8 @@ Exit codes:
      did not answer`;
 
 const STEP_STRATEGY_HELP = `
-The intents are the five steps: shape, propose, propose-review, apply and
-apply-review.`;
+The intents are the five steps: shape, plan, review-plan, build and
+review-build.`;
 
 const STEP_HELP = `
 The session ends its final message with a step report: a fenced block
