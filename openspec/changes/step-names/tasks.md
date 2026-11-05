@@ -14,7 +14,7 @@
 ## 3. Sweep and whole-suite check [depends-on: 2]
 
 - [x] 3.1 [easy] No old step name is left outside `openspec/changes/archive/`, `docs/decisions/`, `.agents/`, `openspec/schemas/` and `lets/dist/`: grep for `propose-review`, `apply-review`, `propose review`, `apply review`, `Skipped propose`, `Skipped apply`, `--for propose`, `--for apply`, `delegate.step.apply`, `step.apply` and `for: 'apply'`, keep the hits under `handoff`, and fix the rest, including the comment in `lets/src/delegate/step.ts`. (verify: `! grep -rnE "propose-review|apply-review|propose review|apply review|Skipped propose|Skipped apply|--for propose|delegate\.step\.apply|step\.apply" --include='*.ts' --include='*.md' --include='*.bats' --include='*.nix' lets/src skills tests README.md docs/*.md flake.nix openspec/specs`) (✓ the grep finds only the bats test's list of banned phrases in lets/src, skills, tests, README.md, docs and flake.nix; in a rehearsed archive, openspec/specs keeps only a scenario heading, as design decision 4 allows, and the new exit 2 scenario)
-- [ ] 3.2 [easy] The whole suite and the flake pass on the renamed tree. (verify: `pnpm test && nix flake check`)
+- [x] 3.2 [easy] The whole suite and the flake pass on the renamed tree. (verify: `pnpm test && nix flake check`) (✓ `pnpm test` passed: 635 node tests, 140 bats tests; `nix flake check` passed)
 
 ## Deviations Ledger
 
