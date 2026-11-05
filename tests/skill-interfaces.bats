@@ -108,6 +108,23 @@ flow_texts() {
   done
 }
 
+@test "both routing tables send the next story to lets-go" {
+  local file
+  grep -qxF "| Start the next story, or move the current branch's change on | The \`lets-go\` skill |" "$repo/overlays/AGENTS.md" ||
+    { echo "overlays/AGENTS.md has no next-story row for lets-go"; false; }
+  grep -qxF '| Start the next story, or carry on the change on your current branch | `lets-go` |' "$repo/README.md" ||
+    { echo "README.md has no next-story row for lets-go"; false; }
+  for file in overlays/AGENTS.md README.md; do
+    run grep -nE '^\| .* \| (The )?`lets-build`( skill)? \|$' "$repo/$file"
+    [ "$status" -eq 1 ] || { echo "$file points a row at lets-build: $output"; false; }
+  done
+}
+
+@test "nothing lets-spec ships sends the user to lets-build on the default branch" {
+  run bash -c "cat '$repo'/skills/*/SKILL.md '$repo'/skills/*/references/*.md '$repo'/schemas/*/schema.yaml '$repo'/overlays/AGENTS.md | tr -s '[:space:]' ' ' | grep -oF 'run \`lets-build\` on the default branch'"
+  [ "$status" -eq 1 ] || { echo "$output"; false; }
+}
+
 @test "each skill a schema or config names is one its flow ships, or a generated OpenSpec skill" {
   local flow skill text
   for flow in standard minimal; do

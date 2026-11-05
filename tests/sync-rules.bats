@@ -43,6 +43,12 @@ stale_block=$'<!-- BEGIN lets-spec rules -->\nold rules\n<!-- END lets-spec rule
   grep -qF '`.agents/skills/lets-shape/references/domain-language.md`' rules
 }
 
+@test "the rules block says lets-go picks, claims and routes" {
+  fragment | tr '\n' ' ' | tr -s ' ' >rules
+  grep -qF '`lets-go` picks, claims and routes' rules
+  run ! grep -qF 'lets-build' rules
+}
+
 @test "sync appends the rules after a blank line, and keeps the project's text" {
   printf '# My project\n' >AGENTS.md
   run sync_project
