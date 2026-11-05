@@ -19,7 +19,7 @@ import type { Effort } from '../resolvers/kit/families.ts';
 import type { StepIntent } from './strategies.ts';
 
 // How long a step may run, in minutes, at every effort. A step such as
-// apply runs far longer than a review.
+// build runs far longer than a review.
 export const STEP_TIMEOUT_MINUTES = 120;
 
 // for: the step, recorded in the record line. models: each <family> or

@@ -246,7 +246,7 @@ test('a clean claude review, which writes no files, removes nothing', async () =
   assert.deepEqual(io.removed, []);
 });
 
-// A step named build-x for apply, at high effort, on the gpt family.
+// A step named build-x for build, at high effort, on the gpt family.
 const stepOptions = (over: Partial<StepOptions> = {}): StepOptions =>
   ({ for: 'build', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['gpt'], ...over });
 const STEP_LAST_MESSAGE = '/repo/.workspace/lets-delegate/build-x.last-message.md';
