@@ -92,7 +92,7 @@ flow_texts() {
 }
 
 @test "lets-go ships in both flows with a routing row" {
-  local flow request='Take a shaped chore to a ready pull request in one run'
+  local flow file request='Take a shaped story, bug or chore to a ready pull request in one run'
   for flow in standard minimal; do
     flow_skills "$flow" | grep -qx lets-go || { echo "$flow does not ship lets-go"; false; }
   done
@@ -100,6 +100,10 @@ flow_texts() {
     { echo "overlays/AGENTS.md has no routing row for lets-go"; false; }
   grep -qxF "| $request | \`lets-go\` |" "$repo/README.md" ||
     { echo "README.md has no usage row for lets-go"; false; }
+  for file in overlays/AGENTS.md README.md; do
+    run grep -nF '| Take a shaped chore to a ready pull request in one run |' "$repo/$file"
+    [ "$status" -eq 1 ] || { echo "$file keeps the chore-only row: $output"; false; }
+  done
 }
 
 @test "each skill a schema or config names is one its flow ships, or a generated OpenSpec skill" {
@@ -243,10 +247,24 @@ skill_says() {
   done
   skill_says lets-go 'gh issue view <i> --json createdAt'
   skill_says lets-go "Skipped shape: #<i>'s packet is complete, last edited <date>."
-  skill_says lets-go 'Interactivity: recommend, because #<i> is a Chore.'
   # lets-build's Claim sets the Status; lets-go sets no Project field itself.
   run grep -n 'gh project item-edit' "$repo/skills/lets-go/SKILL.md"
   [ "$status" -eq 1 ] || { echo "lets-go sets a Project field: $output"; false; }
+}
+
+@test "lets-go picks the level from the Kind and relays at ask" {
+  local phrase
+  skill_says lets-go 'Interactivity: <level>, because #<i> is a <Kind>.'
+  skill_says lets-go 'Interactivity: <level>, because you asked for it.'
+  skill_says lets-go 'Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
+  skill_says lets-go 'gh issue view <i> --json title,blockedBy'
+  skill_says lets-go 'its *Check the prerequisite* still runs, and its stop stands'
+  skill_says lets-go 'The interactivity level is <level>.'
+  skill_says lets-go 'Write the answer as the user gave it, with no marker'
+  for phrase in '#152 adds' 'chores only'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
+      { echo "lets-go still says: $phrase"; false; }
+  done
 }
 
 @test "lets-go runs each step through lets delegate step" {

@@ -1,15 +1,16 @@
 ---
 name: lets-go
-description: Take one shaped chore from its issue to a pull request ready for review, in one run. Start claims the issue here; propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user names a chore issue and wants it built end to end, says lets-go with an issue number, or runs lets-go again after a run stopped.
+description: Take one shaped story, bug or chore from its issue to a pull request ready for review, in one run. Start claims the issue here; propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. A chore or a bug runs at the recommend level, where lets-go answers each question that has a recommendation; a story runs at ask, where the user answers every question. Name ask or recommend with the issue number to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user names a shaped issue and wants it built end to end, says lets-go with an issue number, or runs lets-go again after a run stopped.
 ---
 
 # Let's go
 
-Take one shaped chore to a pull request ready for review, in one run.
-*Start* claims the issue in this session. Then each step runs in a
-fresh session: propose, apply, then apply review. A step never asks the
-user. It ends with a report, and this session asks the user for it. Run
-every command below from the repo root.
+Take one shaped story, bug or chore to a pull request ready for review,
+in one run. *Start* claims the issue in this session. Then each step
+runs in a fresh session: propose, apply, then apply review. A step never
+asks the user. It ends with a report. This session answers its questions
+or asks the user, as the interactivity level says. Run every command
+below from the repo root.
 
 A run can stop part way. Run `lets-go` again, on the default branch or
 on the change's branch. It reads from Git and GitHub which steps are
@@ -39,14 +40,24 @@ unfinished step.
      `lets-go` runs on the default branch or on a change's branch, and
      needs the issue number on a change's branch. Stop. If several
      match, say that `lets-go` needs the issue number, and stop.
-3. Run `lets-build`'s *Find the source of demand* for the named issue,
-   then its *Confirm the packet*. A stop either section makes stands, as
-   `lets-build` reports it. A packet that fails sends the user to
-   `lets-shape`, as `lets-build` says.
-4. In *Confirm the packet*, check the Kind as soon as you have read the
-   issue's fields from the Project. If it is not Chore, say that #152
-   adds Stories and Bugs to `lets-go`, say to run `lets-build` on #<i>,
-   and stop. Read no parent epic.
+3. Run `lets-build`'s *Find the source of demand* for the named issue.
+   Read its blockers with `gh issue view <i> --json title,blockedBy`, so
+   you have the title too. `<name>` is the change's name, as *Claim*
+   names it from the title. On a change's branch, it is `<branch>`. When
+   a blocker is open, look for the change's branch before you stop, as
+   step 7 does:
+   - **The branch exists**, here or on `origin`: the user has stacked it
+     by hand. Name the open blockers by number, and go on with the rest
+     of the section: its *Check the prerequisite* still runs, and its stop
+     stands. On a change's branch, the branch exists: you are on it.
+   - **It does not exist:** the stop stands, as `lets-build` reports it.
+
+   Any other stop in that section stands as `lets-build` reports it.
+4. Run `lets-build`'s *Confirm the packet*. A stop it makes stands, as
+   `lets-build` reports it. An Epic stops there: it is built through its
+   stories. A packet that fails sends the user to `lets-shape`. For a
+   Story with a parent, it reads the parent's **Shared decisions**:
+   *Route* needs them.
 5. When *Confirm the packet* passes, shape is done. Print:
 
    ```text
@@ -62,8 +73,7 @@ unfinished step.
    ```
 
 6. Run `lets-build`'s *Route*. Keep the route line: the propose step
-   needs it. `<name>` is the change's name, as *Claim* names it. On a
-   change's branch, it is `<branch>`.
+   needs it.
 7. On the default branch, look for the change's branch, here and on
    `origin`:
 
@@ -80,7 +90,8 @@ unfinished step.
      `git fetch origin <name>` first: `git switch` finds a branch on
      `origin` only once it is fetched. Then run `git switch <name>`.
 
-   Stay on `<name>` for the whole run.
+   When step 3 has looked already, use what it found. Stay on `<name>`
+   for the whole run.
 8. When `origin` has the branch, bring it up to date before you read any
    record. On a change's branch, run the `git ls-remote` above to check.
 
@@ -96,14 +107,20 @@ unfinished step.
 9. Set `<schema>`. When `openspec/changes/<name>/.openspec.yaml` exists,
    it is that file's `schema:` line. Otherwise it is the schema *Route*
    picked.
-10. Print the interactivity level:
+10. Set `<level>`, the interactivity level. When the user named `ask` or
+    `recommend` in the request that started the run, it is that word.
+    Otherwise it comes from the Kind: `recommend` for a Chore or a Bug,
+    `ask` for a Story. Never ask the user which level to use. The level
+    holds for this run only. Print one of these lines:
 
     ```text
-    Interactivity: recommend, because #<i> is a Chore.
+    Interactivity: <level>, because #<i> is a <Kind>.
+    Interactivity: <level>, because you asked for it.
     ```
 
     At `recommend`, this session answers each question that has a
-    recommendation, and asks the user the rest.
+    recommendation, and asks the user the rest. At `ask`, it asks the
+    user every question.
 
 *Start* runs in this session. It is not a step, and has no step report.
 
@@ -191,6 +208,13 @@ short hash, from `%h`. A read that prints nothing means the
   Skipped propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).
   ```
 
+  When the propose step reported `done` in this run, the review ran in
+  it, so the line starts `Done` instead, with the same reads:
+
+  ```text
+  Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).
+  ```
+
 - **Apply.** Read the last commit that changed the task list: the last
   task's tick.
 
@@ -247,7 +271,7 @@ prompt, and runs as [Run a step](#run-a-step) says.
 Create the folder first, if it is missing: `mkdir -p .workspace/lets-go`.
 Then write the frame below to `.workspace/lets-go/<name>-<step>-prompt.md`.
 Fill in each `<...>`, and put the step's row from the table under
-*What to run*. `<schema>` is the schema *Start* set.
+*What to run*. `<schema>` and `<level>` are the ones *Start* set.
 
 ````text
 You run one step of a lets-go run: <step>, for the change <name>.
@@ -259,9 +283,11 @@ Issue: #<i>, <issue URL>. Branch: <name>. Schema: <schema>.
 
 ## Questions
 
-The interactivity level is recommend. The lets-go session answers each
-question that has a recommendation, and asks the user the rest. Never
-decide a question yourself. Never ask the user in this session: nobody
+The interactivity level is <level>. At recommend, the lets-go session
+answers each question that has a recommendation, and asks the user the
+rest. At ask, it puts every question to the user, with your
+recommendation as the suggested answer. Your rules are the same at both
+levels. Never decide a question yourself. Never ask the user in this session: nobody
 here can answer.
 
 When you need a decision, stop. End with a needs-input report that lists
@@ -390,7 +416,7 @@ Read `outcome` from `.workspace/lets-go/<name>-<step>-report.json`:
 
 - **`done`**: go on to the next step. After `propose`, print propose
   review's line from [Print the skip lines](#print-the-skip-lines)
-  before you run `apply`. After `apply-review`, go to [End of the run](#end-of-the-run).
+  before you run `apply`: the `Done` form, or the `lets-minimal` line. After `apply-review`, go to [End of the run](#end-of-the-run).
 - **`needs-input`**: [relay its questions](#relay-the-questions).
 - **`failed`**: print the lines of [End of the run](#end-of-the-run) for
   the steps so far, ending with the failed one. Name the step and the
@@ -405,13 +431,18 @@ file per step.
 1. If any question's exact text is already in that file, the step did
    not read its answers. Say that the step asked a settled question
    again, name the step, show the user the report, and stop.
-2. Go through the questions in the report's order:
-   - **With a `recommendation`**: take it as the answer. Tell the user
-     the question and the answer you gave. Write the answer as the
-     recommendation followed by
+2. Go through the questions in the report's order, as `<level>` says:
+   - **At `recommend`, with a `recommendation`**: take it as the answer.
+     Tell the user the question and the answer you gave. Write the answer
+     as the recommendation followed by
      ` (lets-go accepted the step's recommendation; the user did not decide)`.
-   - **Without one**: ask the user that question alone. Wait for the
-     answer before the next question.
+   - **At `recommend`, without one**: ask the user that question alone.
+     Wait for the answer before the next question.
+   - **At `ask`**: ask the user every question, one at a time. Show the
+     `recommendation`, when there is one, as the suggested answer. Wait
+     for each answer before the next question. Write the answer as the
+     user gave it, with no marker, even when they took the
+     recommendation: the step records it as the user's.
 3. Append each pair, in order, to the answers file. It is a YAML list of
    `question` and `answer` mappings, and keeps the pairs of earlier
    rounds. Quote each value, so YAML keeps it whole:
@@ -445,8 +476,11 @@ Done apply review: <date>. <evidence>
 ```
 
 `<date>` on a `Done` line is the report's `date`, and `<evidence>` is its
-`evidence`, joined with `; `. A step done before this run prints its
-line from [Print the skip lines](#print-the-skip-lines) instead. When
+`evidence`, joined with `; `. Propose review has no report of its own.
+When propose ran in this run on a schema with a review, its line is
+`Done propose review: review.md says VERDICT: <verdict>, committed <date> (<sha>).`
+A step done before this run prints its line from
+[Print the skip lines](#print-the-skip-lines) instead. When
 every step was already done, all five lines are `Skipped` lines. A
 failed step prints `Failed <step>: <reason>`. Then print the pull request's URL:
 

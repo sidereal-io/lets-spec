@@ -13,9 +13,9 @@ You talk to it through three skills:
   issues on the repository's GitHub Project.
 - **`lets-build`** takes the next one from that backlog and moves it
   through planning, building, review and archive.
-- **`lets-go`** takes one shaped chore to a pull request ready for
-  review, in one run, and asks you every question in the conversation
-  you started. Run it again and it picks up where it stopped.
+- **`lets-go`** takes one shaped story, bug or chore to a pull request
+  ready for review, in one run, and asks you its questions in the
+  conversation you started. Run it again and it picks up where it stopped.
 
 A fourth skill, **`lets-setup-backlog`**, creates that Project once per
 repository. The `lets sync` command copies the skills, schemas and rules
@@ -173,7 +173,7 @@ them to `lets-shape`.
 | Split or prioritize a large idea | `lets-shape` |
 | File a bug, a chore or a single story, or finish an issue that has no packet | `lets-shape` |
 | Start the next story, or carry on the change on your current branch | `lets-build` |
-| Take a shaped chore to a ready pull request in one run | `lets-go` |
+| Take a shaped story, bug or chore to a ready pull request in one run | `lets-go` |
 | Set up or check this repository's backlog | `lets-setup-backlog` |
 
 ### `lets-setup-backlog`: create or check the Project
@@ -215,15 +215,25 @@ priority. Chores and most XS or S stories use the `lets-minimal` schema;
 [the skill](skills/lets-build/SKILL.md#route) says the exact rule. You
 merge the pull request: agents never merge unless you ask.
 
-### `lets-go`: a chore in one run
+### `lets-go`: one issue in one run
 
-Run `lets-go` on the default branch with a shaped chore's issue number.
-It claims the issue as `lets-build` does, then runs propose, apply and
-apply review, each in a fresh session through `lets delegate step run`.
-A step never asks you anything in its own session. It reports its
-questions, and `lets-go` answers each one that has a recommendation,
-tells you what it answered, and asks you the rest. The run ends when the
-pull request is ready for review, with one line per step.
+Run `lets-go` on the default branch with the issue number of a shaped
+story, bug or chore. It claims the issue as `lets-build` does, then runs
+propose, apply and apply review, each in a fresh session through
+`lets delegate step run`. On `lets-standard`, the plan review runs
+inside propose. A step never asks you anything in its own session. It
+reports its questions, and `lets-go` handles them at one of two
+interactivity levels:
+
+- **`recommend`**, for a chore or a bug: `lets-go` answers each
+  question that has a recommendation, tells you what it answered, and
+  asks you the rest.
+- **`ask`**, for a story: `lets-go` asks you every question, with the
+  step's recommendation as the suggested answer.
+
+To use the other level, name it with the issue number, such as
+`lets-go #152 recommend`. The level holds for that run only. The run
+ends when the pull request is ready for review, with one line per step.
 
 If a run stops, run `lets-go` again, on the default branch or on the
 change's branch. It reads from Git and GitHub which steps are done, and
@@ -233,7 +243,9 @@ as `Skipped apply: every task is ticked, last task commit 2026-11-03
 records disagree, for example on a branch with uncommitted changes, it
 says what to fix, and stops.
 
-`lets-go` takes chores only. For a story or a bug, use `lets-build`.
+An open blocker stops a run until the change's branch exists. Once you
+have stacked the branch by hand, `lets-go` names the open blockers and
+goes on. It never takes an epic: build its stories instead.
 
 ### The Project fields
 
