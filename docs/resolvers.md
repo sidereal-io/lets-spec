@@ -9,7 +9,7 @@ config file.
 | Name | It answers | It needs | A review runs as | A handoff | A step |
 |---|---|---|---|---|---|
 | [`t3`](#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | Starts a new thread in the sidebar | Declines, so the next resolver answers |
-| [`cli`](#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers | Declines, so the next resolver answers |
+| [`cli`](#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers | A child process of that CLI, in its write mode |
 | [`subagent`](#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Gives back the prompt to start any agent with | Saves the prompt, and exits 3, so the caller runs the step in a subagent |
 
 Each one declines where it cannot work, and the next in your config is
@@ -121,20 +121,20 @@ The review spends tokens. CI never runs it.
 
 ## `cli`
 
-`cli` runs each review headless with the command line tool (CLI) of a
-model family: `codex`, `claude` or `agy`. It works in a plain terminal,
-or inside another harness. It declines when none of the three is on your
-`PATH`.
+`cli` runs each review and each step headless with the command line
+tool (CLI) of a model family: `codex`, `claude` or `agy`. It works in a
+plain terminal, or inside another harness. It declines when none of the
+three is on your `PATH`.
 
 It never starts a handoff, so it declines every one, without running
 anything. Keep `subagent` after it: a handoff then falls through to the
-default, which gives you the prompt to start any agent with. It runs no
-step either, so it declines every one, and runs no CLI for it.
+default, which gives you the prompt to start any agent with.
 
 ### Which models it lists
 
-`lets delegate review instructions` lists the models each CLI on your
-`PATH` reports, in the order `gpt`, `claude`, `gemini`:
+`lets delegate review instructions` and `lets delegate step instructions`
+list the models each CLI on your `PATH` reports, in the order `gpt`,
+`claude`, `gemini`:
 
 | Family | Listed from | What it lists |
 |---|---|---|
@@ -176,6 +176,29 @@ own exit code:
 | The CLI runs past the time limit | 6 |
 
 Exit 3 is a refusal: the caller can try another model.
+
+### How a step runs
+
+A step runs the same CLI in the same way, but in its write mode:
+
+| Family | Command | The prompt goes | The answer comes from |
+|---|---|---|---|
+| `gpt` | `codex exec --dangerously-bypass-approvals-and-sandbox` | on stdin | `.workspace/lets-delegate/<name>.last-message.md` |
+| `claude` | `claude -p --permission-mode bypassPermissions` | on stdin | stdout |
+| `gemini` | `agy --mode accept-edits --dangerously-skip-permissions … -p <prompt>` | in the arguments | stdout |
+
+A step runs with your own rights, with no sandbox and no prompts, so it
+can run any command you can. You opt in to this by listing `cli` in
+`delegate.resolvers`. To run steps elsewhere, list that resolver before
+`cli`, or leave `cli` out.
+
+The step gets its effort, model and files as a review does, and a time
+limit of 120 minutes unless `--timeout-minutes` says otherwise.
+`lets delegate step run` reads the [step report](#a-steps-report) from
+the final message. A done step's files are removed. Any other step keeps
+them, so you can read them. A refusal is exit 3, and a step past its time
+limit is exit 6. A CLI that prints and then exits non-zero, or ends with
+no report, gives a `failed` report at exit 0.
 
 ## `subagent`
 

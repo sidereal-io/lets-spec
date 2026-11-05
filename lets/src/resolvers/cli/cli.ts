@@ -1,9 +1,10 @@
 // In any terminal or harness: each review runs headless, as a child process
 // of the family's CLI in its read-only mode, on the model the request names.
-// Revived from lets's old built-in default resolver.
+// Each step runs the same way in the CLI's write mode, with the user's own
+// rights. Revived from lets's old built-in default resolver.
 //
-// A handoff needs a session a person can work in, so it takes only run: start,
-// and a probe for start, decline, and the next resolver in the chain answers.
+// A handoff needs a session a person can work in. cli has no start, so it
+// declines, and the next resolver in the chain answers.
 //
 // The child is started by this process, so it gets this process's
 // environment without the session markers.
@@ -15,7 +16,7 @@ import { HEADLESS_EXECUTOR, withEffort, withoutEffort } from '../kit/families.ts
 import { SCRATCH } from '../kit/io.ts';
 import type { Io } from '../kit/io.ts';
 import { normalizeName } from '../kit/adapter.ts';
-import type { ModelString } from '../kit/adapter.ts';
+import type { ModelString, RunInput } from '../kit/adapter.ts';
 import { FAMILIES } from '../kit/families.ts';
 import type { Effort, Family } from '../kit/families.ts';
 
@@ -43,26 +44,45 @@ const LISTINGS: Partial<Record<Family, { args: string[]; read: (stdout: string) 
   },
 };
 
-type RunCommandInput = { family: Family; model: string | null; effort: Effort; prompt: string; lastMessagePath: string; timeoutMinutes: number };
+// A review runs read-only. A step writes: it commits, pushes and runs gh,
+// headless, so it needs the mode in which the CLI never prompts. Any mode
+// that would prompt denies the command instead.
+export type Mode = 'read-only' | 'write';
 
-// The command for a read-only run, what goes on its stdin, and where its
-// final message comes from: stdout, or a file.
-export function runCommand({ family, model, effort, prompt, lastMessagePath, timeoutMinutes }: RunCommandInput) {
+const MODE_ARGS: Record<Mode, Record<Family, string[]>> = {
+  'read-only': {
+    gpt: ['-s', 'read-only'],
+    claude: ['--permission-mode', 'plan'],
+    gemini: ['--mode', 'plan'],
+  },
+  write: {
+    gpt: ['--dangerously-bypass-approvals-and-sandbox'],
+    claude: ['--permission-mode', 'bypassPermissions'],
+    gemini: ['--mode', 'accept-edits', '--dangerously-skip-permissions'],
+  },
+};
+
+type RunCommandInput = { mode: Mode; family: Family; model: string | null; effort: Effort; prompt: string; lastMessagePath: string; timeoutMinutes: number };
+
+// The command for a run in the given mode, what goes on its stdin, and where
+// its final message comes from: stdout, or a file.
+export function runCommand({ mode, family, model, effort, prompt, lastMessagePath, timeoutMinutes }: RunCommandInput) {
   const cmd = HEADLESS_EXECUTOR[family];
+  const modeArgs = MODE_ARGS[mode][family];
   if (family === 'gpt') {
     return {
       cmd,
-      args: ['exec', '-s', 'read-only', '-c', `model_reasoning_effort="${effort}"`, ...modelArgs('-m', model), '-o', lastMessagePath, '-'],
+      args: ['exec', ...modeArgs, '-c', `model_reasoning_effort="${effort}"`, ...modelArgs('-m', model), '-o', lastMessagePath, '-'],
       input: prompt,
       readResultFrom: lastMessagePath,
     };
   }
   if (family === 'claude') {
-    return { cmd, args: ['-p', '--permission-mode', 'plan', '--effort', effort, ...modelArgs('--model', model)], input: prompt, readResultFrom: 'stdout' };
+    return { cmd, args: ['-p', ...modeArgs, '--effort', effort, ...modelArgs('--model', model)], input: prompt, readResultFrom: 'stdout' };
   }
   return {
     cmd,
-    args: ['--mode', 'plan', '--effort', effort, ...modelArgs('--model', model && withEffort(model, effort)),
+    args: [...modeArgs, '--effort', effort, ...modelArgs('--model', model && withEffort(model, effort)),
       '--print-timeout', `${timeoutMinutes}m`, '-p', prompt],
     input: undefined,
     readResultFrom: 'stdout',
@@ -71,6 +91,31 @@ export function runCommand({ family, model, effort, prompt, lastMessagePath, tim
 
 export function createAdapter(io: Io): Adapter {
   const lastMessagePath = (cwd: string, name: string) => join(cwd, SCRATCH, `${name}.last-message.md`);
+
+  // Runs the family's CLI in mode. The handle is the session's name, so an
+  // error need not name it: the caller sent the name.
+  async function execute({ name, cwd, prompt, family, model, effort }: RunInput, { timeoutMs }: { timeoutMs: number }, mode: Mode) {
+    io.mkdirp(join(cwd, SCRATCH));
+    const timeoutMinutes = Math.ceil(timeoutMs / 60000);
+    const { cmd, args, input, readResultFrom } = runCommand({ mode, family, model, effort, prompt, timeoutMinutes, lastMessagePath: lastMessagePath(cwd, name) });
+    // A file from an earlier run with this name would hide a refusal.
+    if (readResultFrom !== 'stdout' && io.exists(readResultFrom)) io.removeFile(readResultFrom);
+    const result = await io.execFile(cmd, args, { cwd, env: scrubbedEnv(io.env), input, timeoutMs }).catch((error: Error) => {
+      throw new Refused(error.message);
+    });
+    if (result.timedOut) throw new TimeoutError(`${cmd} did not finish in ${timeoutMinutes} minutes`);
+    const text = readResultFrom === 'stdout' ? result.stdout : (io.exists(readResultFrom) ? io.readFile(readResultFrom) : '');
+    if (result.code !== 0) {
+      // Nothing printed means the CLI or the account said no before the
+      // model gave any output, such as a model it cannot run.
+      const printed = result.stdout.trim() !== '' || text.trim() !== '';
+      const why = `exit ${result.code}: ${result.stderr.slice(-500)}`;
+      throw printed ? new SessionFailed(`${cmd} failed: ${why}`) : new Refused(`${cmd} refused: ${why}`);
+    }
+    // For a review, the kit turns an empty message, or a missing file, into
+    // a failed session. For a step, the report reader does.
+    return { handle: { kind: 'process', id: name }, text };
+  }
 
   return {
     name: 'cli',
@@ -98,29 +143,10 @@ export function createAdapter(io: Io): Adapter {
       return lists.flat();
     },
 
-    // Runs the family's CLI. The handle is the session's name, so an error
-    // need not name it: the caller sent the name. cli has no start.
-    async run({ name, cwd, prompt, family, model, effort }, { timeoutMs }) {
-      io.mkdirp(join(cwd, SCRATCH));
-      const timeoutMinutes = Math.ceil(timeoutMs / 60000);
-      const { cmd, args, input, readResultFrom } = runCommand({ family, model, effort, prompt, timeoutMinutes, lastMessagePath: lastMessagePath(cwd, name) });
-      // A file from an earlier run with this name would hide a refusal.
-      if (readResultFrom !== 'stdout' && io.exists(readResultFrom)) io.removeFile(readResultFrom);
-      const result = await io.execFile(cmd, args, { cwd, env: scrubbedEnv(io.env), input, timeoutMs }).catch((error: Error) => {
-        throw new Refused(error.message);
-      });
-      if (result.timedOut) throw new TimeoutError(`${cmd} did not finish in ${timeoutMinutes} minutes`);
-      const text = readResultFrom === 'stdout' ? result.stdout : (io.exists(readResultFrom) ? io.readFile(readResultFrom) : '');
-      if (result.code !== 0) {
-        // Nothing printed means the CLI or the account said no before the
-        // model gave any output, such as a model it cannot run.
-        const printed = result.stdout.trim() !== '' || text.trim() !== '';
-        const why = `exit ${result.code}: ${result.stderr.slice(-500)}`;
-        throw printed ? new SessionFailed(`${cmd} failed: ${why}`) : new Refused(`${cmd} refused: ${why}`);
-      }
-      // The kit turns an empty message, or a missing file, into a failed session.
-      return { handle: { kind: 'process', id: name }, text };
-    },
+    // A review runs the family's CLI read-only, and a step in its write
+    // mode. cli has no start.
+    run: (input, options) => execute(input, options, 'read-only'),
+    step: (input, options) => execute(input, options, 'write'),
 
     // Removes the session's files on ok. The handle's id is the session's
     // name, so only a name that is safe in a path removes anything.
