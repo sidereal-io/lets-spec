@@ -5,7 +5,7 @@
 
 ## Review Summary
 
-ADR review completed for this change. None of the eleven decisions in design.md passes the skill's test. The step table, the walk and the review plan step are prose in one skill, and another edit undoes each. The two choices a reader might bind to are already recorded: ADR-017 says `lets-go` reads where a run stands from Git and GitHub, and ADR-019 says the plan review records in the pull request. The walk and the covering check apply those records to one more step. No record is created.
+ADR review completed for this change. None of the eleven decisions in design.md passes the skill's test. The step table, the walk and the review plan step are prose in two skills, and another edit undoes each. The two choices a reader might bind to are already recorded. ADR-017 says `lets-go` reads where a run stands from Git and GitHub. ADR-019 says the plan review records in the pull request. The walk and the covering check apply those records to one more step. No record is created.
 
 ## In-Force ADRs Reviewed
 
