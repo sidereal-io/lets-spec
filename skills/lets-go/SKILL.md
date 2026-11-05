@@ -361,7 +361,7 @@ only when this story is the owner of the glossary edits.
     owner or the base changed, repeat steps 1 to 3 just before claiming.
 
 The verified glossary import is the only implementation step this skill
-adds.
+adds, beside [the discovery map commit](#commit-the-discovery-map).
 
 ### Claim
 
