@@ -3,7 +3,7 @@
 
 ## 1. The schema
 
-- [ ] 1.1 [easy] `lets-standard` ends at `tasks`: the `review` artifact and `schemas/lets-standard/templates/review.md` go, `tasks` requires `adr` and `specs`, the `tasks` instruction reads no verdict and says "Break the plan into tasks", the `design` instruction says the plan review reads the tier, and the `apply` instruction says to start from the `lets-build` skill, which has the plan reviewed first on `lets-standard`. The marker test keeps `Confirmed by user:` only, and a new test fails when any file under `schemas/` holds `VERDICT:`, `CHANGES_APPLIED:` or `review.md`. (verify: `bats tests/skill-interfaces.bats tests/openspec-compat.bats`)
+- [x] 1.1 [easy] `lets-standard` ends at `tasks`: the `review` artifact and `schemas/lets-standard/templates/review.md` go, `tasks` requires `adr` and `specs`, the `tasks` instruction reads no verdict and says "Break the plan into tasks", the `design` instruction says the plan review reads the tier, and the `apply` instruction says to start from the `lets-build` skill, which has the plan reviewed first on `lets-standard`. The marker test keeps `Confirmed by user:` only, and a new test fails when any file under `schemas/` holds `VERDICT:`, `CHANGES_APPLIED:` or `review.md`. (verify: `bats tests/skill-interfaces.bats tests/openspec-compat.bats`) (✓ `bats tests/skill-interfaces.bats tests/openspec-compat.bats` passed)
 
 ## 2. The skills and the README [depends-on: 1]
 
@@ -20,3 +20,5 @@
 ## Deviations Ledger
 
 <!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-04, task 1.1: the `apply` instruction names the `lets-review-plan` skill as well as `lets-build`. Without the name, no text the standard flow ships would name the skill between tasks 1.1 and 2.2, and the flow-ships test would fail. The design template's tier note says "plan review" too.

@@ -122,17 +122,27 @@ flow_texts() {
 }
 
 @test "each marker a schema reads is one its templates write" {
-  local flow marker template
+  local flow
   for flow in standard minimal; do
-    for marker in 'Confirmed by user:' 'VERDICT:' 'CHANGES_APPLIED:'; do
-      grep -qF "$marker" "$repo/schemas/lets-$flow/schema.yaml" || continue
-      case "$marker" in
-        'Confirmed by user:') template=brainstorm.md ;;
-        *) template=review.md ;;
-      esac
-      grep -qF "$marker" "$repo/schemas/lets-$flow/templates/$template" ||
-        { echo "the $flow schema reads $marker, but templates/$template does not write it"; false; }
-    done
+    grep -qF 'Confirmed by user:' "$repo/schemas/lets-$flow/schema.yaml" || continue
+    grep -qF 'Confirmed by user:' "$repo/schemas/lets-$flow/templates/brainstorm.md" ||
+      { echo "the $flow schema reads Confirmed by user:, but templates/brainstorm.md does not write it"; false; }
+  done
+}
+
+# The plan review records in the pull request, so no schema has a review
+# step, and nothing in a schema reads a verdict.
+@test "no schema has a review step or reads a verdict" {
+  local phrase
+  [ ! -e "$repo/schemas/lets-standard/templates/review.md" ] ||
+    { echo "schemas/lets-standard/templates/review.md still exists"; false; }
+  [ -z "$(yq -r '.artifacts[] | select(.id == "review") | .id' "$repo/schemas/lets-standard/schema.yaml")" ] ||
+    { echo "lets-standard still has a review artifact"; false; }
+  [ "$(yq -r '.artifacts[] | select(.id == "tasks") | .requires | sort | join(",")' "$repo/schemas/lets-standard/schema.yaml")" = adr,specs ] ||
+    { echo "lets-standard's tasks does not require adr and specs"; false; }
+  for phrase in 'VERDICT:' 'CHANGES_APPLIED:' 'review.md'; do
+    run grep -rnF -- "$phrase" "$repo/schemas"
+    [ "$status" -eq 1 ] || { echo "schemas/ still says $phrase: $output"; false; }
   done
 }
 
