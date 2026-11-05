@@ -5,7 +5,7 @@
 
 ## Review Summary
 
-ADR review completed for this change. Of the nine decisions in design.md, eight are prose choices in skills and tests that another edit can undo. One passes the skill's test: where a review records. Many readers bind to it, the skills, the tests, `lets-go`'s reads and the people who read pull requests, and an engineer reading the schema alone could add a review artifact back without knowing why it left. That decision gets ADR-019.
+ADR review completed for this change. Of the nine decisions in design.md, eight are prose choices in skills and tests that another edit can undo. One passes the skill's test: where a review records. Many readers bind to it: the skills, the tests, `lets-go`'s reads, and the people who read pull requests. An engineer reading the schema alone could add a review artifact back without knowing why it left. That decision gets ADR-019.
 
 ## In-Force ADRs Reviewed
 
