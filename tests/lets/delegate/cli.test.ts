@@ -324,3 +324,27 @@ test('with no config, step instructions prints one JSON line from subagent', asy
   assert.equal(code, 0);
   assert.deepEqual(JSON.parse(stdout), { strategy: 'step', for: 'apply', resolver: 'subagent', options: [], guidance: null });
 });
+
+test('go --help names level', async () => {
+  const { code, stdout } = await lets('go', '--help');
+  assert.equal(code, 0);
+  assert.match(stdout, /\blevel\b/);
+});
+
+test('go level --help names the config file, the key, its two values and the exit codes', async () => {
+  const { code, stdout } = await lets('go', 'level', '--help');
+  assert.equal(code, 0);
+  for (const named of ['config.yaml', 'go.level', 'ask', 'recommend']) assert.ok(stdout.includes(named), named);
+  assert.match(stdout, /^ +0 /m);
+  assert.match(stdout, /^ +2 /m);
+});
+
+test('go level with a level lets does not know is exit 2, naming the config file and go.level', async () => {
+  const r = repo('version: 3\ngo:\n  level: loud\n');
+  const { code, stdout, stderr } = await letsIn(r, 'go', 'level');
+  assert.equal(code, 2);
+  assert.equal(stdout, '');
+  assert.match(stderr, /^lets go: /);
+  assert.ok(stderr.includes(join(r.env.XDG_CONFIG_HOME, 'lets', 'config.yaml')), stderr);
+  assert.ok(stderr.includes('go.level'), stderr);
+});

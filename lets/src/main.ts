@@ -14,6 +14,7 @@ import type { ReviewOptions } from './delegate/review.ts';
 import { run as step, STEP_TIMEOUT_MINUTES } from './delegate/step.ts';
 import type { StepOptions } from './delegate/step.ts';
 import { STRATEGIES } from './delegate/strategies.ts';
+import { run as level } from './go/level.ts';
 import type { Intent, Strategy } from './delegate/strategies.ts';
 import { realIo } from './io.ts';
 import type { Deps } from './io.ts';
@@ -195,6 +196,27 @@ Exit codes:
      that is not a string is a usage error.
   4  the outcome is unknown, such as no reply from the harness`;
 
+const GO_LEVEL_HELP = `
+Reads go.level from the lets config: $XDG_CONFIG_HOME/lets/config.yaml,
+or ~/.config/lets/config.yaml when XDG_CONFIG_HOME is unset or empty.
+go.level is ask or recommend:
+
+  version: 3
+  go:
+    level: recommend
+
+lets-go uses it in place of the Kind's default. A level named in the
+request still wins. lets go level reads only version and go, and starts
+no session.
+
+stdout: one JSON line, { level }. level is null when there is no config,
+no go or no go.level.
+
+Exit codes:
+  0  ok
+  2  the config is not valid, go is not a mapping, or go.level is not ask
+     or recommend. stderr names the file and the key.`;
+
 // --timeout-minutes: a whole number of minutes.
 function wholeMinutes(value: string): number {
   if (!/^[1-9][0-9]*$/.test(value)) throw new InvalidArgumentError('Give a whole number of minutes.');
@@ -320,6 +342,18 @@ strategyCommand('step', 'run a step in a fresh session that may write files, and
   .addHelpText('after', STEP_HELP)
   .action(async ({ model, ...options }: Omit<StepOptions, 'models'> & { model: string[] }) => {
     process.exitCode = await step({ ...options, models: model }, realDeps());
+  });
+
+program
+  .command('go')
+  .summary('settings for the lets-go skill')
+  .description('Read the settings the lets-go skill uses.')
+  .command('level')
+  .summary('print the default interactivity level')
+  .description('Print the default interactivity level, from go.level in the lets config.')
+  .addHelpText('after', GO_LEVEL_HELP)
+  .action(async () => {
+    process.exitCode = await level(realDeps());
   });
 
 try {

@@ -1,6 +1,6 @@
 ---
 name: lets-go
-description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation; a story or a shape runs at ask, where the user answers every question. Name ask or recommend to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, says lets-go, or runs lets-go again after a run stopped.
+description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation; a story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, says lets-go, or runs lets-go again after a run stopped.
 ---
 
 # Let's go
@@ -25,7 +25,18 @@ unfinished step.
 
 ## Start
 
-1. Find the default branch as `lets-build` does, and run
+1. Read the user's default level. Run this once, before anything asks
+   GitHub:
+
+   ```bash
+   lets go level
+   ```
+
+   It prints one JSON line, such as `{"level":"recommend"}`. Keep its
+   `level` for the whole run: `ask`, `recommend`, or `null` when the
+   `lets` config sets none. If it exits non-zero, show the user its
+   stderr, and stop: claim nothing, and run no step. Then find the
+   default branch as `lets-build` does, and run
    `git branch --show-current`.
 2. Read the request. A leading or trailing `ask` or `recommend` names
    the level: take it off, and keep it for step 10. What is left is one
@@ -134,16 +145,22 @@ unfinished step.
 9. Set `<schema>`. When `openspec/changes/<name>/.openspec.yaml` exists,
    it is that file's `schema:` line. Otherwise it is the schema *Route*
    picked.
-10. Set `<level>`, the interactivity level. When the user named `ask` or
-    `recommend` in the request that started the run, it is that word.
-    Otherwise it comes from the Kind: `recommend` for a Chore or a Bug,
-    `ask` for a Story. Never ask the user which level to use. The level
-    holds for this run only. After a shape step, set it again here: the
-    Kind is settled now. Print one of these lines:
+10. Set `<level>`, the interactivity level. Take the first of these
+    that is set:
+    1. The level the user named in the request that started the run.
+    2. The level `lets go level` printed in step 1, when it is not
+       `null`.
+    3. The Kind's: `recommend` for a Chore or a Bug, `ask` for a Story.
+
+    Never ask the user which level to use. The level holds for this run
+    only. After a shape step, set it again here, in the same order: the
+    Kind is settled now. Do not run `lets go level` again. Print the line
+    for the source you used:
 
     ```text
-    Interactivity: <level>, because #<i> is a <Kind>.
     Interactivity: <level>, because you asked for it.
+    Interactivity: <level>, because your lets config sets go.level.
+    Interactivity: <level>, because #<i> is a <Kind>.
     ```
 
     At `recommend`, this session answers each question that has a
@@ -197,9 +214,12 @@ stands.
    - **There is none:** say that the map has uncommitted edits, and to
      commit or discard them. Stop, and run no step. Otherwise a
      discovery's commit could sweep those edits in.
-2. Print the level line. When the user named a level, it is
-   `Interactivity: <level>, because you asked for it.` Otherwise the level
-   is `ask`, because there is no Kind yet:
+2. Set `<level>` and print its line. There is no Kind yet, so take the
+   first of these that is set: the level the user named, then the level
+   *Start* step 1 kept, when it is not `null`, then `ask`. The lines are
+   `Interactivity: <level>, because you asked for it.`,
+   `Interactivity: <level>, because your lets config sets go.level.`, and
+   for `ask` with neither:
 
    ```text
    Interactivity: ask, because shape has not run yet.

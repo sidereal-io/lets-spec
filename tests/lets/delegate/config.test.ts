@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { configPath, guidanceFor, parseConfig, readConfig } from '../../../lets/src/delegate/config.ts';
+import { configPath, guidanceFor, levelFor, parseConfig, parseDocument, readConfig } from '../../../lets/src/delegate/config.ts';
 import { UsageError } from '../../../lets/src/resolvers/kit/errors.ts';
 import { fakeIo } from './fixtures/fake-io.ts';
 
@@ -146,4 +146,53 @@ test('a config.json with no config.yaml is not read', () => {
 test('a config that is not YAML says where the parser stopped, in one sentence', () => {
   assert.throws(() => readConfig(depsWith('version: 3\ndelegate: { resolvers: [/x\n')),
     (error) => error instanceof UsageError && /line 3, column 1\.$/.test(error.message));
+});
+
+test('parseDocument gives the checked mapping, every key as written', () => {
+  assert.deepEqual(parseDocument('version: 3\ndelegate: [t3]\ngo:\n  level: loud\n', CONFIG), { version: 3, delegate: ['t3'], go: { level: 'loud' } });
+});
+
+test('parseDocument rejects a document that is not a version 3 mapping, naming the file', () => {
+  const cases: [string, string][] = [
+    ['go: { level: [unclosed\n', 'not YAML'],
+    ['- just\n- a list\n', 'mapping'],
+    ['version: 2\ngo:\n  level: ask\n', 'version must be 3, got 2'],
+  ];
+  for (const [text, named] of cases) {
+    assert.throws(() => parseDocument(text, CONFIG),
+      (error) => error instanceof UsageError && error.message.includes(CONFIG) && error.message.includes(named), text);
+  }
+});
+
+test('parseConfig drops a go key, even with a level lets does not know', () => {
+  const text = 'version: 3\ndelegate:\n  resolvers: [t3]\ngo:\n  level: loud\n';
+  assert.deepEqual(parseConfig(text, CONFIG), { version: 3, delegate: { resolvers: ['t3'] } });
+});
+
+const levelIn = (yaml: string) => levelFor(parseDocument(`version: 3\n${yaml}`, CONFIG), CONFIG);
+
+test('levelFor gives the level the config sets', () => {
+  assert.equal(levelIn('go:\n  level: ask\n'), 'ask');
+  assert.equal(levelIn('go:\n  level: recommend\n'), 'recommend');
+});
+
+test('levelFor gives null when the config sets no level', () => {
+  for (const yaml of ['', 'go:\n', 'go: null\n', 'go: {}\n', 'go:\n  level:\n', 'go:\n  level: null\n', 'go:\n  verbose: true\n']) {
+    assert.equal(levelIn(yaml), null, yaml);
+  }
+});
+
+test('levelFor rejects a bad go or go.level, naming the file and the key', () => {
+  const cases: [string, string][] = [
+    ['go: recommend\n', 'go must be a mapping, got "recommend"'],
+    ['go: [ask]\n', 'go must be a mapping'],
+    ['go:\n  level: loud\n', 'go.level must be ask or recommend, got "loud"'],
+    ['go:\n  level: [ask]\n', 'go.level must be ask or recommend'],
+    ['go:\n  level: Ask\n', 'go.level must be ask or recommend, got "Ask"'],
+    ['go:\n  level: 3\n', 'go.level must be ask or recommend, got 3'],
+  ];
+  for (const [yaml, named] of cases) {
+    assert.throws(() => levelIn(yaml),
+      (error) => error instanceof UsageError && error.message.includes(CONFIG) && error.message.includes(named), yaml);
+  }
 });

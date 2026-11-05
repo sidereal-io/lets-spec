@@ -26,3 +26,9 @@ test('guarded rethrows an error it does not know', async () => {
   await assert.rejects(guarded(t.deps, async () => { throw new TypeError('a bug'); }), TypeError);
   assert.equal(t.stderr(), '');
 });
+
+test('guarded starts the line with the prefix it is given', async () => {
+  const t = setup();
+  assert.equal(await guarded(t.deps, async () => { throw new SessionFailed('the session ended'); }, 'lets go: '), 5);
+  assert.equal(t.stderr(), 'lets go: the session ended\n');
+});
