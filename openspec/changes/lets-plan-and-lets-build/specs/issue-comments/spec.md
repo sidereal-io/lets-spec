@@ -31,7 +31,7 @@ In *Confirm the packet*, `lets-go` SHALL fetch the issue's body edit date, comme
 - **THEN** the run stops, and names that comment
 
 ### Requirement: A comment newer than the watermark stops the run
-`lets-go` SHALL stop before *Claim* when any comment's `createdAt`, or its `lastEditedAt` when it has one, is after the watermark. Who wrote the comment SHALL make no difference. A read marker SHALL never stop the run. When no comment is newer, the run SHALL go on to *Route*. On the default branch, before any shape step has run, the stop is set aside and the shape step runs for the issue, as the `lets-go` spec says; the thread check itself does not change.
+`lets-go` SHALL stop before *Claim* when any comment's `createdAt`, or its `lastEditedAt` when it has one, is after the watermark. Who wrote the comment SHALL make no difference. A read marker SHALL never stop the run. When no comment is newer, the run SHALL go on to *Route*. On the default branch, before any shape step has run, `lets-go` sets the stop aside and runs the shape step for the issue, as its own spec says. The thread check itself does not change.
 
 #### Scenario: A new comment from a bot
 - **WHEN** the newest comment is from a GitHub App and is after the watermark

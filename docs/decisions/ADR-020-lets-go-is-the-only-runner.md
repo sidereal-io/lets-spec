@@ -3,7 +3,7 @@ id: adr-020
 date: 2026-11-04
 status: accepted
 title: 'ADR-020: lets-go is the only runner, and lets-build is the build step'
-description: Architecture decision record (ADR) for making lets-go the one skill that runs the workflow, with one skill of its own name for each step, and lets-build reduced to the build step
+description: Architecture decision record (ADR) for one runner, lets-go, with one skill of its own name for each step, and lets-build as the build step alone
 ---
 
 # ADR-020: lets-go is the only runner, and lets-build is the build step
@@ -32,7 +32,7 @@ The workflow has five steps: shape, plan, review plan, build and review build. `
 ### Alternative 1: Keep `lets-build` as the in-session runner beside `lets-go`
 - **Pros**: no move, and a session can run the whole workflow by hand without step reports.
 - **Cons**: two runners share six sections by name, the plan step has no skill, and a step row cannot name one skill per step.
-- **Why not**: this was ADR-018's choice. Once the stack made review plan and review build skills of their own, the one step left without a skill was plan, and the one skill left with two jobs was `lets-build`.
+- **Why not**: this was ADR-018's choice. Then review plan and review build became skills of their own. That left plan as the one step without a skill, and `lets-build` as the one skill with two jobs.
 
 ### Alternative 2: Retire `lets-build`, and put apply in `lets-go`'s build prompt
 - **Pros**: one skill fewer, and no name shared with the old runner.
