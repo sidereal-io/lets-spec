@@ -84,7 +84,7 @@ flow_texts() {
       for skill in $shipped; do named_skills "$repo/skills/$skill/SKILL.md"; done
     )"
     for skill in $shipped; do
-      case "$skill" in lets-build | lets-go | lets-shape | lets-setup-backlog) continue ;; esac
+      case "$skill" in lets-go | lets-shape | lets-setup-backlog) continue ;; esac
       grep -qx "$skill" <<<"$named" ||
         { echo "$flow ships $skill, but none of its schema, config or skills name it"; false; }
     done
@@ -308,18 +308,33 @@ skill_says() {
 }
 
 @test "each skill that delegates lets the guidance only rank and filter models" {
-  for skill in lets-review-build lets-review-plan lets-build lets-go; do
+  for skill in lets-review-build lets-review-plan lets-go; do
     skill_says "$skill" "The guidance only ranks and filters the listed models"
   done
 }
 
-@test "lets-build's handoff asks lets for options, then runs with a ranked list" {
-  skill_says lets-build "lets delegate handoff instructions --for apply"
-  skill_says lets-build "lets delegate handoff run --for apply"
-  skill_says lets-build "delegate.handoff.apply.guidance"
-  skill_says lets-build "the guidance first, then the order the options came in"
-  skill_says lets-build "When \`options\` is empty, pass your own family"
-  skill_says lets-build "If it exits 3, every model was refused: show the user its stderr, and stop."
+@test "lets-build runs openspec-apply-change test-first" {
+  skill_says lets-build '`openspec-apply-change` skill'
+  skill_says lets-build '`lets-test-first` skill'
+}
+
+@test "lets-build is the build step and nothing else" {
+  local phrase
+  for phrase in 'Finish the change' 'gh project' 'lets delegate' 'lets-review-plan' 'Find the source of demand'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-build/SKILL.md" | grep -qF -- "$phrase" ||
+      { echo "lets-build still says: $phrase"; false; }
+  done
+}
+
+@test "lets-build sends each state it does not build to the skill that handles it" {
+  skill_says lets-build 'Say that `lets-go` starts an issue, and stop.'
+  skill_says lets-build 'run the `lets-plan` skill'
+  skill_says lets-build 'the `lets-review-build` skill finishes the change'
+}
+
+@test "nothing lets-spec ships names a section of lets-build" {
+  run grep -rnF "\`lets-build\`'s *" "$repo/skills" "$repo/schemas" "$repo/overlays"
+  [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
 @test "lets-go's build row has the plan reviewed before lets-build on lets-standard" {
@@ -376,10 +391,6 @@ review_build_start() {
 @test "the README's minimal flow adds lets-review-build" {
   grep -E '^\| Skills it adds \|' "$repo/README.md" | awk -F'|' '{ print $(NF-1) }' | grep -qF '`lets-review-build`' ||
     { echo "README.md's minimal Skills it adds cell does not name lets-review-build"; false; }
-}
-
-@test "lets-build gives the code review's session to lets-review-build" {
-  skill_says lets-build "the code review's is the \`lets-review-build\` skill's"
 }
 
 @test "nothing lets-spec ships names lets-review-code" {
@@ -577,10 +588,6 @@ step_row() {
 
 @test "lets-shape posts its reply with the gh command gh issue comment --body-file" {
   skill_says lets-shape 'gh issue comment <i> --body-file <file>'
-}
-
-@test "lets-build says a handoff's instructions hold the prompt to carry on by hand" {
-  grep -q 'hold the prompt to carry on by hand' "$repo/skills/lets-build/SKILL.md"
 }
 
 # Resolve actual Markdown reference links as an installed skill would.
