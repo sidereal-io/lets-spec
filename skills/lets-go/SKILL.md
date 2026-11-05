@@ -466,117 +466,125 @@ If the import fails:
    ```
 
    When a parent's `Input:` line holds the idea word for word, say that a
-   discovery of this idea is in progress at #<p>. Skip the search below,
-   and [run the shape step](#run-the-shape-step) for the idea: its round
-   resumes that parent.
-2. Run [Find the source of demand](#find-the-source-of-demand), its
-   second case: the
-   user described work but named no issue. It searches open issue titles
-   for the idea's words. Show the user the matches, and ask whether one
-   is the same work. Ask at either level: a wrong yes builds someone
-   else's issue.
-3. On a yes, that issue is `<i>`. Go on from step 3.
-4. On a no, or when nothing matches, set aside that case's stop, which
-   says to run `lets-shape`. [Run the shape step](#run-the-shape-step)
-   for the idea.
+   discovery of this idea is in progress at #<p>. Skip the search in
+   step 2, and [run the shape step](#run-the-shape-step) for the idea.
+   The shape step's round resumes that parent.
+2. Run the second case of
+   [Find the source of demand](#find-the-source-of-demand): the user
+   described work but named no issue. That case searches open issue
+   titles for the idea's words. Show the user the matches, and ask
+   whether one is the same work. Ask at either level, because a wrong
+   yes builds someone else's issue.
+3. On a yes, that issue is `<i>`. Go on from *Start* step 3, the blocker
+   read.
+4. On a no, or when nothing matches, set aside the second case's stop,
+   which says to run `lets-shape`.
+   [Run the shape step](#run-the-shape-step) for the idea.
 
 ### Run the shape step
 
 The shape step turns an idea, or an issue whose packet is not complete,
-into one shaped issue. When the work is too large for one issue, it runs
-discovery instead, which files a parent issue and its stories. It runs
-on the default branch, before any branch or change exists. On a change's
-branch, the `lets-shape` stops of *Confirm the packet* stand. It runs at
-most once per run: after it, a stop that *Confirm the packet* makes
-stands.
+into one shaped issue. When the work is too large for one issue, the
+step runs discovery instead, which files a parent issue and its stories.
+The step runs on the default branch, before any branch or change exists.
+On a change's branch, the `lets-shape` stops of *Confirm the packet*
+stand. The step runs at most once per run: after it, a stop that
+*Confirm the packet* makes stands.
 
-1. Check the discovery map. Run `git status --porcelain`. When it lists
-   `openspec/discovery.md`, look for this input's discovery: an open
-   parent issue that says `Discovery status: in-progress`, and whose
-   `Input:` line names this input, the idea's words or #<i>. For an idea,
-   use what *Start from an idea* found. For an issue, run the query it
-   names.
+1. Check the discovery map. Run `git status --porcelain`. When the
+   output lists `openspec/discovery.md`, look for this input's
+   discovery: an open parent issue that says
+   `Discovery status: in-progress`, and whose `Input:` line names this
+   input, the idea's words or #<i>. For an idea, use what *Start from an
+   idea* found. For an issue, run the query in step 1 of *Start from an
+   idea*.
    - **There is one:** the edits are that discovery's confirmed phases.
-     Go on: the step resumes it, and its map commit takes them.
-   - **There is none:** say that the map has uncommitted edits, and to
-     commit or discard them. Stop, and run no step. Otherwise a
-     discovery's commit could sweep those edits in.
+     Go on: the shape step resumes that discovery, and the discovery's
+     map commit takes the edits.
+   - **There is none:** say that the map has uncommitted edits, and that
+     the user should commit or discard them. Stop, and run no step. If
+     the run went on, a discovery's commit could sweep those edits in.
 2. Set `<level>` and print its line. There is no Kind yet, so take the
-   first of these that is set: the level the user named, then the level
-   *Start* step 1 kept, when it is not `null`, then `ask`. The lines are
-   `Interactivity: <level>, because you asked for it.`,
-   `Interactivity: <level>, because your lets config sets go.level.`, and
-   for `ask` with neither:
+   first of these that is set:
+   1. The level the user named. Its line is
+      `Interactivity: <level>, because you asked for it.`
+   2. The level `lets go level` printed in *Start* step 1, when it is
+      not `null`. Its line is
+      `Interactivity: <level>, because your lets config sets go.level.`
+   3. `ask`, when neither is set. Its line is:
 
-   ```text
-   Interactivity: ask, because shape has not run yet.
-   ```
+      ```text
+      Interactivity: ask, because shape has not run yet.
+      ```
 
 3. For an idea, check that the answers file is this idea's. Two ideas
    can share their first five words, and so their `<name>`. When
    `.workspace/lets-go/<name>-shape-prompt.md` exists and holds another
-   idea, an earlier run stopped part way on that one. Remove
-   `.workspace/lets-go/<name>-shape-answers.yaml` before you write the
-   prompt.
+   idea, an earlier run stopped part way on that other idea. In that
+   case, remove `.workspace/lets-go/<name>-shape-answers.yaml` before
+   you write the prompt.
 4. Run the `shape` step, as [Run a step](#run-a-step) says.
-5. When it reports `done`, [Read the report](#read-the-report) says
-   what it shaped:
-   - **One issue:** that issue is `<i>`. Go on from step 3 with it, as
-     for an issue number.
+5. When the shape step reports `done`, [Read the report](#read-the-report)
+   says what the step shaped:
+   - **One issue:** that issue is `<i>`. Go on from *Start* step 3, the
+     blocker read, with that issue, as for an issue number.
    - **A parent and its stories:**
      [pick the first ready story](#pick-the-first-ready-story).
 
 ### Pick the first ready story
 
 Discovery filed a parent issue, `#<p>`, and its stories. Build one of
-them in this run.
+the stories in this run.
 
-1. Run [Find the source of demand](#find-the-source-of-demand), its
-   third case, `next`, with one narrowing: the candidates are the stories
-   the report named, and no other issue. Run that case's two commands as
-   the section writes them. Rank as it does: Must, then Should, then
-   Could, then the lowest issue number. Run its *Check the prerequisite*
-   on each candidate, in rank order. A ready story is one that `next`
-   would take.
+1. Run the third case, `next`, of
+   [Find the source of demand](#find-the-source-of-demand), with one
+   narrowing: the candidates are the stories the report named, and no
+   other issue. Run the two commands of `next` as that section writes
+   them. Rank as `next` does: Must, then Should, then Could, then the
+   lowest issue number. Run *Check the prerequisite* on each candidate,
+   in rank order, as `next` does. A ready story is one that `next` would
+   take.
 2. When a story is ready, print:
 
    ```text
    Picked #<n>: <title>, the first ready story under #<p>.
    ```
 
-   That story is `<i>`. Go on from step 3 with it, as for an issue
-   number.
-3. When no story is ready, print the `Done shape` line of *Start*, step 5. Say
-   that no story under #<p> is ready. Name each story, and why it was
-   left out: for example, its blocker, its assignee, or an unresolved
-   prerequisite. Say to run `lets-go` with a story's number once it is
-   ready. Then stop. Claim nothing, and create no branch.
+   That story is `<i>`. Go on from *Start* step 3, the blocker read,
+   with that story, as for an issue number.
+3. When no story is ready, print the `Done shape` line that *Start*
+   step 5 shows. Say that no story under #<p> is ready. Name each story,
+   and why it was left out: for example, its blocker, its assignee, or
+   an unresolved prerequisite. Say to run `lets-go` with a story's
+   number once that story is ready. Then stop. Claim nothing, and create
+   no branch.
 
 A run that stops after discovery and before *Claim*, for any reason,
 leaves the map's edits on the default branch. When
-`git status --porcelain` lists `openspec/discovery.md`, say that it
-holds the discovery's map, uncommitted on the default branch. While the
-parent still says `Discovery status: in-progress`, say to leave the map
-as it is: running `lets-go` again with the same idea, or #<i>, resumes
-the discovery and keeps its edits. Otherwise, say to commit or discard
-the map before the next run, because the next run stops on it.
+`git status --porcelain` lists `openspec/discovery.md`, say that the
+file holds the discovery's map, uncommitted on the default branch.
+While the parent still says `Discovery status: in-progress`, say to
+leave the map as it is: running `lets-go` again with the same idea,
+or #<i>, resumes the discovery and keeps its edits. When the parent no
+longer says so, say to commit or discard the map before the next run,
+because the next run stops on an uncommitted map.
 
 ### Commit the discovery map
 
 Discovery edits `openspec/discovery.md` on the default branch, and the
-new branch carries the edits with it. Commit them there, before
-[Walk the step table](#walk-the-step-table) reads
-the tree. Do this only when a shape step ran in this run, and
-`git status --porcelain` lists `openspec/discovery.md`. Otherwise make
-no commit.
+new branch carries the edits with it. When a shape step ran in this
+run, and `git status --porcelain` lists `openspec/discovery.md`, commit
+the edits on the new branch, before
+[Walk the step table](#walk-the-step-table) reads the tree. Otherwise
+make no commit.
 
 ```bash
 git add openspec/discovery.md
 git commit -m "docs: the discovery map from #<p>" -- openspec/discovery.md
 ```
 
-`<p>` is the parent's number, or the story's when the parent became the
-one story. Commit no other path. This is the one commit `lets-go` makes
+`<p>` is the parent's number, or the story's number when the parent
+became the one story. Commit no other path. This is the one commit `lets-go` makes
 itself, beside the glossary import.
 
 ## Walk the step table
