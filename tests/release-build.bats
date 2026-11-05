@@ -45,7 +45,7 @@ build_from() {
   build "$out" lets-standard lets-test-first
   [ "$(yq -o json -I0 '.operations | keys' "$out/init/openspec/config.yaml")" = '["archive"]' ]
   [ "$(yq '.operations.archive.guidance | length' "$out/init/openspec/config.yaml")" -eq 1 ]
-  grep -q '`lets-review-code` skill' "$out/init/openspec/config.yaml"
+  grep -q '`lets-review-build` skill' "$out/init/openspec/config.yaml"
   rm -rf "$out"
   build "$out" lets-minimal lets-test-first
   [ "$(yq -o json -I0 . "$out/init/openspec/config.yaml")" = '{"schema":"lets-minimal"}' ]

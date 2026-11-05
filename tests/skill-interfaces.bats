@@ -72,8 +72,8 @@ flow_texts() {
 }
 
 # A skill no schema step calls is still reachable when another skill the
-# flow ships calls it. lets-review-code is reached through the standard
-# flow's finishing rules, in its config.
+# flow ships calls it. lets-review-build is reached through lets-build's
+# *Finish the change*.
 @test "each skill a flow ships, other than an entry point, is named by its schema, its config or a skill the flow ships" {
   local flow skill shipped named text
   for flow in standard minimal; do
@@ -173,7 +173,7 @@ flow_texts() {
 }
 
 @test "each skill that delegates to a subagent says exit 3 also means no resolver started a session" {
-  for skill in lets-review-code lets-review-plan lets-go; do
+  for skill in lets-review-build lets-review-plan lets-go; do
     grep -q '\*\*3\*\*: no fresh session can run here, for example because no resolver started one' \
       "$repo/skills/$skill/SKILL.md" || { echo "$skill"; false; }
   done
@@ -216,7 +216,7 @@ skill_says() {
 }
 
 @test "each review skill asks lets for its intent's options, then runs with a ranked list" {
-  for pair in lets-review-plan:plan lets-review-code:code; do
+  for pair in lets-review-plan:plan lets-review-build:code; do
     skill="${pair%%:*}" intent="${pair##*:}"
     skill_says "$skill" "lets delegate review instructions --for $intent"
     skill_says "$skill" "lets delegate review run --for $intent"
@@ -242,20 +242,34 @@ skill_says() {
   done
 }
 
+@test "lets-review-build records its review in its own section of the pull request" {
+  skill_says lets-review-build 'Reviewed: <base> <base-sha>..<head-sha>'
+  skill_says lets-review-build '**Code review**'
+  skill_says lets-review-build '## Code review'
+  skill_says lets-review-build 'gh pr edit --body-file'
+}
+
+@test "lets-review-build finishes the change after its review" {
+  skill_says lets-review-build 'operationGuidance'
+  skill_says lets-review-build '`openspec-verify-change` skill'
+  skill_says lets-review-build '`openspec-archive-change` skill'
+  skill_says lets-review-build 'gh pr ready'
+}
+
 @test "each review skill ranks by the guidance, then other families, then the order given" {
-  for skill in lets-review-code lets-review-plan; do
+  for skill in lets-review-build lets-review-plan; do
     skill_says "$skill" "the guidance first, then families other than the author's, then the order the options came in"
   done
 }
 
 @test "each review skill takes the subagent step when there are no options" {
-  for skill in lets-review-code lets-review-plan; do
+  for skill in lets-review-build lets-review-plan; do
     skill_says "$skill" "When \`options\` is empty, whatever the resolver, skip the command and take the [subagent step]"
   done
 }
 
 @test "each skill that delegates lets the guidance only rank and filter models" {
-  for skill in lets-review-code lets-review-plan lets-build lets-go; do
+  for skill in lets-review-build lets-review-plan lets-build lets-go; do
     skill_says "$skill" "The guidance only ranks and filters the listed models"
   done
 }
@@ -529,7 +543,7 @@ load support/release
 @test "review vocabulary inputs resolve in the published standard flow" {
   local out="$BATS_TEST_TMPDIR/standard" skill
   build "$out" lets-standard,lets-minimal $(flow_skills standard)
-  for skill in lets-review-plan lets-review-code; do
+  for skill in lets-review-plan lets-review-build; do
     assert_reference_links "$out/overlay/.agents/skills/$skill/SKILL.md" "$out/overlay"
   done
 }
