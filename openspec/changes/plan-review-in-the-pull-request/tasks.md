@@ -14,7 +14,7 @@
 
 ## 3. Sweep and whole-suite check [depends-on: 2]
 
-- [ ] 3.1 [easy] No `review.md`, `VERDICT:` or `CHANGES_APPLIED:` is left in the code, skills, schemas, README, docs or flake outside `docs/decisions/` and the bats file's own list of banned strings; `openspec/specs` changes at archive, so the grep leaves it out. (verify: `! grep -rnE "review\.md|VERDICT:|CHANGES_APPLIED:" --include='*.md' --include='*.yaml' --include='*.ts' --include='*.nix' lets/src skills schemas README.md docs/*.md flake.nix`)
+- [x] 3.1 [easy] No `review.md`, `VERDICT:` or `CHANGES_APPLIED:` is left in the code, skills, schemas, README, docs or flake outside `docs/decisions/` and the bats file's own list of banned strings; `openspec/specs` changes at archive, so the grep leaves it out. (verify: `! grep -rnE "review\.md|VERDICT:|CHANGES_APPLIED:" --include='*.md' --include='*.yaml' --include='*.ts' --include='*.nix' lets/src skills schemas README.md docs/*.md flake.nix`) (✓ the grep found nothing)
 - [ ] 3.2 [easy] A rehearsed archive in a throwaway worktree under `.workspace/` merges the `lets-go` delta, with its added scenario, and the merged spec holds no `review.md`; then the whole suite and the flake pass. (verify: `pnpm test && nix flake check`)
 
 ## Deviations Ledger
