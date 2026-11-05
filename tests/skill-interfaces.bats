@@ -225,6 +225,21 @@ skill_says() {
   done
 }
 
+@test "lets-review-plan records in the pull request, and checks an earlier review" {
+  local phrase
+  skill_says lets-review-plan 'Reviewed: <sha>'
+  skill_says lets-review-plan '**Plan review**'
+  skill_says lets-review-plan '- **Verdict:**'
+  skill_says lets-review-plan '## Check an earlier review'
+  skill_says lets-review-plan 'git merge-base --is-ancestor <sha> HEAD'
+  skill_says lets-review-plan 'git log --oneline <sha>..HEAD -- openspec/changes/<name>/ docs/decisions/'
+  skill_says lets-review-plan '`openspec-update-change` skill'
+  for phrase in 'review.md' '`review` artifact' '`review` instruction'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-review-plan/SKILL.md" | grep -qF -- "$phrase" ||
+      { echo "lets-review-plan still says: $phrase"; false; }
+  done
+}
+
 @test "each review skill ranks by the guidance, then other families, then the order given" {
   for skill in lets-review-code lets-review-plan; do
     skill_says "$skill" "the guidance first, then families other than the author's, then the order the options came in"
