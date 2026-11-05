@@ -200,24 +200,59 @@ that no action occurred. Missing results never mean success or effects none.
 | Backend receipt or observation verifiable through an independent trusted channel | Only the facts its provenance, scope, revision and freshness actually establish. An unverifiable receipt copied into a report stays attributed evidence. |
 | Fresh independent ownership/status read or exact code-host merge observation | The observed scoped state at that time; a snapshot is not an exclusive lock or a guarantee against later races. |
 
-Lets may independently check local structure, mappings against validated metadata,
-request correlation, deadlines and sequencing. Remote facts require evidence it
-can independently verify through a trusted backend/tool channel or verifiable
-backend attestation; parsing the agent's text is not such a channel. The runtime
-migration must identify each verification channel and its trust/freshness limits.
-An independent read can use the same backend, but must not rely solely on the
-executing agent's account of that read. This does not require a second provider
-implementation: verification checks the required facts through the common
-operation/evidence contract.
+Lets independently checks local structure, mappings against validated metadata,
+request correlation, deadlines and sequencing. For required remote facts, use
+trusted capture of tool results: the agent initiates the backend call, and a
+trusted harness/tool host or generic capture runner records the actual request
+and response outside the agent's editable report. Lets retrieves and verifies
+that record through the capture channel; the agent may submit its reference,
+but cannot supply or replace the authoritative record.
 
-If a required remote-state guarantee cannot be independently established, lets
-blocks automatic retry and progression pending reconciliation or manual
-resolution. Manual resolution must establish and record the missing facts and
-provenance under the existing guarantee; an approval or edited report alone does
-not waive evidence requirements. Definitions cannot self-certify trust, atomicity,
-complete blocker enumeration or exact merge evidence. Where the available tools
-cannot establish the required guarantee, report the limitation and stop rather
-than silently lower it.
+The channel must bind evidence to the issued action, actual tool/server identity,
+arguments, selected backend/scope, authenticated context, collection time,
+response and execution outcome. Lets checks those against the allowed action
+and the definition's mappings. A receipt for another command, scope or attempt
+cannot establish the requested fact. Tool identity and capture-channel trust
+come from validated runtime setup, not a definition's claim to be trusted.
+Capturing a shell echo, an untrusted substitute CLI or an agent-written result
+file is not authoritative backend evidence. An ordinary local file or a key
+accessible to the agent does not by itself establish an independent trust boundary.
+
+Capture establishes what the trusted tool returned, not every remote guarantee.
+Lets must still check authoritative scope, freshness, complete pagination and
+blocker coverage, current ownership, and exact associated merge evidence as the
+operation requires. A fresh read initiated by the same agent can qualify when
+lets retrieves its original captured tool result independently; the agent's
+account of that read alone cannot. Snapshot evidence supplies no exclusive lock.
+
+Shipped and custom integrations use this same generic capture channel and their
+single provider definition for tool usage/mappings. Adding a definition for
+existing supported operations does not require provider-specific verifier code
+or a lets release when the available trusted channel can capture its tools.
+The capture runner records the agent-initiated execution; lets validates the
+record rather than making separate provider-specific verification calls. This
+adds neither a second implementation of provider operations nor a plugin loader.
+Direct backend verification reads executed by lets are not an implicit fallback.
+
+This is a target contract, not an assertion that today's CLI/MCP hosts already
+provide independent capture. #180 must demonstrate the channel for fresh claim
+ownership/status and exact PR merge evidence, including rejection of forged,
+agent-editable, mismatched, stale and incomplete records, before claiming the
+migrated GitHub path works. Delegation migration must prove its own evidence
+path. Until the required channel is established, these normal workflow steps
+pause; the limitation is not confined to unusual failures.
+
+If a required guarantee cannot be independently established, lets pauses automatic
+retry and progression and asks the user how to resolve it. Explain the action,
+known/unknown effects, missing evidence and available reconciliation steps. The
+user can provide access to a trusted channel, reconcile the outcome with recorded
+evidence, or stop. Do not retry or progress while the decision or required facts
+remain unresolved. A user approval or edited report alone does not establish the
+missing remote facts. Manual resolution must establish and record the facts and
+provenance under the existing guarantee. Definitions cannot self-certify trust,
+atomicity, complete blocker enumeration or exact merge evidence. If no available
+channel can establish the guarantee, ask the user to reconcile or stop rather
+than silently lower the guarantee or switch execution models.
 
 ### Deadlines, errors and reconciliation
 
@@ -247,7 +282,7 @@ have no effects only under bounded core policy. Never recreate uncertain items
 or launch another session merely because a response or wait failed. Expose known
 session handles and partial effects. Late results may aid reconciliation but do
 not reactivate an expired request. If absence, ownership or deduplication cannot
-be established, require manual reconciliation rather than guess or switch provider.
+be established, pause and ask the user to reconcile or stop rather than guess or switch provider.
 
 Native ownership/status remain authoritative. Private local journals record
 recovery provenance and uncertainty; they are neither a replacement backlog nor
@@ -299,11 +334,11 @@ not treated as already satisfied by this decision.
 
 | Existing requirement or surface | Required target migration | Guarantees retained |
 |---|---|---|
-| **Contract validation leaves production integrations unchanged**; offline executable harness | Exercise policy/action requests, simulated agent/tool submissions and independent verifier evidence; keep checks offline and credentials-free. | No production mutation from conformance; deliberate negative cases must fail. |
+| **Contract validation leaves production integrations unchanged**; offline executable harness | Exercise policy/action requests, simulated agent/tool submissions and trusted capture records; keep checks offline and credentials-free. | No production mutation from conformance; deliberate negative cases must fail. |
 | **Executable boundary separates responsibilities**; stdin/stdout JSON, stderr, exit/result pairs, signals and startup | Replace adapter process transport with a versioned bounded-action/submission contract. Test malformed, mismatched, stale, replayed and missing results plus unavailable tools. | Shared policy remains in lets; backend translation stays in definitions; code host owns branches/PRs; untrusted reports cannot authorize progression. |
 | That requirement's deadline, SIGKILL and byte-limit scenarios; **Protocol 1** | Replace process supervision with core request expiry/bounded waits and declared bounded tool calls/results. Test ignored cancellation, overflow, late effects and late submissions. | Timeout never proves rollback or effects none; unknown outcomes block retry/progression. A tool that cannot meet required limits is unavailable for that action. |
 | **Configuration separates shared settings from authentication**; executable resolution and default | Select shipped or explicit custom definitions; implement schema/source/version checks, machine tool options and actionable rejection of obsolete executable keys. | One backlog; GitHub default; no silent selection fallback; external auth; mappings and local storage/tracking checked before mutation. |
-| **Mutation errors support safe recovery**; protocol/JSON failures | Validate requests/submissions and independently check required evidence. Retain typed errors and effect certainty; test forged/unverifiable receipts and same-agent repeated observations. | No error-message inference; original mutation identity, deduplication and reconciliation; no blind repeated create or session launch. |
+| **Mutation errors support safe recovery**; protocol/JSON failures | Validate requests/submissions and independently check required evidence. Retain typed errors and effect certainty; test forged/unverifiable receipts, unavailable capture and same-agent report-only observations. | No error-message inference; original mutation identity, deduplication and reconciliation; no blind repeated create or session launch. |
 | **Four-provider evidence qualifies conformance claims**; profiles and evidence matrix | Distinguish policy tests, agent/tool translation tests, independent verification tests and live acceptance for each provider/configuration. | All four providers remain release requirements; offline profiles are not production integrations. |
 | **Runtime releases exclude unused conformance payloads**; executable bundles | Package core validators/recovery and production definitions; remove obsolete adapter-executable bundles and declare backend-tool dependencies separately. | Offline checks remain runnable; unused kit source, fixtures and docs remain outside runtime packages. |
 | Operation inventory, identity, metadata, capabilities and discovery | Carry complete behavioral scenarios through the request/result boundary, with operation-specific evidence requirements. | Scoped opaque identities, optional URLs, targeted field updates, pagination and complete blocker evidence, native/emulated/unsupported declarations and deterministic ranking. |
@@ -312,7 +347,8 @@ not treated as already satisfied by this decision.
 
 #180 implements the GitHub build migration after #179 and #136. It must migrate
 the production caller, contract, conformance invocation and packaging and prove
-its own equivalence. #137–#144 retain their provider outcomes and acceptance
+its own equivalence, including the trusted capture channel for fresh claims and
+exact merge evidence. #137–#144 retain their provider outcomes and acceptance
 obligations; #145 covers definition authoring for both capabilities. Its delegation
 part requires the delegation runtime migration below, not merely #180. Until that
 follow-up is shaped and its prerequisite is resolved, #145 is not ready for its
@@ -342,8 +378,9 @@ separate scoped equivalence evidence before a support claim.
 - Shared policy, sequencing, recovery and validators remain in code, while one
   provider definition describes its backend translation for every workflow.
 - Execution depends on agent tool availability and correct action interpretation.
-  Schema validation alone cannot establish remote truth. Missing independent
-  evidence can stop a workflow for manual reconciliation.
+  Schema validation alone cannot establish remote truth. Without a proven trusted
+  capture channel, even routine claim/completion steps must pause and ask the
+  user for reconciliation; the architecture alone does not make them usable.
 - Maintainers must version definitions and the request/result contract, validate
   evidence provenance, reject stale results and retain private recovery state.
 - The design adds no credential sandbox or stronger backend locking primitive.
