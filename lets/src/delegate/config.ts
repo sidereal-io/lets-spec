@@ -16,12 +16,12 @@ export type ResolverName = (typeof RESOLVER_NAMES)[number];
 
 // The file's shape, with the keys this lets does not know dropped. delegate
 // is {} when the file has none. Each resolver is one of RESOLVER_NAMES.
-// review and handoff are as the user wrote them: only lets delegate
+// review, handoff and step are as the user wrote them: only lets delegate
 // <strategy> instructions reads them, through guidanceFor, so a bad entry
 // never stops a run.
 export type Config = {
   version: typeof CONFIG_VERSION;
-  delegate: { resolvers?: ResolverName[]; review?: unknown; handoff?: unknown };
+  delegate: { resolvers?: ResolverName[]; review?: unknown; handoff?: unknown; step?: unknown };
 };
 
 export type ConfigDeps = { env: Deps['env']; io: Io };
@@ -62,7 +62,7 @@ export function parseConfig(text: string, path: string): Config {
     });
     config.delegate.resolvers = resolvers;
   }
-  for (const strategy of ['review', 'handoff'] as const) {
+  for (const strategy of ['review', 'handoff', 'step'] as const) {
     if (delegate[strategy] !== undefined) config.delegate[strategy] = delegate[strategy];
   }
   return config;

@@ -2,7 +2,7 @@
 // the user's delegate config names, that does not decline. With no config,
 // or a config with no chain, the chain is the default, subagent. Every
 // resolver is built into lets, so nothing is run or looked up on PATH.
-import type { Adapter } from '../resolvers/kit/adapter.ts';
+import type { Adapter, Handle } from '../resolvers/kit/adapter.ts';
 import type { Deps } from '../io.ts';
 import { configPath } from './config.ts';
 import type { Config } from './config.ts';
@@ -10,8 +10,8 @@ import { exitCodeOf, Refused, SpawnError, UsageError } from '../resolvers/kit/er
 import { FAMILIES, parseModel } from '../resolvers/kit/families.ts';
 
 // The kind of session asked for: read-only for a review, interactive for a
-// handoff.
-export type Kind = 'run' | 'start';
+// handoff, and one that may write files, and is waited for, for a step.
+export type Kind = 'run' | 'start' | 'step';
 
 // config: the user's delegate config, or null when there is none.
 export type LookupDeps = Pick<Deps, 'env' | 'io' | 'resolvers'> & { config: Config | null };
@@ -22,11 +22,12 @@ export function chain({ config, resolvers }: Pick<LookupDeps, 'config' | 'resolv
 }
 
 // The first adapter in the chain that does not decline kind. An adapter
-// declines when it cannot run here, and declines a handoff when it cannot
-// start one. Throws a UsageError when every adapter declines.
+// declines when it cannot run here, declines a handoff when it cannot start
+// one, and declines a step when it cannot run one. Throws a UsageError when
+// every adapter declines.
 export async function pick(kind: Kind, deps: LookupDeps): Promise<Adapter> {
   for (const adapter of chain(deps)) {
-    if (kind === 'start' && adapter.start === undefined) continue;
+    if (kind !== 'run' && adapter[kind] === undefined) continue;
     if (await inAdapter(async () => adapter.detect())) return adapter;
   }
   throw new UsageError(`every resolver declined. ${configPath(deps)} lists the resolvers to ask; add subagent to fall back to a subagent.`);
@@ -67,5 +68,16 @@ export async function inAdapter<T>(fn: () => Promise<T>): Promise<T> {
   } catch (error) {
     if (exitCodeOf(error) !== null) throw error;
     throw new SpawnError(error instanceof Error ? error.message : String(error));
+  }
+}
+
+// Tell the adapter that made the session that lets is done with it. ok
+// false keeps the session for a person to read. A failure here does not undo
+// the review or the step, so it is reported and nothing more.
+export async function finishSession(adapter: Adapter, handle: Handle, { cwd, ok, deps }: { cwd: string; ok: boolean; deps: Deps }) {
+  try {
+    await inAdapter(() => adapter.finish(handle, ok, { cwd }));
+  } catch (error) {
+    deps.stderr(`lets delegate: could not finish ${handle.kind} ${handle.id}: ${(error as Error).message}\n`);
   }
 }

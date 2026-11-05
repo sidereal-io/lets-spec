@@ -43,6 +43,12 @@ test('a resolver with no start declines a handoff, and answers a review', async 
   assert.equal((await pick('run', deps)).name, 'cli');
 });
 
+test('a resolver with no step declines only a step', async () => {
+  const { deps } = lookup({ cli: { steps: false }, t3: {} }, listing('cli', 't3'));
+  assert.equal((await pick('step', deps)).name, 't3');
+  assert.equal((await pick('run', deps)).name, 'cli');
+});
+
 test('when every resolver declines, it is a usage error naming the config file', async () => {
   for (const config of [listing('t3', 'cli'), listing()]) {
     const { deps } = lookup({}, config);

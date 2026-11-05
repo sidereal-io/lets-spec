@@ -28,6 +28,9 @@ export function normalizeName(raw: string): string {
 export type RunInput = { name: string; prompt: string; cwd: string; family: Family; model: string | null; effort: Effort };
 // The request for an interactive session, which the resolver returns at once.
 export type StartInput = Omit<RunInput, 'effort'>;
+// The request for a session that may write files, whose final message the
+// resolver waits for.
+export type StepInput = RunInput;
 
 export type Adapter = {
   // The resolver's name in the config and in each command's output, such
@@ -47,6 +50,10 @@ export type Adapter = {
   // instructions a person needs when it starts none. Throws Refused when
   // the harness says no. Without it, the resolver declines every handoff.
   start?(input: StartInput): Promise<Handle | { instructions: string }>;
+  // Runs a session that may write files and waits for its final message,
+  // which ends with the step report. Throws as run does. Without it, the
+  // resolver declines every step.
+  step?(input: StepInput, options: { timeoutMs: number }): Promise<{ handle: Handle; text: string }>;
   // Cleans up after a session it made, on ok. cwd is the repository.
   // Throws when it cannot.
   finish(handle: Handle, ok: boolean, options: { cwd: string }): Promise<void>;

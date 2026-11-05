@@ -2,16 +2,14 @@
 // for its final message. Checks the tree after, tells the resolver it may
 // clean up, and reports which family answered. No process access here;
 // everything comes through deps.
-import type { Adapter } from '../resolvers/kit/adapter.ts';
 import type { Deps } from '../io.ts';
 import { readConfig } from './config.ts';
 import { EXIT, SessionFailed, SpawnError } from '../resolvers/kit/errors.ts';
 import { isTreeClean, repoRoot, treeStatus } from './git.ts';
 import { guarded } from './guarded.ts';
-import { checkModels, inAdapter, pick, withModels } from './lookup.ts';
+import { checkModels, finishSession, pick, withModels } from './lookup.ts';
 import { readPromptFile } from './prompt-file.ts';
 import { DEFAULT_TIMEOUT_MINUTES, normalizeName } from '../resolvers/kit/adapter.ts';
-import type { Handle } from '../resolvers/kit/adapter.ts';
 import { parseModel } from '../resolvers/kit/families.ts';
 import type { Effort, Family } from '../resolvers/kit/families.ts';
 import type { Intent } from './strategies.ts';
@@ -71,15 +69,4 @@ async function review({ for: intent, name, promptFile, sourceFamily, effort, mod
   // The model that ran, else the --model value, when it names only a family.
   deps.stderr(`${JSON.stringify({ for: intent, resolver: adapter.name, family, model: model ?? sent, independent, handle, gitClean: true, durationSeconds })}\n`);
   return EXIT.ok;
-}
-
-// Tell the adapter that made the session that lets is done with it. ok
-// false keeps the session for a person to read. A failure here does not undo
-// the review, so it is reported and nothing more.
-async function finishSession(adapter: Adapter, handle: Handle, { cwd, ok, deps }: { cwd: string; ok: boolean; deps: Deps }) {
-  try {
-    await inAdapter(() => adapter.finish(handle, ok, { cwd }));
-  } catch (error) {
-    deps.stderr(`lets delegate: could not finish ${handle.kind} ${handle.id}: ${(error as Error).message}\n`);
-  }
 }

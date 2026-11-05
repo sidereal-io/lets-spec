@@ -1,16 +1,16 @@
 # The resolvers
 
-A resolver is the part of `lets` that turns a review or a handoff into a
-real session in one harness. `lets` has three, and you choose them by name
+A resolver is the part of `lets` that turns a review, a handoff or a step
+into a real session in one harness. `lets` has three, and you choose them by name
 under `delegate.resolvers` in your `lets` config. There is nothing to install. The README's
 [Set up delegation](../README.md#set-up-delegation) section explains the
 config file.
 
-| Name | It answers | It needs | A review runs as | A handoff |
-|---|---|---|---|---|
-| [`t3`](#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | Starts a new thread in the sidebar |
-| [`cli`](#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers |
-| [`subagent`](#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Gives back the prompt to start any agent with |
+| Name | It answers | It needs | A review runs as | A handoff | A step |
+|---|---|---|---|---|---|
+| [`t3`](#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | Starts a new thread in the sidebar | Declines, so the next resolver answers |
+| [`cli`](#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers | Declines, so the next resolver answers |
+| [`subagent`](#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Gives back the prompt to start any agent with | Saves the prompt, and exits 3, so the caller runs the step in a subagent |
 
 Each one declines where it cannot work, and the next in your config is
 asked. List them in this order, and leave out any you do not use:
@@ -34,6 +34,8 @@ It counts as inside T3 Code only when the running T3 server started
 `lets`, through any number of parent processes. A terminal outside T3
 Code declines, even while T3 Code runs. If you also work in other
 terminals, list `cli` after it.
+
+It runs no step yet, so it declines every one and opens no thread.
 
 ### Which model runs
 
@@ -126,7 +128,8 @@ or inside another harness. It declines when none of the three is on your
 
 It never starts a handoff, so it declines every one, without running
 anything. Keep `subagent` after it: a handoff then falls through to the
-default, which gives you the prompt to start any agent with.
+default, which gives you the prompt to start any agent with. It runs no
+step either, so it declines every one, and runs no CLI for it.
 
 ### Which models it lists
 
@@ -184,7 +187,79 @@ run no model, and it starts no session.
 |---|---|
 | A review | Starts nothing, and the command exits 3. The review skill then runs the review in a subagent. |
 | A handoff | Saves the prompt to `.workspace/lets-delegate/<name>.prompt.md` in the repository, and gives back the prompt and that path, so you can start any agent with it. |
+| A step | Saves the prompt, with any answers added, to `.workspace/lets-delegate/<name>.prompt.md`. Then the command exits 3, and stderr names that file. The caller runs the step in a subagent with it. |
 | `instructions` | Lists no models. |
 
 To get a fresh session in another model family, list `t3` or `cli` before
 `subagent` in `delegate.resolvers`.
+
+## A step's report
+
+This section is for you if you write a step's prompt, or a resolver that
+runs steps.
+
+`lets delegate step run` waits for the session's final message, and reads
+the step report at its end. The report is a fenced block tagged
+`step-report`, holding one YAML mapping. Its `outcome` is one of three:
+
+````markdown
+```step-report
+outcome: done
+evidence:
+  - "commit 3f2a1c0: feat: run a step"
+  - "pull request #164"
+```
+
+```step-report
+outcome: needs-input
+questions:
+  - question: Which schema should the change use?
+    recommendation: lets-minimal
+  - question: Should the story split?
+```
+
+```step-report
+outcome: failed
+reason: The tests fail on main before any change.
+```
+````
+
+Tell the step to follow these rules:
+
+- **Write the report last.** `lets` reads the last `step-report` block,
+  and ignores the text before it and after it.
+- **Quote a line that holds `#` or `: `.** YAML reads ` #` as the start of
+  a comment, so `- pull request #164` loses its number.
+- **Quote no other `step-report` block.** To show one, put it inside a
+  longer fence, as this page does. A block closes only at a line of at
+  least as many backticks as opened it.
+
+`lets` prints the report as one JSON line, `outcome` first, and adds
+`date` to a `done` report. A final message with no valid report becomes a
+`failed` report. Its `reason` says what is wrong, and its `message` holds
+the final message. A session that the resolver reports failed becomes a
+`failed` report with the resolver's reason. Exit 0 means a report is on
+stdout, whatever its outcome.
+
+### Resume a step with answers
+
+When a step reports `needs-input`, put the answers in a file:
+
+```yaml
+- question: Which schema should the change use?
+  answer: lets-minimal
+- question: Should the story split?
+  answer: No.
+```
+
+Then run the step again, with the same `--prompt-file` and
+`--answers-file <path>`. `lets` adds an `## Answers` section to the end of
+the prompt. It lists each pair, and says the questions are settled. A file
+that is missing, is not such a list, is empty, or holds a blank question
+or answer makes the command exit 2.
+
+### The step's guidance
+
+`lets delegate step instructions --for <step>` gives the guidance at
+`delegate.step.<step>.guidance` in your `lets` config, such as
+`delegate.step.apply.guidance`. It does not read the handoff's guidance.

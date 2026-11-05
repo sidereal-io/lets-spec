@@ -299,14 +299,17 @@ session that shares no context with the author. These words come up:
 - **Chain:** the resolvers your config lists, which `lets` asks in order.
 - **Review:** a read-only session. `lets` waits for its final message.
 - **Handoff:** an interactive session that builds a planned change.
+- **Step:** one stage of the workflow, such as propose or apply, in a
+  session that may write files. `lets` waits for its step report.
 - **Decline:** a resolver cannot work here, so the next one is asked.
 - **Refuse:** a resolver will not run the model it was given, so `lets`
   sends it the next model.
 
-Skills call `lets delegate review run` and `lets delegate handoff run`, where
-`--for` names what the session is for. Each first asks the matching
-`instructions` command which models it can use, and passes them to `run`
-best first. `lets delegate review run --help` lists the options.
+Skills call `lets delegate review run`, `lets delegate handoff run` and
+`lets delegate step run`, where `--for` names what the session is for.
+Each first asks the matching `instructions` command which models it can
+use, and passes them to `run` best first. `lets delegate review run --help`
+lists the options.
 
 ### What a review gets
 
@@ -319,6 +322,26 @@ A review gets the best of these that your machine offers:
 
 The skill falls back when the resolver lists no models, or refuses them
 all. `review.md` records which ran, such as `fresh context, other family`.
+
+### What a step returns
+
+`lets delegate step run --for <step>` runs one step: `shape`, `propose`,
+`propose-review`, `apply` or `apply-review`. The session may change files,
+and has 120 minutes unless `--timeout-minutes` says otherwise. It ends its
+final message with a step report, a fenced `step-report` block of YAML,
+and `lets` prints that report as one JSON line:
+
+- `done`, with the step's `evidence`. `lets` adds the `date`.
+- `needs-input`, with the step's `questions`, each with a
+  `recommendation` when the step has one.
+- `failed`, with the `reason`. A session that gives no valid report is a
+  `failed` report too.
+
+Exit 0 means a report is on stdout, whatever its outcome. To resume a step
+that needs input, run it again with the same `--prompt-file` and
+`--answers-file <path>`, a YAML list of `question` and `answer` pairs.
+`lets` adds them to the prompt. [A step's report](docs/resolvers.md#a-steps-report)
+shows the block.
 
 ### Set up delegation
 
@@ -341,6 +364,9 @@ delegate:
   handoff:
     apply:
       guidance: Prefer claude. Use a small model for a chore.
+  step:
+    apply:
+      guidance: Prefer claude/claude-opus-5-5.
 ```
 
 `delegate.resolvers` is the chain. List the resolvers for your harnesses
@@ -350,11 +376,12 @@ review every resolver declines fails. Each entry is `t3`, `cli` or
 `lets delegate` exit 2. With no `delegate.resolvers`, only `subagent`
 answers.
 
-`review` and `handoff` are optional. `delegate.<strategy>.<intent>.guidance`
-is your advice, in plain words, on which models to use. Its parts are the
-command that reads it and a value `--for` takes: `review.plan`,
-`review.code` or `handoff.apply`. The skill uses it only to rank and leave
-out models. A value that is not a string makes `instructions` exit 2.
+`review`, `handoff` and `step` are optional.
+`delegate.<strategy>.<intent>.guidance` is your advice, in plain words, on
+which models to use. Its parts are the command that reads it and a value
+`--for` takes: `review.plan`, `review.code`, `handoff.apply`, or
+`step.<step>` for one of the five steps, such as `step.apply`. The skill
+uses it only to rank and leave out models. A value that is not a string makes `instructions` exit 2.
 
 Other keys are ignored, so a later `lets` can add settings beside
 `delegate`.
@@ -364,11 +391,11 @@ Other keys are ignored, so a later `lets` can add settings beside
 The resolvers are part of `lets`, so there is nothing to install. List
 the ones you want by name:
 
-| Name | It answers | It needs | A review runs as | A handoff |
-|---|---|---|---|---|
-| [`t3`](docs/resolvers.md#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | Starts a new thread in the sidebar |
-| [`cli`](docs/resolvers.md#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers |
-| [`subagent`](docs/resolvers.md#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Gives back the prompt to start any agent with |
+| Name | It answers | It needs | A review runs as | A handoff | A step |
+|---|---|---|---|---|---|
+| [`t3`](docs/resolvers.md#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | Starts a new thread in the sidebar | Declines, so the next resolver answers |
+| [`cli`](docs/resolvers.md#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers | Declines, so the next resolver answers |
+| [`subagent`](docs/resolvers.md#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Gives back the prompt to start any agent with | Saves the prompt, and exits 3, so the caller runs the step in a subagent |
 
 Each declines where it cannot work, so the first that fits where you are
 answers.

@@ -64,12 +64,27 @@ test('review and handoff under delegate are kept as written, unchecked', () => {
   assert.deepEqual(readConfig(depsWith(text)), { version: 3, delegate: { resolvers: ['subagent'], review: { code: { guidance: 42 } }, handoff: 'apply' } });
 });
 
+test('step under delegate is kept as written, unchecked', () => {
+  const text = 'version: 3\ndelegate:\n  step:\n    apply:\n      guidance: 42\n';
+  assert.deepEqual(readConfig(depsWith(text)), { version: 3, delegate: { step: { apply: { guidance: 42 } } } });
+});
+
 const CONFIG = '/c/config.yaml';
 const withDelegate = (yaml: string) => parseConfig(`version: 3\n${yaml}`, CONFIG);
 
 test('guidanceFor gives the guidance for the strategy and the intent', () => {
   const config = withDelegate('delegate:\n  review:\n    code:\n      guidance: Use the strongest gpt model.\n');
   assert.equal(guidanceFor(config, 'review', 'code', CONFIG), 'Use the strongest gpt model.');
+});
+
+test('guidanceFor gives the guidance for a step', () => {
+  const config = withDelegate('delegate:\n  step:\n    apply:\n      guidance: Use claude/claude-opus-5-5.\n');
+  assert.equal(guidanceFor(config, 'step', 'apply', CONFIG), 'Use claude/claude-opus-5-5.');
+});
+
+test('guidanceFor gives a step no guidance from handoff', () => {
+  const config = withDelegate('delegate:\n  handoff:\n    apply:\n      guidance: Prefer claude.\n');
+  assert.equal(guidanceFor(config, 'step', 'apply', CONFIG), null);
 });
 
 test('guidanceFor keeps a multi-line block whole', () => {
