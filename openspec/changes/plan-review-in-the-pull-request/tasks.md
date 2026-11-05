@@ -15,7 +15,7 @@
 ## 3. Sweep and whole-suite check [depends-on: 2]
 
 - [x] 3.1 [easy] No `review.md`, `VERDICT:` or `CHANGES_APPLIED:` is left in the code, skills, schemas, README, docs or flake outside `docs/decisions/` and the bats file's own list of banned strings; `openspec/specs` changes at archive, so the grep leaves it out. (verify: `! grep -rnE "review\.md|VERDICT:|CHANGES_APPLIED:" --include='*.md' --include='*.yaml' --include='*.ts' --include='*.nix' lets/src skills schemas README.md docs/*.md flake.nix`) (✓ the grep found nothing)
-- [ ] 3.2 [easy] A rehearsed archive in a throwaway worktree under `.workspace/` merges the `lets-go` delta, with its added scenario, and the merged spec holds no `review.md`; then the whole suite and the flake pass. (verify: `pnpm test && nix flake check`)
+- [x] 3.2 [easy] A rehearsed archive in a throwaway worktree under `.workspace/` merges the `lets-go` delta, with its added scenario, and the merged spec holds no `review.md`; then the whole suite and the flake pass. (verify: `pnpm test && nix flake check`) (✓ `pnpm test && nix flake check` passed; the rehearsed archive merged 6 modified requirements)
 
 ## Deviations Ledger
 
@@ -26,3 +26,5 @@
 - 2026-11-04, task 2.1: *Check an earlier review* says to run the check before the first task is built. Each task commit ticks tasks.md, so rule 4 would otherwise call for a new review on every resumed build. Task 2.2 has `lets-build` skip the check once a task is ticked.
 
 - 2026-11-04, task 2.2: *Apply* goes straight to apply once a task is ticked, as the 2.1 note says. Its *Rules* say the plan review's session belongs to `lets-review-plan`, so the rule that the handoff is the only new session stays true.
+
+- 2026-11-04, task 3.2: the merged `lets-go` spec names `review.md` twice, both in the delta's own list of strings the skill must not hold. No requirement relies on the file.
