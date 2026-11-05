@@ -15,7 +15,7 @@
 ## 3. The README and the whole-suite check [depends-on: 2]
 
 - [x] 3.1 [easy] `README.md`'s flows table names `lets-review-build` in *Skills it adds* and in stages 9 and 10. Its *Independent code review* row says `Yes` and `No`, with no link. The *Turning the code review off* section goes. The test fails when `README.md` says `lets-review-code` or `#turning-the-code-review-off`. (verify: `bats tests/skill-interfaces.bats`) (✓ `bats tests/skill-interfaces.bats` passed)
-- [ ] 3.2 [easy] No `lets-review-code` is left in `skills/`, `schemas/`, `overlays/`, `flows.json` or `README.md`. Then the whole suite and the flake pass. (verify: `! grep -rn lets-review-code skills schemas overlays flows.json README.md && pnpm test && nix flake check`)
+- [x] 3.2 [easy] No `lets-review-code` is left in `skills/`, `schemas/`, `overlays/`, `flows.json` or `README.md`. Then the whole suite and the flake pass. (verify: `! grep -rn lets-review-code skills schemas overlays flows.json README.md && pnpm test && nix flake check`) (✓ grep found nothing; `pnpm test` passed, 640 Node and 156 bats tests; `nix flake check` passed)
 
 ## Deviations Ledger
 
