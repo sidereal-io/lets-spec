@@ -94,7 +94,12 @@ test('checkConfig warns once however many lines name lets-review-code', () => {
 });
 
 test('checkConfig ignores lets-review-code in a comment', () => {
-  assert.deepEqual(warningsFor('schema: lets-standard\n# lets-review-code\n  # lets-review-code\nx: 1 # lets-review-code\n'), []);
+  assert.deepEqual(warningsFor('schema: lets-standard\n# lets-review-code\n  # lets-review-code\nx: 1 # lets-review-code\ny: "a" # lets-review-code\n'), []);
+});
+
+test('checkConfig warns about lets-review-code after a # inside quotes', () => {
+  assert.deepEqual(warningsFor('schema: lets-standard\nx: "note # lets-review-code"\n'), [STALE]);
+  assert.deepEqual(warningsFor("schema: lets-standard\nx: 'note # lets-review-code'\n"), [STALE]);
 });
 
 test('checkConfig is quiet for the standard config this release writes', () => {

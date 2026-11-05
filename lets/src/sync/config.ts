@@ -24,8 +24,20 @@ function unquote(raw: string) {
   return withoutComment(raw).trim();
 }
 
-function withoutComment(text: string) {
-  return text.replace(/(^|\s)#.*$/, '');
+// A `#` starts a comment at the line's start or after a space, but not
+// inside a quoted value.
+function withoutComment(line: string) {
+  let quote: string | null = null;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const tokenStart = i === 0 || /[\s[{,]/.test(line[i - 1]);
+    if (quote !== null) {
+      if (quote === '"' && char === '\\') i++;
+      else if (char === quote) quote = null;
+    } else if ((char === '"' || char === "'") && tokenStart) quote = char;
+    else if (char === '#' && (i === 0 || /\s/.test(line[i - 1]))) return line.slice(0, i);
+  }
+  return line;
 }
 
 // The warnings about the project's config. Returns lines; prints nothing.
