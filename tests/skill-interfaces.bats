@@ -196,8 +196,10 @@ schema_step() {
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
-@test "lets-review-plan runs in lets-go's build step" {
-  skill_says lets-review-plan "\`lets-go\`'s build step"
+@test "lets-review-plan runs as lets-go's review plan step" {
+  skill_says lets-review-plan "\`lets-go\`'s review plan step"
+  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-review-plan/SKILL.md" | grep -qF -- "\`lets-go\`'s build step" ||
+    { echo "lets-review-plan still runs in lets-go's build step"; false; }
   run grep -nF 'lets-build' "$repo/skills/lets-review-plan/SKILL.md"
   [ "$status" -eq 1 ] || { echo "lets-review-plan still names lets-build: $output"; false; }
 }
@@ -279,6 +281,11 @@ skill_says() {
     skill_says "$skill" "--model <first> --model <second>"
     skill_says "$skill" "delegate.review.$intent.guidance"
   done
+}
+
+@test "lets-review-plan starts from the change alone" {
+  grep -qx '## Start' "$repo/skills/lets-review-plan/SKILL.md" || { echo "lets-review-plan has no Start"; false; }
+  skill_says lets-review-plan "git log --format='%(trailers:key=Co-Authored-By,valueonly)'"
 }
 
 @test "lets-review-plan records in the pull request, and checks an earlier review" {
