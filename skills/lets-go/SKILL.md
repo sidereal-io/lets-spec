@@ -1,19 +1,19 @@
 ---
 name: lets-go
-description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Given nothing, it takes the next ready issue on the backlog. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, plan, review plan, build and review build each run in a fresh session, and lets-minimal skips review plan. Every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation; a story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, wants to start the next story or carry on the change on the current branch, says lets-go, or runs lets-go again after a run stopped.
+description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Given nothing, it takes the next ready issue on the backlog. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, plan, review plan, build and review build each run in a fresh session. lets-minimal skips review plan. Every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation. A story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch, it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, or wants to start the next story. Also use when the user wants to carry on the change on the current branch, says lets-go, or runs it again after a run stopped.
 ---
 
 # Let's go
 
 Take one story, bug or chore to a pull request ready for review, in one
 run. Start from its issue number, from an idea in words, or from
-nothing, which takes the next ready issue. *Start*
-claims the issue in this session. Then each step runs in a fresh
-session: shape when the issue needs it, then plan, review plan, build
-and review build. `lets-minimal` skips review plan. An idea too large for one issue
-runs discovery in the shape step, and the run builds the first ready
-story it files. A step never asks the user. It ends with a report. This
-session answers its questions or asks the user, as the interactivity
+nothing, which takes the next ready issue. *Start* claims the issue in
+this session. Then each step runs in a fresh session: shape when the
+issue needs it, then plan, review plan, build and review build.
+`lets-minimal` skips review plan. An idea too large for one issue runs
+discovery in the shape step, and the run builds the first ready story it
+files. A step never asks the user: it ends with a report. This session
+answers the step's questions or asks the user, as the interactivity
 level says. Run every command below from the repo root.
 
 A run can stop part way. Run `lets-go` again, on the default branch or
@@ -33,7 +33,7 @@ unfinished step.
    It prints one JSON line, such as `{"level":"recommend"}`. Keep its
    `level` for the whole run: `ask`, `recommend`, or `null` when the
    `lets` config sets none. If it exits non-zero, show the user its
-   stderr, and stop: claim nothing, and run no step. Then find the
+   stderr and stop: claim nothing, and run no step. Then find the
    default branch with
    `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`,
    and run `git branch --show-current`.
@@ -47,14 +47,15 @@ unfinished step.
 
    Then find the issue, `<i>`:
    - **On the default branch**, a number is `<i>`. An idea goes to
-     [Start from an idea](#start-from-an-idea). With nothing, run
-     [Find the source of demand](#find-the-source-of-demand), its third
-     case, `next`, over the whole backlog. When it selects an issue,
-     print `Picked #<n>: <title>, the next ready issue.` That issue is
-     `<i>`. When nothing is ready, that case's stop stands.
-   - **On another branch**, `<branch>`, given words, say that an idea
-     needs the default branch, and stop. Otherwise search for the
-     change's issue:
+     [Start from an idea](#start-from-an-idea). With nothing, run the
+     third case, `next`, of
+     [Find the source of demand](#find-the-source-of-demand), over the
+     whole backlog. When `next` picks an issue, print
+     `Picked #<n>: <title>, the next ready issue.` That issue is `<i>`.
+     When nothing is ready, the stop in `next` stands.
+   - **On another branch**, `<branch>`: when the request is words, say
+     that an idea needs the default branch, and stop. Otherwise search
+     for the change's issue:
 
      ```bash
      gh issue list --state open --search "<branch> in:title" --json number,title
@@ -68,27 +69,27 @@ unfinished step.
      needs the issue number on a change's branch. Stop. If several
      match, say that `lets-go` needs the issue number, and stop.
 3. Run [Find the source of demand](#find-the-source-of-demand) for
-   `<i>`, as for a named issue.
-   Read its blockers with `gh issue view <i> --json title,blockedBy`, so
-   you have the title too. `<name>` is the change's name, as *Claim*
-   names it from the title. On a change's branch, it is `<branch>`. When
-   a blocker is open, look for the change's branch before you stop, as
-   step 7 does:
+   `<i>`, as for a named issue. Read its blockers with
+   `gh issue view <i> --json title,blockedBy`, which gives the title
+   too. `<name>` is the change's name, which *Claim* takes from the
+   title. On a change's branch, it is `<branch>`. When a blocker is
+   open, look for the change's branch before you stop, as step 7 does:
    - **The branch exists**, here or on `origin`: the user has stacked it
      by hand. Name the open blockers by number, and go on with the rest
-     of the section: its *Check the prerequisite* still runs, and its stop
-     stands. On a change's branch, the branch exists: you are on it.
+     of *Find the source of demand*: its *Check the prerequisite* still
+     runs, and its stop stands. On a change's branch, the branch exists:
+     you are on it.
    - **It does not exist:** the stop stands, as the section reports it.
 
    Any other stop in that section stands as the section reports it.
-4. Run [Confirm the packet](#confirm-the-packet). Three of its stops say to
-   run `lets-shape` on #<i>: the issue is not shaped, a line is missing
-   or a placeholder, or comments are unread. On the default branch, when
-   no shape step has run in this run, set that stop aside, and
-   [run the shape step](#run-the-shape-step) for #<i>. Any other stop
-   stands, as the section reports it. An Epic stops there: it is built
-   through its stories. For a Story with a parent, it reads the parent's
-   **Shared decisions**: *Route* needs them.
+4. Run [Confirm the packet](#confirm-the-packet). Three of its stops say
+   to run `lets-shape` on #<i>: the issue is not shaped, a line is
+   missing or a placeholder, or comments are unread. On the default
+   branch, when no shape step has run in this run, set that stop aside
+   and [run the shape step](#run-the-shape-step) for #<i>. Any other
+   stop stands, as the section reports it. An Epic stops there: it is
+   built through its stories. For a Story with a parent, the section
+   reads the parent's **Shared decisions**: *Route* needs them.
 5. When *Confirm the packet* passes, shape is done. When a shape step
    reported `done` in this run, print its line. `<date>` is the report's
    `date`, and `<evidence>` is its `evidence`, joined with `; `:
@@ -104,15 +105,15 @@ unfinished step.
    ```
 
    Here `<date>` is the day of the issue's `lastEditedAt`, from the thread
-   query in *Confirm the packet*, as `YYYY-MM-DD`. When it is null, the
-   body was never edited. Use the day the issue was created:
+   query in *Confirm the packet*, as `YYYY-MM-DD`. When `lastEditedAt`
+   is null, the body was never edited. Use the day the issue was
+   created:
 
    ```bash
    gh issue view <i> --json createdAt --jq .createdAt
    ```
 
-6. Run [Route](#route). Keep the route line: the plan step needs
-   it.
+6. Run [Route](#route). Keep the route line: the plan step needs it.
 7. On the default branch, look for the change's branch, here and on
    `origin`:
 
@@ -121,19 +122,20 @@ unfinished step.
    git ls-remote --heads origin refs/heads/<name>
    ```
 
-   - **Neither prints a line:** run [Claim](#claim). A stop it
-     makes stands. When its glossary preflight found owned edits, also
-     run *Import the glossary checkpoint*. *Claim* creates the branch.
-     Then [commit the discovery map](#commit-the-discovery-map).
+   - **Neither prints a line:** run [Claim](#claim), which creates the
+     branch. A stop it makes stands. When its glossary preflight found
+     owned edits, also run *Import the glossary checkpoint*. Then
+     [commit the discovery map](#commit-the-discovery-map).
    - **Either prints a line:** the change has started. Do not run
      *Claim*. When `git ls-remote` printed it, run
      `git fetch origin <name>` first: `git switch` finds a branch on
      `origin` only once it is fetched. Then run `git switch <name>`.
 
-   When step 3 has looked already, use what it found. Stay on `<name>`
-   for the whole run.
+   When step 3 has looked already, use what it found.
+   Stay on `<name>` for the whole run.
 8. When `origin` has the branch, bring it up to date before you read any
-   record. On a change's branch, run the `git ls-remote` above to check.
+   record. On a change's branch, run the `git ls-remote` of step 7 to
+   check.
 
    ```bash
    git fetch origin <name>
@@ -170,8 +172,8 @@ unfinished step.
     user every question.
 
 *Start* runs in this session. It is not a step, and has no step report.
-The shape step it runs is a step, and has a report. After *Start*,
-[walk the step table](#walk-the-step-table).
+The shape step it runs is a step, and has a report. After
+*Start*, [walk the step table](#walk-the-step-table).
 
 ### Find the source of demand
 
@@ -197,14 +199,17 @@ query($owner: String!, $name: String!) {
       | map(select(.closed | not) | {number, title, url, owner: .owner.login}) | unique_by(.owner, .number))}'
 ```
 
-The query lists the Projects linked to the repository, and the owner's Projects that link back to it. A user-owned Project can be missing from the repository's own listing for a while after it is linked, so neither list alone is enough.
+The query lists the Projects linked to the repository, and the
+owner's Projects that link back to it. A user-owned Project can be
+missing from the repository's own listing for a while after it is
+linked, so neither list alone is enough.
 
 - **One Project:** use its `number` as `<n>` and its `owner` as
-  `<owner>` in every `gh project` command below. `repo` is the
-  repository, as `owner/name`.
+  `<owner>` in every `gh project` command below. The query's `repo` is
+  the repository, as `owner/name`.
 - **None:** say to run the `lets-setup-backlog` skill, and stop.
-- **Two or more:** list each one's title and URL, ask the user to unlink
-  the extras, and stop. Never pick one yourself.
+- **Two or more:** list each Project's title and URL, ask the user to
+  unlink the extras, and stop. Never pick one yourself.
 
 Then take the first case that applies:
 
@@ -216,9 +221,9 @@ Then take the first case that applies:
    `gh issue list --state open --search "<words> in:title" --json number,title`.
    If one matches, confirm with the user that it is the same work. If
    none does, say to run the `lets-shape` skill on it, and stop.
-3. **Otherwise, take `next`.** List the Todo, prioritized candidates on
-   the Project. Any Kind but Epic counts, and items from other
-   repositories are left out:
+3. **Otherwise, take `next`.** List the Project's Todo candidates with a
+   priority of Must, Should or Could. Any Kind but Epic counts, and
+   items from other repositories are left out:
 
    ```bash
    gh project item-list <n> --owner <owner> --format json --limit 500 \
@@ -239,14 +244,15 @@ Then take the first case that applies:
    none, say the backlog has nothing ready, suggest the `lets-shape`
    skill to shape more, and stop.
 
-Before you select `next`, run only
+Before you pick `next`, run only
 [Check the prerequisite](#check-the-prerequisite) on each candidate, in
-rank order. Fetching, the commit checks and the rehearsal wait for Claim,
-and only for the candidate you select. Skip a candidate with an unresolved
-prerequisite. If none is left, say the backlog has nothing ready, suggest
-the `lets-shape` skill, and stop, without selecting a candidate or
-confirming a packet. For a named issue, report the unresolved owner or
-checkpoint, and stop. Otherwise, go on to [Confirm the packet](#confirm-the-packet).
+rank order. Fetching, the commit checks and the rehearsal wait for
+*Claim*, and run only for the candidate you pick. Skip a candidate with
+an unresolved prerequisite. If none is left, say the backlog has
+nothing ready, suggest the `lets-shape` skill, and stop, without picking
+a candidate or confirming a packet. For a named issue, report the
+unresolved owner or checkpoint, and stop. Otherwise, go on to
+[Confirm the packet](#confirm-the-packet).
 
 ### Confirm the packet
 
@@ -274,23 +280,24 @@ issue templates:
 | Story, and any Kind this table does not name | the one-line outcome, **Persona served**, **Journey segment**, **MoSCoW**, **Why this story / why now**, **Depends on**, **Scope**, **Relevant code** |
 
 If a line is missing, or still holds a placeholder in angle brackets,
-name it, say to run the `lets-shape` skill on #<i>, and stop. Never write
-or fix the packet yourself.
+name it, say to run the `lets-shape` skill on #<i>, and stop. Never
+write or fix the packet yourself.
 
 Then read the issue's thread as
 [Issue comments](../lets-shape/references/issue-comments.md) says. Read
 a comment's first line only, to find read markers. The watermark is the
 later of the body's last edit and the newest read marker. When neither
-exists, every comment is after it. A comment created or edited after the
-watermark stops the run, whoever wrote it. A read marker never does. To
-stop, say how many comments shaping has not read. Give each one's author
-as the reference shows it, and the date that put it past the watermark:
-its edit date, else its creation date. Show nothing of what a comment
-says. Say to run the `lets-shape` skill on #<i>, and stop.
+exists, every comment is after it. A comment created or edited after
+the watermark stops the run, whoever wrote it. A read marker never does.
+
+To stop, say how many comments shaping has not read. Give each one's
+author as the reference shows it, and the date that put it past the
+watermark: its edit date, else its creation date. Show nothing of what
+a comment says. Say to run the `lets-shape` skill on #<i>, and stop.
 
 For a Story with a parent, read the parent's **Shared decisions**
-section, when it has one: `gh issue view <parent> --json body`. The
-route needs it.
+section, when it has one: `gh issue view <parent> --json body`. *Route*
+needs it.
 
 ### Route
 
@@ -319,9 +326,9 @@ record. These steps check it. "You" is the agent.
 1. Read **Glossary handoff** in the story, and in any shaping parent or
    owner issue it references. A missing blocker link does not mean the
    story is ready.
-2. If another issue owns the definitions the story needs, check that its
-   pull request has merged, and that the definitions are on the proposed
-   base. A pull request closed without merging is not enough.
+2. If another issue owns the definitions the story needs, check that the
+   owner's pull request has merged, and that the definitions are on the
+   proposed base. A pull request closed without merging is not enough.
 3. Treat each of these as unresolved: an undecided owner, a declined
    blocker link with an unmerged owner, or definitions missing from the
    base. For `next`, skip the candidate. For a named issue, report it,
@@ -331,8 +338,8 @@ record. These steps check it. "You" is the agent.
 
 #### Check the checkpoint
 
-Run these steps once, after Claim's branch-existence check passes, and
-only when this story is the owner of the glossary edits.
+Run these steps only when this story owns the glossary edits. Run them
+once, after the branch check in *Claim* step 2 passes.
 
 5. Read the starting base, the owned paths, the remote URL and branch,
    and the ordered checkpoint commits. Fetch the recorded branch if you
@@ -388,8 +395,8 @@ adds, beside [the discovery map commit](#commit-the-discovery-map).
    lines printed for the lost issue stand. When the user named it, say
    who has it, and stop.
 4. Create a branch with the change's name off the default branch. If
-   this fails, release the claim, so another session can pick the issue
-   up, and stop:
+   creating the branch fails, release the claim, so another session can
+   pick the issue up, and stop:
 
    ```bash
    gh issue edit <i> --remove-assignee @me
@@ -398,11 +405,11 @@ adds, beside [the discovery map commit](#commit-the-discovery-map).
 
 ### Import the glossary checkpoint
 
-Run this after *Claim* created the branch, before
-[Walk the step table](#walk-the-step-table) reads
-the tree, and only when [Glossary preflight](#glossary-preflight) found
-owned edits. A resumed change has its glossary edits committed already,
-and needs no transfer and no new claim.
+Run this section only when [Glossary preflight](#glossary-preflight)
+found owned edits. Run it after *Claim* created the branch, and before
+[Walk the step table](#walk-the-step-table) reads the tree. A resumed
+change has its glossary edits committed already, and needs no transfer
+and no new claim.
 
 #### Import the commits
 
@@ -424,11 +431,11 @@ If the import fails:
    work beyond its starting base. If earlier picks survived on it, keep
    it, and report how to recover. Never delete an existing change branch,
    and never reset unrelated commits.
-4. Release the claim with the same commands as a failed branch creation in
-   [Claim](#claim): remove your assignment, and set Status back to Todo.
-   Do this even if the Git cleanup failed.
-5. Report every cleanup failure, and anything kept: the branch, commits or
-   claim. Then stop.
+4. Release the claim with the same commands as a failed branch creation
+   in [Claim](#claim): remove your assignment, and set Status back to
+   Todo. Do this even if the Git cleanup failed.
+5. Report every cleanup failure, and anything kept: the branch, commits
+   or claim. Then stop.
 
 ### Start from an idea
 
@@ -443,16 +450,17 @@ If the import fails:
    discovery of this idea is in progress at #<p>. Skip the search below,
    and [run the shape step](#run-the-shape-step) for the idea: its round
    resumes that parent.
-2. Run [Find the source of demand](#find-the-source-of-demand), its
-   second case: the
-   user described work but named no issue. It searches open issue titles
-   for the idea's words. Show the user the matches, and ask whether one
-   is the same work. Ask at either level: a wrong yes builds someone
-   else's issue.
-3. On a yes, that issue is `<i>`. Go on from step 3.
+2. Run the second case of
+   [Find the source of demand](#find-the-source-of-demand): the user
+   described work but named no issue. It searches open issue titles for
+   the idea's words. Show the user the matches, and ask whether one is
+   the same work. Ask at either level: a wrong yes builds someone else's
+   issue.
+3. On a yes, that issue is `<i>`. Go on from *Start* step 3, the blocker
+   read.
 4. On a no, or when nothing matches, set aside that case's stop, which
-   says to run `lets-shape`. [Run the shape step](#run-the-shape-step)
-   for the idea.
+   says to run `lets-shape`.
+   [Run the shape step](#run-the-shape-step) for the idea.
 
 ### Run the shape step
 
@@ -465,38 +473,40 @@ most once per run: after it, a stop that *Confirm the packet* makes
 stands.
 
 1. Check the discovery map. Run `git status --porcelain`. When it lists
-   `openspec/discovery.md`, look for this input's discovery: an open
-   parent issue that says `Discovery status: in-progress`, and whose
-   `Input:` line names this input, the idea's words or #<i>. For an idea,
-   use what *Start from an idea* found. For an issue, run the query it
-   names.
+   `openspec/discovery.md`, look for this input's discovery: an open parent issue that says
+   `Discovery status: in-progress`, and whose `Input:` line names this
+   input, the idea's words or #<i>. For an idea, use what *Start from an
+   idea* found. For an issue, run the query in step 1 of *Start from an
+   idea*.
    - **There is one:** the edits are that discovery's confirmed phases.
      Go on: the step resumes it, and its map commit takes them.
    - **There is none:** say that the map has uncommitted edits, and to
-     commit or discard them. Stop, and run no step. Otherwise a
-     discovery's commit could sweep those edits in.
+     commit or discard them. Stop, and run no step. If the run went on,
+     a discovery's commit could sweep those edits in.
 2. Set `<level>` and print its line. There is no Kind yet, so take the
-   first of these that is set: the level the user named, then the level
-   *Start* step 1 kept, when it is not `null`, then `ask`. The lines are
-   `Interactivity: <level>, because you asked for it.`,
-   `Interactivity: <level>, because your lets config sets go.level.`, and
-   for `ask` with neither:
+   first of these that is set:
+   1. The level the user named. Its line is
+      `Interactivity: <level>, because you asked for it.`
+   2. The level `lets go level` printed in *Start* step 1, when it is
+      not `null`. Its line is
+      `Interactivity: <level>, because your lets config sets go.level.`
+   3. `ask`, when neither is set. Its line is:
 
-   ```text
-   Interactivity: ask, because shape has not run yet.
-   ```
+      ```text
+      Interactivity: ask, because shape has not run yet.
+      ```
 
 3. For an idea, check that the answers file is this idea's. Two ideas
    can share their first five words, and so their `<name>`. When
    `.workspace/lets-go/<name>-shape-prompt.md` exists and holds another
-   idea, an earlier run stopped part way on that one. Remove
-   `.workspace/lets-go/<name>-shape-answers.yaml` before you write the
-   prompt.
+   idea, an earlier run stopped part way on that other idea. In that
+   case, remove `.workspace/lets-go/<name>-shape-answers.yaml` before
+   you write the prompt.
 4. Run the `shape` step, as [Run a step](#run-a-step) says.
 5. When it reports `done`, [Read the report](#read-the-report) says
    what it shaped:
-   - **One issue:** that issue is `<i>`. Go on from step 3 with it, as
-     for an issue number.
+   - **One issue:** that issue is `<i>`. Go on from *Start* step 3, the
+     blocker read, with it, as for an issue number.
    - **A parent and its stories:**
      [pick the first ready story](#pick-the-first-ready-story).
 
@@ -505,26 +515,27 @@ stands.
 Discovery filed a parent issue, `#<p>`, and its stories. Build one of
 them in this run.
 
-1. Run [Find the source of demand](#find-the-source-of-demand), its
-   third case, `next`, with one narrowing: the candidates are the stories
-   the report named, and no other issue. Run that case's two commands as
-   the section writes them. Rank as it does: Must, then Should, then
-   Could, then the lowest issue number. Run its *Check the prerequisite*
-   on each candidate, in rank order. A ready story is one that `next`
-   would take.
+1. Run the third case, `next`, of
+   [Find the source of demand](#find-the-source-of-demand), with one
+   narrowing: the candidates are the stories the report named, and no
+   other issue. Run its two commands as the section writes them. Rank
+   as it does: Must, then Should, then Could, then the lowest issue
+   number. Run *Check the prerequisite* on each candidate, in rank order.
+   A ready story is one that `next` would take.
 2. When a story is ready, print:
 
    ```text
    Picked #<n>: <title>, the first ready story under #<p>.
    ```
 
-   That story is `<i>`. Go on from step 3 with it, as for an issue
-   number.
-3. When no story is ready, print the `Done shape` line of *Start*, step 5. Say
-   that no story under #<p> is ready. Name each story, and why it was
-   left out: for example, its blocker, its assignee, or an unresolved
-   prerequisite. Say to run `lets-go` with a story's number once it is
-   ready. Then stop. Claim nothing, and create no branch.
+   That story is `<i>`. Go on from *Start* step 3, the blocker read,
+   with it, as for an issue number.
+3. When no story is ready, print the `Done shape` line that *Start*
+   step 5 shows. Say that no story under #<p> is ready. Name each story,
+   and why it was left out: for example, its blocker, its assignee, or
+   an unresolved prerequisite. Say to run `lets-go` with a story's
+   number once it is ready. Then stop. Claim nothing, and create
+   no branch.
 
 A run that stops after discovery and before *Claim*, for any reason,
 leaves the map's edits on the default branch. When
@@ -538,11 +549,11 @@ the map before the next run, because the next run stops on it.
 ### Commit the discovery map
 
 Discovery edits `openspec/discovery.md` on the default branch, and the
-new branch carries the edits with it. Commit them there, before
-[Walk the step table](#walk-the-step-table) reads
-the tree. Do this only when a shape step ran in this run, and
-`git status --porcelain` lists `openspec/discovery.md`. Otherwise make
-no commit.
+new branch carries the edits with it. When a shape step ran in this
+run, and `git status --porcelain` lists `openspec/discovery.md`, commit
+the edits on the new branch, before
+[Walk the step table](#walk-the-step-table) reads the tree. Otherwise
+make no commit.
 
 ```bash
 git add openspec/discovery.md
@@ -585,18 +596,18 @@ order:
 Then walk [The step table](#the-step-table) from the top row. At each
 row, find out whether the step is done:
 
-- **Shape** is done: *Start* passed *Confirm the packet*.
+- **Shape.** When *Start* passed *Confirm the packet*, shape is done.
 - **Plan.** When the archive folder exists, plan is done. When
   `openspec/changes/<name>/` does not exist, plan is not done.
   Otherwise run `openspec instructions apply --change <name> --json`,
-  and read its `state`. Plan is done when it is `ready` or `all_done`,
-  and not done when it is `blocked`. For any other `state`, show the
-  user the CLI's `instruction`, and stop. When
+  and read its `state`. When the `state` is `ready` or `all_done`, plan
+  is done. When the `state` is `blocked`, plan is not done. For any
+  other `state`, show the user the CLI's `instruction`, and stop. When
   `openspec/changes/<name>/brainstorm.md` exists and the branch has no
   pull request, the records disagree. The tree is clean, so the file is
   committed.
 - **Review plan.** On `lets-minimal`, it is done once plan is done. When
-  the archive folder exists, it is done, but the records disagree if the
+  the archive folder exists, it is done. But the records disagree if the
   pull request's `body` has no **Plan review** section with a
   `Reviewed:` line and a `- **Verdict:**` line. No step can write the
   section once the change is archived. Otherwise read the pull
@@ -611,17 +622,18 @@ row, find out whether the step is done:
   Follow *Check an earlier review* in the `lets-review-plan` skill. Its
   four rules say when a new round is needed. It then says when the
   review is finished, with the fix commits under `APPROVE_WITH_CHANGES`.
-  Review plan is done when no rule calls for a new round and the review
-  is finished. Its reads change nothing:
+  When no rule calls for a new round and the review is finished, review
+  plan is done. Its reads change nothing:
   `git merge-base --is-ancestor`, `git log` and `git show`. When review
   plan is not done, run it, whatever the state.
 - **Build.** When the archive folder exists, build is done. Otherwise
   run `openspec instructions apply --change <name> --json` again, even
-  when the plan row has run it. A review plan round can add a task to a
-  built change. Build is done when the `state` is `all_done`. Any
-  `state` other than `blocked`, `ready` or `all_done` stops the run, as
-  for plan.
-- **Review build** is done when the archive folder exists.
+  when the plan row has run it, because a review plan round can add a
+  task to a built change. When the `state` is `all_done`, build is
+  done. Any `state` other than `blocked`, `ready` or `all_done` stops
+  the run, as for plan.
+- **Review build.** When the archive folder exists, review build is
+  done.
 
 Read a row's record when you reach the row, not before. A step that runs
 in this walk changes the records the next row reads.
@@ -648,16 +660,16 @@ choice.
 |---|---|
 | `git status --porcelain` lists a path outside `.workspace/` | Commit or discard the path. |
 | The branch and `origin/<name>` have diverged | Reconcile the two, and push. |
-| A change folder and an archive folder for the same name | Keep the one that is right, and remove the other. |
+| A change folder and an archive folder for the same name | Keep the folder that is right, and remove the other. |
 | An archive folder, and the pull request is missing or a draft, or has no `Code review` section on `lets-standard` | Open the pull request, review it, or mark it ready, as `lets-review-build` does. Or revert the archive commit. |
 | `brainstorm.md` is committed, and the branch has no pull request | Push the branch, and open the draft pull request. |
 | An archived change on a schema other than `lets-minimal`, and the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line | Review the plan with the `lets-review-plan` skill, which writes the section. Or revert the archive commit. |
-| A `git log` read for a skipped step finds no commit | Name the command. The step's record is missing: find out why. |
+| A `git log` read for a skipped step finds no commit | Name the command, and find out why the step's record is missing. |
 
-Each case names what you found, such as the path, or the pull request's
-`isDraft`. A built change that is not archived, and whose pull request
-has no **Plan review** section, is not a disagreement. The walk reaches
-review plan first, and runs it.
+The printed line names what you found, such as the path, or the pull
+request's `isDraft`. A built change that is not archived,
+and whose pull request has no **Plan review** section, is not a
+disagreement. The walk reaches review plan first, and runs it.
 
 ## The step table
 
@@ -686,9 +698,9 @@ The state is the `state` that
 
 ### Read the records
 
-Each skip line is dated by one read. `<date>` is the commit's author
-date, from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is the
-short hash, from `%h`. A read that prints nothing means the
+One read dates each skip line. `<date>` is the commit's author date,
+from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is
+the short hash, from `%h`. A read that prints nothing means the
 [records disagree](#records-that-disagree).
 
 - **Shape.** *Start* step 5 reads the issue's last edit, and prints the
@@ -727,7 +739,7 @@ short hash, from `%h`. A read that prints nothing means the
   git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/archive/<YYYY-MM-DD>-<name>/tasks.md
   ```
 
-The plan and build reads work after archive too. Archive deletes the
+The plan and build reads work after archive too. Archive removes the
 old path, and its history keeps the add and the ticks.
 
 ### The change's name
@@ -750,7 +762,7 @@ use the change's name: the review plan step runs with
 
 ## Write the prompt
 
-Create the folder first, if it is missing: `mkdir -p .workspace/lets-go`.
+If the folder is missing, create it first: `mkdir -p .workspace/lets-go`.
 Then write the frame below to `.workspace/lets-go/<name>-<step>-prompt.md`.
 Fill in each `<...>`. `<schema>`, `<level>` and `<route line>` are the
 ones *Start* set. Under *What to run*, put this sentence. `<skill>` is
@@ -760,8 +772,8 @@ the skill in the step's row of [The step table](#the-step-table):
 Invoke the `<skill>` skill for the change `<name>`, for issue #<i>, and stop where it stops.
 ```
 
-For shape, put the text of [What shape runs](#what-shape-runs) there
-instead.
+For shape, put the text of [What shape runs](#what-shape-runs) under
+*What to run* instead.
 
 For shape, the first two lines differ. There is no change, the branch is
 the default branch, `<default>`, and *Route* has not run, so there is no
@@ -849,7 +861,8 @@ holds `#` or `: `. Put no other step-report block in the message.
 
 The shape step runs `lets-shape`. It shapes one issue, or runs discovery
 when the work is too large for one issue. A fresh round must find the
-discovery an earlier round started, so the text orders where to start.
+discovery an earlier round started, so the text lists where to start, in
+order.
 
 ```text
 Run the `lets-shape` skill. Start at the first of these that matches:
@@ -955,7 +968,7 @@ file names the prompt `lets` saved,
 prompt, with any answers added.
 
 1. Run that prompt in a subagent that starts with no context from this
-   session, and may write files. It works in the repository root, on the
+   session, and may write files. It works in the repo root, on the
    branch `<name>`. For shape, it works on the default branch.
 2. Read the last `step-report` block in the subagent's final message, by
    the rules `lets` uses:
@@ -992,16 +1005,17 @@ evidence line is one of these:
 When the first line is in neither form, the report is `failed`, and its
 reason is that the shape step named no issue. When it is an `epic` line
 and no `story` line follows, the report is `failed`, and its reason is
-that the shape step named no story. Once shape reports `done` or `failed`, remove
+that the shape step named no story.
+
+Once shape reports `done` or `failed`, remove
 `.workspace/lets-go/<name>-shape-answers.yaml`. Nothing resumes a
-finished shape, and a later idea or a second shape of the same issue
-must start with no answers.
+finished shape. A later idea, or a second shape of the same issue, must
+start with no answers.
 
 - **`done`**: after `shape`, go back to *Start*, as
   [Run the shape step](#run-the-shape-step) says. After any other step,
   print its `Done` line, as [End of the run](#end-of-the-run) says, and
-  go on to the next row of the
-  [walk](#walk-the-step-table).
+  go on to the next row of the [walk](#walk-the-step-table).
 - **`needs-input`**: [relay its questions](#relay-the-questions).
 - **`failed`**: print its `Failed` line, as
   [End of the run](#end-of-the-run) says. The walk ends here. Name the
@@ -1022,11 +1036,10 @@ file per step.
    again, name the step, show the user the report, and stop.
 2. Go through the questions in the report's order, as `<level>` says:
    - **At `recommend`, with a `recommendation`**: take it as the answer.
-     Tell the user the question and the answer you gave. Write the answer
-     as the recommendation followed by
+     Say which question you answered, and the answer you gave. Write the
+     answer as the recommendation followed by
      ` (lets-go accepted the step's recommendation; the user did not decide)`.
-   - **At `recommend`, without one**: ask the user that question alone.
-     Wait for the answer before the next question.
+   - **At `recommend`, without one**: ask the user that question alone. Wait for the answer before the next question.
    - **At `ask`**: ask the user every question, one at a time. Show the
      `recommendation`, when there is one, as the suggested answer. Wait
      for each answer before the next question. Write the answer as the
@@ -1052,10 +1065,10 @@ A step's rounds go on until its report is `done` or `failed`.
 
 ## End of the run
 
-The walk prints each row's line when it settles the row: `Skipped` when
-the step was done before this run, `Done` after a `done` report, and
-`Failed` after a `failed` one. A step can take an hour, so print each
-line as it comes. A run's lines look like this:
+The walk prints each row's line when it settles the row. The line is
+`Skipped` when the step was done before this run, `Done` after a `done`
+report, and `Failed` after a `failed` one. A step can take an hour,
+so print each line as it comes. A run's lines look like this:
 
 ```text
 Skipped shape: #<i>'s packet is complete, last edited <date>.
