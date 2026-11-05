@@ -308,7 +308,8 @@ builds. When it stops, read `state` once more with
 - `ready` means the plan is finished. Offer the handoff: ask the user
   whether to build it in a fresh session named `<name>` with the prompt
   `Run lets-build on branch <name>`, or to stop here. On no, say that
-  running `lets-build` on this branch builds the plan. On yes:
+  running `lets-build` on this branch builds the plan. On
+  `lets-standard`, the build has the plan reviewed first. On yes:
   1. Write the prompt to `.workspace/<name>-handoff-prompt.md`.
   2. Ask what can run. From the repo root, run:
 
@@ -348,8 +349,26 @@ builds. When it stops, read `state` once more with
 
 ## Apply
 
-Invoke the `openspec-apply-change` skill for the change `<branch>`. The
-schema's apply instruction works the tasks, then comes to
+Have the plan reviewed first, when the change's schema calls for it.
+Read the `schema:` line of `openspec/changes/<branch>/.openspec.yaml`,
+and take the first case that applies:
+
+1. **Any schema but `lets-standard`.** Go straight to apply.
+2. **A task is ticked.** `progress.complete` is above 0 in the output
+   that *Find where you are* read. The build started after the review.
+   Go straight to apply.
+3. **`schema: lets-standard`.** Read the pull request's body with
+   `gh pr view --json body`. When it has no **Plan review** section, run
+   the `lets-review-plan` skill on the change. Otherwise, follow that
+   skill's *Check an earlier review*, and run the skill again only when
+   the check says to. The skill runs its own rounds. If it stops to ask
+   the user, stop too.
+
+Go on to apply only when the review is finished, as *Check an earlier
+review* says.
+
+Then invoke the `openspec-apply-change` skill for the change `<branch>`.
+The schema's apply instruction works the tasks, then comes to
 [Finish the change](#finish-the-change) when every task is done.
 
 ## Finish the change
@@ -380,7 +399,8 @@ ready.
   verified glossary commits. It allows no other edits.
 - One issue per run.
 - The handoff is the only new session this skill starts, and only after
-  the user says yes.
+  the user says yes. The plan review's session is the `lets-review-plan`
+  skill's.
 - Change requests on a pull request are not yours to handle. If the
   user is fixing them, as the workflow rules in `AGENTS.md` describe,
   run only after every fix is committed.

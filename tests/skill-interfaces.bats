@@ -267,6 +267,15 @@ skill_says() {
   skill_says lets-build "If it exits 3, every model was refused: show the user its stderr, and stop."
 }
 
+@test "lets-build has the plan reviewed before it builds on lets-standard" {
+  skill_says lets-build 'schema: lets-standard'
+  skill_says lets-build 'openspec/changes/<branch>/.openspec.yaml'
+  skill_says lets-build '`lets-review-plan` skill'
+  skill_says lets-build "*Check an earlier review*"
+  skill_says lets-build '`openspec-apply-change` skill'
+  skill_says lets-build 'On `lets-standard`, the build has the plan reviewed first.'
+}
+
 @test "lets-go's Start names lets-build's sections and adds one command" {
   local section
   for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Claim'; do
