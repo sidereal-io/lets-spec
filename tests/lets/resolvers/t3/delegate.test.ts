@@ -349,14 +349,14 @@ test('a bare-family handoff launches with the token the catalogue request issued
 test('a step inside T3 Code opens no thread, and the default answers', async () => {
   const sent: Sent = [];
   const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3, subagent] }\n', real: { t3: createAdapter(insideT3({ sent })) } });
-  assert.equal(await step({ for: 'apply', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['claude'] }, t.deps), 3);
+  assert.equal(await step({ for: 'build', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['claude'] }, t.deps), 3);
   assert.deepEqual(sent, []);
   assert.ok(t.savedFile('.workspace/lets-delegate/build-x.prompt.md'), 'the default saved the prompt');
 });
 
 test('step instructions inside T3 Code decline when t3 is the only resolver', async () => {
   const t = withT3(insideT3());
-  assert.equal(await instructions({ strategy: 'step', for: 'propose' }, t.deps), 2);
+  assert.equal(await instructions({ strategy: 'step', for: 'plan' }, t.deps), 2);
   assert.equal(t.stdout(), '');
   assert.match(t.stderr(), /every resolver declined/);
 });

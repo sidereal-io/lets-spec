@@ -81,7 +81,7 @@ test('handoff instructions skip cli with codex on PATH, running nothing, and the
   assert.deepEqual(io.calls, []);
 });
 
-const stepInstructions = { strategy: 'step', for: 'apply' } as const;
+const stepInstructions = { strategy: 'step', for: 'build' } as const;
 const CLI_THEN_DEFAULT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
 
 test('step instructions answer cli with the models codex lists', async () => {
@@ -102,7 +102,7 @@ test('step instructions list the bare family when codex is signed out, and warn 
 test('with no family CLI on PATH, the default answers a step next, starting nothing', async () => {
   const io = fakeIo({ commands: [] });
   const t = withCli(io, CLI_THEN_DEFAULT);
-  assert.equal(await step({ for: 'apply', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['claude'] }, t.deps), 3);
+  assert.equal(await step({ for: 'build', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['claude'] }, t.deps), 3);
   assert.match(t.stderr(), /\.workspace\/lets-delegate\/build-x\.prompt\.md/);
   assert.deepEqual(io.calls, []);
 });
@@ -248,7 +248,7 @@ test('a clean claude review, which writes no files, removes nothing', async () =
 
 // A step named build-x for apply, at high effort, on the gpt family.
 const stepOptions = (over: Partial<StepOptions> = {}): StepOptions =>
-  ({ for: 'apply', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['gpt'], ...over });
+  ({ for: 'build', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['gpt'], ...over });
 const STEP_LAST_MESSAGE = '/repo/.workspace/lets-delegate/build-x.last-message.md';
 // An io with every CLI on PATH, whose one run ends with message: codex in
 // its last-message file, the others on stdout.

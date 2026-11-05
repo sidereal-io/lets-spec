@@ -3,7 +3,7 @@
 
 ## 1. The step intents in `lets`
 
-- [ ] 1.1 [easy] `STRATEGIES.step.intents` is `shape`, `plan`, `review-plan`, `build`, `review-build`, from a `STEP_INTENTS` const tuple; `Intent` drops `propose`, `propose-review` and `apply-review`; `StepOptions['for']` is `StepIntent`. The strategies test pins the tuple, and the step, instructions, config and resolver tests pass `plan` or `build` to step calls. (verify: `node --test tests/lets/delegate/strategies.test.ts tests/lets/delegate/step.test.ts tests/lets/delegate/instructions.test.ts tests/lets/delegate/config.test.ts tests/lets/resolvers/cli/delegate.test.ts tests/lets/resolvers/t3/delegate.test.ts && pnpm check`)
+- [x] 1.1 [easy] `STRATEGIES.step.intents` is `shape`, `plan`, `review-plan`, `build`, `review-build`, from a `STEP_INTENTS` const tuple; `Intent` drops `propose`, `propose-review` and `apply-review`; `StepOptions['for']` is `StepIntent`. The strategies test pins the tuple, and the step, instructions, config and resolver tests pass `plan` or `build` to step calls. (verify: `node --test tests/lets/delegate/strategies.test.ts tests/lets/delegate/step.test.ts tests/lets/delegate/instructions.test.ts tests/lets/delegate/config.test.ts tests/lets/resolvers/cli/delegate.test.ts tests/lets/resolvers/t3/delegate.test.ts && pnpm check`) (✓ the six node test files and `pnpm check` passed)
 - [ ] 1.2 [easy] `lets delegate step instructions --for apply` exits 2, prints nothing on stdout, and names `--for` on stderr; `--for build` and `--for plan` still work with no config; the `delegate --help` example reads `step: build: guidance:` and the step strategy's help lists the five names. (verify: `node --test tests/lets/delegate/cli.test.ts`)
 
 ## 2. The skill, the docs and the bats test [depends-on: 1]

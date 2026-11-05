@@ -6,7 +6,7 @@ import { SessionFailed, SpawnError, TimeoutError } from '../../../lets/src/resol
 import { commandDeps, CONFIG, PROMPT_FILE } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<StepOptions> = {}): StepOptions =>
-  ({ for: 'apply', name: 'Build X', promptFile: 'p.md', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
+  ({ for: 'build', name: 'Build X', promptFile: 'p.md', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
 
 // commandDeps whose config lists t3, which runs steps, and more as given.
 const withT3 = (over: Parameters<typeof commandDeps>[0] = {}) =>
@@ -57,11 +57,11 @@ test('a done report is printed with the clock\'s date', async () => {
 
 test('the record on stderr names the session that ran the step', async () => {
   const t = withT3();
-  assert.equal(await run(options({ for: 'propose', models: ['claude/claude-opus-5-5'] }), t.deps), 0);
+  assert.equal(await run(options({ for: 'plan', models: ['claude/claude-opus-5-5'] }), t.deps), 0);
   assert.equal(t.stderr().split('\n').length, 2, 'one line on stderr');
-  assert.ok(t.stderr().startsWith('{"for":"propose",'), t.stderr());
+  assert.ok(t.stderr().startsWith('{"for":"plan",'), t.stderr());
   assert.deepEqual(JSON.parse(t.stderr()), {
-    for: 'propose', resolver: 't3', family: 'claude', model: 'claude-opus-5-5', handle: { kind: 't3', id: 't3-1' }, durationSeconds: 0,
+    for: 'plan', resolver: 't3', family: 'claude', model: 'claude-opus-5-5', handle: { kind: 't3', id: 't3-1' }, durationSeconds: 0,
   });
   assert.deepEqual(Object.keys(JSON.parse(t.stderr())), ['for', 'resolver', 'family', 'model', 'handle', 'durationSeconds']);
 });
@@ -126,7 +126,7 @@ test('a finish that fails is reported, and the report stands', async () => {
   assert.equal(await run(options(), t.deps), 0);
   assert.equal(report(t).outcome, 'done');
   assert.match(t.stderr(), /could not finish thread t-1: thread gone/);
-  assert.equal(JSON.parse(t.stderr().trim().split('\n').at(-1)!).for, 'apply', 'the record still ends stderr');
+  assert.equal(JSON.parse(t.stderr().trim().split('\n').at(-1)!).for, 'build', 'the record still ends stderr');
 });
 
 test('a bad --model is exit 2, naming it, and no resolver is asked', async () => {
@@ -146,7 +146,7 @@ test('a name lets does not know in the config is exit 2, naming it and the file'
 });
 
 test('the step guidance is not read by run, even one that is not a string', async () => {
-  const t = withT3({ config: 'version: 3\ndelegate:\n  resolvers: [t3]\n  step:\n    apply:\n      guidance: 42\n' });
+  const t = withT3({ config: 'version: 3\ndelegate:\n  resolvers: [t3]\n  step:\n    build:\n      guidance: 42\n' });
   assert.equal(await run(options(), t.deps), 0);
 });
 
@@ -234,11 +234,11 @@ for (const [name, answers] of [['missing', undefined], ['a mapping', 'question: 
 }
 
 test('with no config, the default saves the composed prompt and is exit 3', async () => {
-  const t = commandDeps({ files: { [PROMPT_FILE]: 'Run propose on x', '/repo/a.yaml': '- question: Which schema?\n  answer: lets-minimal\n' } });
-  assert.equal(await run(options({ for: 'propose', name: 'plan-x', models: ['claude'], answersFile: 'a.yaml' }), t.deps), 3);
+  const t = commandDeps({ files: { [PROMPT_FILE]: 'Run plan on x', '/repo/a.yaml': '- question: Which schema?\n  answer: lets-minimal\n' } });
+  assert.equal(await run(options({ for: 'plan', name: 'plan-x', models: ['claude'], answersFile: 'a.yaml' }), t.deps), 3);
   assert.equal(t.stdout(), '');
   const saved = t.savedFile('.workspace/lets-delegate/plan-x.prompt.md');
-  assert.ok(saved?.startsWith('Run propose on x\n') && saved.includes('Which schema?') && saved.includes('lets-minimal'), saved ?? 'no file');
+  assert.ok(saved?.startsWith('Run plan on x\n') && saved.includes('Which schema?') && saved.includes('lets-minimal'), saved ?? 'no file');
   assert.match(t.stderr(), /no resolver.*subagent.*\.workspace\/lets-delegate\/plan-x\.prompt\.md/);
   assert.doesNotMatch(t.stderr(), /installed/);
 });

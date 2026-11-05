@@ -16,7 +16,7 @@ import { normalizeName } from '../resolvers/kit/adapter.ts';
 import type { Handle } from '../resolvers/kit/adapter.ts';
 import { parseModel } from '../resolvers/kit/families.ts';
 import type { Effort } from '../resolvers/kit/families.ts';
-import type { Intent } from './strategies.ts';
+import type { StepIntent } from './strategies.ts';
 
 // How long a step may run, in minutes, at every effort. A step such as
 // apply runs far longer than a review.
@@ -26,7 +26,7 @@ export const STEP_TIMEOUT_MINUTES = 120;
 // <family>/<model>, best first, asked for one at a time until one is not
 // refused. answersFile: the user's answers to the questions of the last
 // needs-input report, which lets appends to the prompt.
-export type StepOptions = { for: Intent; name: string; promptFile: string; effort: Effort; models: string[]; timeoutMinutes?: number; answersFile?: string };
+export type StepOptions = { for: StepIntent; name: string; promptFile: string; effort: Effort; models: string[]; timeoutMinutes?: number; answersFile?: string };
 
 // The exit code: 0 a report is on stdout, whatever its outcome, 2 usage,
 // 3 every model refused, 4 the outcome is unknown, 6 timeout.

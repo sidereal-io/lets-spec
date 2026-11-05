@@ -4,7 +4,10 @@
 import type { Kind } from './lookup.ts';
 
 export type Strategy = 'review' | 'handoff' | 'step';
-export type Intent = 'plan' | 'code' | 'apply' | 'shape' | 'propose' | 'propose-review' | 'apply-review';
+// The five steps, in the order they run.
+export const STEP_INTENTS = ['shape', 'plan', 'review-plan', 'build', 'review-build'] as const;
+export type StepIntent = (typeof STEP_INTENTS)[number];
+export type Intent = 'code' | 'apply' | StepIntent;
 
 export const STRATEGIES: Record<Strategy, { intents: readonly Intent[]; verb: Kind }> = {
   // Read-only, and waits for the final message.
@@ -12,5 +15,5 @@ export const STRATEGIES: Record<Strategy, { intents: readonly Intent[]; verb: Ki
   // Interactive, and returns at once.
   handoff: { intents: ['apply'], verb: 'start' },
   // May write files, waits for the final message, and reads its step report.
-  step: { intents: ['shape', 'propose', 'propose-review', 'apply', 'apply-review'], verb: 'step' },
+  step: { intents: STEP_INTENTS, verb: 'step' },
 };
