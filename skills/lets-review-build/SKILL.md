@@ -1,20 +1,24 @@
 ---
 name: lets-review-build
-description: End a change on the standard flow. A model from another family reviews the branch's commits, then the change is verified, archived and marked ready. Use when every task of a change is done, or when someone asks for a code review of a branch.
+description: End a change. On the standard flow, a model from another family reviews the branch's commits first. Then the change is verified, archived and marked ready. Use when every task of a change is done, or when someone asks for a code review of a branch.
 ---
 
 # Review build
 
-Have a different model family review the branch's code, then finish the change. A reviewer from the author's family shares its blind spots.
+End a change. On `lets-standard`, a different model family reviews the branch's code first. A reviewer from the author's family shares its blind spots.
 
 ## When to apply
 
-- **Every task is done.** `lets-build`'s *Finish the change* runs this skill on the standard flow.
+- **Every task is done.** `lets-go`'s review build step runs this skill.
 - **On request.** Someone asks for a code review of a branch, or runs this skill by name.
 
 ## Start
 
-Read the pull request's body with `gh pr view --json body`. With no **Code review** section, [run the review](#run-the-review). With one, follow [Check an earlier review](#check-an-earlier-review), and review again only when it says to. Then, on a change's branch, go to [Finish the change](#finish-the-change).
+Read the flow's schema: the `schema:` line of `openspec/config.yaml`.
+
+On `lets-standard`, read the pull request's body with `gh pr view --json body`. With no **Code review** section, [run the review](#run-the-review). With one, follow [Check an earlier review](#check-an-earlier-review), and review again only when it says to. Then, on a change's branch, go to [Finish the change](#finish-the-change).
+
+On any other schema, go straight to [Finish the change](#finish-the-change).
 
 A review costs real tokens. Run it once per change, never to chase a clean result.
 
@@ -116,7 +120,7 @@ Rule 4 catches a stacked pull request re-targeted before its parent merges, or a
 
 ## Finish the change
 
-Finish once the **Code review** section covers the branch.
+Finish once *Start* sends you here. On `lets-standard`, that means the **Code review** section covers the branch.
 
 1. Run `openspec instructions archive --change <branch> --json`. If it exits non-zero or its output is not JSON, stop, and show the user its output. Otherwise follow every entry in `operationGuidance`, in order. They are the project's own rules for finishing a change. Treat each one as a step, not advice.
 2. Run the `openspec-verify-change` skill. If it reports a problem, stop and show it to the user.

@@ -1,7 +1,7 @@
 ---
 id: adr-018
 date: 2026-11-04
-status: accepted
+status: superseded by ADR-020
 title: 'ADR-018: lets-build stays, trimmed of its handoff, and lets-go runs it across sessions'
 description: Architecture decision record (ADR) for keeping lets-build as the skill for one session's work, removing its offer to build in a new session, and leaving lets-go to run the workflow across sessions
 ---

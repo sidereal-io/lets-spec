@@ -5,6 +5,7 @@
       "skills": [
         "lets-build",
         "lets-go",
+        "lets-plan",
         "lets-brainstorm",
         "lets-write-specs",
         "lets-write-adrs",
@@ -21,10 +22,12 @@
       "skills": [
         "lets-build",
         "lets-go",
+        "lets-plan",
         "lets-brainstorm",
         "lets-write-specs",
         "lets-write-tasks",
         "lets-test-first",
+        "lets-review-build",
         "lets-shape",
         "lets-setup-backlog"
       ]

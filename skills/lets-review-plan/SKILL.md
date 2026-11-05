@@ -1,6 +1,6 @@
 ---
 name: lets-review-plan
-description: Use when someone asks for an independent review of a plan, design, spec, architecture decision record (ADR), or skill, or when `lets-build` is about to build an OpenSpec change on `lets-standard`. Another model family reviews the work read-only, and the findings come back ranked.
+description: Use when someone asks for an independent review of a plan, design, spec, architecture decision record (ADR), or skill, or when `lets-go`'s build step is about to build an OpenSpec change on `lets-standard`. Another model family reviews the work read-only, and the findings come back ranked.
 ---
 
 # Peer Plan Review
@@ -9,7 +9,7 @@ Have a different model family attack a plan before anyone builds on it. A review
 
 ## When to apply
 
-- **Before build.** `lets-build` runs this skill before it builds an OpenSpec change on `lets-standard`. The plan is finished, brainstorm.md through tasks.md. [For an OpenSpec change](#for-an-openspec-change) says what to review.
+- **Before build.** `lets-go`'s build step runs this skill before it builds an OpenSpec change on `lets-standard`. The plan is finished, brainstorm.md through tasks.md. [For an OpenSpec change](#for-an-openspec-change) says what to review.
 - **On request.** Someone asks for a review of a plan, design, spec, ADR, or skill.
 
 This skill does not fire on its own when someone writes one of these. Each run costs a cross-model review.
