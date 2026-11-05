@@ -484,6 +484,17 @@ assert_reference_links() {
   skill_says lets-shape "gh issue edit <parent> --body-file <file>"
 }
 
+@test "the README shows the plan review in the pull request, after tasks" {
+  grep -qF '| 7. | plan review |' "$repo/README.md" ||
+    { echo "README.md has no plan review row after tasks"; false; }
+  grep -qF '| A **Plan review** section in the pull request |' "$repo/README.md" ||
+    { echo "README.md's plan review row names no Plan review section"; false; }
+  run grep -nF 'review.md' "$repo/README.md"
+  [ "$status" -eq 1 ] || { echo "README.md still says review.md: $output"; false; }
+  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-write-tasks/SKILL.md" | grep -qF 'approved plan' ||
+    { echo "lets-write-tasks still says an approved plan"; false; }
+}
+
 load support/release
 
 @test "planning vocabulary inputs resolve inside each published flow" {
