@@ -25,8 +25,8 @@ ADR review completed for this change. The seven decisions in design.md are namin
 - [ADR-017](../../../docs/decisions/ADR-017-lets-go-reads-where-a-run-stands-from-git-and-github.md) lets-go reads where a run stands from Git and GitHub. Its text names the old steps; it stays as a dated record (D6).
 - [ADR-018](../../../docs/decisions/ADR-018-lets-build-stays-and-loses-its-handoff.md) lets-build stays and loses its handoff. Epic #148's revision of 2026-11-04 supersedes it in a later story, not this one.
 
-ADR-003, ADR-004 and ADR-009 are superseded by ADR-010 and were not reviewed.
+ADR-010 supersedes ADR-003, ADR-004 and ADR-009, so this review skipped them.
 
 ## New Durable ADRs Created
 
-- None - no major durable architectural decisions were introduced.
+- None. This change introduces no durable architectural decision.

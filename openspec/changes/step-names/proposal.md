@@ -5,8 +5,8 @@
 ## What Changes
 
 - **BREAKING** `lets delegate step instructions` and `lets delegate step run` take `--for shape`, `plan`, `review-plan`, `build` or `review-build`, and nothing else (D1). `--for propose`, `propose-review`, `apply` and `apply-review` under `step` exit 2 (D3). The `review` and `handoff` strategies keep their intents.
-- **BREAKING** The step guidance keys follow: `delegate.step.plan.guidance`, `delegate.step.build.guidance` and so on. An old key such as `delegate.step.apply.guidance` is no longer read, with no warning (D5).
-- `lets-go` names the five steps and prints `Skipped plan:`, `Skipped review plan:`, `Done review plan:`, `Skipped build:` and `Skipped review build:` lines in place of the old ones (D2). Its prompt, answers and report files, and its `--name` values, use `plan`, `build` and `review-build`. It still runs review plan inside plan on `lets-standard` (D4).
+- **BREAKING** The step guidance keys follow: `delegate.step.plan.guidance`, `delegate.step.build.guidance` and so on. `lets` reads no old key such as `delegate.step.apply.guidance`, and gives no warning (D5).
+- `lets-go` names the five steps. Its `Skipped`, `Done` and `Failed` lines use the spoken names, such as `Skipped review plan:` and `Done build:` (D2). Its prompt, answers and report files, and its `--name` values, use `plan`, `build` and `review-build`. It still runs review plan inside plan on `lets-standard` (D4).
 - The glossary's *Step* entry lists the five names. It is already committed on this branch (D1).
 - The README and `docs/resolvers.md` say the same names, in the `lets-go` section, the delegation glossary, the step list, the config example and the guidance key (D2). The README's flow table keeps its rows and heads its first column *Stage* (D9).
 - The tests pin the new strings, and one test checks that an old name under `step` exits 2 (D8).
