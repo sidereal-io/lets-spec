@@ -536,6 +536,20 @@ assert_reference_links() {
     { echo "lets-write-tasks still says an approved plan"; false; }
 }
 
+@test "the README names lets-review-build for the code review and the finish" {
+  grep -qF '| Independent code review | Yes | No |' "$repo/README.md" ||
+    { echo "README.md's code review row is not Yes and No"; false; }
+  grep -E '^\| Skills it adds \|' "$repo/README.md" | grep -qF '`lets-review-build`' ||
+    { echo "README.md's Skills it adds row does not name lets-review-build"; false; }
+  grep -E '^\| (9|10)\. \|' "$repo/README.md" | grep -cF '`lets-review-build`' | grep -qx 2 ||
+    { echo "README.md's stages 9 and 10 do not both name lets-review-build"; false; }
+}
+
+@test "the README names no lets-review-code and no switch for the code review" {
+  run grep -nE 'lets-review-code|#turning-the-code-review-off' "$repo/README.md"
+  [ "$status" -eq 1 ] || { echo "$output"; false; }
+}
+
 load support/release
 
 @test "planning vocabulary inputs resolve inside each published flow" {

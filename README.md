@@ -300,8 +300,8 @@ one, and also gets `lets-minimal` for chores and small stories.
 | Planning stages | brainstorm → proposal → specs → design → ADR → tasks | brainstorm → specs → tasks |
 | Independent plan review | Yes | No |
 | Building | One commit per task, test-first | One commit per task, test-first |
-| Independent code review | Yes, a rule in `openspec/config.yaml` ([how](#turning-the-code-review-off)) | No |
-| Skills it adds | `lets-brainstorm`, `lets-write-specs`, `lets-write-adrs`, `lets-write-tasks`, `lets-test-first`, `lets-review-plan`, `lets-review-code` | `lets-brainstorm`, `lets-write-specs`, `lets-write-tasks`, `lets-test-first` |
+| Independent code review | Yes | No |
+| Skills it adds | `lets-brainstorm`, `lets-write-specs`, `lets-write-adrs`, `lets-write-tasks`, `lets-test-first`, `lets-review-plan`, `lets-review-build` | `lets-brainstorm`, `lets-write-specs`, `lets-write-tasks`, `lets-test-first` |
 
 The `standard` flow, stage by stage:
 
@@ -315,17 +315,11 @@ The `standard` flow, stage by stage:
 | 6. | tasks | Breaks the work into a checklist | `tasks.md` |
 | 7. | plan review | Before the build, a fresh session reviews the whole plan with `lets-review-plan` | A **Plan review** section in the pull request |
 | 8. | apply | Builds each task test-first. One commit per task. | Commits |
-| 9. | code review | A fresh session reviews the branch with `lets-review-code` | A **Code review** section in the pull request |
-| 10. | verify, archive | Checks the code matches the plan, then archives the change | An archive commit |
+| 9. | code review | `lets-review-build` has a fresh session review the branch | A **Code review** section in the pull request |
+| 10. | verify, archive | `lets-review-build` checks the code matches the plan, archives the change, and marks the pull request ready | An archive commit |
 
 A `minimal` change has no `proposal.md`, so `openspec show` fails on it.
 Nothing in the workflow calls `show`.
-
-#### Turning the code review off
-
-The code review is the `operations.archive` entry in your project's
-`openspec/config.yaml`, which `lets sync` writes once and never changes.
-Delete the entry to stop code reviews, or edit it to change when they run.
 
 ### Your project's vocabulary
 
