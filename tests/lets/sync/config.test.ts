@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { checkConfig, schemaOf } from '../../../lets/src/sync/config.ts';
 import { realIo } from '../../../lets/src/io.ts';
 import { fakeIo } from './fixtures/fake-io.ts';
@@ -74,4 +75,36 @@ test('checkConfig treats a folder at the config path as missing', () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+// The standard config release 0.7.0 wrote, with its code review rule.
+const CONFIG_0_7_0 = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'fixtures/config-0.7.0.yaml'), 'utf8');
+const STALE = `${CONFIG} names lets-review-code, which this release does not ship. Delete the operations.archive entry that names it: the lets-review-build skill runs the code review now.`;
+
+function warningsFor(text: string) {
+  return checkConfig({ io: fakeIo({ files: { [CONFIG]: text } }), configPath: CONFIG, schemaName: 'lets-standard' });
+}
+
+test('checkConfig warns about the code review rule release 0.7.0 wrote', () => {
+  assert.deepEqual(warningsFor(CONFIG_0_7_0), [STALE]);
+});
+
+test('checkConfig warns once however many lines name lets-review-code', () => {
+  assert.deepEqual(warningsFor('schema: lets-standard\nx: lets-review-code\ny: lets-review-code\n'), [STALE]);
+});
+
+test('checkConfig ignores lets-review-code in a comment', () => {
+  assert.deepEqual(warningsFor('schema: lets-standard\n# lets-review-code\n  # lets-review-code\nx: 1 # lets-review-code\n'), []);
+});
+
+test('checkConfig is quiet for the standard config this release writes', () => {
+  const overlay = join(dirname(fileURLToPath(import.meta.url)), '../../../overlays/openspec/config.d/lets-standard.yaml');
+  assert.deepEqual(warningsFor(readFileSync(overlay, 'utf8')), []);
+});
+
+test('checkConfig lists a schema problem, then the lets-review-code problem', () => {
+  assert.deepEqual(warningsFor(CONFIG_0_7_0.replace('schema: lets-standard', 'schema: spec-driven')), [
+    `${CONFIG} sets schema to 'spec-driven'; it must be lets-standard.`,
+    STALE,
+  ]);
 });
