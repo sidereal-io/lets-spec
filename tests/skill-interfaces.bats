@@ -280,10 +280,24 @@ skill_says() {
   skill_says lets-go 'Failed shape:'
   skill_says lets-go 'at most once'
   skill_says lets-go 'holds another idea'
-  for phrase in '#153 adds' '`lets-go` needs an issue number, and stop'; do
+  skill_says lets-go 'Run discovery on it?'
+  skill_says lets-go 'epic #<p>: <title>'
+  skill_says lets-go 'story #<n>: <title>'
+  skill_says lets-go 'Picked #<n>: <title>, the first ready story under #<p>.'
+  skill_says lets-go 'docs: the discovery map from #<p>'
+  skill_says lets-go 'Discovery status: in-progress'
+  skill_says lets-go "gh issue list --state open --search '\"Discovery status: in-progress\" in:body' --json number,title,body"
+  skill_says lets-go '*Resume mode*'
+  skill_says lets-go 'Finalize has started on that parent'
+  skill_says lets-go 'the edits are that discovery'"'"'s confirmed phases'
+  for phrase in '#153 adds' '#154 adds' '`lets-go` needs an issue number, and stop' \
+    'end with a failed report that says so and names'; do
     ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
       { echo "lets-go still says: $phrase"; false; }
   done
+  # A large idea now runs discovery, so the README must not send it away.
+  ! tr -s '[:space:]' ' ' < "$repo/README.md" | grep -qF -- 'An idea too large for one issue stops the run' ||
+    { echo "README.md still says a large idea stops the run"; false; }
 }
 
 @test "lets-go runs each step through lets delegate step" {

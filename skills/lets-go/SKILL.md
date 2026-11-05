@@ -1,6 +1,6 @@
 ---
 name: lets-go
-description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. Shape, propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation; a story or a shape runs at ask, where the user answers every question. Name ask or recommend to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, says lets-go, or runs lets-go again after a run stopped.
+description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, propose, apply and apply review each run in a fresh session, and every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation; a story or a shape runs at ask, where the user answers every question. Name ask or recommend to pick the other. On a change's branch it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, says lets-go, or runs lets-go again after a run stopped.
 ---
 
 # Let's go
@@ -9,7 +9,8 @@ Take one story, bug or chore to a pull request ready for review, in one
 run. Start from its issue number, or from an idea in words. *Start*
 claims the issue in this session. Then each step runs in a fresh
 session: shape when the issue needs it, then propose, apply and apply
-review. A step never
+review. An idea too large for one issue runs discovery in the shape
+step, and the run builds the first ready story it files. A step never
 asks the user. It ends with a report. This session answers its questions
 or asks the user, as the interactivity level says. Run every command
 below from the repo root.
@@ -110,6 +111,7 @@ unfinished step.
    - **Neither prints a line:** run `lets-build`'s *Claim*. A stop it
      makes stands. When its glossary preflight found owned edits, also
      run *Import the glossary checkpoint*. *Claim* creates the branch.
+     Then [commit the discovery map](#commit-the-discovery-map).
    - **Either prints a line:** the change has started. Do not run
      *Claim*. When `git ls-remote` printed it, run
      `git fetch origin <name>` first: `git switch` finds a branch on
@@ -153,25 +155,49 @@ The shape step it runs is a step, and has a report.
 
 ### Start from an idea
 
-1. Run `lets-build`'s *Find the source of demand*, its second case: the
+1. Look for a discovery of this idea that an earlier run started. Use
+   `lets-shape`'s own query:
+
+   ```bash
+   gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body
+   ```
+
+   When a parent's `Input:` line holds the idea word for word, say that a
+   discovery of this idea is in progress at #<p>. Skip the search below,
+   and [run the shape step](#run-the-shape-step) for the idea: its round
+   resumes that parent.
+2. Run `lets-build`'s *Find the source of demand*, its second case: the
    user described work but named no issue. It searches open issue titles
    for the idea's words. Show the user the matches, and ask whether one
    is the same work. Ask at either level: a wrong yes builds someone
    else's issue.
-2. On a yes, that issue is `<i>`. Go on from step 3.
-3. On a no, or when nothing matches, set aside that case's stop, which
+3. On a yes, that issue is `<i>`. Go on from step 3.
+4. On a no, or when nothing matches, set aside that case's stop, which
    says to run `lets-shape`. [Run the shape step](#run-the-shape-step)
    for the idea.
 
 ### Run the shape step
 
 The shape step turns an idea, or an issue whose packet is not complete,
-into one shaped issue. It runs on the default branch, before any branch
-or change exists. On a change's branch, the `lets-shape` stops of
-*Confirm the packet* stand. It runs at most once per run: after it, a
-stop that *Confirm the packet* makes stands.
+into one shaped issue. When the work is too large for one issue, it runs
+discovery instead, which files a parent issue and its stories. It runs
+on the default branch, before any branch or change exists. On a change's
+branch, the `lets-shape` stops of *Confirm the packet* stand. It runs at
+most once per run: after it, a stop that *Confirm the packet* makes
+stands.
 
-1. Print the level line. When the user named a level, it is
+1. Check the discovery map. Run `git status --porcelain`. When it lists
+   `openspec/discovery.md`, look for this input's discovery: an open
+   parent issue that says `Discovery status: in-progress`, and whose
+   `Input:` line names this input, the idea's words or #<i>. For an idea,
+   use what *Start from an idea* found. For an issue, run the query it
+   names.
+   - **There is one:** the edits are that discovery's confirmed phases.
+     Go on: the step resumes it, and its map commit takes them.
+   - **There is none:** say that the map has uncommitted edits, and to
+     commit or discard them. Stop, and run no step. Otherwise a
+     discovery's commit could sweep those edits in.
+2. Print the level line. When the user named a level, it is
    `Interactivity: <level>, because you asked for it.` Otherwise the level
    is `ask`, because there is no Kind yet:
 
@@ -179,15 +205,72 @@ stop that *Confirm the packet* makes stands.
    Interactivity: ask, because shape has not run yet.
    ```
 
-2. For an idea, check that the answers file is this idea's. Two ideas
+3. For an idea, check that the answers file is this idea's. Two ideas
    can share their first five words, and so their `<name>`. When
    `.workspace/lets-go/<name>-shape-prompt.md` exists and holds another
    idea, an earlier run stopped part way on that one. Remove
    `.workspace/lets-go/<name>-shape-answers.yaml` before you write the
    prompt.
-3. Run the `shape` step, as [Run a step](#run-a-step) says.
-4. When it reports `done`, [Read the report](#read-the-report) gives
-   `<i>`. Go on from step 3 with it, as for an issue number.
+4. Run the `shape` step, as [Run a step](#run-a-step) says.
+5. When it reports `done`, [Read the report](#read-the-report) says
+   what it shaped:
+   - **One issue:** that issue is `<i>`. Go on from step 3 with it, as
+     for an issue number.
+   - **A parent and its stories:**
+     [pick the first ready story](#pick-the-first-ready-story).
+
+### Pick the first ready story
+
+Discovery filed a parent issue, `#<p>`, and its stories. Build one of
+them in this run.
+
+1. Run `lets-build`'s *Find the source of demand*, its third case,
+   `next`, with one narrowing: the candidates are the stories the report
+   named, and no other issue. Run that case's two commands as
+   `lets-build` writes them. Rank as it does: Must, then Should, then
+   Could, then the lowest issue number. Run its *Check the prerequisite*
+   on each candidate, in rank order. A ready story is one that `next`
+   would take.
+2. When a story is ready, print:
+
+   ```text
+   Picked #<n>: <title>, the first ready story under #<p>.
+   ```
+
+   That story is `<i>`. Go on from step 3 with it, as for an issue
+   number.
+3. When no story is ready, print the `Done shape` line of *Start*, step 5. Say
+   that no story under #<p> is ready. Name each story, and why it was
+   left out: for example, its blocker, its assignee, or an unresolved
+   prerequisite. Say to run `lets-go` with a story's number once it is
+   ready. Then stop. Claim nothing, and create no branch.
+
+A run that stops after discovery and before *Claim*, for any reason,
+leaves the map's edits on the default branch. When
+`git status --porcelain` lists `openspec/discovery.md`, say that it
+holds the discovery's map, uncommitted on the default branch. While the
+parent still says `Discovery status: in-progress`, say to leave the map
+as it is: running `lets-go` again with the same idea, or #<i>, resumes
+the discovery and keeps its edits. Otherwise, say to commit or discard
+the map before the next run, because the next run stops on it.
+
+### Commit the discovery map
+
+Discovery edits `openspec/discovery.md` on the default branch, and the
+new branch carries the edits with it. Commit them there, before
+[Find the first unfinished step](#find-the-first-unfinished-step) reads
+the tree. Do this only when a shape step ran in this run, and
+`git status --porcelain` lists `openspec/discovery.md`. Otherwise make
+no commit.
+
+```bash
+git add openspec/discovery.md
+git commit -m "docs: the discovery map from #<p>" -- openspec/discovery.md
+```
+
+`<p>` is the parent's number, or the story's when the parent became the
+one story. Commit no other path. This is the one commit `lets-go` makes
+itself, beside the glossary import.
 
 ## Find the first unfinished step
 
@@ -353,7 +436,9 @@ such as `--name idea-fix-letssync-quiet-output-shape`.
 Create the folder first, if it is missing: `mkdir -p .workspace/lets-go`.
 Then write the frame below to `.workspace/lets-go/<name>-<step>-prompt.md`.
 Fill in each `<...>`, and put the step's row from the table under
-*What to run*. `<schema>` and `<level>` are the ones *Start* set.
+*What to run*. For shape, put the text of
+[What shape runs](#what-shape-runs) there instead. `<schema>` and
+`<level>` are the ones *Start* set.
 
 For shape, the first two lines differ. There is no change, the branch is
 the default branch, `<default>`, and *Route* has not run, so there is no
@@ -393,8 +478,8 @@ here can answer.
 When you need a decision, stop. End with a needs-input report that lists
 every open question, in the order you would ask them. Give a
 recommendation where you have one. Give none for a question that asks
-the user to confirm something, such as a brainstorm ledger or an issue
-packet.
+the user to confirm something, such as a brainstorm ledger, an issue
+packet or a discovery phase.
 
 A resumed step ends with an `## Answers` section. Each answer settles its
 question, so never ask it again. An answer that ends with "(lets-go
@@ -430,16 +515,77 @@ reason: The tests fail on main before any change.
 
 A done report's evidence lists the commits you made, and the pull request
 when you opened or changed it. For shape, its first line is the issue,
-as `issue #<n>: <title>`. Write the report last. Quote a line that
+as `issue #<n>: <title>`, or the parent, as `epic #<p>: <title>`, with a
+`story #<n>: <title>` line for each story. Write the report last. Quote a line that
 holds `#` or `: `. Put no other step-report block in the message.
 ````
 
 | Step | What to run |
 |---|---|
-| `shape` | Run the `lets-shape` skill's *Shape one issue* to its end, including its second comment fetch, its reply and its glossary handoff. For an issue: shape #<i>. For an idea: lets-go has searched for it, and the user confirmed that no open issue is the same work. Skip the search in step 1, and create the issue. Create no change and no change branch. A glossary holding branch that `lets-shape` makes is allowed. End on the branch `<default>` with a clean tree. The packet confirmation in step 7 is a confirmation question: give it no recommendation. When the work is Size L or XL, too large for one issue, end with a failed report that says so and names `lets-shape` discovery. A done report's first evidence line is `issue #<n>: <title>`. |
+| `shape` | The text of [What shape runs](#what-shape-runs). |
 | `propose` | Invoke the `openspec-propose` skill for the change `<name>`, for issue #<i>. Give it this route line for the proposal's commit message: `<route line>`. When the route is `lets-minimal` and the flow's schema is not, say to use the schema `lets-minimal`. If the change exists, continue it. Stop when the plan is ready: do not build it, and offer no handoff. |
 | `apply` | Run the `lets-build` skill on the branch `<name>`. Stop when every task is ticked. Do not run its *Finish the change*. |
 | `apply-review` | Run the *Finish the change* section of the `lets-build` skill on the branch `<name>`. |
+
+### What shape runs
+
+The shape step runs `lets-shape`. It shapes one issue, or runs discovery
+when the work is too large for one issue. A fresh round must find the
+discovery an earlier round started, so the text orders where to start.
+
+```text
+Run the `lets-shape` skill. Start at the first of these that matches:
+
+1. An open parent issue says `Discovery status: in-progress`, and its
+   `Input:` line names this input: the idea's words, or #<i>. Run its
+   *Resume mode* on that parent, and start no second discovery. The
+   phases that the `## Answers` section confirmed are settled. So skip
+   the restatement in *Resume mode* and its confirmation, and go straight
+   to the parent's recorded next phase.
+2. An open parent issue's `Input:` line names this input, it has no
+   status line, and the `## Answers` section confirmed its Phase 5 story
+   table. Finalize has started on that parent: Finalize removes the
+   status line first, then asks its own questions. Finish Finalize on
+   that parent, from where the answers leave off, including the glossary
+   handoff. Start no second discovery.
+3. The `## Answers` section answers the discovery question with yes. Run
+   its discovery from Ingest, with the idea or #<i> as its input.
+4. Otherwise, run its *Shape one issue* to its end, including its second
+   comment fetch, its reply and its glossary handoff. For an issue: shape
+   #<i>. For an idea: lets-go has searched for it, and the user confirmed
+   that no open issue is the same work. Skip the search in step 1, and
+   create the issue. The packet confirmation in step 7 is a confirmation
+   question: give it no recommendation.
+
+The work is too large for one issue when it is Size L or XL, or when the
+input holds a large idea. Then do not fail, and do not start discovery
+yourself. End the round with a needs-input report that holds this
+question, with the recommendation yes:
+
+The work is Size <L or XL>, too large for one issue. Run discovery on it?
+
+If the answer is anything but yes, end with a failed report. Its reason
+says that the work is too large for one issue and discovery was
+declined.
+
+Discovery runs every phase from Ingest to Finalize, including the
+glossary handoff. Write the idea's words, or #<i>, in the parent's
+`Input:` line, so a later round can find the parent. Each phase's
+confirmation, and the story table in Phase 5, is a confirmation
+question: give it no recommendation. When the glossary handoff asks who
+carries the edits, recommend the first story in dependency order.
+
+Create no change and no change branch. The parent issue, the stories
+and a glossary holding branch that `lets-shape` makes are allowed. End on
+the branch <default>, with a clean tree, except `openspec/discovery.md`
+when discovery ran.
+
+A done report's first evidence line is `issue #<n>: <title>` for one
+issue. When discovery filed stories, it is `epic #<p>: <title>`, then one
+`story #<n>: <title>` line per story, in the order you created them.
+When discovery found that the whole run fits one story, the parent became
+that story: use the `issue` form.
+```
 
 ## Run a step
 
@@ -517,10 +663,18 @@ prompt, with any answers added.
 
 Read `outcome` from `.workspace/lets-go/<name>-<step>-report.json`.
 
-A shape step's `done` report must name its issue. Its first evidence line
-is `issue #<n>: <title>`, and `<n>` is `<i>`. When the line is not in
-that form, the report is `failed`, and its reason is that the shape step
-named no issue. Once shape reports `done` or `failed`, remove
+A shape step's `done` report must name what it shaped. Its first
+evidence line is one of these:
+
+- `issue #<n>: <title>`: one issue, and `<n>` is `<i>`.
+- `epic #<p>: <title>`: the parent issue of a discovery, and `<p>` is its
+  number. Each `story #<n>: <title>` line after it names one story, in
+  the order discovery created them.
+
+When the first line is in neither form, the report is `failed`, and its
+reason is that the shape step named no issue. When it is an `epic` line
+and no `story` line follows, the report is `failed`, and its reason is
+that the shape step named no story. Once shape reports `done` or `failed`, remove
 `.workspace/lets-go/<name>-shape-answers.yaml`. Nothing resumes a
 finished shape, and a later idea or a second shape of the same issue
 must start with no answers.
