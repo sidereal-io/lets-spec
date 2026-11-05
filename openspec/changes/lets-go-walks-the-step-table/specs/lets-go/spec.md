@@ -316,10 +316,11 @@ When the records disagree, `lets-go` SHALL print `Records disagree:` and what it
 - the local branch and `origin/<name>` have diverged;
 - a change folder and an archive folder exist for the same name;
 - an archive folder exists but the pull request is missing or is a draft, or, when the `schema:` line of `openspec/config.yaml` is `lets-standard`, has no `Code review` section;
+- an archive folder exists, the schema is not `lets-minimal`, and the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line;
 - `openspec/changes/<name>/brainstorm.md` is committed but the branch has no open pull request;
 - a `git log` read for a skipped step finds no commit.
 
-A built change whose pull request has no **Plan review** section is not a disagreement: the walk reaches review plan before build, and runs it.
+A built change that is not archived, and whose pull request has no **Plan review** section, is not a disagreement: the walk reaches review plan before build, and runs it. Once the change is archived, no step can write the section.
 
 #### Scenario: A dirty tree
 - **WHEN** `git status --porcelain` lists `skills/lets-go/SKILL.md`
@@ -352,6 +353,10 @@ A built change whose pull request has no **Plan review** section is not a disagr
 #### Scenario: An archived change on the minimal flow
 - **WHEN** `openspec/config.yaml` says `schema: lets-minimal`, the archive folder exists, and the pull request is ready for review with no `Code review` section
 - **THEN** `lets-go` prints no disagreement, and runs no step
+
+#### Scenario: An archived change with no plan review
+- **WHEN** the change's schema is `lets-standard`, the archive folder exists, and pull request #167 is ready for review with a **Code review** section and no **Plan review** section
+- **THEN** `lets-go` prints `Records disagree:`, says the pull request has no Plan review section, and runs no step
 
 #### Scenario: An archived change on the standard flow with no code review
 - **WHEN** `openspec/config.yaml` says `schema: lets-standard`, the archive folder exists, and the pull request is ready for review with no `Code review` section

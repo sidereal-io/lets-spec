@@ -631,8 +631,16 @@ walk_section() {
   local row
   row="$(grep -E '^\| An archive folder' "$repo/skills/lets-go/SKILL.md")"
   grep -qF '`lets-standard`' <<<"$row" || { echo "the archive row asks every flow for a Code review section"; false; }
-  run grep -nE '^\|.*no \*\*Plan review\*\* section' "$repo/skills/lets-go/SKILL.md"
+  run grep -nE '^\| Build is done' "$repo/skills/lets-go/SKILL.md"
   [ "$status" -eq 1 ] || { echo "a built change with no Plan review is still a disagreement: $output"; false; }
+}
+
+@test "an archived change with no Plan review section is a disagreement" {
+  local row
+  row="$(grep -E '^\| An archived change on a schema other than `lets-minimal`' "$repo/skills/lets-go/SKILL.md")"
+  grep -qF 'no **Plan review** section' <<<"$row" || { echo "lets-go has no disagreement for an archived change with no Plan review"; false; }
+  grep -qF 'the records disagree if the pull request' <<<"$(walk_section)" ||
+    { echo "the walk's review plan row does not check the section after archive"; false; }
 }
 
 # step_row <step>: lets-go's row for the step in its table of steps.

@@ -596,7 +596,10 @@ row, find out whether the step is done:
   pull request, the records disagree. The tree is clean, so the file is
   committed.
 - **Review plan.** On `lets-minimal`, it is done once plan is done. When
-  the archive folder exists, it is done. Otherwise read the pull
+  the archive folder exists, it is done, but the records disagree if the
+  pull request's `body` has no **Plan review** section with a
+  `Reviewed:` line and a `- **Verdict:**` line. No step can write the
+  section once the change is archived. Otherwise read the pull
   request's body again, because a step in this run can have opened or
   changed it:
 
@@ -648,12 +651,13 @@ choice.
 | A change folder and an archive folder for the same name | Keep the one that is right, and remove the other. |
 | An archive folder, and the pull request is missing or a draft, or has no `Code review` section on `lets-standard` | Open the pull request, review it, or mark it ready, as `lets-review-build` does. Or revert the archive commit. |
 | `brainstorm.md` is committed, and the branch has no pull request | Push the branch, and open the draft pull request. |
+| An archived change on a schema other than `lets-minimal`, and the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line | Review the plan with the `lets-review-plan` skill, which writes the section. Or revert the archive commit. |
 | A `git log` read for a skipped step finds no commit | Name the command. The step's record is missing: find out why. |
 
 Each case names what you found, such as the path, or the pull request's
-`isDraft`. A built change whose pull request has no **Plan review**
-section is not a disagreement. The walk reaches review plan first, and
-runs it.
+`isDraft`. A built change that is not archived, and whose pull request
+has no **Plan review** section, is not a disagreement. The walk reaches
+review plan first, and runs it.
 
 ## The step table
 
