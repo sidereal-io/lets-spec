@@ -208,7 +208,7 @@ open stories the map links the same way.
 |---|---|
 | The default branch, such as `main` | Finds the next issue, or the one you name, and checks its packet. Stops on comments shaping has not read, and sends them to `lets-shape`. Otherwise assigns it to you, sets it In Progress, creates a branch and an OpenSpec change named after it, and plans it. It stops when the plan is ready. |
 | A change's branch, plan unfinished | Carries on planning. |
-| A change's branch, plan finished | Builds the tasks. In `standard`, it then has the code reviewed. It verifies and archives the change, and marks the pull request ready for review. |
+| A change's branch, plan finished | Builds the tasks. In `standard`, it has the plan reviewed first, and the code reviewed after. It verifies and archives the change, and marks the pull request ready for review. |
 | A branch whose change is archived | Tells you the pull request is ready for review. |
 
 The next issue is the unassigned, unblocked Todo with the highest
@@ -222,7 +222,7 @@ Run `lets-go` on the default branch with the issue number of a story,
 bug or chore, or with an idea in words. It claims the issue as
 `lets-build` does, then runs plan, build and review build, each in a
 fresh session through `lets delegate step run`. On `lets-standard`,
-review plan runs inside plan. A step never asks you anything in its own session. It
+review plan runs inside build. A step never asks you anything in its own session. It
 reports its questions, and `lets-go` handles them at one of two
 interactivity levels:
 
@@ -297,7 +297,7 @@ one, and also gets `lets-minimal` for chores and small stories.
 | | `standard` | `minimal` |
 |---|---|---|
 | Use it for | Normal feature work | Small changes |
-| Planning stages | brainstorm → proposal → specs → design → ADR → review → tasks | brainstorm → specs → tasks |
+| Planning stages | brainstorm → proposal → specs → design → ADR → tasks | brainstorm → specs → tasks |
 | Independent plan review | Yes | No |
 | Building | One commit per task, test-first | One commit per task, test-first |
 | Independent code review | Yes, a rule in `openspec/config.yaml` ([how](#turning-the-code-review-off)) | No |
@@ -312,8 +312,8 @@ The `standard` flow, stage by stage:
 | 3. | specs | Writes the requirements, each with testable scenarios | `specs/**/spec.md` |
 | 4. | design | Explains how to build it, when the change needs that | `design.md` |
 | 5. | ADR | Writes an architecture decision record (ADR) in `docs/decisions/`, only for a choice that is costly to reverse | `adr.md`, plus any new ADRs |
-| 6. | review | A fresh session reviews the whole plan with `lets-review-plan` | `review.md` |
-| 7. | tasks | Breaks the work into a checklist | `tasks.md` |
+| 6. | tasks | Breaks the work into a checklist | `tasks.md` |
+| 7. | plan review | Before the build, a fresh session reviews the whole plan with `lets-review-plan` | A **Plan review** section in the pull request |
 | 8. | apply | Builds each task test-first. One commit per task. | Commits |
 | 9. | code review | A fresh session reviews the branch with `lets-review-code` | A **Code review** section in the pull request |
 | 10. | verify, archive | Checks the code matches the plan, then archives the change | An archive commit |
@@ -378,7 +378,8 @@ A review gets the best of these that your machine offers:
 | Fallback | A read-only subagent in your current harness | yes | no | nothing |
 
 The skill falls back when the resolver lists no models, or refuses them
-all. `review.md` records which ran, such as `fresh context, other family`.
+all. The review's section in the pull request records which ran, such
+as `fresh context, other family`.
 
 ### What a step returns
 

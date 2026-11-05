@@ -122,17 +122,27 @@ flow_texts() {
 }
 
 @test "each marker a schema reads is one its templates write" {
-  local flow marker template
+  local flow
   for flow in standard minimal; do
-    for marker in 'Confirmed by user:' 'VERDICT:' 'CHANGES_APPLIED:'; do
-      grep -qF "$marker" "$repo/schemas/lets-$flow/schema.yaml" || continue
-      case "$marker" in
-        'Confirmed by user:') template=brainstorm.md ;;
-        *) template=review.md ;;
-      esac
-      grep -qF "$marker" "$repo/schemas/lets-$flow/templates/$template" ||
-        { echo "the $flow schema reads $marker, but templates/$template does not write it"; false; }
-    done
+    grep -qF 'Confirmed by user:' "$repo/schemas/lets-$flow/schema.yaml" || continue
+    grep -qF 'Confirmed by user:' "$repo/schemas/lets-$flow/templates/brainstorm.md" ||
+      { echo "the $flow schema reads Confirmed by user:, but templates/brainstorm.md does not write it"; false; }
+  done
+}
+
+# The plan review records in the pull request, so no schema has a review
+# step, and nothing in a schema reads a verdict.
+@test "no schema has a review step or reads a verdict" {
+  local phrase
+  [ ! -e "$repo/schemas/lets-standard/templates/review.md" ] ||
+    { echo "schemas/lets-standard/templates/review.md still exists"; false; }
+  [ -z "$(yq -r '.artifacts[] | select(.id == "review") | .id' "$repo/schemas/lets-standard/schema.yaml")" ] ||
+    { echo "lets-standard still has a review artifact"; false; }
+  [ "$(yq -r '.artifacts[] | select(.id == "tasks") | .requires | sort | join(",")' "$repo/schemas/lets-standard/schema.yaml")" = adr,specs ] ||
+    { echo "lets-standard's tasks does not require adr and specs"; false; }
+  for phrase in 'VERDICT:' 'CHANGES_APPLIED:' 'review.md'; do
+    run grep -rnF -- "$phrase" "$repo/schemas"
+    [ "$status" -eq 1 ] || { echo "schemas/ still says $phrase: $output"; false; }
   done
 }
 
@@ -215,6 +225,23 @@ skill_says() {
   done
 }
 
+@test "lets-review-plan records in the pull request, and checks an earlier review" {
+  local phrase
+  skill_says lets-review-plan 'Reviewed: <sha>'
+  skill_says lets-review-plan '**Plan review**'
+  skill_says lets-review-plan '- **Verdict:**'
+  skill_says lets-review-plan '## Check an earlier review'
+  skill_says lets-review-plan 'git merge-base --is-ancestor <sha> HEAD'
+  skill_says lets-review-plan 'git log --oneline <sha>..HEAD -- openspec/changes/<name>/ docs/decisions/'
+  skill_says lets-review-plan "':(exclude)openspec/changes/<name>/tasks.md'"
+  skill_says lets-review-plan '`openspec-update-change` skill'
+  skill_says lets-review-plan 'each fix commit holds up'
+  for phrase in 'review.md' '`review` artifact' '`review` instruction'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-review-plan/SKILL.md" | grep -qF -- "$phrase" ||
+      { echo "lets-review-plan still says: $phrase"; false; }
+  done
+}
+
 @test "each review skill ranks by the guidance, then other families, then the order given" {
   for skill in lets-review-code lets-review-plan; do
     skill_says "$skill" "the guidance first, then families other than the author's, then the order the options came in"
@@ -242,6 +269,15 @@ skill_says() {
   skill_says lets-build "If it exits 3, every model was refused: show the user its stderr, and stop."
 }
 
+@test "lets-build has the plan reviewed before it builds on lets-standard" {
+  skill_says lets-build 'schema: lets-standard'
+  skill_says lets-build 'openspec/changes/<branch>/.openspec.yaml'
+  skill_says lets-build '`lets-review-plan` skill'
+  skill_says lets-build "*Check an earlier review*"
+  skill_says lets-build '`openspec-apply-change` skill'
+  skill_says lets-build 'On `lets-standard`, the build has the plan reviewed first.'
+}
+
 @test "lets-go's Start names lets-build's sections and adds one command" {
   local section
   for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Claim'; do
@@ -258,7 +294,7 @@ skill_says() {
   local phrase
   skill_says lets-go 'Interactivity: <level>, because #<i> is a <Kind>.'
   skill_says lets-go 'Interactivity: <level>, because you asked for it.'
-  skill_says lets-go 'Done review plan: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
+  skill_says lets-go 'Done review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.'
   skill_says lets-go 'gh issue view <i> --json title,blockedBy'
   skill_says lets-go 'its *Check the prerequisite* still runs, and its stop stands'
   skill_says lets-go 'The interactivity level is <level>.'
@@ -343,12 +379,25 @@ skill_says() {
 
 @test "lets-go dates each skipped step from Git and GitHub" {
   skill_says lets-go 'Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).'
-  skill_says lets-go 'Skipped review plan: review.md says VERDICT: <verdict>, committed <date> (<sha>).'
+  skill_says lets-go 'Skipped review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.'
   skill_says lets-go 'Skipped build: every task is ticked, last task commit <date> (<sha>).'
   skill_says lets-go 'Skipped review build: archived <date> (<sha>); pull request #<p> is ready for review with a Code review section.'
   skill_says lets-go "git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md"
   skill_says lets-go "git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md"
-  skill_says lets-go "git log -1 --diff-filter=AM --format='%h %as' -- openspec/changes/<name>/review.md"
+  skill_says lets-go 'git log -1 --format=%as <sha>'
+  skill_says lets-go 'gh pr view <name> --json number,body'
+}
+
+# Review plan runs inside build, and reads the Plan review section in the
+# pull request, not review.md.
+@test "lets-go reads review plan from the pull request" {
+  local phrase
+  skill_says lets-go '## Plan review'
+  skill_says lets-go '- **Verdict:** '
+  for phrase in 'review.md' 'VERDICT:' 'runs inside plan'; do
+    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
+      { echo "lets-go still says: $phrase"; false; }
+  done
 }
 
 @test "lets-go names the five steps, and no old step name" {
@@ -435,6 +484,17 @@ assert_reference_links() {
 @test "Ingest takes an accepted comment into the parent, as the issue-comments reference says" {
   skill_says lets-shape "Recommend taking it into the parent issue or dismissing it"
   skill_says lets-shape "gh issue edit <parent> --body-file <file>"
+}
+
+@test "the README shows the plan review in the pull request, after tasks" {
+  grep -qF '| 7. | plan review |' "$repo/README.md" ||
+    { echo "README.md has no plan review row after tasks"; false; }
+  grep -qF '| A **Plan review** section in the pull request |' "$repo/README.md" ||
+    { echo "README.md's plan review row names no Plan review section"; false; }
+  run grep -nF 'review.md' "$repo/README.md"
+  [ "$status" -eq 1 ] || { echo "README.md still says review.md: $output"; false; }
+  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-write-tasks/SKILL.md" | grep -qF 'approved plan' ||
+    { echo "lets-write-tasks still says an approved plan"; false; }
 }
 
 load support/release

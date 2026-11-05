@@ -51,7 +51,8 @@ One stage of the workflow that `lets-go` runs: shape, plan, review plan,
 build or review build. `lets delegate step --for` names them as `shape`,
 `plan`, `review-plan`, `build` and `review-build`. A step runs in its own
 session through the `step` delegate strategy, and ends with a step report.
-A step may write several OpenSpec artifacts. It is not an artifact and not
+Until review plan gets a session of its own, it runs inside build, with no
+prompt and no report. A step may write several OpenSpec artifacts. It is not an artifact and not
 a task.
 
 ## Step report
