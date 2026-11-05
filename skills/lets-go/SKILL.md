@@ -600,11 +600,11 @@ order:
    gh pr view <name> --json number,url,state,isDraft,body
    ```
 
-   When it finds none, note that the branch has no pull request, and go
-   on. A new branch has none yet. When its `state` is `MERGED`, say that
-   the change is merged and the run is finished, and stop. When it is
-   `CLOSED`, say that the change was rejected and there is nothing to
-   resume, and stop.
+   When the command finds no pull request, note that the branch has
+   none, and go on. A new branch has none yet. When the pull request's
+   `state` is `MERGED`, say that the change is merged and the run is
+   finished, and stop. When the `state` is `CLOSED`, say that the change
+   was rejected and there is nothing to resume, and stop.
 3. **The archive folder.** Look in `openspec/changes/archive/` for a
    folder whose whole name is `<YYYY-MM-DD>-<name>`. A folder whose name
    only ends in `-<name>` belongs to another change. When the folder
@@ -619,50 +619,52 @@ order:
 Then walk [The step table](#the-step-table) from the top row. At each
 row, find out whether the step is done:
 
-- **Shape** is done: *Start* passed *Confirm the packet*.
+- **Shape.** When *Start* passed *Confirm the packet*, shape is done.
 - **Plan.** When the archive folder exists, plan is done. When
   `openspec/changes/<name>/` does not exist, plan is not done.
   Otherwise run `openspec instructions apply --change <name> --json`,
-  and read its `state`. Plan is done when it is `ready` or `all_done`,
-  and not done when it is `blocked`. For any other `state`, show the
-  user the CLI's `instruction`, and stop. When
+  and read its `state`. When the `state` is `ready` or `all_done`, plan
+  is done. When the `state` is `blocked`, plan is not done. For any
+  other `state`, show the user the CLI's `instruction`, and stop. When
   `openspec/changes/<name>/brainstorm.md` exists and the branch has no
   pull request, the records disagree. The tree is clean, so the file is
   committed.
-- **Review plan.** On `lets-minimal`, it is done once plan is done. When
-  the archive folder exists, it is done, but the records disagree if the
-  pull request's `body` has no **Plan review** section with a
-  `Reviewed:` line and a `- **Verdict:**` line. No step can write the
-  section once the change is archived. Otherwise read the pull
-  request's body again, because a step in this run can have opened or
-  changed it:
+- **Review plan.** On `lets-minimal`, review plan is done once plan is
+  done. When the archive folder exists, review plan is done, but the
+  records disagree if the pull request's `body` has no **Plan review**
+  section with a `Reviewed:` line and a `- **Verdict:**` line. No step
+  can write the section once the change is archived. In any other case,
+  read the pull request's body again, because a step in this run can
+  have opened or changed the pull request:
 
   ```bash
   gh pr view <name> --json number,body
   ```
 
   Review plan is done when the **Plan review** section covers the plan.
-  Follow *Check an earlier review* in the `lets-review-plan` skill. Its
-  four rules say when a new round is needed. It then says when the
-  review is finished, with the fix commits under `APPROVE_WITH_CHANGES`.
-  Review plan is done when no rule calls for a new round and the review
-  is finished. Its reads change nothing:
+  To find out, follow *Check an earlier review* in the
+  `lets-review-plan` skill. Its four rules say when a new round is
+  needed. That section then says when the review is finished, with the
+  fix commits under `APPROVE_WITH_CHANGES`. When no rule calls for a new
+  round and the review is finished, review plan is done. The reads in
+  *Check an earlier review* change nothing:
   `git merge-base --is-ancestor`, `git log` and `git show`. When review
-  plan is not done, run it, whatever the state.
+  plan is not done, run it, whatever the `state` is.
 - **Build.** When the archive folder exists, build is done. Otherwise
   run `openspec instructions apply --change <name> --json` again, even
-  when the plan row has run it. A review plan round can add a task to a
-  built change. Build is done when the `state` is `all_done`. Any
-  `state` other than `blocked`, `ready` or `all_done` stops the run, as
-  for plan.
-- **Review build** is done when the archive folder exists.
+  when the plan row has run it, because a review plan round can add a
+  task to a built change. When the `state` is `all_done`, build is
+  done. When the `state` is anything other than `blocked`, `ready` or
+  `all_done`, stop the run, as for plan.
+- **Review build.** When the archive folder exists, review build is
+  done.
 
 Read a row's record when you reach the row, not before. A step that runs
 in this walk changes the records the next row reads.
 
 Then settle the row:
 
-- **Done:** print its Skip line from the table, filled from
+- **Done:** print the row's Skip line from the table, filled from
   [Read the records](#read-the-records). *Start* has printed shape's
   line already. Go on to the next row.
 - **Not done:** run the step, as [Run a step](#run-a-step) says. Then
@@ -674,24 +676,24 @@ When no row is left, go to [End of the run](#end-of-the-run).
 ### Records that disagree
 
 When the records disagree, print `Records disagree:` and what you found.
-Say what to fix by hand, and stop before any step. Repair nothing: each
-repair means choosing which record is right, and that is the user's
-choice.
+Say what to fix by hand, and stop before any step. Repair nothing,
+because each repair means choosing which record is right, and that
+choice is the user's.
 
 | What you found | What to fix by hand |
 |---|---|
 | `git status --porcelain` lists a path outside `.workspace/` | Commit or discard the path. |
-| The branch and `origin/<name>` have diverged | Reconcile the two, and push. |
-| A change folder and an archive folder for the same name | Keep the one that is right, and remove the other. |
+| The branch and `origin/<name>` have diverged | Reconcile the branch with `origin/<name>`, and push. |
+| A change folder and an archive folder for the same name | Keep the folder that is right, and remove the other. |
 | An archive folder, and the pull request is missing or a draft, or has no `Code review` section on `lets-standard` | Open the pull request, review it, or mark it ready, as `lets-review-build` does. Or revert the archive commit. |
 | `brainstorm.md` is committed, and the branch has no pull request | Push the branch, and open the draft pull request. |
 | An archived change on a schema other than `lets-minimal`, and the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line | Review the plan with the `lets-review-plan` skill, which writes the section. Or revert the archive commit. |
-| A `git log` read for a skipped step finds no commit | Name the command. The step's record is missing: find out why. |
+| A `git log` read for a skipped step finds no commit | Name the command, and find out why the step's record is missing. |
 
-Each case names what you found, such as the path, or the pull request's
-`isDraft`. A built change that is not archived, and whose pull request
-has no **Plan review** section, is not a disagreement. The walk reaches
-review plan first, and runs it.
+In each case, the printed line names what you found, such as the path,
+or the pull request's `isDraft`. A built change that is not archived,
+and whose pull request has no **Plan review** section, is not a
+disagreement. The walk reaches review plan first, and runs that step.
 
 ## The step table
 
