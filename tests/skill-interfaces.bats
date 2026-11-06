@@ -323,6 +323,14 @@ skill_has_section() {
   grep -qxF "${heading[@]}" -- "${files[@]}" || { echo "$1 has no heading: $2"; return 1; }
 }
 
+# skill_rows <skill> <pattern>: each line of the skill's SKILL.md or a
+# reference file that matches the extended regex.
+skill_rows() {
+  local files
+  mapfile -t files < <(skill_files "$1")
+  grep -hE -- "$2" "${files[@]}"
+}
+
 # steps_in_one_table <skill>: plan, review-plan, build and review-build each
 # have one row, a line that starts | `<step>` |, and all four rows sit in one
 # table, a run of lines that start with |, in one file of the skill.
@@ -883,15 +891,15 @@ walk_section() {
 
 @test "lets-go asks for a Code review section only on lets-standard" {
   local row
-  row="$(grep -E '^\| An archive folder' "$repo/skills/lets-go/SKILL.md")"
+  row="$(skill_rows lets-go '^\| An archive folder')"
   grep -qF '`lets-standard`' <<<"$row" || { echo "the archive row asks every flow for a Code review section"; false; }
-  run grep -nE '^\| Build is done' "$repo/skills/lets-go/SKILL.md"
+  run skill_rows lets-go '^\| Build is done'
   [ "$status" -eq 1 ] || { echo "a built change with no Plan review is still a disagreement: $output"; false; }
 }
 
 @test "an archived change with no Plan review section is a disagreement" {
   local row
-  row="$(grep -E '^\| An archived change on a schema other than `lets-minimal`' "$repo/skills/lets-go/SKILL.md")"
+  row="$(skill_rows lets-go '^\| An archived change on a schema other than `lets-minimal`')"
   grep -qF 'no **Plan review** section' <<<"$row" || { echo "lets-go has no disagreement for an archived change with no Plan review"; false; }
   grep -qF 'the records disagree if the pull request' <<<"$(walk_section)" ||
     { echo "the walk's review plan row does not check the section after archive"; false; }
@@ -899,7 +907,18 @@ walk_section() {
 
 # step_row <step>: lets-go's row for the step in its table of steps.
 step_row() {
-  grep -E "^\| \`$1\` \|" "$repo/skills/lets-go/SKILL.md"
+  skill_rows lets-go "^\| \`$1\` \|"
+}
+
+@test "step_row reads a row in a reference file" {
+  fixture_file lets-go references/steps.md '| `plan` | the fixture skill |'
+  [ "$(step_row plan)" = '| `plan` | the fixture skill |' ] || { echo "it read: $(step_row plan)"; false; }
+}
+
+@test "skill_rows reads a row of the disagreements table in a reference file" {
+  fixture_file lets-go references/records.md '| An archive folder exists | Fixture. |'
+  [ "$(skill_rows lets-go '^\| An archive folder')" = '| An archive folder exists | Fixture. |' ] ||
+    { echo "it read: $(skill_rows lets-go '^\| An archive folder')"; false; }
 }
 
 @test "lets-plan runs openspec-propose and reads the change state when it stops" {
