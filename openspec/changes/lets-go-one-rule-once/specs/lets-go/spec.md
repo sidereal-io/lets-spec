@@ -229,7 +229,7 @@ After *Set the level*, on the change's branch, `lets-go` SHALL read the records 
 - **THEN** its header has no *Done when* column
 
 ### Requirement: A closed pull request ends the run
-When the pull request's `state` is `MERGED`, `lets-go` SHALL say the change is merged and the run is finished, and stop. When its `state` is `CLOSED`, `lets-go` SHALL say the change was rejected and there is nothing to resume, and stop. Neither SHALL count as a disagreement, and neither SHALL run a step. The skill SHALL say when these stops run: when the change's branch still exists and the run can find its issue. That happens when a stacked pull request merged into the branch below it, which leaves its issue open, or when the user names a closed issue on the default branch and its branch is still there.
+When the pull request's `state` is `MERGED`, `lets-go` SHALL say the change is merged and the run is finished, and stop. When its `state` is `CLOSED`, `lets-go` SHALL say the change was rejected and there is nothing to resume, and stop. Neither SHALL count as a disagreement, and neither SHALL run a step. The skill SHALL say when these stops run. They run only when the change's branch still exists and the run can find its issue. That happens in three cases: a stacked pull request merged into the branch below it; a pull request closed without merging; or a closed issue the user names on the default branch, whose branch is still there. In the first two cases the issue stays open.
 
 #### Scenario: A merged pull request
 - **WHEN** `gh pr view lets-go-chore` says `state` is `MERGED`
@@ -244,7 +244,7 @@ When the pull request's `state` is `MERGED`, `lets-go` SHALL say the change is m
 - **THEN** `lets-go` finds #202 by the branch name, reads `MERGED`, says the change is merged, and runs no step
 
 ### Requirement: lets-go runs for a Chore, a Bug or a Story
-`lets-go` SHALL run on the repository's default branch, or on a change's branch. A change's branch is a branch named after the change, whose issue `lets-go` finds as *lets-go takes one issue number or an idea* says. On any other branch it SHALL say that `lets-go` runs on the default branch or on a change's branch, and stop. It SHALL run for an issue whose Kind is Chore, Bug or Story, for an issue of any other Kind but Epic, which it treats as a Story, and for an idea or an unshaped issue, which the shape step turns into one. It SHALL add no Kind check of its own: an Epic stops where *Confirm the packet* says an epic is built through its stories. For a Story with a parent, it SHALL read the parent's **Shared decisions** as *Confirm the packet* says, because *Route* needs them. When a procedure returns a result that ends the run, such as `unresolved` for a glossary prerequisite, `lets-go` SHALL stop as the part that ran it says.
+`lets-go` SHALL run on the repository's default branch, or on a change's branch. A change's branch is a branch named after the change, whose issue `lets-go` finds as *lets-go takes one issue number or an idea* says. On any other branch it SHALL say that `lets-go` runs on the default branch or on a change's branch, and stop. It SHALL run for an issue whose Kind is Chore, Bug or Story. It SHALL run for an issue of any other Kind but Epic as for a Story. It SHALL also run for an idea or an unshaped issue, which the shape step turns into one. It SHALL add no Kind check of its own: an Epic stops where *Confirm the packet* says an epic is built through its stories. For a Story with a parent, it SHALL read the parent's **Shared decisions** as *Confirm the packet* says, because *Route* needs them. When a procedure returns a result that ends the run, such as `unresolved` for a glossary prerequisite, `lets-go` SHALL stop as the part that ran it says.
 
 #### Scenario: A change's branch
 - **WHEN** the current branch is `lets-go-chore`, and issue #149's title starts with `lets-go-chore — `
@@ -294,7 +294,7 @@ When the pull request's `state` is `MERGED`, `lets-go` SHALL say the change is m
 - **THEN** *Read the settings* holds the Project query, and no part or procedure holds `no-project` or `several-projects`
 
 ### Requirement: Each lets-go procedure returns a result
-Each section under `## Procedures` in `lets-go` SHALL end by returning to the part that ran it, with a result. A procedure SHALL not tell the agent to stop, and SHALL not name the part that runs next: the part that ran it decides. Outside code, a procedure's text, its subsections included, SHALL not hold the word `stop` or `stops`, in any case. A procedure that can end more than one way SHALL list its results. Each result is a name in backticks, with when it is returned and what it carries, such as the issue, who has it, or what to tell the user. The results SHALL be these:
+Each section under `## Procedures` in `lets-go` SHALL end by returning to the part that ran it, with a result. *Glossary preflight*, which only *Claim* runs, SHALL return to *Claim*. A procedure SHALL not tell the agent to stop, and SHALL not name the part that runs next: the part that ran it decides. Outside code, a procedure's text, its subsections included, SHALL not hold the word `stop` or `stops`, in any case. A procedure that can end more than one way SHALL list its results. Each result is a name in backticks, with when it is returned and what it carries, such as the issue, who has it, or what to tell the user. The results SHALL be these:
 
 | Procedure | Results |
 |---|---|
@@ -310,7 +310,7 @@ Each section under `## Procedures` in `lets-go` SHALL end by returning to the pa
 
 #### Scenario: Every procedure returns
 - **WHEN** the skill-interfaces test reads each procedure of `lets-go`
-- **THEN** each one says it returns to the part that ran it, has no `Next:` line, and holds no `stop` or `stops` outside code
+- **THEN** each one says it returns to the part that ran it, or, for *Glossary preflight*, to *Claim*, has no `Next:` line, and holds no `stop` or `stops` outside code
 
 #### Scenario: A procedure that stops
 - **WHEN** a skills folder holds `lets-go/SKILL.md` whose *Confirm the packet* says ``Say to run the `lets-shape` skill on `#<i>`, and stop.``
@@ -319,6 +319,21 @@ Each section under `## Procedures` in `lets-go` SHALL end by returning to the pa
 #### Scenario: Confirm the packet lists its results
 - **WHEN** the skill-interfaces test reads *Confirm the packet*
 - **THEN** it finds `complete`, `needs-shape` and `epic`
+
+### Requirement: Review build ends the run
+The review build step SHALL run the `lets-review-build` skill. On `lets-standard` that skill reviews the code first. On every flow it then follows the project's finishing rules, verifies, archives, and marks the pull request ready. When it reports `done` and the check that *A done report is checked against its record* sets passes, or when the walk of *lets-go walks the step table* found every step done, the walk SHALL have printed one line per step, in order. A skipped step prints its skip line from *A skipped step's line carries its evidence and date*. A done step prints `Done`, the step's spoken name, a colon, the report's `date` and its evidence: `Done build: <date>. <evidence>`. Review plan prints the line *Review plan runs as a step, or is not in the route* sets. A failed step prints `Failed`, the spoken name, a colon and the reason: `Failed review build: <reason>`. The spoken name has a space, never a hyphen. `lets-go` SHALL then print the pull request's URL and stop. It SHALL keep no state of its own outside `.workspace/`, and SHALL need none: without its files in `.workspace/lets-go/`, a run reaches the same step.
+
+#### Scenario: A finished run
+- **WHEN** review build reports `done` with evidence `archive commit 9a1b2c3` and `pull request #167 ready`
+- **THEN** `lets-go` prints a line for shape, plan, review plan, build and review build, then the pull request's URL
+
+#### Scenario: A finished run on lets-standard
+- **WHEN** the review plan step and the build step ran in this run on `lets-standard`, and review build reports `done`
+- **THEN** the third line starts `Done review plan: ` and the fourth starts `Done build: `
+
+#### Scenario: Every step was already done
+- **WHEN** Start finds the archive folder `openspec/changes/archive/2026-11-04-lets-go-chore`, and pull request #167 is ready for review with a `Code review` section
+- **THEN** `lets-go` runs no step, prints five `Skipped` lines, then the pull request's URL
 
 ### Requirement: Each part names the action for each result
 A part that runs a procedure SHALL name each result the procedure can return there. For each one, it SHALL say what to do: go on, run another part, or tell the user what the result carries and stop. A part SHALL not hold a catch-all such as `any other stop stands`. The overview's *Stops when* column SHALL name the results a part stops on.
@@ -346,7 +361,7 @@ A part that runs a procedure SHALL name each result the procedure can return the
 ## ADDED Requirements
 
 ### Requirement: A done report is checked against its record
-After a `done` report from plan, review plan, build or review build, the walk SHALL run that row's done test again, with the same reads and the same disagreement rules, before it prints the step's line. When the test says the step is done, the walk SHALL print the step's `Done` line and go on. When the records disagree, `lets-go` SHALL stop as *Records that disagree stop the run* says. When the test says the step is not done, the step SHALL count as failed. `lets-go` SHALL print its `Failed` line, whose reason starts `the step reported done, but` and names the record and what it holds, and end the walk as for a `failed` report. It SHALL not run the step again. A shape step's `done` report SHALL need no check of its own, because *Check the issue* runs *Confirm the packet* after it, and a second `needs-shape` stops the run.
+After a `done` report from plan, review plan, build or review build, the walk SHALL check the report before it prints the step's line. It SHALL read the three records again, as at the start of the walk: `git status --porcelain`, `gh pr view <name> --json number,url,state,isDraft,body`, and the archive folder. It SHALL apply their disagreement rules, then run the row's done test. When the records disagree, `lets-go` SHALL stop as *Records that disagree stop the run* says. When the test says the step is done, the walk SHALL print the step's `Done` line and go on. When the test says the step is not done, the step has failed. `lets-go` SHALL print its `Failed` line, whose reason starts `the step reported done, but` and names the record and what it holds. It SHALL end the walk as for a `failed` report, and SHALL not run the step again. A shape step's `done` report SHALL need no check of its own: *Check the issue* runs *Confirm the packet* after it, and a second `needs-shape` stops the run.
 
 #### Scenario: Plan reports done on a blocked change
 - **WHEN** the plan step reports `done`, and `openspec instructions apply --change lets-go-chore --json` then says `blocked`
@@ -360,15 +375,19 @@ After a `done` report from plan, review plan, build or review build, the walk SH
 - **WHEN** the review build step reports `done`, the archive folder exists, and pull request #167 is still a draft
 - **THEN** `lets-go` prints `Records disagree:`, names the draft, and prints no `Done review build:` line
 
+#### Scenario: Plan leaves a file uncommitted
+- **WHEN** the plan step reports `done`, and `git status --porcelain` then lists `openspec/changes/lets-go-chore/tasks.md`
+- **THEN** `lets-go` prints `Records disagree:`, names the path, prints no `Done plan:` line, and runs no review plan
+
 #### Scenario: A report the records agree with
 - **WHEN** the build step reports `done`, and the state is then `all_done`
 - **THEN** `lets-go` prints `Done build:` with the report's date and evidence, and goes on to review build
 
 ### Requirement: Each lets-go rule is written once
-Each of these rules SHALL be written in one place in `lets-go`. Every other place that uses it SHALL link to it or name it, and SHALL not restate it.
+`lets-go` SHALL write each of these rules in one place. Every other place that uses a rule SHALL link to it or name it, and SHALL not restate it.
 
 - The interactivity level, in *Set the level*.
-- The form of each step's `Done`, `Skipped` and `Failed` line, and how `<date>` and `<evidence>` are filled, in one section.
+- The form of each step's `Done`, `Skipped` and `Failed` line, and what fills `<date>` and `<evidence>`, in one section.
 - The branch check, in *Check the issue*.
 - The Project query and its two stops, in *Read the settings*.
 - The prerequisite check, in *Check the prerequisite*.

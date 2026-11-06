@@ -1,6 +1,6 @@
 ## Context
 
-After #201, `skills/lets-go/SKILL.md` is 1,412 lines: an overview table, a Placeholders table, eleven parts as `##` headings, `## Procedures` with seven `###` procedures, then five `##` sections that are not parts (*The step table*, *Write the prompt*, *Run a step*, *Read the report*, *Relay the questions*). Each procedure returns a result, and the part that ran it acts on it.
+After #201, `skills/lets-go/SKILL.md` is 1,412 lines: an overview table, a Placeholders table, eleven parts as `##` headings, `## Procedures` with six `###` procedures, then five `##` sections that are not parts (*The step table*, *Write the prompt*, *Run a step*, *Read the report*, *Relay the questions*). Each procedure returns a result, and the part that ran it acts on it.
 
 These rules are written more than once today:
 
@@ -64,7 +64,7 @@ Alternative: keep the query where it is, and write the two stops once in a subse
 
 1. The level the user named.
 2. The level `lets go level` printed, when it is not `null`.
-3. The Kind's: `recommend` for a Chore or a Bug, and `ask` for any other Kind, Story included, as *Confirm the packet* reads any other Kind as a Story. Before a shape step there is no Kind, so it is `ask`, with the line `Interactivity: ask, because shape has not run yet.`
+3. The Kind's: `recommend` for a Chore or a Bug, and `ask` for any other Kind, Story included, as *Confirm the packet* reads any other Kind as a Story. Before a shape step, the Kind does not count, even when the Project already has one, as for a Bug whose packet lacks a line. So the third source is `ask`, with the line `Interactivity: ask, because shape has not run yet.`
 
 The four `Interactivity:` lines sit there, in one code block. *Run the shape step* step 2 becomes: set `<level>` as [Set the level](#set-the-level) says, before the shape step, and print its line. "After a shape step, set it again here" goes. "Do not run `lets go level` again" stays.
 
@@ -74,12 +74,13 @@ A new `### The step lines` sits under `## The step table`, after *Read the recor
 
 - the `Done` form, with one line per step in one code block, shape's included: `Done shape: <date>. <evidence>` to `Done review build: <date>. <evidence>`;
 - the `Skipped` lines: shape's, `Skipped shape: #<i>'s packet is complete, last edited <date>.`, and a pointer to each row's *Skip line* in the table for the other steps;
-- the `Failed` form, `Failed <step name>: <reason>`, written with a real step, such as `Failed review build: <reason>`, as today. A line names a step with a space, never a hyphen;
+- the `Failed` form: `Failed`, the step's name, a colon and the reason, as `Failed review build: <reason>` and `Failed shape: <reason>`. A line names a step with a space, never a hyphen;
 - what fills `<date>` and `<evidence>` on each kind of line: a report's `date` and its `evidence` joined with `; `; the record's author date, from *Read the records*; or the issue's last edit, or its creation date when `lastEditedAt` is null, with the `gh issue view <i> --json createdAt` read;
-- when shape's line prints: `Done shape` once per run, when this run has not printed it yet; `Skipped shape` once for each issue *Check the issue* passes;
-- the example run that *End of the run* holds today.
+- when shape's line prints: `Done shape` once per run, when this run has not printed it yet; `Skipped shape` once for each issue *Check the issue* passes, and only when no shape step ran in this run. So a story picked after a lost claim in a discovery run prints neither.
 
-*Check the issue* step 6 says: print shape's line, as [The step lines](#the-step-lines) says. *Pick the first ready story* on `nothing-ready` says the same. *Read the report* and *End of the run* link to it instead of describing the forms. *End of the run* keeps the URL, the `.workspace/lets-go/` note and "The run is over."
+The example run that *End of the run* holds today goes. It writes four line forms a second time, and the order of the lines is already the order of the steps. The Placeholders rows for `<date>`, `<evidence>` and `<reason>` say only what each one is, and name *The step lines* as where the run sets it, so they do not restate the rule.
+
+*Check the issue* step 6 says: print shape's line, as [The step lines](#the-step-lines) says. *Pick the first ready story* on `nothing-ready` says the same. *Read the report* and *End of the run* link to it instead of describing the forms. *Read the report*'s `failed`, for shape bullet keeps its place before the general `failed` bullet, and prints shape's `Failed` line from the section. *End of the run* keeps the URL, the `.workspace/lets-go/` note and "The run is over."
 
 Alternative: put the section in *End of the run*, where most of the text is now. Rejected: *End of the run* is a part, and runs last. A rule the first part of the walk uses belongs with the step table, which every line names.
 
@@ -99,23 +100,25 @@ In *Walk the step table*, each row's bullet becomes a short numbered list, heade
 2. When the archive folder exists, review plan is done. The records disagree when the pull request's `body` has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line.
 3. Otherwise read the body again, with `gh pr view <name> --json number,body`, and follow *Check an earlier review*, as now.
 
-Plan, build and review build get the same shape, with the archive folder first. The step table drops its *Done when* column and keeps *Step*, *Skill*, *Record* and *Skip line*. Its intro sentence on the state moves into the walk, which reads it. Each numbered list starts at 1 under its own heading, as `lists_start_at_one` checks.
+Plan, build and review build get the same shape, with the archive folder first. The step table drops its *Done when* column and keeps *Step*, *Skill*, *Record* and *Skip line*. Its intro sentence on the state moves into the walk, which reads it. The rows stay bullets, not headings: a heading inside the part would end it for `parts_say_next` and `next_line`. Each nested list starts at 1. `lists_start_at_one` checks only the first list after a heading, so it does not check these.
 
 ### The walk checks a `done` report
 
-*Read the report*'s `done` case, for any step but shape, becomes: run the row's done test again, from the walk, with its reads and disagreement rules.
+*Read the report*'s `done` case, for any step but shape, becomes: read the three records again, as the walk does before its first row, then run the row's done test. The reads are `git status --porcelain`, `gh pr view <name> --json number,url,state,isDraft,body` and the archive folder. The step may have changed any of them, so a read from before the step cannot answer. For review build, the archive folder's own disagreement rules run here, so a draft pull request is caught.
 
 - **Done:** print the step's `Done` line, and go on to the next row.
 - **The records disagree:** stop as [Records that disagree](#records-that-disagree) says.
-- **Not done:** the step failed. Its reason starts `the step reported done, but`, then names the record and what it holds. For example: `the step reported done, but the change state is blocked`, or `the step reported done, but pull request #<pr> has no Plan review section that covers the plan`. Go on as for `failed`, below.
+- **Not done:** the step failed. Its reason starts `the step reported done, but`, then names the record and what it holds. For example: `the step reported done, but the change state is blocked`, `the step reported done, but pull request #<pr> has no Plan review section that covers the plan`, or `the step reported done, but the branch has no pull request`. Go on as for `failed`, below.
 
-The reason fills `<reason>`, so the `Failed` line needs no new placeholder. The walk's `Not done` bullet and the overview's *Stops when* for the walk name the new case. Shape gets no change: *Check the issue* already runs *Confirm the packet* after it (D13).
+The reason fills `<reason>`, so the `Failed` line needs no new placeholder. The `<reason>` row in Placeholders names this source beside a `failed` report. The walk's `Not done` bullet and the overview's *Stops when* for the walk name the new case. Shape gets no change: *Check the issue* already runs *Confirm the packet* after it (D13).
 
 ### Branches that never run go, or say when they run
 
-- *Find the source of demand* ends "Return to the part that ran it, with the result." The *Claim* clause goes. The pinned `When *Claim* ran it, return to *Claim*` still sits in *What the preflight returns*, where it is true.
+- *Find the source of demand* ends "Return to the part that ran it, with the result." The *Claim* clause goes.
+- *What the preflight returns* ends "Return to *Claim*, with the result." Only *Claim* runs the whole preflight, so its "Otherwise, return to the part that ran it" goes. The pinned `When *Claim* ran it, return to *Claim*` is reworded with it, and the procedure-return check accepts *Claim* for *Glossary preflight*.
 - Review plan on `lets-minimal` is the first item of its list (above), with no "once plan is done".
-- The walk's `MERGED` and `CLOSED` stops gain one sentence: they run when the branch still exists and the run finds its issue. That is a stacked pull request merged into the branch below it, which leaves its issue open, or a closed issue the user names on the default branch.
+- The walk's `MERGED` and `CLOSED` stops gain one sentence: they run when the branch still exists and the run finds its issue. That is a stacked pull request merged into the branch below it, a pull request closed without merging, or a closed issue the user names on the default branch. In the first two cases the issue stays open.
+- *Start from an idea* no longer stops on its own: its overview *Stops when* cell becomes `Never`.
 
 ### The tests change with the sentences they pin
 
@@ -128,7 +131,10 @@ Each pinned phrase that moves follows its sentence: the Project query check read
 - the step table's header has no *Done when*;
 - review plan's done test lists `lets-minimal` before the archive folder;
 - *Read the report* runs the done test again after `done`, and holds `the step reported done, but`;
-- *Find the source of demand* does not return to *Claim*.
+- *Find the source of demand* does not return to *Claim*, and *What the preflight returns* returns to *Claim* only;
+- `no-owned-edits` does not say *Check the prerequisite* returned `resolved`, and *Glossary preflight*'s opening says *Claim* runs only the rest of the preflight (D8);
+- the walk's `MERGED` sentence names a stacked pull request (D14);
+- *Read the report*'s `done` case reads `gh pr view <name> --json number,url,state,isDraft,body` again.
 
 ## Risks / Trade-offs
 
@@ -136,6 +142,7 @@ Each pinned phrase that moves follows its sentence: the Project query check read
 - [A part still handles `no-project` or `branch-exists`, which nothing returns] → a new check bans both names in `lets-go`.
 - [The no-Project stop now comes first, before a stop that names the wrong branch] → The user chose this (D7). Both stops are true, and the repository cannot run `lets-go` without a single Project.
 - [The `done` check turns a real success into a failure, for example when a record lags] → Every record the test reads is local Git or a fresh `gh pr view`, which the step itself just wrote. A false failure stops the run with the record named, and the next run picks up from the same step.
+- [Without *Claim*'s own check, a branch made in the seconds between *Check the issue* and *Claim* is caught only by `git switch -c`, which sees local branches only. Two sessions of one user that both pass the assignee check can also release each other's claim] → The second case is the claim race, being shaped as a separate bug, and *Claim*'s old check did not close it. The first needs someone to push the branch in those seconds. The plan step's first push of the new branch is then rejected, because `origin` holds other history, and that step fails with the error.
 - [The edits change text the plan did not name] → As in #201, the last task diffs the old and new `SKILL.md` sentence by sentence, and accounts for every changed sentence.
 
 ## Migration & Rollback
