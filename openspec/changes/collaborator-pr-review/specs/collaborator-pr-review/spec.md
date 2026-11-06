@@ -126,7 +126,7 @@ A published concern SHALL have a specific basis, a plausible meaningful conseque
 
 ### Requirement: One comment explains the result
 
-The review SHALL publish one consolidated PR comment identifying the revision, completed passes and reason for stopping. Concerns SHALL appear in descending order of perceived criticality, with evidence, likely consequence, uncertainty and suggested next steps. It SHALL distinguish observations, interpretations and suggested remedies, separate unresolved questions, use polite language and leave decisions with people. It SHALL identify criticality as the reviewer's assessment and distinguish severity from confidence. It SHALL NOT publish the examiner–challenger transcript.
+The review SHALL publish one consolidated PR comment identifying the revision, completed passes and reason for stopping. Concerns SHALL appear in descending order of perceived criticality, with evidence, likely consequence, uncertainty and suggested next steps. It SHALL distinguish observations, interpretations and suggested remedies, separate unresolved questions, use polite language and leave decisions with people. It SHALL identify criticality as the reviewer's assessment and distinguish severity from confidence. The comment SHALL start by stating that it is an AI-generated review, name the models used, and make clear that it is posted through the invoking user's account. It SHALL use plain language, put useful findings before process details, and keep detailed review records in a collapsible section without hiding material uncertainty. It SHALL NOT publish the examiner–challenger transcript.
 
 #### Scenario: Several concerns survive
 - **WHEN** a review has concerns of different potential consequence and confidence
