@@ -20,7 +20,7 @@ These tasks change `skills/lets-go/SKILL.md` and the tests that pin its wording.
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [medium] Nothing the plan did not name has changed. Diff the old `SKILL.md` (at this change's base, `origin/lets-go-run-at-a-glance`) and the new one sentence by sentence: one sentence per line, then `sort` and `comm`. Account for every changed sentence in a task above or in the Deviations Ledger. The whole suite, the flake and strict validation pass (verify: pnpm test && nix flake check && openspec validate lets-go-procedures-return --strict)
+- [x] 3.1 [medium] Nothing the plan did not name has changed. Diff the old `SKILL.md` (at this change's base, `origin/lets-go-run-at-a-glance`) and the new one sentence by sentence: one sentence per line, then `sort` and `comm`. Account for every changed sentence in a task above or in the Deviations Ledger. The whole suite, the flake and strict validation pass (verify: pnpm test && nix flake check && openspec validate lets-go-procedures-return --strict) (✓ pnpm test && nix flake check && openspec validate lets-go-procedures-return --strict passed; the sentence diff against origin/lets-go-run-at-a-glance removed 83 sentences and added 164, each from a task above)
 
 ## Deviations Ledger
 
@@ -28,3 +28,4 @@ These tasks change `skills/lets-go/SKILL.md` and the tests that pin its wording.
 
 - 2026-11-06, task 2.5: five of *Check the checkpoint*'s six failing checks return `checkpoint-failed`. The sixth, the second run of *Check the prerequisite*, returns `unresolved`, as design.md *The checkpoint returns `checkpoint-failed`* and the spec's results table say. The task's "each of its six" counted the six pinned phrases.
 - 2026-11-06, task 2.5: *Glossary preflight*'s results sit under a heading of their own, `#### What the preflight returns`, after its two subsections. Text after `#### Check the checkpoint` with no heading would read as part of that check.
+- 2026-11-06, section 2: a few checks beside the ones the tasks name keep what the plan decided: *Start from an idea* asks about the matches and *Find the source of demand* does not; *Enter the branch* imports only after `verified`; *Enter the branch*'s `Next:` line names both ways back after a lost claim; the overview names results and no stop in a procedure.
