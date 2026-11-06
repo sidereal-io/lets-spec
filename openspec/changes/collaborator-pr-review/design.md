@@ -31,6 +31,8 @@ Add `skills/lets-review-pr/SKILL.md` with focused references for pass prompts, p
 
 Use existing `lets delegate review instructions --for plan` for decision passes and `--for code` for implementation and focused implementation questions. Rank permitted discovered models with the implementer's known model as a preference to avoid, not a requirement for a different family. Unknown authorship remains unknown; do not infer it from the reviewer's identity. Existing model metadata supports honest reporting, without defining a new independence flag. When discovery provides no options or every model is refused, use the existing fresh read-only subagent fallback. If no such delegation is available, report the review incomplete; do not substitute an unchallenged review.
 
+`lets delegate review run` requires `--source-family`. When the implementer's family is known, use it. When it is unknown, pass the mediator's known family only as a CLI compatibility value. Keep implementer provenance unknown in prompts and publication; the resulting `independent` boolean compares the role to that compatibility value and is not evidence of independence from the implementer. Contract tests must cover this unknown-provenance path. If the mediator's family cannot be represented by the existing CLI, use an available fresh read-only native subagent or report the unsupported prerequisite; never invent a family.
+
 Alternatives: changing the CLI would impose a new contract for judgment expressed in prompts; reusing author-review skills directly would import their build gates, verdicts and PR body writes. Both exceed the independent comment workflow.
 
 ### Capture immutable Git inputs before starting passes
