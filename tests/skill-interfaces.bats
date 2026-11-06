@@ -314,6 +314,15 @@ skill_does_not_say() {
   ! skill_text "$1" | grep -q "${case[@]}" -F -- "$2" || { echo "$1 still says: $2"; return 1; }
 }
 
+# skill_has_section <skill> <name>: a line of the skill's SKILL.md or a
+# reference file is a heading with that name, at any level.
+skill_has_section() {
+  local level heading=() files
+  for level in '#' '##' '###' '####' '#####' '######'; do heading+=(-e "$level $2"); done
+  mapfile -t files < <(skill_files "$1")
+  grep -qxF "${heading[@]}" -- "${files[@]}" || { echo "$1 has no heading: $2"; return 1; }
+}
+
 # fixture_file <skill> <path> <line>...: writes the lines to the file in a
 # skills folder under the test's temporary folder, gives the skill a SKILL.md
 # if it has none, and points the helpers at that folder.
@@ -500,13 +509,28 @@ review_build_start() {
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
+@test "the section check finds a section in a reference file" {
+  fixture_file lets-go references/glossary-preflight.md '## Check the checkpoint' 'Steps.'
+  skill_has_section lets-go 'Check the checkpoint'
+}
+
+@test "the section check finds a section at another heading level" {
+  fixture_file lets-go SKILL.md '# lets-go' '## Route' 'Text.'
+  skill_has_section lets-go 'Route'
+}
+
+@test "the section check names a missing section" {
+  fixture_file lets-go SKILL.md '# lets-go' '### Claimed' 'Text that says Claim.'
+  run skill_has_section lets-go 'Claim'
+  [ "$status" -eq 1 ] || { echo "it passed on a skill with no Claim heading"; false; }
+  [ "$output" = 'lets-go has no heading: Claim' ] || { echo "it said: $output"; false; }
+}
+
 @test "lets-go's Start holds the sections that find, confirm, route and claim the issue" {
   local section
-  for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Glossary preflight' 'Claim' 'Import the glossary checkpoint'; do
-    grep -qx "### $section" "$repo/skills/lets-go/SKILL.md" || { echo "lets-go has no heading: $section"; false; }
-  done
-  for section in 'Check the prerequisite' 'Check the checkpoint' 'Import the commits' 'Recover from a failed import'; do
-    grep -qx "#### $section" "$repo/skills/lets-go/SKILL.md" || { echo "lets-go has no heading: $section"; false; }
+  for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Glossary preflight' 'Claim' 'Import the glossary checkpoint' \
+    'Check the prerequisite' 'Check the checkpoint' 'Import the commits' 'Recover from a failed import'; do
+    skill_has_section lets-go "$section"
   done
   skill_says lets-go 'gh issue view <i> --json createdAt'
   skill_says lets-go 'gh repo view --json defaultBranchRef --jq .defaultBranchRef.name'
