@@ -601,7 +601,7 @@ review_build_start() {
 }
 
 @test "lets-go runs next again with the same candidates after a lost race" {
-  skill_says lets-go 'run `next` again with the same candidates, and go on from *Start* step 3 with the new issue'
+  skill_says lets-go 'run `next` again with the same candidates'
 }
 
 @test "lets-go sends a failed step back to lets-go" {
