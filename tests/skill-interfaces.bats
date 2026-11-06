@@ -845,8 +845,10 @@ review_build_start() {
 }
 
 @test "Pick the first ready story prints Done shape once after a lost claim" {
-  grep -qF 'when this run has not printed it yet' <<<"$(part_section 'Pick the first ready story')" ||
-    { echo "Pick the first ready story prints Done shape again after a lost claim"; false; }
+  grep -qF 'when this run has not printed it yet' <<<"$(skill_section lets-go 'The step lines')" ||
+    { echo "The step lines print Done shape again after a lost claim"; false; }
+  grep -qF '](#the-step-lines)' <<<"$(part_section 'Pick the first ready story')" ||
+    { echo "Pick the first ready story does not link The step lines"; false; }
 }
 
 @test "lets-go sends a failed step back to lets-go" {
@@ -1701,10 +1703,31 @@ walk_section() {
 }
 
 @test "Check the issue prints shape's line before the walk" {
-  local part line
-  part="$(part_section 'Check the issue')"
+  local lines line
+  lines="$(skill_section lets-go 'The step lines')"
   for line in "Skipped shape: #<i>'s packet is complete, last edited <date>." 'Done shape: <date>. <evidence>'; do
-    grep -qF -- "$line" <<<"$part" || { echo "Check the issue does not print: $line"; false; }
+    grep -qF -- "$line" <<<"$lines" || { echo "The step lines do not hold: $line"; false; }
+  done
+  grep -qF 'only when no shape step ran in this run' <<<"$lines" ||
+    { echo "The step lines print Skipped shape after a shape step"; false; }
+  grep -qF '](#the-step-lines)' <<<"$(part_section 'Check the issue')" ||
+    { echo "Check the issue does not link The step lines"; false; }
+}
+
+@test "each step line, and what fills it, is written once, in The step lines" {
+  local phrase part lines
+  lines="$(skill_section lets-go 'The step lines')"
+  for phrase in 'Done shape: <date>. <evidence>' "Skipped shape: #<i>'s packet is complete, last edited <date>." \
+    '`evidence`, joined with `; `' 'Failed shape: <reason>' 'Failed review build: <reason>'; do
+    skill_says_once lets-go "$phrase"
+    grep -qF -- "$phrase" <<<"$lines" || { echo "The step lines do not hold: $phrase"; false; }
+  done
+  for part in 'Read the report' 'End of the run'; do
+    grep -qF '](#the-step-lines)' <<<"$(part_section "$part")" || { echo "$part does not link The step lines"; false; }
+  done
+  for phrase in '<date>' '<evidence>' '<reason>'; do
+    skill_rows lets-go "^\| \`$phrase\` \|" | grep -qF '[The step lines](#the-step-lines)' ||
+      { echo "the $phrase row does not name The step lines"; false; }
   done
 }
 

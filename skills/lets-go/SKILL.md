@@ -72,11 +72,11 @@ sets it.
 | `<schema>` | The change's schema | [Enter the branch](#enter-the-branch) |
 | `<route line>` | The line *Route* says, such as `Route: lets-minimal, because #<i> is a Chore.` | [Route](#route) |
 | `<title>` | The title of the issue the line names | The command or report line that names the issue |
-| `<date>` | The date on a printed line | The line's own read: a report's `date`, a commit's author date, or the issue's last edit |
+| `<date>` | The date on a printed line | [The step lines](#the-step-lines), for each kind of line |
 | `<sha>` | A commit's short hash, or the commit a review names | [Read the records](#read-the-records), or the review plan report |
 | `<verdict>` | A plan review's verdict | The **Plan review** section, or the review plan report |
-| `<evidence>` | A `done` report's `evidence`, joined with `; ` | [Read the report](#read-the-report) |
-| `<reason>` | A `failed` report's `reason` | [Read the report](#read-the-report) |
+| `<evidence>` | What a `done` report's `evidence` lists | [The step lines](#the-step-lines) |
+| `<reason>` | Why a step failed | [The step lines](#the-step-lines), from a `failed` report's `reason` |
 | `<YYYY-MM-DD>` | The date in an archive folder's name | The folder's name in `openspec/changes/archive/` |
 | `<first>` | The first model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
 | `<second>` | The second model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
@@ -261,28 +261,8 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
      run the `lets-shape` skill on `#<i>`, and stop.
    - **`epic`:** say that an epic is built through its stories, list the
      open sub-issues the result carries, and stop.
-6. When *Confirm the packet* returns `complete`, shape is done. When a shape step
-   reported `done` in this run, print its line. `<date>` is the report's
-   `date`, and `<evidence>` is its `evidence`, joined with `; `:
-
-   ```text
-   Done shape: <date>. <evidence>
-   ```
-
-   Otherwise print:
-
-   ```text
-   Skipped shape: #<i>'s packet is complete, last edited <date>.
-   ```
-
-   Here `<date>` is the day of the issue's `lastEditedAt`, from the thread
-   query in *Confirm the packet*, as `YYYY-MM-DD`. When `lastEditedAt`
-   is null, the body was never edited. Use the day the issue was
-   created:
-
-   ```bash
-   gh issue view <i> --json createdAt --jq .createdAt
-   ```
+6. When *Confirm the packet* returns `complete`, shape is done. Print
+   shape's line, as [The step lines](#the-step-lines) says.
 
 Next: [Run the shape step](#run-the-shape-step) when *Confirm the packet*
 returned `needs-shape` and shape can run; otherwise [Route](#route).
@@ -349,8 +329,8 @@ of them in this run.
 
      That story is `<i>`. Go on from the blocker read in
      [Check the issue](#check-the-issue) with it, as for an issue number.
-   - **`nothing-ready`:** print the `Done shape` line that
-     *Check the issue* shows, when this run has not printed it yet. Say
+   - **`nothing-ready`:** print the `Done shape` line, as
+     [The step lines](#the-step-lines) says. Say
      that no story under `#<parent>` is
      ready. Name each story, and why it was left out, as the result
      carries it: for example, its blocker, its assignee, an unresolved
@@ -586,38 +566,8 @@ disagreement. The walk reaches review plan first, and runs it.
 
 ## End of the run
 
-The walk prints each row's line when it settles the row. The line is
-`Skipped` when the step was done before this run, `Done` after a `done`
-report, and `Failed` after a `failed` one. A step can take an hour,
-so print each line as it comes. A run's lines look like this:
-
-```text
-Skipped shape: #<i>'s packet is complete, last edited <date>.
-Done plan: <date>. <evidence>
-Skipped review plan: not in the lets-minimal route.
-Done build: <date>. <evidence>
-Done review build: <date>. <evidence>
-```
-
-When a shape step ran in this run, the first line is its `Done` form
-instead:
-
-```text
-Done shape: <date>. <evidence>
-```
-
-`<date>` on a `Done` line is the report's `date`, and `<evidence>` is its
-`evidence`, joined with `; `. Review plan's line is the same form as the
-others:
-
-```text
-Done review plan: <date>. <evidence>
-```
-
-When every step was already done, all five lines are `Skipped` lines. A
-failed step prints `Failed`, the step's name, a colon and the reason,
-such as `Failed review build: <reason>`, and ends the walk. A line names
-a step with a space, never a hyphen.
+The walk prints each row's line when it settles the row, as
+[The step lines](#the-step-lines) says. A failed step ends the walk.
 
 When `review-build` reports `done`, its *Finish the change* has marked
 the pull request ready for review. When the walk is over, print the pull
@@ -1013,8 +963,8 @@ from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is
 the short hash, from `%h`. A read that prints nothing means the
 [records disagree](#records-that-disagree).
 
-- **Shape.** *Check the issue* reads the issue's last edit, and prints
-  the line.
+- **Shape.** [The step lines](#the-step-lines) says how to date shape's
+  line.
 - **Plan.** Read the commit that added the task list:
 
   ```bash
@@ -1051,6 +1001,55 @@ the short hash, from `%h`. A read that prints nothing means the
 
 The plan and build reads work after archive too. Archive removes the
 old path, and its history keeps the add and the ticks.
+
+### The step lines
+
+The run prints one line for each step, when it settles the step: `Done`
+after a `done` report, `Skipped` when the step was done before this run,
+and `Failed` after a `failed` report. A step can take an hour, so print
+each line as it comes. A line names a step with a space, never a
+hyphen.
+
+A `Done` line is one of these. `<date>` is the report's `date`, and
+`<evidence>` is its `evidence`, joined with `; `:
+
+```text
+Done shape: <date>. <evidence>
+Done plan: <date>. <evidence>
+Done review plan: <date>. <evidence>
+Done build: <date>. <evidence>
+Done review build: <date>. <evidence>
+```
+
+A `Skipped` line is the Skip line in the step's row of
+[The step table](#the-step-table), with `<date>` and `<sha>` from
+[Read the records](#read-the-records). Shape has no row. Its line is:
+
+```text
+Skipped shape: #<i>'s packet is complete, last edited <date>.
+```
+
+Here `<date>` is the day of the issue's `lastEditedAt`, from the thread
+query in *Confirm the packet*, as `YYYY-MM-DD`. When `lastEditedAt` is
+null, the body was never edited. Use the day the issue was created:
+
+```bash
+gh issue view <i> --json createdAt --jq .createdAt
+```
+
+When every step was already done, all five lines are `Skipped` lines.
+
+A `Failed` line is `Failed`, the step's name, a colon and the reason,
+`<reason>`, such as `Failed review build: <reason>` or
+`Failed shape: <reason>`.
+
+Shape's line prints at most once for an issue. Print `Done shape` after
+a shape step reported `done`, once per run, when this run has not
+printed it yet: *Check the issue* prints it, or
+*Pick the first ready story* when no story is ready. Print
+`Skipped shape` once for each issue whose packet *Check the issue* finds
+complete, and only when no shape step ran in this run. So a story
+picked after a lost claim in a discovery run prints neither.
 
 ### The change's name
 
@@ -1330,14 +1329,14 @@ start with no answers.
 
 - **`done`**: after `shape`, go on as
   [Run the shape step](#run-the-shape-step) says. After any other step,
-  print its `Done` line, as [End of the run](#end-of-the-run) says, and
+  print its `Done` line, as [The step lines](#the-step-lines) says, and
   go on to the next row of the [walk](#walk-the-step-table).
 - **`needs-input`**: [relay its questions](#relay-the-questions).
-- **`failed`, for shape**: there is no branch yet. Print
-  `Failed shape: <reason>`. Say to run `lets-shape` on the idea, or on
-  `#<i>`, and name no branch. Stop.
+- **`failed`, for shape**: there is no branch yet. Print shape's
+  `Failed` line, as [The step lines](#the-step-lines) says. Say to run
+  `lets-shape` on the idea, or on `#<i>`, and name no branch. Stop.
 - **`failed`**: print its `Failed` line, as
-  [End of the run](#end-of-the-run) says. The walk ends here. Name the
+  [The step lines](#the-step-lines) says. The walk ends here. Name the
   step and the branch `<name>`, and say that running `lets-go` again on
   that branch carries on from the first unfinished step. The step may
   have opened the pull request, so look for it again:
