@@ -556,7 +556,9 @@ a step with a space, never a hyphen.
 
 When `review-build` reports `done`, its *Finish the change* has marked
 the pull request ready for review. When the walk is over, print the pull
-request's URL. A failed shape has none: there is no branch yet.
+request's URL. A failed shape has none: there is no branch yet. Nor
+does a step that failed before the branch had a pull request: say that
+the branch has no pull request yet.
 
 ```bash
 gh pr view <name> --json url --jq .url
@@ -1208,14 +1210,22 @@ start with no answers.
   print its `Done` line, as [End of the run](#end-of-the-run) says, and
   go on to the next row of the [walk](#walk-the-step-table).
 - **`needs-input`**: [relay its questions](#relay-the-questions).
-- **`failed`**: print its `Failed` line, as
-  [End of the run](#end-of-the-run) says. The walk ends here. Name the
-  step and the branch `<name>`, and say that running `lets-go` again on
-  that branch carries on from the first unfinished step. Print the pull
-  request's URL. Stop. Never run a failed step again.
 - **`failed`, for shape**: there is no branch yet. Print
   `Failed shape: <reason>`. Say to run `lets-shape` on the idea, or on
   `#<i>`, and name no branch. Stop.
+- **`failed`**: print its `Failed` line, as
+  [End of the run](#end-of-the-run) says. The walk ends here. Name the
+  step and the branch `<name>`, and say that running `lets-go` again on
+  that branch carries on from the first unfinished step. The step may
+  have opened the pull request, so look for it again:
+
+  ```bash
+  gh pr view <name> --json url --jq .url
+  ```
+
+  When it finds one, print the pull request's URL. When it finds none,
+  print no URL, and say that the branch has no pull request yet. Stop.
+  Never run a failed step again.
 
 ## Relay the questions
 

@@ -1358,6 +1358,23 @@ walk_section() {
   done
 }
 
+@test "Read the report handles a failed shape before any other failed step" {
+  local part shape other
+  part="$(part_section 'Read the report')"
+  shape="${part%%'- **`failed`, for shape**'*}"
+  other="${part%%'- **`failed`**:'*}"
+  [ "$shape" != "$part" ] || { echo "Read the report has no failed shape case"; false; }
+  [ "$other" != "$part" ] || { echo "Read the report has no failed case for another step"; false; }
+  [ "${#shape}" -lt "${#other}" ] || { echo "Read the report reads another failed step before a failed shape"; false; }
+}
+
+@test "a failed step on a branch with no pull request prints no URL" {
+  local part
+  part="$(part_section 'Read the report')"
+  grep -qF 'gh pr view <name> --json url --jq .url' <<<"$part" || { echo "Read the report does not look for the pull request again"; false; }
+  grep -qF 'no pull request yet' <<<"$part" || { echo "Read the report does not say the branch has no pull request yet"; false; }
+}
+
 @test "a review plan step that ran prints its line from its report" {
   local phrase
   skill_says lets-go 'Done review plan: <date>. <evidence>'
