@@ -850,6 +850,7 @@ pr_reference_says() {
 
 @test "collaborator review provenance" {
   skill_says lets-review-pr 'Co-Authored-By'
+  skill_says lets-review-pr 'A family is the part before the first `/` in a discovered option ID.'
   skill_says lets-review-pr 'all known implementer models'
   skill_says lets-review-pr 'outside the known exact-model set, then outside the known-family set, then discovery order'
   skill_says lets-review-pr 'Family-only evidence never establishes an exact model'
