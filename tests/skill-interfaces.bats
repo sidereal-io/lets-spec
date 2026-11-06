@@ -293,11 +293,12 @@ skill_files() {
   return 0
 }
 
-# skill_text <skill>: the skill's files as one text, each run of whitespace
-# one space, so a string may wrap across lines.
+# skill_text <skill>: each of the skill's files on a line of its own, each
+# run of whitespace one space, so a string may wrap across lines but not run
+# from one file into the next.
 skill_text() {
   local file
-  skill_files "$1" | while IFS= read -r file; do cat "$file"; echo; done | tr -s '[:space:]' ' '
+  skill_files "$1" | while IFS= read -r file; do tr -s '[:space:]' ' ' <"$file"; echo; done
 }
 
 # skill_says <skill> <fixed text>: the skill's SKILL.md or a reference file
@@ -365,6 +366,13 @@ fixture_file() {
 @test "skill_says finds a string that wraps across two lines of a reference file" {
   fixture_file lets-go references/records.md 'The fixture records' 'disagree: here.'
   skill_says lets-go 'The fixture records disagree: here.'
+}
+
+@test "skill_says does not match a string split across two files" {
+  fixture_file lets-go SKILL.md '# lets-go' 'The fixture records'
+  fixture_file lets-go references/records.md 'disagree: here.'
+  run skill_says lets-go 'The fixture records disagree: here.'
+  [ "$status" -eq 1 ] || { echo "it matched across the end of SKILL.md"; false; }
 }
 
 @test "skill_says names a string no file of the skill holds" {
