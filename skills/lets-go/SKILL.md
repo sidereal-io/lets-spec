@@ -768,7 +768,8 @@ A stop repairs nothing, and leaves user edits as they are.
 The verified glossary import is the only implementation step this skill
 adds, beside [the discovery map commit](#commit-the-discovery-map).
 
-Return to the part that ran it.
+When *Claim* ran it, return to *Claim*, which goes on to claim the issue.
+Otherwise, return to the part that ran it.
 
 ### Claim
 
