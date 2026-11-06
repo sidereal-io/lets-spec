@@ -916,6 +916,20 @@ review_build_start() {
     { echo "lets go level is on line $first_level, after a GitHub call on line $first_gh"; false; }
 }
 
+@test "the level rule is written once, in Set the level, and the shape step links it" {
+  local shape level
+  shape="$(part_section 'Run the shape step')"
+  level="$(part_section 'Set the level')"
+  grep -qF '](#set-the-level)' <<<"$shape" || { echo "Run the shape step does not link Set the level"; false; }
+  ! grep -qF 'because your lets config sets go.level' <<<"$shape" ||
+    { echo "Run the shape step still writes the level rule"; false; }
+  grep -qF '`ask` for any other Kind' <<<"$level" || { echo "Set the level names no level for any other Kind"; false; }
+  grep -qF 'Interactivity: ask, because shape has not run yet.' <<<"$level" ||
+    { echo "Set the level does not hold shape's level line"; false; }
+  skill_does_not_say lets-go 'After a shape step, set it again here'
+  skill_says_once lets-go 'Interactivity: <level>, because your lets config sets go.level.'
+}
+
 @test "lets-go runs a shape step for an idea or an unshaped issue" {
   local phrase
   skill_says lets-go 'Done shape: <date>. <evidence>'

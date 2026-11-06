@@ -306,19 +306,9 @@ once per run. [Check the issue](#check-the-issue) decides when it runs.
    - **There is none:** say that the map has uncommitted edits, and to
      commit or discard them. Stop, and run no step. If the run went on,
      a discovery's commit could sweep those edits in.
-2. Set `<level>` and print its line. There is no Kind yet, so take the
-   first of these that is set:
-   1. The level the user named. Its line is
-      `Interactivity: <level>, because you asked for it.`
-   2. The level `lets go level` printed in
-      [Read the settings](#read-the-settings), when it is not `null`. Its line is
-      `Interactivity: <level>, because your lets config sets go.level.`
-   3. `ask`, when neither is set. Its line is:
-
-      ```text
-      Interactivity: ask, because shape has not run yet.
-      ```
-
+2. Set `<level>` and print its line, as
+   [Set the level](#set-the-level) says for a level before a shape step.
+   Then go on here, with the next step.
 3. For an idea, check that the answers file is this idea's. Two ideas
    can share their first five words, and so their `<shape-name>`. When
    `.workspace/lets-go/<shape-name>-shape-prompt.md` exists and holds
@@ -465,17 +455,21 @@ that is set:
 1. The level the user named in the request that started the run.
 2. The level `lets go level` printed in
    [Read the settings](#read-the-settings), when it is not `null`.
-3. The Kind's: `recommend` for a Chore or a Bug, `ask` for a Story.
+3. The Kind's: `recommend` for a Chore or a Bug, and `ask` for any
+   other Kind, a Story included. *Confirm the packet* reads any other
+   Kind as a Story. Before a shape step, the Kind does not count, even
+   when the Project has one, as for a Bug whose packet lacks a line. So
+   before a shape step, the third source is `ask`.
 
 Never ask the user which level to use. The level holds for this run
-only. After a shape step, set it again here, in the same order: the
-Kind is settled now. Do not run `lets go level` again. Print the line
-for the source you used:
+only. Do not run `lets go level` again. Print the line for the source
+you used. The last line is for the third source, before a shape step:
 
 ```text
 Interactivity: <level>, because you asked for it.
 Interactivity: <level>, because your lets config sets go.level.
 Interactivity: <level>, because #<i> is a <Kind>.
+Interactivity: ask, because shape has not run yet.
 ```
 
 At `recommend`, this session answers each question that has a
