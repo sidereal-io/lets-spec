@@ -303,7 +303,7 @@ one, and also gets `lets-minimal` for chores and small stories.
 | Independent plan review | Yes | No |
 | Building | One commit per task, test-first | One commit per task, test-first |
 | Independent code review | Yes | No |
-| Skills it adds | `lets-brainstorm`, `lets-write-specs`, `lets-write-adrs`, `lets-write-tasks`, `lets-test-first`, `lets-review-plan`, `lets-review-build` | `lets-brainstorm`, `lets-write-specs`, `lets-write-tasks`, `lets-test-first`, `lets-review-build` |
+| Skills it adds | `lets-brainstorm`, `lets-write-specs`, `lets-write-adrs`, `lets-write-tasks`, `lets-test-first`, `lets-review-plan`, `lets-review-build`, `lets-review-pr` | `lets-brainstorm`, `lets-write-specs`, `lets-write-tasks`, `lets-test-first`, `lets-review-build`, `lets-review-pr` |
 
 The `standard` flow, stage by stage:
 
@@ -572,3 +572,21 @@ update, run the smoke test in
 ## 📄 License
 
 If you want to reuse this code, it is under the [GNU GPL v3.0](LICENSE).
+
+### Collaborator PR review
+
+Invoke `lets-review-pr` with an existing PR URL to review it as a collaborator.
+It ships in both flows as an independent entry point, without adding a build
+stage. It captures the head and supporting PR context, reviews decisions and
+implementation through fresh examiner/challenger sessions, and publishes one
+advisory comment. Supported concerns are ranked by perceived consequence, with
+confidence, evidence and limits stated separately. The comment identifies the
+reviewed revision if newer commits arrive.
+
+Known implementer models guide a preference for other available models; a
+different family is not required. Each pass has a bounded exchange and one
+extra verification allowance; after the two full passes, at most two focused
+passes follow specific evidence. These are trial limits, not validated claims
+about review quality. See the [skill and exercises](skills/lets-review-pr/SKILL.md).
+Author finishing remains `lets-review-build`; explicit plan-only review remains
+`lets-review-plan`.

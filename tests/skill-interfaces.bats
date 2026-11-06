@@ -84,7 +84,7 @@ flow_texts() {
       for skill in $shipped; do named_skills "$repo/skills/$skill/SKILL.md"; done
     )"
     for skill in $shipped; do
-      case "$skill" in lets-go | lets-shape | lets-setup-backlog) continue ;; esac
+      case "$skill" in lets-go | lets-shape | lets-setup-backlog | lets-review-pr) continue ;; esac
       grep -qx "$skill" <<<"$named" ||
         { echo "$flow ships $skill, but none of its schema, config or skills name it"; false; }
     done
@@ -916,4 +916,25 @@ pr_reference_says() {
   pr_reference_says comment-template 'Stopping reason:'
   pr_reference_says comment-template 'No substantive supported concern survived'
   pr_reference_says comment-template 'Interpretation:'
+}
+
+@test "collaborator review ships in both flows" {
+  local flow out ref schemas
+  for flow in standard minimal; do
+    flow_skills "$flow" | grep -qx lets-review-pr
+    out="$BATS_TEST_TMPDIR/$flow"
+    schemas="$(jq -r --arg flow "$flow" '.flows[$flow].schemas | join(",")' "$repo/flows.json")"
+    build "$out" "$schemas" $(flow_skills "$flow")
+    [ -f "$out/overlay/.agents/skills/lets-review-pr/SKILL.md" ]
+    assert_reference_links "$out/overlay/.agents/skills/lets-review-pr/SKILL.md" "$out/overlay"
+    for ref in role-prompt decision-pass adr-guidance implementation-pass comment-template trial-exercises; do
+      cmp "$repo/skills/lets-review-pr/references/$ref.md" "$out/overlay/.agents/skills/lets-review-pr/references/$ref.md"
+    done
+  done
+  for ref in 'Disproved concern' 'Justified early exit' 'Supported uncertain risk' 'Advancing head' 'No findings'; do
+    pr_reference_says trial-exercises "$ref"
+  done
+  grep -qF '### Collaborator PR review' "$repo/README.md"
+  ! grep -qF 'lets-review-pr' "$repo/skills/lets-go/SKILL.md"
+  ! grep -rF 'lets-review-pr' "$repo/schemas"
 }

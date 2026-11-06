@@ -94,3 +94,7 @@ Keep the comment below a conservative 60,000-character budget. Remove repetition
 Publish once using `gh pr comment <pr-url> --body-file <file>`. Record the returned comment URL. On failure preserve the draft and report failure. On an unknown outcome, inspect existing comments for the exact prepared text and reviewer identity and verify its URL before deciding whether publication succeeded; never retry blindly, claim success without a returned or verified URL, or post a duplicate. If still uncertain, report unknown outcome with the local draft path.
 
 Report the comment URL (or publication failure/unknown outcome and draft path), reviewed head, completed passes and material limits to the invoking user. This method neither advances nor finishes the target's build workflow.
+
+## Trial exercises
+
+Use [the scripted exercises](references/trial-exercises.md) to rehearse judgments; static contract checks do not demonstrate role judgment or count as live trials. Keep actual outcomes, passes, limits and comment URLs distinct from expected exercise decisions. For this change's first live trial, the user selected https://github.com/sidereal-io/sidereal/pull/472; capture its then-current head when starting, after implementation review. Do not substitute another PR or count planning as that trial.
