@@ -806,13 +806,19 @@ review_build_start() {
   done
 }
 
-@test "Find the source of demand runs its Project query once per run" {
+@test "Read the settings runs the Project query once per run, and stops on none or several" {
   local text
-  text="$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')"
-  grep -qF 'Run this query only when `<project>` is not set yet in this run' <<<"$text" ||
-    { echo "Find the source of demand runs its Project query on every pass"; false; }
-  grep -qF 'When an earlier pass set `<project>`, `<owner>` and `<repo>`, use them' <<<"$text" ||
-    { echo "Find the source of demand does not reuse an earlier pass's Project"; false; }
+  text="$(part_section 'Read the settings')"
+  grep -qF 'gh api graphql' <<<"$text" || { echo "Read the settings does not run the Project query"; false; }
+  grep -qF '**None:** say to run the `lets-setup-backlog` skill, and stop.' <<<"$text" ||
+    { echo "Read the settings does not stop on no Project"; false; }
+  grep -qF '**Two or more:** list each one'"'"'s title and URL, ask the user to unlink the extras, and stop.' <<<"$text" ||
+    { echo "Read the settings does not stop on several Projects"; false; }
+  ! grep -qF 'gh api graphql' <<<"$(procedure_text 'Find the source of demand')" ||
+    { echo "Find the source of demand still runs the Project query"; false; }
+  skill_says_once lets-go 'gh api graphql'
+  skill_does_not_say lets-go 'no-project'
+  skill_does_not_say lets-go 'several-projects'
 }
 
 @test "lets-go with nothing takes the next ready issue" {
@@ -1398,6 +1404,10 @@ overview_row() {
   ! grep -qiF 'a stop in' <<<"$overview" || { echo "the overview still names a stop in a procedure"; false; }
   grep -qF '`taken`' <<<"$(overview_row 'Enter the branch')" || { echo "Enter the branch's row does not name taken"; false; }
   grep -qF '`epic`' <<<"$(overview_row 'Check the issue')" || { echo "Check the issue's row does not name epic"; false; }
+  grep -qF 'finds no Project, or several' <<<"$(overview_row 'Read the settings')" ||
+    { echo "Read the settings' row does not stop on the Project query"; false; }
+  [[ "$(overview_row 'Start from an idea')" == *'| Never |' ]] ||
+    { echo "Start from an idea's row still stops: $(overview_row 'Start from an idea')"; false; }
 }
 
 @test "the overview's Next for Enter the branch names both ways back after a lost claim" {
@@ -1565,7 +1575,7 @@ procedure_stops() {
 @test "Find the source of demand lists its results" {
   local text result
   text="$(procedure_text 'Find the source of demand')"
-  for result in found unresolved matches no-match picked nothing-ready no-project several-projects; do
+  for result in found unresolved matches no-match picked nothing-ready; do
     grep -qF -- "- \`$result\`:" <<<"$text" || { echo "Find the source of demand does not list: $result"; false; }
   done
 }
@@ -1582,10 +1592,10 @@ procedure_stops() {
 @test "each part that finds the source of demand acts on each result it can get there" {
   local part result
   declare -A results=(
-    ['Read the request']='picked nothing-ready no-project several-projects'
-    ['Start from an idea']='matches no-match no-project several-projects'
-    ['Check the issue']='found unresolved no-project several-projects'
-    ['Pick the first ready story']='picked nothing-ready no-project several-projects')
+    ['Read the request']='picked nothing-ready'
+    ['Start from an idea']='matches no-match'
+    ['Check the issue']='found unresolved'
+    ['Pick the first ready story']='picked nothing-ready')
   for part in "${!results[@]}"; do
     for result in ${results[$part]}; do
       grep -qF -- "**\`$result\`:**" <<<"$(part_section "$part")" || { echo "$part does not act on: $result"; false; }

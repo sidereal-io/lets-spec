@@ -31,12 +31,12 @@ part is not a step, and has no step report. The shape step that
 
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
-| [Read the settings](#read-the-settings) | Reads the default level, the default branch and the current branch | this session | *Read the request* | `lets go level` fails |
-| [Read the request](#read-the-request) | Takes a level off the request, then finds the issue from the branch and the request | this session | *Check the issue*, or *Start from an idea* for an idea | An idea on a change's branch, no issue that matches the branch, or *Find the source of demand* returns `nothing-ready`, `no-project` or `several-projects` |
-| [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | *Check the issue* for the same work; otherwise *Run the shape step* | *Find the source of demand* returns `no-project` or `several-projects` |
-| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | *Run the shape step* when the packet needs shaping and shape can run; otherwise *Route* | An open blocker with no branch; *Find the source of demand* returns `unresolved`, `no-project` or `several-projects`; or *Confirm the packet* returns `epic`, or `needs-shape` when shape cannot run |
+| [Read the settings](#read-the-settings) | Reads the default level, the default branch, the current branch and the Project | this session | *Read the request* | `lets go level` fails, or the Project query finds no Project, or several |
+| [Read the request](#read-the-request) | Takes a level off the request, then finds the issue from the branch and the request | this session | *Check the issue*, or *Start from an idea* for an idea | An idea on a change's branch, no issue that matches the branch, or *Find the source of demand* returns `nothing-ready` |
+| [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | *Check the issue* for the same work; otherwise *Run the shape step* | Never |
+| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | *Run the shape step* when the packet needs shaping and shape can run; otherwise *Route* | An open blocker with no branch; *Find the source of demand* returns `unresolved`; or *Confirm the packet* returns `epic`, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | *Check the issue* for one issue; *Pick the first ready story* for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
-| [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | *Check the issue* | *Find the source of demand* returns `nothing-ready`, `no-project` or `several-projects` |
+| [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | *Check the issue* | *Find the source of demand* returns `nothing-ready` |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | *Enter the branch* | Never |
 | [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | *Set the level*; *Read the request* or *Pick the first ready story* after a lost claim | *Claim* returns `branch-exists`, `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
 | [Set the level](#set-the-level) | Picks `ask` or `recommend`, and says why | this session | *Walk the step table* | Never |
@@ -51,9 +51,9 @@ sets it.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
-| `<project>` | The number of the Project linked to the repository | *Find the source of demand*, from the Project query |
-| `<owner>` | The Project's owner | *Find the source of demand*, from the Project query |
-| `<repo>` | The repository, as `owner/name` | *Find the source of demand*, from the Project query's `repo` |
+| `<project>` | The number of the Project linked to the repository | [Read the settings](#read-the-settings), from the Project query |
+| `<owner>` | The Project's owner | [Read the settings](#read-the-settings), from the Project query |
+| `<repo>` | The repository, as `owner/name` | [Read the settings](#read-the-settings), from the Project query's `repo` |
 | `<i>` | The run's issue: the number the user named, the issue `next` or *Pick the first ready story* picked, or the issue a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
 | `<issue-url>` | The URL of `<i>` | *Confirm the packet*, from the issue's `url` |
 | `<parent>` | A parent issue: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in *Start from an idea* |
@@ -103,6 +103,38 @@ default branch with
 `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`,
 and run `git branch --show-current`.
 
+Then find the Project linked to this repository. Run this query once
+per run:
+
+```bash
+gh api graphql -F owner='{owner}' -F name='{repo}' -f query='
+query($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    nameWithOwner
+    projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } } }
+  }
+  repositoryOwner(login: $owner) {
+    ... on ProjectV2Owner {
+      projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } repositories(first: 100) { nodes { nameWithOwner } } } }
+    }
+  }
+}' --jq '.data.repository.nameWithOwner as $repo
+  | {repo: $repo, projects: ([.data.repository.projectsV2.nodes[], (.data.repositoryOwner.projectsV2.nodes[] | select(any(.repositories.nodes[]; .nameWithOwner == $repo)))]
+      | map(select(.closed | not) | {number, title, url, owner: .owner.login}) | unique_by(.owner, .number))}'
+```
+
+The query lists the Projects linked to the repository, and the
+owner's Projects that link back to it. A user-owned Project can be
+missing from the repository's own listing for a while after it is
+linked, so neither list alone is enough.
+
+- **One Project:** use its `number` as `<project>` and its `owner` as
+  `<owner>` in every `gh project` command of this run. The query's
+  `repo` is the repository, `<repo>`, as `owner/name`.
+- **None:** say to run the `lets-setup-backlog` skill, and stop.
+- **Two or more:** list each one's title and URL, ask the user to unlink
+  the extras, and stop. Never pick one yourself.
+
 Next: [Read the request](#read-the-request).
 
 ## Read the request
@@ -130,9 +162,6 @@ whole backlog. On its result:
   That issue is `<i>`.
 - **`nothing-ready`:** say the backlog has nothing ready, suggest the
   `lets-shape` skill to shape more, and stop, claiming nothing.
-- **`no-project`:** say to run the `lets-setup-backlog` skill, and stop.
-- **`several-projects`:** list each Project's title and URL it carries,
-  ask the user to unlink the extras, and stop.
 
 On another branch, `<branch>`, when the request is words, say that an
 idea needs the default branch, and stop. Otherwise search for the
@@ -175,10 +204,6 @@ Next: [Check the issue](#check-the-issue) when the entry table found `<i>`;
      builds someone else's issue.
    - **`no-match`:** [run the shape step](#run-the-shape-step) for the
      idea.
-   - **`no-project`:** say to run the `lets-setup-backlog` skill, and
-     stop.
-   - **`several-projects`:** list each Project's title and URL it
-     carries, ask the user to unlink the extras, and stop.
 3. On a yes, that issue is `<i>`. Go on from the blocker read in
    [Check the issue](#check-the-issue).
 4. On a no, [run the shape step](#run-the-shape-step) for the idea.
@@ -219,10 +244,6 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
    - **`found`:** go on to *Confirm the packet*, below.
    - **`unresolved`:** report the unresolved owner or checkpoint it
      carries, and stop, even on a stacked branch.
-   - **`no-project`:** say to run the `lets-setup-backlog` skill, and
-     stop.
-   - **`several-projects`:** list each Project's title and URL it
-     carries, ask the user to unlink the extras, and stop.
 5. Run [Confirm the packet](#confirm-the-packet). On its result:
    - **`complete`:** go on to the shape line, below. For a Story with a
      parent, the result carries the parent's **Shared decisions**:
@@ -345,10 +366,6 @@ of them in this run.
      carries it: for example, its blocker, its assignee, an unresolved
      prerequisite, or a packet that is not complete. Say to run `lets-go` with a story's number
      once it is ready. Then stop. Claim nothing, and create no branch.
-   - **`no-project`:** say to run the `lets-setup-backlog` skill, and
-     stop.
-   - **`several-projects`:** list each Project's title and URL it
-     carries, ask the user to unlink the extras, and stop.
 
 A run that stops after discovery and before *Claim*, for any reason,
 leaves the map's edits on the default branch. When
@@ -632,41 +649,9 @@ The parts run these sections. Each one returns to the part that ran it.
 Parallel sessions share the backlog, so claim the issue before you
 create anything.
 
-Find the Project linked to this repository first. Run this query only
-when `<project>` is not set yet in this run. When an earlier pass set
-`<project>`, `<owner>` and `<repo>`, use them, and go on to the cases
-below.
-
-```bash
-gh api graphql -F owner='{owner}' -F name='{repo}' -f query='
-query($owner: String!, $name: String!) {
-  repository(owner: $owner, name: $name) {
-    nameWithOwner
-    projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } } }
-  }
-  repositoryOwner(login: $owner) {
-    ... on ProjectV2Owner {
-      projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } repositories(first: 100) { nodes { nameWithOwner } } } }
-    }
-  }
-}' --jq '.data.repository.nameWithOwner as $repo
-  | {repo: $repo, projects: ([.data.repository.projectsV2.nodes[], (.data.repositoryOwner.projectsV2.nodes[] | select(any(.repositories.nodes[]; .nameWithOwner == $repo)))]
-      | map(select(.closed | not) | {number, title, url, owner: .owner.login}) | unique_by(.owner, .number))}'
-```
-
-The query lists the Projects linked to the repository, and the
-owner's Projects that link back to it. A user-owned Project can be
-missing from the repository's own listing for a while after it is
-linked, so neither list alone is enough.
-
-- **One Project:** use its `number` as `<project>` and its `owner` as
-  `<owner>` in every `gh project` command below. The query's `repo` is
-  the repository, as `owner/name`.
-- **None:** the result is `no-project`: return it now.
-- **Two or more:** the result is `several-projects`: return it now, with
-  each Project's title and URL. Never pick one yourself.
-
-Then take the first case that applies:
+It uses the `<project>`, `<owner>` and `<repo>` that
+[Read the settings](#read-the-settings) set. Take the first case that
+applies:
 
 1. **The run has an issue, `<i>`.** Use it. *Check the issue* has read its
    blockers already, and decided on an open one. Run
@@ -724,9 +709,6 @@ It returns one of these results:
 - `nothing-ready`: `next` has no candidate left. It carries each
   candidate it left out, and why: its blocker, its assignee, an
   unresolved prerequisite, or a packet that is not complete.
-- `no-project`: no Project is linked to the repository.
-- `several-projects`: two or more Projects are linked. It carries each
-  one's title and URL.
 
 When *Claim* ran it, return to *Claim*: it says what comes next.
 Otherwise, return to the part that ran it, with the result.
