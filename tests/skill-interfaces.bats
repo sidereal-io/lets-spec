@@ -315,6 +315,14 @@ skill_does_not_say() {
   ! skill_text "$1" | grep -q "${case[@]}" -F -- "$2" || { echo "$1 still says: $2"; return 1; }
 }
 
+# skill_says_once <skill> <fixed text>: the files skill_says reads hold the
+# text exactly once between them, so a rule has one place to change.
+skill_says_once() {
+  local count
+  count="$(skill_text "$1" | grep -oF -- "$2" | wc -l)"
+  [ "$count" -eq 1 ] || { echo "$1 says $((count)) times: $2"; return 1; }
+}
+
 # skill_has_section <skill> <name>: a line of the skill's SKILL.md or a
 # reference file is a heading with that name, at any level.
 skill_has_section() {
@@ -442,6 +450,26 @@ fixture_file() {
 @test "skill_does_not_say passes when no file holds the phrase" {
   fixture_file lets-go references/records.md 'Nothing to see.'
   skill_does_not_say lets-go 'VERDICT:'
+}
+
+@test "the says once check passes a phrase SKILL.md holds once" {
+  fixture_file lets-go SKILL.md '# lets-go' 'Print Done shape:' '<date>. <evidence> here.'
+  skill_says_once lets-go 'Done shape: <date>. <evidence>'
+}
+
+@test "the says once check names a phrase SKILL.md and a reference file both hold" {
+  fixture_file lets-go SKILL.md '# lets-go' 'Print Done shape: <date>. <evidence> here.'
+  fixture_file lets-go references/steps.md 'And Done shape: <date>. <evidence> again.'
+  run skill_says_once lets-go 'Done shape: <date>. <evidence>'
+  [ "$status" -eq 1 ] || { echo "it passed on a phrase written twice"; false; }
+  [ "$output" = 'lets-go says 2 times: Done shape: <date>. <evidence>' ] || { echo "it said: $output"; false; }
+}
+
+@test "the says once check names a phrase no file of the skill holds" {
+  fixture_file lets-go SKILL.md '# lets-go' 'Nothing to see.'
+  run skill_says_once lets-go 'Done shape: <date>. <evidence>'
+  [ "$status" -eq 1 ] || { echo "it passed on a missing phrase"; false; }
+  [ "$output" = 'lets-go says 0 times: Done shape: <date>. <evidence>' ] || { echo "it said: $output"; false; }
 }
 
 @test "each review skill asks lets for its intent's options, then runs with a ranked list" {

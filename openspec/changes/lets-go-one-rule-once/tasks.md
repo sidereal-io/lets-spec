@@ -2,7 +2,7 @@
 
 This task changes only `tests/skill-interfaces.bats`. Do not touch `skills/lets-go/SKILL.md` yet.
 
-- [ ] 1.1 [easy] `skill_says_once <skill> <phrase>` passes when the phrase occurs exactly once across the files `skill_files` lists, with whitespace squeezed as `skill_says` does, and otherwise prints the phrase and how many times it occurs. Fixture tests through `fixture_file`: a phrase in `SKILL.md` once passes; the same phrase in `SKILL.md` and in `references/steps.md` fails and says `2`; a missing phrase fails and says `0` (verify: bats tests/skill-interfaces.bats -f 'says once')
+- [x] 1.1 [easy] `skill_says_once <skill> <phrase>` passes when the phrase occurs exactly once across the files `skill_files` lists, with whitespace squeezed as `skill_says` does, and otherwise prints the phrase and how many times it occurs. Fixture tests through `fixture_file`: a phrase in `SKILL.md` once passes; the same phrase in `SKILL.md` and in `references/steps.md` fails and says `2`; a missing phrase fails and says `0` (verify: bats tests/skill-interfaces.bats -f 'says once') (✓ bats tests/skill-interfaces.bats -f 'says once' passed)
 
 ## 2. Each rule written once [depends-on: 1]
 
