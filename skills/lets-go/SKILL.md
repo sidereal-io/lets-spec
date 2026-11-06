@@ -652,8 +652,7 @@ It returns one of these results:
   candidate it left out, and why: its blocker, its assignee, an
   unresolved prerequisite, or a packet that is not complete.
 
-When *Claim* ran it, return to *Claim*: it says what comes next.
-Otherwise, return to the part that ran it, with the result.
+Return to the part that ran it, with the result.
 
 ### Confirm the packet
 
@@ -716,10 +715,11 @@ that ran it, with the result.
 ### Glossary preflight
 
 A story whose shaping added glossary terms carries a **Glossary handoff**
-record. These steps check it. "You" is the agent. Run
-*Check the prerequisite*, then, when this story owns the glossary edits,
-*Check the checkpoint*. *Find the source of demand* runs only
-*Check the prerequisite*.
+record. These steps check it. "You" is the agent. `next` and
+*Find the source of demand* run *Check the prerequisite*. *Claim* runs
+the rest of the preflight: read the story's **Glossary handoff**. When
+it has none, or another issue owns the edits, the result is
+`no-owned-edits`. Otherwise run *Check the checkpoint*.
 
 #### Check the prerequisite
 
@@ -804,19 +804,18 @@ Return to the section that ran it, with the result.
 
 It returns one of these results:
 
-- `no-owned-edits`: *Check the prerequisite* returned `resolved`, and
-  the story owns no glossary edits: it has no **Glossary handoff**, or
-  another issue owns the edits.
+- `no-owned-edits`: the story owns no glossary edits: it has no
+  **Glossary handoff**, or another issue owns the edits.
 - `verified`: the story owns the edits, and *Check the checkpoint*
   returned `verified`. It carries the checkpoint commits, in their
   recorded order, and the ones the rehearsal found already present.
-- `unresolved`: *Check the prerequisite* returned `unresolved`, the
-  first time or the second. It carries what is unresolved.
+- `unresolved`: *Check the checkpoint* returned it, because
+  *Check the prerequisite* ran again and returned `unresolved`. It
+  carries what is unresolved.
 - `checkpoint-failed`: *Check the checkpoint* returned it. It carries
   what the check found.
 
-When *Claim* ran it, return to *Claim*, with the result. Otherwise,
-return to the part that ran it.
+Return to *Claim*, with the result.
 
 ### Claim
 

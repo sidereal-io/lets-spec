@@ -784,6 +784,19 @@ review_build_start() {
   done
   grep -qF '`verified`: the story owns the edits, and *Check the checkpoint* returned `verified`. It carries the checkpoint commits' <<<"$section" ||
     { echo "verified does not carry the checkpoint commits"; false; }
+  ! grep -F -- '- `no-owned-edits`:' <<<"${section//- \`/$'\n'- \`}" | grep -qF '*Check the prerequisite*' ||
+    { echo "no-owned-edits still waits on Check the prerequisite"; false; }
+}
+
+# next and Find the source of demand check the prerequisite, so Claim's
+# preflight does not check it a third time.
+@test "Glossary preflight in Claim checks no prerequisite first" {
+  local opening
+  opening="$(skill_section lets-go 'Glossary preflight')"
+  grep -qF '*Claim* runs the rest of the preflight' <<<"$opening" ||
+    { echo "Glossary preflight does not say Claim runs only the rest: $opening"; false; }
+  ! grep -qF 'Run *Check the prerequisite*, then' <<<"$opening" ||
+    { echo "Glossary preflight still runs Check the prerequisite first"; false; }
 }
 
 @test "lets-go holds the sections that find, confirm, route and claim the issue" {
@@ -883,7 +896,10 @@ review_build_start() {
   skill_does_not_say lets-go 'If an open issue blocks it, say so and stop' ||
     { echo "Find the source of demand still stops on a blocker of its own"; false; }
   skill_says lets-go 'return to the part that ran it'
-  skill_says lets-go 'When *Claim* ran it, return to *Claim*'
+  grep -qF 'Return to *Claim*, with the result.' <<<"$(skill_section lets-go 'What the preflight returns')" ||
+    { echo "Glossary preflight does not return to Claim"; false; }
+  ! grep -qiF 'return to *Claim*' <<<"$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')" ||
+    { echo "Find the source of demand still returns to Claim, which never runs it"; false; }
   grep -qF '**`found`:** go on to *Confirm the packet*' <<<"$part" ||
     { echo "Check the issue does not go on to Confirm the packet on found"; false; }
   skill_does_not_say lets-go 'Otherwise, go on to [Confirm the packet](#confirm-the-packet).' ||
@@ -1509,8 +1525,14 @@ procedure_stops() {
     'Import the glossary checkpoint' 'Commit the discovery map'; do
     text="$(procedure_text "$procedure")"
     [ -n "$text" ] || { echo "lets-go has no procedure $procedure"; false; }
-    tr -s '[:space:]' ' ' <<<"$text" | grep -qi 'return to the part that ran it' ||
-      { echo "$procedure does not return to the part that ran it"; false; }
+    # Only Claim runs the whole preflight, so it returns there.
+    if [ "$procedure" = 'Glossary preflight' ]; then
+      tr -s '[:space:]' ' ' <<<"$text" | grep -qF 'Return to *Claim*, with the result.' ||
+        { echo "$procedure does not return to Claim"; false; }
+    else
+      tr -s '[:space:]' ' ' <<<"$text" | grep -qi 'return to the part that ran it' ||
+        { echo "$procedure does not return to the part that ran it"; false; }
+    fi
     ! grep -q '^Next: ' <<<"$text" || { echo "$procedure has a Next line"; false; }
     procedure_stops "$procedure"
   done
