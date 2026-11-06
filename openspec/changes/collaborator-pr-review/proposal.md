@@ -10,6 +10,7 @@ A collaborator needs to review someone else's pull request without taking over i
 - Publish one comment with grounded concerns ranked by perceived criticality, explicit uncertainty, completed passes and the reason for stopping.
 - Prefer models different from the implementer's when its model is known and alternatives are available, without requiring model diversity (D1).
 - Ship the skill in both flows and document its independent entry point.
+- Distinguish a collaborator's full PR review from the author's finishing review and an explicitly requested plan-only review.
 
 ## Capabilities
 
@@ -23,6 +24,6 @@ None. Existing delegation and domain-language requirements remain unchanged.
 
 ## Impact
 
-Implementation touches a new skill under `skills/`, its review prompts and references, `flows.json`, usage documentation and skill interface tests. It reuses read-only delegation without adding a CLI strategy, resolver contract or hosted service.
+Implementation touches a new skill under `skills/`, its review prompts and references, `flows.json`, usage documentation and skill interface tests. It also clarifies the existing review skills' trigger descriptions and the routing table in `overlays/AGENTS.md`. It reuses read-only delegation without adding a CLI strategy, resolver contract or hosted service.
 
 The review creates no OpenSpec change in the target project, fixes no contributor code and writes no required review document there. Its only public write is the requested PR comment. This planning change itself follows the repository's normal workflow.
