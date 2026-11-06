@@ -259,7 +259,8 @@ an unresolved prerequisite. If none is left, say the backlog has
 nothing ready, suggest the `lets-shape` skill, and stop, without picking
 a candidate or confirming a packet. For a named issue, report the
 unresolved owner or checkpoint, and stop. Otherwise, go back to the
-step of *Start* that ran it.
+step of *Start* that ran it. When *Pick the first ready story* or
+*Claim* ran it, go back to that step: each says what comes next.
 
 ### Confirm the packet
 

@@ -495,6 +495,7 @@ start_step() {
   ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- 'If an open issue blocks it, say so and stop' ||
     { echo "Find the source of demand still stops on a blocker of its own"; false; }
   skill_says lets-go 'go back to the step of *Start* that ran it'
+  skill_says lets-go 'When *Pick the first ready story* or *Claim* ran it, go back to that step'
   ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- 'Otherwise, go on to [Confirm the packet](#confirm-the-packet).' ||
     { echo "Find the source of demand still picks the next section"; false; }
   [[ "${step% }" == *'go on to step 4.' ]] || { echo "Start step 3 does not end by going on to step 4"; false; }
