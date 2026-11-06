@@ -18,6 +18,13 @@ These tasks change `skills/lets-go/SKILL.md` and the tests that pin its wording.
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [medium] Nothing the plan did not name has changed. Diff the old `SKILL.md` (at this change's base, `origin/lets-go-procedures-return`) and the new one sentence by sentence: one sentence per line, then `sort` and `comm`. Account for every changed sentence in a task above or in the Deviations Ledger. The whole suite, the flake and strict validation pass (verify: pnpm test && nix flake check && openspec validate lets-go-one-rule-once --strict)
+- [x] 3.1 [medium] Nothing the plan did not name has changed. Diff the old `SKILL.md` (at this change's base, `origin/lets-go-procedures-return`) and the new one sentence by sentence: one sentence per line, then `sort` and `comm`. Account for every changed sentence in a task above or in the Deviations Ledger. The whole suite, the flake and strict validation pass (verify: pnpm test && nix flake check && openspec validate lets-go-one-rule-once --strict) (✓ pnpm test && nix flake check && openspec validate lets-go-one-rule-once --strict passed; the sentence diff against origin/lets-go-procedures-return removed 82 sentences and added 92, each from a task above or the ledger)
 
 ## Deviations Ledger
+
+- 2026-11-06, task 1.1: the three fixture tests are named "the says once check …", so the task's filter `-f 'says once'` finds them. A name with `skill_says_once` has an underscore there.
+- 2026-11-06, task 2.2: *Run the shape step* links *Set the level* and then says "Then go on here, with the next step." *Set the level* is a part, and ends with its own `Next:` line, which must not take the run past the shape step.
+- 2026-11-06, task 2.3: *The step lines* opens with "Shape's line prints at most once for an issue." before the two rules. "When every step was already done, all five lines are `Skipped` lines." moved there from *End of the run*, which keeps "A failed step ends the walk." The test also checks that `Failed shape: <reason>` and `Failed review build: <reason>` are written once.
+- 2026-11-06, task 2.6: each ordered list says when its step is not done: build adds "When it is `blocked` or `ready`, build is not done.", and review build adds "Otherwise review build is not done." Build's last sentence becomes "Any other `state` stops the run, as for plan."
+- 2026-11-06, task 2.7: *Review build ends the run* says the URL prints after the check passes, so *End of the run*'s sentence on a `done` review build names *Read the report*'s check.
+- 2026-11-06, task 3.1: the sentence diff against `origin/lets-go-procedures-return` removed 82 sentences and added 92. Each is from a task above or this ledger.
