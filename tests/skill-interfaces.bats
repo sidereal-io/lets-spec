@@ -690,6 +690,17 @@ review_build_start() {
   skill_does_not_say lets-go 'do not claim until it is recovered'
 }
 
+@test "lets-go's checkpoint stops on a conflicting patch, repairing nothing" {
+  grep -qF 'report the conflict, and stop, repairing nothing' <<<"$(skill_section lets-go 'Check the checkpoint')" ||
+    { echo "Check the checkpoint does not stop on a conflicting patch"; false; }
+  skill_does_not_say lets-go 'Resolve a partial or conflicting patch'
+}
+
+@test "lets-go's checkpoint skips an edit already on the base" {
+  grep -qF 'An edit already present is skipped, which is not a failure' <<<"$(skill_section lets-go 'Check the checkpoint')" ||
+    { echo "Check the checkpoint does not skip an edit already present"; false; }
+}
+
 @test "lets-go's Start holds the sections that find, confirm, route and claim the issue" {
   local section
   for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Glossary preflight' 'Claim' 'Import the glossary checkpoint' \

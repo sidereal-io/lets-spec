@@ -413,9 +413,10 @@ once, after the branch check in *Claim* step 2 passes.
    reset, or stash automatically.
 5. Before claiming, rehearse the import on the proposed base in a
    throwaway checkout under `.workspace/`. Compare patches and contents
-   to find edits already present, and import no duplicate. Resolve a
-   partial or conflicting patch before you claim. Leave the real working
-   tree unchanged.
+   to find edits already present, and import no duplicate. An edit
+   already present is skipped, which is not a failure. If a patch applies
+   only in part, or conflicts, report the conflict, and stop, repairing
+   nothing. Leave the real working tree unchanged.
 6. If the owner of the glossary definitions or the proposed base changed
    since *Find the source of demand* ran *Check the prerequisite*, run
    [Check the prerequisite](#check-the-prerequisite) again, before
