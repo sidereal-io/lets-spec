@@ -793,8 +793,26 @@ review_build_start() {
     { echo "lets-go still stops with nothing"; false; }
 }
 
-@test "lets-go runs next again with the same candidates after a lost race" {
-  skill_says lets-go 'run `next` again with the same candidates'
+@test "lets-go leaves out every lost issue after a lost race" {
+  skill_says lets-go 'leave out every issue lost in this run'
+  skill_does_not_say lets-go 'run `next` again with the same candidates'
+}
+
+@test "lets-go stops after the third lost claim" {
+  grep -qF 'After the third lost claim in this run, say that other sessions keep taking the picked issues' <<<"$(part_section 'Enter the branch')" ||
+    { echo "Enter the branch does not stop after the third lost claim"; false; }
+}
+
+@test "Enter the branch goes back to the part that picked after a lost claim" {
+  local line
+  line="$(next_line 'Enter the branch')"
+  grep -qF '](#read-the-request)' <<<"$line" && grep -qF '](#pick-the-first-ready-story)' <<<"$line" ||
+    { echo "it said: $line"; false; }
+}
+
+@test "Pick the first ready story prints Done shape once after a lost claim" {
+  grep -qF 'when this run has not printed it yet' <<<"$(part_section 'Pick the first ready story')" ||
+    { echo "Pick the first ready story prints Done shape again after a lost claim"; false; }
 }
 
 @test "lets-go sends a failed step back to lets-go" {

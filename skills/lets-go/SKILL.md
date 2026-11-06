@@ -339,7 +339,8 @@ of them in this run.
      That story is `<i>`. Go on from the blocker read in
      [Check the issue](#check-the-issue) with it, as for an issue number.
    - **`nothing-ready`:** print the `Done shape` line that
-     *Check the issue* shows. Say that no story under `#<parent>` is
+     *Check the issue* shows, when this run has not printed it yet. Say
+     that no story under `#<parent>` is
      ready. Name each story, and why it was left out, as the result
      carries it: for example, its blocker, its assignee, an unresolved
      prerequisite, or a packet that is not complete. Say to run `lets-go` with a story's number
@@ -402,10 +403,13 @@ Next: [Enter the branch](#enter-the-branch).
    - **`branch-exists`:** say so, suggest switching to it and running
      `lets-go` there, and stop.
    - **`taken`:** when the user named `<i>` or confirmed it, say who has
-     it, and stop. When `next` or *Pick the first ready story* picked
-     it, run `next` again with the same candidates, and go on from the
-     blocker read in [Check the issue](#check-the-issue) with the new
-     issue. Keep the lines printed for the lost issue.
+     it, and stop. Otherwise `next` or *Pick the first ready story*
+     picked it: count the lost claim. After the third lost claim in this
+     run, say that other sessions keep taking the picked issues, and to
+     run `lets-go` again. Stop, claiming nothing. Before that, go back
+     to the part that picked: [Read the request](#read-the-request) for
+     `next`, or [Pick the first ready story](#pick-the-first-ready-story).
+     Keep the lines printed for the lost issue.
    - **`unresolved`:** report the owner or the definitions it carries,
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
@@ -432,7 +436,10 @@ Next: [Enter the branch](#enter-the-branch).
    it is that file's `schema:` line. Otherwise it is the schema *Route*
    picked.
 
-Next: [Set the level](#set-the-level).
+Next: [Set the level](#set-the-level);
+[Read the request](#read-the-request) or
+[Pick the first ready story](#pick-the-first-ready-story) after a lost
+claim.
 
 ## Set the level
 
@@ -689,7 +696,9 @@ Then take the first case that applies:
 
    `next` comes from the candidates whose number is in the second list.
    Rank them Must, then Should, then Could, then the lowest issue
-   number. A Wont is never a candidate.
+   number. A Wont is never a candidate. After a lost claim, leave out
+   every issue lost in this run: each one for which *Claim* returned
+   `taken`.
 
    Check each candidate in rank order, with its number as `<i>` while
    you check it. Run [Check the prerequisite](#check-the-prerequisite),
