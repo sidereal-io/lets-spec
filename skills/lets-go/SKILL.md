@@ -178,31 +178,38 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
 
 ## Check the issue
 
-1. Read the blockers of `<i>`, and decide on an open one before
-   anything else in this part:
+1. Read the blockers of `<i>`:
 
    ```bash
    gh issue view <i> --json title,blockedBy
    ```
 
    It gives the title too. `<name>` is the change's name, which *Claim*
-   takes from the title. On a change's branch, it is `<branch>`. A
-   blocker whose `state` is `OPEN` is open. When one is, look for the
-   change's branch before you stop, as [Enter the branch](#enter-the-branch)
-   does:
+   takes from the title. On a change's branch, it is `<branch>`.
+2. Look for the change's branch, here and on `origin`, every time:
+
+   ```bash
+   git branch --list <name>
+   git ls-remote --heads origin refs/heads/<name>
+   ```
+
+   On a change's branch, the branch exists: you are on it. Run the
+   `git ls-remote` there too, to learn whether `origin` has it. Keep
+   what you found: [Enter the branch](#enter-the-branch) reads it, and
+   does not look again.
+3. Decide on an open blocker before anything else in this part runs. A
+   blocker whose `state` is `OPEN` is open. When one is:
    - **The branch exists**, here or on `origin`: the user has stacked it
-     by hand. Name the open blockers by number, and go on. On a change's
-     branch, the branch exists: you are on it.
+     by hand. Name the open blockers by number, and go on.
    - **It does not exist:** say which open issues block `#<i>`, and
      stop. The user stacks it on the blocker's branch by hand.
-
-   Then run [Find the source of demand](#find-the-source-of-demand) for
+4. Run [Find the source of demand](#find-the-source-of-demand) for
    `<i>`, as for a named issue. Its *Check the prerequisite* still
    runs. When it finds an unresolved owner or checkpoint, the
    prerequisite stop stands, even on a stacked branch: report it, and
    stop. Any other stop in that section stands as the section reports
    it. When the section passes, go on to *Confirm the packet*, below.
-2. Run [Confirm the packet](#confirm-the-packet). Three of its stops say
+5. Run [Confirm the packet](#confirm-the-packet). Three of its stops say
    to run `lets-shape` on `#<i>`: the issue is not shaped, a line is
    missing or a placeholder, or comments are unread. On the default
    branch, when no shape step has run in this run, set that stop aside
@@ -210,7 +217,7 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
    stop stands, as the section reports it. An Epic stops there: it is
    built through its stories. For a Story with a parent, the section
    reads the parent's **Shared decisions**: *Route* needs them.
-3. When *Confirm the packet* passes, shape is done. When a shape step
+6. When *Confirm the packet* passes, shape is done. When a shape step
    reported `done` in this run, print its line. `<date>` is the report's
    `date`, and `<evidence>` is its `evidence`, joined with `; `:
 
@@ -349,28 +356,21 @@ Next: [Enter the branch](#enter-the-branch).
 
 ## Enter the branch
 
-1. On the default branch, look for the change's branch, here and on
-   `origin`:
-
-   ```bash
-   git branch --list <name>
-   git ls-remote --heads origin refs/heads/<name>
-   ```
-
-   - **Neither prints a line:** run [Claim](#claim), which creates the
+1. On the default branch, use what *Check the issue* found when it
+   looked for the change's branch, here and on `origin`:
+   - **Neither has it:** run [Claim](#claim), which creates the
      branch. A stop it makes stands. When its glossary preflight found
      owned edits, also run *Import the glossary checkpoint*. Then
      [commit the discovery map](#commit-the-discovery-map).
-   - **Either prints a line:** the change has started. Do not run
-     *Claim*. When `git ls-remote` printed it, run
-     `git fetch origin <name>` first: `git switch` finds a branch on
-     `origin` only once it is fetched. Then run `git switch <name>`.
+   - **Either has it:** the change has started. Do not run *Claim*.
+     When `origin` has it, run `git fetch origin <name>` first:
+     `git switch` finds a branch on `origin` only once it is fetched.
+     Then run `git switch <name>`.
 
-   When *Check the issue* has looked already, use what it found.
    Stay on `<name>` for the whole run.
 2. When `origin` has the branch, bring it up to date before you read any
-   record. On a change's branch, run the `git ls-remote` above to
-   check.
+   record. On a change's branch too, *Check the issue* found whether it
+   does.
 
    ```bash
    git fetch origin <name>

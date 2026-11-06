@@ -806,6 +806,24 @@ review_build_start() {
     { echo "Find the source of demand still picks the next section"; false; }
 }
 
+# The packet check decides between shaping and stopping on whether the branch
+# exists, so the lookup must come first.
+@test "lets-go looks for the branch before it confirms the packet" {
+  local part look source confirm
+  part="$(part_section 'Check the issue')"
+  look="${part%%"git ls-remote --heads origin refs/heads/<name>"*}"
+  source="${part%%"[Find the source of demand](#find-the-source-of-demand)"*}"
+  confirm="${part%%"](#confirm-the-packet)"*}"
+  [ "$look" != "$part" ] || { echo "Check the issue does not look for the change's branch"; false; }
+  [ "$confirm" != "$part" ] || { echo "Check the issue does not run Confirm the packet"; false; }
+  [ "${#look}" -lt "${#source}" ] ||
+    { echo "Check the issue runs Find the source of demand before it looks for the branch"; false; }
+  [ "${#look}" -lt "${#confirm}" ] ||
+    { echo "Check the issue confirms the packet before it looks for the branch"; false; }
+  ! grep -qF 'git ls-remote' <<<"$(part_section 'Enter the branch')" ||
+    { echo "Enter the branch looks for the branch again"; false; }
+}
+
 @test "lets-go reads go.level before it asks GitHub for anything" {
   local skill="$repo/skills/lets-go/SKILL.md" first_level first_gh
   skill_says lets-go 'Interactivity: <level>, because your lets config sets go.level.'
