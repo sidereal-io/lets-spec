@@ -1733,6 +1733,35 @@ walk_section() {
   done
 }
 
+# Each step's done test is written once, in the walk.
+@test "the step table has no Done when column" {
+  local header
+  header="$(awk '/^## The step table$/ { on = 1 } on && /^\| Step \|/ { print; exit }' "$(lets_go_skill)")"
+  [ -n "$header" ] || { echo "the step table has no header row"; false; }
+  [[ "$header" != *'Done when'* ]] || { echo "the step table still has a Done when column: $header"; false; }
+}
+
+@test "the walk's review plan row reads lets-minimal first, then the archive folder" {
+  local walk row minimal archive
+  walk="$(walk_section)"
+  row="${walk#*'**Review plan.**'}"
+  row="${row%%'**Build.**'*}"
+  [ "$row" != "$walk" ] || { echo "the walk has no review plan row"; false; }
+  minimal="${row%%'`lets-minimal`'*}"
+  archive="${row%%'archive folder'*}"
+  [ "$minimal" != "$row" ] && [ "$archive" != "$row" ] || { echo "the review plan row does not name both: $row"; false; }
+  [ "${#minimal}" -lt "${#archive}" ] || { echo "the review plan row reads the archive folder before lets-minimal"; false; }
+  [[ "$row" != *'once plan is done'* ]] || { echo "the review plan row still waits for plan"; false; }
+  grep -qF 'the first of these that matches decides' <<<"$walk" || { echo "the walk does not say which item decides"; false; }
+}
+
+@test "the walk says when a merged or closed pull request stops it" {
+  grep -qF 'a stacked pull request merged into the branch below it' <<<"$(walk_section)" ||
+    { echo "the walk does not say when MERGED runs"; false; }
+  grep -qF 'a pull request closed without merging' <<<"$(walk_section)" ||
+    { echo "the walk does not say when CLOSED runs"; false; }
+}
+
 @test "the walk has no shape row" {
   ! grep -qF -- '**Shape.**' <<<"$(skill_section lets-go 'Walk the step table')" || { echo "the walk still has a shape row"; false; }
 }

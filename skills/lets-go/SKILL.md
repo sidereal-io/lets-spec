@@ -473,7 +473,11 @@ records first, in this order:
    on. A new branch has none yet. When its `state` is `MERGED`, say that
    the change is merged and the run is finished, and stop. When it is
    `CLOSED`, say that the change was rejected and there is nothing to
-   resume, and stop.
+   resume, and stop. These two stops run only when the branch still
+   exists and the run finds its issue. That happens for a stacked pull
+   request merged into the branch below it, for a pull request closed
+   without merging, and for a closed issue the user names on the default
+   branch. In the first two cases the issue stays open.
 3. **The archive folder.** Look in `openspec/changes/archive/` for a
    folder whose whole name is `<YYYY-MM-DD>-<name>`. A folder whose name
    only ends in `-<name>` belongs to another change. When the folder
@@ -487,45 +491,52 @@ records first, in this order:
 
 Then walk [The step table](#the-step-table) from the top row.
 *Check the issue* has printed shape's line already. At each row, find
-out whether the step is done:
+out whether the step is done: the first of these that matches decides.
+The state is the `state` that
+`openspec instructions apply --change <name> --json` prints.
 
-- **Plan.** When the archive folder exists, plan is done. When
-  `openspec/changes/<name>/` does not exist, plan is not done.
-  Otherwise run `openspec instructions apply --change <name> --json`,
-  and read its `state`. When the `state` is `ready` or `all_done`, plan
-  is done. When the `state` is `blocked`, plan is not done. For any
-  other `state`, show the user the CLI's `instruction`, and stop. When
-  `openspec/changes/<name>/brainstorm.md` exists and the branch has no
-  pull request, the records disagree. The tree is clean, so the file is
-  committed.
-- **Review plan.** On `lets-minimal`, it is done once plan is done. When
-  the archive folder exists, it is done. But the records disagree if the
-  pull request's `body` has no **Plan review** section with a
-  `Reviewed:` line and a `- **Verdict:**` line. No step can write the
-  section once the change is archived. Otherwise read the pull
-  request's body again, because a step in this run can have opened or
-  changed it:
+- **Plan.**
+  1. When the archive folder exists, plan is done.
+  2. When `openspec/changes/<name>/` does not exist, plan is not done.
+  3. Otherwise run `openspec instructions apply --change <name> --json`,
+     and read its `state`. When the `state` is `ready` or `all_done`,
+     plan is done. When the `state` is `blocked`, plan is not done. For
+     any other `state`, show the user the CLI's `instruction`, and stop.
 
-  ```bash
-  gh pr view <name> --json number,body
-  ```
+  When `openspec/changes/<name>/brainstorm.md` exists and the branch has
+  no pull request, the records disagree. The tree is clean, so the file
+  is committed.
+- **Review plan.**
+  1. On `lets-minimal`, review plan is done.
+  2. When the archive folder exists, review plan is done. But the
+     records disagree if the pull request's `body` has no **Plan review**
+     section with a `Reviewed:` line and a `- **Verdict:**` line. No
+     step can write the section once the change is archived.
+  3. Otherwise read the pull request's body again, because a step in
+     this run can have opened or changed it:
 
-  Review plan is done when the **Plan review** section covers the plan.
-  Follow *Check an earlier review* in the `lets-review-plan` skill. Its
-  four rules say when a new round is needed. It then says when the
-  review is finished, with the fix commits under `APPROVE_WITH_CHANGES`.
-  When no rule calls for a new round and the review is finished, review
-  plan is done. Its reads change nothing:
-  `git merge-base --is-ancestor`, `git log` and `git show`. When review
-  plan is not done, run it, whatever the state.
-- **Build.** When the archive folder exists, build is done. Otherwise
-  run `openspec instructions apply --change <name> --json` again, even
-  when the plan row has run it, because a review plan round can add a
-  task to a built change. When the `state` is `all_done`, build is
-  done. Any `state` other than `blocked`, `ready` or `all_done` stops
-  the run, as for plan.
-- **Review build.** When the archive folder exists, review build is
-  done.
+     ```bash
+     gh pr view <name> --json number,body
+     ```
+
+     Review plan is done when the **Plan review** section covers the
+     plan. Follow *Check an earlier review* in the `lets-review-plan`
+     skill. Its four rules say when a new round is needed. It then says
+     when the review is finished, with the fix commits under
+     `APPROVE_WITH_CHANGES`. When no rule calls for a new round and the
+     review is finished, review plan is done. Its reads change nothing:
+     `git merge-base --is-ancestor`, `git log` and `git show`. When
+     review plan is not done, run it, whatever the state.
+- **Build.**
+  1. When the archive folder exists, build is done.
+  2. Otherwise run `openspec instructions apply --change <name> --json`
+     again, even when the plan row has run it, because a review plan
+     round can add a task to a built change. When the `state` is
+     `all_done`, build is done. When it is `blocked` or `ready`, build is
+     not done. Any other `state` stops the run, as for plan.
+- **Review build.**
+  1. When the archive folder exists, review build is done.
+  2. Otherwise review build is not done.
 
 Read a row's record when you reach the row, not before. A step that runs
 in this walk changes the records the next row reads.
@@ -939,17 +950,17 @@ for it. Its skill is in [What shape runs](#what-shape-runs), and
 Every other step runs in a fresh session, as [Run a step](#run-a-step)
 says. On `lets-minimal`, review plan never runs.
 
-Each row says which skill the step runs, when the step is done, which
-record shows it, and the line to print when it was done before this run.
-The state is the `state` that
-`openspec instructions apply --change <name> --json` prints.
+Each row says which skill the step runs, which record shows the step
+was done, and the line to print when it was done before this run.
+[Walk the step table](#walk-the-step-table) says when each step is
+done.
 
-| Step | Skill | Done when | Record | Skip line |
-|---|---|---|---|---|
-| `plan` | the `lets-plan` skill | The state is `ready` or `all_done`, or the archive folder exists | The commit that added `tasks.md` | `Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).` |
-| `review-plan` | the `lets-review-plan` skill | The **Plan review** section covers the plan. On `lets-minimal`, plan is done | The section's `Reviewed:` commit | `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.` On `lets-minimal`: `Skipped review plan: not in the lets-minimal route.` |
-| `build` | the `lets-build` skill | The state is `all_done`, or the archive folder exists | The last commit that changed `tasks.md` | `Skipped build: every task is ticked, last task commit <date> (<sha>).` |
-| `review-build` | the `lets-review-build` skill | The archive folder exists | The commit that added the archive's `tasks.md`, and the pull request | `Skipped review build: archived <date> (<sha>); pull request #<pr> is ready for review.` |
+| Step | Skill | Record | Skip line |
+|---|---|---|---|
+| `plan` | the `lets-plan` skill | The commit that added `tasks.md` | `Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).` |
+| `review-plan` | the `lets-review-plan` skill | The section's `Reviewed:` commit | `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.` On `lets-minimal`: `Skipped review plan: not in the lets-minimal route.` |
+| `build` | the `lets-build` skill | The last commit that changed `tasks.md` | `Skipped build: every task is ticked, last task commit <date> (<sha>).` |
+| `review-build` | the `lets-review-build` skill | The commit that added the archive's `tasks.md`, and the pull request | `Skipped review build: archived <date> (<sha>); pull request #<pr> is ready for review.` |
 
 ### Read the records
 
