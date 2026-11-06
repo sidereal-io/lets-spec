@@ -111,29 +111,35 @@ of these:
 - **Words:** anything else. They are an idea, kept word for word.
 - **Nothing.**
 
-Then find the issue, `<i>`:
-- **On the default branch**, a number is `<i>`. An idea goes to
-  [Start from an idea](#start-from-an-idea). With nothing, run the
-  third case, `next`, of
-  [Find the source of demand](#find-the-source-of-demand), over the
-  whole backlog. When `next` picks an issue, print
-  `Picked #<i>: <title>, the next ready issue.` That issue is `<i>`.
-  When nothing is ready, the stop in `next` stands.
-- **On another branch**, `<branch>`: when the request is words, say
-  that an idea needs the default branch, and stop. Otherwise search
-  for the change's issue:
+Then find the issue, `<i>`, from the branch the run started on and what
+is left of the request:
 
-  ```bash
-  gh issue list --state open --search "<branch> in:title" --json number,title
-  ```
+| The branch | A number | An idea | Nothing |
+|---|---|---|---|
+| The default branch | The number is `<i>`. Go to [Check the issue](#check-the-issue) | Go to [Start from an idea](#start-from-an-idea) | Run `next`. Its pick is `<i>`: print the `Picked` line, and go to [Check the issue](#check-the-issue). When nothing is ready, stop |
+| Another branch, `<branch>` | When the number is one of the matches, it is `<i>`: go to [Check the issue](#check-the-issue). Otherwise stop | Stop: an idea needs the default branch | When exactly one issue matches, it is `<i>`: go to [Check the issue](#check-the-issue). When none or several do, stop |
 
-  Keep the issues whose title starts with `<branch> — `. When the
-  user gave a number, it must be one of them. If it is not, say that
-  the issue and the branch do not match, and stop. When they gave
-  none, exactly one match is the issue. If none matches, say that
-  `lets-go` runs on the default branch or on a change's branch, and
-  needs the issue number on a change's branch. Stop. If several
-  match, say that `lets-go` needs the issue number, and stop.
+With nothing on the default branch, run the third case, `next`, of
+[Find the source of demand](#find-the-source-of-demand), over the
+whole backlog. When `next` picks an issue, print
+`Picked #<i>: <title>, the next ready issue.` That issue is `<i>`.
+When nothing is ready, the stop in `next` stands.
+
+On another branch, `<branch>`, when the request is words, say that an
+idea needs the default branch, and stop. Otherwise search for the
+change's issue, once:
+
+```bash
+gh issue list --state open --search "<branch> in:title" --json number,title
+```
+
+Keep the issues whose title starts with `<branch> — `: these are the
+matches. When the user gave a number, it must be one of them. If it is
+not, say that the issue and the branch do not match, and stop. When
+they gave none, exactly one match is the issue. If none matches, say
+that `lets-go` runs on the default branch or on a change's branch, and
+needs the issue number on a change's branch. Stop. If several match,
+say that `lets-go` needs the issue number, and stop.
 
 ## Start from an idea
 

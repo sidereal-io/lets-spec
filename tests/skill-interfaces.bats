@@ -1250,6 +1250,14 @@ parts_fixture() {
   ! grep -qx '## Start' "$(lets_go_skill)" || { echo "lets-go still has a ## Start heading"; false; }
 }
 
+@test "lets-go's entry table has a row for each branch and a column for each request" {
+  local part cell
+  part="$(part_section 'Read the request')"
+  for cell in '| A number | An idea | Nothing |' '| The default branch |' '| Another branch, `<branch>` |'; do
+    grep -qF -- "$cell" <<<"$part" || { echo "the entry table does not say: $cell"; false; }
+  done
+}
+
 @test "each link in lets-go names one of its file's headings" {
   anchors_resolve lets-go
 }
