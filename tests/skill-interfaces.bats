@@ -598,6 +598,23 @@ start_step() {
   done
 }
 
+# placeholder_rows: the first cell of each row of lets-go's Placeholders
+# table, without its backticks.
+placeholder_rows() {
+  awk '/^## Placeholders$/ { on = 1; next } /^## / { on = 0 } on && /^\|/' "$repo/skills/lets-go/SKILL.md" |
+    tail -n +3 | cut -d'|' -f2 | sed -E 's/^ *`?//; s/`? *$//'
+}
+
+@test "lets-go lists each placeholder once" {
+  local placeholder rows count wrong=()
+  rows="$(placeholder_rows)"
+  while IFS= read -r placeholder; do
+    count="$(grep -cxF -- "$placeholder" <<<"$rows" || true)"
+    [ "$count" -eq 1 ] || wrong+=("$placeholder has $count rows")
+  done < <(grep -oE '<[A-Za-z][^<>]*>' "$repo/skills/lets-go/SKILL.md" | sort -u)
+  [ "${#wrong[@]}" -eq 0 ] || { printf 'the Placeholders table: %s\n' "${wrong[@]}"; false; }
+}
+
 # readme_lets_go: the README's lets-go section, on one line.
 readme_lets_go() {
   awk '/^### `lets-go`/ { on = 1; next } /^### / { on = 0 } on' "$repo/README.md" | tr -s '[:space:]' ' '

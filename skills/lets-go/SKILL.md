@@ -21,6 +21,49 @@ on the change's branch. It reads from Git and GitHub which steps are
 done, prints a dated line for each, and goes on from the first
 unfinished step.
 
+## Placeholders
+
+A name in angle brackets is a placeholder. Each one stands for one
+thing, the same everywhere in this skill. Fill it in from where the run
+sets it.
+
+| Placeholder | What it stands for | Where the run sets it |
+|---|---|---|
+| `<project>` | The number of the Project linked to the repository | *Find the source of demand*, from the Project query |
+| `<owner>` | The Project's owner | *Find the source of demand*, from the Project query |
+| `<repo>` | The repository, as `owner/name` | *Find the source of demand*, from the Project query's `repo` |
+| `<i>` | The run's issue: the number the user named, the issue `next` or *Pick the first ready story* picked, or the issue a shape step shaped | *Start* step 2, or the shape step's report |
+| `<issue-url>` | The URL of `<i>` | *Confirm the packet*, from the issue's `url` |
+| `<parent>` | A parent issue: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in *Start from an idea* |
+| `<story>` | One story that a shape step's report names | Each `story` line of the shape report |
+| `<pr>` | The number of the change's pull request | *Read the records*, from the pull request's `number` |
+| `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | *Start* step 3, from the title. After a shape step, step 3 sets it again from the shaped issue's title |
+| `<branch>` | The branch the run started on, when it is not the default branch | *Start* step 1, from `git branch --show-current` |
+| `<default>` | The repository's default branch | *Start* step 1 |
+| `<shape-name>` | The shape step's name: `issue-<i>` or `idea-<slug>` | [The change's name](#the-changes-name) |
+| `<slug>` | The first five words of the idea, as [The change's name](#the-changes-name) makes them | [The change's name](#the-changes-name) |
+| `<idea>` | The idea, in the user's words | *Start* step 2 |
+| `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs |
+| `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
+| `<level>` | The interactivity level, `ask` or `recommend` | *Start* step 10, or step 2 of [Run the shape step](#run-the-shape-step) |
+| `<Kind>` | The issue's Kind on the Project | *Confirm the packet* |
+| `<schema>` | The change's schema | *Start* step 9 |
+| `<route line>` | The line *Route* says, such as `Route: lets-minimal, because #<i> is a Chore.` | [Route](#route) |
+| `<title>` | The title of the issue the line names | The command or report line that names the issue |
+| `<date>` | The date on a printed line | The line's own read: a report's `date`, a commit's author date, or the issue's last edit |
+| `<sha>` | A commit's short hash, or the commit a review names | [Read the records](#read-the-records), or the review plan report |
+| `<verdict>` | A plan review's verdict | The **Plan review** section, or the review plan report |
+| `<evidence>` | A `done` report's `evidence`, joined with `; ` | [Read the report](#read-the-report) |
+| `<reason>` | A `failed` report's `reason` | [Read the report](#read-the-report) |
+| `<YYYY-MM-DD>` | The date in an archive folder's name | The folder's name in `openspec/changes/archive/` |
+| `<first>` | The first model of the ranked options | Step 3 of [Run a step](#run-a-step) |
+| `<second>` | The second model of the ranked options | Step 3 of [Run a step](#run-a-step) |
+| `<skill>` | The skill in the step's row of the step table | [Write the prompt](#write-the-prompt) |
+| `<the sentence above>` | The sentence for *What to run*, or for shape the text of [What shape runs](#what-shape-runs) | [Write the prompt](#write-the-prompt) |
+| `<kebab-name>` | The part of an issue title before ` — `, in `lets-shape`'s template | The issue's title |
+| `<one-line outcome>` | The part of an issue title after ` — `, in `lets-shape`'s template | The issue's title |
+| `<L or XL>` | The Size the shape step gave the work, `L` or `XL` | The shape step |
+
 ## Start
 
 1. Read the user's default level. Run this once, before anything asks
