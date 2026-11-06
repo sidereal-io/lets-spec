@@ -376,7 +376,8 @@ skill_rows() {
 
 # steps_in_one_table <skill>: plan, review-plan, build and review-build each
 # have one row, a line that starts | `<step>` |, and all four rows sit in one
-# table, a run of lines that start with |, in one file of the skill.
+# table, a run of lines that start with |, in one file of the skill. Shape has
+# no row: it runs before the walk.
 steps_in_one_table() {
   local files rows step count wrong=()
   mapfile -t files < <(skill_files "$1")
@@ -390,6 +391,7 @@ steps_in_one_table() {
     count="$(grep -c "^$step"$'\t' <<<"$rows" || true)"
     [ "$count" -eq 1 ] || wrong+=("$step has $count rows")
   done
+  ! grep -q $'^shape\t' <<<"$rows" || wrong+=("shape has a row")
   count="$(grep -E $'^(plan|review-plan|build|review-build)\t' <<<"$rows" | cut -f2 | sort -u | wc -l)"
   [ "$count" -le 1 ] || wrong+=("the steps sit in $count tables")
   [ "${#wrong[@]}" -eq 0 ] || { printf '%s step table: %s\n' "$1" "${wrong[@]}"; return 1; }
@@ -538,6 +540,14 @@ step_table_fixture() {
   step_table_fixture '| Step | Skill | Record | Skip line |' \
     '| `plan` | a | b | c |' '| `review-plan` | a | b | c |' '| `build` | a | b | c |' '| `review-build` | a | b | c |'
   steps_in_one_table lets-go
+}
+
+@test "the step table check names a shape row" {
+  step_table_fixture '| Step | Skill | Record | Skip line |' '| `shape` | a | b | c |' \
+    '| `plan` | a | b | c |' '| `review-plan` | a | b | c |' '| `build` | a | b | c |' '| `review-build` | a | b | c |'
+  run steps_in_one_table lets-go
+  [ "$status" -eq 1 ] || { echo "it passed on a shape row"; false; }
+  [[ "$output" == *'shape has a row'* ]] || { echo "it said: $output"; false; }
 }
 
 @test "the step table check names a step with two rows" {
