@@ -1805,6 +1805,22 @@ walk_section() {
   [ "${#shape}" -lt "${#other}" ] || { echo "Read the report reads another failed step before a failed shape"; false; }
 }
 
+# A step's done report is checked against the records it should have changed.
+@test "Read the report checks a done report against its record" {
+  local part
+  part="$(part_section 'Read the report')"
+  grep -qF 'gh pr view <name> --json number,url,state,isDraft,body' <<<"$part" ||
+    { echo "Read the report does not read the pull request again after done"; false; }
+  grep -qF 'git status --porcelain' <<<"$part" || { echo "Read the report does not read the tree again after done"; false; }
+  grep -qF 'the step reported done, but' <<<"$part" || { echo "Read the report takes a done report on trust"; false; }
+  grep -qF '[Records that disagree](#records-that-disagree)' <<<"$part" ||
+    { echo "Read the report does not stop on records that disagree"; false; }
+  grep -qF 'reports done when its record says otherwise' <<<"$(overview_row 'Walk the step table')" ||
+    { echo "the walk's overview row does not stop on a done report its record contradicts"; false; }
+  skill_rows lets-go '^\| `<reason>` \|' | grep -qF 'the step reported done, but' ||
+    { echo "the <reason> row does not name the done check"; false; }
+}
+
 @test "a failed step on a branch with no pull request prints no URL" {
   local part
   part="$(part_section 'Read the report')"

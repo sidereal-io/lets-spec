@@ -40,7 +40,7 @@ part is not a step, and has no step report. The shape step that
 | [Route](#route) | Picks the change's schema, and says the route line | this session | *Enter the branch* | Never |
 | [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | *Set the level*; *Read the request* or *Pick the first ready story* after a lost claim | *Claim* returns `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
 | [Set the level](#set-the-level) | Picks `ask` or `recommend`, and says why | this session | *Walk the step table* | Never |
-| [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | *End of the run* | The records disagree, the pull request is merged or closed, or a step fails or asks a settled question again |
+| [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | *End of the run* | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL | this session | Nothing: the run is over | Always |
 
 ## Placeholders
@@ -76,7 +76,7 @@ sets it.
 | `<sha>` | A commit's short hash, or the commit a review names | [Read the records](#read-the-records), or the review plan report |
 | `<verdict>` | A plan review's verdict | The **Plan review** section, or the review plan report |
 | `<evidence>` | What a `done` report's `evidence` lists | [The step lines](#the-step-lines) |
-| `<reason>` | Why a step failed | [The step lines](#the-step-lines), from a `failed` report's `reason` |
+| `<reason>` | Why a step failed | [The step lines](#the-step-lines), from a `failed` report's `reason`, or from [Read the report](#read-the-report) when a `done` report's record says otherwise: `the step reported done, but` and what the record holds |
 | `<YYYY-MM-DD>` | The date in an archive folder's name | The folder's name in `openspec/changes/archive/` |
 | `<first>` | The first model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
 | `<second>` | The second model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
@@ -546,8 +546,8 @@ Then settle the row:
 - **Done:** print its Skip line from the table, filled from
   [Read the records](#read-the-records). Go on to the next row.
 - **Not done:** run the step, as [Run a step](#run-a-step) says. Then
-  [read its report](#read-the-report), which says what to print and
-  whether the walk goes on.
+  [read its report](#read-the-report). It checks a `done` report against
+  the records, and says what to print and whether the walk goes on.
 
 Next: [End of the run](#end-of-the-run), when no row is left.
 
@@ -578,8 +578,9 @@ disagreement. The walk reaches review plan first, and runs it.
 The walk prints each row's line when it settles the row, as
 [The step lines](#the-step-lines) says. A failed step ends the walk.
 
-When `review-build` reports `done`, its *Finish the change* has marked
-the pull request ready for review. When the walk is over, print the pull
+When `review-build` reports `done`, and
+[Read the report](#read-the-report) has checked it against the records,
+its *Finish the change* has marked the pull request ready for review. When the walk is over, print the pull
 request's URL. A failed shape has none: there is no branch yet. Nor
 does a step that failed before the branch had a pull request: say that
 the branch has no pull request yet.
@@ -1335,8 +1336,28 @@ start with no answers.
 
 - **`done`**: after `shape`, go on as
   [Run the shape step](#run-the-shape-step) says. After any other step,
-  print its `Done` line, as [The step lines](#the-step-lines) says, and
-  go on to the next row of the [walk](#walk-the-step-table).
+  check the report against the records first. The step may have changed
+  any of them, so a read from before the step cannot answer. Read the
+  three records again, as the [walk](#walk-the-step-table) does before
+  its first row: the tree, the pull request and the archive folder.
+
+  ```bash
+  git status --porcelain
+  gh pr view <name> --json number,url,state,isDraft,body
+  ```
+
+  Apply their rules for records that disagree, then run the row's done
+  test from the walk:
+  - **Done:** print the step's `Done` line, as
+    [The step lines](#the-step-lines) says, and go on to the next row of
+    the walk.
+  - **The records disagree:** stop, as
+    [Records that disagree](#records-that-disagree) says.
+  - **Not done:** the step failed. Its reason starts
+    `the step reported done, but`, then names the record and what it
+    holds, such as `the step reported done, but the change state is blocked`
+    or `the step reported done, but the branch has no pull request`. Go
+    on as for `failed`, below.
 - **`needs-input`**: [relay its questions](#relay-the-questions).
 - **`failed`, for shape**: there is no branch yet. Print shape's
   `Failed` line, as [The step lines](#the-step-lines) says. Say to run
