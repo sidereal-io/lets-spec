@@ -743,30 +743,57 @@ start_step() {
 # A placeholder that names two things lets an agent send an issue number
 # where the Project number belongs.
 @test "lets-go gives each placeholder one meaning" {
-  local old
   skill_says lets-go '<shape-name>'
   skill_says lets-go '<session>'
+  no_old_placeholders
+}
+
+# no_old_placeholders: no file of lets-go holds a placeholder name that once
+# meant two things.
+no_old_placeholders() {
+  local old
   for old in '<n>' '<p>' '<name>-<step>' '<name>-shape' '<url>' '<issue URL>' '<words>'; do
-    run grep -nF -- "$old" "$repo/skills/lets-go/SKILL.md"
-    [ "$status" -eq 1 ] || { echo "lets-go still says $old: $output"; false; }
+    skill_does_not_say lets-go "$old" || return 1
   done
 }
 
 # placeholder_rows: the first cell of each row of lets-go's Placeholders
 # table, without its backticks.
 placeholder_rows() {
-  awk '/^## Placeholders$/ { on = 1; next } /^## / { on = 0 } on && /^\|/' "$repo/skills/lets-go/SKILL.md" |
+  awk '/^## Placeholders$/ { on = 1; next } /^## / { on = 0 } on && /^\|/' "${skills_dir:-$repo/skills}/lets-go/SKILL.md" |
     tail -n +3 | cut -d'|' -f2 | sed -E 's/^ *`?//; s/`? *$//'
 }
 
 @test "lets-go lists each placeholder once" {
+  placeholders_listed_once
+}
+
+@test "the placeholder table check names a placeholder only a reference file uses" {
+  fixture_file lets-go SKILL.md '# lets-go' '' '## Placeholders' '' '| Placeholder | What | Where |' '|---|---|---|' \
+    '| `<i>` | The issue | Start |' '' '## Start' '' 'Read `#<i>`.'
+  fixture_file lets-go references/glossary-preflight.md 'Check out `<base>` first.'
+  run placeholders_listed_once
+  [ "$status" -eq 1 ] || { echo "it passed on a placeholder with no row"; false; }
+  [ "$output" = 'the Placeholders table: <base> has 0 rows' ] || { echo "it said: $output"; false; }
+}
+
+@test "the old placeholder check fails on an old name only a reference file uses" {
+  fixture_file lets-go references/claim.md 'Run `gh project item-edit <n>`.'
+  run no_old_placeholders
+  [ "$status" -eq 1 ] || { echo "it passed on <n> in a reference file"; false; }
+  [[ "$output" == *'<n>'* ]] || { echo "it said: $output"; false; }
+}
+
+# placeholders_listed_once: each placeholder in lets-go's SKILL.md or a
+# reference file is the first cell of one row of the Placeholders table.
+placeholders_listed_once() {
   local placeholder rows count wrong=()
   rows="$(placeholder_rows)"
   while IFS= read -r placeholder; do
     count="$(grep -cxF -- "$placeholder" <<<"$rows" || true)"
     [ "$count" -eq 1 ] || wrong+=("$placeholder has $count rows")
-  done < <(grep -oE '<[A-Za-z][^<>]*>' "$repo/skills/lets-go/SKILL.md" | sort -u)
-  [ "${#wrong[@]}" -eq 0 ] || { printf 'the Placeholders table: %s\n' "${wrong[@]}"; false; }
+  done < <(skill_rows lets-go '<[A-Za-z][^<>]*>' | grep -oE '<[A-Za-z][^<>]*>' | sort -u)
+  [ "${#wrong[@]}" -eq 0 ] || { printf 'the Placeholders table: %s\n' "${wrong[@]}"; return 1; }
 }
 
 # prose_placeholders <file>: each placeholder outside fenced code and inline
