@@ -291,6 +291,14 @@ skill_says() {
   skill_text "$1" | grep -qF -- "$2" || { echo "$1 does not say: $2"; return 1; }
 }
 
+# skill_does_not_say [-i] <skill> <fixed text>: no file skill_says reads
+# holds the text. -i ignores case.
+skill_does_not_say() {
+  local case=()
+  [ "$1" = -i ] && { case=(-i); shift; }
+  ! skill_text "$1" | grep -q "${case[@]}" -F -- "$2" || { echo "$1 still says: $2"; return 1; }
+}
+
 # fixture_file <skill> <path> <line>...: writes the lines to the file in a
 # skills folder under the test's temporary folder, gives the skill a SKILL.md
 # if it has none, and points the helpers at that folder.
@@ -311,6 +319,24 @@ fixture_file() {
   run skill_says lets-go 'Records disagree:'
   [ "$status" -eq 1 ] || { echo "it passed on a string no fixture file holds"; false; }
   [ "$output" = 'lets-go does not say: Records disagree:' ] || { echo "it said: $output"; false; }
+}
+
+@test "skill_does_not_say fails on a phrase only a reference file holds" {
+  fixture_file lets-go references/records.md 'Write VERDICT: here.'
+  run skill_does_not_say lets-go 'VERDICT:'
+  [ "$status" -eq 1 ] || { echo "it passed on a phrase a reference file holds"; false; }
+  [ "$output" = 'lets-go still says: VERDICT:' ] || { echo "it said: $output"; false; }
+}
+
+@test "skill_does_not_say -i fails on the phrase in another case" {
+  fixture_file lets-go references/steps.md 'Skipped Propose: once.'
+  run skill_does_not_say -i lets-go 'skipped propose'
+  [ "$status" -eq 1 ] || { echo "it passed on the phrase in another case"; false; }
+}
+
+@test "skill_does_not_say passes when no file holds the phrase" {
+  fixture_file lets-go references/records.md 'Nothing to see.'
+  skill_does_not_say lets-go 'VERDICT:'
 }
 
 @test "each review skill asks lets for its intent's options, then runs with a ranked list" {
