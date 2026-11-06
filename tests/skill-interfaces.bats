@@ -822,3 +822,20 @@ load support/release
   skill_says lets-review-build "author's finishing workflow"
   skill_says lets-review-plan 'explicit plan-only review'
 }
+
+# References are part of the installed review contract, alongside SKILL.md.
+pr_reference_says() {
+  tr -s '[:space:]' ' ' < "$repo/skills/lets-review-pr/references/$1.md" | grep -qF -- "$2" ||
+    { echo "$1 does not say: $2"; return 1; }
+}
+
+@test "collaborator review revision" {
+  skill_says lets-review-pr 'git merge-base <base-sha> <head-sha>'
+  skill_says lets-review-pr 'verify the target repository identity'
+  skill_says lets-review-pr 'git cat-file -e <head-sha>^{commit}'
+  skill_says lets-review-pr 'newer commits were not reviewed'
+  skill_says lets-review-pr "Never switch the user's checkout"
+  pr_reference_says role-prompt 'git show <head-sha>:<path>'
+  pr_reference_says role-prompt '<merge-base-sha> <head-sha>'
+  pr_reference_says role-prompt 'unreadable or truncated'
+}
