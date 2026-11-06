@@ -455,7 +455,7 @@ If the import fails:
    ```
 
    When a parent's `Input:` line holds the idea word for word, say that a
-   discovery of this idea is in progress at #<p>. Skip the search below,
+   discovery of this idea is in progress at #<parent>. Skip the search below,
    and [run the shape step](#run-the-shape-step) for the idea: its round
    resumes that parent.
 2. Run the second case of
@@ -520,8 +520,8 @@ stands.
 
 ### Pick the first ready story
 
-Discovery filed a parent issue, `#<p>`, and its stories. Build one of
-them in this run.
+Discovery filed a parent issue, `#<parent>`, and its stories. Build one
+of them in this run.
 
 1. Run the third case, `next`, of
    [Find the source of demand](#find-the-source-of-demand), with one
@@ -533,13 +533,13 @@ them in this run.
 2. When a story is ready, print:
 
    ```text
-   Picked #<i>: <title>, the first ready story under #<p>.
+   Picked #<i>: <title>, the first ready story under #<parent>.
    ```
 
    That story is `<i>`. Go on from *Start* step 3, the blocker read,
    with it, as for an issue number.
 3. When no story is ready, print the `Done shape` line that *Start*
-   step 5 shows. Say that no story under #<p> is ready. Name each story,
+   step 5 shows. Say that no story under #<parent> is ready. Name each story,
    and why it was left out: for example, its blocker, its assignee, or
    an unresolved prerequisite. Say to run `lets-go` with a story's
    number once it is ready. Then stop. Claim nothing, and create
@@ -565,12 +565,12 @@ make no commit.
 
 ```bash
 git add openspec/discovery.md
-git commit -m "docs: the discovery map from #<p>" -- openspec/discovery.md
+git commit -m "docs: the discovery map from #<parent>" -- openspec/discovery.md
 ```
 
-`<p>` is the parent's number, or the story's when the parent became the
-one story. Commit no other path. This is the one commit `lets-go` makes
-itself, beside the glossary import.
+`<parent>` is the parent's number, or the story's when the parent
+became the one story. Commit no other path. This is the one commit
+`lets-go` makes itself, beside the glossary import.
 
 ## Walk the step table
 
@@ -700,9 +700,9 @@ The state is the `state` that
 |---|---|---|---|---|
 | `shape` | the `lets-shape` skill, as [What shape runs](#what-shape-runs) says | *Confirm the packet* passes | The issue's last edit | `Skipped shape: #<i>'s packet is complete, last edited <date>.` |
 | `plan` | the `lets-plan` skill | The state is `ready` or `all_done`, or the archive folder exists | The commit that added `tasks.md` | `Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).` |
-| `review-plan` | the `lets-review-plan` skill | The **Plan review** section covers the plan. On `lets-minimal`, plan is done | The section's `Reviewed:` commit | `Skipped review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.` On `lets-minimal`: `Skipped review plan: not in the lets-minimal route.` |
+| `review-plan` | the `lets-review-plan` skill | The **Plan review** section covers the plan. On `lets-minimal`, plan is done | The section's `Reviewed:` commit | `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.` On `lets-minimal`: `Skipped review plan: not in the lets-minimal route.` |
 | `build` | the `lets-build` skill | The state is `all_done`, or the archive folder exists | The last commit that changed `tasks.md` | `Skipped build: every task is ticked, last task commit <date> (<sha>).` |
-| `review-build` | the `lets-review-build` skill | The archive folder exists | The commit that added the archive's `tasks.md`, and the pull request | `Skipped review build: archived <date> (<sha>); pull request #<p> is ready for review.` |
+| `review-build` | the `lets-review-build` skill | The archive folder exists | The commit that added the archive's `tasks.md`, and the pull request | `Skipped review build: archived <date> (<sha>); pull request #<pr> is ready for review.` |
 
 ### Read the records
 
@@ -726,7 +726,7 @@ the short hash, from `%h`. A read that prints nothing means the
   of the body. Inside it, `<sha>` comes from the line that starts
   `Reviewed: `, and `<verdict>` from the line that starts
   `- **Verdict:** `. Do not search the whole body: a **Code review**
-  section has a `Reviewed:` line too. `<p>` is the pull request's
+  section has a `Reviewed:` line too. `<pr>` is the pull request's
   `number`. Date the line by the reviewed commit:
 
   ```bash
@@ -740,7 +740,7 @@ the short hash, from `%h`. A read that prints nothing means the
   git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md
   ```
 
-- **Review build.** Read the commit that archived the change. `<p>` is
+- **Review build.** Read the commit that archived the change. `<pr>` is
   the pull request's `number`.
 
   ```bash
@@ -858,9 +858,9 @@ reason: The tests fail on main before any change.
 
 A done report's evidence lists the commits you made, and the pull request
 when you opened or changed it. For shape, its first line is the issue,
-as `issue #<i>: <title>`, or the parent, as `epic #<p>: <title>`, with a
-`story #<story>: <title>` line for each story. For review plan, its
-first line is the verdict and the commit reviewed, as
+as `issue #<i>: <title>`, or the parent, as `epic #<parent>: <title>`,
+with a `story #<story>: <title>` line for each story. For review plan,
+its first line is the verdict and the commit reviewed, as
 `Plan review: <verdict> for <sha>`. Write the report last. Quote a line that
 holds `#` or `: `. Put no other step-report block in the message.
 ````
@@ -920,8 +920,9 @@ the branch <default>, with a clean tree, except `openspec/discovery.md`
 when discovery ran.
 
 A done report's first evidence line is `issue #<i>: <title>` for one
-issue. When discovery filed stories, it is `epic #<p>: <title>`, then one
-`story #<story>: <title>` line per story, in the order you created them.
+issue. When discovery filed stories, it is `epic #<parent>: <title>`,
+then one `story #<story>: <title>` line per story, in the order you
+created them.
 When discovery found that the whole run fits one story, the parent became
 that story: use the `issue` form.
 ```
@@ -1006,9 +1007,9 @@ A shape step's `done` report must name what it shaped. Its first
 evidence line is one of these:
 
 - `issue #<i>: <title>`: one issue, `<i>`.
-- `epic #<p>: <title>`: the parent issue of a discovery, and `<p>` is its
-  number. Each `story #<story>: <title>` line after it names one
-  story, in the order discovery created them.
+- `epic #<parent>: <title>`: the parent issue of a discovery, and
+  `<parent>` is its number. Each `story #<story>: <title>` line after it
+  names one story, in the order discovery created them.
 
 When the first line is in neither form, the report is `failed`, and its
 reason is that the shape step named no issue. When it is an `epic` line

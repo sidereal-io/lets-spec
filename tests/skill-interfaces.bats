@@ -523,10 +523,10 @@ start_step() {
   skill_says lets-go 'at most once'
   skill_says lets-go 'holds another idea'
   skill_says lets-go 'Run discovery on it?'
-  skill_says lets-go 'epic #<p>: <title>'
+  skill_says lets-go 'epic #<parent>: <title>'
   skill_says lets-go 'story #<story>: <title>'
-  skill_says lets-go 'Picked #<i>: <title>, the first ready story under #<p>.'
-  skill_says lets-go 'docs: the discovery map from #<p>'
+  skill_says lets-go 'Picked #<i>: <title>, the first ready story under #<parent>.'
+  skill_says lets-go 'docs: the discovery map from #<parent>'
   skill_says lets-go 'Discovery status: in-progress'
   skill_says lets-go "gh issue list --state open --search '\"Discovery status: in-progress\" in:body' --json number,title,body"
   skill_says lets-go '*Resume mode*'
@@ -575,9 +575,9 @@ start_step() {
 
 @test "lets-go dates each skipped step from Git and GitHub" {
   skill_says lets-go 'Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).'
-  skill_says lets-go 'Skipped review plan: the Plan review in pull request #<p> says <verdict> for <sha>, committed <date>.'
+  skill_says lets-go 'Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.'
   skill_says lets-go 'Skipped build: every task is ticked, last task commit <date> (<sha>).'
-  skill_says lets-go 'Skipped review build: archived <date> (<sha>); pull request #<p> is ready for review.'
+  skill_says lets-go 'Skipped review build: archived <date> (<sha>); pull request #<pr> is ready for review.'
   ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- 'with a Code review section' ||
     { echo "lets-go still asks every flow for a Code review section"; false; }
   skill_says lets-go "git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md"
@@ -590,7 +590,7 @@ start_step() {
 # where the Project number belongs.
 @test "lets-go gives each placeholder one meaning" {
   local old
-  for old in '<n>'; do
+  for old in '<n>' '<p>'; do
     run grep -nF -- "$old" "$repo/skills/lets-go/SKILL.md"
     [ "$status" -eq 1 ] || { echo "lets-go still says $old: $output"; false; }
   done
