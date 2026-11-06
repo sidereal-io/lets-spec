@@ -615,6 +615,60 @@ placeholder_rows() {
   [ "${#wrong[@]}" -eq 0 ] || { printf 'the Placeholders table: %s\n' "${wrong[@]}"; false; }
 }
 
+# prose_placeholders <file>: each placeholder outside fenced code and inline
+# code spans, as <line>: <placeholder>. GitHub reads one there as an HTML
+# tag. A fence closes only on a line of its own character, at least as long
+# as the line that opened it, so a four-backtick fence holds three-backtick
+# ones. A code span closes on a run of as many backticks as opened it.
+prose_placeholders() {
+  awk '
+    function run(s, i,   n) { n = 0; while (substr(s, i + n, 1) == "`") n++; return n }
+    fence == "" && match($0, /^ *(```+|~~~+)/) {
+      fence = substr($0, RSTART, RLENGTH); sub(/^ */, "", fence); next
+    }
+    fence != "" {
+      line = $0; sub(/^ */, "", line); sub(/ *$/, "", line)
+      if (line ~ /^(`+|~+)$/ && substr(line, 1, 1) == substr(fence, 1, 1) && length(line) >= length(fence)) fence = ""
+      next
+    }
+    /^ *$/ { span = 0; next }
+    {
+      text = ""
+      for (i = 1; i <= length($0); ) {
+        c = substr($0, i, 1)
+        if (c == "`") {
+          n = run($0, i)
+          if (span == 0) span = n; else if (n == span) span = 0
+          i += n; continue
+        }
+        if (span == 0) text = text c
+        i++
+      }
+      while (match(text, /<[A-Za-z][^<>]*>/)) {
+        print NR ": " substr(text, RSTART, RLENGTH); text = substr(text, RSTART + RLENGTH)
+      }
+    }' "$1"
+}
+
+@test "lets-go writes no placeholder outside code" {
+  run prose_placeholders "$repo/skills/lets-go/SKILL.md"
+  [ -z "$output" ] || { echo "lets-go has placeholders outside code:"; echo "$output"; false; }
+}
+
+@test "the placeholder check reads a fence inside a longer fence as code" {
+  local file="$BATS_TEST_TMPDIR/fences.md"
+  printf '%s\n' '````text' '```step-report' 'outcome: done' '```' '<inside>' '````' '<outside>' >"$file"
+  run prose_placeholders "$file"
+  [ "$output" = '7: <outside>' ] || { echo "it found: $output"; false; }
+}
+
+@test "the placeholder check reads a two-backtick code span as code" {
+  local file="$BATS_TEST_TMPDIR/spans.md"
+  printf '%s\n' 'Write `` `#<i>` `` here, not <bare>.' >"$file"
+  run prose_placeholders "$file"
+  [ "$output" = '1: <bare>' ] || { echo "it found: $output"; false; }
+}
+
 # readme_lets_go: the README's lets-go section, on one line.
 readme_lets_go() {
   awk '/^### `lets-go`/ { on = 1; next } /^### / { on = 0 } on' "$repo/README.md" | tr -s '[:space:]' ' '

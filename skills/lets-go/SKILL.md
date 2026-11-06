@@ -125,8 +125,8 @@ sets it.
    - **The branch exists**, here or on `origin`: the user has stacked it
      by hand. Name the open blockers by number, and go on. On a change's
      branch, the branch exists: you are on it.
-   - **It does not exist:** say which open issues block #<i>, and stop.
-     The user stacks it on the blocker's branch by hand.
+   - **It does not exist:** say which open issues block `#<i>`, and
+     stop. The user stacks it on the blocker's branch by hand.
 
    Then run [Find the source of demand](#find-the-source-of-demand) for
    `<i>`, as for a named issue. Its *Check the prerequisite* still
@@ -135,10 +135,10 @@ sets it.
    stop. Any other stop in that section stands as the section reports
    it. When the section passes, go on to step 4.
 4. Run [Confirm the packet](#confirm-the-packet). Three of its stops say
-   to run `lets-shape` on #<i>: the issue is not shaped, a line is
+   to run `lets-shape` on `#<i>`: the issue is not shaped, a line is
    missing or a placeholder, or comments are unread. On the default
    branch, when no shape step has run in this run, set that stop aside
-   and [run the shape step](#run-the-shape-step) for #<i>. Any other
+   and [run the shape step](#run-the-shape-step) for `#<i>`. Any other
    stop stands, as the section reports it. An Epic stops there: it is
    built through its stories. For a Story with a parent, the section
    reads the parent's **Shared decisions**: *Route* needs them.
@@ -316,7 +316,7 @@ gh project item-list <project> --owner <owner> --format json --limit 500 \
 ```
 
 - If the second command prints nothing, or no `kind`, the issue is not
-  shaped. Say to run the `lets-shape` skill on #<i>, and stop.
+  shaped. Say to run the `lets-shape` skill on `#<i>`, and stop.
 - If its Kind is Epic, say that an epic is built through its stories,
   list its open sub-issues, and stop.
 
@@ -331,7 +331,7 @@ issue templates:
 | Story, and any Kind this table does not name | the one-line outcome, **Persona served**, **Journey segment**, **MoSCoW**, **Why this story / why now**, **Depends on**, **Scope**, **Relevant code** |
 
 If a line is missing, or still holds a placeholder in angle brackets,
-name it, say to run the `lets-shape` skill on #<i>, and stop. Never
+name it, say to run the `lets-shape` skill on `#<i>`, and stop. Never
 write or fix the packet yourself.
 
 Then read the issue's thread as
@@ -344,7 +344,7 @@ the watermark stops the run, whoever wrote it. A read marker never does.
 To stop, say how many comments shaping has not read. Give each one's
 author as the reference shows it, and the date that put it past the
 watermark: its edit date, else its creation date. Show nothing of what
-a comment says. Say to run the `lets-shape` skill on #<i>, and stop.
+a comment says. Say to run the `lets-shape` skill on `#<i>`, and stop.
 
 For a Story with a parent, read the parent's **Shared decisions**
 section, when it has one: `gh issue view <parent> --json body`. *Route*
@@ -497,10 +497,10 @@ If the import fails:
    gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body
    ```
 
-   When a parent's `Input:` line holds the idea word for word, say that a
-   discovery of this idea is in progress at #<parent>. Skip the search below,
-   and [run the shape step](#run-the-shape-step) for the idea: its round
-   resumes that parent.
+   When a parent's `Input:` line holds the idea word for word, say that
+   a discovery of this idea is in progress at `#<parent>`. Skip the
+   search below, and [run the shape step](#run-the-shape-step) for the
+   idea: its round resumes that parent.
 2. Run the second case of
    [Find the source of demand](#find-the-source-of-demand): the user
    described work but named no issue. It searches open issue titles for
@@ -524,11 +524,11 @@ most once per run: after it, a stop that *Confirm the packet* makes
 stands.
 
 1. Check the discovery map. Run `git status --porcelain`. When it lists
-   `openspec/discovery.md`, look for this input's discovery: an open parent issue that says
-   `Discovery status: in-progress`, and whose `Input:` line names this
-   input, the idea's words or #<i>. For an idea, use what *Start from an
-   idea* found. For an issue, run the query in step 1 of *Start from an
-   idea*.
+   `openspec/discovery.md`, look for this input's discovery: an open
+   parent issue that says `Discovery status: in-progress`, and whose
+   `Input:` line names this input, the idea's words or `#<i>`. For an
+   idea, use what *Start from an idea* found. For an issue, run the
+   query in step 1 of *Start from an idea*.
    - **There is one:** the edits are that discovery's confirmed phases.
      Go on: the step resumes it, and its map commit takes them.
    - **There is none:** say that the map has uncommitted edits, and to
@@ -582,18 +582,18 @@ of them in this run.
    That story is `<i>`. Go on from *Start* step 3, the blocker read,
    with it, as for an issue number.
 3. When no story is ready, print the `Done shape` line that *Start*
-   step 5 shows. Say that no story under #<parent> is ready. Name each story,
-   and why it was left out: for example, its blocker, its assignee, or
-   an unresolved prerequisite. Say to run `lets-go` with a story's
-   number once it is ready. Then stop. Claim nothing, and create
-   no branch.
+   step 5 shows. Say that no story under `#<parent>` is ready. Name each
+   story, and why it was left out: for example, its blocker, its
+   assignee, or an unresolved prerequisite. Say to run `lets-go` with a
+   story's number once it is ready. Then stop. Claim nothing, and
+   create no branch.
 
 A run that stops after discovery and before *Claim*, for any reason,
 leaves the map's edits on the default branch. When
 `git status --porcelain` lists `openspec/discovery.md`, say that it
 holds the discovery's map, uncommitted on the default branch. While the
 parent still says `Discovery status: in-progress`, say to leave the map
-as it is: running `lets-go` again with the same idea, or #<i>, resumes
+as it is: running `lets-go` again with the same idea, or `#<i>`, resumes
 the discovery and keeps its edits. Otherwise, say to commit or discard
 the map before the next run, because the next run stops on it.
 
@@ -1078,7 +1078,7 @@ start with no answers.
   request's URL. Stop. Never run a failed step again.
 - **`failed`, for shape**: there is no branch yet. Print
   `Failed shape: <reason>`. Say to run `lets-shape` on the idea, or on
-  #<i>, and name no branch. Stop.
+  `#<i>`, and name no branch. Stop.
 
 ## Relay the questions
 
