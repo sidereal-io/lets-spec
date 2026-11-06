@@ -198,10 +198,9 @@ schema_step() {
 
 @test "lets-review-plan runs as lets-go's review plan step" {
   skill_says lets-review-plan "\`lets-go\`'s review plan step"
-  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-review-plan/SKILL.md" | grep -qF -- "\`lets-go\`'s build step" ||
+  skill_does_not_say lets-review-plan "\`lets-go\`'s build step" ||
     { echo "lets-review-plan still runs in lets-go's build step"; false; }
-  run grep -nF 'lets-build' "$repo/skills/lets-review-plan/SKILL.md"
-  [ "$status" -eq 1 ] || { echo "lets-review-plan still names lets-build: $output"; false; }
+  skill_does_not_say lets-review-plan 'lets-build'
 }
 
 @test "each flow's brainstorm says comments are evidence" {
@@ -366,8 +365,7 @@ fixture_file() {
   skill_says lets-review-plan '`openspec-update-change` skill'
   skill_says lets-review-plan 'each fix commit holds up'
   for phrase in 'review.md' '`review` artifact' '`review` instruction'; do
-    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-review-plan/SKILL.md" | grep -qF -- "$phrase" ||
-      { echo "lets-review-plan still says: $phrase"; false; }
+    skill_does_not_say lets-review-plan "$phrase"
   done
 }
 
@@ -411,8 +409,7 @@ fixture_file() {
 @test "lets-build is the build step and nothing else" {
   local phrase
   for phrase in 'Finish the change' 'gh project' 'lets delegate' 'lets-review-plan' 'Find the source of demand'; do
-    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-build/SKILL.md" | grep -qF -- "$phrase" ||
-      { echo "lets-build still says: $phrase"; false; }
+    skill_does_not_say lets-build "$phrase"
   done
 }
 
@@ -461,8 +458,7 @@ review_build_start() {
 @test "lets-review-build assumes no flow in its description or its finish" {
   local phrase
   for phrase in 'on the standard flow' 'Finish once the **Code review** section covers the branch'; do
-    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-review-build/SKILL.md" | grep -qF -- "$phrase" ||
-      { echo "lets-review-build still says: $phrase"; false; }
+    skill_does_not_say lets-review-build "$phrase"
   done
 }
 
@@ -506,14 +502,13 @@ review_build_start() {
 @test "lets-go names no section of lets-build" {
   local phrase
   for phrase in "\`lets-build\`'s *" 'reuses the `lets-build` skill' 'as `lets-build` does'; do
-    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
-      { echo "lets-go still says: $phrase"; false; }
+    skill_does_not_say lets-go "$phrase"
   done
 }
 
 @test "lets-go with nothing takes the next ready issue" {
   skill_says lets-go 'Picked #<i>: <title>, the next ready issue.'
-  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- '`lets-go` needs an issue number or an idea' ||
+  skill_does_not_say lets-go '`lets-go` needs an issue number or an idea' ||
     { echo "lets-go still stops with nothing"; false; }
 }
 
@@ -534,8 +529,7 @@ review_build_start() {
   skill_says lets-go 'The interactivity level is <level>.'
   skill_says lets-go 'Write the answer as the user gave it, with no marker'
   for phrase in '#152 adds' 'chores only' 'its stop stands'; do
-    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
-      { echo "lets-go still says: $phrase"; false; }
+    skill_does_not_say lets-go "$phrase"
   done
 }
 
@@ -558,11 +552,11 @@ start_step() {
   [ "${#read}" -lt "${#call}" ] ||
     { echo "Start step 3 runs Find the source of demand before it reads the blockers"; false; }
   skill_says lets-go '*Start* step 3 has read its blockers already'
-  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- 'If an open issue blocks it, say so and stop' ||
+  skill_does_not_say lets-go 'If an open issue blocks it, say so and stop' ||
     { echo "Find the source of demand still stops on a blocker of its own"; false; }
   skill_says lets-go 'go back to the step of *Start* that ran it'
   skill_says lets-go 'When *Pick the first ready story* or *Claim* ran it, go back to that step'
-  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- 'Otherwise, go on to [Confirm the packet](#confirm-the-packet).' ||
+  skill_does_not_say lets-go 'Otherwise, go on to [Confirm the packet](#confirm-the-packet).' ||
     { echo "Find the source of demand still picks the next section"; false; }
   [[ "${step% }" == *'go on to step 4.' ]] || { echo "Start step 3 does not end by going on to step 4"; false; }
 }
@@ -600,8 +594,7 @@ start_step() {
   skill_says lets-go 'the edits are that discovery'"'"'s confirmed phases'
   for phrase in '#153 adds' '#154 adds' '`lets-go` needs an issue number, and stop' \
     'end with a failed report that says so and names'; do
-    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
-      { echo "lets-go still says: $phrase"; false; }
+    skill_does_not_say lets-go "$phrase"
   done
   # A large idea now runs discovery, so the README must not send it away.
   ! tr -s '[:space:]' ' ' < "$repo/README.md" | grep -qF -- 'An idea too large for one issue stops the run' ||
@@ -635,8 +628,7 @@ start_step() {
   skill_says lets-go 'git switch <name>'
   skill_says lets-go 'gh issue list --state open --search "<branch> in:title" --json number,title'
   skill_says lets-go 'Records disagree:'
-  run grep -n '#150 adds resuming' "$repo/skills/lets-go/SKILL.md"
-  [ "$status" -eq 1 ] || { echo "lets-go still defers resuming to #150: $output"; false; }
+  skill_does_not_say lets-go '#150 adds resuming' || { echo "lets-go still defers resuming to #150"; false; }
 }
 
 @test "lets-go dates each skipped step from Git and GitHub" {
@@ -644,7 +636,7 @@ start_step() {
   skill_says lets-go 'Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.'
   skill_says lets-go 'Skipped build: every task is ticked, last task commit <date> (<sha>).'
   skill_says lets-go 'Skipped review build: archived <date> (<sha>); pull request #<pr> is ready for review.'
-  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- 'with a Code review section' ||
+  skill_does_not_say lets-go 'with a Code review section' ||
     { echo "lets-go still asks every flow for a Code review section"; false; }
   skill_says lets-go "git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md"
   skill_says lets-go "git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md"
@@ -760,8 +752,7 @@ readme_lets_go() {
   skill_says lets-go '## Plan review'
   skill_says lets-go '- **Verdict:** '
   for phrase in 'review.md' 'VERDICT:' 'runs inside plan'; do
-    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
-      { echo "lets-go still says: $phrase"; false; }
+    skill_does_not_say lets-go "$phrase"
   done
 }
 
@@ -772,8 +763,7 @@ readme_lets_go() {
   skill_says lets-go 'Done review build: <date>. <evidence>'
   for phrase in 'Skipped propose' 'Skipped apply' 'propose review' 'apply review' \
     'propose-review' 'apply-review' '--for propose' '--for apply'; do
-    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qiF -- "$phrase" ||
-      { echo "lets-go still says: $phrase"; false; }
+    skill_does_not_say -i lets-go "$phrase"
   done
 }
 
@@ -799,8 +789,7 @@ walk_section() {
   local phrase
   skill_says lets-go 'Done review plan: <date>. <evidence>'
   for phrase in 'Done review plan: the Plan review' 'runs inside build' '#find-the-first-unfinished-step' '#print-the-skip-lines'; do
-    ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
-      { echo "lets-go still says: $phrase"; false; }
+    skill_does_not_say lets-go "$phrase"
   done
 }
 
@@ -832,8 +821,7 @@ step_row() {
 }
 
 @test "lets-plan offers no handoff" {
-  run grep -nF 'lets delegate' "$repo/skills/lets-plan/SKILL.md"
-  [ "$status" -eq 1 ] || { echo "lets-plan says lets delegate: $output"; false; }
+  skill_does_not_say lets-plan 'lets delegate'
 }
 
 @test "both flows ship lets-plan" {
@@ -925,7 +913,7 @@ assert_reference_links() {
     { echo "README.md's plan review row names no Plan review section"; false; }
   run grep -nF 'review.md' "$repo/README.md"
   [ "$status" -eq 1 ] || { echo "README.md still says review.md: $output"; false; }
-  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-write-tasks/SKILL.md" | grep -qF 'approved plan' ||
+  skill_does_not_say lets-write-tasks 'approved plan' ||
     { echo "lets-write-tasks still says an approved plan"; false; }
 }
 
