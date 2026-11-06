@@ -1333,6 +1333,17 @@ procedure_text() {
     on' "$(lets_go_skill)"
 }
 
+# procedure_stops <name>: each line of the procedure's prose_text, its
+# subsections included, that holds the word stop or stops, in any case, as
+# <name>:<line>: <text>. A procedure returns a result, and the part that ran
+# it decides whether to stop.
+procedure_stops() {
+  local file="$BATS_TEST_TMPDIR/procedure.md" out
+  procedure_text "$1" >"$file"
+  out="$(prose_text "$file" | grep -iE '(^|[^A-Za-z])stops?([^A-Za-z]|$)' | sed "s|^|$1:|")"
+  [ -z "$out" ] || { echo "$out"; return 1; }
+}
+
 @test "each lets-go procedure returns to the part that ran it, with no Next line" {
   local procedure text
   for procedure in 'Find the source of demand' 'Confirm the packet' 'Glossary preflight' 'Claim' \
@@ -1343,6 +1354,26 @@ procedure_text() {
       { echo "$procedure does not return to the part that ran it"; false; }
     ! grep -q '^Next: ' <<<"$text" || { echo "$procedure has a Next line"; false; }
   done
+}
+
+@test "the procedure stops check names a procedure that says stop" {
+  fixture_file lets-go SKILL.md '# lets-go' '## Procedures' '### Confirm the packet' '' \
+    'Say to run the `lets-shape` skill on `#<i>`, and stop.' '' 'Return to the part that ran it.'
+  run procedure_stops 'Confirm the packet'
+  [ "$status" -eq 1 ] || { echo "it passed on a procedure that says stop"; false; }
+  [[ "$output" == 'Confirm the packet:'*'stop'* ]] || { echo "it said: $output"; false; }
+}
+
+@test "the procedure stops check skips stop inside a code span" {
+  fixture_file lets-go SKILL.md '# lets-go' '## Procedures' '### Confirm the packet' '' \
+    'Old skills said `stop` here.' '' 'Return to the part that ran it.'
+  procedure_stops 'Confirm the packet'
+}
+
+@test "the procedure stops check passes a procedure that returns a result" {
+  fixture_file lets-go SKILL.md '# lets-go' '## Procedures' '### Confirm the packet' '' \
+    'If a line is missing, the result is `needs-shape`.' '' 'Return to the part that ran it, with the result.'
+  procedure_stops 'Confirm the packet'
 }
 
 @test "lets-go refers to no step by its step number" {
