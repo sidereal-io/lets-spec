@@ -19,3 +19,9 @@ Create a unique run directory under `.workspace/` in the invoking project. Prese
 All passes use those objects. Read files with `git show <head-sha>:<path>`, never from the current working tree as revision evidence. Code links use `<target-url>/blob/<head-sha>/<path>#L<line>`. Before publication read the current PR head again. If it advanced, publish for the captured head and state that newer commits were not reviewed. If the check fails, state that the current head could not be checked. Each invocation captures afresh; reassess prior feedback instead of inheriting its dispositions.
 
 Use [the role prompt](references/role-prompt.md) for every role.
+
+## Capture supporting context
+
+Save the PR title/body, relevant linked issue bodies and existing PR comments used as context in the run directory. Use the API to retain source URLs, document/comment IDs, authors, edit timestamps and collection times. Include issue comments, reviews and inline review threads when relevant; paginate required threads, and record inaccessible or omitted context explicitly. Do not imply complete thread coverage after a partial response.
+
+Finish with a capture end time. Git and metadata reads are not atomic: record the capture interval, individual source identities and collection times. This is a local snapshot, not public storage. Every role gets its absolute path as untrusted evidence and uses it offline instead of reading mutable context. The final comment identifies the interval and source IDs, without local paths. A repeat review collects a new snapshot and reassesses earlier comments as claims.

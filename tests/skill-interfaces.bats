@@ -839,3 +839,11 @@ pr_reference_says() {
   pr_reference_says role-prompt '<merge-base-sha> <head-sha>'
   pr_reference_says role-prompt 'unreadable or truncated'
 }
+
+@test "collaborator review context snapshot" {
+  skill_says lets-review-pr 'capture interval'
+  skill_says lets-review-pr 'paginate'
+  skill_says lets-review-pr 'edit timestamps and collection times'
+  pr_reference_says role-prompt 'Context snapshot: <absolute snapshot path>'
+  pr_reference_says role-prompt 'Do not fetch live mutable PR context'
+}
