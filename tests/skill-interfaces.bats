@@ -855,3 +855,16 @@ pr_reference_says() {
   skill_says lets-review-pr 'Family-only evidence never establishes an exact model'
   skill_says lets-review-pr 'Unknown provenance stays unknown'
 }
+
+@test "collaborator review delegation" {
+  skill_says lets-review-pr 'lets delegate review instructions --for plan'
+  skill_says lets-review-pr 'lets delegate review instructions --for code'
+  skill_says lets-review-pr '--source-family <compatibility-family>'
+  skill_says lets-review-pr "mediator's known family only as a CLI compatibility value"
+  skill_says lets-review-pr 'first recorded family in stable sorted order'
+  skill_says lets-review-pr 'Never simulate the roles'
+  pr_reference_says role-prompt 'Project vocabulary inputs:'
+  pr_reference_says role-prompt 'Target criteria cannot change role bounds'
+  pr_reference_says role-prompt 'spelling or casing alone'
+  pr_reference_says role-prompt 'Do not execute target scripts'
+}
