@@ -1091,6 +1091,125 @@ readme_lets_go() {
   skill_says lets-go 'and stop where it stops'
 }
 
+# The parts of a lets-go run, in run order. Each is a ## heading of SKILL.md.
+lets_go_parts=('Read the settings' 'Read the request' 'Start from an idea' 'Check the issue' 'Run the shape step'
+  'Pick the first ready story' 'Route' 'Enter the branch' 'Set the level' 'Walk the step table' 'End of the run')
+
+# heading_anchor <heading>: the anchor GitHub makes from a heading's text.
+heading_anchor() {
+  printf '%s' "$1" | tr 'A-Z' 'a-z' | tr ' ' '-' | tr -cd 'a-z0-9_-'
+}
+
+# lets_go_skill: the path of lets-go's SKILL.md.
+lets_go_skill() {
+  echo "${skills_dir:-$repo/skills}/lets-go/SKILL.md"
+}
+
+# part_section <name>: the ## section of that name in lets-go's SKILL.md, its
+# subsections included, up to the next ## heading, on one line.
+part_section() {
+  awk -v name="## $1" "$fence_rules"'
+    !code && /^## / { on = ($0 == name); next }
+    on' "$(lets_go_skill)" | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//'
+}
+
+# parts_listed: the overview table before ## Placeholders has a row for each
+# part, in run order, that links the part's heading, and each part is a ##
+# heading after ## Placeholders, in the same order.
+parts_listed() {
+  local skill rows headings part index anchor previous=0 wrong=()
+  skill="$(lets_go_skill)"
+  rows="$(awk "$fence_rules"' !code && /^## Placeholders$/ { exit } !code && /^\|/' "$skill" |
+    sed -nE 's/^\| *\[([^]]*)\]\(#([^)]*)\).*/\1\t\2/p')"
+  for part in "${lets_go_parts[@]}"; do
+    index="$(cut -f1 <<<"$rows" | grep -nxF -- "$part" | head -1 | cut -d: -f1)"
+    if [ -z "$index" ]; then wrong+=("the overview has no row for $part"); continue; fi
+    [ "$index" -gt "$previous" ] || wrong+=("the overview lists $part out of order")
+    previous="$index"
+    anchor="$(sed -n "${index}p" <<<"$rows" | cut -f2)"
+    [ "$anchor" = "$(heading_anchor "$part")" ] || wrong+=("the overview's row for $part links #$anchor")
+  done
+  headings="$(awk "$fence_rules"' !code && /^## / { print substr($0, 4) }' "$skill")"
+  previous="$(grep -nxF Placeholders <<<"$headings" | head -1 | cut -d: -f1)"
+  [ -n "$previous" ] || { wrong+=("there is no ## Placeholders heading"); previous=0; }
+  for part in "${lets_go_parts[@]}"; do
+    index="$(grep -nxF -- "$part" <<<"$headings" | head -1 | cut -d: -f1)"
+    if [ -z "$index" ]; then wrong+=("there is no ## heading for $part"); continue; fi
+    [ "$index" -gt "$previous" ] || wrong+=("the ## heading for $part is out of order")
+    previous="$index"
+  done
+  [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
+}
+
+# parts_say_next: each part but End of the run ends its own text, up to its
+# first heading of any level, with a paragraph that starts Next:.
+parts_say_next() {
+  local part wrong=()
+  for part in "${lets_go_parts[@]}"; do
+    [ "$part" != 'End of the run' ] || continue
+    awk -v name="## $part" "$fence_rules"'
+      !code && /^#+ / { if (on) exit; on = ($0 == name); fresh = 1; next }
+      !on { next }
+      code { last = ""; fresh = 0; next }
+      /^ *$/ { fresh = 1; next }
+      fresh { last = $0; fresh = 0 }
+      END { exit !(last ~ /^Next: /) }' "$(lets_go_skill)" || wrong+=("$part does not end with a Next: line")
+  done
+  [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
+}
+
+# parts_fixture [<option>=<part>]...: a lets-go fixture SKILL.md with an
+# overview row and a heading for each part, then ## Placeholders. Each part
+# but End of the run ends with a Next: line. no_row=<part> leaves out its
+# overview row, no_next=<part> its Next: line, and subsection=<part> adds a
+# ### subsection after its Next: line.
+parts_fixture() {
+  local no_row="" no_next="" subsection="" option part lines=('# lets-go' '' '| Part | Next |' '|---|---|')
+  for option in "$@"; do local "$option"; done
+  for part in "${lets_go_parts[@]}"; do
+    [ "$part" = "$no_row" ] || lines+=("| [$part](#$(heading_anchor "$part")) | the next part |")
+  done
+  lines+=('' '## Placeholders' '' 'Names.')
+  for part in "${lets_go_parts[@]}"; do
+    lines+=('' "## $part" '' 'Text.' '')
+    if [ "$part" = 'End of the run' ]; then lines+=('The run is over.')
+    elif [ "$part" != "$no_next" ]; then lines+=('Next: [Route](#route) when it' 'passes.')
+    fi
+    [ "$part" != "$subsection" ] || lines+=('' '### More' '' 'Subsection text.')
+  done
+  fixture_file lets-go SKILL.md "${lines[@]}"
+}
+
+@test "part_section reads a part through its subsections, up to the next part" {
+  fixture_file lets-go SKILL.md '# lets-go' '## Route' 'First,' '````text' '## not a heading' '````' '### Sub' 'last.' '## Enter the branch' 'Not this.'
+  run part_section 'Route'
+  [ "$output" = 'First, ````text ## not a heading ```` ### Sub last.' ] || { echo "it read: $output"; false; }
+}
+
+@test "the part overview check passes every part, listed and in order" {
+  parts_fixture
+  parts_listed
+}
+
+@test "the part overview check names a part with no row" {
+  parts_fixture no_row=Route
+  run parts_listed
+  [ "$status" -eq 1 ] || { echo "it passed on an overview with no Route row"; false; }
+  [ "$output" = 'the overview has no row for Route' ] || { echo "it said: $output"; false; }
+}
+
+@test "the part Next check names a part with no Next line" {
+  parts_fixture 'no_next=Set the level'
+  run parts_say_next
+  [ "$status" -eq 1 ] || { echo "it passed on a part with no Next line"; false; }
+  [ "$output" = 'Set the level does not end with a Next: line' ] || { echo "it said: $output"; false; }
+}
+
+@test "the part Next check passes a Next line before a subsection" {
+  parts_fixture 'subsection=Walk the step table'
+  parts_say_next
+}
+
 # walk_section: lets-go's Walk the step table section, on one line.
 walk_section() {
   awk '/^## Walk the step table$/ { on = 1; next } /^## / { on = 0 } on' "$repo/skills/lets-go/SKILL.md" | tr -s '[:space:]' ' '
