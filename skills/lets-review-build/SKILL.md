@@ -1,6 +1,6 @@
 ---
 name: lets-review-build
-description: End a change. On the standard flow, a model from another family reviews the branch's commits first. Then the change is verified, archived and marked ready. Use when every task of a change is done, or when someone asks for a code review of a branch.
+description: End a change. On the standard flow, a model from another family reviews the branch's commits first. Then the change is verified, archived and marked ready. Use for the author's finishing workflow when every task is done or the author requests branch code review. A full collaborator review of an existing PR uses lets-review-pr.
 ---
 
 # Review build
@@ -13,6 +13,8 @@ End a change. On `lets-standard`, a different model family reviews the branch's 
 - **On request.** Someone asks for a code review of a branch, or runs this skill by name.
 
 ## Start
+
+For a full collaborator review of an existing PR, use the `lets-review-pr` skill and stop here.
 
 Read the flow's schema: the `schema:` line of `openspec/config.yaml`.
 

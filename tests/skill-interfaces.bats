@@ -811,3 +811,14 @@ load support/release
   ln -s "$real" "$alias"
   assert_reference_links "$alias/skill/SKILL.md" "$alias"
 }
+
+@test "collaborator review routing" {
+  local file
+  for file in README.md overlays/AGENTS.md; do
+    grep -qF '| Review an existing PR as a collaborator |' "$repo/$file"
+    grep -qF 'lets-review-pr' "$repo/$file"
+  done
+  skill_says lets-review-pr 'explicit full collaborator PR review'
+  skill_says lets-review-build "author's finishing workflow"
+  skill_says lets-review-plan 'explicit plan-only review'
+}

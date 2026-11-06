@@ -173,6 +173,7 @@ Kind's template: `lets-shape` writes it, and `lets-go` checks it.
 | File a bug, a chore or a single story, or finish an issue that has no packet | `lets-shape` |
 | Start the next story, or carry on the change on your current branch | `lets-go` |
 | Take a shaped story, bug or chore, or an idea in words, to a ready pull request in one run | `lets-go` |
+| Review an existing PR as a collaborator | `lets-review-pr` |
 | Set up or check this repository's backlog | `lets-setup-backlog` |
 
 ### `lets-setup-backlog`: create or check the Project

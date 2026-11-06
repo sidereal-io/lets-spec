@@ -49,6 +49,7 @@ These rules come from lets-spec, and apply to every agent.
 | A bug, a chore or a single story with no issue yet, or an issue with no packet | The `lets-shape` skill |
 | Start the next story, or move the current branch's change on | The `lets-go` skill |
 | Take a shaped story, bug or chore, or an idea in words, to a ready pull request in one run | The `lets-go` skill |
+| Review an existing PR as a collaborator | The `lets-review-pr` skill |
 | Set up or check this repository's backlog | The `lets-setup-backlog` skill |
 
 ### Domain language
