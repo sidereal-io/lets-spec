@@ -1,6 +1,6 @@
 ---
 name: lets-review-plan
-description: Use when someone asks for an independent review of a plan, design, spec, architecture decision record (ADR), or skill, or when `lets-go`'s review plan step reviews an OpenSpec change on `lets-standard`. Another model family reviews the work read-only, and the findings come back ranked.
+description: Use for explicit plan-only review, including a plan in a PR. Full collaborator PR review uses lets-review-pr. Use when someone asks for an independent review of a plan, design, spec, architecture decision record (ADR), or skill, or when `lets-go`'s review plan step reviews an OpenSpec change on `lets-standard`. Another model family reviews the work read-only, and the findings come back ranked.
 ---
 
 # Peer Plan Review

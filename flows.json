@@ -13,6 +13,7 @@
         "lets-test-first",
         "lets-review-plan",
         "lets-review-build",
+        "lets-review-pr",
         "lets-shape",
         "lets-setup-backlog"
       ]
@@ -28,6 +29,7 @@
         "lets-write-tasks",
         "lets-test-first",
         "lets-review-build",
+        "lets-review-pr",
         "lets-shape",
         "lets-setup-backlog"
       ]

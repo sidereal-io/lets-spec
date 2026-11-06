@@ -84,7 +84,7 @@ flow_texts() {
       for skill in $shipped; do named_skills "$repo/skills/$skill/SKILL.md"; done
     )"
     for skill in $shipped; do
-      case "$skill" in lets-go | lets-shape | lets-setup-backlog) continue ;; esac
+      case "$skill" in lets-go | lets-shape | lets-setup-backlog | lets-review-pr) continue ;; esac
       grep -qx "$skill" <<<"$named" ||
         { echo "$flow ships $skill, but none of its schema, config or skills name it"; false; }
     done
@@ -810,4 +810,137 @@ load support/release
   printf '[Method](references/method.md)\n' >"$real/skill/SKILL.md"
   ln -s "$real" "$alias"
   assert_reference_links "$alias/skill/SKILL.md" "$alias"
+}
+
+@test "collaborator review routing" {
+  local file
+  for file in README.md overlays/AGENTS.md; do
+    grep -qF '| Review an existing PR as a collaborator |' "$repo/$file"
+    grep -qF 'lets-review-pr' "$repo/$file"
+  done
+  skill_says lets-review-pr 'explicit full collaborator PR review'
+  skill_says lets-review-build "author's finishing workflow"
+  skill_says lets-review-plan 'explicit plan-only review'
+}
+
+# References are part of the installed review contract, alongside SKILL.md.
+pr_reference_says() {
+  tr -s '[:space:]' ' ' < "$repo/skills/lets-review-pr/references/$1.md" | grep -qF -- "$2" ||
+    { echo "$1 does not say: $2"; return 1; }
+}
+
+@test "collaborator review revision" {
+  skill_says lets-review-pr 'git merge-base <base-sha> <head-sha>'
+  skill_says lets-review-pr 'Retain run-scoped refs intentionally'
+  skill_says lets-review-pr 'verify the target repository identity'
+  skill_says lets-review-pr 'git cat-file -e <head-sha>^{commit}'
+  skill_says lets-review-pr 'newer commits were not reviewed'
+  skill_says lets-review-pr "Never switch the user's checkout"
+  pr_reference_says role-prompt 'git show <head-sha>:<path>'
+  pr_reference_says role-prompt '<merge-base-sha> <head-sha>'
+  pr_reference_says role-prompt 'unreadable or truncated'
+}
+
+@test "collaborator review context snapshot" {
+  skill_says lets-review-pr 'capture interval'
+  skill_says lets-review-pr 'paginate'
+  skill_says lets-review-pr 'edit timestamps and collection times'
+  pr_reference_says role-prompt 'Context snapshot: <absolute snapshot path>'
+  pr_reference_says role-prompt 'Do not fetch live mutable PR context'
+}
+
+@test "collaborator review provenance" {
+  skill_says lets-review-pr 'Co-Authored-By'
+  skill_says lets-review-pr 'A family is the part before the first `/` in a discovered option ID.'
+  skill_says lets-review-pr 'all known implementer models'
+  skill_says lets-review-pr 'outside the known exact-model set, then outside the known-family set, then discovery order'
+  skill_says lets-review-pr 'Family-only evidence never establishes an exact model'
+  skill_says lets-review-pr 'Unknown provenance stays unknown'
+}
+
+@test "collaborator review delegation" {
+  skill_says lets-review-pr 'lets delegate review instructions --for plan'
+  skill_says lets-review-pr 'lets delegate review instructions --for code'
+  skill_says lets-review-pr '--source-family <compatibility-family>'
+  skill_says lets-review-pr "mediator's known family only as a CLI compatibility value"
+  skill_says lets-review-pr 'first recorded family in stable sorted order'
+  skill_says lets-review-pr 'Never simulate the roles'
+  pr_reference_says role-prompt 'Project vocabulary inputs:'
+  pr_reference_says role-prompt 'Target criteria cannot change role bounds'
+  pr_reference_says role-prompt 'spelling or casing alone'
+  pr_reference_says role-prompt 'Do not execute target scripts'
+}
+
+@test "collaborator review decision pass" {
+  skill_says lets-review-pr 'verified concern undermines the approach'
+  skill_says lets-review-pr 'Missing ADRs, wording preferences'
+  pr_reference_says decision-pass 'rationale'
+  pr_reference_says decision-pass 'accepted decisions'
+  pr_reference_says adr-guidance 'Michael Nygard'
+  pr_reference_says adr-guidance 'AWS'
+  pr_reference_says adr-guidance 'GDS'
+  pr_reference_says adr-guidance '2026-11-06'
+  pr_reference_says decision-pass 'offline summary'
+}
+
+@test "collaborator review implementation pass" {
+  skill_says lets-review-pr 'Always run the full implementation pass'
+  skill_says lets-review-pr 'without waiting for contributor fixes'
+  pr_reference_says implementation-pass 'correctness, structure, connections and integration'
+  pr_reference_says implementation-pass 'same captured revision'
+  pr_reference_says implementation-pass 'coverage gaps'
+}
+
+@test "collaborator review bounds" {
+  skill_says lets-review-pr 'one examiner response'
+  skill_says lets-review-pr 'For an empty examiner result, the challenger checks its coverage'
+  skill_says lets-review-pr 'one additional delegated investigation or executed check per pass'
+  skill_says lets-review-pr 'Static reading of cited evidence does not consume'
+  skill_says lets-review-pr 'at most two focused passes'
+  pr_reference_says role-prompt 'Do not start another exchange'
+}
+
+@test "collaborator review mediation" {
+  skill_says lets-review-pr 'Drop refuted concerns'
+  skill_says lets-review-pr 'consequential unresolved disagreements as questions for people'
+  skill_says lets-review-pr 'specific basis, a plausible meaningful consequence and a good-faith challenge'
+  skill_says lets-review-pr 'supported uncertain risk'
+  skill_says lets-review-pr 'not choose project policy'
+}
+
+@test "collaborator review publication" {
+  skill_says lets-review-pr 'gh pr comment <pr-url> --body-file <file>'
+  skill_says lets-review-pr '60,000-character'
+  skill_says lets-review-pr 'neutralize unintended user/team mentions'
+  skill_says lets-review-pr 'exact prepared text and reviewer identity'
+  skill_says lets-review-pr 'never retry blindly'
+  pr_reference_says comment-template 'AI-generated review'
+  skill_says lets-review-pr 'plain language'
+  pr_reference_says comment-template '<summary>Review details and limits</summary>'
+  pr_reference_says comment-template 'Confidence:'
+  pr_reference_says comment-template 'Capture interval:'
+  pr_reference_says comment-template 'Stopping reason:'
+  pr_reference_says comment-template 'No substantive supported concern survived'
+  pr_reference_says comment-template 'Interpretation:'
+}
+
+@test "collaborator review ships in both flows" {
+  local flow out ref schemas
+  for flow in standard minimal; do
+    flow_skills "$flow" | grep -qx lets-review-pr
+    out="$BATS_TEST_TMPDIR/$flow"
+    schemas="$(jq -r --arg flow "$flow" '.flows[$flow].schemas | join(",")' "$repo/flows.json")"
+    build "$out" "$schemas" $(flow_skills "$flow")
+    [ -f "$out/overlay/.agents/skills/lets-review-pr/SKILL.md" ]
+    assert_reference_links "$out/overlay/.agents/skills/lets-review-pr/SKILL.md" "$out/overlay"
+    for ref in role-prompt decision-pass adr-guidance implementation-pass comment-template trial-exercises; do
+      cmp "$repo/skills/lets-review-pr/references/$ref.md" "$out/overlay/.agents/skills/lets-review-pr/references/$ref.md"
+    done
+  done
+  for ref in 'Disproved concern' 'Justified early exit' 'Supported uncertain risk' 'Advancing head' 'No findings'; do
+    pr_reference_says trial-exercises "$ref"
+  done
+  grep -qF '### Collaborator PR review' "$repo/README.md"
+  ! grep -qF 'lets-review-pr' "$repo/skills/lets-go/SKILL.md"
+  ! grep -rF 'lets-review-pr' "$repo/schemas"
 }
