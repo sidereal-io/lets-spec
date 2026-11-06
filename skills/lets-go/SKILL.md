@@ -505,11 +505,11 @@ stands.
       ```
 
 3. For an idea, check that the answers file is this idea's. Two ideas
-   can share their first five words, and so their `<name>`. When
-   `.workspace/lets-go/<name>-shape-prompt.md` exists and holds another
-   idea, an earlier run stopped part way on that other idea. In that
-   case, remove `.workspace/lets-go/<name>-shape-answers.yaml` before
-   you write the prompt.
+   can share their first five words, and so their `<shape-name>`. When
+   `.workspace/lets-go/<shape-name>-shape-prompt.md` exists and holds
+   another idea, an earlier run stopped part way on that other idea. In
+   that case, remove `.workspace/lets-go/<shape-name>-shape-answers.yaml`
+   before you write the prompt.
 4. Run the `shape` step, as [Run a step](#run-a-step) says.
 5. When it reports `done`, [Read the report](#read-the-report) says
    what it shaped:
@@ -752,8 +752,8 @@ old path, and its history keeps the add and the ticks.
 
 ### The change's name
 
-`<name>` is the change's name. Shape runs before there is one, so its
-`<name>` comes from what it shapes:
+`<name>` is the change's name. Shape runs before there is one, so it
+has a name of its own, `<shape-name>`, from what it shapes:
 
 - **An issue:** `issue-<i>`, such as `issue-180`.
 - **An idea:** `idea-<slug>`. To make `<slug>`, split the idea on white
@@ -763,15 +763,17 @@ old path, and its history keeps the add and the ticks.
   `idea-fix-letssync-quiet-output`. The same idea typed again gets the
   same name, so it finds its answers file.
 
-So the shape step runs with `--for shape` and `--name <name>-shape`,
-such as `--name idea-fix-letssync-quiet-output-shape`. The other steps
-use the change's name: the review plan step runs with
-`--for review-plan` and `--name <name>-review-plan`.
+A step's session label, `<session>`, names its fresh session and its
+files. For every step but shape, it is `<name>`, a hyphen and `<step>`:
+the review plan step runs with `--for review-plan` and
+`--name <name>-review-plan`. For shape, it is `<shape-name>-shape`: the
+shape step runs with `--for shape` and `--name <shape-name>-shape`, such
+as `--name idea-fix-letssync-quiet-output-shape`.
 
 ## Write the prompt
 
 If the folder is missing, create it first: `mkdir -p .workspace/lets-go`.
-Then write the frame below to `.workspace/lets-go/<name>-<step>-prompt.md`.
+Then write the frame below to `.workspace/lets-go/<session>-prompt.md`.
 Fill in each `<...>`. `<schema>`, `<level>` and `<route line>` are the
 ones *Start* set. Under *What to run*, put this sentence. `<skill>` is
 the skill in the step's row of [The step table](#the-step-table):
@@ -947,17 +949,17 @@ that story: use the `issue` form.
    `gpt`, `claude` or `gemini`, as the one model.
 4. Run the step with one `--model` per ranked option, best first. An
    earlier run may have left answers for this step. When
-   `.workspace/lets-go/<name>-<step>-answers.yaml` exists before the
+   `.workspace/lets-go/<session>-answers.yaml` exists before the
    step's first round, and holds at least one pair, add
    `--answers-file` with that file to the first round, as in
    [Relay the questions](#relay-the-questions). An empty or unreadable
    file counts as absent.
 
    ```bash
-   lets delegate step run --for <step> --name <name>-<step> \
-     --prompt-file .workspace/lets-go/<name>-<step>-prompt.md \
+   lets delegate step run --for <step> --name <session> \
+     --prompt-file .workspace/lets-go/<session>-prompt.md \
      --effort high --model <first> --model <second> \
-     > .workspace/lets-go/<name>-<step>-report.json 2> .workspace/lets-go/<name>-<step>-meta.txt
+     > .workspace/lets-go/<session>-report.json 2> .workspace/lets-go/<session>-meta.txt
    ```
 
 5. Act on its exit code:
@@ -973,7 +975,7 @@ that story: use the `issue` form.
 
 Take this step only when `lets delegate step run` exits 3, and the meta
 file names the prompt `lets` saved,
-`.workspace/lets-delegate/<name>-<step>.prompt.md`. That file holds the
+`.workspace/lets-delegate/<session>.prompt.md`. That file holds the
 prompt, with any answers added.
 
 1. Run that prompt in a subagent that starts with no context from this
@@ -997,11 +999,11 @@ prompt, with any answers added.
 4. Add `date` to a `done` report: the current time in ISO 8601 UTC, from
    `date -u +%Y-%m-%dT%H:%M:%SZ`.
 5. Write the report as one JSON line, `outcome` first, to
-   `.workspace/lets-go/<name>-<step>-report.json`.
+   `.workspace/lets-go/<session>-report.json`.
 
 ## Read the report
 
-Read `outcome` from `.workspace/lets-go/<name>-<step>-report.json`.
+Read `outcome` from `.workspace/lets-go/<session>-report.json`.
 
 A shape step's `done` report must name what it shaped. Its first
 evidence line is one of these:
@@ -1017,7 +1019,7 @@ and no `story` line follows, the report is `failed`, and its reason is
 that the shape step named no story.
 
 Once shape reports `done` or `failed`, remove
-`.workspace/lets-go/<name>-shape-answers.yaml`. Nothing resumes a
+`.workspace/lets-go/<shape-name>-shape-answers.yaml`. Nothing resumes a
 finished shape. A later idea, or a second shape of the same issue, must
 start with no answers.
 
@@ -1037,7 +1039,7 @@ start with no answers.
 
 ## Relay the questions
 
-The answers go in `.workspace/lets-go/<name>-<step>-answers.yaml`, one
+The answers go in `.workspace/lets-go/<session>-answers.yaml`, one
 file per step.
 
 1. If any question's exact text is already in that file, the step did
@@ -1066,7 +1068,7 @@ file per step.
    ```
 
 4. [Run the step](#run-a-step) again with the same prompt file. Add
-   `--answers-file .workspace/lets-go/<name>-<step>-answers.yaml` to
+   `--answers-file .workspace/lets-go/<session>-answers.yaml` to
    `lets delegate step run`. Ask for the options again, and rank them
    again. Exit 3 goes to the subagent step as before.
 

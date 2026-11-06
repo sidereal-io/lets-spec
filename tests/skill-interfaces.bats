@@ -548,13 +548,13 @@ start_step() {
   skill_says lets-go 'delegate.step.<step>.guidance'
   skill_says lets-go 'the guidance first, then the order the options came in'
   skill_says lets-go 'When `options` is empty, pass your own family'
-  skill_says lets-go '.workspace/lets-go/<name>-<step>-prompt.md'
-  skill_says lets-go '.workspace/lets-delegate/<name>-<step>.prompt.md'
+  skill_says lets-go '.workspace/lets-go/<session>-prompt.md'
+  skill_says lets-go '.workspace/lets-delegate/<session>.prompt.md'
   skill_says lets-go 'step-report'
 }
 
 @test "lets-go relays a step's questions" {
-  skill_says lets-go '.workspace/lets-go/<name>-<step>-answers.yaml'
+  skill_says lets-go '.workspace/lets-go/<session>-answers.yaml'
   skill_says lets-go '--answers-file'
   skill_says lets-go "lets-go accepted the step's recommendation; the user did not decide"
   skill_says lets-go 'asked a settled question again'
@@ -590,7 +590,9 @@ start_step() {
 # where the Project number belongs.
 @test "lets-go gives each placeholder one meaning" {
   local old
-  for old in '<n>' '<p>'; do
+  skill_says lets-go '<shape-name>'
+  skill_says lets-go '<session>'
+  for old in '<n>' '<p>' '<name>-<step>' '<name>-shape'; do
     run grep -nF -- "$old" "$repo/skills/lets-go/SKILL.md"
     [ "$status" -eq 1 ] || { echo "lets-go still says $old: $output"; false; }
   done
