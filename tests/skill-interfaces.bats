@@ -904,3 +904,16 @@ pr_reference_says() {
   skill_says lets-review-pr 'supported uncertain risk'
   skill_says lets-review-pr 'not choose project policy'
 }
+
+@test "collaborator review publication" {
+  skill_says lets-review-pr 'gh pr comment <pr-url> --body-file <file>'
+  skill_says lets-review-pr '60,000-character'
+  skill_says lets-review-pr 'neutralize unintended user/team mentions'
+  skill_says lets-review-pr 'exact prepared text and reviewer identity'
+  skill_says lets-review-pr 'never retry blindly'
+  pr_reference_says comment-template 'Confidence:'
+  pr_reference_says comment-template 'Capture interval:'
+  pr_reference_says comment-template 'Stopping reason:'
+  pr_reference_says comment-template 'No substantive supported concern survived'
+  pr_reference_says comment-template 'Interpretation:'
+}
