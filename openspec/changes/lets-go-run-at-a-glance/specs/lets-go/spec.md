@@ -73,6 +73,17 @@ Every part but *End of the run* SHALL end with a line that starts `Next:`. The l
 - **WHEN** the skill-interfaces test reads *What shape runs* in `lets-go`
 - **THEN** it finds `**Find or create the issue**` and `**Confirm, then write**`
 
+### Requirement: Every link inside lets-go names one of its headings
+Each link in `skills/lets-go/SKILL.md` to a place in the same file, written `](#<anchor>)` outside code, SHALL match the anchor GitHub makes from one of the file's headings: the heading's text in lower case, with each space made a hyphen, and every character other than a letter, a digit, a hyphen or an underscore dropped. The skill-interfaces check SHALL fail on a link that matches no heading, and SHALL name the anchor.
+
+#### Scenario: Every link resolves
+- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
+- **THEN** every `](#...)` link outside code matches one of its headings, such as `#enter-the-branch` for `## Enter the branch` and `#the-changes-name` for `### The change's name`
+
+#### Scenario: A link to a heading that is gone
+- **WHEN** a skills folder holds `lets-go/SKILL.md` with a link `[Start](#start)` and no heading `Start`
+- **THEN** the check fails, and its output names `#start`
+
 ### Requirement: The Project query runs once per run
 *Find the source of demand* SHALL run its Project query only the first time it runs in a run. When an earlier pass in the same run has set `<project>`, `<owner>` and `<repo>`, a later pass SHALL use them, and SHALL not run the query again. This holds for the pass after `next` picks an issue, the pass after a shape step, the pass after *Pick the first ready story*, and the pass after a lost claim.
 
