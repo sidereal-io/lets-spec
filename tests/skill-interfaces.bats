@@ -473,6 +473,26 @@ review_build_start() {
   done
 }
 
+# start_step <n>: step <n> of lets-go's Start section, on one line.
+start_step() {
+  awk -v n="$1" '/^## Start$/ { start = 1; next } /^## / { start = 0 }
+    start && $0 ~ "^" n "\\. " { on = 1 } start && $0 ~ "^" (n + 1) "\\. " { on = 0 } on' \
+    "$repo/skills/lets-go/SKILL.md" | tr -s '[:space:]' ' '
+}
+
+# An agent follows the skill in reading order, so a rule that comes after
+# the call is one it reads too late.
+@test "lets-go states the blocker rule before it finds the source of demand" {
+  local step read call
+  step="$(start_step 3)"
+  read="${step%%"gh issue view <i> --json title,blockedBy"*}"
+  call="${step%%"[Find the source of demand](#find-the-source-of-demand)"*}"
+  [ "$read" != "$step" ] || { echo "Start step 3 does not read the blockers"; false; }
+  [ "$call" != "$step" ] || { echo "Start step 3 does not run Find the source of demand"; false; }
+  [ "${#read}" -lt "${#call}" ] ||
+    { echo "Start step 3 runs Find the source of demand before it reads the blockers"; false; }
+}
+
 @test "lets-go reads go.level before it asks GitHub for anything" {
   local skill="$repo/skills/lets-go/SKILL.md" first_level first_gh
   skill_says lets-go 'Interactivity: <level>, because your lets config sets go.level.'

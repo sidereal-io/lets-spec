@@ -68,20 +68,27 @@ unfinished step.
      `lets-go` runs on the default branch or on a change's branch, and
      needs the issue number on a change's branch. Stop. If several
      match, say that `lets-go` needs the issue number, and stop.
-3. Run [Find the source of demand](#find-the-source-of-demand) for
-   `<i>`, as for a named issue. Read its blockers with
-   `gh issue view <i> --json title,blockedBy`, which gives the title
-   too. `<name>` is the change's name, which *Claim* takes from the
-   title. On a change's branch, it is `<branch>`. When a blocker is
-   open, look for the change's branch before you stop, as step 7 does:
-   - **The branch exists**, here or on `origin`: the user has stacked it
-     by hand. Name the open blockers by number, and go on with the rest
-     of *Find the source of demand*: its *Check the prerequisite* still
-     runs, and its stop stands. On a change's branch, the branch exists:
-     you are on it.
-   - **It does not exist:** the stop stands, as the section reports it.
+3. Read the blockers of `<i>`, and decide on an open one before
+   anything else in this step:
 
-   Any other stop in that section stands as the section reports it.
+   ```bash
+   gh issue view <i> --json title,blockedBy
+   ```
+
+   It gives the title too. `<name>` is the change's name, which *Claim*
+   takes from the title. On a change's branch, it is `<branch>`. A
+   blocker whose `state` is `OPEN` is open. When one is, look for the
+   change's branch before you stop, as step 7 does:
+   - **The branch exists**, here or on `origin`: the user has stacked it
+     by hand. Name the open blockers by number, and go on. On a change's
+     branch, the branch exists: you are on it.
+   - **It does not exist:** say which open issues block #<i>, and stop.
+     The user stacks it on the blocker's branch by hand.
+
+   Then run [Find the source of demand](#find-the-source-of-demand) for
+   `<i>`, as for a named issue: its *Check the prerequisite* still
+   runs, and its stop stands. Any other stop in that section stands as
+   the section reports it.
 4. Run [Confirm the packet](#confirm-the-packet). Three of its stops say
    to run `lets-shape` on #<i>: the issue is not shaped, a line is
    missing or a placeholder, or comments are unread. On the default
