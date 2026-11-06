@@ -892,6 +892,7 @@ pr_reference_says() {
 
 @test "collaborator review bounds" {
   skill_says lets-review-pr 'one examiner response'
+  skill_says lets-review-pr 'For an empty examiner result, the challenger checks its coverage'
   skill_says lets-review-pr 'one additional delegated investigation or executed check per pass'
   skill_says lets-review-pr 'Static reading of cited evidence does not consume'
   skill_says lets-review-pr 'at most two focused passes'
