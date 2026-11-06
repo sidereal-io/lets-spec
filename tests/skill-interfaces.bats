@@ -464,10 +464,10 @@ review_build_start() {
   skill_says lets-go 'Interactivity: <level>, because #<i> is a <Kind>.'
   skill_says lets-go 'Interactivity: <level>, because you asked for it.'
   skill_says lets-go 'gh issue view <i> --json title,blockedBy'
-  skill_says lets-go 'its *Check the prerequisite* still runs, and its stop stands'
+  skill_says lets-go 'the prerequisite stop stands, even on a stacked branch'
   skill_says lets-go 'The interactivity level is <level>.'
   skill_says lets-go 'Write the answer as the user gave it, with no marker'
-  for phrase in '#152 adds' 'chores only'; do
+  for phrase in '#152 adds' 'chores only' 'its stop stands'; do
     ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- "$phrase" ||
       { echo "lets-go still says: $phrase"; false; }
   done

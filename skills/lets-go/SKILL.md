@@ -86,9 +86,11 @@ unfinished step.
      The user stacks it on the blocker's branch by hand.
 
    Then run [Find the source of demand](#find-the-source-of-demand) for
-   `<i>`, as for a named issue: its *Check the prerequisite* still
-   runs, and its stop stands. Any other stop in that section stands as
-   the section reports it.
+   `<i>`, as for a named issue. Its *Check the prerequisite* still
+   runs. When it finds an unresolved owner or checkpoint, the
+   prerequisite stop stands, even on a stacked branch: report it, and
+   stop. Any other stop in that section stands as the section reports
+   it.
 4. Run [Confirm the packet](#confirm-the-packet). Three of its stops say
    to run `lets-shape` on #<i>: the issue is not shaped, a line is
    missing or a placeholder, or comments are unread. On the default
