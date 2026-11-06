@@ -419,7 +419,10 @@ once, after the branch check in *Claim* step 2 passes.
 6. If the owner of the glossary definitions or the proposed base changed
    since *Find the source of demand* ran *Check the prerequisite*, run
    [Check the prerequisite](#check-the-prerequisite) again, before
-   *Claim* step 3 claims the issue.
+   *Claim* step 3 claims the issue. When that run finds an unresolved
+   prerequisite, report it, and stop, claiming nothing, even for an issue
+   that `next` picked. Nothing is claimed yet, so the stop leaves the
+   backlog as it was.
 
 The verified glossary import is the only implementation step this skill
 adds, beside [the discovery map commit](#commit-the-discovery-map).

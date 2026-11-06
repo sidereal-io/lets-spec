@@ -674,6 +674,16 @@ review_build_start() {
   skill_does_not_say lets-go 'Go on with the normal packet, blocker and routing checks'
 }
 
+@test "lets-go's checkpoint stops on an unresolved prerequisite, even for a next pick" {
+  local section
+  section="$(skill_section lets-go 'Check the checkpoint')"
+  grep -qF 'When that run finds an unresolved prerequisite, report it, and stop, claiming nothing' <<<"$section" ||
+    { echo "Check the checkpoint does not stop on an unresolved prerequisite"; false; }
+  grep -qF 'even for an issue that `next` picked' <<<"$section" ||
+    { echo "Check the checkpoint does not stop for a next pick"; false; }
+  ! grep -qF 'skip the candidate' <<<"$section" || { echo "Check the checkpoint still skips the candidate"; false; }
+}
+
 @test "lets-go's Start holds the sections that find, confirm, route and claim the issue" {
   local section
   for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Glossary preflight' 'Claim' 'Import the glossary checkpoint' \
