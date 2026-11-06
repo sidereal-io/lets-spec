@@ -1434,6 +1434,31 @@ procedure_stops() {
   override_idioms lets-go
 }
 
+@test "Confirm the packet says no stop" {
+  procedure_stops 'Confirm the packet'
+}
+
+@test "Confirm the packet lists its results" {
+  local text result
+  text="$(procedure_text 'Confirm the packet')"
+  for result in complete needs-shape epic; do
+    grep -qF -- "- \`$result\`:" <<<"$text" || { echo "Confirm the packet does not list: $result"; false; }
+  done
+}
+
+@test "Check the issue acts on each result of Confirm the packet" {
+  local part result
+  part="$(part_section 'Check the issue')"
+  for result in complete needs-shape epic; do
+    grep -qF -- "**\`$result\`:**" <<<"$part" || { echo "Check the issue does not act on: $result"; false; }
+  done
+}
+
+@test "Check the issue says the change has started on its branch" {
+  grep -qF 'the change has started on `<name>`' <<<"$(part_section 'Check the issue')" ||
+    { echo "Check the issue does not say the change has started"; false; }
+}
+
 @test "lets-go refers to no step by its step number" {
   step_numbers lets-go
 }

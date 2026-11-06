@@ -209,15 +209,24 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
    prerequisite stop stands, even on a stacked branch: report it, and
    stop. Any other stop in that section stands as the section reports
    it. When the section passes, go on to *Confirm the packet*, below.
-5. Run [Confirm the packet](#confirm-the-packet). Three of its stops say
-   to run `lets-shape` on `#<i>`: the issue is not shaped, a line is
-   missing or a placeholder, or comments are unread. On the default
-   branch, when no shape step has run in this run, set that stop aside
-   and [run the shape step](#run-the-shape-step) for `#<i>`. Any other
-   stop stands, as the section reports it. An Epic stops there: it is
-   built through its stories. For a Story with a parent, the section
-   reads the parent's **Shared decisions**: *Route* needs them.
-6. When *Confirm the packet* passes, shape is done. When a shape step
+5. Run [Confirm the packet](#confirm-the-packet). On its result:
+   - **`complete`:** go on to the shape line, below. For a Story with a
+     parent, the result carries the parent's **Shared decisions**:
+     *Route* needs them.
+   - **`needs-shape`:** [run the shape step](#run-the-shape-step) for
+     `#<i>` when all of these hold:
+     - the user named `<i>`, or said in *Start from an idea* that it is
+       the same work;
+     - the branch lookup above found no branch, here or on `origin`;
+     - no shape step has run in this run.
+
+     Otherwise, when the branch exists, first say that the change has
+     started on `<name>`. Say why the packet needs shaping, as the
+     result carries it, and show nothing of what a comment says. Say to
+     run the `lets-shape` skill on `#<i>`, and stop.
+   - **`epic`:** say that an epic is built through its stories, list the
+     open sub-issues the result carries, and stop.
+6. When *Confirm the packet* returns `complete`, shape is done. When a shape step
    reported `done` in this run, print its line. `<date>` is the report's
    `date`, and `<evidence>` is its `evidence`, joined with `; `:
 
@@ -240,18 +249,16 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
    gh issue view <i> --json createdAt --jq .createdAt
    ```
 
-Next: [Run the shape step](#run-the-shape-step) when a stop of *Confirm the
-packet* was set aside for shape; otherwise [Route](#route).
+Next: [Run the shape step](#run-the-shape-step) when *Confirm the packet*
+returned `needs-shape` and shape can run; otherwise [Route](#route).
 
 ## Run the shape step
 
 The shape step turns an idea, or an issue whose packet is not complete,
 into one shaped issue. When the work is too large for one issue, it runs
 discovery instead, which files a parent issue and its stories. It runs
-on the default branch, before any branch or change exists. On a change's
-branch, the `lets-shape` stops of *Confirm the packet* stand. It runs at
-most once per run: after it, a stop that *Confirm the packet* makes
-stands.
+on the default branch, before any branch or change exists, and at most
+once per run. [Check the issue](#check-the-issue) decides when it runs.
 
 1. Check the discovery map. Run `git status --porcelain`. When it lists
    `openspec/discovery.md`, look for this input's discovery: an open
@@ -665,9 +672,9 @@ gh project item-list <project> --owner <owner> --format json --limit 500 \
 ```
 
 - If the second command prints nothing, or no `kind`, the issue is not
-  shaped. Say to run the `lets-shape` skill on `#<i>`, and stop.
-- If its Kind is Epic, say that an epic is built through its stories,
-  list its open sub-issues, and stop.
+  shaped. The result is `needs-shape`: return it now.
+- If its Kind is Epic, the result is `epic`: return it now, with the
+  epic's open sub-issues.
 
 Read the whole body. Check that every required line for its Kind is
 there and filled in. These are the lines of the `lets-shape` skill's
@@ -680,7 +687,7 @@ issue templates:
 | Story, and any Kind this table does not name | the one-line outcome, **Persona served**, **Journey segment**, **MoSCoW**, **Why this story / why now**, **Depends on**, **Scope**, **Relevant code** |
 
 If a line is missing, or still holds a placeholder in angle brackets,
-name it, say to run the `lets-shape` skill on `#<i>`, and stop. Never
+the result is `needs-shape`: return it now, naming the line. Never
 write or fix the packet yourself.
 
 Then read the issue's thread as
@@ -688,18 +695,27 @@ Then read the issue's thread as
 a comment's first line only, to find read markers. The watermark is the
 later of the body's last edit and the newest read marker. When neither
 exists, every comment is after it. A comment created or edited after
-the watermark stops the run, whoever wrote it. A read marker never does.
-
-To stop, say how many comments shaping has not read. Give each one's
-author as the reference shows it, and the date that put it past the
-watermark: its edit date, else its creation date. Show nothing of what
-a comment says. Say to run the `lets-shape` skill on `#<i>`, and stop.
+the watermark makes the result `needs-shape`, whoever wrote it. A read
+marker never does. The result then carries how many comments shaping
+has not read, each one's author as the reference shows it, and the date
+that put it past the watermark: its edit date, else its creation date.
+It carries nothing of what a comment says.
 
 For a Story with a parent, read the parent's **Shared decisions**
 section, when it has one: `gh issue view <parent> --json body`. *Route*
 needs it.
 
-Return to the part that ran it.
+It returns one of these results:
+
+- `complete`: the issue has a Kind other than Epic, every required line
+  is there and filled in, and no comment is past the watermark. It
+  carries the Kind, the Size, and the parent's **Shared decisions**.
+- `needs-shape`: the issue is not on the Project or has no Kind, a line
+  is missing or holds a placeholder, or comments are unread. It carries
+  which, with each unread comment's author and date.
+- `epic`: the Kind is Epic. It carries the open sub-issues.
+
+Return to the part that ran it, with the result.
 
 ### Glossary preflight
 
