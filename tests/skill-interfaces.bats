@@ -592,7 +592,7 @@ start_step() {
   local old
   skill_says lets-go '<shape-name>'
   skill_says lets-go '<session>'
-  for old in '<n>' '<p>' '<name>-<step>' '<name>-shape'; do
+  for old in '<n>' '<p>' '<name>-<step>' '<name>-shape' '<url>' '<issue URL>' '<words>'; do
     run grep -nF -- "$old" "$repo/skills/lets-go/SKILL.md"
     [ "$status" -eq 1 ] || { echo "lets-go still says $old: $output"; false; }
   done

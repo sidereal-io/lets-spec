@@ -225,7 +225,7 @@ Then take the first case that applies:
 1. **The user named an issue.** Use it. *Start* step 3 has read its
    blockers already, and decided whether an open one stops the run.
 2. **The user described work but named no issue.** Search for it:
-   `gh issue list --state open --search "<words> in:title" --json number,title`.
+   `gh issue list --state open --search "<idea> in:title" --json number,title`.
    If one matches, confirm with the user that it is the same work. If
    none does, say to run the `lets-shape` skill on it, and stop.
 3. **Otherwise, take `next`.** List the Project's Todo candidates with a
@@ -389,12 +389,12 @@ adds, beside [the discovery map commit](#commit-the-discovery-map).
    or rehearsing a transfer. Otherwise complete
    [Glossary preflight](#glossary-preflight) against the proposed base.
 3. Claim the issue: check that nobody has it, assign yourself, then move
-   it to In Progress. `<url>` is the issue's URL.
+   it to In Progress. `<issue-url>` is the issue's URL.
 
    ```bash
    gh issue view <i> --json assignees --jq '.assignees | length'
    gh issue edit <i> --add-assignee @me
-   gh project item-edit <project> --owner <owner> --url <url> --field Status --value "In Progress"
+   gh project item-edit <project> --owner <owner> --url <issue-url> --field Status --value "In Progress"
    ```
 
    The first command must print `0`. Anything else means another
@@ -408,7 +408,7 @@ adds, beside [the discovery map commit](#commit-the-discovery-map).
 
    ```bash
    gh issue edit <i> --remove-assignee @me
-   gh project item-edit <project> --owner <owner> --url <url> --field Status --value Todo
+   gh project item-edit <project> --owner <owner> --url <issue-url> --field Status --value Todo
    ```
 
 ### Import the glossary checkpoint
@@ -791,7 +791,7 @@ schema and no route line. For an issue, they are:
 
 ```text
 You run one step of a lets-go run: shape, for issue #<i>.
-Issue: #<i>, <issue URL>. Branch: <default>.
+Issue: #<i>, <issue-url>. Branch: <default>.
 ```
 
 For an idea, they are:
@@ -805,7 +805,7 @@ The rest of the frame is the same for every step.
 
 ````text
 You run one step of a lets-go run: <step>, for the change <name>.
-Issue: #<i>, <issue URL>. Branch: <name>. Schema: <schema>. <route line>
+Issue: #<i>, <issue-url>. Branch: <name>. Schema: <schema>. <route line>
 
 ## What to run
 
