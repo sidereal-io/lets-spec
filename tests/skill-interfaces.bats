@@ -638,6 +638,10 @@ review_build_start() {
   lists_start_at_one lets-go
 }
 
+@test "each numbered list in lets-go starts at 1 under its heading" {
+  lists_start_at_one lets-go
+}
+
 @test "lets-go's Start holds the sections that find, confirm, route and claim the issue" {
   local section
   for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Glossary preflight' 'Claim' 'Import the glossary checkpoint' \
