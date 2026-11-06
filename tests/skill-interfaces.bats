@@ -267,10 +267,50 @@ schema_step() {
   grep -qF -- '--for' "$repo/README.md"
 }
 
-# skill_says <skill> <fixed text>: the skill's SKILL.md holds the text,
-# which may wrap across lines.
+# skill_files <skill>: the skill's SKILL.md, then each of its reference
+# files. Fixture tests point skills_dir at a folder of their own.
+skill_files() {
+  local dir="${skills_dir:-$repo/skills}/$1" file
+  echo "$dir/SKILL.md"
+  for file in "$dir"/references/*.md; do
+    [ -f "$file" ] && echo "$file"
+  done
+  return 0
+}
+
+# skill_text <skill>: the skill's files as one text, each run of whitespace
+# one space, so a string may wrap across lines.
+skill_text() {
+  local file
+  skill_files "$1" | while IFS= read -r file; do cat "$file"; echo; done | tr -s '[:space:]' ' '
+}
+
+# skill_says <skill> <fixed text>: the skill's SKILL.md or a reference file
+# holds the text, which may wrap across lines.
 skill_says() {
-  tr -s '[:space:]' ' ' < "$repo/skills/$1/SKILL.md" | grep -qF -- "$2" || { echo "$1 does not say: $2"; return 1; }
+  skill_text "$1" | grep -qF -- "$2" || { echo "$1 does not say: $2"; return 1; }
+}
+
+# fixture_file <skill> <path> <line>...: writes the lines to the file in a
+# skills folder under the test's temporary folder, gives the skill a SKILL.md
+# if it has none, and points the helpers at that folder.
+fixture_file() {
+  skills_dir="$BATS_TEST_TMPDIR/skills"
+  mkdir -p "$(dirname "$skills_dir/$1/$2")"
+  printf '%s\n' "${@:3}" >"$skills_dir/$1/$2"
+  [ -f "$skills_dir/$1/SKILL.md" ] || printf '# %s\n' "$1" >"$skills_dir/$1/SKILL.md"
+}
+
+@test "skill_says finds a string that wraps across two lines of a reference file" {
+  fixture_file lets-go references/records.md 'The fixture records' 'disagree: here.'
+  skill_says lets-go 'The fixture records disagree: here.'
+}
+
+@test "skill_says names a string no file of the skill holds" {
+  fixture_file lets-go references/records.md 'Nothing to see.'
+  run skill_says lets-go 'Records disagree:'
+  [ "$status" -eq 1 ] || { echo "it passed on a string no fixture file holds"; false; }
+  [ "$output" = 'lets-go does not say: Records disagree:' ] || { echo "it said: $output"; false; }
 }
 
 @test "each review skill asks lets for its intent's options, then runs with a ranked list" {
