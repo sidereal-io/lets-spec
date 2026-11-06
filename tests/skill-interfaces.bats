@@ -896,3 +896,11 @@ pr_reference_says() {
   skill_says lets-review-pr 'at most two focused passes'
   pr_reference_says role-prompt 'Do not start another exchange'
 }
+
+@test "collaborator review mediation" {
+  skill_says lets-review-pr 'Drop refuted concerns'
+  skill_says lets-review-pr 'consequential unresolved disagreements as questions for people'
+  skill_says lets-review-pr 'specific basis, a plausible meaningful consequence and a good-faith challenge'
+  skill_says lets-review-pr 'supported uncertain risk'
+  skill_says lets-review-pr 'not choose project policy'
+}
