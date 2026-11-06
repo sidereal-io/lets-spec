@@ -1543,6 +1543,32 @@ procedure_stops() {
     { echo "the <i> row does not name the candidate next is checking"; false; }
 }
 
+@test "the claim and the import say no stop" {
+  procedure_stops 'Claim'
+  procedure_stops 'Import the glossary checkpoint'
+}
+
+@test "Enter the branch acts on each result of the claim" {
+  local part result
+  part="$(part_section 'Enter the branch')"
+  for result in claimed branch-exists taken unresolved checkpoint-failed branch-failed; do
+    grep -qF -- "**\`$result\`:**" <<<"$part" || { echo "Enter the branch does not act on: $result"; false; }
+  done
+}
+
+@test "Enter the branch acts on each result of the import" {
+  local part result
+  part="$(part_section 'Enter the branch')"
+  for result in imported import-failed; do
+    grep -qF -- "**\`$result\`:**" <<<"$part" || { echo "Enter the branch does not act on: $result"; false; }
+  done
+}
+
+@test "Enter the branch imports the glossary checkpoint only after verified" {
+  grep -qF '**`claimed`:** when it carries `verified`, run [Import the glossary checkpoint](#import-the-glossary-checkpoint)' <<<"$(part_section 'Enter the branch')" ||
+    { echo "Enter the branch does not import only after verified"; false; }
+}
+
 @test "lets-go refers to no step by its step number" {
   step_numbers lets-go
 }

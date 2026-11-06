@@ -386,16 +386,36 @@ Next: [Enter the branch](#enter-the-branch).
 1. On the default branch, use what *Check the issue* found when it
    looked for the change's branch, here and on `origin`:
    - **Neither has it:** run [Claim](#claim), which creates the
-     branch. A stop it makes stands. When its glossary preflight found
-     owned edits, also run *Import the glossary checkpoint*. Then
-     [commit the discovery map](#commit-the-discovery-map).
+     branch, and act on its result as below.
    - **Either has it:** the change has started. Do not run *Claim*.
      When `origin` has it, run `git fetch origin <name>` first:
      `git switch` finds a branch on `origin` only once it is fetched.
      Then run `git switch <name>`.
 
    Stay on `<name>` for the whole run.
-2. When `origin` has the branch, bring it up to date before you read any
+2. When you ran *Claim*, act on its result:
+   - **`claimed`:** when it carries `verified`, run
+     [Import the glossary checkpoint](#import-the-glossary-checkpoint)
+     with the commits it carries, and act on its result as below. When
+     it carries `no-owned-edits`, run no import, and
+     [commit the discovery map](#commit-the-discovery-map).
+   - **`branch-exists`:** say so, suggest switching to it and running
+     `lets-go` there, and stop.
+   - **`taken`:** when the user named `<i>` or confirmed it, say who has
+     it, and stop. When `next` or *Pick the first ready story* picked
+     it, run `next` again with the same candidates, and go on from the
+     blocker read in [Check the issue](#check-the-issue) with the new
+     issue. Keep the lines printed for the lost issue.
+   - **`unresolved`:** report the owner or the definitions it carries,
+     and stop, claiming nothing, even for an issue that `next` picked.
+   - **`checkpoint-failed`:** report what the check found, and stop.
+   - **`branch-failed`:** *Claim* has released the claim. Show the error
+     it carries, and stop.
+3. When you ran *Import the glossary checkpoint*, act on its result:
+   - **`imported`:** [commit the discovery map](#commit-the-discovery-map).
+   - **`import-failed`:** report each cleanup failure it carries, and
+     what was kept, with how to recover, and stop.
+4. When `origin` has the branch, bring it up to date before you read any
    record. On a change's branch too, *Check the issue* found whether it
    does.
 
@@ -408,7 +428,7 @@ Next: [Enter the branch](#enter-the-branch).
    fast-forward, the branch and `origin` have diverged: the
    [records disagree](#records-that-disagree). If any command here fails
    for another reason, show the user its error, and stop.
-3. Set `<schema>`. When `openspec/changes/<name>/.openspec.yaml` exists,
+5. Set `<schema>`. When `openspec/changes/<name>/.openspec.yaml` exists,
    it is that file's `schema:` line. Otherwise it is the schema *Route*
    picked.
 
@@ -870,10 +890,12 @@ return to the part that ran it.
 1. Name the change after the issue title. Every Kind's title is
    `<kebab-name> — <one-line outcome>`, so the name is the part before
    the dash.
-2. If a branch with the change's name already exists, say so, suggest
-   switching to it and running `lets-go` there, and stop before fetching
-   or rehearsing a transfer. Otherwise complete
-   [Glossary preflight](#glossary-preflight) against the proposed base.
+2. If a branch with the change's name already exists, the result is
+   `branch-exists`: return it now, before fetching or rehearsing a
+   transfer. Otherwise run [Glossary preflight](#glossary-preflight)
+   against the proposed base. When it returns `unresolved` or
+   `checkpoint-failed`, return that result now, with what it carries,
+   before you assign the issue.
 3. Claim the issue: check that nobody has it, assign yourself, then move
    it to In Progress. `<issue-url>` is the issue's URL.
 
@@ -884,27 +906,41 @@ return to the part that ran it.
    ```
 
    The first command must print `0`. Anything else means another
-   session took it. When `next` picked it, run `next` again with the
-   same candidates, and go on from the blocker read in
-   [Check the issue](#check-the-issue) with the new issue. The lines
-   printed for the lost issue stand. When the user named it, say
-   who has it, and stop.
+   session took it: the result is `taken`, with who has it. Return it
+   now.
 4. Create a branch with the change's name off the default branch. If
    creating the branch fails, release the claim, so another session can
-   pick the issue up, and stop:
+   pick the issue up. The result is then `branch-failed`, with the
+   error:
 
    ```bash
    gh issue edit <i> --remove-assignee @me
    gh project item-edit <project> --owner <owner> --url <issue-url> --field Status --value Todo
    ```
 
-When the branch exists, return to the part that ran it.
+It returns one of these results:
+
+- `claimed`: the issue is yours, and the branch exists. It carries what
+  *Glossary preflight* returned: `no-owned-edits`, or `verified` with
+  the checkpoint commits.
+- `branch-exists`: a branch with the change's name exists already.
+- `taken`: another session has the issue. It carries who has it.
+- `unresolved`: *Glossary preflight* returned `unresolved`. It carries
+  what is unresolved.
+- `checkpoint-failed`: *Glossary preflight* returned it. It carries what
+  the check found.
+- `branch-failed`: creating the branch failed, and the claim is
+  released. It carries the error.
+
+Return to the part that ran it, with the result.
 
 ### Import the glossary checkpoint
 
-Run this section only when [Glossary preflight](#glossary-preflight)
-found owned edits. Run it after *Claim* created the branch, and before
-[Walk the step table](#walk-the-step-table) reads the tree. A resumed
+Run this section only when *Claim* returned `claimed`, carrying the
+`verified` result of [Glossary preflight](#glossary-preflight). It
+imports the commits `verified` carries. Run it after *Claim* created the
+branch, and before [Walk the step table](#walk-the-step-table) reads the
+tree. A resumed
 change has its glossary edits committed already, and needs no transfer
 and no new claim.
 
@@ -917,7 +953,8 @@ and no new claim.
    resulting commits and, once it exists, the pull request.
 3. Keep the holding branch until the destination holds the edits.
 
-When the import succeeds, return to the part that ran it.
+When the import succeeds, the result is `imported`. Return to the part
+that ran it, with the result.
 
 #### Recover from a failed import
 
@@ -928,13 +965,15 @@ If the import fails:
    Never force a checkout.
 3. Delete the branch this attempt created only after proving it holds no
    work beyond its starting base. If earlier picks survived on it, keep
-   it, and report how to recover. Never delete an existing change branch,
+   it, and note how to recover. Never delete an existing change branch,
    and never reset unrelated commits.
 4. Release the claim with the same commands as a failed branch creation
    in [Claim](#claim): remove your assignment, and set Status back to
    Todo. Do this even if the Git cleanup failed.
-5. Report every cleanup failure, and anything kept: the branch, commits
-   or claim. Then stop.
+5. The result is `import-failed`. It carries every cleanup failure, and
+   anything kept: the branch, commits or claim, with how to recover.
+
+Return to the part that ran it, with the result.
 
 ### Commit the discovery map
 
