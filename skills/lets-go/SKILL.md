@@ -390,7 +390,9 @@ record. These steps check it. "You" is the agent.
 #### Check the checkpoint
 
 Run these steps only when this story owns the glossary edits. Run them
-once, after the branch check in *Claim* step 2 passes.
+once, after the branch check in *Claim* step 2 passes. Each stop below
+comes before *Claim* step 3, so nothing is claimed and no branch exists.
+A stop repairs nothing, and leaves user edits as they are.
 
 1. Read the starting base, the owned paths, the remote URL and branch,
    and the ordered checkpoint commits. Fetch the recorded branch if you
@@ -402,15 +404,19 @@ once, after the branch check in *Claim* step 2 passes.
    commit's diff, not only the total. Each commit may touch only the
    recorded project-owned glossary paths. A shared glossary path set by
    an explicit `context` replacement is allowed. Skill files, config,
-   code and other paths are not.
+   code and other paths are not. If the range holds a merge, a commit
+   that is not recorded, or a commit that touches another path, report
+   what you found, and stop.
 3. If the commits come from a source change branch, take only the
    recorded glossary commits and their parents, never implementation
    commits. Check that the context they need is on the proposed base.
-   Never import a commit from a planning store into the code repository.
+   If that context is missing from the proposed base, report it, and
+   stop. Never import a commit from a planning store into the code
+   repository.
 4. Record the starting branch, and the working tree and index status.
-   Check that the owned paths match the shaping baseline. Keep any user
-   edits, whether they came before or after. Never force a checkout,
-   reset, or stash automatically.
+   If the owned paths do not match the shaping baseline, report what
+   differs, and stop. Keep any user edits, whether they came before or
+   after. Never force a checkout, reset, or stash automatically.
 5. Before claiming, rehearse the import on the proposed base in a
    throwaway checkout under `.workspace/`. Compare patches and contents
    to find edits already present, and import no duplicate. An edit

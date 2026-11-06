@@ -701,6 +701,16 @@ review_build_start() {
     { echo "Check the checkpoint does not skip an edit already present"; false; }
 }
 
+@test "lets-go's checkpoint stops where each of its other checks fails" {
+  local section stop
+  section="$(skill_section lets-go 'Check the checkpoint')"
+  for stop in 'or a commit that touches another path, report what you found, and stop' \
+    'If that context is missing from the proposed base, report it, and stop' \
+    'If the owned paths do not match the shaping baseline, report what differs, and stop'; do
+    grep -qF -- "$stop" <<<"$section" || { echo "Check the checkpoint does not say: $stop"; false; }
+  done
+}
+
 @test "lets-go's Start holds the sections that find, confirm, route and claim the issue" {
   local section
   for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Glossary preflight' 'Claim' 'Import the glossary checkpoint' \
