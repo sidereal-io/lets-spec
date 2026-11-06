@@ -578,7 +578,10 @@ The parts run these sections. Each one returns to the part that ran it.
 Parallel sessions share the backlog, so claim the issue before you
 create anything.
 
-Find the Project linked to this repository first:
+Find the Project linked to this repository first. Run this query only
+when `<project>` is not set yet in this run. When an earlier pass set
+`<project>`, `<owner>` and `<repo>`, use them, and go on to the cases
+below.
 
 ```bash
 gh api graphql -F owner='{owner}' -F name='{repo}' -f query='

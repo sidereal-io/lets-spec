@@ -748,6 +748,15 @@ review_build_start() {
   done
 }
 
+@test "Find the source of demand runs its Project query once per run" {
+  local text
+  text="$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')"
+  grep -qF 'Run this query only when `<project>` is not set yet in this run' <<<"$text" ||
+    { echo "Find the source of demand runs its Project query on every pass"; false; }
+  grep -qF 'When an earlier pass set `<project>`, `<owner>` and `<repo>`, use them' <<<"$text" ||
+    { echo "Find the source of demand does not reuse an earlier pass's Project"; false; }
+}
+
 @test "lets-go with nothing takes the next ready issue" {
   skill_says lets-go 'Picked #<i>: <title>, the next ready issue.'
   skill_does_not_say lets-go '`lets-go` needs an issue number or an idea' ||
