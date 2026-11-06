@@ -831,6 +831,7 @@ pr_reference_says() {
 
 @test "collaborator review revision" {
   skill_says lets-review-pr 'git merge-base <base-sha> <head-sha>'
+  skill_says lets-review-pr 'Retain run-scoped refs intentionally'
   skill_says lets-review-pr 'verify the target repository identity'
   skill_says lets-review-pr 'git cat-file -e <head-sha>^{commit}'
   skill_says lets-review-pr 'newer commits were not reviewed'
