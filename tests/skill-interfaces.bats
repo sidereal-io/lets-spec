@@ -1140,17 +1140,19 @@ part_section() {
     on' "$(lets_go_skill)" | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//'
 }
 
-# parts_listed: the overview table before ## Placeholders has a row for each
-# part, in run order, that links the part's heading, and each part is a ##
+# parts_listed: the overview table before ## Placeholders has one row for
+# each part, in run order, that links the part's heading, and each part is a ##
 # heading after ## Placeholders, in the same order.
 parts_listed() {
-  local skill rows headings part index anchor previous=0 wrong=()
+  local skill rows headings part index count anchor previous=0 wrong=()
   skill="$(lets_go_skill)"
   rows="$(awk "$fence_rules"' !code && /^## Placeholders$/ { exit } !code && /^\|/' "$skill" |
     sed -nE 's/^\| *\[([^]]*)\]\(#([^)]*)\).*/\1\t\2/p')"
   for part in "${lets_go_parts[@]}"; do
     index="$(cut -f1 <<<"$rows" | grep -nxF -- "$part" | head -1 | cut -d: -f1)"
     if [ -z "$index" ]; then wrong+=("the overview has no row for $part"); continue; fi
+    count="$(cut -f1 <<<"$rows" | grep -cxF -- "$part")"
+    [ "$count" -eq 1 ] || wrong+=("the overview has $count rows for $part")
     [ "$index" -gt "$previous" ] || wrong+=("the overview lists $part out of order")
     previous="$index"
     anchor="$(sed -n "${index}p" <<<"$rows" | cut -f2)"
@@ -1221,13 +1223,14 @@ anchors_resolve() {
 # parts_fixture [<option>=<part>]...: a lets-go fixture SKILL.md with an
 # overview row and a heading for each part, then ## Placeholders. Each part
 # but End of the run ends with a Next: line. no_row=<part> leaves out its
-# overview row, no_next=<part> its Next: line, and subsection=<part> adds a
-# ### subsection after its Next: line.
+# overview row, twice=<part> gives it two, no_next=<part> leaves out its
+# Next: line, and subsection=<part> adds a ### subsection after its Next: line.
 parts_fixture() {
-  local no_row="" no_next="" subsection="" option part lines=('# lets-go' '' '| Part | Next |' '|---|---|')
+  local no_row="" twice="" no_next="" subsection="" option part lines=('# lets-go' '' '| Part | Next |' '|---|---|')
   for option in "$@"; do local "$option"; done
   for part in "${lets_go_parts[@]}"; do
     [ "$part" = "$no_row" ] || lines+=("| [$part](#$(heading_anchor "$part")) | the next part |")
+    [ "$part" != "$twice" ] || lines+=("| [$part](#$(heading_anchor "$part")) | the next part |")
   done
   lines+=('' '## Placeholders' '' 'Names.')
   for part in "${lets_go_parts[@]}"; do
@@ -1256,6 +1259,13 @@ parts_fixture() {
   run parts_listed
   [ "$status" -eq 1 ] || { echo "it passed on an overview with no Route row"; false; }
   [ "$output" = 'the overview has no row for Route' ] || { echo "it said: $output"; false; }
+}
+
+@test "the part overview check names a part with two rows" {
+  parts_fixture twice=Route
+  run parts_listed
+  [ "$status" -eq 1 ] || { echo "it passed on an overview with two Route rows"; false; }
+  [ "$output" = 'the overview has 2 rows for Route' ] || { echo "it said: $output"; false; }
 }
 
 @test "the part Next check names a part with no Next line" {
