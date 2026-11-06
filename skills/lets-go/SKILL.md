@@ -54,7 +54,7 @@ sets it.
 | `<project>` | The number of the Project linked to the repository | *Find the source of demand*, from the Project query |
 | `<owner>` | The Project's owner | *Find the source of demand*, from the Project query |
 | `<repo>` | The repository, as `owner/name` | *Find the source of demand*, from the Project query's `repo` |
-| `<i>` | The run's issue: the number the user named, the issue `next` or *Pick the first ready story* picked, or the issue a shape step shaped | [Read the request](#read-the-request), or the shape step's report |
+| `<i>` | The run's issue: the number the user named, the issue `next` or *Pick the first ready story* picked, or the issue a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
 | `<issue-url>` | The URL of `<i>` | *Confirm the packet*, from the issue's `url` |
 | `<parent>` | A parent issue: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in *Start from an idea* |
 | `<story>` | One story that a shape step's report names | Each `story` line of the shape report |
@@ -326,8 +326,9 @@ of them in this run.
    narrowing: the candidates are the stories the report named, and no
    other issue. Run its two commands as the section writes them. Rank
    as it does: Must, then Should, then Could, then the lowest issue
-   number. Run *Check the prerequisite* on each candidate, in rank order.
-   A ready story is one that `next` would take.
+   number. Run *Check the prerequisite* and *Confirm the packet* on
+   each candidate, in rank order. A ready story is one that `next`
+   would take.
 2. On its result:
    - **`picked`:** print:
 
@@ -340,8 +341,8 @@ of them in this run.
    - **`nothing-ready`:** print the `Done shape` line that
      *Check the issue* shows. Say that no story under `#<parent>` is
      ready. Name each story, and why it was left out, as the result
-     carries it: for example, its blocker, its assignee, or an
-     unresolved prerequisite. Say to run `lets-go` with a story's number
+     carries it: for example, its blocker, its assignee, an unresolved
+     prerequisite, or a packet that is not complete. Say to run `lets-go` with a story's number
      once it is ready. Then stop. Claim nothing, and create no branch.
    - **`no-project`:** say to run the `lets-setup-backlog` skill, and
      stop.
@@ -670,12 +671,14 @@ Then take the first case that applies:
    Rank them Must, then Should, then Could, then the lowest issue
    number. A Wont is never a candidate.
 
-   Before you take a candidate, run only
-   [Check the prerequisite](#check-the-prerequisite) on each one, in
-   rank order. Fetching, the commit checks and the rehearsal wait for
-   *Claim*, and run only for the candidate you pick. Skip a candidate
-   for which it returns `unresolved`. The result is `picked`, with the
-   first candidate left. When none is left, the result is
+   Check each candidate in rank order, with its number as `<i>` while
+   you check it. Run [Check the prerequisite](#check-the-prerequisite),
+   then [Confirm the packet](#confirm-the-packet). Take the first
+   candidate for which they return `resolved` and `complete`: the result
+   is `picked`. Skip any other, and keep why: its prerequisite is
+   unresolved, or its packet is not complete. Fetching, the commit
+   checks and the rehearsal wait for *Claim*, and run only for the
+   candidate you pick. When no candidate is left, the result is
    `nothing-ready`, and you pick no candidate.
 
 It returns one of these results:
@@ -690,7 +693,8 @@ It returns one of these results:
 - `picked`: `next` took a candidate. It carries the candidate's number
   and title.
 - `nothing-ready`: `next` has no candidate left. It carries each
-  candidate it left out, and why.
+  candidate it left out, and why: its blocker, its assignee, an
+  unresolved prerequisite, or a packet that is not complete.
 - `no-project`: no Project is linked to the repository.
 - `several-projects`: two or more Projects are linked. It carries each
   one's title and URL.
@@ -752,7 +756,9 @@ It returns one of these results:
   which, with each unread comment's author and date.
 - `epic`: the Kind is Epic. It carries the open sub-issues.
 
-Return to the part that ran it, with the result.
+When *Find the source of demand* ran it, for a candidate of `next`,
+return to *Find the source of demand*. Otherwise, return to the part
+that ran it, with the result.
 
 ### Glossary preflight
 

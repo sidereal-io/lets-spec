@@ -1501,6 +1501,18 @@ procedure_stops() {
     { echo "Find the source of demand still asks the user"; false; }
 }
 
+# A candidate whose packet is not complete would send a picked issue to the
+# shape step, so next skips it.
+@test "next checks the packet of each candidate" {
+  grep -qF '](#confirm-the-packet)' <<<"$(procedure_text 'Find the source of demand')" ||
+    { echo "Find the source of demand does not run Confirm the packet"; false; }
+}
+
+@test "the <i> placeholder names the candidate next is checking" {
+  grep -E '^\| `<i>` \|' "$(lets_go_skill)" | grep -qF 'inside `next`, the candidate it is checking' ||
+    { echo "the <i> row does not name the candidate next is checking"; false; }
+}
+
 @test "lets-go refers to no step by its step number" {
   step_numbers lets-go
 }
