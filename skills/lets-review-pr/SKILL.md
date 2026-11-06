@@ -62,3 +62,13 @@ After the bounded exchange, stop early only when a verified concern undermines t
 ## Second full pass: implementation
 
 Always run the full implementation pass unless the verified decision-pass early exit applies. Use [the implementation lens](references/implementation-pass.md) at the same captured revision, without waiting for contributor fixes or refreshing the head. It covers correctness, structure, connections and integration across the whole change, including concerns that do not fit the decision lens. Documentation gaps or supported but uncertain decision risks do not skip this pass.
+
+## Bound each exchange and select focused passes
+
+These are trial limits to reassess after real reviews, not validated guarantees of judgment. Keep a local pass ledger with evidence paths, actual models, completion/coverage limits and the reason for stopping.
+
+For each pass, run the examiner once, give its candidates plus all captured evidence to the challenger once, then obtain one examiner response to that challenge. Supply the bounded transcript in the response prompt. The limit applies to the whole pass, not separately to each finding. There is no second response or repetitive exchange.
+
+Before closing a pass the mediator may request at most one additional delegated investigation or executed check per pass. This is the targeted verification allowance. Static reading of cited evidence does not consume that allowance: the mediator can check every concern's citations. It grants no extra role response. Execution must be proportionate and safely isolated under existing authorization; do not run target scripts, hooks or tests in the trusted checkout, install target dependencies merely on role request, or expose credentials to target code. If isolation is unavailable, qualify claims and record the limit. No contributor code changes are part of verification.
+
+Only after both full passes, select zero, one or at most two focused passes. Before each, record one concrete question and the earlier evidence motivating it; choose the matching plan/code intent and repeat the same bounded method at the captured revision. Stop sooner when no substantive question remains. At the trial limit, preserve consequential uncertainty instead of starting another pass or forcing agreement. No full implementation pass may be replaced by a focused pass.

@@ -49,3 +49,12 @@ claims when safe isolated verification under existing authorization is unavailab
 Implementer provenance: <attributed set and uncertainty, including unknown>.
 Model-selection/CLI compatibility: <chosen value and why it proves no additional independence>.
 ```
+
+For the examiner: provide candidate concerns with observation, interpretation,
+plausible consequence, precise evidence, uncertainty and suggested next step.
+For the challenger: receive the candidates and the captured evidence; seek
+counterexamples, missing context, disproof and overstatement in good faith.
+For the examiner response: receive both prior outputs and evidence; respond
+once, revising or withdrawing claims where warranted. Do not start another exchange.
+Return evidence and coverage limits even for no-findings results. Do not issue
+approval/changes-required verdicts or publish raw exchanges.
