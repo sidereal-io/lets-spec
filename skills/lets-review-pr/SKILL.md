@@ -52,3 +52,9 @@ lets delegate review run --for <plan-or-code> --name <run-pass-role-model> \
 Exit 0 supplies output and a final JSON metadata line identifying the actual model/resolver. Empty output is incomplete. When discovery options are empty or the run exits 3 (all models refused), use an available fresh read-only subagent with no inherited context and the same filled prompt. Record its tool-reported model and compare working-tree status before/after every fallback; stop on unexpected changes and preserve user work. For any other run failure, preserve evidence, report the exit/stderr and stop; do not retry without changed circumstances. If no fresh read-only delegation is available, report incomplete. Never simulate the roles in the mediator's context or substitute an unchallenged review.
 
 A fresh response session receives the bounded transcript and captured evidence. Do not start a conversational loop when a harness cannot resume roles. Only the mediator publishes; roles cannot edit code, publish, delegate further or change the method.
+
+## First full pass: decisions
+
+Use [the decision lens](references/decision-pass.md) and [attributed ADR guidance](references/adr-guidance.md) alongside the common role prompt. Review the complete captured change and relevant accepted ADRs. Assess ADR need, rationale, consistency with accepted decisions and whether consequences cover the actual choice; preserve the target's ADR structure.
+
+After the bounded exchange, stop early only when a verified concern undermines the approach enough to make implementation review premature. Identify the contradictory evidence and explain why examining implementation would be premature. Missing ADRs, wording preferences and unverified risks do not meet that threshold. Retain supported uncertainty and continue to implementation. The final comment must identify the skipped implementation pass on early exit.

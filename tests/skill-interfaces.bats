@@ -868,3 +868,15 @@ pr_reference_says() {
   pr_reference_says role-prompt 'spelling or casing alone'
   pr_reference_says role-prompt 'Do not execute target scripts'
 }
+
+@test "collaborator review decision pass" {
+  skill_says lets-review-pr 'verified concern undermines the approach'
+  skill_says lets-review-pr 'Missing ADRs, wording preferences'
+  pr_reference_says decision-pass 'rationale'
+  pr_reference_says decision-pass 'accepted decisions'
+  pr_reference_says adr-guidance 'Michael Nygard'
+  pr_reference_says adr-guidance 'AWS'
+  pr_reference_says adr-guidance 'GDS'
+  pr_reference_says adr-guidance '2026-11-06'
+  pr_reference_says decision-pass 'offline summary'
+}
