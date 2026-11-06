@@ -1001,13 +1001,20 @@ skill_prose_placeholders() {
 
 # step_numbers <skill>: each step or steps followed by a number, in any case,
 # in the prose_text of each of the skill's files, as <file>:<line>: <match>,
-# the file under the skills folder. A number shifts when a step is added, so
-# a reference names the part instead.
+# the file under the skills folder. A match may wrap from one line to the
+# next. A number shifts when a step is added, so a reference names the part
+# instead.
 step_numbers() {
   local file out
   out="$(skill_files "$1" | while IFS= read -r file; do
     prose_text "$file" | awk -v name="${file#"${skills_dir:-$repo/skills}/"}" '{
       line = $0; sub(/:.*/, "", line); text = substr($0, length(line) + 3)
+      if (line == last + 1 && match(tolower(tail), /(^|[^a-z])steps? *$/) && match(text, /^ *[0-9]+/)) {
+        found = tail; sub(/ *$/, "", found); found = substr(found, length(found) - 5); sub(/^.*[^A-Za-z]/, "", found)
+        number = substr(text, RSTART, RLENGTH); sub(/^ */, "", number)
+        print name ":" last ": " found " " number
+      }
+      last = line; tail = text
       while (match(tolower(text), /(^|[^a-z])steps? [0-9]+/)) {
         found = substr(text, RSTART, RLENGTH); sub(/^[^A-Za-z]/, "", found)
         print name ":" line ": " found; text = substr(text, RSTART + RLENGTH)
@@ -1046,6 +1053,13 @@ step_numbers() {
   fixture_file lets-go SKILL.md '# lets-go' '' 'Go on from *Claim* step 3.'
   run step_numbers lets-go
   [ "$status" -eq 1 ] || { echo "it passed on a step number"; false; }
+  [ "$output" = 'lets-go/SKILL.md:3: step 3' ] || { echo "it found: $output"; false; }
+}
+
+@test "the step number check finds a step number that wraps across two lines" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'Go on from *Claim* step' '3, then stop.'
+  run step_numbers lets-go
+  [ "$status" -eq 1 ] || { echo "it passed on a step number across a line break"; false; }
   [ "$output" = 'lets-go/SKILL.md:3: step 3' ] || { echo "it found: $output"; false; }
 }
 
