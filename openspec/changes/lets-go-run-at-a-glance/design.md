@@ -90,7 +90,7 @@ Columns: *Part*, *What it does*, *Runs in*, *Next*, *Stops when*. *Runs in* is `
 
 ### D-4. `Next:` lines
 
-Every part but *End of the run* ends its own text with one line: `Next: [Route](#route).` When a part can branch: `Next: [Run the shape step](#run-the-shape-step) when the packet sent the run to shape; otherwise [Route](#route).` The line comes before any `###` subsection, so `skill_section` and `walk_section` both see it as the part's last line. *End of the run* ends with "The run is over." A procedure ends with "Return to the part that ran it." *Claim* and the checkpoint keep their own stop rules (#201 changes those).
+Every part but *End of the run* ends its own text with one line: `Next: [Route](#route).` When a part can branch: `Next: [Run the shape step](#run-the-shape-step) when the packet sent the run to shape; otherwise [Route](#route).` The line ends the part's own text, before any `###` subsection. `skill_section` stops at the next heading of any level, so it reads that text alone, and the `Next:` line is its last line. `walk_section` and `part_section` read on through the subsections, so they are not used for this check. *End of the run* ends with "The run is over." A procedure ends with "Return to the part that ran it." *Claim* and the checkpoint keep their own stop rules (#201 changes those).
 
 ### D-5. References that replace step numbers
 
@@ -109,11 +109,13 @@ Each reference is rewritten to the part or section that holds the rule, with a l
 | shape prompt: `step 1`, `step 7` | `**Find or create the issue**`, `**Confirm, then write**` |
 | `go back to the step of *Start* that ran it` | `return to the part that ran it` |
 
+*Start* goes too, with or without a step number. Each of the ten other places that say *Start* names the part it means. For example, *Read the report* says to go on as *Run the shape step* says after a `done` shape report, not to "go back to *Start*". *Write the prompt* says `<schema>`, `<level>` and `<route line>` are the ones *Enter the branch*, *Set the level* and *Route* set. A `skill_does_not_say lets-go '*Start*'` check keeps it gone. *Start from an idea* does not match it.
+
 The three `skill_says` phrases in the tests change with it. The new phrases are `*Check the issue* has read its blockers already`, `return to the part that ran it` and `When *Claim* ran it, return to *Claim*`.
 
 ### D-6. Shape and the step table
 
-The `shape` row leaves the step table. Its *Done when* goes to *Check the issue*, which already prints shape's line. Its skill goes to *Run the shape step*, which already says what shape runs. The table's intro says there are five steps, of which the walk runs four. *Write the prompt* takes `<skill>` from the step table for those four, and from *What shape runs* for shape, as now. The walk loses its shape bullet, and the note in *Walk the step table* that shape's line is printed already moves to a sentence before the walk's first row. *End of the run* still shows the shape line first: the run prints it before the walk. `step_row` and the table check do not change, except that the check now fails on a `shape` row.
+The `shape` row leaves the step table. Its *Done when* goes to *Check the issue*, which already prints shape's line. Its skill goes to *Run the shape step*, which already says what shape runs. The table's intro says there are five steps, of which the walk runs four. *Write the prompt* takes `<skill>` from the step table for those four, and from *What shape runs* for shape, as now. The walk loses its shape bullet, and the note in *Walk the step table* that shape's line is printed already moves to a sentence before the walk's first row. *End of the run* still shows the shape line first: the run prints it before the walk. `step_row` does not change. `steps_in_one_table` today checks only the four other rows and ignores a `shape` row. It gains one rule: a row for `shape` adds `shape has a row` to its failures. A fixture with a `shape` row tests it.
 
 ### D-7. *Read the report*, B7
 
@@ -129,16 +131,16 @@ The failed-shape bullet moves above the general `failed` bullet. The general bul
 - `prose_text <file>`: the code-stripping loop of `prose_placeholders`, split out to print `<line>: <prose>` for each line. `prose_placeholders` then greps its output for placeholders, so its existing tests keep passing.
 - `step_numbers <skill>`: runs `prose_text` on each of the skill's files and prints `<file>:<line>: <match>` for each match of `[Ss]teps? [0-9]+`.
 - `parts_listed`: the overview table's links before `## Placeholders`, checked against the `##` part headings in order.
-- `parts_say_next`: for each part but *End of the run*, the last non-empty line of its own text starts `Next:`.
+- `parts_say_next`: for each part but *End of the run*, the last non-empty line of its own text starts `Next:`. It reads each part's text up to its first heading of any level, as `skill_section` does, not up to the next `## `, so a part with a `###` subsection, such as *Walk the step table*, still passes.
 - The entry table check reads `part_section 'Read the request'` for its two rows and three columns.
-- `anchors_resolve`: every `](#<anchor>)` in `SKILL.md`, outside code, matches the GitHub anchor of one of its headings: lower case, spaces to hyphens, punctuation other than hyphens dropped.
+- `anchors_resolve <skill>`: for each file `skill_files` lists, every `](#<anchor>)` in it, outside code, matches the GitHub anchor of one of that file's own headings: lower case, spaces to hyphens, punctuation other than hyphens dropped. So it keeps working when #203 moves sections into `references/`.
 
 Each helper gets a failing fixture that names what broke, as the spec's scenarios say.
 
 ## Risks / Trade-offs
 
 - [The rewrite drops or changes a sentence that no test pins] → Build the new file by moving blocks, not retyping them. Before the last commit, diff the old and new files by sentence (`tr` to one sentence per line, then `sort | comm`), and account for every sentence that changed.
-- [A link points at a heading that no longer exists] → The anchors stay because heading text stays. A new check, `anchors_resolve`, fails on any `](#...)` link in `SKILL.md` that matches no heading, and names it.
+- [A link points at a heading that no longer exists] → The anchors stay because heading text stays. A new check, `anchors_resolve`, fails on any `](#...)` link in a `lets-go` file that matches no heading of that file, and names it.
 - [The step-number ban hits a legitimate number] → The ban is on prose only. Phases (`Phase 5`) and list items are not matched.
 - [Stories #201 to #206 branch off this one and rewrite the same text] → This story moves text and rewords references only. Later stories start from the new layout.
 

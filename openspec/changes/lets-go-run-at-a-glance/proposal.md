@@ -25,7 +25,7 @@ None.
 
 ### Modified Capabilities
 
-- `lets-go`: the run is described as named parts with an overview and an entry table, each part says what comes next, no prose refers to a step by number, shape leaves the step table, a failed report prints a URL only when a pull request exists, and the Project query runs once per run. Requirements that name *Start* or its numbered steps are reworded to name the parts.
+- `lets-go`: the skill describes the run as named parts, with an overview and an entry table. Each part says what comes next, and no prose refers to a step by number or names *Start*. Every link inside the skill resolves. Shape leaves the step table. A failed report prints a URL only when a pull request exists. The Project query runs once per run. Requirements that name *Start* or its numbered steps are reworded to name the parts.
 
 ## Impact
 

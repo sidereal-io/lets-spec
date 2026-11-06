@@ -1,7 +1,21 @@
 ## ADDED Requirements
 
 ### Requirement: lets-go opens with an overview of its parts
-`skills/lets-go/SKILL.md` SHALL describe a run as named parts. A part is one named piece of a run, as `openspec/glossary.md` defines it. The parts SHALL be these, in run order: *Read the settings*, *Read the request*, *Start from an idea*, *Check the issue*, *Run the shape step*, *Pick the first ready story*, *Route*, *Enter the branch*, *Set the level*, *Walk the step table* and *End of the run*. *Start from an idea*, *Run the shape step* and *Pick the first ready story* run only when the request or the packet needs them. Each part SHALL be a `##` heading of `SKILL.md`, in that order. Right after its opening paragraphs, and before `## Placeholders`, `SKILL.md` SHALL hold an overview table with one row per part, in the same order. Each row SHALL name the part and link to its heading, and say what the part does, whether it runs in the `lets-go` session or a fresh one, what comes next, and when it stops. The skill SHALL hold no `## Start` heading. Where another requirement of this spec says *Start*, it means the parts from *Read the settings* to *Set the level*, which run before the walk, and *Start*'s blocker read is the blocker read in *Check the issue*.
+`skills/lets-go/SKILL.md` SHALL describe a run as named parts. A part is one named piece of a run, as `openspec/glossary.md` defines it. The parts SHALL be these eleven, in run order:
+
+1. *Read the settings*
+2. *Read the request*
+3. *Start from an idea*
+4. *Check the issue*
+5. *Run the shape step*
+6. *Pick the first ready story*
+7. *Route*
+8. *Enter the branch*
+9. *Set the level*
+10. *Walk the step table*
+11. *End of the run*
+
+ *Start from an idea*, *Run the shape step* and *Pick the first ready story* run only when the request or the packet needs them. Each part SHALL be a `##` heading of `SKILL.md`, in that order. `SKILL.md` SHALL hold an overview table right after its opening paragraphs, and before `## Placeholders`. The table SHALL have one row per part, in the same order. Each row SHALL name the part and link to its heading. It SHALL say what the part does, and whether it runs in the `lets-go` session or a fresh one. It SHALL say what comes next, and when the part stops. The skill SHALL hold no `## Start` heading, and SHALL not name *Start* anywhere. Another requirement of this spec may still say *Start*. There it means the parts from *Read the settings* to *Set the level*, which run before the walk. *Start*'s blocker read is the blocker read in *Check the issue*.
 
 #### Scenario: The overview lists every part
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
@@ -9,7 +23,7 @@
 
 #### Scenario: The parts are headings in run order
 - **WHEN** the skill-interfaces test lists the `##` headings of `skills/lets-go/SKILL.md`
-- **THEN** each of the eleven parts is one of them, in the order the overview lists them, and none is `## Start`
+- **THEN** each of the eleven parts is one of them, in the order the overview lists them, none is `## Start`, and no file of `lets-go` says `*Start*`
 
 #### Scenario: A part missing from the overview
 - **WHEN** a skills folder holds `lets-go/SKILL.md` with a `## Route` heading and an overview table that has no row for *Route*
@@ -40,11 +54,15 @@ The table SHALL replace the bullets *Start* step 2 held, with the same results. 
 - **THEN** it finds a table with a row for the default branch and a row for another branch, and a column each for a number, an idea and nothing
 
 ### Requirement: Each part ends by saying what comes next
-Every part but *End of the run* SHALL end with a line that starts `Next:`. The line SHALL link the part or parts that can follow, and give the condition for each when there is more than one. A procedure that a part runs, such as *Find the source of demand*, *Confirm the packet* or *Claim*, SHALL say that it returns to the part that ran it, and SHALL have no `Next:` line. *End of the run* SHALL say that the run is over.
+Every part but *End of the run* SHALL end its own text with a line that starts `Next:`. A part's own text runs from its heading to the next heading of any level, so the line comes before any subsection of the part. The line SHALL link the part or parts that can follow, and give the condition for each when there is more than one. A procedure that a part runs, such as *Find the source of demand*, *Confirm the packet* or *Claim*, SHALL say that it returns to the part that ran it, and SHALL have no `Next:` line. *End of the run* SHALL say that the run is over.
 
 #### Scenario: Route says what comes next
 - **WHEN** the skill-interfaces test reads the *Route* section of `skills/lets-go/SKILL.md`
 - **THEN** its last non-empty line starts `Next:` and links `#enter-the-branch`
+
+#### Scenario: A part with a subsection
+- **WHEN** the skill-interfaces test reads *Walk the step table*, which has the subsection *Records that disagree*
+- **THEN** the last non-empty line before `### Records that disagree` starts `Next:` and links `#end-of-the-run`
 
 #### Scenario: A part without a Next line
 - **WHEN** a skills folder holds `lets-go/SKILL.md` whose *Set the level* section ends with no `Next:` line
@@ -74,7 +92,7 @@ Every part but *End of the run* SHALL end with a line that starts `Next:`. The l
 - **THEN** it finds `**Find or create the issue**` and `**Confirm, then write**`
 
 ### Requirement: Every link inside lets-go names one of its headings
-Each link in `skills/lets-go/SKILL.md` to a place in the same file, written `](#<anchor>)` outside code, SHALL match the anchor GitHub makes from one of the file's headings: the heading's text in lower case, with each space made a hyphen, and every character other than a letter, a digit, a hyphen or an underscore dropped. The skill-interfaces check SHALL fail on a link that matches no heading, and SHALL name the anchor.
+This holds for `skills/lets-go/SKILL.md` and for each file in `skills/lets-go/references/`. A link to a place in the same file is written `](#<anchor>)`. Outside code, each such link SHALL match the anchor GitHub makes from one of that file's own headings. GitHub makes it from the heading's text: in lower case, with each space made a hyphen. It drops every character other than a letter, a digit, a hyphen or an underscore. The skill-interfaces check SHALL fail on a link that matches no heading, and SHALL name the file and the anchor.
 
 #### Scenario: Every link resolves
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
@@ -82,7 +100,11 @@ Each link in `skills/lets-go/SKILL.md` to a place in the same file, written `](#
 
 #### Scenario: A link to a heading that is gone
 - **WHEN** a skills folder holds `lets-go/SKILL.md` with a link `[Start](#start)` and no heading `Start`
-- **THEN** the check fails, and its output names `#start`
+- **THEN** the check fails, and its output names `SKILL.md` and `#start`
+
+#### Scenario: A link in a reference file
+- **WHEN** `lets-go/references/glossary-preflight.md` links `[Check the prerequisite](#check-the-prerequisite)` and has a heading `## Check the prerequisite`
+- **THEN** the check passes for that file
 
 ### Requirement: The Project query runs once per run
 *Find the source of demand* SHALL run its Project query only the first time it runs in a run. When an earlier pass in the same run has set `<project>`, `<owner>` and `<repo>`, a later pass SHALL use them, and SHALL not run the query again. This holds for the pass after `next` picks an issue, the pass after a shape step, the pass after *Pick the first ready story*, and the pass after a lost claim.
@@ -297,7 +319,7 @@ Neither `SKILL.md` nor any reference file SHALL hold `<n>`, `<p>`, `<url>`, `<is
 - **THEN** `<name>` is `lets-sync-quiet`, and *Claim* creates the branch `lets-sync-quiet`, not `issue-180`
 
 ### Requirement: The lets-go checks read the skill's reference files
-Every skill-interfaces check that `lets-go` holds a string, or does not hold one, SHALL read `skills/lets-go/SKILL.md` and every `skills/lets-go/references/*.md` as one text. It SHALL collapse each run of whitespace, line breaks included, to one space before it matches, so a string may wrap across lines. A check that a string is present SHALL pass when any of those files holds it. A check that a string is absent SHALL fail when any of those files holds it, and SHALL name the string. A check that greps a table row of `lets-go`, such as a step's row or a row of the disagreements table, SHALL read the same files. The checks that test reading order or a relative link SHALL read `SKILL.md` alone: the section of each part, the *Walk the step table* section, the order of the overview and the parts, the place of the `## Placeholders` section, the rule that `lets go level` comes before the first GitHub call, and the links to other skills' reference files.
+Every skill-interfaces check that `lets-go` holds a string, or does not hold one, SHALL read `skills/lets-go/SKILL.md` and every `skills/lets-go/references/*.md` as one text. It SHALL collapse each run of whitespace, line breaks included, to one space before it matches, so a string may wrap across lines. A check that a string is present SHALL pass when any of those files holds it. A check that a string is absent SHALL fail when any of those files holds it, and SHALL name the string. A check that greps a table row of `lets-go`, such as a step's row or a row of the disagreements table, SHALL read the same files. Some checks test reading order or a relative link. They SHALL read `SKILL.md` alone. These are the checks of the section of each part and of the *Walk the step table* section. So are the checks of the order of the overview and the parts, and of the place of the `## Placeholders` section. So are the rule that `lets go level` comes before the first GitHub call, and the links to other skills' reference files. The check that each link names a heading reads each file against its own headings.
 
 #### Scenario: A fixed line that wraps in a reference file
 - **WHEN** a skills folder holds `lets-go/SKILL.md` without `Records disagree:`, and `lets-go/references/records.md` holds `Records` at the end of one line and `disagree:` at the start of the next
