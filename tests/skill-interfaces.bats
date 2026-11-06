@@ -324,6 +324,31 @@ skill_has_section() {
   grep -qxF "${heading[@]}" -- "${files[@]}" || { echo "$1 has no heading: $2"; return 1; }
 }
 
+# lists_start_at_one <skill>: in each of the skill's files, the first
+# numbered item after each heading, outside fenced code, is 1. A list that
+# carries on its numbers across a heading makes "step 3" ambiguous. Prints
+# each break as <file>: <heading>: <number>, the file under the skills folder.
+lists_start_at_one() {
+  local file out
+  out="$(skill_files "$1" | while IFS= read -r file; do
+    awk -v name="${file#"${skills_dir:-$repo/skills}/"}" '
+      fence == "" && match($0, /^ *(```+|~~~+)/) {
+        fence = substr($0, RSTART, RLENGTH); sub(/^ */, "", fence); next
+      }
+      fence != "" {
+        line = $0; sub(/^ */, "", line); sub(/ *$/, "", line)
+        if (line ~ /^(`+|~+)$/ && substr(line, 1, 1) == substr(fence, 1, 1) && length(line) >= length(fence)) fence = ""
+        next
+      }
+      /^#+ / { heading = $0; first = 1; next }
+      first && match($0, /^[0-9]+\. /) {
+        first = 0
+        if (substr($0, 1, RLENGTH - 1) != "1.") print name ": " heading ": " substr($0, 1, RLENGTH - 1)
+      }' "$file"
+  done)"
+  [ -z "$out" ] || { echo "$out"; return 1; }
+}
+
 # skill_rows <skill> <pattern>: each line of the skill's SKILL.md or a
 # reference file that matches the extended regex.
 skill_rows() {
@@ -588,6 +613,29 @@ review_build_start() {
   run skill_has_section lets-go 'Claim'
   [ "$status" -eq 1 ] || { echo "it passed on a skill with no Claim heading"; false; }
   [ "$output" = 'lets-go has no heading: Claim' ] || { echo "it said: $output"; false; }
+}
+
+@test "the numbered list check names a heading whose list starts at 5" {
+  fixture_file lets-go SKILL.md '# lets-go' '### Steps' '5. Read the base.'
+  run lists_start_at_one lets-go
+  [ "$status" -eq 1 ] || { echo "it passed on a list that starts at 5"; false; }
+  [ "$output" = 'lets-go/SKILL.md: ### Steps: 5.' ] || { echo "it said: $output"; false; }
+}
+
+@test "the numbered list check names a reference file whose list starts at 2" {
+  fixture_file lets-go references/steps.md '## Steps' '2. Read the base.'
+  run lists_start_at_one lets-go
+  [ "$output" = 'lets-go/references/steps.md: ## Steps: 2.' ] || { echo "it said: $output"; false; }
+}
+
+@test "the numbered list check skips a number inside a code block" {
+  fixture_file lets-go SKILL.md '# lets-go' '### Steps' '```text' '5. not a step' '```' '1. Read the base.'
+  lists_start_at_one lets-go
+}
+
+@test "the numbered list check passes a reference file whose numbered lists start at 1" {
+  fixture_file lets-go references/steps.md '## One' '1. Read.' '2. Check.' '## Two' 'Text.' '1. Stop.'
+  lists_start_at_one lets-go
 }
 
 @test "lets-go's Start holds the sections that find, confirm, route and claim the issue" {
