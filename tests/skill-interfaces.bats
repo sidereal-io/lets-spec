@@ -229,11 +229,27 @@ schema_step() {
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
+# says_exit_3 <skill>: the skill says what exit 3 of a delegate command means.
+says_exit_3() {
+  skill_says "$1" '**3**: no fresh session can run here, for example because no resolver started one'
+}
+
 @test "each skill that delegates to a subagent says exit 3 also means no resolver started a session" {
   for skill in lets-review-build lets-review-plan lets-go; do
-    grep -q '\*\*3\*\*: no fresh session can run here, for example because no resolver started one' \
-      "$repo/skills/$skill/SKILL.md" || { echo "$skill"; false; }
+    says_exit_3 "$skill"
   done
+}
+
+@test "the exit 3 check matches the sentence across a line break" {
+  fixture_file lets-go SKILL.md '**3**: no fresh session can run here, for example' 'because no resolver started one'
+  says_exit_3 lets-go
+}
+
+@test "the exit 3 check names a skill without the sentence" {
+  fixture_file lets-review-plan references/delegate.md 'Exit codes are elsewhere.'
+  run says_exit_3 lets-review-plan
+  [ "$status" -eq 1 ] || { echo "it passed on a skill without the sentence"; false; }
+  [[ "$output" == *lets-review-plan* ]] || { echo "it said: $output"; false; }
 }
 
 @test "each lets delegate review, handoff or step the prose names is followed by instructions or run" {
