@@ -14,8 +14,14 @@
 
 ## 2. Integration [depends-on: 1]
 
-- [ ] 2.1 [medium] Verify the complete skill contract and both release outputs with both required repository checks; record their actual results and limitations before pushing. (verify: pnpm test && nix flake check)
+- [x] 2.1 [medium] Verify the complete skill contract and both release outputs with both required repository checks; record their actual results and limitations before pushing. (verify: pnpm test && nix flake check) (✓ pnpm test && nix flake check passed)
 
 ## Deviations Ledger
 
 No implementation deviations. Claude's plan review split Git capture from PR-context capture and model selection from role delegation. The 12 tasks remain sequential because they share the skill and interface tests. Each filtered feature test must exist and fail its named assertion before implementation; an empty suite is not acceptance evidence. The first live trial is sidereal PR #472, as recorded in design.md (D3), after implementation.
+
+## Integration evidence
+
+`pnpm test` passed after the review fixes: 686 Node tests, typecheck and 197 shell tests. `nix flake check` passed on x86_64-linux, including both flows, commands, distribution and release checks; incompatible aarch64-linux/aarch64-darwin systems were omitted. Each feature filter was observed failing its named assertion before implementation and passing afterward. The release test compares all six installed references with source in both flows. These contract checks do not establish review judgment or count as the live trial.
+
+Claude Opus 5.5 independently reviewed 680690bc1a1dfb6c0e7c0e92b856f14fa5330031 read-only and found no correctness defects or material plan divergence. The confirmed README placement defect is fixed in 59c3229. Small suggestions are addressed in 5010fb8 (model-name matching), b01235c (empty-result challenge) and 51ec9f6 (retained refs). Each suggestion fix has a failing-then-passing contract assertion. A separate generated-by line is declined because the comment already names actual models and provenance limits. No REVIEW.md exists; the review carried the shared glossary and installed domain-language method. The reviewer ran no tests or live trial and did not verify research sources; the author performed those source checks separately.
