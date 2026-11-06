@@ -804,9 +804,25 @@ prose_placeholders() {
     }' "$1"
 }
 
+# skill_prose_placeholders <skill>: prose_placeholders for each of the
+# skill's files, as <file>:<line>: <placeholder>, the file under the skills
+# folder.
+skill_prose_placeholders() {
+  local file
+  while IFS= read -r file; do
+    prose_placeholders "$file" | sed "s|^|${file#"${skills_dir:-$repo/skills}/"}:|"
+  done < <(skill_files "$1")
+}
+
 @test "lets-go writes no placeholder outside code" {
-  run prose_placeholders "$repo/skills/lets-go/SKILL.md"
+  run skill_prose_placeholders lets-go
   [ -z "$output" ] || { echo "lets-go has placeholders outside code:"; echo "$output"; false; }
+}
+
+@test "the placeholder check names the reference file a placeholder outside code is in" {
+  fixture_file lets-go references/records.md 'Read `#<i>` first.' 'Then see pull request #<pr> here.'
+  run skill_prose_placeholders lets-go
+  [ "$output" = 'lets-go/references/records.md:2: <pr>' ] || { echo "it found: $output"; false; }
 }
 
 @test "the placeholder check reads a fence inside a longer fence as code" {
