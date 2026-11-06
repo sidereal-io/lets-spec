@@ -125,9 +125,14 @@ is left of the request:
 
 With nothing on the default branch, run the third case, `next`, of
 [Find the source of demand](#find-the-source-of-demand), over the
-whole backlog. When `next` picks an issue, print
-`Picked #<i>: <title>, the next ready issue.` That issue is `<i>`.
-When nothing is ready, the stop in `next` stands.
+whole backlog. On its result:
+- **`picked`:** print `Picked #<i>: <title>, the next ready issue.`
+  That issue is `<i>`.
+- **`nothing-ready`:** say the backlog has nothing ready, suggest the
+  `lets-shape` skill to shape more, and stop, claiming nothing.
+- **`no-project`:** say to run the `lets-setup-backlog` skill, and stop.
+- **`several-projects`:** list each Project's title and URL it carries,
+  ask the user to unlink the extras, and stop.
 
 On another branch, `<branch>`, when the request is words, say that an
 idea needs the default branch, and stop. Otherwise search for the
@@ -162,16 +167,21 @@ Next: [Check the issue](#check-the-issue) when the entry table found `<i>`;
    search below, and [run the shape step](#run-the-shape-step) for the
    idea: its round resumes that parent.
 2. Run the second case of
-   [Find the source of demand](#find-the-source-of-demand): the user
-   described work but named no issue. It searches open issue titles for
-   the idea's words. Show the user the matches, and ask whether one is
-   the same work. Ask at either level: a wrong yes builds someone else's
-   issue.
+   [Find the source of demand](#find-the-source-of-demand): the run has
+   described work, but no issue. It searches open issue titles for the
+   idea's words. On its result:
+   - **`matches`:** show the user the matches it carries, and ask
+     whether one is the same work. Ask at either level: a wrong yes
+     builds someone else's issue.
+   - **`no-match`:** [run the shape step](#run-the-shape-step) for the
+     idea.
+   - **`no-project`:** say to run the `lets-setup-backlog` skill, and
+     stop.
+   - **`several-projects`:** list each Project's title and URL it
+     carries, ask the user to unlink the extras, and stop.
 3. On a yes, that issue is `<i>`. Go on from the blocker read in
    [Check the issue](#check-the-issue).
-4. On a no, or when nothing matches, set aside that case's stop, which
-   says to run `lets-shape`.
-   [Run the shape step](#run-the-shape-step) for the idea.
+4. On a no, [run the shape step](#run-the-shape-step) for the idea.
 
 Next: [Check the issue](#check-the-issue) when the user says an issue is the
 same work; otherwise [Run the shape step](#run-the-shape-step).
@@ -204,11 +214,15 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
    - **It does not exist:** say which open issues block `#<i>`, and
      stop. The user stacks it on the blocker's branch by hand.
 4. Run [Find the source of demand](#find-the-source-of-demand) for
-   `<i>`, as for a named issue. Its *Check the prerequisite* still
-   runs. When it finds an unresolved owner or checkpoint, the
-   prerequisite stop stands, even on a stacked branch: report it, and
-   stop. Any other stop in that section stands as the section reports
-   it. When the section passes, go on to *Confirm the packet*, below.
+   `<i>`. Its first case runs *Check the prerequisite* for the issue.
+   On its result:
+   - **`found`:** go on to *Confirm the packet*, below.
+   - **`unresolved`:** report the unresolved owner or checkpoint it
+     carries, and stop, even on a stacked branch.
+   - **`no-project`:** say to run the `lets-setup-backlog` skill, and
+     stop.
+   - **`several-projects`:** list each Project's title and URL it
+     carries, ask the user to unlink the extras, and stop.
 5. Run [Confirm the packet](#confirm-the-packet). On its result:
    - **`complete`:** go on to the shape line, below. For a Story with a
      parent, the result carries the parent's **Shared decisions**:
@@ -314,20 +328,25 @@ of them in this run.
    as it does: Must, then Should, then Could, then the lowest issue
    number. Run *Check the prerequisite* on each candidate, in rank order.
    A ready story is one that `next` would take.
-2. When a story is ready, print:
+2. On its result:
+   - **`picked`:** print:
 
-   ```text
-   Picked #<i>: <title>, the first ready story under #<parent>.
-   ```
+     ```text
+     Picked #<i>: <title>, the first ready story under #<parent>.
+     ```
 
-   That story is `<i>`. Go on from the blocker read in
-   [Check the issue](#check-the-issue) with it, as for an issue number.
-3. When no story is ready, print the `Done shape` line that
-   *Check the issue* shows. Say that no story under `#<parent>` is ready. Name each
-   story, and why it was left out: for example, its blocker, its
-   assignee, or an unresolved prerequisite. Say to run `lets-go` with a
-   story's number once it is ready. Then stop. Claim nothing, and
-   create no branch.
+     That story is `<i>`. Go on from the blocker read in
+     [Check the issue](#check-the-issue) with it, as for an issue number.
+   - **`nothing-ready`:** print the `Done shape` line that
+     *Check the issue* shows. Say that no story under `#<parent>` is
+     ready. Name each story, and why it was left out, as the result
+     carries it: for example, its blocker, its assignee, or an
+     unresolved prerequisite. Say to run `lets-go` with a story's number
+     once it is ready. Then stop. Claim nothing, and create no branch.
+   - **`no-project`:** say to run the `lets-setup-backlog` skill, and
+     stop.
+   - **`several-projects`:** list each Project's title and URL it
+     carries, ask the user to unlink the extras, and stop.
 
 A run that stops after discovery and before *Claim*, for any reason,
 leaves the map's edits on the default branch. When
@@ -615,18 +634,21 @@ linked, so neither list alone is enough.
 - **One Project:** use its `number` as `<project>` and its `owner` as
   `<owner>` in every `gh project` command below. The query's `repo` is
   the repository, as `owner/name`.
-- **None:** say to run the `lets-setup-backlog` skill, and stop.
-- **Two or more:** list each Project's title and URL, ask the user to
-  unlink the extras, and stop. Never pick one yourself.
+- **None:** the result is `no-project`: return it now.
+- **Two or more:** the result is `several-projects`: return it now, with
+  each Project's title and URL. Never pick one yourself.
 
 Then take the first case that applies:
 
-1. **The user named an issue.** Use it. *Check the issue* has read its
-   blockers already, and decided whether an open one stops the run.
-2. **The user described work but named no issue.** Search for it:
+1. **The run has an issue, `<i>`.** Use it. *Check the issue* has read its
+   blockers already, and decided on an open one. Run
+   [Check the prerequisite](#check-the-prerequisite) for it. The result
+   is `found` when that returns `resolved`, and `unresolved` when it
+   returns `unresolved`.
+2. **The run has described work, but no issue.** Search for it:
    `gh issue list --state open --search "<idea> in:title" --json number,title`.
-   If one matches, confirm with the user that it is the same work. If
-   none does, say to run the `lets-shape` skill on it, and stop.
+   The result is `matches`, with the issues the search found, or
+   `no-match` when it found none.
 3. **Otherwise, take `next`.** List the Project's Todo candidates with a
    priority of Must, Should or Could. Any Kind but Epic counts, and
    items from other repositories are left out:
@@ -646,20 +668,35 @@ Then take the first case that applies:
 
    `next` comes from the candidates whose number is in the second list.
    Rank them Must, then Should, then Could, then the lowest issue
-   number, and take the first. A Wont is never a candidate. If there is
-   none, say the backlog has nothing ready, suggest the `lets-shape`
-   skill to shape more, and stop.
+   number. A Wont is never a candidate.
 
-Before you pick `next`, run only
-[Check the prerequisite](#check-the-prerequisite) on each candidate, in
-rank order. Fetching, the commit checks and the rehearsal wait for
-*Claim*, and run only for the candidate you pick. Skip a candidate with
-an unresolved prerequisite. If none is left, say the backlog has
-nothing ready, suggest the `lets-shape` skill, and stop, without picking
-a candidate or confirming a packet. For a named issue, report the
-unresolved owner or checkpoint, and stop. Otherwise, return to the part
-that ran it. When *Claim* ran it, return to *Claim*: it says what comes
-next.
+   Before you take a candidate, run only
+   [Check the prerequisite](#check-the-prerequisite) on each one, in
+   rank order. Fetching, the commit checks and the rehearsal wait for
+   *Claim*, and run only for the candidate you pick. Skip a candidate
+   for which it returns `unresolved`. The result is `picked`, with the
+   first candidate left. When none is left, the result is
+   `nothing-ready`, and you pick no candidate.
+
+It returns one of these results:
+
+- `found`: the run has an issue, and its prerequisite is resolved. It
+  carries `<i>`.
+- `unresolved`: *Check the prerequisite* returned `unresolved` for the
+  run's issue. It carries the unresolved owner or checkpoint.
+- `matches`: the search for described work found issues. It carries
+  each one's number and title.
+- `no-match`: the search found no issue.
+- `picked`: `next` took a candidate. It carries the candidate's number
+  and title.
+- `nothing-ready`: `next` has no candidate left. It carries each
+  candidate it left out, and why.
+- `no-project`: no Project is linked to the repository.
+- `several-projects`: two or more Projects are linked. It carries each
+  one's title and URL.
+
+When *Claim* ran it, return to *Claim*: it says what comes next.
+Otherwise, return to the part that ran it, with the result.
 
 ### Confirm the packet
 

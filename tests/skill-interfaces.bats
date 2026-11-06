@@ -776,7 +776,7 @@ review_build_start() {
   skill_says lets-go 'Interactivity: <level>, because #<i> is a <Kind>.'
   skill_says lets-go 'Interactivity: <level>, because you asked for it.'
   skill_says lets-go 'gh issue view <i> --json title,blockedBy'
-  skill_says lets-go 'the prerequisite stop stands, even on a stacked branch'
+  skill_says lets-go 'report the unresolved owner or checkpoint it carries, and stop, even on a stacked branch'
   skill_says lets-go 'The interactivity level is <level>.'
   skill_says lets-go 'Write the answer as the user gave it, with no marker'
   for phrase in '#152 adds' 'chores only' 'its stop stands'; do
@@ -800,8 +800,8 @@ review_build_start() {
     { echo "Find the source of demand still stops on a blocker of its own"; false; }
   skill_says lets-go 'return to the part that ran it'
   skill_says lets-go 'When *Claim* ran it, return to *Claim*'
-  grep -qF 'When the section passes, go on to *Confirm the packet*' <<<"$part" ||
-    { echo "Check the issue does not go on to Confirm the packet after Find the source of demand"; false; }
+  grep -qF '**`found`:** go on to *Confirm the packet*' <<<"$part" ||
+    { echo "Check the issue does not go on to Confirm the packet on found"; false; }
   skill_does_not_say lets-go 'Otherwise, go on to [Confirm the packet](#confirm-the-packet).' ||
     { echo "Find the source of demand still picks the next section"; false; }
 }
@@ -1457,6 +1457,48 @@ procedure_stops() {
 @test "Check the issue says the change has started on its branch" {
   grep -qF 'the change has started on `<name>`' <<<"$(part_section 'Check the issue')" ||
     { echo "Check the issue does not say the change has started"; false; }
+}
+
+@test "Find the source of demand says no stop" {
+  procedure_stops 'Find the source of demand'
+}
+
+@test "Find the source of demand lists its results" {
+  local text result
+  text="$(procedure_text 'Find the source of demand')"
+  for result in found unresolved matches no-match picked nothing-ready no-project several-projects; do
+    grep -qF -- "- \`$result\`:" <<<"$text" || { echo "Find the source of demand does not list: $result"; false; }
+  done
+}
+
+# Check the issue runs the first case for a picked or shaped issue too, so
+# the case must not read as a named issue only.
+@test "Find the source of demand's first case is the issue the run has" {
+  skill_says lets-go '**The run has an issue, `<i>`.**'
+  skill_does_not_say lets-go '**The user named an issue.**'
+  ! grep -qF 'as for a named issue' <<<"$(part_section 'Check the issue')" ||
+    { echo "Check the issue still runs the section as for a named issue"; false; }
+}
+
+@test "each part that finds the source of demand acts on each result it can get there" {
+  local part result
+  declare -A results=(
+    ['Read the request']='picked nothing-ready no-project several-projects'
+    ['Start from an idea']='matches no-match no-project several-projects'
+    ['Check the issue']='found unresolved no-project several-projects'
+    ['Pick the first ready story']='picked nothing-ready no-project several-projects')
+  for part in "${!results[@]}"; do
+    for result in ${results[$part]}; do
+      grep -qF -- "**\`$result\`:**" <<<"$(part_section "$part")" || { echo "$part does not act on: $result"; false; }
+    done
+  done
+}
+
+@test "Start from an idea asks the user whether a match is the same work" {
+  grep -qF '**`matches`:** show the user the matches it carries, and ask whether one is the same work' <<<"$(part_section 'Start from an idea')" ||
+    { echo "Start from an idea does not ask about the matches"; false; }
+  ! grep -qF 'confirm with the user' <<<"$(procedure_text 'Find the source of demand')" ||
+    { echo "Find the source of demand still asks the user"; false; }
 }
 
 @test "lets-go refers to no step by its step number" {
