@@ -73,10 +73,13 @@ The results are the ones the spec's table names:
 | *Confirm the packet* | `complete`, `needs-shape`, `epic` |
 | *Check the prerequisite* | `resolved`, `unresolved` |
 | *Check the checkpoint* | `verified`, `checkpoint-failed`, `unresolved` |
+| *Glossary preflight* | `no-owned-edits`, `verified`, `unresolved`, `checkpoint-failed` |
 | *Claim* | `claimed`, `branch-exists`, `taken`, `unresolved`, `checkpoint-failed`, `branch-failed` |
 | *Import the glossary checkpoint* | `imported`, `import-failed` |
 
 The names are hyphenated, like a step report's `needs-input`, so an agent reads `needs-shape` as one name. A result that a procedure passes on from a procedure it runs keeps its name. *Claim* returns *Check the checkpoint*'s `unresolved` and `checkpoint-failed` unchanged.
+
+*Glossary preflight* ends with its own results, after its two subsections. It returns `no-owned-edits` when the story has no **Glossary handoff**, or another issue owns the edits. Otherwise it returns what *Check the checkpoint* returned. `verified` carries the checkpoint commits, in their recorded order, and the ones the rehearsal found already present. *Claim*'s `claimed` carries the preflight's result, so *Enter the branch* knows whether to import without remembering how *Claim* got there.
 
 Alternatives: a results table instead of a list, which wraps badly at 72 columns once the *Carries* text is long; or free prose ("return that the issue needs shaping"), which a part cannot match on and a test cannot check.
 
@@ -92,6 +95,10 @@ Right after the sentence that runs a procedure, the part gives one bullet per re
 ```
 
 Each part lists only the results the procedure can return there. When a part runs *Find the source of demand* for a named issue, case 2 and case 3 cannot happen, so it handles only `found`, `unresolved`, `no-project` and `several-projects`. `no-project` and `several-projects` show up in four parts. Each part repeats the one-line action: say to run `lets-setup-backlog`, or list each Project and ask the user to unlink the extras, and stop. That is four short copies. #202 decides whether to define the action once.
+
+### Case 1 is the issue the run has
+
+*Check the issue* runs *Find the source of demand* for every `<i>`: one the user named, one `next` or *Pick the first ready story* picked, and one a shape step shaped. Case 1 is worded today as **The user named an issue**, and *Check the issue* adds "as for a named issue". An agent that reads case 1 literally for a picked issue falls through to case 3 and runs `next` again. D6 also gives "the user named it" a meaning of its own, for the shape step. So case 1 becomes **The run has an issue, `<i>`**, and *Check the issue* drops "as for a named issue". The words "the user named" appear only where the shape step's rule needs them.
 
 ### The idea's search returns its matches, and the part asks
 
@@ -124,7 +131,7 @@ Otherwise it says why the packet needs shaping and to run `lets-shape` on `` `#<
 
 ### `next` checks the packet
 
-Case 3 of *Find the source of demand* checks each candidate in rank order. It runs [Check the prerequisite](#check-the-prerequisite), then [Confirm the packet](#confirm-the-packet), and takes the first candidate where they return `resolved` and `complete`. A candidate that fails either check is skipped, and kept with its reason for `nothing-ready`. *Pick the first ready story* names those reasons. *Confirm the packet* returns to *Find the source of demand* when that is what ran it, as *Glossary preflight* returns to *Claim*. Its last line names both.
+Case 3 of *Find the source of demand* checks each candidate in rank order, with the candidate's number as `<i>` while it is checked. The `<i>` row of the Placeholders table adds "or, inside `next`, the candidate it is checking", so `Confirm the packet`'s commands read the right issue. It runs [Check the prerequisite](#check-the-prerequisite), then [Confirm the packet](#confirm-the-packet), and takes the first candidate where they return `resolved` and `complete`. A candidate that fails either check is skipped, and kept with its reason for `nothing-ready`. *Pick the first ready story* names those reasons. *Confirm the packet* returns to *Find the source of demand* when that is what ran it, as *Glossary preflight* returns to *Claim*. Its last line names both.
 
 The packet is then checked twice for the picked issue: once in `next`, and once in *Check the issue*. The second check is what catches a comment that arrives in between, so it stays.
 
@@ -136,7 +143,7 @@ The jq filter keeps `.kind != "Epic"`. An item with no Kind passes the filter, a
 
 - When the user named `<i>` or confirmed it, it says who has it, and stops.
 - Otherwise, it counts the lost claim. After the third in the run, it says that other sessions keep taking the picked issues and to run `lets-go` again, and stops.
-- Before that, it goes back to the part that picked: *Read the request* for `next`, or *Pick the first ready story*. That part prints the right `Picked` line, handles `nothing-ready` with its own words, and goes on to *Check the issue*.
+- Before that, it goes back to the part that picked: *Read the request* for `next`, or *Pick the first ready story*. That part prints the right `Picked` line, handles `nothing-ready` with its own words, and goes on to *Check the issue*. *Pick the first ready story* prints the `Done shape` line on `nothing-ready` only when this run has not printed it yet. After a lost claim, *Check the issue* has printed it already.
 
 Case 3 of *Find the source of demand* says to leave out every issue lost in this run. So a reused candidate list cannot pick the same issue, even though the `no:assignee` search would usually drop it already. *Enter the branch*'s `Next:` line and its overview row name both ways back.
 
@@ -146,7 +153,7 @@ Three is a cap, not a tuning knob. Two lost claims can be bad luck. Three mean a
 
 ### *Enter the branch* handles every claim result
 
-- **`claimed`:** run the import when preflight found owned edits, then commit the discovery map, then go on.
+- **`claimed`:** when it carries `verified`, run *Import the glossary checkpoint* with the commits it carries. Then commit the discovery map, and go on. With `no-owned-edits`, skip the import.
 - **`branch-exists`:** say so, suggest switching to it and running `lets-go` there, and stop.
 - **`taken`:** as above.
 - **`unresolved`:** report the owner or checkpoint, and stop, claiming nothing.
@@ -168,6 +175,15 @@ Matching on words rather than on the nine phrases catches new phrasings, such as
 ### Overview rows
 
 The *Stops when* column names results, for example: "*Find the source of demand* returns `nothing-ready`, `no-project` or `several-projects`". *Enter the branch*'s *Next* becomes "*Set the level*; *Read the request* or *Pick the first ready story* after a lost claim". *Check the issue*'s row adds `epic`, and `needs-shape` when shape cannot run.
+
+### Tests whose pinned wording changes
+
+The structural checks from #200 stay as they are: `parts_listed`, `parts_say_next`, `step_numbers`, `anchors_resolve`, the `*Start*` and `part way` bans, `lists_start_at_one` and the placeholder checks. These pinned phrases change with the new wording, and the build updates each test with its phrase:
+
+- `the prerequisite stop stands, even on a stacked branch`, in the level-and-relay test.
+- ``run `next` again with the same candidates``, in the lost-race test. It becomes `leave out every issue lost in this run`.
+- `When the section passes, go on to *Confirm the packet*`, in the blocker-order test. It becomes a check that *Check the issue* handles `found` by going on to *Confirm the packet*.
+- The six *Check the checkpoint* phrases that end in `and stop`, such as `report the conflict, and stop, repairing nothing`. Each becomes its `checkpoint-failed` form.
 
 ## Risks / Trade-offs
 
