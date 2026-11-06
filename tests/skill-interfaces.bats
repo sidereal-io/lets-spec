@@ -491,6 +491,9 @@ start_step() {
   [ "$call" != "$step" ] || { echo "Start step 3 does not run Find the source of demand"; false; }
   [ "${#read}" -lt "${#call}" ] ||
     { echo "Start step 3 runs Find the source of demand before it reads the blockers"; false; }
+  skill_says lets-go '*Start* step 3 has read its blockers already'
+  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- 'If an open issue blocks it, say so and stop' ||
+    { echo "Find the source of demand still stops on a blocker of its own"; false; }
 }
 
 @test "lets-go reads go.level before it asks GitHub for anything" {

@@ -220,10 +220,8 @@ linked, so neither list alone is enough.
 
 Then take the first case that applies:
 
-1. **The user named an issue.** Use it. If an open issue blocks it, say
-   so and stop: `gh issue view <i> --json blockedBy` lists its blockers,
-   and any with `state` `OPEN` counts. The user stacks it on the
-   blocker's branch by hand.
+1. **The user named an issue.** Use it. *Start* step 3 has read its
+   blockers already, and decided whether an open one stops the run.
 2. **The user described work but named no issue.** Search for it:
    `gh issue list --state open --search "<words> in:title" --json number,title`.
    If one matches, confirm with the user that it is the same work. If
