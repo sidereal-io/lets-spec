@@ -1359,6 +1359,24 @@ parts_fixture() {
   done
 }
 
+# overview_row <part>: the overview's row for the part.
+overview_row() {
+  awk '/^## Placeholders$/ { exit } /^\|/' "$(lets_go_skill)" | grep -F -- "| [$1](#"
+}
+
+@test "the overview names the results each part stops on" {
+  local overview
+  overview="$(awk '/^## Placeholders$/ { exit } /^\|/' "$(lets_go_skill)")"
+  ! grep -qiF 'a stop in' <<<"$overview" || { echo "the overview still names a stop in a procedure"; false; }
+  grep -qF '`taken`' <<<"$(overview_row 'Enter the branch')" || { echo "Enter the branch's row does not name taken"; false; }
+  grep -qF '`epic`' <<<"$(overview_row 'Check the issue')" || { echo "Check the issue's row does not name epic"; false; }
+}
+
+@test "the overview's Next for Enter the branch names both ways back after a lost claim" {
+  overview_row 'Enter the branch' | grep -qF '*Read the request* or *Pick the first ready story* after a lost claim' ||
+    { echo "it said: $(overview_row 'Enter the branch')"; false; }
+}
+
 @test "each lets-go part but the last ends with a Next line" {
   parts_say_next
 }
@@ -1440,6 +1458,7 @@ procedure_stops() {
     tr -s '[:space:]' ' ' <<<"$text" | grep -qi 'return to the part that ran it' ||
       { echo "$procedure does not return to the part that ran it"; false; }
     ! grep -q '^Next: ' <<<"$text" || { echo "$procedure has a Next line"; false; }
+    procedure_stops "$procedure"
   done
 }
 
@@ -1475,6 +1494,10 @@ procedure_stops() {
   run override_idioms lets-go
   [ "$status" -eq 1 ] || { echo "it passed on a stop set aside"; false; }
   [ "$output" = 'lets-go/references/claim.md:1: aside' ] || { echo "it said: $output"; false; }
+}
+
+@test "lets-go states each action, with no override idiom" {
+  override_idioms lets-go
 }
 
 @test "the override idiom check passes stands for" {
