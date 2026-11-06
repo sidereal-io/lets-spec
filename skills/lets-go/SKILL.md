@@ -416,8 +416,10 @@ once, after the branch check in *Claim* step 2 passes.
    to find edits already present, and import no duplicate. Resolve a
    partial or conflicting patch before you claim. Leave the real working
    tree unchanged.
-6. Go on with the normal packet, blocker and routing checks. If the
-   owner or the base changed, repeat steps 1 to 3 just before claiming.
+6. If the owner of the glossary definitions or the proposed base changed
+   since *Find the source of demand* ran *Check the prerequisite*, run
+   [Check the prerequisite](#check-the-prerequisite) again, before
+   *Claim* step 3 claims the issue.
 
 The verified glossary import is the only implementation step this skill
 adds, beside [the discovery map commit](#commit-the-discovery-map).

@@ -324,6 +324,29 @@ skill_has_section() {
   grep -qxF "${heading[@]}" -- "${files[@]}" || { echo "$1 has no heading: $2"; return 1; }
 }
 
+# Awk rules that set code to 1 on each line that opens, holds or closes
+# fenced code, so a # comment or a numbered line there is not read as prose.
+# A fence closes only on a line of its own character, at least as long as
+# the line that opened it.
+fence_rules='
+  { code = 0 }
+  fence != "" {
+    code = 1; line = $0; sub(/^ */, "", line); sub(/ *$/, "", line)
+    if (line ~ /^(`+|~+)$/ && substr(line, 1, 1) == substr(fence, 1, 1) && length(line) >= length(fence)) fence = ""
+  }
+  !code && match($0, /^ *(```+|~~~+)/) { code = 1; fence = substr($0, RSTART, RLENGTH); sub(/^ */, "", fence) }'
+
+# skill_section <skill> <name>: the text of the section with that heading,
+# at any level, in the skill's SKILL.md or a reference file, up to the next
+# heading, each run of whitespace one space.
+skill_section() {
+  local files
+  mapfile -t files < <(skill_files "$1")
+  awk -v name="$2" "$fence_rules"'
+    !code && /^#+ / { on = (substr($0, index($0, " ") + 1) == name); next }
+    on' "${files[@]}" | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//'
+}
+
 # lists_start_at_one <skill>: in each of the skill's files, the first
 # numbered item after each heading, outside fenced code, is 1. A list that
 # carries on its numbers across a heading makes "step 3" ambiguous. Prints
@@ -331,15 +354,8 @@ skill_has_section() {
 lists_start_at_one() {
   local file out
   out="$(skill_files "$1" | while IFS= read -r file; do
-    awk -v name="${file#"${skills_dir:-$repo/skills}/"}" '
-      fence == "" && match($0, /^ *(```+|~~~+)/) {
-        fence = substr($0, RSTART, RLENGTH); sub(/^ */, "", fence); next
-      }
-      fence != "" {
-        line = $0; sub(/^ */, "", line); sub(/ *$/, "", line)
-        if (line ~ /^(`+|~+)$/ && substr(line, 1, 1) == substr(fence, 1, 1) && length(line) >= length(fence)) fence = ""
-        next
-      }
+    awk -v name="${file#"${skills_dir:-$repo/skills}/"}" "$fence_rules"'
+      code { next }
       /^#+ / { heading = $0; first = 1; next }
       first && match($0, /^[0-9]+\. /) {
         first = 0
@@ -640,6 +656,22 @@ review_build_start() {
 
 @test "each numbered list in lets-go starts at 1 under its heading" {
   lists_start_at_one lets-go
+}
+
+@test "the section text helper reads a reference file's section up to the next heading" {
+  fixture_file lets-go references/glossary.md '## Check the checkpoint' 'First line,' '```bash' '# not a heading' '```' 'last line.' '## Claim' 'Not this.'
+  run skill_section lets-go 'Check the checkpoint'
+  [ "$output" = 'First line, ```bash # not a heading ``` last line.' ] || { echo "it read: $output"; false; }
+}
+
+@test "lets-go's checkpoint runs Check the prerequisite again by name" {
+  local section
+  section="$(skill_section lets-go 'Check the checkpoint')"
+  [ -n "$section" ] || { echo "lets-go has no Check the checkpoint section"; false; }
+  grep -qF '](#check-the-prerequisite)' <<<"$section" ||
+    { echo "Check the checkpoint does not link Check the prerequisite"; false; }
+  skill_does_not_say lets-go 'repeat steps 1 to 3'
+  skill_does_not_say lets-go 'Go on with the normal packet, blocker and routing checks'
 }
 
 @test "lets-go's Start holds the sections that find, confirm, route and claim the issue" {
