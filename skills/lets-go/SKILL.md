@@ -90,7 +90,7 @@ unfinished step.
    runs. When it finds an unresolved owner or checkpoint, the
    prerequisite stop stands, even on a stacked branch: report it, and
    stop. Any other stop in that section stands as the section reports
-   it.
+   it. When the section passes, go on to step 4.
 4. Run [Confirm the packet](#confirm-the-packet). Three of its stops say
    to run `lets-shape` on #<i>: the issue is not shaped, a line is
    missing or a placeholder, or comments are unread. On the default
@@ -258,8 +258,8 @@ rank order. Fetching, the commit checks and the rehearsal wait for
 an unresolved prerequisite. If none is left, say the backlog has
 nothing ready, suggest the `lets-shape` skill, and stop, without picking
 a candidate or confirming a packet. For a named issue, report the
-unresolved owner or checkpoint, and stop. Otherwise, go on to
-[Confirm the packet](#confirm-the-packet).
+unresolved owner or checkpoint, and stop. Otherwise, go back to the
+step of *Start* that ran it.
 
 ### Confirm the packet
 

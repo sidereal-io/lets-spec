@@ -475,7 +475,7 @@ review_build_start() {
 
 # start_step <n>: step <n> of lets-go's Start section, on one line.
 start_step() {
-  awk -v n="$1" '/^## Start$/ { start = 1; next } /^## / { start = 0 }
+  awk -v n="$1" '/^## Start$/ { start = 1; next } /^##/ { start = 0 }
     start && $0 ~ "^" n "\\. " { on = 1 } start && $0 ~ "^" (n + 1) "\\. " { on = 0 } on' \
     "$repo/skills/lets-go/SKILL.md" | tr -s '[:space:]' ' '
 }
@@ -494,6 +494,10 @@ start_step() {
   skill_says lets-go '*Start* step 3 has read its blockers already'
   ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- 'If an open issue blocks it, say so and stop' ||
     { echo "Find the source of demand still stops on a blocker of its own"; false; }
+  skill_says lets-go 'go back to the step of *Start* that ran it'
+  ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- 'Otherwise, go on to [Confirm the packet](#confirm-the-packet).' ||
+    { echo "Find the source of demand still picks the next section"; false; }
+  [[ "${step% }" == *'go on to step 4.' ]] || { echo "Start step 3 does not end by going on to step 4"; false; }
 }
 
 @test "lets-go reads go.level before it asks GitHub for anything" {
