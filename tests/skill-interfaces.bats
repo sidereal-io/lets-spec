@@ -847,3 +847,11 @@ pr_reference_says() {
   pr_reference_says role-prompt 'Context snapshot: <absolute snapshot path>'
   pr_reference_says role-prompt 'Do not fetch live mutable PR context'
 }
+
+@test "collaborator review provenance" {
+  skill_says lets-review-pr 'Co-Authored-By'
+  skill_says lets-review-pr 'all known implementer models'
+  skill_says lets-review-pr 'outside the known exact-model set, then outside the known-family set, then discovery order'
+  skill_says lets-review-pr 'Family-only evidence never establishes an exact model'
+  skill_says lets-review-pr 'Unknown provenance stays unknown'
+}
