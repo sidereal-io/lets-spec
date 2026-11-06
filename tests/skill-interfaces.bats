@@ -775,24 +775,17 @@ review_build_start() {
   done
 }
 
-# start_step <n>: step <n> of lets-go's Start section, on one line.
-start_step() {
-  awk -v n="$1" '/^## Start$/ { start = 1; next } /^##/ { start = 0 }
-    start && $0 ~ "^" n "\\. " { on = 1 } start && $0 ~ "^" (n + 1) "\\. " { on = 0 } on' \
-    "$repo/skills/lets-go/SKILL.md" | tr -s '[:space:]' ' '
-}
-
 # An agent follows the skill in reading order, so a rule that comes after
 # the call is one it reads too late.
 @test "lets-go states the blocker rule before it finds the source of demand" {
-  local step read call
-  step="$(start_step 3)"
-  read="${step%%"gh issue view <i> --json title,blockedBy"*}"
-  call="${step%%"[Find the source of demand](#find-the-source-of-demand)"*}"
-  [ "$read" != "$step" ] || { echo "Start step 3 does not read the blockers"; false; }
-  [ "$call" != "$step" ] || { echo "Start step 3 does not run Find the source of demand"; false; }
+  local part read call
+  part="$(part_section 'Check the issue')"
+  read="${part%%"gh issue view <i> --json title,blockedBy"*}"
+  call="${part%%"[Find the source of demand](#find-the-source-of-demand)"*}"
+  [ "$read" != "$part" ] || { echo "Check the issue does not read the blockers"; false; }
+  [ "$call" != "$part" ] || { echo "Check the issue does not run Find the source of demand"; false; }
   [ "${#read}" -lt "${#call}" ] ||
-    { echo "Start step 3 runs Find the source of demand before it reads the blockers"; false; }
+    { echo "Check the issue runs Find the source of demand before it reads the blockers"; false; }
   skill_says lets-go '*Start* step 3 has read its blockers already'
   skill_does_not_say lets-go 'If an open issue blocks it, say so and stop' ||
     { echo "Find the source of demand still stops on a blocker of its own"; false; }
@@ -800,7 +793,6 @@ start_step() {
   skill_says lets-go 'When *Pick the first ready story* or *Claim* ran it, go back to that step'
   skill_does_not_say lets-go 'Otherwise, go on to [Confirm the packet](#confirm-the-packet).' ||
     { echo "Find the source of demand still picks the next section"; false; }
-  [[ "${step% }" == *'go on to step 4.' ]] || { echo "Start step 3 does not end by going on to step 4"; false; }
 }
 
 @test "lets-go reads go.level before it asks GitHub for anything" {
@@ -1251,6 +1243,15 @@ parts_fixture() {
 @test "the part Next check passes a Next line before a subsection" {
   parts_fixture 'subsection=Walk the step table'
   parts_say_next
+}
+
+@test "lets-go lists its parts in an overview, and has no Start part" {
+  parts_listed
+  ! grep -qx '## Start' "$(lets_go_skill)" || { echo "lets-go still has a ## Start heading"; false; }
+}
+
+@test "each link in lets-go names one of its file's headings" {
+  anchors_resolve lets-go
 }
 
 # walk_section: lets-go's Walk the step table section, on one line.
