@@ -54,6 +54,14 @@ runs in the `lets-go` session. A part may run a step, which runs in a
 session of its own. A part is not a step, a journey stage or a discovery
 phase.
 
+## Procedure
+
+A section of `lets-go` that a part runs in the `lets-go` session, such
+as *Claim*. It returns a result to the part that ran it, such as
+`complete` or `needs-shape`. It never stops the run and never picks
+what comes next: the part decides. A procedure is not a part and not a
+step.
+
 ## Step
 
 One unit of work that `lets-go` runs in its own session: shape, plan,
