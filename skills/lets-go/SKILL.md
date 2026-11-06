@@ -960,7 +960,8 @@ If the folder is missing, create it first: `mkdir -p .workspace/lets-go`.
 Then write the frame below to `.workspace/lets-go/<session>-prompt.md`.
 Fill in each `<...>`. `<schema>`, `<level>` and `<route line>` are the
 ones [Enter the branch](#enter-the-branch), [Set the level](#set-the-level)
-and [Route](#route) set. Under *What to run*, put this sentence. `<skill>` is
+and [Route](#route) set. For shape, `<level>` is the one
+[Run the shape step](#run-the-shape-step) set. Under *What to run*, put this sentence. `<skill>` is
 the skill in the step's row of [The step table](#the-step-table):
 
 ```text
