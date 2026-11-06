@@ -1333,6 +1333,27 @@ procedure_text() {
     on' "$(lets_go_skill)"
 }
 
+# override_idioms <skill>: each aside, and each stand or stands not followed
+# by " for", in any case, in the prose_text of each of the skill's files, as
+# <file>:<line>: <word>, the file under the skills folder. A stop set aside,
+# or one that stands, overrides what another section said; the skill states
+# the action instead.
+override_idioms() {
+  local file out
+  out="$(skill_files "$1" | while IFS= read -r file; do
+    prose_text "$file" | awk -v name="${file#"${skills_dir:-$repo/skills}/"}" '{
+      line = $0; sub(/:.*/, "", line); text = substr($0, length(line) + 3); lower = tolower(text)
+      while (match(lower, /(^|[^a-z])(aside|stands?)([^a-z]|$)/)) {
+        word = substr(text, RSTART, RLENGTH); sub(/^[^A-Za-z]/, "", word); sub(/[^A-Za-z]$/, "", word)
+        rest = substr(lower, RSTART + RLENGTH - 1)
+        if (tolower(word) == "aside" || rest !~ /^ for([^a-z]|$)/) print name ":" line ": " word
+        text = substr(text, RSTART + RLENGTH - 1); lower = substr(lower, RSTART + RLENGTH - 1)
+      }
+    }'
+  done)"
+  [ -z "$out" ] || { echo "$out"; return 1; }
+}
+
 # procedure_stops <name>: each line of the procedure's prose_text, its
 # subsections included, that holds the word stop or stops, in any case, as
 # <name>:<line>: <text>. A procedure returns a result, and the part that ran
@@ -1374,6 +1395,25 @@ procedure_stops() {
   fixture_file lets-go SKILL.md '# lets-go' '## Procedures' '### Confirm the packet' '' \
     'If a line is missing, the result is `needs-shape`.' '' 'Return to the part that ran it, with the result.'
   procedure_stops 'Confirm the packet'
+}
+
+@test "the override idiom check names a stop that stands" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'When nothing is ready, the stop in `next` stands.'
+  run override_idioms lets-go
+  [ "$status" -eq 1 ] || { echo "it passed on a stop that stands"; false; }
+  [ "$output" = 'lets-go/SKILL.md:3: stands' ] || { echo "it said: $output"; false; }
+}
+
+@test "the override idiom check names a stop set aside" {
+  fixture_file lets-go references/claim.md 'On the default branch, set that stop aside.'
+  run override_idioms lets-go
+  [ "$status" -eq 1 ] || { echo "it passed on a stop set aside"; false; }
+  [ "$output" = 'lets-go/references/claim.md:1: aside' ] || { echo "it said: $output"; false; }
+}
+
+@test "the override idiom check passes stands for" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'Each one stands for one thing.' '' '| Placeholder | What it stands for |'
+  override_idioms lets-go
 }
 
 @test "lets-go refers to no step by its step number" {
