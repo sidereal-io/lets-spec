@@ -446,7 +446,7 @@ review_build_start() {
 }
 
 @test "lets-go with nothing takes the next ready issue" {
-  skill_says lets-go 'Picked #<n>: <title>, the next ready issue.'
+  skill_says lets-go 'Picked #<i>: <title>, the next ready issue.'
   ! tr -s '[:space:]' ' ' < "$repo/skills/lets-go/SKILL.md" | grep -qF -- '`lets-go` needs an issue number or an idea' ||
     { echo "lets-go still stops with nothing"; false; }
 }
@@ -515,7 +515,7 @@ start_step() {
   local phrase
   skill_says lets-go 'Done shape: <date>. <evidence>'
   skill_says lets-go 'Interactivity: ask, because shape has not run yet.'
-  skill_says lets-go 'issue #<n>: <title>'
+  skill_says lets-go 'issue #<i>: <title>'
   skill_says lets-go 'issue-<i>'
   skill_says lets-go 'idea-<slug>'
   skill_says lets-go '--for shape'
@@ -524,8 +524,8 @@ start_step() {
   skill_says lets-go 'holds another idea'
   skill_says lets-go 'Run discovery on it?'
   skill_says lets-go 'epic #<p>: <title>'
-  skill_says lets-go 'story #<n>: <title>'
-  skill_says lets-go 'Picked #<n>: <title>, the first ready story under #<p>.'
+  skill_says lets-go 'story #<story>: <title>'
+  skill_says lets-go 'Picked #<i>: <title>, the first ready story under #<p>.'
   skill_says lets-go 'docs: the discovery map from #<p>'
   skill_says lets-go 'Discovery status: in-progress'
   skill_says lets-go "gh issue list --state open --search '\"Discovery status: in-progress\" in:body' --json number,title,body"
@@ -584,6 +584,16 @@ start_step() {
   skill_says lets-go "git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md"
   skill_says lets-go 'git log -1 --format=%as <sha>'
   skill_says lets-go 'gh pr view <name> --json number,body'
+}
+
+# A placeholder that names two things lets an agent send an issue number
+# where the Project number belongs.
+@test "lets-go gives each placeholder one meaning" {
+  local old
+  for old in '<n>'; do
+    run grep -nF -- "$old" "$repo/skills/lets-go/SKILL.md"
+    [ "$status" -eq 1 ] || { echo "lets-go still says $old: $output"; false; }
+  done
 }
 
 # readme_lets_go: the README's lets-go section, on one line.

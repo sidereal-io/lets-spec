@@ -40,7 +40,7 @@ unfinished step.
 2. Read the request. A leading or trailing `ask` or `recommend` names
    the level: take it off, and keep it for step 10. What is left is one
    of these:
-   - **A number:** it holds `#<n>`, or is a bare number. It names the
+   - **A number:** it holds `#<i>`, or is a bare number. It names the
      issue.
    - **Words:** anything else. They are an idea, kept word for word.
    - **Nothing.**
@@ -51,7 +51,7 @@ unfinished step.
      third case, `next`, of
      [Find the source of demand](#find-the-source-of-demand), over the
      whole backlog. When `next` picks an issue, print
-     `Picked #<n>: <title>, the next ready issue.` That issue is `<i>`.
+     `Picked #<i>: <title>, the next ready issue.` That issue is `<i>`.
      When nothing is ready, the stop in `next` stands.
    - **On another branch**, `<branch>`: when the request is words, say
      that an idea needs the default branch, and stop. Otherwise search
@@ -213,7 +213,7 @@ owner's Projects that link back to it. A user-owned Project can be
 missing from the repository's own listing for a while after it is
 linked, so neither list alone is enough.
 
-- **One Project:** use its `number` as `<n>` and its `owner` as
+- **One Project:** use its `number` as `<project>` and its `owner` as
   `<owner>` in every `gh project` command below. The query's `repo` is
   the repository, as `owner/name`.
 - **None:** say to run the `lets-setup-backlog` skill, and stop.
@@ -233,7 +233,7 @@ Then take the first case that applies:
    items from other repositories are left out:
 
    ```bash
-   gh project item-list <n> --owner <owner> --format json --limit 500 \
+   gh project item-list <project> --owner <owner> --format json --limit 500 \
      --jq '.items[] | select(.content.repository == "<repo>" and .status == "Todo" and .kind != "Epic" and (.priority | IN("Must", "Should", "Could")))
            | "\(.priority)\t\(.kind)\t\(.size // "-")\t#\(.content.number)\t\(.content.title)\t\(.content.url)"'
    ```
@@ -268,7 +268,7 @@ Read the issue, and its fields on the Project:
 
 ```bash
 gh issue view <i> --json number,title,body,url,parent
-gh project item-list <n> --owner <owner> --format json --limit 500 \
+gh project item-list <project> --owner <owner> --format json --limit 500 \
   --jq '.items[] | select(.content.repository == "<repo>" and .content.number == <i>) | {kind, priority, size, status}'
 ```
 
@@ -394,7 +394,7 @@ adds, beside [the discovery map commit](#commit-the-discovery-map).
    ```bash
    gh issue view <i> --json assignees --jq '.assignees | length'
    gh issue edit <i> --add-assignee @me
-   gh project item-edit <n> --owner <owner> --url <url> --field Status --value "In Progress"
+   gh project item-edit <project> --owner <owner> --url <url> --field Status --value "In Progress"
    ```
 
    The first command must print `0`. Anything else means another
@@ -408,7 +408,7 @@ adds, beside [the discovery map commit](#commit-the-discovery-map).
 
    ```bash
    gh issue edit <i> --remove-assignee @me
-   gh project item-edit <n> --owner <owner> --url <url> --field Status --value Todo
+   gh project item-edit <project> --owner <owner> --url <url> --field Status --value Todo
    ```
 
 ### Import the glossary checkpoint
@@ -533,7 +533,7 @@ them in this run.
 2. When a story is ready, print:
 
    ```text
-   Picked #<n>: <title>, the first ready story under #<p>.
+   Picked #<i>: <title>, the first ready story under #<p>.
    ```
 
    That story is `<i>`. Go on from *Start* step 3, the blocker read,
@@ -858,9 +858,9 @@ reason: The tests fail on main before any change.
 
 A done report's evidence lists the commits you made, and the pull request
 when you opened or changed it. For shape, its first line is the issue,
-as `issue #<n>: <title>`, or the parent, as `epic #<p>: <title>`, with a
-`story #<n>: <title>` line for each story. For review plan, its first
-line is the verdict and the commit reviewed, as
+as `issue #<i>: <title>`, or the parent, as `epic #<p>: <title>`, with a
+`story #<story>: <title>` line for each story. For review plan, its
+first line is the verdict and the commit reviewed, as
 `Plan review: <verdict> for <sha>`. Write the report last. Quote a line that
 holds `#` or `: `. Put no other step-report block in the message.
 ````
@@ -919,9 +919,9 @@ and a glossary holding branch that `lets-shape` makes are allowed. End on
 the branch <default>, with a clean tree, except `openspec/discovery.md`
 when discovery ran.
 
-A done report's first evidence line is `issue #<n>: <title>` for one
+A done report's first evidence line is `issue #<i>: <title>` for one
 issue. When discovery filed stories, it is `epic #<p>: <title>`, then one
-`story #<n>: <title>` line per story, in the order you created them.
+`story #<story>: <title>` line per story, in the order you created them.
 When discovery found that the whole run fits one story, the parent became
 that story: use the `issue` form.
 ```
@@ -1005,10 +1005,10 @@ Read `outcome` from `.workspace/lets-go/<name>-<step>-report.json`.
 A shape step's `done` report must name what it shaped. Its first
 evidence line is one of these:
 
-- `issue #<n>: <title>`: one issue, and `<n>` is `<i>`.
+- `issue #<i>: <title>`: one issue, `<i>`.
 - `epic #<p>: <title>`: the parent issue of a discovery, and `<p>` is its
-  number. Each `story #<n>: <title>` line after it names one story, in
-  the order discovery created them.
+  number. Each `story #<story>: <title>` line after it names one
+  story, in the order discovery created them.
 
 When the first line is in neither form, the report is `failed`, and its
 reason is that the shape step named no issue. When it is an `epic` line
