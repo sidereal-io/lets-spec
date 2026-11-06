@@ -323,6 +323,27 @@ skill_has_section() {
   grep -qxF "${heading[@]}" -- "${files[@]}" || { echo "$1 has no heading: $2"; return 1; }
 }
 
+# steps_in_one_table <skill>: plan, review-plan, build and review-build each
+# have one row, a line that starts | `<step>` |, and all four rows sit in one
+# table, a run of lines that start with |, in one file of the skill.
+steps_in_one_table() {
+  local files rows step count wrong=()
+  mapfile -t files < <(skill_files "$1")
+  # Each step row, as <step>, a tab, and <file>:<table>.
+  rows="$(awk '
+    FNR == 1 { table = 0; inside = 0 }
+    !/^\|/ { inside = 0; next }
+    !inside { table++; inside = 1 }
+    match($0, /^\| `[a-z-]+` \|/) { print substr($0, 4, RLENGTH - 6) "\t" FILENAME ":" table }' "${files[@]}")"
+  for step in plan review-plan build review-build; do
+    count="$(grep -c "^$step"$'\t' <<<"$rows" || true)"
+    [ "$count" -eq 1 ] || wrong+=("$step has $count rows")
+  done
+  count="$(grep -E $'^(plan|review-plan|build|review-build)\t' <<<"$rows" | cut -f2 | sort -u | wc -l)"
+  [ "$count" -le 1 ] || wrong+=("the steps sit in $count tables")
+  [ "${#wrong[@]}" -eq 0 ] || { printf '%s step table: %s\n' "$1" "${wrong[@]}"; return 1; }
+}
+
 # fixture_file <skill> <path> <line>...: writes the lines to the file in a
 # skills folder under the test's temporary folder, gives the skill a SKILL.md
 # if it has none, and points the helpers at that folder.
@@ -449,10 +470,37 @@ fixture_file() {
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
-@test "lets-go keeps its steps in one table, under the pinned header" {
-  skill_says lets-go '| Step | Skill | Done when | Record | Skip line |'
-  run grep -cxF '| Step | Skill | Done when | Record | Skip line |' "$repo/skills/lets-go/SKILL.md"
-  [ "$output" -eq 1 ] || { echo "lets-go has $output step tables"; false; }
+# step_table_fixture <header> <row>...: a lets-go fixture whose SKILL.md
+# holds one table, with the header, its divider line and the rows.
+step_table_fixture() {
+  fixture_file lets-go SKILL.md '# lets-go' '' "$1" '|---|---|---|---|' "${@:2}" '' 'Text.'
+}
+
+@test "the step table check passes a table with another header and no shape row" {
+  step_table_fixture '| Step | Skill | Record | Skip line |' \
+    '| `plan` | a | b | c |' '| `review-plan` | a | b | c |' '| `build` | a | b | c |' '| `review-build` | a | b | c |'
+  steps_in_one_table lets-go
+}
+
+@test "the step table check names a step with two rows" {
+  step_table_fixture '| Step | Skill | Record | Skip line |' \
+    '| `plan` | a | b | c |' '| `review-plan` | a | b | c |' '| `build` | a | b | c |' '| `build` | d | e | f |' \
+    '| `review-build` | a | b | c |'
+  run steps_in_one_table lets-go
+  [ "$status" -eq 1 ] || { echo "it passed on two build rows"; false; }
+  [[ "$output" == *'build has 2 rows'* ]] || { echo "it said: $output"; false; }
+}
+
+@test "the step table check fails when the steps sit in two tables" {
+  step_table_fixture '| Step | Skill | Record | Skip line |' '| `plan` | a | b | c |' '| `review-plan` | a | b | c |'
+  fixture_file lets-go references/build.md '| Step | Skill |' '|---|---|' '| `build` | a |' '| `review-build` | a |'
+  run steps_in_one_table lets-go
+  [ "$status" -eq 1 ] || { echo "it passed on steps in two tables"; false; }
+  [[ "$output" == *'the steps sit in 2 tables'* ]] || { echo "it said: $output"; false; }
+}
+
+@test "lets-go keeps its steps in one table" {
+  steps_in_one_table lets-go
 }
 
 @test "lets-go's review plan row runs the lets-review-plan skill" {
