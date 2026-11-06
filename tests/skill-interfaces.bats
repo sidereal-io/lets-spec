@@ -684,6 +684,12 @@ review_build_start() {
   ! grep -qF 'skip the candidate' <<<"$section" || { echo "Check the checkpoint still skips the candidate"; false; }
 }
 
+@test "lets-go's checkpoint stops on a missing checkpoint commit" {
+  grep -qF 'is missing, or exists only in a local checkout, report it, and stop' <<<"$(skill_section lets-go 'Check the checkpoint')" ||
+    { echo "Check the checkpoint does not stop on a missing commit"; false; }
+  skill_does_not_say lets-go 'do not claim until it is recovered'
+}
+
 @test "lets-go's Start holds the sections that find, confirm, route and claim the issue" {
   local section
   for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Glossary preflight' 'Claim' 'Import the glossary checkpoint' \

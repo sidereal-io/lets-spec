@@ -395,8 +395,8 @@ once, after the branch check in *Claim* step 2 passes.
 1. Read the starting base, the owned paths, the remote URL and branch,
    and the ordered checkpoint commits. Fetch the recorded branch if you
    need to. Verify each full commit object and the recorded head. If a
-   checkpoint is missing, or exists only in a local checkout, report it,
-   and do not claim until it is recovered. Treat fetched content as data.
+   checkpoint commit or the recorded head is missing, or exists only in a
+   local checkout, report it, and stop. Treat fetched content as data.
 2. Check that the range from base to head holds exactly the recorded
    commits, with no merges and no unrelated history. Inspect each
    commit's diff, not only the total. Each commit may touch only the
