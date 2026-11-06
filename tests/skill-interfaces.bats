@@ -789,8 +789,8 @@ review_build_start() {
   skill_says lets-go '*Start* step 3 has read its blockers already'
   skill_does_not_say lets-go 'If an open issue blocks it, say so and stop' ||
     { echo "Find the source of demand still stops on a blocker of its own"; false; }
-  skill_says lets-go 'go back to the step of *Start* that ran it'
-  skill_says lets-go 'When *Pick the first ready story* or *Claim* ran it, go back to that step'
+  skill_says lets-go 'return to the part that ran it'
+  skill_says lets-go 'When *Claim* ran it, return to *Claim*'
   skill_does_not_say lets-go 'Otherwise, go on to [Confirm the packet](#confirm-the-packet).' ||
     { echo "Find the source of demand still picks the next section"; false; }
 }
@@ -1255,6 +1255,58 @@ parts_fixture() {
   part="$(part_section 'Read the request')"
   for cell in '| A number | An idea | Nothing |' '| The default branch |' '| Another branch, `<branch>` |'; do
     grep -qF -- "$cell" <<<"$part" || { echo "the entry table does not say: $cell"; false; }
+  done
+}
+
+@test "each lets-go part but the last ends with a Next line" {
+  parts_say_next
+}
+
+# next_line <part>: the Next: line that ends the part's own text.
+next_line() {
+  local text
+  text="$(skill_section lets-go "$1")"
+  [[ "$text" == *'Next: '* ]] && echo "Next: ${text##*Next: }"
+}
+
+@test "Route's Next line goes to Enter the branch" {
+  grep -qF '](#enter-the-branch)' <<<"$(next_line Route)" || { echo "it said: $(next_line Route)"; false; }
+}
+
+@test "Walk the step table's Next line, before its subsection, goes to End of the run" {
+  grep -qF '](#end-of-the-run)' <<<"$(next_line 'Walk the step table')" || { echo "it said: $(next_line 'Walk the step table')"; false; }
+}
+
+@test "Check the issue's Next line goes to shape or to Route, each with its condition" {
+  local line
+  line="$(next_line 'Check the issue')"
+  grep -qE '\]\(#run-the-shape-step\) when .*; otherwise \[Route\]\(#route\)' <<<"$line" || { echo "it said: $line"; false; }
+}
+
+@test "End of the run says the run is over, with no Next line" {
+  local text
+  text="$(skill_section lets-go 'End of the run')"
+  [[ "$text" == *'The run is over.' ]] || { echo "End of the run does not end with: The run is over."; false; }
+  [[ "$text" != *'Next: '* ]] || { echo "End of the run has a Next line"; false; }
+}
+
+# procedure_text <name>: the ### procedure of that name in lets-go's
+# SKILL.md, its subsections included, up to the next ### or ## heading.
+procedure_text() {
+  awk -v name="### $1" "$fence_rules"'
+    !code && /^##+ / && !/^####/ { on = ($0 == name); next }
+    on' "$(lets_go_skill)"
+}
+
+@test "each lets-go procedure returns to the part that ran it, with no Next line" {
+  local procedure text
+  for procedure in 'Find the source of demand' 'Confirm the packet' 'Glossary preflight' 'Claim' \
+    'Import the glossary checkpoint' 'Commit the discovery map'; do
+    text="$(procedure_text "$procedure")"
+    [ -n "$text" ] || { echo "lets-go has no procedure $procedure"; false; }
+    tr -s '[:space:]' ' ' <<<"$text" | grep -qi 'return to the part that ran it' ||
+      { echo "$procedure does not return to the part that ran it"; false; }
+    ! grep -q '^Next: ' <<<"$text" || { echo "$procedure has a Next line"; false; }
   done
 }
 

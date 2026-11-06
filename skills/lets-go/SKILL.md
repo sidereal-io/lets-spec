@@ -101,6 +101,8 @@ default branch with
 `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`,
 and run `git branch --show-current`.
 
+Next: [Read the request](#read-the-request).
+
 ## Read the request
 
 Read the request. A leading or trailing `ask` or `recommend` names
@@ -141,6 +143,9 @@ that `lets-go` runs on the default branch or on a change's branch, and
 needs the issue number on a change's branch. Stop. If several match,
 say that `lets-go` needs the issue number, and stop.
 
+Next: [Check the issue](#check-the-issue) when the entry table found `<i>`;
+[Start from an idea](#start-from-an-idea) for an idea on the default branch.
+
 ## Start from an idea
 
 1. Look for a discovery of this idea that an earlier run started. Use
@@ -165,6 +170,9 @@ say that `lets-go` needs the issue number, and stop.
 4. On a no, or when nothing matches, set aside that case's stop, which
    says to run `lets-shape`.
    [Run the shape step](#run-the-shape-step) for the idea.
+
+Next: [Check the issue](#check-the-issue) when the user says an issue is the
+same work; otherwise [Run the shape step](#run-the-shape-step).
 
 ## Check the issue
 
@@ -222,6 +230,9 @@ say that `lets-go` needs the issue number, and stop.
    gh issue view <i> --json createdAt --jq .createdAt
    ```
 
+Next: [Run the shape step](#run-the-shape-step) when a stop of *Confirm the
+packet* was set aside for shape; otherwise [Route](#route).
+
 ## Run the shape step
 
 The shape step turns an idea, or an issue whose packet is not complete,
@@ -270,6 +281,10 @@ stands.
    - **A parent and its stories:**
      [pick the first ready story](#pick-the-first-ready-story).
 
+Next: [Check the issue](#check-the-issue) when shape shaped one issue;
+[Pick the first ready story](#pick-the-first-ready-story) when it filed a
+parent and its stories.
+
 ## Pick the first ready story
 
 Discovery filed a parent issue, `#<parent>`, and its stories. Build one
@@ -306,6 +321,8 @@ as it is: running `lets-go` again with the same idea, or `#<i>`, resumes
 the discovery and keeps its edits. Otherwise, say to commit or discard
 the map before the next run, because the next run stops on it.
 
+Next: [Check the issue](#check-the-issue), with the story that is ready.
+
 ## Route
 
 Pick the schema for the change. Top down, first match wins:
@@ -324,6 +341,8 @@ which schema and why in one line, such as
 proposal commit message.
 
 Keep the route line: the plan step needs it.
+
+Next: [Enter the branch](#enter-the-branch).
 
 ## Enter the branch
 
@@ -363,6 +382,8 @@ Keep the route line: the plan step needs it.
    it is that file's `schema:` line. Otherwise it is the schema *Route*
    picked.
 
+Next: [Set the level](#set-the-level).
+
 ## Set the level
 
 Set `<level>`, the interactivity level. Take the first of these
@@ -388,8 +409,9 @@ recommendation, and asks the user the rest. At `ask`, it asks the
 user every question.
 
 *Start* runs in this session. It is not a step, and has no step report.
-The shape step it runs is a step, and has a report. After
-*Start*, [walk the step table](#walk-the-step-table).
+The shape step it runs is a step, and has a report.
+
+Next: [Walk the step table](#walk-the-step-table).
 
 ## Walk the step table
 
@@ -474,7 +496,7 @@ Then settle the row:
   [read its report](#read-the-report), which says what to print and
   whether the walk goes on.
 
-When no row is left, go to [End of the run](#end-of-the-run).
+Next: [End of the run](#end-of-the-run), when no row is left.
 
 ### Records that disagree
 
@@ -543,6 +565,8 @@ gh pr view <name> --json url --jq .url
 
 `lets-go` keeps no state of its own. Its files in `.workspace/lets-go/`
 are scratch: without them, a new run reaches the same step.
+
+The run is over.
 
 ## Procedures
 
@@ -622,9 +646,9 @@ rank order. Fetching, the commit checks and the rehearsal wait for
 an unresolved prerequisite. If none is left, say the backlog has
 nothing ready, suggest the `lets-shape` skill, and stop, without picking
 a candidate or confirming a packet. For a named issue, report the
-unresolved owner or checkpoint, and stop. Otherwise, go back to the
-step of *Start* that ran it. When *Pick the first ready story* or
-*Claim* ran it, go back to that step: each says what comes next.
+unresolved owner or checkpoint, and stop. Otherwise, return to the part
+that ran it. When *Claim* ran it, return to *Claim*: it says what comes
+next.
 
 ### Confirm the packet
 
@@ -670,6 +694,8 @@ a comment says. Say to run the `lets-shape` skill on `#<i>`, and stop.
 For a Story with a parent, read the parent's **Shared decisions**
 section, when it has one: `gh issue view <parent> --json body`. *Route*
 needs it.
+
+Return to the part that ran it.
 
 ### Glossary preflight
 
@@ -738,6 +764,8 @@ A stop repairs nothing, and leaves user edits as they are.
 The verified glossary import is the only implementation step this skill
 adds, beside [the discovery map commit](#commit-the-discovery-map).
 
+Return to the part that ran it.
+
 ### Claim
 
 1. Name the change after the issue title. Every Kind's title is
@@ -770,6 +798,8 @@ adds, beside [the discovery map commit](#commit-the-discovery-map).
    gh project item-edit <project> --owner <owner> --url <issue-url> --field Status --value Todo
    ```
 
+When the branch exists, return to the part that ran it.
+
 ### Import the glossary checkpoint
 
 Run this section only when [Glossary preflight](#glossary-preflight)
@@ -786,6 +816,8 @@ and no new claim.
 2. In the issue's **Glossary handoff**, record the destination branch, the
    resulting commits and, once it exists, the pull request.
 3. Keep the holding branch until the destination holds the edits.
+
+When the import succeeds, return to the part that ran it.
 
 #### Recover from a failed import
 
@@ -821,6 +853,8 @@ git commit -m "docs: the discovery map from #<parent>" -- openspec/discovery.md
 `<parent>` is the parent's number, or the story's when the parent
 became the one story. Commit no other path. This is the one commit
 `lets-go` makes itself, beside the glossary import.
+
+Return to the part that ran it.
 
 ## The step table
 
