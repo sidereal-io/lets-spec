@@ -691,25 +691,25 @@ review_build_start() {
   skill_does_not_say lets-go 'Go on with the normal packet, blocker and routing checks'
 }
 
-@test "lets-go's checkpoint stops on an unresolved prerequisite, even for a next pick" {
+@test "lets-go's checkpoint returns unresolved on an unresolved prerequisite, even for a next pick" {
   local section
   section="$(skill_section lets-go 'Check the checkpoint')"
-  grep -qF 'When that run finds an unresolved prerequisite, report it, and stop, claiming nothing' <<<"$section" ||
-    { echo "Check the checkpoint does not stop on an unresolved prerequisite"; false; }
+  grep -qF 'When that run returns `unresolved`, return `unresolved`, claiming nothing' <<<"$section" ||
+    { echo "Check the checkpoint does not return unresolved on an unresolved prerequisite"; false; }
   grep -qF 'even for an issue that `next` picked' <<<"$section" ||
-    { echo "Check the checkpoint does not stop for a next pick"; false; }
+    { echo "Check the checkpoint does not return unresolved for a next pick"; false; }
   ! grep -qF 'skip the candidate' <<<"$section" || { echo "Check the checkpoint still skips the candidate"; false; }
 }
 
-@test "lets-go's checkpoint stops on a missing checkpoint commit" {
-  grep -qF 'is missing, or exists only in a local checkout, report it, and stop' <<<"$(skill_section lets-go 'Check the checkpoint')" ||
-    { echo "Check the checkpoint does not stop on a missing commit"; false; }
+@test "lets-go's checkpoint fails on a missing checkpoint commit" {
+  grep -qF 'is missing, or exists only in a local checkout, return `checkpoint-failed`, with what is missing' <<<"$(skill_section lets-go 'Check the checkpoint')" ||
+    { echo "Check the checkpoint does not fail on a missing commit"; false; }
   skill_does_not_say lets-go 'do not claim until it is recovered'
 }
 
-@test "lets-go's checkpoint stops on a conflicting patch, repairing nothing" {
-  grep -qF 'report the conflict, and stop, repairing nothing' <<<"$(skill_section lets-go 'Check the checkpoint')" ||
-    { echo "Check the checkpoint does not stop on a conflicting patch"; false; }
+@test "lets-go's checkpoint fails on a conflicting patch, repairing nothing" {
+  grep -qF 'return `checkpoint-failed`, with the conflict, repairing nothing' <<<"$(skill_section lets-go 'Check the checkpoint')" ||
+    { echo "Check the checkpoint does not fail on a conflicting patch"; false; }
   skill_does_not_say lets-go 'Resolve a partial or conflicting patch'
 }
 
@@ -718,14 +718,44 @@ review_build_start() {
     { echo "Check the checkpoint does not skip an edit already present"; false; }
 }
 
-@test "lets-go's checkpoint stops where each of its other checks fails" {
-  local section stop
+@test "lets-go's checkpoint fails where each of its other checks fails" {
+  local section failure
   section="$(skill_section lets-go 'Check the checkpoint')"
-  for stop in 'or a commit that touches another path, report what you found, and stop' \
-    'If that context is missing from the proposed base, report it, and stop' \
-    'If the owned paths do not match the shaping baseline, report what differs, and stop'; do
-    grep -qF -- "$stop" <<<"$section" || { echo "Check the checkpoint does not say: $stop"; false; }
+  for failure in 'or a commit that touches another path, return `checkpoint-failed`, with what you found' \
+    'If that context is missing from the proposed base, return `checkpoint-failed`, with what is missing' \
+    'If the owned paths do not match the shaping baseline, return `checkpoint-failed`, with what differs'; do
+    grep -qF -- "$failure" <<<"$section" || { echo "Check the checkpoint does not say: $failure"; false; }
   done
+}
+
+@test "the glossary checkpoint and prerequisite say no stop" {
+  procedure_stops 'Glossary preflight'
+}
+
+@test "Check the prerequisite returns resolved or unresolved" {
+  local section result
+  section="$(skill_section lets-go 'Check the prerequisite')"
+  for result in resolved unresolved; do
+    grep -qF -- "\`$result\`" <<<"$section" || { echo "Check the prerequisite does not return: $result"; false; }
+  done
+}
+
+@test "Check the checkpoint lists its results" {
+  local section result
+  section="$(skill_section lets-go 'Check the checkpoint')"
+  for result in verified checkpoint-failed unresolved; do
+    grep -qF -- "- \`$result\`:" <<<"$section" || { echo "Check the checkpoint does not list: $result"; false; }
+  done
+}
+
+@test "Glossary preflight lists its results after its prerequisite and checkpoint" {
+  local section result
+  section="$(skill_section lets-go 'What the preflight returns')"
+  for result in no-owned-edits verified unresolved checkpoint-failed; do
+    grep -qF -- "- \`$result\`:" <<<"$section" || { echo "Glossary preflight does not list: $result"; false; }
+  done
+  grep -qF '`verified`: the story owns the edits, and *Check the checkpoint* returned `verified`. It carries the checkpoint commits' <<<"$section" ||
+    { echo "verified does not carry the checkpoint commits"; false; }
 }
 
 @test "lets-go holds the sections that find, confirm, route and claim the issue" {
