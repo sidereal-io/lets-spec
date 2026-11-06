@@ -932,12 +932,12 @@ placeholders_listed_once() {
   [ "${#wrong[@]}" -eq 0 ] || { printf 'the Placeholders table: %s\n' "${wrong[@]}"; return 1; }
 }
 
-# prose_placeholders <file>: each placeholder outside fenced code and inline
-# code spans, as <line>: <placeholder>. GitHub reads one there as an HTML
-# tag. A fence closes only on a line of its own character, at least as long
-# as the line that opened it, so a four-backtick fence holds three-backtick
-# ones. A code span closes on a run of as many backticks as opened it.
-prose_placeholders() {
+# prose_text <file>: each line's text outside fenced code and inline code
+# spans, as <line>: <prose>. A fence closes only on a line of its own
+# character, at least as long as the line that opened it, so a four-backtick
+# fence holds three-backtick ones. A code span closes on a run of as many
+# backticks as opened it.
+prose_text() {
   awk '
     function run(s, i,   n) { n = 0; while (substr(s, i + n, 1) == "`") n++; return n }
     fence == "" && match($0, /^ *(```+|~~~+)/) {
@@ -961,10 +961,19 @@ prose_placeholders() {
         if (span == 0) text = text c
         i++
       }
-      while (match(text, /<[A-Za-z][^<>]*>/)) {
-        print NR ": " substr(text, RSTART, RLENGTH); text = substr(text, RSTART + RLENGTH)
-      }
+      print NR ": " text
     }' "$1"
+}
+
+# prose_placeholders <file>: each placeholder in the prose_text of the file,
+# as <line>: <placeholder>. GitHub reads one there as an HTML tag.
+prose_placeholders() {
+  prose_text "$1" | awk '{
+    line = $0; sub(/:.*/, "", line); text = substr($0, length(line) + 3)
+    while (match(text, /<[A-Za-z][^<>]*>/)) {
+      print line ": " substr(text, RSTART, RLENGTH); text = substr(text, RSTART + RLENGTH)
+    }
+  }'
 }
 
 # skill_prose_placeholders <skill>: prose_placeholders for each of the
@@ -975,6 +984,24 @@ skill_prose_placeholders() {
   while IFS= read -r file; do
     prose_placeholders "$file" | sed "s|^|${file#"${skills_dir:-$repo/skills}/"}:|"
   done < <(skill_files "$1")
+}
+
+# step_numbers <skill>: each step or steps followed by a number, in any case,
+# in the prose_text of each of the skill's files, as <file>:<line>: <match>,
+# the file under the skills folder. A number shifts when a step is added, so
+# a reference names the part instead.
+step_numbers() {
+  local file out
+  out="$(skill_files "$1" | while IFS= read -r file; do
+    prose_text "$file" | awk -v name="${file#"${skills_dir:-$repo/skills}/"}" '{
+      line = $0; sub(/:.*/, "", line); text = substr($0, length(line) + 3)
+      while (match(tolower(text), /(^|[^a-z])steps? [0-9]+/)) {
+        found = substr(text, RSTART, RLENGTH); sub(/^[^A-Za-z]/, "", found)
+        print name ":" line ": " found; text = substr(text, RSTART + RLENGTH)
+      }
+    }'
+  done)"
+  [ -z "$out" ] || { echo "$out"; return 1; }
 }
 
 @test "lets-go writes no placeholder outside code" {
@@ -1000,6 +1027,23 @@ skill_prose_placeholders() {
   printf '%s\n' 'Write `` `#<i>` `` here, not <bare>.' >"$file"
   run prose_placeholders "$file"
   [ "$output" = '1: <bare>' ] || { echo "it found: $output"; false; }
+}
+
+@test "the step number check names the file and the step it finds" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'Go on from *Claim* step 3.'
+  run step_numbers lets-go
+  [ "$status" -eq 1 ] || { echo "it passed on a step number"; false; }
+  [ "$output" = 'lets-go/SKILL.md:3: step 3' ] || { echo "it found: $output"; false; }
+}
+
+@test "the step number check passes a numbered list" {
+  fixture_file lets-go SKILL.md '# lets-go' '## Run' '1. Read.' '2. Check.' '3. Claim.' '4. Stop.'
+  step_numbers lets-go
+}
+
+@test "the step number check skips a step number inside a code span" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'Old skills said `step 3` here.'
+  step_numbers lets-go
 }
 
 # readme_lets_go: the README's lets-go section, on one line.
