@@ -21,7 +21,7 @@ These tasks change `skills/lets-go/SKILL.md` and its tests. Build the new layout
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [medium] Nothing the plan did not name has changed. Diff the old `SKILL.md` (at this change's base, `origin/lets-go-checkpoint-steps`) and the new one sentence by sentence. Put one sentence per line, then use `sort` and `comm`. Account for every changed sentence in the Deviations Ledger or by a task above. The whole suite and the flake pass, and so does strict validation (verify: pnpm test && nix flake check && openspec validate lets-go-run-at-a-glance --strict)
+- [x] 3.1 [medium] Nothing the plan did not name has changed. Diff the old `SKILL.md` (at this change's base, `origin/lets-go-checkpoint-steps`) and the new one sentence by sentence. Put one sentence per line, then use `sort` and `comm`. Account for every changed sentence in the Deviations Ledger or by a task above. The whole suite and the flake pass, and so does strict validation (verify: pnpm test && nix flake check && openspec validate lets-go-run-at-a-glance --strict) (✓ pnpm test, nix flake check and openspec validate lets-go-run-at-a-glance --strict passed; sentence comparison accounted for)
 
 ## Deviations Ledger
 
@@ -31,3 +31,4 @@ These tasks change `skills/lets-go/SKILL.md` and its tests. Build the new layout
 - 2026-11-05, 2.4: *Run the shape step* also said "an earlier run stopped part way". It now says "stopped before it finished", as the opening paragraphs do, so "part" keeps its one meaning. *Check the issue* says "before anything else in this part", not "in this step", for the same reason.
 - 2026-11-05, 2.3: the blocker-order test lost its check that *Start* step 3 ends with `go on to step 4.`. It now checks that *Check the issue* says `When the section passes, go on to *Confirm the packet*`. The two `skill_says` phrases about returning changed in 2.3, with the sentence they pin.
 - 2026-11-06, 2.5: the `<step>` row of `## Placeholders` said the step table's row sets it. Shape has no row now, so the row adds `` `shape` in [Run the shape step](#run-the-shape-step) ``. The `**Shape.**` bullet in *Read the records* stays: it says where shape's skip line is dated.
+- 2026-11-06, 3.1: the sentence comparison against `origin/lets-go-checkpoint-steps` found 65 removed and 111 added sentences. Each one is a moved heading, a row of the overview, entry or placeholders table, a `Next:` or return line, a D-5 rewrite, B7, the Project query rule, or a note above. Nothing else changed.
