@@ -65,7 +65,7 @@ sets it.
 | `<shape-name>` | The shape step's name: `issue-<i>` or `idea-<slug>` | [The change's name](#the-changes-name) |
 | `<slug>` | The first five words of the idea, as [The change's name](#the-changes-name) makes them | [The change's name](#the-changes-name) |
 | `<idea>` | The idea, in the user's words | [Read the request](#read-the-request) |
-| `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs |
+| `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs, or `shape` in [Run the shape step](#run-the-shape-step) |
 | `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
 | `<level>` | The interactivity level, `ask` or `recommend` | [Set the level](#set-the-level), or [Run the shape step](#run-the-shape-step), before shape |
 | `<Kind>` | The issue's Kind on the Project | *Confirm the packet* |
@@ -442,10 +442,10 @@ records first, in this order:
      `lets-standard`, and the pull request's `body` has no `Code review`
      section.
 
-Then walk [The step table](#the-step-table) from the top row. At each
-row, find out whether the step is done:
+Then walk [The step table](#the-step-table) from the top row.
+*Check the issue* has printed shape's line already. At each row, find
+out whether the step is done:
 
-- **Shape.** When *Check the issue* passed *Confirm the packet*, shape is done.
 - **Plan.** When the archive folder exists, plan is done. When
   `openspec/changes/<name>/` does not exist, plan is not done.
   Otherwise run `openspec instructions apply --change <name> --json`,
@@ -490,8 +490,7 @@ in this walk changes the records the next row reads.
 Then settle the row:
 
 - **Done:** print its Skip line from the table, filled from
-  [Read the records](#read-the-records). *Check the issue* has printed
-  shape's line already. Go on to the next row.
+  [Read the records](#read-the-records). Go on to the next row.
 - **Not done:** run the step, as [Run a step](#run-a-step) says. Then
   [read its report](#read-the-report), which says what to print and
   whether the walk goes on.
@@ -865,9 +864,11 @@ and review build. Prose and printed lines use these names. `--for`,
 `build` and `review-build`. `<step>` is one of these.
 
 Shape runs only before the walk, as
-[Run the shape step](#run-the-shape-step) says. Every other step runs in
-a fresh session, as [Run a step](#run-a-step) says. On `lets-minimal`,
-review plan never runs.
+[Run the shape step](#run-the-shape-step) says, so this table has no row
+for it. Its skill is in [What shape runs](#what-shape-runs), and
+*Check the issue* prints its line. The walk runs the other four steps.
+Every other step runs in a fresh session, as [Run a step](#run-a-step)
+says. On `lets-minimal`, review plan never runs.
 
 Each row says which skill the step runs, when the step is done, which
 record shows it, and the line to print when it was done before this run.
@@ -876,7 +877,6 @@ The state is the `state` that
 
 | Step | Skill | Done when | Record | Skip line |
 |---|---|---|---|---|
-| `shape` | the `lets-shape` skill, as [What shape runs](#what-shape-runs) says | *Confirm the packet* passes | The issue's last edit | `Skipped shape: #<i>'s packet is complete, last edited <date>.` |
 | `plan` | the `lets-plan` skill | The state is `ready` or `all_done`, or the archive folder exists | The commit that added `tasks.md` | `Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).` |
 | `review-plan` | the `lets-review-plan` skill | The **Plan review** section covers the plan. On `lets-minimal`, plan is done | The section's `Reviewed:` commit | `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.` On `lets-minimal`: `Skipped review plan: not in the lets-minimal route.` |
 | `build` | the `lets-build` skill | The state is `all_done`, or the archive folder exists | The last commit that changed `tasks.md` | `Skipped build: every task is ticked, last task commit <date> (<sha>).` |

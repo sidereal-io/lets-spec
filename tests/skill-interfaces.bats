@@ -1346,6 +1346,18 @@ walk_section() {
   done
 }
 
+@test "the walk has no shape row" {
+  ! grep -qF -- '**Shape.**' <<<"$(skill_section lets-go 'Walk the step table')" || { echo "the walk still has a shape row"; false; }
+}
+
+@test "Check the issue prints shape's line before the walk" {
+  local part line
+  part="$(part_section 'Check the issue')"
+  for line in "Skipped shape: #<i>'s packet is complete, last edited <date>." 'Done shape: <date>. <evidence>'; do
+    grep -qF -- "$line" <<<"$part" || { echo "Check the issue does not print: $line"; false; }
+  done
+}
+
 @test "a review plan step that ran prints its line from its report" {
   local phrase
   skill_says lets-go 'Done review plan: <date>. <evidence>'
