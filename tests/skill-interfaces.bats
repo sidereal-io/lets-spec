@@ -1158,6 +1158,39 @@ parts_say_next() {
   [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
 }
 
+# anchors_resolve <skill>: each ](#<anchor>) link outside code, in each of
+# the skill's files, is the anchor of one of that file's own headings. Prints
+# each one that is not as <file>: #<anchor>, the file under the skills folder.
+anchors_resolve() {
+  local file name anchors anchor out=""
+  while IFS= read -r file; do
+    name="${file#"${skills_dir:-$repo/skills}/"}"
+    anchors="$(awk "$fence_rules"' !code && /^#+ / { sub(/^#+ /, ""); print }' "$file" |
+      while IFS= read -r heading; do heading_anchor "$heading"; echo; done)"
+    while IFS= read -r anchor; do
+      grep -qxF -- "$anchor" <<<"$anchors" || out+="$name: #$anchor"$'\n'
+    done < <(prose_text "$file" | grep -oE '\]\(#[^)]*\)' | sed -E 's/^\]\(#//; s/\)$//' | sort -u)
+  done < <(skill_files "$1")
+  [ -z "$out" ] || { printf '%s' "$out"; return 1; }
+}
+
+@test "the link check names a link to a heading that is gone" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'Go back to [Start](#start).'
+  run anchors_resolve lets-go
+  [ "$status" -eq 1 ] || { echo "it passed on a link to no heading"; false; }
+  [ "$output" = 'lets-go/SKILL.md: #start' ] || { echo "it said: $output"; false; }
+}
+
+@test "the link check drops punctuation from a heading's anchor" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'See [the name](#the-changes-name).' '' "### The change's name" '' 'Text.'
+  anchors_resolve lets-go
+}
+
+@test "the link check reads a reference file against its own headings" {
+  fixture_file lets-go references/glossary-preflight.md '## Check the prerequisite' '' 'Run [Check the prerequisite](#check-the-prerequisite) again.'
+  anchors_resolve lets-go
+}
+
 # parts_fixture [<option>=<part>]...: a lets-go fixture SKILL.md with an
 # overview row and a heading for each part, then ## Placeholders. Each part
 # but End of the run ends with a Next: line. no_row=<part> leaves out its
