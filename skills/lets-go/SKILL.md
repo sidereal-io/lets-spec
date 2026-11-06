@@ -1,13 +1,13 @@
 ---
 name: lets-go
-description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Given nothing, it takes the next ready issue on the backlog. Start claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, plan, review plan, build and review build each run in a fresh session. lets-minimal skips review plan. Every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation. A story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch, it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, or wants to start the next story. Also use when the user wants to carry on the change on the current branch, says lets-go, or runs it again after a run stopped.
+description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Given nothing, it takes the next ready issue on the backlog. It claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, plan, review plan, build and review build each run in a fresh session. lets-minimal skips review plan. Every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation. A story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch, it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, or wants to start the next story. Also use when the user wants to carry on the change on the current branch, says lets-go, or runs it again after a run stopped.
 ---
 
 # Let's go
 
 Take one story, bug or chore to a pull request ready for review, in one
 run. Start from its issue number, from an idea in words, or from
-nothing, which takes the next ready issue. *Start* claims the issue in
+nothing, which takes the next ready issue. The run claims the issue in
 this session. Then each step runs in a fresh session: shape when the
 issue needs it, then plan, review plan, build and review build.
 `lets-minimal` skips review plan. An idea too large for one issue runs
@@ -16,7 +16,7 @@ files. A step never asks the user: it ends with a report. This session
 answers the step's questions or asks the user, as the interactivity
 level says. Run every command below from the repo root.
 
-A run can stop part way. Run `lets-go` again, on the default branch or
+A run can stop before it finishes. Run `lets-go` again, on the default branch or
 on the change's branch. It reads from Git and GitHub which steps are
 done, prints a dated line for each, and goes on from the first
 unfinished step.
@@ -25,7 +25,9 @@ unfinished step.
 
 A run goes through these parts, in this order. *Start from an idea*,
 *Run the shape step* and *Pick the first ready story* run only when the
-request or the packet needs them.
+request or the packet needs them. Each part runs in this session. A
+part is not a step, and has no step report. The shape step that
+*Run the shape step* runs is a step, and has a report.
 
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
@@ -52,22 +54,22 @@ sets it.
 | `<project>` | The number of the Project linked to the repository | *Find the source of demand*, from the Project query |
 | `<owner>` | The Project's owner | *Find the source of demand*, from the Project query |
 | `<repo>` | The repository, as `owner/name` | *Find the source of demand*, from the Project query's `repo` |
-| `<i>` | The run's issue: the number the user named, the issue `next` or *Pick the first ready story* picked, or the issue a shape step shaped | *Start* step 2, or the shape step's report |
+| `<i>` | The run's issue: the number the user named, the issue `next` or *Pick the first ready story* picked, or the issue a shape step shaped | [Read the request](#read-the-request), or the shape step's report |
 | `<issue-url>` | The URL of `<i>` | *Confirm the packet*, from the issue's `url` |
 | `<parent>` | A parent issue: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in *Start from an idea* |
 | `<story>` | One story that a shape step's report names | Each `story` line of the shape report |
 | `<pr>` | The number of the change's pull request | *Read the records*, from the pull request's `number` |
-| `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | *Start* step 3, from the title. After a shape step, step 3 sets it again from the shaped issue's title |
-| `<branch>` | The branch the run started on, when it is not the default branch | *Start* step 1, from `git branch --show-current` |
-| `<default>` | The repository's default branch | *Start* step 1 |
+| `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | [Check the issue](#check-the-issue), from the blocker read's title. After a shape step, *Check the issue* sets it again from the shaped issue's title |
+| `<branch>` | The branch the run started on, when it is not the default branch | [Read the settings](#read-the-settings), from `git branch --show-current` |
+| `<default>` | The repository's default branch | [Read the settings](#read-the-settings) |
 | `<shape-name>` | The shape step's name: `issue-<i>` or `idea-<slug>` | [The change's name](#the-changes-name) |
 | `<slug>` | The first five words of the idea, as [The change's name](#the-changes-name) makes them | [The change's name](#the-changes-name) |
-| `<idea>` | The idea, in the user's words | *Start* step 2 |
+| `<idea>` | The idea, in the user's words | [Read the request](#read-the-request) |
 | `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs |
 | `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
-| `<level>` | The interactivity level, `ask` or `recommend` | *Start* step 10, or step 2 of [Run the shape step](#run-the-shape-step) |
+| `<level>` | The interactivity level, `ask` or `recommend` | [Set the level](#set-the-level), or [Run the shape step](#run-the-shape-step), before shape |
 | `<Kind>` | The issue's Kind on the Project | *Confirm the packet* |
-| `<schema>` | The change's schema | *Start* step 9 |
+| `<schema>` | The change's schema | [Enter the branch](#enter-the-branch) |
 | `<route line>` | The line *Route* says, such as `Route: lets-minimal, because #<i> is a Chore.` | [Route](#route) |
 | `<title>` | The title of the issue the line names | The command or report line that names the issue |
 | `<date>` | The date on a printed line | The line's own read: a report's `date`, a commit's author date, or the issue's last edit |
@@ -76,8 +78,8 @@ sets it.
 | `<evidence>` | A `done` report's `evidence`, joined with `; ` | [Read the report](#read-the-report) |
 | `<reason>` | A `failed` report's `reason` | [Read the report](#read-the-report) |
 | `<YYYY-MM-DD>` | The date in an archive folder's name | The folder's name in `openspec/changes/archive/` |
-| `<first>` | The first model of the ranked options | Step 3 of [Run a step](#run-a-step) |
-| `<second>` | The second model of the ranked options | Step 3 of [Run a step](#run-a-step) |
+| `<first>` | The first model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
+| `<second>` | The second model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
 | `<skill>` | The skill in the step's row of the step table | [Write the prompt](#write-the-prompt) |
 | `<the sentence above>` | The sentence for *What to run*, or for shape the text of [What shape runs](#what-shape-runs) | [Write the prompt](#write-the-prompt) |
 | `<kebab-name>` | The part of an issue title before ` — `, in `lets-shape`'s template | The issue's title |
@@ -106,8 +108,8 @@ Next: [Read the request](#read-the-request).
 ## Read the request
 
 Read the request. A leading or trailing `ask` or `recommend` names
-the level: take it off, and keep it for step 10. What is left is one
-of these:
+the level: take it off, and keep it for [Set the level](#set-the-level).
+What is left is one of these:
 - **A number:** it holds `#<i>`, or is a bare number. It names the
   issue.
 - **Words:** anything else. They are an idea, kept word for word.
@@ -165,8 +167,8 @@ Next: [Check the issue](#check-the-issue) when the entry table found `<i>`;
    the idea's words. Show the user the matches, and ask whether one is
    the same work. Ask at either level: a wrong yes builds someone else's
    issue.
-3. On a yes, that issue is `<i>`. Go on from *Start* step 3, the blocker
-   read.
+3. On a yes, that issue is `<i>`. Go on from the blocker read in
+   [Check the issue](#check-the-issue).
 4. On a no, or when nothing matches, set aside that case's stop, which
    says to run `lets-shape`.
    [Run the shape step](#run-the-shape-step) for the idea.
@@ -177,7 +179,7 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
 ## Check the issue
 
 1. Read the blockers of `<i>`, and decide on an open one before
-   anything else in this step:
+   anything else in this part:
 
    ```bash
    gh issue view <i> --json title,blockedBy
@@ -186,7 +188,8 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
    It gives the title too. `<name>` is the change's name, which *Claim*
    takes from the title. On a change's branch, it is `<branch>`. A
    blocker whose `state` is `OPEN` is open. When one is, look for the
-   change's branch before you stop, as step 7 does:
+   change's branch before you stop, as [Enter the branch](#enter-the-branch)
+   does:
    - **The branch exists**, here or on `origin`: the user has stacked it
      by hand. Name the open blockers by number, and go on. On a change's
      branch, the branch exists: you are on it.
@@ -198,7 +201,7 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
    runs. When it finds an unresolved owner or checkpoint, the
    prerequisite stop stands, even on a stacked branch: report it, and
    stop. Any other stop in that section stands as the section reports
-   it. When the section passes, go on to step 4.
+   it. When the section passes, go on to *Confirm the packet*, below.
 2. Run [Confirm the packet](#confirm-the-packet). Three of its stops say
    to run `lets-shape` on `#<i>`: the issue is not shaped, a line is
    missing or a placeholder, or comments are unread. On the default
@@ -248,7 +251,7 @@ stands.
    parent issue that says `Discovery status: in-progress`, and whose
    `Input:` line names this input, the idea's words or `#<i>`. For an
    idea, use what *Start from an idea* found. For an issue, run the
-   query in step 1 of *Start from an idea*.
+   query in *Start from an idea*.
    - **There is one:** the edits are that discovery's confirmed phases.
      Go on: the step resumes it, and its map commit takes them.
    - **There is none:** say that the map has uncommitted edits, and to
@@ -258,8 +261,8 @@ stands.
    first of these that is set:
    1. The level the user named. Its line is
       `Interactivity: <level>, because you asked for it.`
-   2. The level `lets go level` printed in *Start* step 1, when it is
-      not `null`. Its line is
+   2. The level `lets go level` printed in
+      [Read the settings](#read-the-settings), when it is not `null`. Its line is
       `Interactivity: <level>, because your lets config sets go.level.`
    3. `ask`, when neither is set. Its line is:
 
@@ -270,14 +273,14 @@ stands.
 3. For an idea, check that the answers file is this idea's. Two ideas
    can share their first five words, and so their `<shape-name>`. When
    `.workspace/lets-go/<shape-name>-shape-prompt.md` exists and holds
-   another idea, an earlier run stopped part way on that other idea. In
+   another idea, an earlier run stopped before it finished, on that other idea. In
    that case, remove `.workspace/lets-go/<shape-name>-shape-answers.yaml`
    before you write the prompt.
 4. Run the `shape` step, as [Run a step](#run-a-step) says.
 5. When it reports `done`, [Read the report](#read-the-report) says
    what it shaped:
-   - **One issue:** that issue is `<i>`. Go on from *Start* step 3, the
-     blocker read, with it, as for an issue number.
+   - **One issue:** that issue is `<i>`. Go on from the blocker read in
+     [Check the issue](#check-the-issue) with it, as for an issue number.
    - **A parent and its stories:**
      [pick the first ready story](#pick-the-first-ready-story).
 
@@ -303,10 +306,10 @@ of them in this run.
    Picked #<i>: <title>, the first ready story under #<parent>.
    ```
 
-   That story is `<i>`. Go on from *Start* step 3, the blocker read,
-   with it, as for an issue number.
-3. When no story is ready, print the `Done shape` line that *Start*
-   step 5 shows. Say that no story under `#<parent>` is ready. Name each
+   That story is `<i>`. Go on from the blocker read in
+   [Check the issue](#check-the-issue) with it, as for an issue number.
+3. When no story is ready, print the `Done shape` line that
+   *Check the issue* shows. Say that no story under `#<parent>` is ready. Name each
    story, and why it was left out: for example, its blocker, its
    assignee, or an unresolved prerequisite. Say to run `lets-go` with a
    story's number once it is ready. Then stop. Claim nothing, and
@@ -363,10 +366,10 @@ Next: [Enter the branch](#enter-the-branch).
      `git fetch origin <name>` first: `git switch` finds a branch on
      `origin` only once it is fetched. Then run `git switch <name>`.
 
-   When step 3 has looked already, use what it found.
+   When *Check the issue* has looked already, use what it found.
    Stay on `<name>` for the whole run.
 2. When `origin` has the branch, bring it up to date before you read any
-   record. On a change's branch, run the `git ls-remote` of step 7 to
+   record. On a change's branch, run the `git ls-remote` above to
    check.
 
    ```bash
@@ -374,7 +377,7 @@ Next: [Enter the branch](#enter-the-branch).
    git merge --ff-only origin/<name>
    ```
 
-   Skip the fetch when step 7 has just run it. If the merge cannot
+   Skip the fetch when you have just run it above. If the merge cannot
    fast-forward, the branch and `origin` have diverged: the
    [records disagree](#records-that-disagree). If any command here fails
    for another reason, show the user its error, and stop.
@@ -389,8 +392,8 @@ Next: [Set the level](#set-the-level).
 Set `<level>`, the interactivity level. Take the first of these
 that is set:
 1. The level the user named in the request that started the run.
-2. The level `lets go level` printed in step 1, when it is not
-   `null`.
+2. The level `lets go level` printed in
+   [Read the settings](#read-the-settings), when it is not `null`.
 3. The Kind's: `recommend` for a Chore or a Bug, `ask` for a Story.
 
 Never ask the user which level to use. The level holds for this run
@@ -408,15 +411,12 @@ At `recommend`, this session answers each question that has a
 recommendation, and asks the user the rest. At `ask`, it asks the
 user every question.
 
-*Start* runs in this session. It is not a step, and has no step report.
-The shape step it runs is a step, and has a report.
-
 Next: [Walk the step table](#walk-the-step-table).
 
 ## Walk the step table
 
-After *Start*, on the branch `<name>`, read three records first, in this
-order:
+After [Set the level](#set-the-level), on the branch `<name>`, read three
+records first, in this order:
 
 1. **The tree.** Run `git status --porcelain`. A line for a path outside
    `.workspace/` means the records disagree.
@@ -445,7 +445,7 @@ order:
 Then walk [The step table](#the-step-table) from the top row. At each
 row, find out whether the step is done:
 
-- **Shape.** When *Start* passed *Confirm the packet*, shape is done.
+- **Shape.** When *Check the issue* passed *Confirm the packet*, shape is done.
 - **Plan.** When the archive folder exists, plan is done. When
   `openspec/changes/<name>/` does not exist, plan is not done.
   Otherwise run `openspec instructions apply --change <name> --json`,
@@ -490,8 +490,8 @@ in this walk changes the records the next row reads.
 Then settle the row:
 
 - **Done:** print its Skip line from the table, filled from
-  [Read the records](#read-the-records). *Start* has printed shape's
-  line already. Go on to the next row.
+  [Read the records](#read-the-records). *Check the issue* has printed
+  shape's line already. Go on to the next row.
 - **Not done:** run the step, as [Run a step](#run-a-step) says. Then
   [read its report](#read-the-report), which says what to print and
   whether the walk goes on.
@@ -610,7 +610,7 @@ linked, so neither list alone is enough.
 
 Then take the first case that applies:
 
-1. **The user named an issue.** Use it. *Start* step 3 has read its
+1. **The user named an issue.** Use it. *Check the issue* has read its
    blockers already, and decided whether an open one stops the run.
 2. **The user described work but named no issue.** Search for it:
    `gh issue list --state open --search "<idea> in:title" --json number,title`.
@@ -720,8 +720,8 @@ record. These steps check it. "You" is the agent.
 #### Check the checkpoint
 
 Run these steps only when this story owns the glossary edits. Run them
-once, after the branch check in *Claim* step 2 passes. Each stop below
-comes before *Claim* step 3, so nothing is claimed and no branch exists.
+once, after *Claim*'s branch check passes. Each stop below comes before
+*Claim* assigns the issue, so nothing is claimed and no branch exists.
 A stop repairs nothing, and leaves user edits as they are.
 
 1. Read the starting base, the owned paths, the remote URL and branch,
@@ -756,7 +756,7 @@ A stop repairs nothing, and leaves user edits as they are.
 6. If the owner of the glossary definitions or the proposed base changed
    since *Find the source of demand* ran *Check the prerequisite*, run
    [Check the prerequisite](#check-the-prerequisite) again, before
-   *Claim* step 3 claims the issue. When that run finds an unresolved
+   *Claim* assigns the issue. When that run finds an unresolved
    prerequisite, report it, and stop, claiming nothing, even for an issue
    that `next` picked. Nothing is claimed yet, so the stop leaves the
    backlog as it was.
@@ -786,8 +786,9 @@ Return to the part that ran it.
 
    The first command must print `0`. Anything else means another
    session took it. When `next` picked it, run `next` again with the
-   same candidates, and go on from *Start* step 3 with the new issue. The
-   lines printed for the lost issue stand. When the user named it, say
+   same candidates, and go on from the blocker read in
+   [Check the issue](#check-the-issue) with the new issue. The lines
+   printed for the lost issue stand. When the user named it, say
    who has it, and stop.
 4. Create a branch with the change's name off the default branch. If
    creating the branch fails, release the claim, so another session can
@@ -863,7 +864,7 @@ and review build. Prose and printed lines use these names. `--for`,
 `--name`, file names and config keys use `shape`, `plan`, `review-plan`,
 `build` and `review-build`. `<step>` is one of these.
 
-Shape runs only inside *Start*, as
+Shape runs only before the walk, as
 [Run the shape step](#run-the-shape-step) says. Every other step runs in
 a fresh session, as [Run a step](#run-a-step) says. On `lets-minimal`,
 review plan never runs.
@@ -888,8 +889,8 @@ from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is
 the short hash, from `%h`. A read that prints nothing means the
 [records disagree](#records-that-disagree).
 
-- **Shape.** *Start* step 5 reads the issue's last edit, and prints the
-  line.
+- **Shape.** *Check the issue* reads the issue's last edit, and prints
+  the line.
 - **Plan.** Read the commit that added the task list:
 
   ```bash
@@ -952,7 +953,8 @@ as `--name idea-fix-letssync-quiet-output-shape`.
 If the folder is missing, create it first: `mkdir -p .workspace/lets-go`.
 Then write the frame below to `.workspace/lets-go/<session>-prompt.md`.
 Fill in each `<...>`. `<schema>`, `<level>` and `<route line>` are the
-ones *Start* set. Under *What to run*, put this sentence. `<skill>` is
+ones [Enter the branch](#enter-the-branch), [Set the level](#set-the-level)
+and [Route](#route) set. Under *What to run*, put this sentence. `<skill>` is
 the skill in the step's row of [The step table](#the-step-table):
 
 ```text
@@ -1071,9 +1073,10 @@ Run the `lets-shape` skill. Start at the first of these that matches:
 4. Otherwise, run its *Shape one issue* to its end, including its second
    comment fetch, its reply and its glossary handoff. For an issue: shape
    #<i>. For an idea: lets-go has searched for it, and the user confirmed
-   that no open issue is the same work. Skip the search in step 1, and
-   create the issue. The packet confirmation in step 7 is a confirmation
-   question: give it no recommendation.
+   that no open issue is the same work. Skip the search in
+   **Find or create the issue**, and create the issue. The packet
+   confirmation in **Confirm, then write** is a confirmation question:
+   give it no recommendation.
 
 The work is too large for one issue when it is Size L or XL, or when the
 input holds a large idea. Then do not fail, and do not start discovery
@@ -1200,7 +1203,7 @@ Once shape reports `done` or `failed`, remove
 finished shape. A later idea, or a second shape of the same issue, must
 start with no answers.
 
-- **`done`**: after `shape`, go back to *Start*, as
+- **`done`**: after `shape`, go on as
   [Run the shape step](#run-the-shape-step) says. After any other step,
   print its `Done` line, as [End of the run](#end-of-the-run) says, and
   go on to the next row of the [walk](#walk-the-step-table).

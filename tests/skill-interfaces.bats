@@ -728,7 +728,7 @@ review_build_start() {
   done
 }
 
-@test "lets-go's Start holds the sections that find, confirm, route and claim the issue" {
+@test "lets-go holds the sections that find, confirm, route and claim the issue" {
   local section
   for section in 'Find the source of demand' 'Confirm the packet' 'Route' 'Glossary preflight' 'Claim' 'Import the glossary checkpoint' \
     'Check the prerequisite' 'Check the checkpoint' 'Import the commits' 'Recover from a failed import'; do
@@ -786,11 +786,13 @@ review_build_start() {
   [ "$call" != "$part" ] || { echo "Check the issue does not run Find the source of demand"; false; }
   [ "${#read}" -lt "${#call}" ] ||
     { echo "Check the issue runs Find the source of demand before it reads the blockers"; false; }
-  skill_says lets-go '*Start* step 3 has read its blockers already'
+  skill_says lets-go '*Check the issue* has read its blockers already'
   skill_does_not_say lets-go 'If an open issue blocks it, say so and stop' ||
     { echo "Find the source of demand still stops on a blocker of its own"; false; }
   skill_says lets-go 'return to the part that ran it'
   skill_says lets-go 'When *Claim* ran it, return to *Claim*'
+  grep -qF 'When the section passes, go on to *Confirm the packet*' <<<"$part" ||
+    { echo "Check the issue does not go on to Confirm the packet after Find the source of demand"; false; }
   skill_does_not_say lets-go 'Otherwise, go on to [Confirm the packet](#confirm-the-packet).' ||
     { echo "Find the source of demand still picks the next section"; false; }
 }
@@ -1307,6 +1309,23 @@ procedure_text() {
     tr -s '[:space:]' ' ' <<<"$text" | grep -qi 'return to the part that ran it' ||
       { echo "$procedure does not return to the part that ran it"; false; }
     ! grep -q '^Next: ' <<<"$text" || { echo "$procedure has a Next line"; false; }
+  done
+}
+
+@test "lets-go refers to no step by its step number" {
+  step_numbers lets-go
+}
+
+@test "lets-go names no Start part, and no run that stops part way" {
+  skill_does_not_say lets-go '*Start*'
+  skill_does_not_say lets-go 'part way'
+}
+
+@test "the shape prompt names lets-shape's steps by their titles, not a step number" {
+  local text title
+  text="$(skill_section lets-go 'What shape runs')"
+  for title in '**Find or create the issue**' '**Confirm, then write**'; do
+    grep -qF -- "$title" <<<"$text" || { echo "What shape runs does not name: $title"; false; }
   done
 }
 
