@@ -348,7 +348,8 @@ skill_section() {
 }
 
 # lists_start_at_one <skill>: in each of the skill's files, the first
-# numbered item after each heading, outside fenced code, is 1. A list that
+# numbered item after each heading, outside fenced code, is 1. Markdown reads
+# an item indented up to three spaces as a list item too. A list that
 # carries on its numbers across a heading makes "step 3" ambiguous. Prints
 # each break as <file>: <heading>: <number>, the file under the skills folder.
 lists_start_at_one() {
@@ -357,9 +358,9 @@ lists_start_at_one() {
     awk -v name="${file#"${skills_dir:-$repo/skills}/"}" "$fence_rules"'
       code { next }
       /^#+ / { heading = $0; first = 1; next }
-      first && match($0, /^[0-9]+\. /) {
-        first = 0
-        if (substr($0, 1, RLENGTH - 1) != "1.") print name ": " heading ": " substr($0, 1, RLENGTH - 1)
+      first && match($0, /^ ? ? ?[0-9]+\. /) {
+        first = 0; number = substr($0, 1, RLENGTH - 1); sub(/^ */, "", number)
+        if (number != "1.") print name ": " heading ": " number
       }' "$file"
   done)"
   [ -z "$out" ] || { echo "$out"; return 1; }
@@ -642,6 +643,12 @@ review_build_start() {
   fixture_file lets-go references/steps.md '## Steps' '2. Read the base.'
   run lists_start_at_one lets-go
   [ "$output" = 'lets-go/references/steps.md: ## Steps: 2.' ] || { echo "it said: $output"; false; }
+}
+
+@test "the numbered list check reads an item indented up to three spaces" {
+  fixture_file lets-go SKILL.md '# lets-go' '### Steps' '  5. Read the base.'
+  run lists_start_at_one lets-go
+  [ "$output" = 'lets-go/SKILL.md: ### Steps: 5.' ] || { echo "it said: $output"; false; }
 }
 
 @test "the numbered list check skips a number inside a code block" {
