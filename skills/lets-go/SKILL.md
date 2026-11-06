@@ -38,7 +38,7 @@ part is not a step, and has no step report. The shape step that
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | *Check the issue* for one issue; *Pick the first ready story* for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | *Check the issue* | *Find the source of demand* returns `nothing-ready` |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | *Enter the branch* | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | *Set the level*; *Read the request* or *Pick the first ready story* after a lost claim | *Claim* returns `branch-exists`, `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | *Set the level*; *Read the request* or *Pick the first ready story* after a lost claim | *Claim* returns `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
 | [Set the level](#set-the-level) | Picks `ask` or `recommend`, and says why | this session | *Walk the step table* | Never |
 | [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | *End of the run* | The records disagree, the pull request is merged or closed, or a step fails or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL | this session | Nothing: the run is over | Always |
@@ -387,8 +387,6 @@ Next: [Enter the branch](#enter-the-branch).
      with the commits it carries, and act on its result as below. When
      it carries `no-owned-edits`, run no import, and
      [commit the discovery map](#commit-the-discovery-map).
-   - **`branch-exists`:** say so, suggest switching to it and running
-     `lets-go` there, and stop.
    - **`taken`:** when the user named `<i>` or confirmed it, say who has
      it, and stop. Otherwise `next` or *Pick the first ready story*
      picked it: count the lost claim. After the third lost claim in this
@@ -744,7 +742,7 @@ Return to the section that ran it, with the result.
 #### Check the checkpoint
 
 Run these steps only when this story owns the glossary edits. Run them
-once, after *Claim*'s branch check passes. Each `checkpoint-failed`
+once, when *Claim* runs *Glossary preflight*. Each `checkpoint-failed`
 below comes before *Claim* assigns the issue, so nothing is claimed and
 no branch exists. Returning `checkpoint-failed` repairs nothing, and
 leaves user edits as they are.
@@ -825,10 +823,8 @@ return to the part that ran it.
 1. Name the change after the issue title. Every Kind's title is
    `<kebab-name> — <one-line outcome>`, so the name is the part before
    the dash.
-2. If a branch with the change's name already exists, the result is
-   `branch-exists`: return it now, before fetching or rehearsing a
-   transfer. Otherwise run [Glossary preflight](#glossary-preflight)
-   against the proposed base. When it returns `unresolved` or
+2. Run [Glossary preflight](#glossary-preflight) against the proposed
+   base. When it returns `unresolved` or
    `checkpoint-failed`, return that result now, with what it carries,
    before you assign the issue.
 3. Claim the issue: check that nobody has it, assign yourself, then move
@@ -843,10 +839,11 @@ return to the part that ran it.
    The first command must print `0`. Anything else means another
    session took it: the result is `taken`, with who has it. Return it
    now.
-4. Create a branch with the change's name off the default branch. If
-   creating the branch fails, release the claim, so another session can
-   pick the issue up. The result is then `branch-failed`, with the
-   error:
+4. Create a branch with the change's name off the default branch. This
+   also fails when a branch with the change's name appeared after
+   *Check the issue* looked. If creating the branch fails, release the
+   claim, so another session can pick the issue up. The result is then
+   `branch-failed`, with the error:
 
    ```bash
    gh issue edit <i> --remove-assignee @me
@@ -858,7 +855,6 @@ It returns one of these results:
 - `claimed`: the issue is yours, and the branch exists. It carries what
   *Glossary preflight* returned: `no-owned-edits`, or `verified` with
   the checkpoint commits.
-- `branch-exists`: a branch with the change's name exists already.
 - `taken`: another session has the issue. It carries who has it.
 - `unresolved`: *Glossary preflight* returned `unresolved`. It carries
   what is unresolved.

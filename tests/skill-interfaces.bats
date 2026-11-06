@@ -1646,9 +1646,22 @@ procedure_stops() {
 @test "Enter the branch acts on each result of the claim" {
   local part result
   part="$(part_section 'Enter the branch')"
-  for result in claimed branch-exists taken unresolved checkpoint-failed branch-failed; do
+  for result in claimed taken unresolved checkpoint-failed branch-failed; do
     grep -qF -- "**\`$result\`:**" <<<"$part" || { echo "Enter the branch does not act on: $result"; false; }
   done
+}
+
+# Check the issue looks for the branch, so Claim does not look again.
+@test "Claim looks for no branch, and a late branch fails its creation" {
+  local claim
+  claim="$(procedure_text 'Claim')"
+  skill_does_not_say lets-go 'branch-exists'
+  ! grep -qF 'git branch --list' <<<"$claim" || { echo "Claim still looks for the branch"; false; }
+  ! grep -qF 'already exists' <<<"$claim" || { echo "Claim still checks for an existing branch"; false; }
+  grep -qF 'appeared after *Check the issue* looked' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" ||
+    { echo "Claim does not say a late branch fails its creation"; false; }
+  grep -qF 'when *Claim* runs *Glossary preflight*' <<<"$(skill_section lets-go 'Check the checkpoint')" ||
+    { echo "Check the checkpoint still runs after a branch check"; false; }
 }
 
 @test "Enter the branch acts on each result of the import" {
