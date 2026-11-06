@@ -58,3 +58,7 @@ A fresh response session receives the bounded transcript and captured evidence. 
 Use [the decision lens](references/decision-pass.md) and [attributed ADR guidance](references/adr-guidance.md) alongside the common role prompt. Review the complete captured change and relevant accepted ADRs. Assess ADR need, rationale, consistency with accepted decisions and whether consequences cover the actual choice; preserve the target's ADR structure.
 
 After the bounded exchange, stop early only when a verified concern undermines the approach enough to make implementation review premature. Identify the contradictory evidence and explain why examining implementation would be premature. Missing ADRs, wording preferences and unverified risks do not meet that threshold. Retain supported uncertainty and continue to implementation. The final comment must identify the skipped implementation pass on early exit.
+
+## Second full pass: implementation
+
+Always run the full implementation pass unless the verified decision-pass early exit applies. Use [the implementation lens](references/implementation-pass.md) at the same captured revision, without waiting for contributor fixes or refreshing the head. It covers correctness, structure, connections and integration across the whole change, including concerns that do not fit the decision lens. Documentation gaps or supported but uncertain decision risks do not skip this pass.

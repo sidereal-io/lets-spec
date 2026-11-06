@@ -880,3 +880,11 @@ pr_reference_says() {
   pr_reference_says adr-guidance '2026-11-06'
   pr_reference_says decision-pass 'offline summary'
 }
+
+@test "collaborator review implementation pass" {
+  skill_says lets-review-pr 'Always run the full implementation pass'
+  skill_says lets-review-pr 'without waiting for contributor fixes'
+  pr_reference_says implementation-pass 'correctness, structure, connections and integration'
+  pr_reference_says implementation-pass 'same captured revision'
+  pr_reference_says implementation-pass 'coverage gaps'
+}
