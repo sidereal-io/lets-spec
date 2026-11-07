@@ -2181,16 +2181,17 @@ text_block_lines() {
 # code point: the count leaves out UTF-8 continuation bytes, so it holds in
 # any locale. The frontmatter, table rows, fenced code and its fences, and a
 # line that holds one link and nothing else but indent, a list marker and
-# one closing mark may run longer. references/terms.md copies the glossary,
-# so it keeps the glossary's wrap.
+# one closing mark may run longer. A frontmatter with no closing --- is not
+# one, so its lines are prose. references/terms.md copies the glossary, so
+# it keeps the glossary's wrap.
 long_lines() {
-  local file out=""
+  local file closes out=""
   for file in "$@"; do
     [[ "$file" != */lets-go/references/terms.md ]] || continue
-    out+="$(awk -v name="${file#"${skills_dir:-$repo/skills}/"}" "$fence_rules"'
+    closes="$(awk 'NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { print NR; exit }' "$file")"
+    out+="$(awk -v name="${file#"${skills_dir:-$repo/skills}/"}" -v closes="${closes:-0}" "$fence_rules"'
       BEGIN { continuation = sprintf("[%c-%c]", 128, 191) }
-      FNR == 1 && $0 == "---" { front = 1; next }
-      front { if ($0 == "---") front = 0; next }
+      FNR <= closes + 0 { next }
       code || /^ *\|/ { next }
       /^ *([-*+]|[0-9]+\.)? *\[[^]]*\]\([^)]*\)[.,;:]?$/ { next }
       {
@@ -2215,6 +2216,13 @@ long_lines() {
   fixture_file lets-go SKILL.md '---' "description: $long" '---' '# lets-go' '' "| a | $long |" '' '```bash' "echo $long" '```' '' \
     '1. Run' '   [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint).'
   long_lines "$(lets_go_skill)"
+}
+
+@test "the check that lets-go wraps its prose at 72 columns reads a frontmatter that never closes as prose" {
+  fixture_file lets-go SKILL.md '---' 'name: lets-go' "$(printf 'e%.0s' $(seq 73))"
+  run long_lines "$(lets_go_skill)"
+  [ "$status" -eq 1 ] || { echo "it passed on a long line after a frontmatter that never closes"; false; }
+  [ "$output" = 'lets-go/SKILL.md:3: 73' ] || { echo "it said: $output"; false; }
 }
 
 @test "the check that lets-go wraps its prose at 72 columns counts a wide character once" {
