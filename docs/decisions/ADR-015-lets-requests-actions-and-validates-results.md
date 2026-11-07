@@ -147,7 +147,8 @@ Provider-definition objects for delegation do not exist in the current runtime.
 The resolver chain and user guidance are not such objects. The migration must
 implement and document their schema, source registration and consumed options;
 this ADR does not claim that adding keys to today's config enables the target.
-Repository backlog versioning likewise remains implementation work in #180.
+Repository backlog versioning likewise remains implementation work in the
+#136 / #172 replacement plan.
 
 Validate consumed definition structure, required tool/context inputs, operation
 names, result/evidence mappings, option types, cardinality, ambiguous field/value
@@ -185,10 +186,10 @@ partial-effect recovery; an agent must not turn one request into an unbounded
 provider workflow.
 
 The agent checks tool availability and uses the definition's tool usage and
-mappings within those limits. It submits the matching action identity, normalized
-result or typed error, effect certainty, timing/dispatch information, any remote
+mappings within those limits. It submits the matching action identity, tool output or typed error, optional
+normalized data, effect certainty, available dispatch information, any remote
 identities/session handles, and evidence provenance. Evidence records its source,
-collection time, scope, request correlation and relevant backend revision or
+scope, request correlation, available observation times and relevant backend revision or
 receipt where available. Redact secrets; do not publish private journal contents.
 Bare agent assertions must remain distinguishable from submitted tool output
 and the normalized facts derived from it. Neither is independently authenticated
@@ -205,8 +206,11 @@ that no action occurred. Missing results never mean success or effects none.
 
 Lets accepts submitted tool observations through the selected adapter. The agent
 executes the requested CLI/MCP action using the inert provider definition and
-submits tool identity, arguments, collection time, outcome and relevant output,
-alongside normalized operation data. The adapter's mappings translate that
+submits tool identity, arguments, outcome and relevant output,
+inline or through explicitly referenced local files. Lets derives normalized
+operation data using the definition's inert projections; supplied normalized
+data is optional and must agree. Lets stamps issuance and receipt times; optional
+observation times and unavailable server versions are not invented by the agent. The adapter's mappings translate that
 known output into the contract Lets understands. Both shipped and custom
 definitions use this path; neither introduces another provider executor.
 
@@ -329,12 +333,14 @@ not treated as already satisfied by this decision.
 | Claims and recovery | Model dispatch uncertainty, partial acquisition, reconciliation and fresh validated submitted ownership/status checks before progression; preserve private local journals. | Native state is authoritative; session-safe release, no stronger locks, best-effort stays best-effort. A journal replay is not current ownership proof. |
 | References and completion | Validate submitted observations of the exact associated code-host PR merge before completion requests; test native auto-close and lost responses. | Exact merged reference/commit, merge-gated completion, idempotence and In Progress until confirmed merge. |
 
-#180 implements the GitHub build migration after #179 and #136. It must migrate
-the production caller, contract, conformance invocation and packaging and prove
-its own equivalence, including validated submitted observations for fresh claims and
-exact merge evidence under this amended trust model. #137–#144 retain their provider outcomes and acceptance
+The #136 / draft #172 replan now owns the GitHub build migration previously
+assigned to #180: production caller, contract, conformance invocation and
+packaging, including fresh claim and exact merge observations under this amended
+trust model. Do not implement the same migration again in #180. At the agreed
+planning handoff, lets-shape must revise or close #180 while retaining any
+remaining distinct scope; this amendment changes no issue or Project field. #137–#144 retain their provider outcomes and acceptance
 obligations; #145 covers definition authoring for both capabilities. Its delegation
-part requires the delegation runtime migration below, not merely #180. Until that
+part requires the delegation runtime migration below, not merely the GitHub migration. Until that
 follow-up is shaped and its prerequisite is resolved, #145 is not ready for its
 full scope. When shaping the follow-up, request a direct blocked-by link on #145;
 absence of that link does not make the prerequisite resolved.
@@ -344,14 +350,13 @@ Delegation needs its own runtime migration under #174. Current built-in
 definition registry. Provider-definition objects, bounded action submission and
 submitted tool-output validation do not yet exist there. Existing T3 launch/
 dispatch, token issuance and Git helper deadline gaps also remain. Shape that
-follow-up before implementing it; #180's GitHub work neither implements delegation
+follow-up before implementing it; the GitHub migration neither implements delegation
 nor proves project-wide compliance. No new runtime story is silently included
 in this documentation correction.
 
 Preserve the native-state/private-local-journal design. PR #172 is draft and
-its capture design is reopened. Replanning stays with #136 / #172; coordinate
-#180's migration scope with that existing delivery rather than publish competing
-ownership. Its prototype remains dependent on the withdrawn service and is not
+its capture design is reopened. Replanning stays with #136 / #172; carry the previously assigned #180 migration within that existing delivery
+rather than publish competing ownership. Its prototype remains dependent on the withdrawn service and is not
 ready for a full live workflow. Historical acceptance and checks qualify only
 the versions tested; never replay those mutations. Fixture PR #14 was user-merged.
 Later migrated behavior needs fresh scoped acceptance before a support claim.

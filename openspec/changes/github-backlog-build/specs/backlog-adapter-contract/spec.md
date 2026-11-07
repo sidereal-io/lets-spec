@@ -1,3 +1,8 @@
+## RENAMED Requirements
+
+- FROM: `### Requirement: Executable boundary separates responsibilities`
+- TO: `### Requirement: Bounded action boundary separates responsibilities`
+
 ## MODIFIED Requirements
 
 ### Requirement: Contract validation leaves production integrations unchanged
@@ -11,7 +16,7 @@ without credentials, network access, production mutation or workflow migration.
 - **THEN** local simulated action, result and tool-output cases execute successfully
 - **AND** no production calls or migration occur
 
-### Requirement: Executable boundary separates responsibilities
+### Requirement: Bounded action boundary separates responsibilities
 The contract SHALL replace executable-adapter process transport with bounded
 action requests and structured result submissions. Lets SHALL own policy,
 sequencing, private recovery and validation; inert provider definitions SHALL
@@ -21,13 +26,20 @@ the code host SHALL own branches, pull requests and merge observations.
 Each action SHALL bind unique action/attempt identity, operation, exact input,
 provider/definition version, actor/session, scope, allowed effects, required
 capabilities, finite deadline and declared tool/output limits. A result SHALL
-carry matching identity, normalized outcome or typed error, timing, effect
-certainty and attributed evidence. An action SHALL NOT authorize additional
+carry matching identity, execution outcome or typed error, effect certainty and
+attributed tool output. Lets SHALL derive normalized data from declared inert
+projections and reject any inconsistent optional agent-supplied normalization.
+Lets SHALL stamp issuance and receipt times; unavailable exact tool times or
+MCP server versions SHALL NOT be fabricated. Required tool versions SHALL be
+checked through preflight when the definition requires them. An action SHALL NOT authorize additional
 writes, later steps or retries. Multi-write operations SHALL use explicit bounded
 steps and partial-effect recovery.
 
+Legacy scenario titles below preserve main's migration identifiers; their
+bodies specify the replacement action contract, not adapter process supervision.
+
 #### Scenario: Fake adapter handles a request
-- **WHEN** a simulated agent executes a supported bounded action and submits a matching result with required tool output and normalized data
+- **WHEN** a simulated agent executes a supported bounded action and submits a matching result with required tool output
 - **THEN** Lets validates operation-specific invariants before allowing the next transition
 
 #### Scenario: Broken process boundary
@@ -150,10 +162,15 @@ from the repository.
 ## ADDED Requirements
 
 ### Requirement: Required remote facts use validated submitted tool observations
-Lets SHALL accept tool output and normalized facts submitted through the selected
-adapter without requiring independently retrieved capture. The submission SHALL
-identify its action, tool/server, arguments, backend/scope, actor context,
-collection time and execution outcome. Lets SHALL validate these bindings,
+The agent SHALL submit tool output to `lets backlog submit`, translated by the
+selected adapter's provider definition, without independently retrieved capture.
+Lets SHALL derive normalized facts through that definition's inert projections.
+The submission SHALL identify its action, tool or server, arguments, backend,
+scope, actor context and execution outcome. Output SHALL be accepted inline or
+through explicitly referenced bounded local files, read as untrusted input.
+Lets SHALL stamp issuance and receipt times rather than require agent-invented
+collection times. Optional normalized facts SHALL agree with the derived facts.
+Lets SHALL validate these bindings,
 output-to-contract mappings, freshness, complete pagination/blocker coverage,
 current ownership and exact associated merge facts as required by the operation.
 Bare assertions SHALL NOT replace required observations. The contract SHALL
@@ -185,3 +202,48 @@ SHALL use the same validation path without strengthening native atomicity.
 - **WHEN** a submission lacks the facts needed to reconcile an issued mutation
 - **THEN** Lets pauses automatic retry/progression and explains the action, known/unknown effects, missing facts and bounded reconciliation or stop choices
 - **AND** user approval alone does not replace the required operation data
+
+#### Scenario: Output is supplied through a local file
+- **WHEN** a matching submission references a readable bounded local output file containing all required data
+- **THEN** Lets reads the file and derives normalized facts without requiring the agent to transcribe its contents
+- **AND** the file does not establish independent provenance
+
+#### Scenario: Output file exceeds its bound
+- **WHEN** a referenced output file exceeds the issued action's result limit
+- **THEN** Lets rejects the submission and does not infer no effects
+
+#### Scenario: Exact tool timestamps are unavailable
+- **WHEN** a result arrives within its action window without exact tool timestamps or an MCP server version that the definition does not require
+- **THEN** Lets uses its issuance and receipt times and does not reject merely because those optional fields are unavailable
+
+### Requirement: Rejected submissions preserve operation safety
+Lets SHALL record each submission attempt using its original continuation
+supplied separately from the submission body, including malformed submissions.
+A rejected read submission SHALL have
+at most two correction attempts within its original deadline; another actual
+tool read SHALL require a new action. Rejection of a write submission after
+issuance SHALL mark its effects unknown and require reconciliation before any
+new write or progression. Corrected output SHALL NOT reactivate write permission.
+
+#### Scenario: Read submission has malformed JSON
+- **WHEN** a read's first submission is malformed but a correction arrives within its deadline and correction limit
+- **THEN** Lets validates the correction and retains both submission attempts
+
+#### Scenario: Assignment succeeds but its submission is malformed
+- **WHEN** an issued assignment is followed by a rejected submission
+- **THEN** Lets records unknown effects and requests reconciliation instead of allowing the assignment to be executed again
+
+### Requirement: Host prerequisites fail before action issuance
+Lets SHALL check required tool availability, login, execution and output bounds,
+and private-state write and locking access before issuing backend actions.
+Missing prerequisites SHALL return an actionable typed failure without tool
+substitution, automatic store relocation or backend effects.
+
+#### Scenario: Private-state directory is unwritable
+- **WHEN** the configured state directory cannot support private durable writes and locking
+- **THEN** Lets issues no action and names the path and machine-local access or configuration remedy
+
+#### Scenario: Host provides a command timeout
+- **WHEN** the configured host provides the declared finite command timeout and output limits for gh
+- **THEN** Lets accepts that bound without requiring a gh timeout flag or GNU timeout
+- **AND** expiry after issuance does not establish rollback or no effects

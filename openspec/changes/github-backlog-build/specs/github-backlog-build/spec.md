@@ -152,3 +152,18 @@ Offline doubles and historical prototype acceptance SHALL NOT qualify it.
 #### Scenario: Offline suite passes without a live run
 - **WHEN** policy and translation-double tests pass but no fresh live workflow has been demonstrated
 - **THEN** the release evidence identifies live support as unqualified
+
+### Requirement: Shipped GitHub translation handles actual structured output
+The shipped definition SHALL use structured GitHub API responses through
+`gh api graphql`, including scoped Project selection, union and null fields,
+required nested connection coverage and structured error types. It SHALL NOT
+infer complete enumeration from a high-level command's item limit or classify
+errors by stderr keywords.
+
+#### Scenario: Project field values include several Projects
+- **WHEN** a response contains field-value arrays for several Projects and a null union member
+- **THEN** translation selects only the configured Project and either maps its required fields or reports the specific gap
+
+#### Scenario: GraphQL returns partial mutation data
+- **WHEN** a mutation response contains partial data and structured errors
+- **THEN** Lets retains the partial or unknown effects instead of inferring none from the error category

@@ -15,7 +15,7 @@ active plan must be replaced before implementation continues (D1, D5).
 - Preserve complete scoped reads, shared readiness/ranking, native best-effort
   claim/release, private recovery, immutable item identity and exact associated
   PR merge evidence. Missing or uncertain facts stop retry and progression.
-- Accept configured adapter submissions of tool output and normalized facts;
+- Accept configured adapter submissions of tool output and derive normalized facts;
   Lets validates correlation, mappings, freshness, coverage and workflow rules.
   Amend ADR-015 explicitly to remove independent capture. This trusts submitted
   observations and cannot detect plausible fabricated output (D10).

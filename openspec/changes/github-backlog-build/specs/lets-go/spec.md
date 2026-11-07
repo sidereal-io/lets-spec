@@ -7,6 +7,9 @@
 - `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` and `git branch --show-current`, run once after it, to find the default branch and the current one;
 - the Project query, run once in *Read the settings*, as *The Project query runs once per run* says;
 - the shared blocker read with title and directional blocker facts above;
+- `lets backlog claim.read` for fresh ownership and status checks;
+- `lets backlog submit --continuation-file .workspace/backlog-continuation.json --submission-file .workspace/backlog-submission.json` and `lets backlog resume --continuation-file .workspace/backlog-continuation.json` in the shared bounded action loop;
+- the scoped shared operations using `--request-file .workspace/backlog-request.json`;
 - the shared issue read for creation time, run only when the issue's `lastEditedAt` is null;
 - the issue search of *lets-go takes one issue number or an idea*;
 - `git branch --list <name>` and `git ls-remote --heads origin refs/heads/<name>`, to find the change's branch, and the fetch, switch and fast-forward above;
@@ -50,7 +53,7 @@ No part SHALL be a step: the parts before the walk SHALL run no `lets delegate s
 
 #### Scenario: The blocker rule comes before the call
 - **WHEN** the skill-interfaces test reads *Check the issue* in `skills/lets-go/SKILL.md`
-- **THEN** it finds the shared title/blocker read before the call to *Find the source of demand*, and that section's named-issue case no longer says `If an open issue blocks it, say so and stop`
+- **THEN** it finds `lets backlog item.read` and `lets backlog relationship.list` before the call to *Find the source of demand*, and that section's named-issue case no longer says `If an open issue blocks it, say so and stop`
 
 #### Scenario: The search finds the same work
 - **WHEN** the user runs `lets-go add a --quiet flag to lets sync`, the search finds `#181 lets-sync-quiet — lets sync takes a --quiet flag`, and the user says it is the same work
@@ -132,6 +135,74 @@ When *Claim* returns `taken` for an issue the user named or confirmed as the sam
 #### Scenario: Three lost claims
 - **WHEN** *Claim* returns `taken` for three picked issues in one run
 - **THEN** `lets-go` says other sessions keep taking the picked issues, says to run `lets-go` again, claims nothing and stops
+
+### Requirement: Each lets-go procedure returns a result
+Each procedure of `lets-go` SHALL end by returning to the part that ran it, with a result. A procedure is a section under `## Procedures` in `SKILL.md`, or one of *Glossary preflight*, *Import the glossary checkpoint* and *Commit the discovery map* in a reference file. *Glossary preflight*, which only *Claim* runs, SHALL return to *Claim*. A procedure SHALL not tell the agent to stop, and SHALL not name the part that runs next: the part that ran it decides. Outside code, a procedure's text, its subsections included, SHALL not hold the word `stop` or `stops`, in any case. A procedure that can end more than one way SHALL list its results. Each result is a name in backticks, with when it is returned and what it carries, such as the issue, who has it, or what to tell the user. The results SHALL be these:
+
+| Procedure | Results |
+|---|---|
+| *Find the source of demand* | `found`, `unresolved`, `matches`, `no-match`, `picked`, `nothing-ready` |
+| *Confirm the packet* | `complete`, `needs-shape`, `epic` |
+| *Check the prerequisite* | `resolved`, `unresolved` |
+| *Check the checkpoint* | `verified`, `checkpoint-failed`, `unresolved` |
+| *Glossary preflight* | `no-owned-edits`, `verified`, `unresolved`, `checkpoint-failed` |
+| *Claim* | `claimed`, `taken`, `unresolved`, `checkpoint-failed`, `branch-failed`, `claim-uncertain`, `backlog-unavailable` |
+| *Import the glossary checkpoint* | `imported`, `import-failed` |
+
+*Glossary preflight* returns `no-owned-edits` when the story owns no glossary edits, and otherwise passes on what *Check the checkpoint* returns. `verified` carries the checkpoint commits to import. *Claim*'s `claimed` carries what *Glossary preflight* returned, so *Enter the branch* runs *Import the glossary checkpoint* only after `verified`. *Commit the discovery map* ends one way only, so it names no result.
+
+#### Scenario: Every procedure returns
+- **WHEN** the skill-interfaces test reads each procedure of `lets-go`, in `SKILL.md` and in its reference files
+- **THEN** each one says it returns to the part that ran it, or, for *Glossary preflight*, to *Claim*, has no `Next:` line, and holds no `stop` or `stops` outside code
+
+#### Scenario: A procedure that stops
+- **WHEN** a skills folder holds `lets-go/SKILL.md` whose *Confirm the packet* says ``Say to run the `lets-shape` skill on `#<i>`, and stop.``
+- **THEN** the check fails, and its output names `Confirm the packet`
+
+#### Scenario: Confirm the packet lists its results
+- **WHEN** the skill-interfaces test reads *Confirm the packet*
+- **THEN** it finds `complete`, `needs-shape` and `epic`
+
+*Claim* SHALL drive intermediate `action` responses through the shared bounded
+action loop; an outstanding action is not a completed claim. `claim-uncertain`
+SHALL carry known partial effects and the original recovery reference when a
+claim cannot be confirmed. `backlog-unavailable` SHALL carry the prerequisite or
+capability failure without a new claim. `branch-failed` SHALL carry the branch
+error plus release status `complete`, `none` or `unresolved`; unresolved release
+SHALL carry its recovery reference. These results SHALL NOT overload glossary
+`unresolved` or be treated as a lost-race `taken` result.
+
+#### Scenario: Claim returns uncertain effects
+- **WHEN** a submitted claim result leaves assignment or status effects unknown
+- **THEN** Claim returns `claim-uncertain` with known effects and the original recovery reference
+
+### Requirement: Each part names the action for each result
+A part that runs a procedure SHALL name each result the procedure can return there. For each one, it SHALL say what to do: go on, run another part, or tell the user what the result carries and stop. A part SHALL not hold a catch-all such as `any other stop stands`. The overview's *Stops when* column SHALL name the results a part stops on.
+
+#### Scenario: Check the issue acts on the packet's results
+- **WHEN** the skill-interfaces test reads *Check the issue*
+- **THEN** it finds `complete`, `needs-shape` and `epic`, each with its action
+
+#### Scenario: Enter the branch acts on the claim's results
+- **WHEN** the skill-interfaces test reads *Enter the branch*
+- **THEN** it finds `claimed`, `taken`, `unresolved`, `checkpoint-failed`, `branch-failed`, `claim-uncertain` and `backlog-unavailable`, each with its action, and no `branch-exists`
+
+#### Scenario: A claim with owned glossary edits
+- **WHEN** *Glossary preflight* returns `verified` with two checkpoint commits, and *Claim* then returns `claimed`
+- **THEN** *Enter the branch* runs *Import the glossary checkpoint* with those two commits before it commits the discovery map
+
+#### Scenario: A claim with no owned edits
+- **WHEN** *Glossary preflight* returns `no-owned-edits`, and *Claim* returns `claimed`
+- **THEN** *Enter the branch* runs no import
+
+#### Scenario: An epic stops the run
+- **WHEN** the user runs `lets-go` for `#194`, and *Confirm the packet* returns `epic`
+- **THEN** `lets-go` says that an epic is built through its stories, lists its open sub-issues, claims nothing and stops
+
+*Enter the branch* SHALL report `claim-uncertain` or `backlog-unavailable` and
+end the run without starting a step or selecting another issue. On
+`branch-failed` it SHALL report both the branch error and release outcome;
+unresolved release SHALL remain visible with its recovery reference.
 
 ## ADDED Requirements
 
