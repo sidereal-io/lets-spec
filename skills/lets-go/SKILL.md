@@ -60,15 +60,15 @@ procedure ranks it.
 
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
-| [Read the settings](#read-the-settings) | Reads the default level, the default branch, the current branch and the Project | this session | [Read the request](#read-the-request) | `lets go level` fails, or the Project query finds no Project, or several |
+| [Read the settings](#read-the-settings) | Reads the default question mode, the default branch, the current branch and the Project | this session | [Read the request](#read-the-request) | `lets go questions` fails, or the Project query finds no Project, or several |
 | [Read the request](#read-the-request) | Takes a level off the request, after asking the user when the level word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; otherwise [Route](#route) | An open blocker with no branch; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic`, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the level](#set-the-level); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
-| [Set the level](#set-the-level) | Picks `ask` or `recommend`, and says why | this session | [Walk the step table](#walk-the-step-table) | Never |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
+| [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table) | Never |
 | [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run) | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL | this session | Nothing: the run is over | Always |
 
@@ -96,7 +96,7 @@ sets it.
 | `<idea>` | The idea, in the user's words | [Read the request](#read-the-request) |
 | `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs, or `shape` in [Run the shape step](#run-the-shape-step) |
 | `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
-| `<level>` | The interactivity level, `ask` or `recommend` | [Set the level](#set-the-level), or [Run the shape step](#run-the-shape-step), before shape |
+| `<mode>` | The question mode, `ask` or `auto` | [Set the question mode](#set-the-question-mode), or [Run the shape step](#run-the-shape-step), before shape |
 | `<Kind>` | The issue's Kind on the Project | [Confirm the packet](#confirm-the-packet) |
 | `<schema>` | The change's schema | [Enter the branch](#enter-the-branch) |
 | `<route line>` | The line [Route](#route) says, such as `Route: lets-minimal, because #<i> is a Chore.` | [Route](#route) |
@@ -117,15 +117,15 @@ sets it.
 
 ## Read the settings
 
-Read the user's default level. Run this once, before anything asks
-GitHub:
+Read the user's default question mode. Run this once, before anything
+asks GitHub:
 
 ```bash
-lets go level
+lets go questions
 ```
 
-It prints one JSON line, such as `{"level":"recommend"}`. Keep its
-`level` for the whole run: `ask`, `recommend`, or `null` when the
+It prints one JSON line, such as `{"questions":"auto"}`. Keep its
+`questions` for the whole run: `ask`, `auto`, or `null` when the
 `lets` config sets none. If it exits non-zero, show the user its
 stderr and stop: claim nothing, and run no step. Then find the
 default branch with
@@ -171,17 +171,19 @@ Next: [Read the request](#read-the-request).
 Read the request. A leading or trailing `ask` or `recommend` may name
 the level. When the rest of the request is a number or nothing, the
 word names the level: take it off, and keep it for
-[Set the level](#set-the-level). When the rest is words, on the default
-branch, ask the user whether the word names the level or is part of
-the idea. Show both readings: for `ask before deleting the branch`, the
-level `ask` with the idea `before deleting the branch`, or the idea
+[Set the question mode](#set-the-question-mode). When the rest is
+words, on the default branch, ask the user whether the word names the
+level or is part of the idea. Show both readings: for
+`ask before deleting the branch`, the level `ask` with the idea
+`before deleting the branch`, or the idea
 `ask before deleting the branch`. Ask it at either level, before
 [Start from an idea](#start-from-an-idea) runs: it asks what the
 request says, not which level to use. When the user says the word names
-the level, take it off, and keep it for [Set the level](#set-the-level).
-Otherwise the word stays in the idea, and
-[Set the level](#set-the-level) takes the level from its next source. On
-another branch, ask nothing about the word: words stop the run there.
+the level, take it off, and keep it for
+[Set the question mode](#set-the-question-mode). Otherwise the word
+stays in the idea, and [Set the question mode](#set-the-question-mode)
+takes the level from its next source. On another branch, ask nothing
+about the word: words stop the run there.
 
 What is left is one of these:
 - **A number:** it holds `#<i>`, or is a bare number. It names the
@@ -413,37 +415,38 @@ Next: [Enter the branch](#enter-the-branch).
    keeps the file, so an archived change keeps the schema it was built
    with, even when [Route](#route) would now pick another.
 
-Next: [Set the level](#set-the-level);
+Next: [Set the question mode](#set-the-question-mode);
 [Read the request](#read-the-request) or
 [Pick the first ready story](#pick-the-first-ready-story) after a lost
 claim.
 
-## Set the level
+## Set the question mode
 
-Set `<level>`, the interactivity level. Take the first of these
-that is set:
-1. The level the user named in the request that started the run.
-2. The level `lets go level` printed in
+Set `<mode>`, the question mode. Take the first of these that is set:
+1. The question mode the user named in the request that started the
+   run.
+2. The question mode `lets go questions` printed in
    [Read the settings](#read-the-settings), when it is not `null`.
-3. The Kind's: `recommend` for a Chore or a Bug, and `ask` for any
+3. The Kind's: `auto` for a Chore or a Bug, and `ask` for any
    other Kind, a Story included.
    [Confirm the packet](#confirm-the-packet) reads any other Kind as a
    Story. Before a shape step, the Kind does not count, even when the
    Project has one, as for a Bug whose packet lacks a line. So before a
    shape step, the third source is `ask`.
 
-Never ask the user which level to use. The level holds for this run
-only. Do not run `lets go level` again. Print the line for the source
-you used. The last line is for the third source, before a shape step:
+Never ask the user which question mode to use. The question mode holds
+for this run only. Do not run `lets go questions` again. Print the line
+for the source you used. The last line is for the third source, before
+a shape step:
 
 ```text
-Interactivity: <level>, because you asked for it.
-Interactivity: <level>, because your lets config sets go.level.
-Interactivity: <level>, because #<i> is a <Kind>.
-Interactivity: ask, because shape has not run yet.
+Questions: <mode>, because you asked for it.
+Questions: <mode>, because your lets config sets go.questions.
+Questions: <mode>, because #<i> is a <Kind>.
+Questions: ask, because shape has not run yet.
 ```
 
-At `recommend`, this session answers each question that has a
+At `auto`, this session answers each question that has a
 recommendation, and asks the user the rest. At `ask`, it asks the
 user every question.
 
@@ -451,8 +454,8 @@ Next: [Walk the step table](#walk-the-step-table).
 
 ## Walk the step table
 
-After [Set the level](#set-the-level), on the branch `<name>`, read
-three records first, in this order:
+After [Set the question mode](#set-the-question-mode), on the branch
+`<name>`, read three records first, in this order:
 
 1. **The tree.** Run `git status --porcelain`. A line for a path outside
    `.workspace/` means the records disagree.
@@ -994,26 +997,26 @@ file per step.
    again, name the step, show the user the report, and stop.
 2. Count the step's `needs-input` reports in this run, this one
    included. From the step's sixth `needs-input` report in this run,
-   relay every question of the step as at `ask`, whatever `<level>` is:
+   relay every question of the step as at `ask`, whatever `<mode>` is:
    ask the user each one, show the `recommendation` as the suggested
    answer, and write the answer as the user gave it, with no marker.
    Before the first such question, print this line once:
 
    ```text
-   Interactivity: ask for the rest of this step, because it asked for input five times.
+   Questions: ask for the rest of this step, because it asked for input five times.
    ```
 
    The count is per step and per run: a new run, or another step,
    starts again at none. The settled-question stop above still holds.
 
 3. Otherwise, go through the questions in the report's order, as
-   `<level>` says:
-   - **At `recommend`, with a `recommendation`**: take it as the answer.
+   `<mode>` says:
+   - **At `auto`, with a `recommendation`**: take it as the answer.
      Say which question you answered, and the answer you gave. Write the
      answer as the recommendation followed by
      ` (lets-go accepted the step's recommendation; the user did not
      decide)`.
-   - **At `recommend`, without one**: ask the user that question alone.
+   - **At `auto`, without one**: ask the user that question alone.
      Wait for the answer before the next question.
    - **At `ask`**: ask the user every question, one at a time. Show the
      `recommendation`, when there is one, as the suggested answer. Wait

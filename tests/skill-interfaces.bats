@@ -870,13 +870,13 @@ review_build_start() {
   skill_says lets-go 'running `lets-go` again on that branch carries on from the first unfinished step'
 }
 
-@test "lets-go picks the level from the Kind and relays at ask" {
+@test "lets-go picks the question mode from the Kind and relays at ask" {
   local phrase
-  skill_says lets-go 'Interactivity: <level>, because #<i> is a <Kind>.'
-  skill_says lets-go 'Interactivity: <level>, because you asked for it.'
+  skill_says lets-go 'Questions: <mode>, because #<i> is a <Kind>.'
+  skill_says lets-go 'Questions: <mode>, because you asked for it.'
   skill_says lets-go 'gh issue view <i> --json title,blockedBy'
   skill_says lets-go 'report the unresolved owner or checkpoint it carries, and stop, even on a stacked branch'
-  skill_says lets-go 'The interactivity level is <level>.'
+  skill_says lets-go 'The interactivity level is <mode>.'
   skill_says lets-go 'Write the answer as the user gave it, with no marker'
   for phrase in '#152 adds' 'chores only' 'its stop stands'; do
     skill_does_not_say lets-go "$phrase"
@@ -926,34 +926,35 @@ review_build_start() {
     { echo "Enter the branch looks for the branch again"; false; }
 }
 
-@test "lets-go reads go.level before it asks GitHub for anything" {
-  local skill="$repo/skills/lets-go/SKILL.md" first_level first_gh
-  skill_says lets-go 'Interactivity: <level>, because your lets config sets go.level.'
-  skill_says lets-go 'lets go level'
-  first_level=$(grep -n 'lets go level' "$skill" | head -1 | cut -d: -f1)
+@test "lets-go reads go.questions before it asks GitHub for anything" {
+  local skill="$repo/skills/lets-go/SKILL.md" first_mode first_gh
+  skill_says lets-go 'Questions: <mode>, because your lets config sets go.questions.'
+  skill_says lets-go 'lets go questions'
+  first_mode=$(grep -n 'lets go questions' "$skill" | head -1 | cut -d: -f1)
   first_gh=$(grep -nE '`gh ' "$skill" | head -1 | cut -d: -f1)
-  [ "$first_level" -lt "$first_gh" ] ||
-    { echo "lets go level is on line $first_level, after a GitHub call on line $first_gh"; false; }
+  [ "$first_mode" -lt "$first_gh" ] ||
+    { echo "lets go questions is on line $first_mode, after a GitHub call on line $first_gh"; false; }
 }
 
-@test "the level rule is written once, in Set the level, and the shape step links it" {
-  local shape level
+@test "the question mode rule is written once, in Set the question mode, and the shape step links it" {
+  local shape mode
   shape="$(part_section 'Run the shape step')"
-  level="$(part_section 'Set the level')"
-  grep -qF '](../SKILL.md#set-the-level)' <<<"$shape" || { echo "Run the shape step does not link Set the level"; false; }
-  ! grep -qF 'because your lets config sets go.level' <<<"$shape" ||
-    { echo "Run the shape step still writes the level rule"; false; }
-  grep -qF '`ask` for any other Kind' <<<"$level" || { echo "Set the level names no level for any other Kind"; false; }
-  grep -qF 'Interactivity: ask, because shape has not run yet.' <<<"$level" ||
-    { echo "Set the level does not hold shape's level line"; false; }
+  mode="$(part_section 'Set the question mode')"
+  grep -qF '](../SKILL.md#set-the-question-mode)' <<<"$shape" || { echo "Run the shape step does not link Set the question mode"; false; }
+  ! grep -qF 'because your lets config sets go.questions' <<<"$shape" ||
+    { echo "Run the shape step still writes the question mode rule"; false; }
+  grep -qF '`auto` for a Chore or a Bug' <<<"$mode" || { echo "Set the question mode names no mode for a Chore or a Bug"; false; }
+  grep -qF '`ask` for any other Kind' <<<"$mode" || { echo "Set the question mode names no mode for any other Kind"; false; }
+  grep -qF 'Questions: ask, because shape has not run yet.' <<<"$mode" ||
+    { echo "Set the question mode does not hold shape's line"; false; }
   skill_does_not_say lets-go 'After a shape step, set it again here'
-  skill_says_once lets-go 'Interactivity: <level>, because your lets config sets go.level.'
+  skill_says_once lets-go 'Questions: <mode>, because your lets config sets go.questions.'
 }
 
 @test "lets-go runs a shape step for an idea or an unshaped issue" {
   local phrase
   skill_says lets-go 'Done shape: <date>. <evidence>'
-  skill_says lets-go 'Interactivity: ask, because shape has not run yet.'
+  skill_says lets-go 'Questions: ask, because shape has not run yet.'
   skill_says lets-go 'issue #<i>: <title>'
   skill_says lets-go 'issue-<i>'
   skill_says lets-go 'idea-<slug>'
@@ -1254,7 +1255,7 @@ readme_lets_go() {
 
 # The parts of a lets-go run, in run order. Each is a ## heading of SKILL.md.
 lets_go_parts=('Read the settings' 'Read the request' 'Start from an idea' 'Check the issue' 'Run the shape step'
-  'Pick the first ready story' 'Route' 'Enter the branch' 'Set the level' 'Walk the step table' 'End of the run')
+  'Pick the first ready story' 'Route' 'Enter the branch' 'Set the question mode' 'Walk the step table' 'End of the run')
 
 # heading_anchor <heading>: the anchor GitHub makes from a heading's text.
 heading_anchor() {
@@ -1600,10 +1601,10 @@ parts_fixture() {
 }
 
 @test "the part Next check names a part with no Next line" {
-  parts_fixture 'no_next=Set the level'
+  parts_fixture 'no_next=Set the question mode'
   run parts_say_next
   [ "$status" -eq 1 ] || { echo "it passed on a part with no Next line"; false; }
-  [ "$output" = 'Set the level does not end with a Next: line' ] || { echo "it said: $output"; false; }
+  [ "$output" = 'Set the question mode does not end with a Next: line' ] || { echo "it said: $output"; false; }
 }
 
 @test "the part Next check passes a Next line before a subsection" {
@@ -1628,16 +1629,16 @@ parts_fixture() {
   local part phrase
   part="$(part_section 'Read the request')"
   for phrase in \
-    'When the rest of the request is a number or nothing, the word names the level: take it off, and keep it for [Set the level](#set-the-level)' \
+    'When the rest of the request is a number or nothing, the word names the level: take it off, and keep it for [Set the question mode](#set-the-question-mode)' \
     'When the rest is words, on the default branch, ask the user whether the word names the level or is part of the idea' \
     'Show both readings' \
     'Ask it at either level, before [Start from an idea](#start-from-an-idea) runs' \
-    'When the user says the word names the level, take it off, and keep it for [Set the level](#set-the-level)' \
-    'Otherwise the word stays in the idea, and [Set the level](#set-the-level) takes the level from its next source' \
+    'When the user says the word names the level, take it off, and keep it for [Set the question mode](#set-the-question-mode)' \
+    'Otherwise the word stays in the idea, and [Set the question mode](#set-the-question-mode) takes the level from its next source' \
     'On another branch, ask nothing about the word: words stop the run there'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Read the request does not say: $phrase"; false; }
   done
-  skill_does_not_say lets-go 'names the level: take it off, and keep it for [Set the level](#set-the-level). What is left'
+  skill_does_not_say lets-go 'names the level: take it off, and keep it for [Set the question mode](#set-the-question-mode). What is left'
 }
 
 @test "lets-go stops an idea with no letter or digit" {
@@ -1658,14 +1659,14 @@ parts_fixture() {
     { echo "The shape step's name does not say <slug> is never empty"; false; }
 }
 
-@test "lets-go limits a step's rounds at recommend" {
+@test "lets-go limits a step's rounds at auto" {
   local section
   section="$(skill_section lets-go 'Relay the questions')"
-  skill_says_once lets-go 'Interactivity: ask for the rest of this step, because it asked for input five times.'
-  grep -qF 'From the step'"'"'s sixth `needs-input` report in this run, relay every question of the step as at `ask`, whatever `<level>` is: ask the user each one, show the `recommendation` as the suggested answer, and write the answer as the user gave it, with no marker' <<<"$section" ||
+  skill_says_once lets-go 'Questions: ask for the rest of this step, because it asked for input five times.'
+  grep -qF 'From the step'"'"'s sixth `needs-input` report in this run, relay every question of the step as at `ask`, whatever `<mode>` is: ask the user each one, show the `recommendation` as the suggested answer, and write the answer as the user gave it, with no marker' <<<"$section" ||
     { echo "Relay the questions does not relay as at ask from the sixth report"; false; }
   grep -qF 'Before the first such question, print this line once' <<<"$section" ||
-    { echo "Relay the questions does not print the Interactivity line once"; false; }
+    { echo "Relay the questions does not print the Questions line once"; false; }
   grep -qF 'The count is per step and per run: a new run, or another step, starts again at none. The settled-question stop above still holds' <<<"$section" ||
     { echo "Relay the questions does not say the count is per step and per run"; false; }
   grep -qF 'A step'"'"'s rounds go on until its report is `done` or `failed`. From its sixth `needs-input` report, the user answers its questions, as the limit above says' <<<"$section" ||
