@@ -2058,14 +2058,14 @@ section_italics() {
   [ -z "$out" ] || { printf '%s' "$out"; return 1; }
 }
 
-@test "the section link check names an italic section name" {
+@test "the check that lets-go links each section it names names an italic section name" {
   fixture_file lets-go SKILL.md '# lets-go' '' '## Route' '' 'Text.' '' '' '' '' '' '' 'otherwise *Route*'
   run section_italics "$(lets_go_skill)"
   [ "$status" -eq 1 ] || { echo "it passed on an italic section name"; false; }
   [ "$output" = 'lets-go/SKILL.md:12: Route' ] || { echo "it said: $output"; false; }
 }
 
-@test "the section link check names a section of another skill that lets-go links" {
+@test "the check that lets-go links each section it names names a section of another skill that lets-go links" {
   fixture_file lets-review-build SKILL.md '# Review build' '' '## Finish the change' '' 'Text.'
   fixture_file lets-go SKILL.md '# lets-go' '' 'See [Finish the change](../lets-review-build/SKILL.md#finish-the-change).' \
     'Then *Finish the change* runs.'
@@ -2074,12 +2074,12 @@ section_italics() {
   [ "$output" = 'lets-go/SKILL.md:4: Finish the change' ] || { echo "it said: $output"; false; }
 }
 
-@test "the section link check reads no italics inside fenced code" {
+@test "the check that lets-go links each section it names reads no italics inside fenced code" {
   fixture_file lets-go SKILL.md '# lets-go' '' '## Route' '' '```text' 'Go on in *Route*.' '```'
   section_italics "$(lets_go_skill)"
 }
 
-@test "the section link check reads no italics that name no section" {
+@test "the check that lets-go links each section it names reads no italics that name no section" {
   fixture_file lets-go SKILL.md '# lets-go' '' 'Back in *Resume mode*.'
   section_italics "$(lets_go_skill)"
 }
@@ -2090,7 +2090,7 @@ section_italics() {
   section_italics "${files[@]}"
 }
 
-@test "the section link check reads no italics in the glossary's copy" {
+@test "the check that lets-go links each section it names reads no italics in the glossary's copy" {
   fixture_file lets-go SKILL.md '# lets-go' '' '## Route' '' 'Text.'
   fixture_file lets-go references/terms.md '# Terms' '' 'such as *Route* or *Walk the step table*'
   section_italics "$(lets_go_skill)" "$skills_dir/lets-go/references/terms.md"
@@ -2121,7 +2121,7 @@ section_code_spans() {
   [ -z "$out" ] || { printf '%s' "$out"; return 1; }
 }
 
-@test "the pull request section check names a section in code font" {
+@test "the check that lets-go names a pull request section in bold names a section in code font" {
   local lines=() n
   for n in $(seq 29); do lines+=(''); done
   fixture_file lets-go references/records.md "${lines[@]}" 'has no `Code review` section'
@@ -2130,7 +2130,7 @@ section_code_spans() {
   [ "$output" = 'lets-go/references/records.md:30' ] || { echo "it said: $output"; false; }
 }
 
-@test "the pull request section check passes a heading to search for" {
+@test "the check that lets-go names a pull request section in bold passes a heading to search for" {
   fixture_file lets-go references/records.md 'Find the `## Plan review` heading'
   section_code_spans "$skills_dir/lets-go/references/records.md"
 }
