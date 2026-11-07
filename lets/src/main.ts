@@ -196,26 +196,26 @@ Exit codes:
      that is not a string is a usage error.
   4  the outcome is unknown, such as no reply from the harness`;
 
-const GO_LEVEL_HELP = `
-Reads go.level from the lets config: $XDG_CONFIG_HOME/lets/config.yaml,
+const GO_QUESTIONS_HELP = `
+Reads go.questions from the lets config: $XDG_CONFIG_HOME/lets/config.yaml,
 or ~/.config/lets/config.yaml when XDG_CONFIG_HOME is unset or empty.
-go.level is ask or recommend:
+go.questions is ask or auto:
 
   version: 3
   go:
-    level: recommend
+    questions: auto
 
-lets-go uses it in place of the Kind's default. A level named in the
-request still wins. lets go level reads only version and go, and starts
-no session.
+lets-go uses it in place of the Kind's default. A question mode named in
+the request still wins. lets go questions reads only version and go, and
+starts no session.
 
-stdout: one JSON line, { level }. level is null when there is no config,
-no go or no go.level.
+stdout: one JSON line, { questions }. questions is null when there is no
+config, no go or no go.questions.
 
 Exit codes:
   0  ok
-  2  the config is not valid, go is not a mapping, or go.level is not ask
-     or recommend. stderr names the file and the key.`;
+  2  the config is not valid, go is not a mapping, or go.questions is not
+     ask or auto. stderr names the file and the key.`;
 
 // --timeout-minutes: a whole number of minutes.
 function wholeMinutes(value: string): number {
@@ -348,10 +348,10 @@ program
   .command('go')
   .summary('settings for the lets-go skill')
   .description('Read the settings the lets-go skill uses.')
-  .command('level')
-  .summary('print the default interactivity level')
-  .description('Print the default interactivity level, from go.level in the lets config.')
-  .addHelpText('after', GO_LEVEL_HELP)
+  .command('questions')
+  .summary('print the default question mode')
+  .description('Print the default question mode, from go.questions in the lets config.')
+  .addHelpText('after', GO_QUESTIONS_HELP)
   .action(async () => {
     process.exitCode = await questions(realDeps());
   });
