@@ -1672,6 +1672,20 @@ parts_fixture() {
     { echo "the closing sentence does not link the limit"; false; }
 }
 
+@test "an archived change keeps the schema it was built with" {
+  local part change archive route
+  part="$(part_section 'Enter the branch')"
+  grep -qF 'Set `<schema>` from the `schema:` line of the first of these files that exists' <<<"$part" ||
+    { echo "Enter the branch does not set the schema from the first file that exists"; false; }
+  change="$(grep -bo -F '`openspec/changes/<name>/.openspec.yaml`' <<<"$part" | head -1 | cut -d: -f1)"
+  archive="$(grep -bo -F '`openspec/changes/archive/<YYYY-MM-DD>-<name>/.openspec.yaml`' <<<"$part" | head -1 | cut -d: -f1)"
+  route="$(grep -bo -F 'When neither exists, it is the schema *Route* picked' <<<"$part" | head -1 | cut -d: -f1)"
+  [ -n "$change" ] && [ -n "$archive" ] && [ -n "$route" ] ||
+    { echo "Enter the branch does not name all three sources: change $change, archive $archive, route $route"; false; }
+  [ "$change" -lt "$archive" ] && [ "$archive" -lt "$route" ] ||
+    { echo "the sources are out of order: change $change, archive $archive, route $route"; false; }
+}
+
 # overview_row <part>: the overview's row for the part.
 overview_row() {
   awk '/^## Placeholders$/ { exit } /^\|/' "$(lets_go_skill)" | grep -F -- "| [$1](#"

@@ -379,9 +379,16 @@ Next: [Enter the branch](#enter-the-branch).
    fast-forward, the branch and `origin` have diverged: the
    [records disagree](references/records.md#records-that-disagree). If any command here fails
    for another reason, show the user its error, and stop.
-5. Set `<schema>`. When `openspec/changes/<name>/.openspec.yaml` exists,
-   it is that file's `schema:` line. Otherwise it is the schema *Route*
-   picked.
+5. Set `<schema>` from the `schema:` line of the first of these files
+   that exists:
+   - the change's `openspec/changes/<name>/.openspec.yaml`;
+   - the archived change's
+     `openspec/changes/archive/<YYYY-MM-DD>-<name>/.openspec.yaml`, in
+     the folder whose whole name is `<YYYY-MM-DD>-<name>`.
+
+   When neither exists, it is the schema *Route* picked. Archive keeps
+   the file, so an archived change keeps the schema it was built with,
+   even when *Route* would now pick another.
 
 Next: [Set the level](#set-the-level);
 [Read the request](#read-the-request) or
