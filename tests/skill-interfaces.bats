@@ -2331,6 +2331,30 @@ overview_paragraph() {
   done
 }
 
+@test "lets-go explains each glossary handoff term in its section" {
+  local section term phrase text before
+  # Each row: the section, the term, and its explanation, which comes before
+  # any other mention of the term in the section.
+  while IFS=$'\t' read -r section term phrase; do
+    text="$(procedure_text "$section" | tr -s '[:space:]' ' ')"
+    grep -qF -- "$phrase" <<<"$text" || { echo "$section does not say: $phrase"; false; }
+    before="${text%%"$phrase"*}"
+    ! grep -qiF -- "$term" <<<"$before" || { echo "$section says $term before it explains it"; false; }
+  done <<'EOF'
+Find the source of demand	glossary handoff	A **Glossary handoff** is the section `lets-shape` writes in a story's issue body when shaping added glossary terms. It records which issue owns the definitions, and where the owner's glossary commits are.
+Check the prerequisite	prerequisite	The prerequisite is the glossary definitions a story needs that another issue owns.
+Check the checkpoint	checkpoint	The checkpoint is the ordered `docs:` commits that hold shaping's glossary edits.
+Check the checkpoint	owned paths	The owned paths are the glossary files those commits may change.
+Import the commits	holding branch	The holding branch is the branch `lets-shape` makes from the default branch to keep the checkpoint commits until a story's branch imports them.
+EOF
+  # Rehearse is explained in the sentence that first says it.
+  text="$(procedure_text 'Check the checkpoint' | tr -s '[:space:]' ' ')"
+  grep -qF 'rehearse the import on the proposed base: try it first in a throwaway checkout, and keep the real working tree as it is.' \
+    <<<"$text" || { echo "Check the checkpoint does not explain rehearse"; false; }
+  before="${text%%rehearse the import on the proposed base: try it first*}"
+  ! grep -qiF 'rehears' <<<"$before" || { echo "Check the checkpoint says rehearse before it explains it"; false; }
+}
+
 @test "the check that lets-go links each glossary term at its first use reads step report apart from step" {
   fixture_file lets-go SKILL.md '# lets-go' '' 'It ends with a [step report](references/terms.md#step-report).' \
     'Each [step](references/terms.md#step) runs in a fresh session.'

@@ -507,7 +507,10 @@ create anything.
 It uses the `<project>`, `<owner>` and `<repo>` that
 [Read the settings](#read-the-settings) set.
 
-Read [the glossary handoff](references/glossary-handoff.md) only for an
+A **Glossary handoff** is the section `lets-shape` writes in a story's
+issue body when shaping added glossary terms. It records which issue
+owns the definitions, and where the owner's glossary commits are. Read
+[the glossary handoff](references/glossary-handoff.md) only for an
 issue whose body has a **Glossary handoff** section. For an issue with
 none, *Check the prerequisite* returns `resolved`, and you read no file.
 
