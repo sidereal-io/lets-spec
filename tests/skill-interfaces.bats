@@ -2108,6 +2108,43 @@ section_italics() {
     { echo "End of the run does not link Finish the change"; false; }
 }
 
+# section_code_spans <file>...: each line, outside fenced code, with a code
+# span that holds only Code review or Plan review, as <file>:<line>, the file
+# under the skills folder. A pull request's section is named in bold.
+section_code_spans() {
+  local file out=""
+  for file in "$@"; do
+    out+="$(awk -v name="${file#"${skills_dir:-$repo/skills}/"}" "$fence_rules"'
+      !code && /`(Code|Plan) review`/ { print name ":" FNR }' "$file")"
+    [ -z "$out" ] || [[ "$out" == *$'\n' ]] || out+=$'\n'
+  done
+  [ -z "$out" ] || { printf '%s' "$out"; return 1; }
+}
+
+@test "the pull request section check names a section in code font" {
+  local lines=() n
+  for n in $(seq 29); do lines+=(''); done
+  fixture_file lets-go references/records.md "${lines[@]}" 'has no `Code review` section'
+  run section_code_spans "$skills_dir/lets-go/references/records.md"
+  [ "$status" -eq 1 ] || { echo "it passed on a section in code font"; false; }
+  [ "$output" = 'lets-go/references/records.md:30' ] || { echo "it said: $output"; false; }
+}
+
+@test "the pull request section check passes a heading to search for" {
+  fixture_file lets-go references/records.md 'Find the `## Plan review` heading'
+  section_code_spans "$skills_dir/lets-go/references/records.md"
+}
+
+@test "lets-go names a pull request section in bold" {
+  local files
+  mapfile -t files < <(skill_files lets-go)
+  section_code_spans "${files[@]}"
+  grep -qF 'has no **Code review** section' <<<"$(walk_section)" ||
+    { echo "Walk the step table does not name Code review in bold"; false; }
+  grep -qF 'has no **Code review** section' <<<"$(skill_section lets-go 'Records that disagree')" ||
+    { echo "Records that disagree does not name Code review in bold"; false; }
+}
+
 @test "lets-go keeps Check an earlier review in italics" {
   local row
   row="$(walk_section)"

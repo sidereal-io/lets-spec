@@ -455,7 +455,7 @@ records first, in this order:
    - `openspec/changes/<name>/` exists too;
    - the pull request is missing or is a draft;
    - the flow's schema, the `schema:` line of `openspec/config.yaml`, is
-     `lets-standard`, and the pull request's `body` has no `Code review`
+     `lets-standard`, and the pull request's `body` has no **Code review**
      section.
 
 Then walk [The step table](#the-step-table) from the top row.
