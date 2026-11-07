@@ -2145,6 +2145,15 @@ section_code_spans() {
     { echo "Records that disagree does not name Code review in bold"; false; }
 }
 
+@test "lets-go names a step in plain words in prose" {
+  local old
+  for old in 'Run the `shape` step' 'When `review-build` reports' 'after `shape`, go on'; do
+    skill_does_not_say lets-go "$old"
+  done
+  grep -qF '`--for`, `--name`, file names and config keys use `shape`, `plan`, `review-plan`, `build` and `review-build`.' \
+    <<<"$(skill_section lets-go 'The step table')" || { echo "The step table does not give the --for names in code font"; false; }
+}
+
 @test "lets-go keeps Check an earlier review in italics" {
   local row
   row="$(walk_section)"

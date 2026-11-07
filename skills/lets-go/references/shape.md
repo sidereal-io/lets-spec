@@ -57,7 +57,7 @@ once per run. [Check the issue](../SKILL.md#check-the-issue) decides when it run
    another idea, an earlier run stopped before it finished, on that other idea. In
    that case, remove `.workspace/lets-go/<shape-name>-shape-answers.yaml`
    before you write the prompt.
-4. Run the `shape` step, as [Run a step](../SKILL.md#run-a-step) says.
+4. Run the shape step, as [Run a step](../SKILL.md#run-a-step) says.
 5. When it reports `done`, [Read the report](../SKILL.md#read-the-report) says
    what it shaped:
    - **One issue:** that issue is `<i>`. Go on from the blocker read in

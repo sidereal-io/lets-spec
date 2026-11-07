@@ -525,7 +525,7 @@ Next: [End of the run](#end-of-the-run), when no row is left.
 The walk prints each row's line when it settles the row, as
 [The step lines](#the-step-lines) says. A failed step ends the walk.
 
-When `review-build` reports `done`, and
+When review build reports `done`, and
 [Read the report](#read-the-report) has checked it against the records,
 its [Finish the change](../lets-review-build/SKILL.md#finish-the-change) has marked the pull request ready for review. When the walk is over, print the pull
 request's URL. A failed shape has none: there is no branch yet. Nor
@@ -886,7 +886,7 @@ Once shape reports `done` or `failed`, remove
 finished shape. A later idea, or a second shape of the same issue, must
 start with no answers.
 
-- **`done`**: after `shape`, go on as
+- **`done`**: after shape, go on as
   [Run the shape step](#run-the-shape-step) says. After any other step,
   check the report against the records first. The step may have changed
   any of them, so a read from before the step cannot answer. Read the
