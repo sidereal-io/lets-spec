@@ -2253,16 +2253,20 @@ glossary_entry() {
 }
 
 # terms_match_glossary [terms] [glossary]: each lets-go term has a ## heading
-# in both files, with the same text. Prints each term that differs or is
-# missing.
+# in both files, with the same text, and terms.md has no other ## heading.
+# Prints each term that differs, is missing or is extra.
 terms_match_glossary() {
   local terms="${1:-$repo/skills/lets-go/references/terms.md}" glossary="${2:-$repo/openspec/glossary.md}"
-  local term copy entry wrong=()
+  local term copy entry heading wrong=()
   for term in "${lets_go_terms[@]}"; do
     if ! copy="$(glossary_entry "$terms" "$term")"; then wrong+=("terms.md has no entry: $term"); continue; fi
     if ! entry="$(glossary_entry "$glossary" "$term")"; then wrong+=("the glossary has no entry: $term"); continue; fi
     [ "$copy" = "$entry" ] || wrong+=("terms.md differs from the glossary: $term")
   done
+  while IFS= read -r heading; do
+    for term in "${lets_go_terms[@]}"; do [ "$heading" != "$term" ] || continue 2; done
+    wrong+=("terms.md has an entry lets-go does not use: $heading")
+  done < <(awk "$fence_rules"' !code && /^## / { print substr($0, 4) }' "$terms")
   [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
 }
 
@@ -2304,6 +2308,15 @@ terms_fixture() {
   run terms_match_glossary "$BATS_TEST_TMPDIR/terms.md" "$BATS_TEST_TMPDIR/glossary.md"
   [ "$status" -eq 1 ] || { echo "it passed on an entry the glossary lacks"; false; }
   [ "$output" = 'the glossary has no entry: Packet' ] || { echo "it said: $output"; false; }
+}
+
+@test "the terms match the glossary check names an entry the copy should not hold" {
+  terms_fixture "$BATS_TEST_TMPDIR/glossary.md" '' '' ''
+  terms_fixture "$BATS_TEST_TMPDIR/terms.md" '' '' ''
+  printf '## Backlog\n\nFixture Backlog.\n' >>"$BATS_TEST_TMPDIR/terms.md"
+  run terms_match_glossary "$BATS_TEST_TMPDIR/terms.md" "$BATS_TEST_TMPDIR/glossary.md"
+  [ "$status" -eq 1 ] || { echo "it passed on an extra entry"; false; }
+  [ "$output" = 'terms.md has an entry lets-go does not use: Backlog' ] || { echo "it said: $output"; false; }
 }
 
 # first_term_links [skill.md]: in lets-go's SKILL.md, outside the frontmatter
