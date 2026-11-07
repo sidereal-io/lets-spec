@@ -234,7 +234,7 @@ The rounds at `auto` SHALL have a limit. From a step's sixth `needs-input` repor
 
 #### Scenario: The fifth round is still answered
 - **WHEN** the question mode is `auto`, and the build step reports `needs-input` for the fifth time in this run, with every question recommended
-- **THEN** `lets-go` takes each recommendation as the answer, as for the first round, and prints no `Interactivity:` line
+- **THEN** `lets-go` takes each recommendation as the answer, as for the first round, and prints no `Questions:` line
 
 ### Requirement: A run ends on done, failed, or a repeated question
 `lets-go` SHALL run a step's rounds until its report is `done` or `failed`. At `auto`, from a step's sixth `needs-input` report in a run, the user answers every question of that step, as *lets-go relays a needs-input report in auto mode* says. When a `needs-input` report holds a question that is already in the answers file, `lets-go` SHALL stop, say the step asked a settled question again, and show the report. *Read the report* SHALL handle a failed shape step before any other failed step. For a failed shape step there is no branch: `lets-go` SHALL print `Failed shape: <reason>`, say to run `lets-shape` on the idea or the issue, name no branch and print no pull request URL. On a `failed` report from any other step it SHALL show the reason, name the step and the branch, and stop. It SHALL say that running `lets-go` again on the branch carries on from the first unfinished step. It SHALL print the pull request's URL only when the branch has a pull request. When it has none, it SHALL print no URL, and SHALL say that the branch has no pull request yet. It SHALL not run a failed step again in the same run.
