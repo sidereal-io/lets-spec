@@ -1,6 +1,6 @@
 # ADR Review Manifest
 
-- Status: reviewed for architecture port
+- Status: capture design reopened; earlier review does not approve a replacement
 - Review date: 2026-11-07
 
 ## Review Summary
@@ -20,10 +20,11 @@ change identity and private continuation from the prior implementation.
 
 ## New Durable ADRs Created
 
-ADR-022-protected-capture-runs-under-a-separate-account.md records the concrete
-Linux capture boundary proposed for operator deployment. It builds on the
-accepted request/result architecture. Offline tests verify implementation
-behavior; service installation and live qualification remain gates.
+ADR-022-protected-capture-runs-under-a-separate-account.md is withdrawn at the
+user's request. The agent introduced this separate-account service proposal
+in #172; it was never accepted. Its prototype remains for reassessment and
+must not be installed as a prerequisite for continuing this change. The
+capture implementation is undecided. ADR-015 and ADR-020 are unchanged.
 
 ## Identity record numbering
 

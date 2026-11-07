@@ -1,3 +1,8 @@
+> **Withdrawn deployment proposal:** ADR-022 was withdrawn at the user's
+> request on 2026-11-07. This guide and `packaging/capture/` describe an
+> unaccepted prototype. Do not install it. Capture design is reopened;
+> no replacement is selected. ADR-015's evidence requirements remain in force.
+
 # Independent backlog capture
 
 The action workflow requires a separately administered capture runner. The

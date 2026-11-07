@@ -1,3 +1,17 @@
+## Current planning status: capture design reopened
+
+The user withdrew the ADR-022 separate-account service proposal on 2026-11-07.
+It was an agent implementation assumption and was never an accepted project
+decision. ADR-015 and ADR-020 remain in force. No replacement capture channel
+has been selected. Investigate existing tool-host capabilities and agree the
+revised design before implementation or live qualification continues.
+
+The concrete service appendix below records the withdrawn prototype design.
+It is historical context, not an instruction to install or continue that work.
+Its implementation and offline tests do not establish acceptance. Reconcile
+CLI behavior, packaging and deployment documentation after the new design is
+agreed, then review the revised plan before applying it.
+
 ## Context
 
 The branch contains an executable GitHub implementation and private native
@@ -83,12 +97,11 @@ cannot establish remote state. No separate provider-specific verification
 executor is a fallback. Reject forged, editable, mismatched, stale,
 replayed, incomplete and unavailable capture.
 
-The concrete service, trust setup, wire operations and resumption design are
-specified below. Building and testing those components does not require an
-existing deployed service. Installing the service requires operator approval
-of the completed deployment artifact. Qualifying live support requires the
-separate-account deployment, trusted real tool/authentication and live evidence.
-A test double never qualifies that trust boundary.
+The concrete capture implementation is unresolved. The separate-account
+service appendix below is withdrawn history. A replacement must satisfy the
+accepted evidence requirements without treating the prototype deployment as
+mandatory. Agree and review that design before applying implementation changes.
+A test double never qualifies an independent trust boundary.
 
 ### 4. Preserve sequencing and conservative recovery
 
@@ -187,7 +200,7 @@ journals for reconciliation. Rollback must not release remote claims or replay
 unknown operations. The original PR remains the delivery branch; merge is
 user-owned.
 
-## Concrete capture and resumption design, 2026-11-07
+## Withdrawn prototype: concrete capture and resumption design, 2026-11-07
 
 No existing capture interface has been identified. The implementation choice
 is a generic protected local runner, administered separately from the agent.

@@ -2,9 +2,12 @@
 
 The original 20 completed tasks are historical under
 history/executable-boundary/tasks.md. They do not qualify this port.
-The concrete capture design was reviewed and the source implementation now
-passes offline checks. Deployment and live qualification remain gated. Never count a test double as live
-independent evidence.
+Capture design is reopened at the user's request. ADR-022 is withdrawn; no
+replacement channel is selected. Stop implementation and live acceptance until
+the revised design is agreed and its plan reviewed. Existing checked tasks
+record implemented prototype behavior, not acceptance of its deployment model.
+Reassess affected work after the design is resolved. Never count a test double
+as live independent evidence.
 
 ## 1. Request/result contract
 
@@ -25,8 +28,12 @@ independent evidence.
 ## 4. Workflow and release [depends-on: 3]
 
 - [x] 4.1 [complex] Integrate explicit private continuation into lets-go, lets-plan, lets-build and lets-review-build while preserving their current step ownership; document callable actions/submissions and error handling. (verify: pnpm test)
-- [x] 4.2 [complex] Replace executable transport conformance/packaging with offline request/result and capture cases and production-consumed definitions. Preserve behavioral coverage and exclude unused kit payloads. (verify: nix flake check)
+- [ ] 4.2 [complex] Reconcile conformance, packaging and deployment documentation with the agreed capture design; reassess the prototype bundle and preserve behavioral coverage. (verify: nix flake check)
 - [ ] 4.3 [complex] Run automated repository checks and fresh scoped live equivalence acceptance, including independent claim and exact merge evidence. Historical mutations must not be repeated. (verify: pnpm test)
+
+Task 2.1 is reopened at the design level. Identify an available capture
+interface, agree its trust boundary and setup cost, and review the revised plan
+before continuing implementation. No separate-account service is selected.
 
 Task 2.1's command verifies offline validation only. Completing that task
 also requires recorded evidence of the actual deployed trust boundary and
@@ -43,7 +50,11 @@ keep completion pending if merge or independent evidence is unavailable.
 - 2026-11-07: user authorized porting #172 to ADR-015 rather than retaining
   its executable design. The PR is draft and its archive was reverted.
 
-## Offline validation
+- 2026-11-07: user withdrew the agent-proposed ADR-022 service design and
+  asked to step back. Capture design and affected packaging work are reopened;
+  no replacement or system-service installation is approved.
+
+## Historical offline validation of the prototype
 
 - 2026-11-07: pnpm test passed 865 Node tests, type checking and 369
   shell tests. Strict validation of github-backlog-build passed.

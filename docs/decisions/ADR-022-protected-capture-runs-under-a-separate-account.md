@@ -1,12 +1,24 @@
 ---
 id: adr-022
 date: 2026-11-07
-status: proposed
+status: withdrawn
 title: 'ADR-022: Protected capture runs under a separate account'
 description: Architecture decision record for a generic independently administered tool capture service
 ---
 
 # ADR-022: Protected capture runs under a separate account
+
+## Withdrawal, 2026-11-07
+
+The user asked to step back from this proposal and reopen the capture design.
+The separate-account service was introduced by the agent during PR #172. It
+was never accepted as a project decision. It does not govern implementation
+or require installation. The accepted request/result architecture remains
+unchanged; no replacement capture implementation has been selected.
+
+The proposal below is retained as history. Existing service code and deployment
+examples are unaccepted prototype work. Do not install them or treat their
+passing offline tests as approval of this approach.
 
 ## Context
 
@@ -17,7 +29,7 @@ report or signing key cannot prove backend ownership or merge. The available
 harness has no established protected capture API. A capture boundary is needed
 before the migrated GitHub workflow can establish its required remote facts.
 
-## Decision
+## Withdrawn proposal
 
 Provide one generic Linux capture runner under a separately administered,
 unprivileged OS account. The agent connects to its protected Unix socket. The

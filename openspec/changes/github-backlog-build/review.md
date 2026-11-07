@@ -1,3 +1,15 @@
+## Current status: capture design reopened
+
+The user withdrew ADR-022's service proposal on 2026-11-07. Earlier plan and
+code reviews below cover the recorded prototype and commit ranges only. They
+do not select a replacement or authorize continued implementation/deployment.
+Agree the revised capture design and review the updated plan before applying
+it. ADR-015 and ADR-020 remain in force; independent evidence and fresh live
+acceptance remain required. Separate-account installation is no longer a
+selected delivery gate.
+
+## Historical reviews of the withdrawn prototype
+
 ## Review Metadata
 
 - Review round: 3
@@ -36,14 +48,15 @@ corrections. The reviewer permits safe implementation after those edits;
 no new review is required for them. This is not independent-family approval,
 and it does not qualify a deployed trust channel or live GitHub support.
 
-## Delivery gates
+## Historical delivery gates
 
-Prepare core, generic runner, inert definitions, offline validation and
-protected deployment artifacts. Installing a system service requires operator
-approval of the completed artifact. Demonstrated separate-account isolation,
-pinned real tools/authentication and new live claim/merge evidence remain
-mandatory before support/readiness. Earlier executable reviews and acceptance
-remain historical under history/executable-boundary.
+This review proposed core, generic runner, inert definitions, offline validation
+and protected deployment artifacts, with operator approval and separate-account
+qualification before readiness. The user has since withdrawn that service
+proposal. These deployment choices no longer govern the change. ADR-015's
+independent evidence and fresh live acceptance requirements remain in force.
+Earlier executable reviews and acceptance remain historical under
+history/executable-boundary.
 
 ## Port code review
 

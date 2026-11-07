@@ -43,8 +43,10 @@ remain external dependencies. Delegation migration stays separate (D6).
 
 ## Delivery prerequisite
 
-No capture channel is deployed in this environment. The concrete design
-prepares a generic separately administered runner. Its implementation can be
-reviewed and tested offline; installation requires operator approval of the
-completed artifact. Live support cannot be claimed until independent capture
-proves fresh ownership/status and exact associated merge evidence (D4).
+Capture design is reopened at the user's request (D8). ADR-022's separate-account
+service proposal is withdrawn. Existing service code and deployment examples
+are unaccepted prototypes, not the selected delivery prerequisite. Investigate
+existing tool-host capture and agree a concrete design before implementation
+continues. ADR-015's independent-evidence requirement remains in force (D4).
+Live support cannot be claimed until the agreed channel proves fresh
+ownership/status and exact associated merge evidence.

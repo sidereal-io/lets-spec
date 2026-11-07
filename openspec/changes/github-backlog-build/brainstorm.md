@@ -15,6 +15,7 @@ https://github.com/sidereal-io/lets-spec/issues/136
 | D5 | How does this fit main's workflow? | Lets-go selects and claims; lets-plan plans; lets-build implements; lets-review-build verifies, archives and marks ready. Pass explicit private continuation through those steps. | ADR-020 |
 | D6 | What is outside this port? | Setup/shaping writes, new providers, delegation runtime migration, claim/storage redesign and automatic PR merging. | #136; #180; ADR-015 |
 | D7 | What evidence can be reused? | Preserve old acceptance as historical evidence only. Never repeat its mutations. The new architecture needs its own automated and fresh scoped live acceptance. | #180 |
+| D8 | Is a separate-account capture service selected? | No. Withdraw ADR-022 and reopen capture design before further implementation or live acceptance. Keep ADR-015 and ADR-020 unchanged. | User, 2026-11-07 |
 
 ## Changes from the story
 
@@ -24,17 +25,19 @@ transport is superseded by ADR-015. #180's earlier exclusion of rewriting
 #172 is superseded by that explicit instruction; unrelated provider and
 delegation work stays outside this change.
 
-## Capture implementation assumption
+## Capture design reopened
 
-The repository and available tool catalog do not identify an established
-trusted capture channel. The user has been asked for an existing service
-interface. If none exists, a generic capture service must be designed and
-deployed outside the agent's write access. Its trust, tool identity and
-request/response provenance must be demonstrated before routine claims
-or completion can progress. Approval alone cannot establish those facts.
-The selected implementation assumption is a generic separately administered
-runner, specified in the design. No system-service installation is authorized
-by this assumption. Deployment and live qualification remain required gates;
-pure/offline implementation can proceed after review of the concrete design.
+The user withdrew the separate-account service proposal after reviewing its
+installation and operating cost. ADR-022 was an agent-proposed implementation
+choice, not an accepted decision from #181. The earlier assumption that a
+separate service must be designed and deployed is withdrawn.
 
-Confirmed by user: yes
+Investigate whether an existing tool host can expose original CLI/MCP results
+through a channel Lets can independently retrieve. Record the actual interface,
+trust properties and user setup cost before proposing an implementation. No
+replacement is selected. Do not weaken ADR-015 or install the prototype to
+continue testing. Agree the revised design and complete its plan review before
+resuming implementation or fresh live acceptance.
+
+Confirmed by user: the request/result port and reopening the capture design;
+not the withdrawn service proposal or any replacement implementation.
