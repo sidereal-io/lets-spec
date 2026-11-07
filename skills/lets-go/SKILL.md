@@ -8,13 +8,15 @@ description: Take one story, bug or chore, or an idea in words, to a pull reques
 Take one story, bug or chore to a pull request ready for review, in one
 run. Start from its issue number, from an idea in words, or from
 nothing, which takes the next ready issue. The run claims the issue in
-this session. Then each step runs in a fresh session: shape when the
-issue needs it, then plan, review plan, build and review build.
-`lets-minimal` skips review plan. An idea too large for one issue runs
-discovery in the shape step, and the run builds the first ready story it
-files. A step never asks the user: it ends with a report. This session
-answers the step's questions or asks the user, as the interactivity
-level says. Run every command below from the repo root.
+this session. Then each [step](references/terms.md#step) runs in a
+fresh session: shape when the issue needs it, then plan, review plan,
+build and review build. `lets-minimal` skips review plan. An idea too
+large for one issue runs discovery in the shape step, and the run builds
+the first ready story it files. A step never asks the user: it ends with
+a [step report](references/terms.md#step-report). This session answers
+the step's questions or asks the user, as the
+[interactivity level](references/terms.md#interactivity-level) says.
+Run every command below from the repo root.
 
 A run can stop before it finishes. Run `lets-go` again, on the default branch or
 on the change's branch. It reads from Git and GitHub which steps are
@@ -25,9 +27,10 @@ unfinished step.
 
 A run goes through these parts, in this order. *Start from an idea*,
 *Run the shape step* and *Pick the first ready story* run only when the
-request or the packet needs them. Each part runs in this session. A
-part is not a step, and has no step report. The shape step that
-*Run the shape step* runs is a step, and has a report.
+request or the [packet](references/terms.md#packet) needs them. Each
+part runs in this session. A part is not a step, and has no step report.
+The shape step that *Run the shape step* runs is a step, and has a
+report.
 
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|

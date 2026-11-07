@@ -2233,6 +2233,60 @@ terms_fixture() {
   [ "$output" = 'the glossary has no entry: Packet' ] || { echo "it said: $output"; false; }
 }
 
+# first_term_links [skill.md]: in lets-go's SKILL.md, outside the frontmatter
+# and code, the first line that mentions each of packet, step, step report
+# and interactivity level links that term's heading in references/terms.md.
+# A mention of step report is not one of step, and a link's target is not a
+# mention. Prints each term whose first mention has no link.
+first_term_links() {
+  local skill="${1:-$(lets_go_skill)}" file="$BATS_TEST_TMPDIR/first-terms.md" term pattern anchor first wrong=()
+  # Blank out the frontmatter, so prose_text keeps the line numbers.
+  awk 'NR == 1 && /^---$/ { front = 1; print ""; next } front { if (/^---$/) front = 0; print ""; next } { print }' \
+    "$skill" >"$file"
+  for term in packet step 'step report' 'interactivity level'; do
+    case "$term" in
+      packet) pattern='packets?' ;;
+      step) pattern='steps?' ;;
+      'step report') pattern='step reports?' ;;
+      # Interactivity comes only before level, which may wrap to the next line.
+      'interactivity level') pattern='interactivity' ;;
+    esac
+    anchor="$(heading_anchor "$term")"
+    first="$(prose_text "$file" | awk -v pattern="(^|[^a-z-])$pattern([^a-z-]|\$)" -v term="$term" '{
+      line = $0; sub(/:.*/, "", line); text = tolower(substr($0, length(line) + 3))
+      gsub(/\]\([^)]*\)/, "]", text)
+      if (term == "step") gsub(/step reports?/, "", text)
+      if (text ~ pattern) { print line; exit }
+    }')"
+    [ -n "$first" ] || continue
+    sed -n "${first}p" "$file" | grep -qF "](references/terms.md#$anchor)" ||
+      wrong+=("$term: line $first does not link references/terms.md#$anchor")
+  done
+  [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
+}
+
+@test "lets-go links each glossary term at its first use" {
+  local anchor
+  first_term_links
+  for anchor in packet step step-report interactivity-level; do
+    grep -qF "](references/terms.md#$anchor)" "$(lets_go_skill)" || { echo "SKILL.md never links terms.md#$anchor"; false; }
+  done
+}
+
+@test "the check that lets-go links each glossary term at its first use names a term used before its link" {
+  fixture_file lets-go SKILL.md '---' 'description: Read the packet.' '---' '# lets-go' '' "Read the issue's packet." \
+    'Then confirm the [packet](references/terms.md#packet).'
+  run first_term_links "$skills_dir/lets-go/SKILL.md"
+  [ "$status" -eq 1 ] || { echo "it passed on a term used before its link"; false; }
+  [ "$output" = 'packet: line 6 does not link references/terms.md#packet' ] || { echo "it said: $output"; false; }
+}
+
+@test "the check that lets-go links each glossary term at its first use reads step report apart from step" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'It ends with a [step report](references/terms.md#step-report).' \
+    'Each [step](references/terms.md#step) runs in a fresh session.'
+  first_term_links "$skills_dir/lets-go/SKILL.md"
+}
+
 # prose() deduplicates matches, and SKILL.md already names gh api graphql, so
 # this reads the reference itself.
 @test "the issue-comments reference holds its fixed strings" {
