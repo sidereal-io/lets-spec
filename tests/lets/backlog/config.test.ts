@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {checkConfiguration} from '../../../lets/src/backlog/config.ts';
 import {METADATA} from '../../../lets/src/backlog/items.ts';
 const mappings=Object.fromEntries(Object.entries(METADATA).map(([field,values])=>[field,{field,cardinality:'one',values:Object.fromEntries(values.map(value=>[value,value]))}]));
-const explicit={lets:{backlog:{provider:'github',definition:{name:'github',version:1},id:'P',mappings}}};
+const explicit={lets:{backlog:{version:1,provider:'github',definition:{name:'github',version:1},id:'P',mappings}}};
 test('configuration validates logical tool prerequisites',()=>{
   const tools:string[]=[];const selection=checkConfiguration({},process.cwd(),tool=>{tools.push(tool);return true;});
   assert.equal(selection.provider,'github');assert.deepEqual(tools,['github-graphql']);

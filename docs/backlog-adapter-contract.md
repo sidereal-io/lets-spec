@@ -47,6 +47,7 @@ metadata mappings:
 ```yaml
 lets:
   backlog:
+    version: 1
     provider: github
     definition:
       name: github

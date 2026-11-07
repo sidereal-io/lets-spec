@@ -12,13 +12,15 @@ export type Selection = { provider: string; definition: Definition; definitionDi
 export function resolveConfiguration(document: unknown, cwd: string, env: NodeJS.ProcessEnv = process.env): Selection {
   try {
     if (!isAbsolute(cwd)) throw new Error('repository cwd must be absolute');
-    const root = object(document, 'config');
+    const root = object(document ?? {}, 'config');
     const lets = root.lets === undefined ? {} : object(root.lets, 'lets');
     const explicit = lets.backlog !== undefined;
     const selection = explicit ? object(lets.backlog, 'lets.backlog') : { provider: 'github', definition: {name:'github',version:1} };
-    for (const key of Object.keys(selection)) if (!['provider', 'definition', 'id', 'mappings', 'storage'].includes(key)) throw new Error(`unsupported backlog setting ${key}`);
+    if (Object.hasOwn(selection,'executable')) throw new Error('openspec/config.yaml: lets.backlog.executable is obsolete; replace it with lets.backlog.version 1 and a versioned definition selection');
+    for (const key of Object.keys(selection)) if (!['version', 'provider', 'definition', 'id', 'mappings', 'storage'].includes(key)) throw new Error(`unsupported backlog setting ${key}`);
     for (const key of ['provider']) if (typeof selection[key] !== 'string' || !selection[key]) throw new Error(`${key} required`);
     if (explicit) {
+      if (selection.version !== 1) throw new Error('openspec/config.yaml: lets.backlog.version must be 1');
       if (typeof selection.id !== 'string' || !selection.id) throw new Error('one backlog id required');
       validateMappings(selection.mappings as Mappings);
     }

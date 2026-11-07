@@ -52,3 +52,7 @@ test('custom definition source has a byte bound before parsing',()=>{
     assert.throws(()=>loadDefinition({name:'github',version:1,source},'github',process.cwd()),/bound/);
   });
 });
+test('custom definition cannot read outside the repository root',()=>{
+  const dir=mkdtempSync(join(process.cwd(),'.workspace/definition-scope-'));
+  try{assert.throws(()=>loadDefinition({name:'github',version:1,source:join(process.cwd(),'lets/src/backlog/definitions/github.json')},'github',dir),/within the repository/);}finally{rmSync(dir,{recursive:true,force:true});}
+});
