@@ -602,12 +602,17 @@ the result is `needs-shape`: return it now, naming the line. Never
 write or fix the packet yourself.
 
 Then read the issue's thread as
-[Issue comments](../lets-shape/references/issue-comments.md) says. Read
-a comment's first line only, to find read markers. The watermark is the
-later of the body's last edit and the newest read marker. When neither
-exists, every comment is after it. A comment created or edited after
-the watermark makes the result `needs-shape`, whoever wrote it. A read
-marker never does. The result then carries how many comments shaping
+[Issue comments](../lets-shape/references/issue-comments.md) says. A
+read marker is a comment that `lets-shape` posts when it has read the
+thread, as
+[The read marker](../lets-shape/references/issue-comments.md#the-read-marker)
+says. Read a comment's first line only, to find read markers. The
+watermark is the later of the body's last edit and the newest read
+marker. When neither exists, every comment is after it. A comment is
+unread when it was created or edited after both the body's last edit
+and the newest read marker: after the watermark. An unread comment
+makes the result `needs-shape`, whoever wrote it. A read marker never
+does. The result then carries how many comments shaping
 has not read, each one's author as the reference shows it, and the date
 that put it past the watermark: its edit date, else its creation date.
 It carries nothing of what a comment says.

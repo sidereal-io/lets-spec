@@ -2163,6 +2163,17 @@ assert_reference_links() {
   skill_says lets-go "The watermark is the later of the body's last edit and the newest read marker"
 }
 
+@test "Confirm the packet explains the read marker" {
+  local text phrase
+  text="$(procedure_text 'Confirm the packet' | tr -s '[:space:]' ' ')"
+  for phrase in 'A read marker is a comment that `lets-shape` posts when it has read the thread, as' \
+    '](../lets-shape/references/issue-comments.md#the-read-marker)' \
+    "A comment is unread when it was created or edited after both the body's last edit and the newest read marker" \
+    "The watermark is the later of the body's last edit and the newest read marker"; do
+    grep -qF -- "$phrase" <<<"$text" || { echo "Confirm the packet does not say: $phrase"; false; }
+  done
+}
+
 # The glossary terms lets-go uses. An installed skill cannot link
 # openspec/glossary.md, which is then the project's own, so lets-go carries
 # a copy of each entry.
