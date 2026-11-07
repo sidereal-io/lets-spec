@@ -5,7 +5,7 @@ Build existing GitHub stories through the shared backlog boundary while preservi
 ## ADDED Requirements
 
 ### Requirement: Resolve one configured backlog without fallback
-The build caller SHALL resolve `lets.backlog` from repository OpenSpec configuration according to protocol 1. Missing selection SHALL use GitHub and discover exactly one open linked Project in either link direction. Explicit selection SHALL require provider, executable, backlog ID and complete unambiguous mappings. Invalid configuration, missing executable and authentication or permission failures SHALL stop without choosing another provider. GitHub mappings SHALL validate native field types, values and repository membership before mutations.
+The build caller SHALL resolve `lets.backlog` from repository OpenSpec configuration under the versioned provider-definition and action contract. Missing selection SHALL use GitHub and discover exactly one open linked Project in either link direction. Explicit selection SHALL require repository version 1, provider/definition identity and version, backlog ID and complete unambiguous mappings. Invalid configuration, unavailable required tools or capture and authentication or permission failures SHALL stop without choosing another provider. GitHub mappings SHALL validate native field types, values and repository membership before mutations.
 
 #### Scenario: Existing unconfigured GitHub repository
 - **WHEN** configuration omits backlog selection and exactly one open linked Project exists
@@ -15,19 +15,33 @@ The build caller SHALL resolve `lets.backlog` from repository OpenSpec configura
 - **WHEN** discovery returns zero or multiple distinct open linked Projects
 - **THEN** build reports the selection problem without claiming work
 
-#### Scenario: Explicit executable is unavailable
-- **WHEN** explicit configuration names an unavailable executable
-- **THEN** build reports invalid configuration without invoking the default adapter
+#### Scenario: Obsolete executable selection
+- **WHEN** explicit configuration still contains an adapter executable setting
+- **THEN** build reports the file/key and a definition migration action without running the executable or selecting the default adapter
 
-### Requirement: Enforce the executable transport contract
-The caller SHALL invoke the selected executable directly with no shell or appended arguments and one protocol-1 JSON request on stdin. It SHALL enforce request/response validation, bounded runtime and output, process exit consistency and complete pagination. Mutation interruption or malformed responses after invocation SHALL remain uncertain until reconciled. Required unsupported capabilities SHALL stop before mutation.
+### Requirement: Enforce bounded action and submission contracts
+Lets SHALL issue versioned bounded actions after validating policy, scope,
+prerequisites and definition compatibility. Each action SHALL bind identity,
+operation, immutable input, provider/definition version, actor/session, finite
+expiry and output limits. The agent SHALL execute only that requested action.
+Lets SHALL validate result identity, structure, sequencing and independently
+retrieved capture before progression. Definitions SHALL remain integration
+data and SHALL NOT authorize policy changes or certify their own trust.
 
-#### Scenario: Claim times out
-- **WHEN** a claim invocation times out after the adapter could have written
-- **THEN** the caller reports an unknown outcome and does not issue another acquire or authorize work without reconciliation
+#### Scenario: Expired claim submission
+- **WHEN** a claim action expires after dispatch and a result arrives late
+- **THEN** effects remain unknown until reconciled and the late result does not reactivate the action or authorize work
+
+#### Scenario: Forged or missing evidence
+- **WHEN** a result includes an agent-written ownership report or unavailable capture reference
+- **THEN** lets pauses progression and automatic retry with the missing facts and reconciliation choices
+
+#### Scenario: Action substitution
+- **WHEN** capture describes a different tool, input, scope or attempt from the issued action
+- **THEN** lets rejects it and does not advance the workflow
 
 #### Scenario: Incomplete enumeration cannot finish
-- **WHEN** a blocker enumeration repeats its cursor or cannot enumerate the remaining blockers
+- **WHEN** captured blocker pages repeat a cursor or omit remaining pages
 - **THEN** readiness fails explicitly rather than treating the item as unblocked
 
 ### Requirement: Preserve GitHub packet and readiness policy
@@ -42,7 +56,7 @@ The shared workflow SHALL retain existing packet validation, comment watermark c
 - **THEN** build reports the owner and stops without replacing ownership
 
 ### Requirement: Claims reconcile native actor ownership
-GitHub claims SHALL report actor-level best-effort guarantees and explicitly disclose that remote sessions using the same actor cannot be distinguished. No machine-state Project fields or shared coordinator SHALL be required. Acquire SHALL check unowned state, journal local continuation intent, assign, transition to In Progress and verify current ownership. Before work, including resume and replay, the caller SHALL freshly read and require matching local continuation and current native sole actor ownership and In Progress. Assignment alone SHALL NOT authorize work. Uncertain or conflicting native state SHALL require reconciliation without clearing another worker's claim.
+GitHub claims SHALL report actor-level best-effort guarantees and explicitly disclose that remote sessions using the same actor cannot be distinguished. No machine-state Project fields or shared coordinator SHALL be required. Acquire SHALL check unowned state, journal local continuation intent, assign, transition to In Progress and verify current ownership. Before work, including resume and replay, the caller SHALL require matching local continuation and independently captured fresh native sole actor ownership and In Progress. Assignment alone SHALL NOT authorize work. Uncertain or conflicting native state SHALL require reconciliation without clearing another worker's claim.
 
 #### Scenario: Same account uses a second session
 - **WHEN** a new session without original local continuation attempts to acquire or release an assigned item
@@ -79,7 +93,7 @@ The workflow SHALL persist provider/backlog/item identity, repository and displa
 - **THEN** the recorded identity remains available for later completion
 
 ### Requirement: Associate PRs and complete only after merge
-The workflow SHALL verify an idempotent native closing-issue association to the exact code-host PR, preserving GitHub closing references. It SHALL leave ready and archived work In Progress. Completion SHALL require the trusted code-host caller to verify that associated PR merged and supply its nonempty merge commit. It SHALL reconcile already-Done automation after merge and reject a different PR or unmerged evidence.
+The workflow SHALL verify an idempotent native closing-issue association to the exact code-host PR, preserving GitHub closing references. It SHALL leave ready and archived work In Progress. Completion SHALL require the independently retrieved capture to verify that exact associated PR merged and establish its nonempty merge commit. It SHALL reconcile already-Done automation after merge and reject a different PR or unmerged evidence.
 
 #### Scenario: Ready PR is unmerged
 - **WHEN** a PR is ready for review but remains unmerged
@@ -89,8 +103,18 @@ The workflow SHALL verify an idempotent native closing-issue association to the 
 - **WHEN** the associated PR has merged and a previous Done update succeeded without returning a response
 - **THEN** recovery observes Done and succeeds without duplicate effects
 
+### Requirement: Use one extensible definition path
+Shipped and custom definitions SHALL use the same action/submission and generic
+capture validation path. Loading a definition SHALL execute no provider code or
+install hook. Lets SHALL NOT retain a built-in provider executor or direct
+provider verification reads beside the agent-executed path.
+
+#### Scenario: Custom GitHub definition
+- **WHEN** a compatible explicit custom definition supplies tool usage and mappings for supported GitHub operations
+- **THEN** it uses the same action and evidence checks as the shipped definition without an adapter executable or lets release
+
 ### Requirement: Prove the production build flow
-Support claims SHALL require automated adapter and workflow checks plus a live run of the implemented flow against the designated test repository and Project. Evidence SHALL identify the tested commit, selected item, PR and merge commit, outcomes and cleanup. It SHALL cover blocked/owned work, uncertain mutation outcomes and branch creation failure. Manual fixture setup and simulated provider results SHALL NOT count as proof of the production lifecycle.
+Support claims SHALL require automated action/submission, capture and workflow checks plus a live run of the implemented flow against the designated test repository and Project. Evidence SHALL identify the tested commit, selected item, PR and merge commit, outcomes and cleanup. It SHALL cover blocked/owned work, uncertain mutation outcomes and branch creation failure. Manual fixture setup and simulated provider results SHALL NOT count as proof of the production lifecycle.
 
 #### Scenario: Live test reaches review readiness
 - **WHEN** the new flow selects and builds a test story and opens its PR

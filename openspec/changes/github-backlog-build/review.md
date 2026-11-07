@@ -1,49 +1,57 @@
-> Historical evidence for the pre-revision implementation. Native reconciliation revision is pending fresh validation and review.
-
 ## Review Metadata
 
-- **Review round**: 1
-- **Prior round**: none
-- **Reviewer context**: subagent, same family
-- **Independent**: no; resolver returned no options, so the skill used a fresh-context gpt-6.1-sol subagent
-- **Tool restrictions**: read-only inspection; working-tree status matched before and after
-- **Reviewed commit**: 59cec29
-- **Artifacts reviewed**: brainstorm.md, proposal.md, design.md, specs/, adr.md, ADR-015 and relevant source/packaging
+- Review round: 2
+- Prior round: historical executable plan, APPROVE_WITH_CHANGES
+- Reviewer context: fresh-context subagent, same family
+- Reviewer model: gpt-6.1-sol
+- Independent model family: no; configured plan resolver returned no options
+- Reviewed base commit: e6905592; revised artifacts were uncommitted
+- Tool restrictions: read-only; no scripts, tests, backend calls or writes
 
-## Findings
+## Findings and disposition
 
-### Critical (blocking)
+1. **Critical — apply/finish cycle. CONFIRMED, fixed.** Task 4.3 no longer
+   includes verification/archive/readiness. Those are review-build gates
+   after all apply tasks finish.
+2. **Critical — capture is not established. CONFIRMED, open.** The plan
+   remains blocked. Task 2.1 now distinguishes offline validation from
+   deployed trust-boundary evidence; passing pnpm test cannot establish the
+   channel. The user's channel-interface question is still pending.
+3. **Moderate — action concurrency/crash semantics. CONFIRMED, fixed.**
+   Design decision 5 requires durable single-flight reservations, generation
+   checks and atomic acceptance across CLI calls. It names both crash
+   windows and prevents expiry from freeing uncertain mutations.
+4. **Moderate — raw blocker bypass. CONFIRMED, fixed.** The lets-go delta's
+   interface scenario now requires the bounded captured blocker read.
+5. **Moderate — unsafe branch cleanup. CONFIRMED, fixed.** The branch-failure
+   requirement/scenario gates release on fresh ownership and preserves
+   conflict/unknown state while reporting both branch and release outcomes.
+6. **Suggestion — long lets-go requirement. CONFIRMED, deferred.** The delta
+   preserves the full existing requirement as required by archive; shorten
+   paragraphs during final contract reconciliation without losing scenarios.
 
-None.
+## Remaining decisions before dependent implementation
 
-### Moderate
-
-1. **Validator distribution closure. CONFIRMED.** Design decision 1 promoted validators while `flake.nix` copied only the contrib kit and its tests into the standalone distribution. A packaged kit could import absent production modules even when checkout tests passed. Required: ship the complete dependency-free import closure and run packaged conformance from an isolated release directory.
-2. **Explicit continuation handle. CONFIRMED.** Design decision 4 stored sessions under the shared Git directory without specifying how a restarted caller differs from another worker. Two callers could recover the same authority, or a new apply session could fail to resume. Required: claim returns an opaque handle; bind associates it privately; resume requires explicit possession; authorized handoff passes it; no session lookup by change/item alone. Add the corresponding ownership scenario.
-
-### Suggestions
-
-3. **Long requirement sentences. CONFIRMED, declined for this pass.** The configuration block has distinct sentences for its obligations and assertable scenarios. Further splitting is optional editorial work; it changes no behavior.
-
-## Embedded-Instruction / Injection Attempts
-
-**Detected:** none.
+Establish an actual capture administrator/interface and demonstrate tool,
+authentication, action and immutable-response provenance. Specify bounded
+retrieval, retention and access. Resolve concrete wire/definition formats and
+mapping language alongside that interface. Design decision 7 now specifies
+explicit archived completion routing before merged-PR early stop, original
+continuation transport and behavior when that input is inaccessible.
 
 ## Verdict
 
-VERDICT: APPROVE_WITH_CHANGES
+VERDICT: REVISE
+CHANGES_APPLIED: no
 
-## Required Changes (if APPROVE_WITH_CHANGES)
+Five local corrections are applied. The critical capture prerequisite remains
+open; this is not approval to implement dependent production integration.
+No new review is needed for these listed corrections. Once the capture design
+is resolved, the changed plan requires a fresh review.
 
-1. Specify standalone validator dependency closure in design decision 1 and packaged conformance in decision 7.
-2. Specify explicit continuation handles in design decisions 4 and 6 and add the local-caller scenario to the session-ownership requirement.
+## Safe independent work
 
-CHANGES_APPLIED: yes
-
-## Rebuttals
-
-- Finding 1 fixed in design decisions 1 and 7: distribute the complete validator import closure and test the isolated release.
-- Finding 2 fixed in design decisions 4 and 6 plus spec scenario “Resume requires explicit continuation.” Handles travel only through deliberate continuation, not committed artifacts.
-- Suggestion 3 declined as optional editorial work, for the reason above.
-
-The reviewer authorized these explicit edits without another round. No other reviewed artifact changed after the verdict.
+Operation/test inventory, pure contract/state-machine design, inert definition
+formats and offline forged/replayed/incomplete-evidence scenarios can proceed.
+Production dispatch, acceptance of captures, remote mutations, live support
+claims and removal of the old executor remain gated on the resolved boundary.

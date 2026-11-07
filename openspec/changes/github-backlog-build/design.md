@@ -1,109 +1,194 @@
 ## Context
 
-`lets/src/main.ts` uses Commander and injected IO for delegation and sync. YAML is already a runtime dependency. `lets/src/sync/config.ts` reads only the schema line. It must keep doing so; backlog configuration needs a separate reader. The adapter kit now lives under `lets/src/backlog/` with its tests under `tests/lets/backlog/`. Its fake supplies no production implementation.
-
-Build currently embeds provider commands in its source skill. Both schemas use GitHub issue numbers during brainstorm and PR creation. The issue-comment and glossary rules remain shared policy. The shared glossary defines Packet as the issue body and Fold as a shaping-only operation. This change introduces no new glossary meanings.
+The branch contains an executable GitHub implementation and private native
+claim recovery. Main now has separate workflow steps and an accepted
+request/result architecture. The shared glossary defines Adapter by its
+integration role, rather than its packaging. Existing executable tests and
+live records are migration inputs, not evidence for the new boundary.
 
 ## Goals / Non-Goals
 
-**Goals:** ship one working GitHub existing-item lifecycle, make failures recoverable, and let another session resume without guessing identity.
+**Goals:** one GitHub execution path, extensible provider definitions,
+explicit bounded actions, independently verified evidence and preservation
+of lifecycle guarantees.
 
-**Non-Goals:** implement setup/shaping writes or another provider; promise atomic claims on GitHub; automatically merge the product or test PR; replace the contract or OpenSpec orchestration.
+**Non-Goals:** new providers, setup/shaping writes, delegation migration,
+stronger native locks or automatic merges.
 
 ## Test Seams
 
-- **Primary test seam:** CLI/process integration through `lets backlog`, using a fake executable and an injected `gh` runner with recorded structured responses. Assert requests, effects and resulting state; never rely only on prose matching.
-- **Existing seams reused:** Node tests and the kit's validators/scenarios; `tests/skill-interfaces.bats` for commands shipped in instructions; release-build tests for executable layout. Live acceptance runs the built executable with real `gh`, using only test-owned items.
+- **Primary test seam:** the CLI action-request/submission lifecycle, driven
+  with offline agent/tool doubles and independently retrieved capture records.
+- **Existing seams reused:** selection, native ownership/recovery, identity,
+  exact merge tests, workflow interface checks and isolated release checks.
+- **Live acceptance:** a new scoped run on the agreed test repository and
+  Project through the migrated path, after the capture prerequisite passes.
+  Do not reuse or repeat historical acceptance mutations.
 
 ## Scrutiny Tier & Blast Radius
 
 - **Tier:** high
-- **Blast radius:** repository configuration, external processes, GitHub writes, local recovery and native ownership, both flows' build/resume/finishing instructions and release packaging.
+- **Blast radius:** external writes, configuration, durable action and
+  identity formats, evidence trust, recovery, workflow steps and releases.
 
 ## Decisions
 
-### 1. Keep one executable boundary in production
+### 1. Replace execution rather than wrapping the old adapter
 
-Add `lets/src/backlog/` for configuration, protocol transport, shared selection and change identity. Add GitHub translation beneath it, with a separate `lets-backlog-github` entry. Ship that executable beside `lets` in tarballs and Nix PATH. Missing explicit executables are errors. The default name also resolves through PATH; packaging must make it available rather than bypassing the process boundary.
+Lets issues a bounded action only after validating policy, prerequisites,
+selected definition and scoped inputs. The agent executes that action with
+available backend CLI/MCP tools and submits an attributed result. Lets
+validates the submission before it advances the workflow. Remove production
+adapter spawning and provider-specific verification calls. Do not keep a
+built-in executor beside a recipe for the same operation.
 
-Reuse main's dependency-free protocol/item validators in the production backlog
-module. Keep the fake adapter and conformance helpers as source-checkout tools,
-following main's kit cleanup. Runtime releases ship the bundled CLI and GitHub
-adapter, not kit source or tests. Do not import the fake or its journal into the
-production runtime. Keep the kit's normalized configuration example checker in
-config.ts; the production YAML and executable reader lives in repository-config.ts.
-Keep GitHub process tests distinct from the kit's simulation tests so both run.
+Action requests bind an action/attempt ID, operation, immutable input,
+provider/definition version, repository/backlog, actor/session, required
+capabilities, finite expiry and byte limits. Mutations also retain the
+original mutation identity. Multi-write operations request explicit bounded
+steps and checkpoint recovery between them; an operation description must
+not authorize an unbounded provider workflow.
 
-Use a production transport with no optional argv escape hatch, a positive timeout (default five seconds), a combined 1 MiB output bound and safe diagnostics. Treat spawn-before-execution failure as no effects; any mutation failure after execution that cannot prove effects is unknown. Preserve valid structured error categories instead of reclassifying them as parse errors. Bound read retries; never blindly retry unknown mutations. Follow pagination to completion, checking repeated cursors and scope on every page.
+### 2. Treat definitions as versioned integration data
 
-Alternative: in-process GitHub calls would make the default bypass the contract exercised by external adapters. Separate runtime and executable packaging are an intentional cost.
+Use provider-definition schema version 1 and declare supported operation
+contract and backend tool versions. The release catalog and explicitly
+selected custom sources use the same validation path. Definitions describe
+tool usage and input/output mappings for core-supported operations. They
+cannot define policy, retry permission, trust, atomicity or new guarantees.
+Loading a definition executes no code, install hook or adapter discovery.
 
-### 2. Read selection once, validate before writes
+Repository `lets.backlog.version: 1` owns provider/definition selection,
+backlog context, field/status mappings and local storage/tracking policy.
+User `backlog` settings own machine tool/channel connection options and
+private paths. Reject misplaced selection, obsolete executable/path keys,
+unknown consumed options and incompatible versions before dispatch. Missing
+selection uses the validated shipped GitHub definition; invalid explicit
+selection never falls back. Validate mapping types, cardinality and allowed
+values against captured backend metadata before mutations.
 
-Parse repository `openspec/config.yaml` with the existing YAML dependency. Consume only `lets.backlog`, preserving unrelated configuration. Match the contract's explicit provider/executable/id/mappings/storage validation and resolve relative executable paths from the repository root. Never use shell expansion. Keep adapter-specific configuration on the adapter side; the GitHub executable reads the same repository selection and verifies it matches request context.
+### 3. Retrieve capture independently of the submitted report
 
-Without selection, discover both repository-linked and owner-linked Projects through fully paginated GraphQL, deduplicate Project node IDs and require exactly one open match. For explicit GitHub selection, verify that Project identity and repository link. Defaults map named single-select fields and options to the contract's meanings. Explicit mappings use native field/option IDs and cardinality one; unsupported native types fail explicitly. Check authenticated actor, repository membership, field types and mapped options before writes. Missing/ambiguous item values are configuration errors, not guessed priorities.
+The agent submits a capture reference, not the authoritative capture body.
+Lets retrieves the actual request/response and execution outcome through a
+trusted harness/tool-host or generic capture service outside the agent's
+editable report. Runtime setup establishes channel and tool trust; a
+provider definition or an agent-writable file cannot self-certify them.
 
-### 3. Offer normalized operations with thin workflow commands
+Check action correlation, actual tool/server identity and arguments, backend
+scope, authenticated context, collection time, complete response and outcome.
+Use one generic channel for shipped and custom definitions. Check mapped
+facts against the captured response; a schema-valid normalized result alone
+cannot establish remote state. No separate provider-specific verification
+executor is a fallback. Reject forged, editable, mismatched, stale,
+replayed, incomplete and unavailable capture.
 
-Expose `lets backlog request` to accept a protocol request from stdin for the selected executable. Add workflow commands `select`, `claim`, `release`, `bind`, `resume`, `reference` and `complete`; document JSON inputs/outputs and exit categories with their implementation. They construct validated requests; shared policy stays in the caller. `select` supports an explicit item reference or the existing `next` route and returns normalized packet, metadata and complete blocker evidence. It does not mark malformed packets ready or skip glossary prerequisites. The skill validates packet/comments/glossary and routes before `claim`.
+**Blocking prerequisite:** no concrete trusted channel is established yet.
+Resolve its interface, isolation and deployment before implementing dependent
+production integration or claiming the plan is ready. If none exists, design
+and demonstrate a generic capture service outside the agent's write access.
+Resolve who administers capture, the independently retrievable interface,
+trusted executable/server identity, authenticated backend context, immutable
+record retention and retrieval authorization. Specify finite retrieval and
+output bounds, pagination/completeness and unavailable-record handling. A
+protected signing key alone does not prove actual tool identity or context.
+A service running with agent-editable state or an agent-accessible signing
+key is not independent capture. A test double establishes validation behavior
+only; it cannot qualify the live trust boundary.
 
-Implement build-required operations: backlog.list/check, capability.read, item.read/search, candidate.list, relationship.list, claim.acquire/read/release, reference.write, completion.write and mutation.read. Implement targeted item.update only for glossary handoff body changes. Declare setup/shaping mutation operations unsupported before effects. Read issue comments, parents and body edit timestamps through adapter-owned GitHub helpers exposed to build; the normalized protocol item stays unchanged. Store those extra read results in a documented caller read command, not extra protocol fields. Existing comment watermark semantics and evidence-only trust boundaries remain intact.
+### 4. Preserve sequencing and conservative recovery
 
-GitHub uses scoped Project node IDs and issue node IDs as identity; repository-qualified issue numbers remain display/closing references. Resolve named references only within the selected repository and Project. Read all owners and directional blockers; a closed issue maps to Done for blocker state, while open blockers stay blocking regardless of Project status. Shared ranking retains numeric issue order. Never silently add a missing issue to a Project during build.
+Persist issued action identity and intended effects in private recovery state
+before returning the action. Missing results after issuance, expiry, tool
+failure or lost responses retain unknown effects unless capture proves more.
+Late results can inform reconciliation but never reactivate an expired action.
+Do not repeat uncertain writes or create a new session to escape uncertainty.
 
-### 4. Persist change identity apart from private recovery state
+Keep the existing private original continuation handle and immutable change
+identity separate. Preserve native assignees and Status with actor-level
+best-effort limits. Fresh independently captured sole ownership and In Progress
+are required before work or resume. A local journal is recovery provenance,
+not remote ownership proof. Release verifies current ownership between steps
+and must not clear a competing actor. Assignment alone cannot authorize work.
 
-Write a versioned `backlog.json` beside the change's planning artifacts with repository, scoped identity, display reference and optional URL. `bind` writes it once after claim and change creation; retries accept identical content and reject replacement. Carry it with the archive folder. The record contains no claim token, credentials or transient actor/session. This is a durable schema decision recorded separately.
+Required facts unavailable means an explicit pause with the action, effects,
+missing evidence and reconciliation choices. User approval alone cannot
+replace remote facts or lower the guarantee.
 
-Store private sessions and mutation journals under the Git common directory's `lets/backlog/` area, using hashed scope keys, restrictive permissions, atomic replacement and per-scope lock files. Never stage them. A session is an opaque UUID retained across restarts for this change; another worker gets a different session. Missing private provenance does not authorize adopting an assigned item. `resume` verifies recorded selection and fresh remote ownership; it stops for manual reconciliation when original session/token state is unavailable. Legacy changes need explicit identity confirmation before binding, never title-based automatic reassociation.
+### 5. Serialize durable action transitions across CLI calls
 
-Claim creates a new opaque local session handle and returns it to the caller. Bind records its association privately. Resume requires that handle explicitly; it never selects a session solely from change name, item identity or shared Git directory. A restarted caller or authorized apply handoff deliberately passes the original handle to continue that worker's claim. A new worker without the handle receives no claim authority and stops for manual reconciliation. Tokens remain private and never enter planning artifacts.
+Persist an outstanding-action reservation per original workflow/session and
+mutation scope before returning an issued action. Under the existing private
+scope lock, compare its generation and expected state, then atomically replace
+the journal. Process exit releases the lock, not the reservation. A second
+caller with the same continuation receives the existing outstanding action;
+it cannot mint another attempt, change its input or accept the result twice.
 
-### 5. Reconcile native ownership using local continuation
+Use explicit prepared, issued, awaiting-evidence, accepted, expired and
+reconciling states. Acceptance requires matching generation/action identity
+and the current expected state under that same lock. Persist the validated
+capture reference and next checkpoint before acknowledging acceptance. A
+crash after remote dispatch leaves an outstanding action to reconcile. A
+crash after acceptance replays the accepted local transition, not its remote
+mutation. Expiry never frees an uncertain mutation for a fresh attempt.
+Tests must interleave two callers and inject both crash windows.
 
-Use native issue assignees and Project Status. No machine-state Project fields,
-metadata branch, repository coordinator or external coordinator is required.
-Keep attempted operations, exact inputs, session correlation and tokens in the
-private local journal. These records permit deliberate continuation but never
-prove current remote ownership. Require fresh assignment and Status reads before
-progression. Reject acquire on any assigned item, including the same actor.
+### 6. Keep completion bound to the exact associated PR
 
-GitHub cannot distinguish sessions using the same actor, nor detect assignment
-removal and reassignment between snapshots. Declare actor-level best-effort
-verification explicitly. A local handle is continuation intent, not a distributed
-lock. Never automatically adopt an existing assignment without original local
-state. Unknown partial writes stay unknown until current native state satisfies
-the attempted operation; conflicting owners or status stop recovery. Release
-requires original local intent and current sole actor ownership; recheck between
-unassignment and restoring Todo. Do not overwrite detected intervening changes.
+Independently captured native closing links bind the recorded item to the
+exact repository-qualified PR. Preserve existing PR text when adding its
+closing reference. Capture must establish that exact PR merged and its
+nonempty merge commit before a Done action, even after native auto-close.
+Completion remains idempotent. Archive and readiness leave In Progress.
 
-### 6. Keep completion behind native links and verified merge
+### 7. Integrate with main's workflow and migrate the contract
 
-Use the PR's native closing-issue links to verify the exact issue association.
-Preserve the existing PR body while adding its closing reference. Read complete
-native closing links before accepting reference.write or completion.write.
-Record attempted operations locally; never write PR associations into Project
-text fields or issue comments. Completion still requires exact repository, PR,
-merged=true and nonempty matching merge commit from the code host, including
-when automation already set Done. Ready and archive leave In Progress.
+Lets-go owns finding, packet checks, routing, claims and glossary handoff.
+Lets-plan accepts explicit identity/continuation, binds once the directory
+exists, and runs planning. Lets-build resumes the recorded claim and only
+implements. Lets-review-build owns verification/archive/readiness. Pass the
+private continuation input deliberately through step prompts. An explicit
+post-merge continuation completes archived work without selecting new work.
+An explicit post-merge completion request is dispatched by lets-go before
+its ordinary merged/closed-PR early stop or new-work selection, including on
+the default branch. Require the deliberately supplied private continuation
+input, matching repository/actor, archived change path and exact associated
+PR URL. Run the completion request/submission lifecycle only; an unmerged PR,
+missing capture or identity mismatch returns without selecting or claiming work.
+Never derive authority from title searches, assignment or scanning storage.
+Step prompts pass the deliberately authorized private input's exact path,
+repository, actor and current active/archive change path; they never embed
+raw handles in reports or committed artifacts. The child validates that input
+against recorded identity. If the original private input is inaccessible in
+its environment, stop for explicit continuation rather than inventing a new
+session or reading shared storage to discover one.
 
-Update source `skills/lets-build/SKILL.md`, its references, both schemas and overlay rules so commands carry recorded identity through propose, resume, archive and post-merge completion. Planning skills that read the packet use the normalized read path when a record exists. Keep Git commands and code-host PR commands outside the backlog adapter. Leave shaping/setup behavior unchanged, including GitHub closing references; do not edit generated installed copies. Both flows pass the local session handle through the existing authorized planning-to-apply handoff. Document callable command inputs for creating, binding and explicitly resuming that handle, including failure when it is unavailable.
-
-### 7. Test the new flow against the prepared fixtures
-
-Automated tests drive each behavior through the CLI/process seam and scripted GitHub faults. Include cursor loops, mapping errors, same-account session conflicts, lost responses, assignment-only progress, replaced ownership, branch failure release, archived identity and unmerged completion. Both the moved kit tests and GitHub process tests must pass. Release checks prove the bundled adapter executable layout; conformance runs from the source checkout, following main’s packaging policy.
-
-Live acceptance uses `mstelz/test-repo-pls-ignore` and `https://github.com/users/mstelz/projects/7`. Prepare test packets with fixture commands, then perform selection/claim/bind/resume/reference/completion through the new flow. Use fresh issues and a new test PR on the existing repository; do not reuse legacy-field fixtures. Remove only acceptance-owned machine fields after verifying their scope, then prove the native adapter works with those fields absent. Keep the fresh fixtures visible for user inspection until the test PR merge permits completion. Prove blocked/owned exclusions using test-only items and inject a lost response at the real adapter boundary after a real mutation. Exercise branch failure through the caller's release path. Record before/after evidence and cleanup only owned fixtures. Ask the user to merge the test PR; until then completion acceptance remains pending. Fixture creation and manual `gh` calls do not substitute for lifecycle evidence.
+Replace executable transport requirements and their failure scenarios with
+action/submission and capture scenarios. Preserve unrelated identity,
+metadata, capability, complete pagination, ranking and recovery cases. Keep
+source conformance offline. Ship only consumed core code and definitions;
+remove the adapter executable bundle, PATH wrappers and obsolete install docs.
 
 ## Risks / Trade-offs
 
-- [Cross-machine claims can race] → Declare best-effort, use native actor-level checks, reread before work and stop uncertain recovery. Do not advertise exclusivity.
-- [Native ownership cannot identify sessions] → Declare that limit. Require deliberate local continuation and fresh remote reads. No lifecycle operation writes machine-state fields or issue comments.
-- [External changes invalidate cached results] → Revalidate configuration and remote claim state; never treat a local journal as authority.
-- [New executable omitted from a release] → Exercise tarball and Nix install layouts in release checks.
-- [Live PR remains unmerged] → Report acceptance pending and keep the product PR draft until evidence is complete.
+- [Capture channel missing] → block dependent integration and support claims;
+  request an actual trusted interface, or design and deploy one explicitly.
+- [Capture proves a response, not a lock] → validate freshness and completeness;
+  retain native best-effort limitations and reread at required checkpoints.
+- [Definition changes during recovery] → pin identity/version/content in each
+  issued action; reconcile the original input rather than reinterpret it.
+- [Timeout after remote writes] → retain unknown effects and the original
+  mutation identity; bound waits without claiming cancellation is rollback.
+- [Scope overlaps #180] → the user's explicit port instruction consolidates
+  GitHub migration into #172; leave delegation and other providers separate.
 
 ## Migration & Rollback
 
-No issue migration is required. Existing repositories retain implicit GitHub selection. Existing change folders gain identity only after explicit confirmation. Release CLI, adapter and source instructions together. Roll back the release and instructions together; retain existing backlog.json records and private journals for manual reconciliation. Do not clear remote assignments during rollback.
+Keep the PR draft and the change active while porting. Retain prior plans and
+reviews under history/executable-boundary and label old acceptance historical.
+Old tests do not qualify the new implementation. Reject obsolete executable
+configuration with the exact file/key and migration action; never run or
+silently ignore it. Retain native assignments, immutable identity and private
+journals for reconciliation. Rollback must not release remote claims or replay
+unknown operations. The original PR remains the delivery branch; merge is
+user-owned.

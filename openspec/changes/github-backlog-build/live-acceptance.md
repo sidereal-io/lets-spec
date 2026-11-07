@@ -1,3 +1,6 @@
+> Historical evidence for the executable implementation. This does not qualify
+> the ADR-015 request/result port. Do not repeat these mutations.
+
 # Fresh native GitHub acceptance
 
 Status: complete. All fresh pre-merge checks, exact merged completion and

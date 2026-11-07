@@ -1,3 +1,6 @@
+> Historical evidence for the executable implementation. This does not qualify
+> the ADR-015 request/result port. Do not repeat these mutations.
+
 # Superseded live acceptance evidence
 
 The user rejected reused fixtures carrying legacy machine state as the current

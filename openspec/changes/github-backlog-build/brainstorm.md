@@ -8,24 +8,30 @@ https://github.com/sidereal-io/lets-spec/issues/136
 
 | # | Question | Answer | Source |
 |---|---|---|---|
-| D1 | What does this story deliver? | Implement the GitHub build lifecycle through the shared executable backlog boundary; keep setup/shaping and other providers outside this story. | Evidence: #136 packet |
-| D2 | Which contract governs behavior? | Follow protocol 1, configuration, identity, capabilities, claim guarantees, transport and recovery from the agreed adapter contract; preserve GitHub as the default without provider fallback. | Evidence: docs/backlog-adapter-contract.md |
-| D3 | Which workflow decisions remain shared? | Keep packet validation, candidate filtering/ranking, schema routing and glossary preflight in shared policy; branches, pull requests and merge verification remain code-host responsibilities. | Evidence: docs/backlog-adapter-contract.md |
-| D4 | What establishes safe progression? | Verify current claim ownership before work; reconcile uncertain mutations; release only this worker's claim after branch creation fails; leave review-ready work In Progress and complete only after confirmed merge. | Evidence: docs/backlog-adapter-contract.md |
-| D5 | Where will live acceptance run? | Use mstelz/test-repo-pls-ignore and its linked user-owned Project https://github.com/users/mstelz/projects/7. | User |
-| D6 | What counts as acceptance evidence? | Exercise the implemented flow for story selection, claiming, planning/resumption identity, PR reference and merge-gated completion; include automated checks and live GitHub evidence for blocked/owned work, uncertain outcomes and branch failure. Preparing fixtures with existing commands does not prove the new flow. | Evidence: #136 packet; User clarification |
+| D1 | Which execution model governs the revised PR? | Port #172 to the accepted request/result architecture in ADR-015. Replace the executable boundary rather than retaining a second execution path. | User, 2026-11-07 |
+| D2 | Who owns the work? | Lets owns policy, sequencing, validation and private recovery. Provider definitions describe tool usage and mappings. Agents execute bounded requested actions and submit structured results. | ADR-015 |
+| D3 | Which behavior must survive? | Preserve readiness/ranking, complete scoped reads, packet/comment/glossary policy, native ownership, private continuation, release, immutable identity and exact merge-gated completion. | #136; ADR-015 |
+| D4 | What establishes required remote facts? | Independent trusted capture of actual tool requests and responses. Reports, editable files and local journals cannot prove ownership or merge. Without capture, pause retry and progression. | ADR-015; #180 |
+| D5 | How does this fit main's workflow? | Lets-go selects and claims; lets-plan plans; lets-build implements; lets-review-build verifies, archives and marks ready. Pass explicit private continuation through those steps. | ADR-020 |
+| D6 | What is outside this port? | Setup/shaping writes, new providers, delegation runtime migration, claim/storage redesign and automatic PR merging. | #136; #180; ADR-015 |
+| D7 | What evidence can be reused? | Preserve old acceptance as historical evidence only. Never repeat its mutations. The new architecture needs its own automated and fresh scoped live acceptance. | #180 |
 
 ## Changes from the story
 
-None. The test repository and Project are acceptance fixtures; their manual setup does not count as evidence that the new flow works.
+The user explicitly chose to port #172, incorporating the GitHub execution
+migration described in #180 into this PR. The old packet's executable
+transport is superseded by ADR-015. #180's earlier exclusion of rewriting
+#172 is superseded by that explicit instruction; unrelated provider and
+delegation work stays outside this change.
+
+## Unresolved prerequisite
+
+The repository and available tool catalog do not identify an established
+trusted capture channel. The user has been asked for an existing service
+interface. If none exists, a generic capture service must be designed and
+deployed outside the agent's write access. Its trust, tool identity and
+request/response provenance must be demonstrated before routine claims
+or completion can progress. Approval alone cannot establish those facts.
+This is a blocking prerequisite, not a waived acceptance condition.
 
 Confirmed by user: yes
-
-## Authorized revision, 2026-11-04
-
-The user chose native GitHub features plus adapter reconciliation and private
-local journals/continuation. Assignees represent ownership, Status progress, and
-native PR links plus exact merge evidence completion. No machine-state Project
-fields, metadata branch, repository coordinator or external coordinator. This
-replaces earlier remote session-provenance decisions. Same-actor remote sessions
-cannot be distinguished; ownership is actor-level and best-effort.
