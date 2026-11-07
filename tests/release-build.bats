@@ -153,17 +153,14 @@ build_bundles() {
   done
 }
 
-@test "the GitHub adapter bundle runs without node_modules" {
+@test "the capture runner bundle runs without node_modules" {
   build_bundles
-  local bin="$BATS_TEST_TMPDIR/bin/lets-backlog-github"
+  local bin="$BATS_TEST_TMPDIR/bin/lets-capture"
   mkdir -p "$BATS_TEST_TMPDIR/bin"
-  cp -p "$BATS_TEST_TMPDIR/build/lets-backlog-github" "$bin"
+  cp -p "$BATS_TEST_TMPDIR/build/lets-capture" "$bin"
   [ -x "$bin" ]
   [ "$(head -n 1 "$bin")" = '#!/usr/bin/env node' ]
-  run bash -c 'printf "{}" | node "$1"' _ "$bin"
+  run node "$bin"
   [ "$status" -eq 1 ]
-  jq -e '.ok == false and .error.category == "unsupported" and .error.effects == "none"' <<<"$output"
-  run bash -c 'printf "{\"protocol\":1}" | node "$1"' _ "$bin"
-  [ "$status" -eq 1 ]
-  jq -e '.ok == false and .error.category == "invalid_request" and .error.effects == "none"' <<<"$output"
+  [[ "$output" == *"check protected administrator configuration"* ]]
 }

@@ -19,7 +19,7 @@ if (Number(process.versions.node.split('.')[0]) < 26) {
   process.exit(1);
 }`;
 
-for (const [name, entry] of [['lets', 'src/main.ts'], ['lets-backlog-github', 'src/backlog/github-entry.ts']]) {
+for (const [name, entry] of [['lets', 'src/main.ts'], ['lets-capture', 'src/backlog/capture-entry.ts']]) {
 const outfile = join(outputDirectory, name);
 await build({
   entryPoints: [entry],

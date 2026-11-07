@@ -1,4 +1,3 @@
-import { readStdin } from './stdin.ts';
 import { updateGlossary, reconcileGlossary } from './glossary.ts';
 import { Completion } from './completion.ts';
 import { Store, mutationName } from './store.ts';
@@ -6,10 +5,9 @@ import { Claims } from './claims.ts';
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import { join } from 'node:path';
-import { validateRequest, validateResponse, parseRequest, MUTATIONS } from './protocol.ts';
+import { validateRequest } from './protocol.ts';
 import { GitHub, fail } from './github.ts';
 import type { Context, Query } from './github.ts';
-import { AdapterFailure } from './errors.ts';
 import type { Mappings } from './items.ts';
 export async function dispatch(request: Record<string, any>, query: Query): Promise<any> {
   validateRequest(request as unknown);
@@ -55,19 +53,5 @@ export async function dispatch(request: Record<string, any>, query: Query): Prom
       } };
     }
     default: fail('unsupported', 'operation is unsupported by the GitHub existing-item adapter');
-  }
-}
-export async function main() {
-  let request: any;
-  try {
-    const input = await readStdin();
-    request = parseRequest(input);
-    const response = { protocol: 1, ok: true, result: await dispatch(request, async () => { throw new AdapterFailure('invalid_configuration', 'none', 'standalone executable adapters are retired; use lets backlog'); }) };
-    validateResponse(response as unknown, 0, request.operation); process.stdout.write(JSON.stringify(response) + '\n');
-  } catch (error) {
-    const failure = error instanceof AdapterFailure ? error : MUTATIONS.includes(request?.operation)
-      ? new AdapterFailure('unknown_outcome', 'unknown', 'GitHub mutation could not return a validated result; reconcile before retry')
-      : new AdapterFailure('invalid_configuration', 'none', 'GitHub configuration or response validation failed');
-    process.stdout.write(JSON.stringify({ protocol: 1, ok: false, error: { category: failure.category, effects: failure.effects, message: failure.message } }) + '\n'); process.exitCode = 1;
   }
 }

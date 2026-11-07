@@ -51,7 +51,7 @@
         # so the hash is the same on each. pnpm fetches only the host's
         # unless told.
         pnpmInstallFlags = [ "--os=linux,darwin" "--cpu=x64,arm64" ];
-        hash = "sha256-AWK0RKZy8BxSAkvWvlzw8CN2JPzBoorwrEfeUtnvnws=";
+        hash = "sha256-S/CPnXKIfKookR4Oejt760Bx/zUci7f5mrPRraOitiQ=";
       };
 
       app = pkgs: name: description: {
@@ -119,12 +119,12 @@
           ''
             install -Dm755 ${bundles}/libexec/${name} $out/libexec/${name}
             makeWrapper ${pkgs.nodejs_26}/bin/node $out/bin/${name} \
-              --add-flags $out/libexec/${name}
+              --add-flags $out/libexec/${name} ${pkgs.lib.optionalString (name == "lets" && pkgs.stdenv.isLinux) "--prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.util-linux ]}"}
           '';
 
         # The lets bundle.
         lets-bundle = program "lets";
-        github-adapter = program "lets-backlog-github";
+        capture-runner = program "lets-capture";
 
         # The release's version, the OpenSpec CLI that generated its
         # openspec-* skills, and the commit it was built from.
@@ -145,7 +145,7 @@
             install -Dm644 ${releaseJson} $out/release.json
             makeWrapper ${pkgs.nodejs_26}/bin/node $out/bin/lets \
               --add-flags $out/libexec/lets \
-              --prefix PATH : ${lib.makeBinPath [ github-adapter pkgs.git pkgs.gh ]}
+              --prefix PATH : ${lib.makeBinPath ([ pkgs.git pkgs.gh ] ++ lib.optionals pkgs.stdenv.isLinux [ pkgs.util-linux ])}
           '';
 
         # lets, bound to one release.
@@ -162,9 +162,10 @@
         # one release for every flow. Its release.json is the one lets-cli
         # carries.
         dist = pkgs.runCommand "lets-spec-dist" { } ''
-          mkdir -p $out/bin $out/releases
+          mkdir -p $out/bin $out/releases $out/capture
+          cp ${./packaging/capture}/* $out/capture/
           cp ${lets-cli}/libexec/lets $out/bin/lets
-          cp ${github-adapter}/libexec/lets-backlog-github $out/bin/lets-backlog-github
+          cp ${capture-runner}/libexec/lets-capture $out/bin/lets-capture
           ${lib.concatMapStringsSep "\n" (flow: "cp -R ${release flow} $out/releases/${flow}") (lib.attrNames flows)}
           cp ${lets-cli}/release.json $out/release.json
         '';
@@ -173,10 +174,10 @@
         # Node for lets, and the gh the skills call.
         bundle = flow: pkgs.buildEnv {
           name = "lets-spec-${flow}";
-          paths = [ openspec (lets flow) github-adapter pkgs.gh pkgs.nodejs_26 ];
+          paths = [ openspec (lets flow) capture-runner pkgs.gh pkgs.nodejs_26 ];
         };
       in
-        { inherit openspec openspec-skills lets-cli github-adapter dist; default = bundle "standard"; }
+        { inherit openspec openspec-skills lets-cli capture-runner dist; default = bundle "standard"; }
         // lib.genAttrs (lib.attrNames flows) bundle);
 
       apps = forAllSystems (pkgs: {
@@ -281,8 +282,8 @@
           { nativeBuildInputs = [ pkgs.nodejs_26 pkgs.git pkgs.jq (packagesFor pkgs).openspec ]; }
           ''
             export HOME="$TMPDIR"
-            [ "$(ls ${dist}/bin)" = "$(printf 'lets\nlets-backlog-github')" ]
-            [ -x ${dist}/bin/lets-backlog-github ]
+            [ "$(ls ${dist}/bin)" = "$(printf 'lets\nlets-capture')" ]
+            [ -x ${dist}/bin/lets-capture ]
             [ -x ${dist}/bin/lets ]
             [ "$(head -n 1 ${dist}/bin/lets)" = '#!/usr/bin/env node' ]
             [ ! -e ${dist}/node_modules ]
@@ -315,7 +316,7 @@
         # run here.
         node-tests = pkgs.runCommand "node-tests"
           {
-            nativeBuildInputs = [ pkgs.nodejs_26 pkgs.pnpm pkgs.pnpmConfigHook pkgs.git ];
+            nativeBuildInputs = [ pkgs.nodejs_26 pkgs.pnpm pkgs.pnpmConfigHook pkgs.git ] ++ lib.optionals pkgs.stdenv.isLinux [ pkgs.util-linux ];
             pnpmDeps = pnpmDepsFor pkgs;
           }
           ''
