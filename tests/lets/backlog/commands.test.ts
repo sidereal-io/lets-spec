@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { withGithub, item } from './fixtures/github.ts';
+import { withGithub, item, data } from './fixtures/github.ts';
 test('workflow CLI carries explicit claim authority through bind and resume', () => withGithub(async ({ command, cwd }) => {
   const selected = command('select'); assert.equal(selected.status, 0); assert.equal(selected.result.item.reference, '#2');
   const claimed = command('claim', { item }); assert.equal(claimed.status, 0); const handle = claimed.result.handle; assert.ok(handle);
@@ -61,3 +61,9 @@ test('uncertain PR closing-line update reconciles without repeating the write',(
   const recovered=command('reconcile',{workflow:lost.result.workflow});assert.equal(recovered.status,0,JSON.stringify(recovered.result));assert.equal(recovered.result.state,'applied');
   assert.equal(state().calls.filter((call:any)=>call.name==='UpdatePRBody').length,1);
 }));
+test('glossary checkpoint can be recorded before the planning change exists',()=>withGithub(async({command,state})=>{
+  const claimed=command('claim',{item});assert.equal(claimed.status,0);
+  const body='Scope stays.\n\n## Glossary handoff\n\n**Destination branch**: work\n\n```text\n# not a section\n```\n\n## Checks\nUnchanged\n';
+  const updated=command('glossary-update',{handle:claimed.result.handle,body,mutationId:'checkpoint'});
+  assert.equal(updated.status,0,JSON.stringify(updated.result));assert.equal(state().responses.Issue.node.body,body);
+},{Issue:{node:{...data().Issue.node,body:'Scope stays.\n\n## Glossary handoff\n\n**Destination branch**: pending\n\n```text\n# not a section\n```\n\n## Checks\nUnchanged\n'}}}));

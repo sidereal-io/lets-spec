@@ -50,7 +50,7 @@ inputs repeat them. The command table names the additional fields.
 | `lets backlog resume` | original `handle`, `change` path | verified recorded `identity` and `handle` |
 | `lets backlog reference` | `handle`, `change`, exact PR URL in `reference` | stored PR reference; preserves GitHub closing line |
 | `lets backlog complete` | `handle`, active or archived `change`, exact PR URL in `reference` | Done only after code-host merge verification |
-| `lets backlog glossary-update` | `handle`, `change`, complete proposed `body`, stable `mutationId` | item whose only body change is inside its existing Glossary handoff section |
+| `lets backlog glossary-update` | `handle`, optional bound `change`, complete proposed `body`, stable `mutationId` | item whose only body change is inside its existing Glossary handoff section |
 
 A scoped item is `{"provider":"github","backlog":"<Project node ID>","id":"<issue node ID>"}`.
 Copy it from selection or the recorded identity; never replace it with a URL

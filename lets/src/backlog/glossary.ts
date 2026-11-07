@@ -4,11 +4,19 @@ import { Claims } from './claims.ts';
 import { fail } from './github.ts';
 import { Store, scope, mutationName } from './store.ts';
 function outside(body: string) {
-  const start = /^(?:#{1,6}\s+Glossary handoff\s*|\*\*Glossary handoff\*\*:?.*)$/m.exec(body);
-  if (!start) fail('unsupported', 'existing Glossary handoff section required');
-  const rest = body.slice(start.index + start[0].length);
-  const end = /^#{1,6}\s+|^\*\*[^*]+\*\*:/m.exec(rest);
-  return [body.slice(0, start.index), end ? rest.slice(end.index) : ''];
+  const lines=body.match(/.*(?:\n|$)/g)!.filter(Boolean);let offset=0;let fence='';let start=-1;let content=-1;let level=0;let bold=false;
+  for(const line of lines){
+    const clean=line.replace(/\r?\n$/,'');const marker=/^ {0,3}(`{3,}|~{3,})/.exec(clean);
+    if(marker){if(!fence)fence=marker[1];else if(marker[1][0]===fence[0]&&marker[1].length>=fence.length)fence='';offset+=line.length;continue;}
+    if(!fence){
+      const heading=/^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(clean);
+      if(start<0&&(heading?.[2]==='Glossary handoff'||/^\*\*Glossary handoff\*\*:?.*$/.test(clean))){start=offset;content=offset+line.length;level=heading?.[1].length??0;bold=!heading;}
+      else if(start>=0&&((heading&&(bold||heading[1].length<=level))||(bold&&/^\*\*[^*]+\*\*:\s*$/.test(clean))))return [body.slice(0,start),body.slice(offset)];
+    }
+    offset+=line.length;
+  }
+  if(content<0)fail('unsupported','existing Glossary handoff section required');
+  return [body.slice(0,start),''];
 }
 export async function updateGlossary(claims: Claims, request: Record<string, any>) {
   if (Object.keys(request.input.patch).some(key => key !== 'body') || typeof request.input.patch.body !== 'string') fail('unsupported', 'build only updates Glossary handoff body text');

@@ -84,8 +84,8 @@ export async function execute(command: string, input: Record<string, any>, cwd: 
     return new GitHub(context, (name,variables)=>transaction.getStore()!.query!(name,variables,context)).packet(item.id, config?.lets?.backlog?.mappings);
   }
   if (command === 'glossary-update') {
-    const { identity, session } = await resume(context, input.change, input.handle, connect);
-    return reconcileWrite(connect(session.context.session), 'item.update', { item: identity.item, patch: { body: input.body } }, input.mutationId ?? randomUUID());
+    const session = input.change ? (await resume(context, input.change, input.handle, connect)).session : await recoverSession(context, input.handle, connect);
+    return reconcileWrite(connect(session.context.session), 'item.update', { item: session.item, patch: { body: input.body } }, input.mutationId ?? randomUUID());
   }
   fail('invalid_request', 'unknown backlog command');
 }

@@ -141,8 +141,9 @@ needs no transfer and no new claim.
 2. In the issue's **Glossary handoff**, record the destination branch,
    the resulting commits and, once it exists, the pull request. Use
    `lets backlog glossary-update` through the action/submission loop
-   with the original private continuation and stable mutation ID. Change
-   only this section; do not post comments or advance shaping's read
+   with the original private continuation and stable mutation ID. Before
+   planning creates and binds the change, omit `change`: the original
+   claim handle identifies the issue. Change only this section; do not post comments or advance shaping's read
    marker.
 3. The holding branch is the branch `lets-shape` makes from the default
    branch to keep the checkpoint commits until a story's branch imports
