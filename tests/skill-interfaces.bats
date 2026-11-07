@@ -1319,18 +1319,38 @@ parts_say_next() {
   [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
 }
 
-# anchors_resolve <skill>: each ](#<anchor>) link outside code, in each of
-# the skill's files, is the anchor of one of that file's own headings. Prints
-# each one that is not as <file>: #<anchor>, the file under the skills folder.
+# file_anchors <file>: the anchor of each of the file's headings outside
+# code, one per line.
+file_anchors() {
+  awk "$fence_rules"' !code && /^#+ / { sub(/^#+ /, ""); print }' "$1" |
+    while IFS= read -r heading; do heading_anchor "$heading"; echo; done
+}
+
+# anchors_resolve <skill>: each link outside code, in each of the skill's
+# files, resolves. A ](#<anchor>) link is the anchor of one of that file's
+# own headings. A link to another file names, relative to the linking file,
+# a file that exists, and its #<anchor>, if it has one, is the anchor of one
+# of that file's headings. A link with a URL scheme, or one that leaves the
+# skills folder, is not checked. Prints each link that does not resolve as
+# <file>: <link>, the file under the skills folder.
 anchors_resolve() {
-  local file name anchors anchor out=""
+  local root file name anchors anchor link path target out=""
+  root="$(realpath -m "${skills_dir:-$repo/skills}")"
   while IFS= read -r file; do
     name="${file#"${skills_dir:-$repo/skills}/"}"
-    anchors="$(awk "$fence_rules"' !code && /^#+ / { sub(/^#+ /, ""); print }' "$file" |
-      while IFS= read -r heading; do heading_anchor "$heading"; echo; done)"
+    anchors="$(file_anchors "$file")"
     while IFS= read -r anchor; do
       grep -qxF -- "$anchor" <<<"$anchors" || out+="$name: #$anchor"$'\n'
     done < <(prose_text "$file" | grep -oE '\]\(#[^)]*\)' | sed -E 's/^\]\(#//; s/\)$//' | sort -u)
+    while IFS= read -r link; do
+      ! grep -qE '^[A-Za-z][A-Za-z0-9+.-]*:' <<<"$link" || continue
+      path="${link%%#*}"
+      target="$(realpath -m "$(dirname "$file")/$path")"
+      [[ "$target" == "$root"/* ]] || continue
+      if [ ! -f "$target" ]; then out+="$name: $link"$'\n'; continue; fi
+      [[ "$link" == *'#'* ]] || continue
+      grep -qxF -- "${link#*#}" <<<"$(file_anchors "$target")" || out+="$name: $link"$'\n'
+    done < <(prose_text "$file" | grep -oE '\]\([^)#][^)]*\)' | sed -E 's/^\]\(//; s/\)$//' | sort -u)
   done < <(skill_files "$1")
   [ -z "$out" ] || { printf '%s' "$out"; return 1; }
 }
@@ -1349,6 +1369,43 @@ anchors_resolve() {
 
 @test "the link check reads a reference file against its own headings" {
   fixture_file lets-go references/glossary-preflight.md '## Check the prerequisite' '' 'Run [Check the prerequisite](#check-the-prerequisite) again.'
+  anchors_resolve lets-go
+}
+
+@test "the link check passes a link to a heading in another file" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'See where [records disagree](references/records.md#records-that-disagree).'
+  fixture_file lets-go references/records.md '# Records' '' '## Records that disagree' '' 'Text.'
+  anchors_resolve lets-go
+}
+
+@test "the link check passes a link to another file with no anchor" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'Read [the records](references/records.md).'
+  fixture_file lets-go references/records.md '# Records'
+  anchors_resolve lets-go
+}
+
+@test "the link check names a link to a missing file" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'Copy [the frame](references/frame.md).'
+  run anchors_resolve lets-go
+  [ "$status" -eq 1 ] || { echo "it passed on a link to no file"; false; }
+  [ "$output" = 'lets-go/SKILL.md: references/frame.md' ] || { echo "it said: $output"; false; }
+}
+
+@test "the link check names a link to a heading another file does not have" {
+  fixture_file lets-go SKILL.md '# lets-go' '' '## Route'
+  fixture_file lets-go references/shape.md '# Shape' '' 'Go on from [Check the issue](../SKILL.md#check-the-issue).'
+  run anchors_resolve lets-go
+  [ "$status" -eq 1 ] || { echo "it passed on a link to no heading"; false; }
+  [ "$output" = 'lets-go/references/shape.md: ../SKILL.md#check-the-issue' ] || { echo "it said: $output"; false; }
+}
+
+@test "the link check skips a link with a URL scheme" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'See [the spec](https://example.com/spec.md#nothing).'
+  anchors_resolve lets-go
+}
+
+@test "the link check skips a link that leaves the skills folder" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'See [the README](../../README.md#nothing).'
   anchors_resolve lets-go
 }
 
