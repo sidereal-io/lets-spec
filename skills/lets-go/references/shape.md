@@ -136,6 +136,9 @@ has a name of its own, `<shape-name>`, from what it shapes:
   of them when there are fewer. `fix lets-sync — quiet output` becomes
   `idea-fix-letssync-quiet-output`. The same idea typed again gets the
   same name, so it finds its answers file.
+  [Read the request](../SKILL.md#read-the-request) has already stopped
+  an idea with no letter or digit, so `<slug>` is never empty, and no
+  shape step is named `idea-`.
 
 ## What shape runs
 

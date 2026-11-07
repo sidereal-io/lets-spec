@@ -1651,6 +1651,13 @@ parts_fixture() {
     { echo "Read the request's row does not name the stop: $(overview_row 'Read the request')"; false; }
 }
 
+@test "the shape step's name is never idea- alone" {
+  local section
+  section="$(skill_section lets-go "The shape step's name")"
+  grep -qF '[Read the request](../SKILL.md#read-the-request) has already stopped an idea with no letter or digit, so `<slug>` is never empty, and no shape step is named `idea-`' <<<"$section" ||
+    { echo "The shape step's name does not say <slug> is never empty"; false; }
+}
+
 # overview_row <part>: the overview's row for the part.
 overview_row() {
   awk '/^## Placeholders$/ { exit } /^\|/' "$(lets_go_skill)" | grep -F -- "| [$1](#"
