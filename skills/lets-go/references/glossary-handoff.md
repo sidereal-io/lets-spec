@@ -76,7 +76,7 @@ leaves user edits as they are.
    Nothing is claimed yet, so the result leaves the backlog as it was.
 
 The verified glossary import is the only implementation step this skill
-adds, beside [the discovery map commit](../SKILL.md#commit-the-discovery-map).
+adds, beside [the discovery map commit](shape.md#commit-the-discovery-map).
 
 It returns one of these results:
 

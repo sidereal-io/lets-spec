@@ -860,7 +860,7 @@ review_build_start() {
 @test "Pick the first ready story prints Done shape once after a lost claim" {
   grep -qF 'when this run has not printed it yet' <<<"$(skill_section lets-go 'The step lines')" ||
     { echo "The step lines print Done shape again after a lost claim"; false; }
-  grep -qF '](#the-step-lines)' <<<"$(part_section 'Pick the first ready story')" ||
+  grep -qF '](../SKILL.md#the-step-lines)' <<<"$(part_section 'Pick the first ready story')" ||
     { echo "Pick the first ready story does not link The step lines"; false; }
 }
 
@@ -938,7 +938,7 @@ review_build_start() {
   local shape level
   shape="$(part_section 'Run the shape step')"
   level="$(part_section 'Set the level')"
-  grep -qF '](#set-the-level)' <<<"$shape" || { echo "Run the shape step does not link Set the level"; false; }
+  grep -qF '](../SKILL.md#set-the-level)' <<<"$shape" || { echo "Run the shape step does not link Set the level"; false; }
   ! grep -qF 'because your lets config sets go.level' <<<"$shape" ||
     { echo "Run the shape step still writes the level rule"; false; }
   grep -qF '`ask` for any other Kind' <<<"$level" || { echo "Set the level names no level for any other Kind"; false; }
@@ -1422,6 +1422,29 @@ section_moved() {
   section_moved references/subagent.md 'Run a step in a subagent'
   section_moved references/glossary-handoff.md 'Glossary preflight' 'Check the prerequisite' 'Check the checkpoint' \
     'What the preflight returns' 'Import the glossary checkpoint' 'Import the commits' 'Recover from a failed import'
+  section_moved references/shape.md 'Commit the discovery map' "The shape step's name" 'What shape runs'
+}
+
+# skill_part <name>: the ## section of that name in lets-go's SKILL.md alone,
+# its subsections included, up to the next ## heading.
+skill_part() {
+  awk -v name="## $1" "$fence_rules"'
+    !code && /^## / { on = ($0 == name); next }
+    on' "$(lets_go_skill)"
+}
+
+# A run that never shapes loads none of shape's steps, but each part keeps
+# its place in the run, and its Next: line, in SKILL.md.
+@test "each part whose steps moved links them in references/shape.md" {
+  local part text
+  for part in 'Start from an idea' 'Run the shape step' 'Pick the first ready story'; do
+    text="$(skill_part "$part")"
+    grep -qF "](references/shape.md#$(heading_anchor "$part"))" <<<"$text" ||
+      { echo "$part does not link its steps in references/shape.md"; false; }
+    ! grep -qE '^ *[0-9]+\. ' <<<"$text" || { echo "$part still has steps in SKILL.md"; false; }
+    has_heading "$repo/skills/lets-go/references/shape.md" "$part" ||
+      { echo "references/shape.md has no heading: $part"; false; }
+  done
 }
 
 # Most issues carry no glossary handoff, so they need not load its file.
