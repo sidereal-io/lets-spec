@@ -851,9 +851,11 @@ Return to *Claim*, with the result.
    session took it: the result is `taken`, with who has it. Return it
    now.
 4. Create a branch with the change's name off the default branch. This
-   also fails when a branch with the change's name appeared after
-   *Check the issue* looked. If creating the branch fails, release the
-   claim, so another session can pick the issue up. The result is then
+   also fails when a local branch with the change's name appeared after
+   *Check the issue* looked. A branch that appeared only on `origin` does
+   not make it fail: the plan step's first push is then rejected, and
+   that step fails. If creating the branch fails, release the claim, so
+   another session can pick the issue up. The result is then
    `branch-failed`, with the error:
 
    ```bash

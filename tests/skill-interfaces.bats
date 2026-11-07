@@ -1680,8 +1680,10 @@ procedure_stops() {
   skill_does_not_say lets-go 'branch-exists'
   ! grep -qF 'git branch --list' <<<"$claim" || { echo "Claim still looks for the branch"; false; }
   ! grep -qF 'already exists' <<<"$claim" || { echo "Claim still checks for an existing branch"; false; }
-  grep -qF 'appeared after *Check the issue* looked' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" ||
-    { echo "Claim does not say a late branch fails its creation"; false; }
+  grep -qF 'a local branch with the change'"'"'s name appeared after *Check the issue* looked' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" ||
+    { echo "Claim does not say a late local branch fails its creation"; false; }
+  grep -qF 'only on `origin`' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" ||
+    { echo "Claim says a late branch on origin fails its creation"; false; }
   grep -qF 'when *Claim* runs *Glossary preflight*' <<<"$(skill_section lets-go 'Check the checkpoint')" ||
     { echo "Check the checkpoint still runs after a branch check"; false; }
 }
