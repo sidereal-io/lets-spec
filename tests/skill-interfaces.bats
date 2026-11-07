@@ -894,7 +894,7 @@ review_build_start() {
   [ "$call" != "$part" ] || { echo "Check the issue does not run Find the source of demand"; false; }
   [ "${#read}" -lt "${#call}" ] ||
     { echo "Check the issue runs Find the source of demand before it reads the blockers"; false; }
-  skill_says lets-go '*Check the issue* has read its blockers already'
+  skill_says lets-go '[Check the issue](#check-the-issue) has read its blockers already'
   skill_does_not_say lets-go 'If an open issue blocks it, say so and stop' ||
     { echo "Find the source of demand still stops on a blocker of its own"; false; }
   skill_says lets-go 'return to the part that ran it'
@@ -902,7 +902,7 @@ review_build_start() {
     { echo "Glossary preflight does not return to Claim"; false; }
   ! grep -qiF 'return to *Claim*' <<<"$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')" ||
     { echo "Find the source of demand still returns to Claim, which never runs it"; false; }
-  grep -qF '**`found`:** go on to *Confirm the packet*' <<<"$part" ||
+  grep -qF '**`found`:** go on to [Confirm the packet](#confirm-the-packet)' <<<"$part" ||
     { echo "Check the issue does not go on to Confirm the packet on found"; false; }
   skill_does_not_say lets-go 'Otherwise, go on to [Confirm the packet](#confirm-the-packet).' ||
     { echo "Find the source of demand still picks the next section"; false; }
@@ -1484,14 +1484,14 @@ skill_part() {
   text="$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')"
   grep -qF 'Read [the glossary handoff](references/glossary-handoff.md) only for an issue whose body has a **Glossary handoff** section.' <<<"$text" ||
     { echo "Find the source of demand does not gate the glossary file"; false; }
-  grep -qF 'For an issue with none, *Check the prerequisite* returns `resolved`, and you read no file.' <<<"$text" ||
+  grep -qF 'For an issue with none, [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite) returns `resolved`, and you read no file.' <<<"$text" ||
     { echo "Find the source of demand does not say what an issue with no handoff returns"; false; }
 }
 
 @test "Claim reads the glossary file only for an issue with a Glossary handoff" {
   local text
   text="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
-  grep -qF 'When the issue'"'"'s body has no **Glossary handoff** section, *Glossary preflight* returns `no-owned-edits`, and you read no file.' <<<"$text" ||
+  grep -qF 'When the issue'"'"'s body has no **Glossary handoff** section, [Glossary preflight](references/glossary-handoff.md#glossary-preflight) returns `no-owned-edits`, and you read no file.' <<<"$text" ||
     { echo "Claim does not say what an issue with no handoff returns"; false; }
   grep -qF 'Otherwise run [Glossary preflight](references/glossary-handoff.md#glossary-preflight)' <<<"$text" ||
     { echo "Claim does not link the glossary file"; false; }
@@ -1632,8 +1632,8 @@ parts_fixture() {
     'When the rest is words, on the default branch, ask the user whether the word names the level or is part of the idea' \
     'Show both readings' \
     'Ask it at either level, before [Start from an idea](#start-from-an-idea) runs' \
-    'When the user says the word names the level, take it off, and keep it for *Set the level*' \
-    'Otherwise the word stays in the idea, and *Set the level* takes the level from its next source' \
+    'When the user says the word names the level, take it off, and keep it for [Set the level](#set-the-level)' \
+    'Otherwise the word stays in the idea, and [Set the level](#set-the-level) takes the level from its next source' \
     'On another branch, ask nothing about the word: words stop the run there'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Read the request does not say: $phrase"; false; }
   done
@@ -1679,7 +1679,7 @@ parts_fixture() {
     { echo "Enter the branch does not set the schema from the first file that exists"; false; }
   change="$(grep -bo -F '`openspec/changes/<name>/.openspec.yaml`' <<<"$part" | head -1 | cut -d: -f1)"
   archive="$(grep -bo -F '`openspec/changes/archive/<YYYY-MM-DD>-<name>/.openspec.yaml`' <<<"$part" | head -1 | cut -d: -f1)"
-  route="$(grep -bo -F 'When neither exists, it is the schema *Route* picked' <<<"$part" | head -1 | cut -d: -f1)"
+  route="$(grep -bo -F 'When neither exists, it is the schema [Route](#route) picked' <<<"$part" | head -1 | cut -d: -f1)"
   [ -n "$change" ] && [ -n "$archive" ] && [ -n "$route" ] ||
     { echo "Enter the branch does not name all three sources: change $change, archive $archive, route $route"; false; }
   [ "$change" -lt "$archive" ] && [ "$archive" -lt "$route" ] ||
@@ -1704,7 +1704,7 @@ overview_row() {
 }
 
 @test "the overview's Next for Enter the branch names both ways back after a lost claim" {
-  overview_row 'Enter the branch' | grep -qF '*Read the request* or *Pick the first ready story* after a lost claim' ||
+  overview_row 'Enter the branch' | grep -qF '[Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim' ||
     { echo "it said: $(overview_row 'Enter the branch')"; false; }
 }
 
@@ -1964,7 +1964,7 @@ procedure_stops() {
   skill_does_not_say lets-go 'branch-exists'
   ! grep -qF 'git branch --list' <<<"$claim" || { echo "Claim still looks for the branch"; false; }
   ! grep -qF 'already exists' <<<"$claim" || { echo "Claim still checks for an existing branch"; false; }
-  grep -qF 'a local branch with the change'"'"'s name appeared after *Check the issue* looked' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" ||
+  grep -qF 'a local branch with the change'"'"'s name appeared after [Check the issue](#check-the-issue) looked' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" ||
     { echo "Claim does not say a late local branch fails its creation"; false; }
   grep -qF 'only on `origin`' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" ||
     { echo "Claim says a late branch on origin fails its creation"; false; }
@@ -2004,6 +2004,101 @@ procedure_stops() {
 
 @test "each link in lets-go names one of its file's headings" {
   anchors_resolve lets-go
+}
+
+# anchor_heading <file> <anchor>: the text of the file's heading outside code
+# whose anchor is <anchor>.
+anchor_heading() {
+  local heading
+  awk "$fence_rules"' !code && /^#+ / { sub(/^#+ /, ""); print }' "$1" |
+    while IFS= read -r heading; do
+      [ "$(heading_anchor "$heading")" != "$2" ] || echo "$heading"
+    done
+}
+
+# section_names: each heading outside code in a lets-go file, then each
+# heading of another skill that a lets-go link points to, one per line.
+section_names() {
+  local root dir file link target
+  root="$(realpath -m "${skills_dir:-$repo/skills}")"
+  dir="$root/lets-go"
+  skill_files lets-go | while IFS= read -r file; do
+    awk "$fence_rules"' !code && /^#+ / { sub(/^#+ /, ""); print }' "$file"
+    prose_text "$file" | grep -oE '\]\([^)#][^)]*#[^)]*\)' | sed -E 's/^\]\(//; s/\)$//' |
+      while IFS= read -r link; do
+        target="$(realpath -m "$(dirname "$file")/${link%%#*}")"
+        [[ "$target" != "$dir"/* && -f "$target" ]] || continue
+        anchor_heading "$target" "${link#*#}"
+      done
+  done | sort -u
+}
+
+# section_italics <file>...: each italic text, outside fenced code and code
+# spans, that equals a name section_names gives, as <file>:<line>: <text>,
+# the file under the skills folder. references/terms.md copies the glossary,
+# which names sections in italics, so it is not read.
+section_italics() {
+  local names file out=""
+  names="$(section_names)"
+  for file in "$@"; do
+    [[ "$file" != */lets-go/references/terms.md ]] || continue
+    out+="$(prose_text "$file" | awk -v name="${file#"${skills_dir:-$repo/skills}/"}" '
+      NR == FNR { names[$0] = 1; next }
+      {
+        line = $0; sub(/:.*/, "", line); text = substr($0, length(line) + 3)
+        gsub(/\*\*[^*]*\*\*/, "", text)
+        while (match(text, /\*[^* ][^*]*\*/)) {
+          found = substr(text, RSTART + 1, RLENGTH - 2)
+          if (found in names) print name ":" line ": " found
+          text = substr(text, RSTART + RLENGTH)
+        }
+      }' <(printf '%s\n' "$names") -)"
+    [ -z "$out" ] || out+=$'\n'
+  done
+  [ -z "$out" ] || { printf '%s' "$out"; return 1; }
+}
+
+@test "the section link check names an italic section name" {
+  fixture_file lets-go SKILL.md '# lets-go' '' '## Route' '' 'Text.' '' '' '' '' '' '' 'otherwise *Route*'
+  run section_italics "$(lets_go_skill)"
+  [ "$status" -eq 1 ] || { echo "it passed on an italic section name"; false; }
+  [ "$output" = 'lets-go/SKILL.md:12: Route' ] || { echo "it said: $output"; false; }
+}
+
+@test "the section link check names a section of another skill that lets-go links" {
+  fixture_file lets-review-build SKILL.md '# Review build' '' '## Finish the change' '' 'Text.'
+  fixture_file lets-go SKILL.md '# lets-go' '' 'See [Finish the change](../lets-review-build/SKILL.md#finish-the-change).' \
+    'Then *Finish the change* runs.'
+  run section_italics "$(lets_go_skill)"
+  [ "$status" -eq 1 ] || { echo "it passed on an italic section of another skill"; false; }
+  [ "$output" = 'lets-go/SKILL.md:4: Finish the change' ] || { echo "it said: $output"; false; }
+}
+
+@test "the section link check reads no italics inside fenced code" {
+  fixture_file lets-go SKILL.md '# lets-go' '' '## Route' '' '```text' 'Go on in *Route*.' '```'
+  section_italics "$(lets_go_skill)"
+}
+
+@test "the section link check reads no italics that name no section" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'Back in *Resume mode*.'
+  section_italics "$(lets_go_skill)"
+}
+
+@test "lets-go links each section it names" {
+  section_italics "$(lets_go_skill)"
+}
+
+@test "lets-go links Finish the change in lets-review-build" {
+  part_section 'End of the run' | grep -qF '](../lets-review-build/SKILL.md#finish-the-change)' ||
+    { echo "End of the run does not link Finish the change"; false; }
+}
+
+@test "lets-go keeps Check an earlier review in italics" {
+  local row
+  row="$(walk_section)"
+  grep -qF "Follow *Check an earlier review* in the \`lets-review-plan\` skill" <<<"$row" ||
+    { echo "the review plan row does not name Check an earlier review in italics"; false; }
+  ! grep -qF '](../lets-review-plan/' <<<"$row" || { echo "the review plan row links lets-review-plan"; false; }
 }
 
 # walk_section: lets-go's Walk the step table section, on one line.
@@ -2394,7 +2489,7 @@ overview_paragraph() {
 @test "lets-go explains its procedures before the overview" {
   local text intro phrase
   text="$(overview_paragraph)"
-  for phrase in "*Find the source of demand* finds the run's issue: the one the user named, the one an idea's words describe, or \`next\`." \
+  for phrase in "[Find the source of demand](#find-the-source-of-demand) finds the run's issue: the one the user named, the one an idea's words describe, or \`next\`." \
     '`next` is the first ready issue on the backlog, as that procedure ranks it.' \
     'A part or another procedure runs it, and it returns its result to what ran it.' \
     '](references/terms.md#procedure)'; do
