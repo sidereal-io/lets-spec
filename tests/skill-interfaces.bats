@@ -1640,6 +1640,17 @@ parts_fixture() {
   skill_does_not_say lets-go 'names the level: take it off, and keep it for [Set the level](#set-the-level). What is left'
 }
 
+@test "lets-go stops an idea with no letter or digit" {
+  local part
+  part="$(part_section 'Read the request')"
+  grep -qF 'When the idea holds no letter or digit, in any script, say that an idea needs at least one letter or digit, and stop, claiming nothing and running no step' <<<"$part" ||
+    { echo "Read the request does not stop an idea with no letter or digit"; false; }
+  grep -qF 'before the discovery query and the title search' <<<"$part" ||
+    { echo "Read the request does not stop before the discovery query and the title search"; false; }
+  grep -qF 'an idea with no letter or digit' <<<"$(overview_row 'Read the request')" ||
+    { echo "Read the request's row does not name the stop: $(overview_row 'Read the request')"; false; }
+}
+
 # overview_row <part>: the overview's row for the part.
 overview_row() {
   awk '/^## Placeholders$/ { exit } /^\|/' "$(lets_go_skill)" | grep -F -- "| [$1](#"

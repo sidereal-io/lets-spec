@@ -58,7 +58,7 @@ that procedure ranks it.
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
 | [Read the settings](#read-the-settings) | Reads the default level, the default branch, the current branch and the Project | this session | *Read the request* | `lets go level` fails, or the Project query finds no Project, or several |
-| [Read the request](#read-the-request) | Takes a level off the request, then finds the issue from the branch and the request | this session | *Check the issue*, or *Start from an idea* for an idea | An idea on a change's branch, no issue that matches the branch, or *Find the source of demand* returns `nothing-ready` |
+| [Read the request](#read-the-request) | Takes a level off the request, then finds the issue from the branch and the request | this session | *Check the issue*, or *Start from an idea* for an idea | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or *Find the source of demand* returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | *Check the issue* for the same work; otherwise *Run the shape step* | Never |
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | *Run the shape step* when the packet needs shaping and shape can run; otherwise *Route* | An open blocker with no branch; *Find the source of demand* returns `unresolved`; or *Confirm the packet* returns `epic`, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | *Check the issue* for one issue; *Pick the first ready story* for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
@@ -191,8 +191,15 @@ is left of the request:
 
 | The branch | A number | An idea | Nothing |
 |---|---|---|---|
-| The default branch | The number is `<i>`. Go to [Check the issue](#check-the-issue) | Go to [Start from an idea](#start-from-an-idea) | Run `next`. Its pick is `<i>`: print the `Picked` line, and go to [Check the issue](#check-the-issue). When nothing is ready, stop |
+| The default branch | The number is `<i>`. Go to [Check the issue](#check-the-issue) | With no letter or digit, stop. Otherwise go to [Start from an idea](#start-from-an-idea) | Run `next`. Its pick is `<i>`: print the `Picked` line, and go to [Check the issue](#check-the-issue). When nothing is ready, stop |
 | Another branch, `<branch>` | When the number is one of the matches, it is `<i>`: go to [Check the issue](#check-the-issue). Otherwise stop | Stop: an idea needs the default branch | When exactly one issue matches, it is `<i>`: go to [Check the issue](#check-the-issue). When none or several do, stop |
+
+With an idea on the default branch, read its characters first. When
+the idea holds no letter or digit, in any script, say that an idea
+needs at least one letter or digit, and stop, claiming nothing and
+running no step. This comes before the discovery query and the title
+search, which an idea like `???` gives nothing to work with. A letter
+in any script counts: `ログを直す` is an idea.
 
 With nothing on the default branch, run the third case, `next`, of
 [Find the source of demand](#find-the-source-of-demand), over the
