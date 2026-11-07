@@ -1419,6 +1419,17 @@ section_moved() {
 # not rows here.
 @test "lets-go keeps each moved section in its reference file" {
   section_moved references/records.md 'Read the records' 'Records that disagree'
+  section_moved references/subagent.md 'Run a step in a subagent'
+}
+
+@test "the subagent follows the saved prompt and makes only the step's changes" {
+  local section phrase
+  section="$(skill_section lets-go 'Run a step in a subagent')"
+  for phrase in 'follows the saved prompt' 'works only in this repository on the branch `<name>`' \
+    'makes only the changes that the step calls for'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Run a step in a subagent does not say: $phrase"; false; }
+  done
+  skill_does_not_say lets-go 'may write files'
 }
 
 @test "the link check passes a link to a heading in another file" {
