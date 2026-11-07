@@ -32,9 +32,9 @@ The skill-interfaces check SHALL fail on any other line longer than 72 columns, 
 - **THEN** `**3**: no fresh session can run here, for example because no resolver started one` spans more than one line, and the exit-3 check still passes
 
 ### Requirement: lets-go links each section it names
-`skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/` SHALL name a section of a file by a link to its heading, every time, in prose and in table cells, the overview's *Next* column included. A link to a section of another `lets-go` file, or of another skill, SHALL use a path relative to the linking file, as *Every link inside lets-go names one of its headings* says. A section of another skill that a published flow does not install, such as *Check an earlier review* in `lets-review-plan`, which the `minimal` flow leaves out, SHALL stay in italics, so that every link resolves in both flows. A heading inside the step prompt frame, which is not a heading of the file, SHALL be written as it is typed, in a code span, such as `## What to run`.
+`skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/` SHALL name a section of a file by a link to its heading, every time, in prose and in table cells, the overview's *Next* column included. A link to a section of another `lets-go` file, or of another skill, SHALL use a path relative to the linking file, as *Every link inside lets-go names one of its headings* says. A section of another skill that a published flow does not install, such as *Check an earlier review* in `lets-review-plan`, which the `minimal` flow leaves out, SHALL stay in italics, so that every link resolves in both flows. A heading inside the step prompt frame, which is not a heading of the file, SHALL be written as it is typed, in a code span, such as `## What to run`. `references/terms.md` is exempt: it copies `openspec/glossary.md` word for word, and the glossary names sections such as *Route* and *Claim* in italics.
 
-Outside fenced code blocks and inline code spans, the skill-interfaces check SHALL fail on italic text, `*...*`, that equals the text of a heading outside code in a `lets-go` file, or of a heading that a `lets-go` link points to in another skill. Its output SHALL name the file, the line number and the text.
+Outside fenced code blocks, inline code spans and `references/terms.md`, the skill-interfaces check SHALL fail on italic text, `*...*`, that equals the text of a heading outside code in a `lets-go` file, or of a heading that a `lets-go` link points to in another skill. Its output SHALL name the file, the line number and the text.
 
 #### Scenario: Every section reference is a link
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`, outside code
@@ -55,6 +55,10 @@ Outside fenced code blocks and inline code spans, the skill-interfaces check SHA
 #### Scenario: A heading of the prompt frame
 - **WHEN** the skill-interfaces test reads *Write the prompt* in `references/step-prompt.md`
 - **THEN** it finds `` `## What to run` `` and no `*What to run*`
+
+#### Scenario: The glossary's copy keeps its italics
+- **WHEN** the skill-interfaces test reads `references/terms.md`, which says `such as *Route* or *Walk the step table*`
+- **THEN** the check passes, and `terms.md` still matches `openspec/glossary.md`
 
 #### Scenario: Italics that name no section
 - **WHEN** a skills folder holds `lets-go/SKILL.md` with no heading `Resume mode`, and the text `*Resume mode*` inside a fenced code block
