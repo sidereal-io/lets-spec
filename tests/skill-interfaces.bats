@@ -1420,6 +1420,8 @@ section_moved() {
 @test "lets-go keeps each moved section in its reference file" {
   section_moved references/records.md 'Read the records' 'Records that disagree'
   section_moved references/subagent.md 'Run a step in a subagent'
+  section_moved references/glossary-handoff.md 'Glossary preflight' 'Check the prerequisite' 'Check the checkpoint' \
+    'What the preflight returns' 'Import the glossary checkpoint' 'Import the commits' 'Recover from a failed import'
 }
 
 @test "the subagent follows the saved prompt and makes only the step's changes" {
@@ -1844,7 +1846,7 @@ procedure_stops() {
 }
 
 @test "Enter the branch imports the glossary checkpoint only after verified" {
-  grep -qF '**`claimed`:** when it carries `verified`, run [Import the glossary checkpoint](#import-the-glossary-checkpoint)' <<<"$(part_section 'Enter the branch')" ||
+  grep -qF '**`claimed`:** when it carries `verified`, run [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint)' <<<"$(part_section 'Enter the branch')" ||
     { echo "Enter the branch does not import only after verified"; false; }
 }
 
