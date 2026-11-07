@@ -22,7 +22,7 @@ or commits the discovery map.
    the run has described work, but no issue. It searches open issue
    titles for the idea's words. On its result:
    - **`matches`:** show the user the matches it carries, and ask
-     whether one is the same work. Ask at either level: a wrong yes
+     whether one is the same work. Ask in either mode: a wrong yes
      builds someone else's issue.
    - **`no-match`:**
      [run the shape step](../SKILL.md#run-the-shape-step) for the idea.
@@ -51,9 +51,10 @@ when it runs.
    - **There is none:** say that the map has uncommitted edits, and to
      commit or discard them. Stop, and run no step. If the run went on,
      a discovery's commit could sweep those edits in.
-2. Set `<level>` and print its line, as
-   [Set the level](../SKILL.md#set-the-level) says for a level before a
-   shape step. Then go on here, with the next step.
+2. Set `<mode>` and print its line, as
+   [Set the question mode](../SKILL.md#set-the-question-mode)
+   says for a question mode before a shape step. Then go on here, with
+   the next step.
 3. For an idea, check that the answers file is this idea's. Two ideas
    can share their first five words, and so their `<shape-name>`. When
    `.workspace/lets-go/<shape-name>-shape-prompt.md` exists and holds

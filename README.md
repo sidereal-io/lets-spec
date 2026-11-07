@@ -227,21 +227,21 @@ Progress and creates its branch. Then it runs plan, review plan, build
 and review build, each in a fresh session through
 `lets delegate step run`. Review plan runs on `lets-standard` only. A
 step never asks you anything in its own session. It
-reports its questions, and `lets-go` handles them at one of two
-interactivity levels:
+reports its questions, and `lets-go` handles them in one of two
+question modes:
 
-- **`recommend`**, for a chore or a bug: `lets-go` answers each
-  question that has a recommendation, tells you what it answered, and
-  asks you the rest.
+- **`auto`**, for a chore or a bug: `lets-go` answers each question
+  that has a recommendation, tells you what it chose, and asks you the
+  rest.
 - **`ask`**, for a story: `lets-go` asks you every question, with the
   step's recommendation as the suggested answer.
 
-To use the other level, name it with the issue number or the idea, such
-as `lets-go #152 recommend`. The level holds for that run only. To set a
-default for every run, add `go.level` to your `lets` config, as
-[Set up delegation](#set-up-delegation) shows. It replaces the Kind's
-level, and a level you name still wins. A `go.level` other than `ask` or
-`recommend` stops the run before it claims anything. The run ends when
+To use the other mode, name it with the issue number or the idea, such
+as `lets-go #152 auto`. The question mode holds for that run only. To
+set a default for every run, add `go.questions` to your `lets` config,
+as [Set up delegation](#set-up-delegation) shows. It replaces the
+Kind's question mode, and a mode you name still wins. A `go.questions`
+other than `ask` or `auto` stops the run before it claims anything. The run ends when
 the pull request is ready for review, with one line per step.
 
 If a run stops, run `lets-go` again, on the default branch or on the
@@ -257,8 +257,8 @@ first searches the open issues for the same work, and asks you whether
 one matches. If none does, a shape step runs `lets-shape` on the idea in
 a fresh session, and creates one issue. An issue whose packet is not
 complete, or has comments shaping has not read, gets the same shape
-step. The shape step runs at `ask`, unless you name a level or set
-`go.level`, because there is no Kind yet. After it, the run goes on as
+step. The shape step runs at `ask`, unless you name a question mode or
+set `go.questions`, because there is no Kind yet. After it, the run goes on as
 for an issue number. An idea too large for one issue runs discovery, once you say yes. The
 shape step runs `lets-shape`'s discovery one phase per round, and you
 confirm each phase. Discovery files a parent issue and its stories. The
@@ -440,7 +440,7 @@ delegate:
     build:
       guidance: Prefer claude/claude-opus-5-5.
 go:
-  level: recommend
+  questions: auto
 ```
 
 `delegate.resolvers` is the chain. List the resolvers for your harnesses
@@ -457,10 +457,10 @@ which models to use. Its parts are the command that reads it and a value
 `step.<step>` for one of the five steps, such as `step.build`. The skill
 uses it only to rank and leave out models. A value that is not a string makes `instructions` exit 2.
 
-`go` holds the settings for `lets-go`. `go.level` is `ask` or
-`recommend`, and is optional. `lets-go` reads it through
-`lets go level`. The `lets delegate` commands ignore `go`, and
-`lets go level` ignores `delegate`.
+`go` holds the settings for `lets-go`. `go.questions`, the question
+mode, is `ask` or `auto`, and is optional. `lets-go` reads it through
+`lets go questions`. The `lets delegate` commands ignore `go`, and
+`lets go questions` ignores `delegate`.
 
 Other keys are ignored, so a later `lets` can add settings beside these.
 

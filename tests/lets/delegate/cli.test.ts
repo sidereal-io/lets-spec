@@ -334,26 +334,32 @@ test('an old step name is a usage error that names --for', async () => {
   assert.match(stderr, /--for/);
 });
 
-test('go --help names level', async () => {
+test('go --help names questions and no level', async () => {
   const { code, stdout } = await lets('go', '--help');
   assert.equal(code, 0);
-  assert.match(stdout, /\blevel\b/);
+  assert.match(stdout, /\bquestions\b/);
+  assert.doesNotMatch(stdout, /\blevel\b/);
 });
 
-test('go level --help names the config file, the key, its two values and the exit codes', async () => {
-  const { code, stdout } = await lets('go', 'level', '--help');
+test('go questions --help names the config file, the key, its two values and the exit codes', async () => {
+  const { code, stdout } = await lets('go', 'questions', '--help');
   assert.equal(code, 0);
-  for (const named of ['config.yaml', 'go.level', 'ask', 'recommend']) assert.ok(stdout.includes(named), named);
+  for (const named of ['config.yaml', 'go.questions', 'ask', 'auto']) assert.ok(stdout.includes(named), named);
   assert.match(stdout, /^ +0 /m);
   assert.match(stdout, /^ +2 /m);
 });
 
-test('go level with a level lets does not know is exit 2, naming the config file and go.level', async () => {
-  const r = repo('version: 3\ngo:\n  level: loud\n');
-  const { code, stdout, stderr } = await letsIn(r, 'go', 'level');
+test('go questions with a question mode lets does not know is exit 2, naming the config file and go.questions', async () => {
+  const r = repo('version: 3\ngo:\n  questions: loud\n');
+  const { code, stdout, stderr } = await letsIn(r, 'go', 'questions');
   assert.equal(code, 2);
   assert.equal(stdout, '');
   assert.match(stderr, /^lets go: /);
   assert.ok(stderr.includes(join(r.env.XDG_CONFIG_HOME, 'lets', 'config.yaml')), stderr);
-  assert.ok(stderr.includes('go.level'), stderr);
+  assert.ok(stderr.includes('go.questions'), stderr);
+});
+
+test('go level is no longer a command', async () => {
+  const { code } = await lets('go', 'level');
+  assert.equal(code, 2);
 });

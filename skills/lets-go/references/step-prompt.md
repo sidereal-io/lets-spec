@@ -7,10 +7,10 @@ Read this file when the run writes the prompt for a step.
 If the folder is missing, create it first:
 `mkdir -p .workspace/lets-go`. Then copy the frame below to
 `.workspace/lets-go/<session>-prompt.md`. Fill in each `<...>`.
-`<schema>`, `<level>` and `<route line>` are the ones
+`<schema>`, `<mode>` and `<route line>` are the ones
 [Enter the branch](../SKILL.md#enter-the-branch),
-[Set the level](../SKILL.md#set-the-level) and
-[Route](../SKILL.md#route) set. For shape, `<level>` is the one
+[Set the question mode](../SKILL.md#set-the-question-mode) and
+[Route](../SKILL.md#route) set. For shape, `<mode>` is the one
 [Run the shape step](../SKILL.md#run-the-shape-step) set. Under
 `## What to run`, put this sentence. `<skill>` is the skill in the
 step's row of [The step table](../SKILL.md#the-step-table):
@@ -50,12 +50,12 @@ Issue: #<i>, <issue-url>. Branch: <name>. Schema: <schema>. <route line>
 
 ## Questions
 
-The interactivity level is <level>. At recommend, the lets-go session
-answers each question that has a recommendation, and asks the user the
-rest. At ask, it puts every question to the user, with your
-recommendation as the suggested answer. Your rules are the same at both
-levels. Never decide a question yourself. Never ask the user in this session: nobody
-here can answer.
+The question mode is <mode>. At auto, the lets-go session answers each
+question that has a recommendation, tells the user what it chose, and
+asks the user the rest. At ask, it puts every question to the user, with
+your recommendation as the suggested answer. Your rules are the same in
+both modes. Never decide a question yourself. Never ask the user in this
+session: nobody here can answer.
 
 When you need a decision, stop. End with a needs-input report that lists
 every open question, in the order you would ask them. Give a

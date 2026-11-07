@@ -6,7 +6,7 @@ Says how `lets delegate` reads the user's delegate config, which decides which r
 ## Requirements
 
 ### Requirement: The config file
-The config SHALL be one YAML document at `$XDG_CONFIG_HOME/lets/config.yaml` when `XDG_CONFIG_HOME` is set and not empty, and at `~/.config/lets/config.yaml` otherwise. It SHALL be a mapping that holds `version` `3`. It MAY hold `delegate`, a mapping of the settings for `lets delegate`. `delegate` MAY hold `resolvers`, the chain: a list of the resolvers to ask, in order. Each entry SHALL be the name of a resolver built into `lets`: `t3`, `cli` or `subagent`. The list MAY be empty. `delegate` MAY hold `review`, `handoff` and `step`, which only `instructions` reads. The document MAY hold `go`, a mapping of the settings for `lets go`, which only `lets go level` reads; *go-level* says what it holds. A `delegate` or `delegate.resolvers` that is null SHALL count as absent. Every `lets delegate review`, `lets delegate handoff` and `lets delegate step` command SHALL ignore any other key, at the top level or under `delegate`. They SHALL exit 2 with a message that names the file and the bad value in each of these cases:
+The config SHALL be one YAML document at `$XDG_CONFIG_HOME/lets/config.yaml` when `XDG_CONFIG_HOME` is set and not empty, and at `~/.config/lets/config.yaml` otherwise. It SHALL be a mapping that holds `version` `3`. It MAY hold `delegate`, a mapping of the settings for `lets delegate`. `delegate` MAY hold `resolvers`, the chain: a list of the resolvers to ask, in order. Each entry SHALL be the name of a resolver built into `lets`: `t3`, `cli` or `subagent`. The list MAY be empty. `delegate` MAY hold `review`, `handoff` and `step`, which only `instructions` reads. The document MAY hold `go`, a mapping of the settings for `lets go`, which only `lets go questions` reads; *go-questions* says what it holds. A `delegate` or `delegate.resolvers` that is null SHALL count as absent. Every `lets delegate review`, `lets delegate handoff` and `lets delegate step` command SHALL ignore any other key, at the top level or under `delegate`. They SHALL exit 2 with a message that names the file and the bad value in each of these cases:
 
 - the document is not YAML, or is not a mapping
 - `version` is not the number `3`
@@ -58,7 +58,7 @@ The config SHALL be one YAML document at `$XDG_CONFIG_HOME/lets/config.yaml` whe
 - **THEN** `lets delegate step run --for build` reads it without error and asks the listed resolvers
 
 #### Scenario: A go key under a delegate command
-- **WHEN** the file holds `version: 3`, a valid `delegate.resolvers`, and `go.level: loud`
+- **WHEN** the file holds `version: 3`, a valid `delegate.resolvers`, and `go.questions: loud`
 - **THEN** `lets delegate review run --for code` reads it without error and asks the listed resolvers
 
 ### Requirement: A chain where every resolver declines fails the command
