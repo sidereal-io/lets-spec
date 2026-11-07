@@ -5,7 +5,7 @@ Read this file when the issue's body has a **Glossary handoff** section.
 ## Glossary preflight
 
 A story whose shaping added glossary terms carries a **Glossary handoff**
-record. These steps check it. "You" is the agent. `next` and
+record. These steps check it. `next` and
 *Find the source of demand* run *Check the prerequisite*. *Claim* runs
 the rest of the preflight: read the story's **Glossary handoff**. When
 it has none, or another issue owns the edits, the result is

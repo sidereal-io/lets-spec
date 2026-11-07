@@ -16,7 +16,8 @@ the first ready story it files. A step never asks the user: it ends with
 a [step report](references/terms.md#step-report). This session answers
 the step's questions or asks the user, as the
 [interactivity level](references/terms.md#interactivity-level) says.
-Run every command below from the repo root.
+"You" is the agent that runs this skill, and "the user" is the person
+who asked for the run. Run every command below from the repo root.
 
 A run can stop before it finishes. Run `lets-go` again, on the default branch or
 on the change's branch. It reads from Git and GitHub which steps are

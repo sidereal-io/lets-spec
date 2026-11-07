@@ -2281,6 +2281,22 @@ first_term_links() {
   [ "$output" = 'packet: line 6 does not link references/terms.md#packet' ] || { echo "it said: $output"; false; }
 }
 
+# before_overview: lets-go's SKILL.md after the frontmatter, up to the
+# overview table, on one line.
+before_overview() {
+  awk 'NR == 1 && /^---$/ { front = 1; next } front { if (/^---$/) front = 0; next } /^\| Part \|/ { exit } { print }' \
+    "$(lets_go_skill)" | tr -s '[:space:]' ' '
+}
+
+@test "lets-go says who you is before the overview" {
+  local file
+  grep -qF '"You" is the agent that runs this skill, and "the user" is the person who asked for the run.' \
+    <<<"$(before_overview)" || { echo "the opening does not say who you and the user are"; false; }
+  for file in "$repo"/skills/lets-go/references/*.md; do
+    ! tr -s '[:space:]' ' ' <"$file" | grep -qF '"You" is the agent' || { echo "${file#"$repo/"} still says who you is"; false; }
+  done
+}
+
 @test "the check that lets-go links each glossary term at its first use reads step report apart from step" {
   fixture_file lets-go SKILL.md '# lets-go' '' 'It ends with a [step report](references/terms.md#step-report).' \
     'Each [step](references/terms.md#step) runs in a fresh session.'
