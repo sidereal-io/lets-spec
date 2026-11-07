@@ -45,13 +45,49 @@ pinned real tools/authentication and new live claim/merge evidence remain
 mandatory before support/readiness. Earlier executable reviews and acceptance
 remain historical under history/executable-boundary.
 
-## Port code review status
+## Port code review
 
-A fresh read-only independent-family review was requested through T3 using
-Gemini gemini-4-argon-high, excluding the GPT and Claude author families.
-The requested range is origin/main at 6524fbff through b7f3cc18. There is
-no REVIEW.md in the repository. The reviewer runtime requested command
-approval before producing findings; no review verdict has been received.
-This request does not count as completed independent review. Subsequent
-source commits 5945bf14 and e6ef8bf6 only wrap continuation-routing prose;
-7b44540a records implementation behavior in this change's design.
+Reviewed: main 6524fbff..f2f92d81
+
+Gemini gemini-4-argon-high reviewed the committed range in a fresh read-only
+T3 session. The tool identifies the Gemini family, independent of the GPT and
+Claude authors. Its first command recorded f2f92d81 as HEAD. No REVIEW.md
+exists, so there were no additional repository review rules.
+
+1. **Critical — incomplete Project items block reads. CONFIRMED.** Fixed in
+   5f3689e1. Read packets preserve missing or unrelated values and expose Project
+   membership; mutations and immutable binding retain strict checks.
+2. **Critical — unexecuted writes strand recovery. CONFIRMED.** Fixed in
+   d5d44ea4. Protected settlement atomically records non-dispatch and prevents
+   later execution of that action ID. Only that evidence permits rollback of
+   an entirely unexecuted workflow. Unknown/partial writes remain reserved.
+   Fresh read-only reconciliation can continue beyond the original day bound.
+   The subclaim that any late successful submission should be accepted is
+   **REFUTED**: new submissions intentionally retain the documented three-minute
+   window. Historical replay and protected non-dispatch have separate rules.
+3. **High — failed reads are reported as uncertain writes. CONFIRMED.** Fixed in
+   77043ded. Captured read failures classify permission/not-found errors and
+   finish read-only workflows. Errors after issued writes retain original
+   workflow correlation and uncertain effects.
+4. **High — glossary import precedes identity binding; section parsing rejects
+   labels. CONFIRMED.** Fixed in d78eae76 and 1b9d52f3. Before planning binds a
+   change, the original verified private claim identifies the update. Markdown
+   boundaries respect heading depth, fenced text and bold labels with values.
+5. **High — early lock-helper exit hangs cleanup. CONFIRMED.** Fixed in
+   290557d4. Cleanup detects an exited helper and reports uncertain effects.
+   The macOS support subclaim is **REFUTED** as a support requirement: the
+   approved port and proposed capture deployment explicitly qualify Linux
+   initially. This review and the automated run do not qualify Darwin support.
+6. **Medium — repository version/migration errors and external definition paths.
+   CONFIRMED.** Fixed in dcf281e8. Explicit selection requires repository version
+   1, obsolete executables name the file/key and migration, empty YAML keeps the
+   default, and definition sources resolve to regular files inside the repo.
+7. **Medium — stacked/deleted merged branches have incorrect routing.
+   CONFIRMED.** Fixed in 42cb39a0. Closed packets route to original archived
+   identity/continuation without a new claim. Stacked PR association remains
+   pending until retargeting exposes native closing links. A feature-branch
+   merge alone still cannot authorize Done.
+
+The listed fix commits address the findings; this is not a second clean review
+or deployed/live acceptance. Protected deployment and fresh scoped evidence
+remain open, and the PR stays draft.
