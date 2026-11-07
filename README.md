@@ -11,18 +11,21 @@ You talk to it through two skills:
 
 - **`lets-shape`** shapes a big idea, or one bug, chore or story, into
   issues on the repository's GitHub Project.
-- **`lets-build`** takes the next one from that backlog and moves it
-  through planning, building, review and archive.
+- **`lets-go`** takes the next issue from that backlog, or the one you
+  name, or an idea in words, to a pull request ready for review, in one
+  run. It asks you its questions in the conversation you started. Run it
+  again and it picks up where it stopped.
 
 A third skill, **`lets-setup-backlog`**, creates that Project once per
-repository. The `lets sync` command copies the skills, schemas and rules
+repository. Four [step skills](#the-step-skills) do one step each, and
+you can run them alone. The `lets sync` command copies the skills, schemas and rules
 into your project, and keeps them up to date. You install it with a Nix
 flake, or with [mise](https://mise.jdx.dev) from a release on GitHub. It
 is a personal, unofficial project, and not part of OpenSpec.
 
 - [🚀 Quick start](#-quick-start): from nothing to a committed setup
 - [📦 Set it up](#-set-it-up): the requirements, and the details for Nix or mise
-- [⚙️ Usage](#️-usage): the backlog, the three skills and the flows
+- [⚙️ Usage](#️-usage): the backlog, the skills and the flows
 - [🧵 Reviews in a fresh session](#-reviews-in-a-fresh-session): reviews by another model family
 - [📜 The working rules](#-the-working-rules) and [🔄 Updating](#-updating)
 - [🛠️ Development](#️-development): working on Let's Spec itself
@@ -53,7 +56,7 @@ This section is for you if you want a project set up, fast.
 3. Commit what it wrote. From a clean working tree:
    `git add -A && git commit -m "chore: set up Let's Spec"`.
 4. In your agent, run the `lets-setup-backlog` skill once. Then run
-   `lets-shape` to fill the backlog, and `lets-build` to build the first
+   `lets-shape` to fill the backlog, and `lets-go` to build the first
    story.
 
 ## 📦 Set it up
@@ -161,16 +164,35 @@ This section is for you once it is set up, and you want to know what to run.
 The backlog is the GitHub Project linked to your repository. Every piece
 of work is an issue on it, with its Kind, Priority, Size and Status as
 Project fields. An issue's **packet** is its body, filled in from its
-Kind's template: `lets-shape` writes it, and `lets-build` checks it.
-`lets-build` also stops on comments shaping has not read, and sends
-them to `lets-shape`.
+Kind's template: `lets-shape` writes it, and `lets-go` checks it.
+`lets-go` also sends comments shaping has not read to `lets-shape`.
 
 | You want to | Run |
 |---|---|
 | Split or prioritize a large idea | `lets-shape` |
 | File a bug, a chore or a single story, or finish an issue that has no packet | `lets-shape` |
-| Start the next story, or carry on the change on your current branch | `lets-build` |
+| Start the next story, or carry on the change on your current branch | `lets-go` |
+| Take a shaped story, bug or chore, or an idea in words, to a ready pull request in one run | `lets-go` |
+| Review an existing PR as a collaborator | `lets-review-pr` |
 | Set up or check this repository's backlog | `lets-setup-backlog` |
+
+### Collaborator PR review
+
+Invoke `lets-review-pr` with an existing PR URL to review it as a collaborator.
+It ships in both flows as an independent entry point, without adding a build
+stage. It captures the head and supporting PR context, reviews decisions and
+implementation through fresh examiner/challenger sessions, and publishes one
+advisory comment. Supported concerns are ranked by perceived consequence, with
+confidence, evidence and limits stated separately. The comment identifies the
+reviewed revision if newer commits arrive.
+
+Known implementer models guide a preference for other available models; a
+different family is not required. Each pass has a bounded exchange and one
+extra verification allowance; after the two full passes, at most two focused
+passes follow specific evidence. These are trial limits, not validated claims
+about review quality. See the [skill and exercises](skills/lets-review-pr/SKILL.md).
+Author finishing remains `lets-review-build`; explicit plan-only review remains
+`lets-review-plan`.
 
 ### `lets-setup-backlog`: create or check the Project
 
@@ -195,21 +217,76 @@ issue instead. Then it replies on the issue with what it folded or took
 in, and what it dismissed. A revision run reads the comments on the
 open stories the map links the same way.
 
-### `lets-build`: build one issue
+### `lets-go`: one issue in one run
 
-`lets-build` looks at your current branch to decide what to do:
+Run `lets-go` on the default branch with the issue number of a story,
+bug or chore, with an idea in words, or with nothing. Given nothing, it
+takes the next issue: the unassigned, unblocked Todo with the highest
+priority. It checks the issue's packet, assigns it to you, sets it In
+Progress and creates its branch. Then it runs plan, review plan, build
+and review build, each in a fresh session through
+`lets delegate step run`. Review plan runs on `lets-standard` only. A
+step never asks you anything in its own session. It
+reports its questions, and `lets-go` handles them in one of two
+question modes:
 
-| You are on | It does |
-|---|---|
-| The default branch, such as `main` | Finds the next issue, or the one you name, and checks its packet. Stops on comments shaping has not read, and sends them to `lets-shape`. Otherwise assigns it to you, sets it In Progress, creates a branch and an OpenSpec change named after it, and plans it. It stops when the plan is ready. |
-| A change's branch, plan unfinished | Carries on planning. |
-| A change's branch, plan finished | Builds the tasks. In `standard`, it then has the code reviewed. It verifies and archives the change, and marks the pull request ready for review. |
-| A branch whose change is archived | Tells you the pull request is ready for review. |
+- **`auto`**, for a chore or a bug: `lets-go` answers each question
+  that has a recommendation, tells you what it chose, and asks you the
+  rest.
+- **`ask`**, for a story: `lets-go` asks you every question, with the
+  step's recommendation as the suggested answer.
 
-The next issue is the unassigned, unblocked Todo with the highest
-priority. Chores and most XS or S stories use the `lets-minimal` schema;
-[the skill](skills/lets-build/SKILL.md#route) says the exact rule. You
+To use the other mode, name it with the issue number or the idea, such
+as `lets-go #152 auto`. The question mode holds for that run only. To
+set a default for every run, add `go.questions` to your `lets` config,
+as [Set up delegation](#set-up-delegation) shows. It replaces the
+Kind's question mode, and a mode you name still wins. A `go.questions`
+other than `ask` or `auto` stops the run before it claims anything. The run ends when
+the pull request is ready for review, with one line per step.
+
+If a run stops, run `lets-go` again, on the default branch or on the
+change's branch. It reads from Git and GitHub which steps are done, and
+skips them. Each skip prints one line with its evidence and date, such
+as `Skipped build: every task is ticked, last task commit 2026-11-03
+(3222c70).` It then goes on from the first unfinished step. When the
+records disagree, for example on a branch with uncommitted changes, it
+says what to fix, and stops.
+
+Given an idea, such as `lets-go add a --quiet flag to lets sync`, it
+first searches the open issues for the same work, and asks you whether
+one matches. If none does, a shape step runs `lets-shape` on the idea in
+a fresh session, and creates one issue. An issue whose packet is not
+complete, or has comments shaping has not read, gets the same shape
+step. The shape step runs at `ask`, unless you name a question mode or
+set `go.questions`, because there is no Kind yet. After it, the run goes on as
+for an issue number. An idea too large for one issue runs discovery, once you say yes. The
+shape step runs `lets-shape`'s discovery one phase per round, and you
+confirm each phase. Discovery files a parent issue and its stories. The
+run then picks the first ready story, as it picks the next issue, and
+builds it. The discovery map, `openspec/discovery.md`, is
+committed on that story's branch, so it reaches the default branch with
+that story's pull request. When no story is ready, the run says why, and
+stops.
+
+An open blocker stops a run until the change's branch exists. Once you
+have stacked the branch by hand, `lets-go` names the open blockers and
+goes on. It never takes an epic: build its stories instead.
+
+Chores and most XS or S stories use the `lets-minimal` schema;
+[the skill](skills/lets-go/SKILL.md#route) says the exact rule. You
 merge the pull request: agents never merge unless you ask.
+
+### The step skills
+
+`lets-go` runs one skill per step. Each runs on the change's branch, and
+you can run it alone:
+
+| Skill | It does |
+|---|---|
+| `lets-plan` | Plans the change with OpenSpec, and stops when the plan is ready. |
+| `lets-review-plan` | Has another model family review the plan, in `standard`. |
+| `lets-build` | Builds the tasks, test-first, and stops when every task is ticked. |
+| `lets-review-build` | Has the code reviewed, in `standard`. Then it verifies and archives the change, and marks the pull request ready for review. |
 
 ### The Project fields
 
@@ -224,12 +301,12 @@ are fine; the skills ignore them.
 | Status | single select | Todo, In Progress, Done. These are a new Project's defaults. |
 
 Option names must match exactly, including case. `lets-shape` sets a new
-issue to Todo. `lets-build` sets it In Progress when it claims it. The
+issue to Todo. `lets-go` sets it In Progress when it claims it. The
 Project's default workflows set it Done when the pull request merges.
 
 > [!IMPORTANT]
 > Put each blocker on the story it blocks, not on the epic. GitHub search
-> cannot see a blocker on a parent issue, so `lets-build` would pick a
+> cannot see a blocker on a parent issue, so `lets-go` would pick a
 > story that is not ready.
 
 ### The flows
@@ -240,35 +317,29 @@ one, and also gets `lets-minimal` for chores and small stories.
 | | `standard` | `minimal` |
 |---|---|---|
 | Use it for | Normal feature work | Small changes |
-| Planning steps | brainstorm → proposal → specs → design → ADR → review → tasks | brainstorm → specs → tasks |
+| Planning stages | brainstorm → proposal → specs → design → ADR → tasks | brainstorm → specs → tasks |
 | Independent plan review | Yes | No |
 | Building | One commit per task, test-first | One commit per task, test-first |
-| Independent code review | Yes, a rule in `openspec/config.yaml` ([how](#turning-the-code-review-off)) | No |
-| Skills it adds | `lets-brainstorm`, `lets-write-specs`, `lets-write-adrs`, `lets-write-tasks`, `lets-test-first`, `lets-review-plan`, `lets-review-code` | `lets-brainstorm`, `lets-write-specs`, `lets-write-tasks`, `lets-test-first` |
+| Independent code review | Yes | No |
+| Skills it adds | `lets-brainstorm`, `lets-write-specs`, `lets-write-adrs`, `lets-write-tasks`, `lets-test-first`, `lets-review-plan`, `lets-review-build`, `lets-review-pr` | `lets-brainstorm`, `lets-write-specs`, `lets-write-tasks`, `lets-test-first`, `lets-review-build`, `lets-review-pr` |
 
-The `standard` flow, step by step:
+The `standard` flow, stage by stage:
 
-| # | Step | What the agent does | Output |
+| # | Stage | What the agent does | Output |
 |---|---|---|---|
 | 1. | brainstorm | Questions you one at a time about scope, behavior and acceptance, and records each answer and its source. A comment on the issue counts as evidence only when you confirm it. | `brainstorm.md` |
 | 2. | proposal | States why the change is needed and what it changes | `proposal.md` |
 | 3. | specs | Writes the requirements, each with testable scenarios | `specs/**/spec.md` |
 | 4. | design | Explains how to build it, when the change needs that | `design.md` |
 | 5. | ADR | Writes an architecture decision record (ADR) in `docs/decisions/`, only for a choice that is costly to reverse | `adr.md`, plus any new ADRs |
-| 6. | review | A fresh session reviews the whole plan with `lets-review-plan` | `review.md` |
-| 7. | tasks | Breaks the work into a checklist | `tasks.md` |
+| 6. | tasks | Breaks the work into a checklist | `tasks.md` |
+| 7. | plan review | Before the build, a fresh session reviews the whole plan with `lets-review-plan` | A **Plan review** section in the pull request |
 | 8. | apply | Builds each task test-first. One commit per task. | Commits |
-| 9. | code review | A fresh session reviews the branch with `lets-review-code` | A **Code review** section in the pull request |
-| 10. | verify, archive | Checks the code matches the plan, then archives the change | An archive commit |
+| 9. | code review | `lets-review-build` has a fresh session review the branch | A **Code review** section in the pull request |
+| 10. | verify, archive | `lets-review-build` checks the code matches the plan, archives the change, and marks the pull request ready | An archive commit |
 
 A `minimal` change has no `proposal.md`, so `openspec show` fails on it.
 Nothing in the workflow calls `show`.
-
-#### Turning the code review off
-
-The code review is the `operations.archive` entry in your project's
-`openspec/config.yaml`, which `lets sync` writes once and never changes.
-Delete the entry to stop code reviews, or edit it to change when they run.
 
 ### Your project's vocabulary
 
@@ -289,8 +360,8 @@ Agents ask you what a new term means, and write it down once you agree;
 
 This section is for you if you want reviews by another model family.
 
-Reviews, and builds that `lets-build` hands off, can run in a fresh
-session that shares no context with the author. These words come up:
+Reviews and steps can run in a fresh session that shares no context
+with the author. These words come up:
 
 - **Resolver:** the part of `lets` that turns a request into a real
   session in one harness. `lets` has three: `t3`, `cli` and `subagent`.
@@ -299,14 +370,17 @@ session that shares no context with the author. These words come up:
 - **Chain:** the resolvers your config lists, which `lets` asks in order.
 - **Review:** a read-only session. `lets` waits for its final message.
 - **Handoff:** an interactive session that builds a planned change.
+- **Step:** one stage of the workflow that `lets-go` runs, such as plan
+  or build, in a session that may write files. `lets` waits for its step report.
 - **Decline:** a resolver cannot work here, so the next one is asked.
 - **Refuse:** a resolver will not run the model it was given, so `lets`
   sends it the next model.
 
-Skills call `lets delegate review run` and `lets delegate handoff run`, where
-`--for` names what the session is for. Each first asks the matching
-`instructions` command which models it can use, and passes them to `run`
-best first. `lets delegate review run --help` lists the options.
+Skills call `lets delegate review run`, `lets delegate handoff run` and
+`lets delegate step run`, where `--for` names what the session is for.
+Each first asks the matching `instructions` command which models it can
+use, and passes them to `run` best first. `lets delegate review run --help`
+lists the options.
 
 ### What a review gets
 
@@ -318,7 +392,28 @@ A review gets the best of these that your machine offers:
 | Fallback | A read-only subagent in your current harness | yes | no | nothing |
 
 The skill falls back when the resolver lists no models, or refuses them
-all. `review.md` records which ran, such as `fresh context, other family`.
+all. The review's section in the pull request records which ran, such
+as `fresh context, other family`.
+
+### What a step returns
+
+`lets delegate step run --for <step>` runs one step: `shape`, `plan`,
+`review-plan`, `build` or `review-build`. The session may change files,
+and has 120 minutes unless `--timeout-minutes` says otherwise. It ends its
+final message with a step report, a fenced `step-report` block of YAML,
+and `lets` prints that report as one JSON line:
+
+- `done`, with the step's `evidence`. `lets` adds the `date`.
+- `needs-input`, with the step's `questions`, each with a
+  `recommendation` when the step has one.
+- `failed`, with the `reason`. A session that gives no valid report is a
+  `failed` report too.
+
+Exit 0 means a report is on stdout, whatever its outcome. To resume a step
+that needs input, run it again with the same `--prompt-file` and
+`--answers-file <path>`, a YAML list of `question` and `answer` pairs.
+`lets` adds them to the prompt. [A step's report](docs/resolvers.md#a-steps-report)
+shows the block.
 
 ### Set up delegation
 
@@ -341,6 +436,11 @@ delegate:
   handoff:
     apply:
       guidance: Prefer claude. Use a small model for a chore.
+  step:
+    build:
+      guidance: Prefer claude/claude-opus-5-5.
+go:
+  questions: auto
 ```
 
 `delegate.resolvers` is the chain. List the resolvers for your harnesses
@@ -350,25 +450,30 @@ review every resolver declines fails. Each entry is `t3`, `cli` or
 `lets delegate` exit 2. With no `delegate.resolvers`, only `subagent`
 answers.
 
-`review` and `handoff` are optional. `delegate.<strategy>.<intent>.guidance`
-is your advice, in plain words, on which models to use. Its parts are the
-command that reads it and a value `--for` takes: `review.plan`,
-`review.code` or `handoff.apply`. The skill uses it only to rank and leave
-out models. A value that is not a string makes `instructions` exit 2.
+`review`, `handoff` and `step` are optional.
+`delegate.<strategy>.<intent>.guidance` is your advice, in plain words, on
+which models to use. Its parts are the command that reads it and a value
+`--for` takes: `review.plan`, `review.code`, `handoff.apply`, or
+`step.<step>` for one of the five steps, such as `step.build`. The skill
+uses it only to rank and leave out models. A value that is not a string makes `instructions` exit 2.
 
-Other keys are ignored, so a later `lets` can add settings beside
-`delegate`.
+`go` holds the settings for `lets-go`. `go.questions`, the question
+mode, is `ask` or `auto`, and is optional. `lets-go` reads it through
+`lets go questions`. The `lets delegate` commands ignore `go`, and
+`lets go questions` ignores `delegate`.
+
+Other keys are ignored, so a later `lets` can add settings beside these.
 
 ### The resolvers
 
 The resolvers are part of `lets`, so there is nothing to install. List
 the ones you want by name:
 
-| Name | It answers | It needs | A review runs as | A handoff |
-|---|---|---|---|---|
-| [`t3`](docs/resolvers.md#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | Starts a new thread in the sidebar |
-| [`cli`](docs/resolvers.md#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers |
-| [`subagent`](docs/resolvers.md#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Gives back the prompt to start any agent with |
+| Name | It answers | It needs | A review runs as | A handoff | A step |
+|---|---|---|---|---|---|
+| [`t3`](docs/resolvers.md#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | Starts a new thread in the sidebar | Declines, so the next resolver answers |
+| [`cli`](docs/resolvers.md#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers | A child process of that CLI, in its write mode |
+| [`subagent`](docs/resolvers.md#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Gives back the prompt to start any agent with | Saves the prompt, and exits 3, so the caller runs the step in a subagent |
 
 Each declines where it cannot work, so the first that fits where you are
 answers.
@@ -384,7 +489,7 @@ This section is for you if you want to know the rules your agents follow.
 - One change is one branch and one pull request, stacked on any it needs.
 - Make one commit per unit of work, with Conventional Commits.
 - Run the project's checks before you push.
-- Only `lets-shape` and `lets-build` set Project fields.
+- Only `lets-shape` and `lets-go` set Project fields.
 - You own the merge.
 - Change requests on a ready pull request reopen its archived change.
 - Never edit what Let's Spec puts in the project.

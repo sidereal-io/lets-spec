@@ -166,10 +166,10 @@ When the run judged at least one unread comment on an issue, `lets-shape` SHALL 
 - **THEN** it finds `Map updated:`
 
 ### Requirement: Build reads the thread before it claims
-In Confirm the packet, `lets-build` SHALL fetch the issue's body edit date, comments and read markers with the thread query the reference gives, paging as the reference says. It SHALL link `../lets-shape/references/issue-comments.md` rather than restate the query, the labels or the marker. It SHALL run the check for `next` and for a named issue alike, after the required-lines check and before it claims the issue.
+In *Confirm the packet*, `lets-go` SHALL fetch the issue's body edit date, comments and read markers with the thread query the reference gives, paging as the reference says. It SHALL link `../lets-shape/references/issue-comments.md` rather than restate the query, the labels or the marker. It SHALL run the check for `next` and for a named issue alike, after the required-lines check and before it claims the issue.
 
 #### Scenario: The skill links the reference
-- **WHEN** the skill-interfaces test reads `skills/lets-build/SKILL.md`
+- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
 - **THEN** it finds the link `](../lets-shape/references/issue-comments.md)`, and the link resolves inside the installed skills in each built flow
 
 #### Scenario: The same check for `next`
@@ -177,7 +177,7 @@ In Confirm the packet, `lets-build` SHALL fetch the issue's body edit date, comm
 - **THEN** the run stops the same way as for a named issue, and does not move on to another candidate
 
 ### Requirement: The watermark is the later of the body's last edit and the newest read marker
-`lets-build` SHALL take the watermark as the later of the issue's `lastEditedAt` and the newest read marker's `createdAt`. A read marker counts only as the reference defines it: the fixed first line from a `candidate` author. When the body was never edited and there is no marker, every comment SHALL count as newer than the watermark.
+`lets-go` SHALL take the watermark as the later of the issue's `lastEditedAt` and the newest read marker's `createdAt`. A read marker counts only as the reference defines it: the fixed first line from a `candidate` author. When the body was never edited and there is no marker, every comment SHALL count as newer than the watermark.
 
 #### Scenario: A body edit after the marker
 - **WHEN** a MEMBER edited the body on day 3, the newest read marker is from day 2, and a comment from day 2 is the newest comment
@@ -196,7 +196,7 @@ In Confirm the packet, `lets-build` SHALL fetch the issue's body edit date, comm
 - **THEN** the run stops, and names that comment
 
 ### Requirement: A comment newer than the watermark stops the run
-`lets-build` SHALL stop before Claim when any comment's `createdAt`, or its `lastEditedAt` when it has one, is after the watermark. Who wrote the comment SHALL make no difference. A read marker SHALL never stop the run. When no comment is newer, the run SHALL go on to Route.
+`lets-go` SHALL stop before *Claim* when any comment's `createdAt`, or its `lastEditedAt` when it has one, is after the watermark. Who wrote the comment SHALL make no difference. A read marker SHALL never stop the run. When no comment is newer, the run SHALL go on to *Route*. On the default branch, before any shape step has run, `lets-go` sets the stop aside and runs the shape step for the issue, as its own spec says. The thread check itself does not change.
 
 #### Scenario: A new comment from a bot
 - **WHEN** the newest comment is from a GitHub App and is after the watermark
@@ -215,7 +215,7 @@ In Confirm the packet, `lets-build` SHALL fetch the issue's body edit date, comm
 - **THEN** the run goes on to Route
 
 ### Requirement: The stop sends the thread to shaping
-When it stops on unread comments, `lets-build` SHALL say how many comments shaping has not read. It SHALL name each one's author without `@`, as `ghost` when the account is deleted, and the date that put it past the watermark: its edit date when it has one, else its creation date. It SHALL say to run the `lets-shape` skill on #<i>. It SHALL show nothing of what a comment says.
+When it stops on unread comments, `lets-go` SHALL say how many comments shaping has not read. It SHALL name each one's author without `@`, as `ghost` when the account is deleted, and the date that put it past the watermark: its edit date when it has one, else its creation date. It SHALL say to run the `lets-shape` skill on #<i>. It SHALL show nothing of what a comment says.
 
 #### Scenario: Two unread comments
 - **WHEN** two comments are newer than the watermark, one from a MEMBER and one from a deleted account

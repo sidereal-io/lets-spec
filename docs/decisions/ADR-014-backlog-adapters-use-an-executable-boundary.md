@@ -1,12 +1,19 @@
 ---
 id: adr-014
 date: 2026-11-03
-status: accepted
+status: superseded by ADR-015
 title: 'ADR-014: Backlog adapters use an executable boundary'
 description: Architecture decision record for independently installed backlog adapters using a versioned JSON process boundary
 ---
 
 # ADR-014: Backlog adapters use an executable boundary
+
+> Superseded by [ADR-015](ADR-015-lets-requests-actions-and-validates-results.md):
+> the execution hybrid spans delegation and backlogs. lets owns policy, bounded
+> action requests, sequencing, private local recovery and result validation; the
+> agent calls backend tools using shipped or custom provider definitions.
+> This body preserves the earlier executable decision. Runtime/spec migration is
+> separate; behavioral guarantees, native state and private local journals remain.
 
 ## Context
 

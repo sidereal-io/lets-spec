@@ -54,6 +54,31 @@ test('start answers the same, and starts no process, whichever CLIs are on PATH'
   assert.deepEqual(io.calls, []);
 });
 
+const stepInput = { ...startInput, name: 'plan-x', effort: 'high' } as const;
+
+test('step saves the prompt in .workspace/lets-delegate under the cwd', async () => {
+  const io = fakeIo();
+  await assert.rejects(createAdapter(io).step!(stepInput, { timeoutMs: 1000 }), Refused);
+  assert.equal(io.files.get(`${DIR}/plan-x.prompt.md`), TRICKY);
+});
+
+test('step is refused with where the prompt is saved, so run the step in a subagent', async () => {
+  await assert.rejects(createAdapter(fakeIo()).step!(stepInput, { timeoutMs: 1000 }), (error) => {
+    assert.ok(error instanceof Refused);
+    assert.match(error.message, /no resolver/);
+    assert.match(error.message, /subagent/);
+    assert.match(error.message, /\.workspace\/lets-delegate\/plan-x\.prompt\.md/);
+    assert.doesNotMatch(error.message, /installed/);
+    return true;
+  });
+});
+
+test('step starts no process, even with every executor on PATH', async () => {
+  const io = fakeIo({ commands: ['codex', 'claude', 'agy'] });
+  await assert.rejects(createAdapter(io).step!(stepInput, { timeoutMs: 1000 }), Refused);
+  assert.deepEqual(io.calls, []);
+});
+
 test('finish does nothing for any handle, removing no file', async () => {
   const handles = [{ kind: 'process', id: '4242', name: 'x' }, { kind: 'thread', id: 't' }, { kind: 'process', id: '1', name: '../../etc' }];
   for (const handle of handles) {

@@ -41,14 +41,14 @@ build_from() {
   [ ! -e "$out/init/openspec/config.d" ]
 }
 
-@test "the standard release's config holds the code review as archive guidance, and the minimal release's holds none" {
-  build "$out" lets-standard lets-test-first
-  [ "$(yq -o json -I0 '.operations | keys' "$out/init/openspec/config.yaml")" = '["archive"]' ]
-  [ "$(yq '.operations.archive.guidance | length' "$out/init/openspec/config.yaml")" -eq 1 ]
-  grep -q '`lets-review-code` skill' "$out/init/openspec/config.yaml"
-  rm -rf "$out"
-  build "$out" lets-minimal lets-test-first
-  [ "$(yq -o json -I0 . "$out/init/openspec/config.yaml")" = '{"schema":"lets-minimal"}' ]
+@test "no release's config holds operations" {
+  local schema
+  for schema in lets-standard lets-minimal; do
+    rm -rf "$out"
+    build "$out" "$schema" lets-test-first
+    [ "$(yq 'has("operations")' "$out/init/openspec/config.yaml")" = false ] ||
+      { echo "the $schema release's config holds operations"; false; }
+  done
 }
 
 @test "the build works from a read-only source, as in the Nix store" {

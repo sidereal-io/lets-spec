@@ -8,6 +8,15 @@ description: Architecture decision record (ADR) for running the t3, cli and suba
 
 # ADR-010: The resolvers are built into lets, and the config names them
 
+> Execution and extension boundary replaced by
+> [ADR-015](ADR-015-lets-requests-actions-and-validates-results.md):
+> lets checks policy, requests bounded actions and validates results after agent
+> tool execution across delegation and backlogs. Shipped/custom provider definitions
+> replace the closed built-in registry as the target. Explicit selection/order and
+> no adapter executable installation remain. The body below records the earlier
+> built-in runtime; migration and independent evidence verification are not yet
+> implemented by this documentation decision.
+
 ## Context
 
 `lets delegate` hands a review or a handoff to a resolver, which turns it into a real session in the user's harness. There are three: `t3` opens a T3 Code thread, `cli` runs a family's command-line tool headless, and `subagent`, the default, starts nothing and sends the work back to the caller. Until now each was a separate program. `lets` ran it as a child process and spoke a JSON protocol with it over stdin and stdout. Users installed the programs themselves and listed their absolute paths in the delegate config. `lets` carried its own copy of `subagent` in a folder beside itself.

@@ -12,7 +12,10 @@ import { run as instructions } from './delegate/instructions.ts';
 import { EFFORTS, FAMILIES, parseModel } from './resolvers/kit/families.ts';
 import { run as review } from './delegate/review.ts';
 import type { ReviewOptions } from './delegate/review.ts';
+import { run as step, STEP_TIMEOUT_MINUTES } from './delegate/step.ts';
+import type { StepOptions } from './delegate/step.ts';
 import { STRATEGIES } from './delegate/strategies.ts';
+import { run as questions } from './go/questions.ts';
 import type { Intent, Strategy } from './delegate/strategies.ts';
 import { realIo } from './io.ts';
 import type { Deps } from './io.ts';
@@ -64,11 +67,12 @@ The Nix wrapper sets WORKFLOW_RELEASE.`;
 
 const DELEGATE_HELP = `
 Each delegation has a strategy and an intent. The strategy is how the
-session runs: review runs it read-only and waits for its answer, and
-handoff starts an interactive session and returns at once. The intent is
-what it is for: plan or code for a review, and apply for a handoff. Each
-strategy has two commands: instructions says what can run and gives the
-user's guidance, and run runs it.
+session runs: review runs it read-only and waits for its answer, handoff
+starts an interactive session and returns at once, and step runs a session
+that may write files and waits for its step report. The intent is what it
+is for: plan or code for a review, apply for a handoff, and one of the five
+steps for a step. Each strategy has two commands: instructions says what
+can run and gives the user's guidance, and run runs it.
 
 A resolver turns each request into a real session. Three are built into
 lets: t3 starts sessions in T3 Code, cli runs a family's CLI headless, and
@@ -91,13 +95,16 @@ write it by hand:
     handoff:
       apply:
         guidance: Prefer claude.
+    step:
+      build:
+        guidance: Prefer claude/claude-opus-5-5.
 
 Each entry under delegate.resolvers is t3, cli or subagent. With no
 config, or no delegate.resolvers, only subagent is asked. It starts no
-session: a review exits 3, and a handoff gives back the prompt to carry on
-by hand.
+session: a review exits 3, a handoff gives back the prompt to carry on by
+hand, and a step saves the prompt and exits 3, for a subagent to run it.
 
-review and handoff are optional. delegate.<strategy>.<intent>.guidance is
+review, handoff and step are optional. delegate.<strategy>.<intent>.guidance is
 prose that the skill reads to rank the models; only instructions reads it.
 
 Run lets delegate from the repo root.`;
@@ -141,6 +148,42 @@ Exit codes:
   4  the outcome is unknown: the session could not start, or the harness
      did not answer`;
 
+const STEP_STRATEGY_HELP = `
+The intents are the five steps: shape, plan, review-plan, build and
+review-build.`;
+
+const STEP_HELP = `
+The session ends its final message with a step report: a fenced block
+tagged step-report, holding YAML. outcome is done, with evidence, a list of
+lines; needs-input, with questions, each with question and an optional
+recommendation; or failed, with reason.
+
+stdout: the report as one JSON line, outcome first. lets adds date to a
+done report. A final message with no valid report is a failed report whose
+reason says what is wrong, and whose message holds the final message.
+stderr: one JSON line with for, resolver, family, model, handle and
+durationSeconds. handle is null when the session failed before it gave a
+final message.
+
+--answers-file resumes a step that reported needs-input: a YAML list of
+question and answer pairs, which lets appends to the prompt. Give the same
+--prompt-file as before.
+
+--model may be given more than once, best first. When the resolver
+refuses a model, lets asks the same resolver for the next one.
+
+lets does not check the tree after a step: a step may change files.
+
+Exit codes:
+  0  a step report is on stdout, whatever its outcome
+  2  usage error, or every resolver in the config declined
+  3  no fresh session can run here on any model given: the harness or the
+     account said no before the model gave any output, or no resolver
+     started a session. stderr names each model and why.
+  4  the outcome is unknown, such as no reply from the harness, or the
+     resolver failed in a way it could not report
+  6  the session did not finish in time`;
+
 const INSTRUCTIONS_HELP = `
 stdout: one JSON line with strategy, for, resolver, options and guidance.
 resolver and options come from the first resolver that does not decline
@@ -153,6 +196,27 @@ Exit codes:
   2  usage error, or every resolver in the config declined. A guidance
      that is not a string is a usage error.
   4  the outcome is unknown, such as no reply from the harness`;
+
+const GO_QUESTIONS_HELP = `
+Reads go.questions from the lets config: $XDG_CONFIG_HOME/lets/config.yaml,
+or ~/.config/lets/config.yaml when XDG_CONFIG_HOME is unset or empty.
+go.questions is ask or auto:
+
+  version: 3
+  go:
+    questions: auto
+
+lets-go uses it in place of the Kind's default. A question mode named in
+the request still wins. lets go questions reads only version and go, and
+starts no session.
+
+stdout: one JSON line, { questions }. questions is null when there is no
+config, no go or no go.questions.
+
+Exit codes:
+  0  ok
+  2  the config is not valid, go is not a mapping, or go.questions is not
+     ask or auto. stderr names the file and the key.`;
 
 // --timeout-minutes: a whole number of minutes.
 function wholeMinutes(value: string): number {
@@ -267,6 +331,35 @@ strategyCommand('handoff', 'start a fresh, interactive session and return at onc
   .addHelpText('after', HANDOFF_HELP)
   .action(async ({ model, for: _intent, ...options }: Omit<HandoffOptions, 'models'> & { model: string[]; for: Intent }) => {
     process.exitCode = await handoff({ ...options, models: model }, realDeps());
+  });
+
+strategyCommand('step', 'run a step in a fresh session that may write files, and read its step report')
+  .addHelpText('after', STEP_STRATEGY_HELP)
+  .command('run')
+  .summary('run the step')
+  .description('Run a prompt in a fresh session that may write files, on the first model --model names that is not refused, wait for its final message, and print its step report.')
+  .addOption(forOption('step'))
+  .requiredOption('--name <name>', 'a label for the session, normalized to lowercase kebab-case')
+  .requiredOption('--prompt-file <path>', 'the file that holds the prompt')
+  .addOption(new Option('--effort <effort>', 'how hard the session thinks').choices(EFFORTS).makeOptionMandatory())
+  .addOption(modelOption())
+  .option('--timeout-minutes <minutes>', `how long to wait (default: ${STEP_TIMEOUT_MINUTES})`, wholeMinutes)
+  .option('--answers-file <path>', 'the answers to the last report\'s questions, as a YAML list of question and answer pairs')
+  .addHelpText('after', STEP_HELP)
+  .action(async ({ model, ...options }: Omit<StepOptions, 'models'> & { model: string[] }) => {
+    process.exitCode = await step({ ...options, models: model }, realDeps());
+  });
+
+program
+  .command('go')
+  .summary('settings for the lets-go skill')
+  .description('Read the settings the lets-go skill uses.')
+  .command('questions')
+  .summary('print the default question mode')
+  .description('Print the default question mode, from go.questions in the lets config.')
+  .addHelpText('after', GO_QUESTIONS_HELP)
+  .action(async () => {
+    process.exitCode = await questions(realDeps());
   });
 
 try {

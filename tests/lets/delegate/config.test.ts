@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { configPath, guidanceFor, parseConfig, readConfig } from '../../../lets/src/delegate/config.ts';
+import { configPath, guidanceFor, parseConfig, parseDocument, questionModeFor, readConfig } from '../../../lets/src/delegate/config.ts';
 import { UsageError } from '../../../lets/src/resolvers/kit/errors.ts';
 import { fakeIo } from './fixtures/fake-io.ts';
 
@@ -64,12 +64,27 @@ test('review and handoff under delegate are kept as written, unchecked', () => {
   assert.deepEqual(readConfig(depsWith(text)), { version: 3, delegate: { resolvers: ['subagent'], review: { code: { guidance: 42 } }, handoff: 'apply' } });
 });
 
+test('step under delegate is kept as written, unchecked', () => {
+  const text = 'version: 3\ndelegate:\n  step:\n    build:\n      guidance: 42\n';
+  assert.deepEqual(readConfig(depsWith(text)), { version: 3, delegate: { step: { build: { guidance: 42 } } } });
+});
+
 const CONFIG = '/c/config.yaml';
 const withDelegate = (yaml: string) => parseConfig(`version: 3\n${yaml}`, CONFIG);
 
 test('guidanceFor gives the guidance for the strategy and the intent', () => {
   const config = withDelegate('delegate:\n  review:\n    code:\n      guidance: Use the strongest gpt model.\n');
   assert.equal(guidanceFor(config, 'review', 'code', CONFIG), 'Use the strongest gpt model.');
+});
+
+test('guidanceFor gives the guidance for a step', () => {
+  const config = withDelegate('delegate:\n  step:\n    build:\n      guidance: Use claude/claude-opus-5-5.\n');
+  assert.equal(guidanceFor(config, 'step', 'build', CONFIG), 'Use claude/claude-opus-5-5.');
+});
+
+test('guidanceFor gives a step no guidance from handoff', () => {
+  const config = withDelegate('delegate:\n  handoff:\n    apply:\n      guidance: Prefer claude.\n');
+  assert.equal(guidanceFor(config, 'step', 'build', CONFIG), null);
 });
 
 test('guidanceFor keeps a multi-line block whole', () => {
@@ -131,4 +146,59 @@ test('a config.json with no config.yaml is not read', () => {
 test('a config that is not YAML says where the parser stopped, in one sentence', () => {
   assert.throws(() => readConfig(depsWith('version: 3\ndelegate: { resolvers: [/x\n')),
     (error) => error instanceof UsageError && /line 3, column 1\.$/.test(error.message));
+});
+
+test('parseDocument gives the checked mapping, every key as written', () => {
+  assert.deepEqual(parseDocument('version: 3\ndelegate: [t3]\ngo:\n  level: loud\n', CONFIG), { version: 3, delegate: ['t3'], go: { level: 'loud' } });
+});
+
+test('parseDocument rejects a document that is not a version 3 mapping, naming the file', () => {
+  const cases: [string, string][] = [
+    ['go: { level: [unclosed\n', 'not YAML'],
+    ['- just\n- a list\n', 'mapping'],
+    ['version: 2\ngo:\n  level: ask\n', 'version must be 3, got 2'],
+  ];
+  for (const [text, named] of cases) {
+    assert.throws(() => parseDocument(text, CONFIG),
+      (error) => error instanceof UsageError && error.message.includes(CONFIG) && error.message.includes(named), text);
+  }
+});
+
+test('parseConfig drops a go key, even with a question mode lets does not know', () => {
+  const text = 'version: 3\ndelegate:\n  resolvers: [t3]\ngo:\n  questions: loud\n';
+  assert.deepEqual(parseConfig(text, CONFIG), { version: 3, delegate: { resolvers: ['t3'] } });
+});
+
+const questionsIn = (yaml: string) => questionModeFor(parseDocument(`version: 3\n${yaml}`, CONFIG), CONFIG);
+
+test('questionModeFor gives the question mode the config sets', () => {
+  assert.equal(questionsIn('go:\n  questions: ask\n'), 'ask');
+  assert.equal(questionsIn('go:\n  questions: auto\n'), 'auto');
+});
+
+test('questionModeFor gives null when the config sets no question mode', () => {
+  for (const yaml of ['', 'go:\n', 'go: null\n', 'go: {}\n', 'go:\n  questions:\n', 'go:\n  questions: null\n', 'go:\n  verbose: true\n']) {
+    assert.equal(questionsIn(yaml), null, yaml);
+  }
+});
+
+test('questionModeFor ignores the old level key under go', () => {
+  assert.equal(questionsIn('go:\n  level: recommend\n'), null);
+  assert.equal(questionsIn('go:\n  level: loud\n  questions: auto\n'), 'auto');
+});
+
+test('questionModeFor rejects a bad go or go.questions, naming the file and the key', () => {
+  const cases: [string, string][] = [
+    ['go: auto\n', 'go must be a mapping, got "auto"'],
+    ['go: [ask]\n', 'go must be a mapping'],
+    ['go:\n  questions: loud\n', 'go.questions must be ask or auto, got "loud"'],
+    ['go:\n  questions: [ask]\n', 'go.questions must be ask or auto'],
+    ['go:\n  questions: Ask\n', 'go.questions must be ask or auto, got "Ask"'],
+    ['go:\n  questions: 3\n', 'go.questions must be ask or auto, got 3'],
+    ['go:\n  questions: recommend\n', 'go.questions must be ask or auto, got "recommend"'],
+  ];
+  for (const [yaml, named] of cases) {
+    assert.throws(() => questionsIn(yaml),
+      (error) => error instanceof UsageError && error.message.includes(CONFIG) && error.message.includes(named), yaml);
+  }
 });

@@ -2,7 +2,7 @@
 
 # The skills a test release ships. A fixture, not a copy of flows.json: it
 # needs one entry point of each kind, and a skill that only some flows ship.
-fixture_skills=(lets-build lets-shape lets-test-first lets-review-code)
+fixture_skills=(lets-build lets-shape lets-test-first lets-review-build)
 
 # generated_skills <dir>: make a folder that stands in for the generated
 # openspec-* skills, and print its path.

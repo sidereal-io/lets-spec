@@ -6,6 +6,7 @@ import type { FakeResolver } from './fixtures/command-deps.ts';
 
 const review = { strategy: 'review', for: 'code' } as const;
 const handoff = { strategy: 'handoff', for: 'apply' } as const;
+const step = { strategy: 'step', for: 'plan' } as const;
 // commandDeps whose config lists t3, behaving as given, with more under
 // delegate beside the chain.
 const withT3 = (more = '', t3: FakeResolver = {}) =>
@@ -131,4 +132,35 @@ test('a resolver whose options fail unexpectedly is exit 4 with the message', as
   assert.equal(await run(review, t.deps), 4);
   assert.equal(t.stdout(), '');
   assert.match(t.stderr(), /manifest unreadable/);
+});
+
+test('step instructions print the step strategy and the resolver\'s options', async () => {
+  const t = withT3('', { options: ['gpt/gpt-6-luna', 'claude'] });
+  assert.equal(await run(step, t.deps), 0);
+  assert.deepEqual(JSON.parse(t.stdout()), { strategy: 'step', for: 'plan', resolver: 't3', options: ['gpt/gpt-6-luna', 'claude'], guidance: null });
+});
+
+test('step instructions skip a resolver that runs no step', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [cli, t3] }\n', adapters: { cli: { steps: false }, t3: {} } });
+  assert.equal(await run(step, t.deps), 0);
+  assert.equal(JSON.parse(t.stdout()).resolver, 't3');
+  assert.deepEqual(t.adapterCalls('options').map(([name]) => name), ['t3']);
+});
+
+test('the guidance for a step comes from delegate.step', async () => {
+  const t = withT3('step:\n  build:\n    guidance: Use claude/claude-opus-5-5.\n');
+  assert.equal(await run({ strategy: 'step', for: 'build' }, t.deps), 0);
+  assert.equal(JSON.parse(t.stdout()).guidance, 'Use claude/claude-opus-5-5.');
+});
+
+test('handoff guidance does not reach a step', async () => {
+  const t = withT3('handoff:\n  apply:\n    guidance: Prefer claude.\n');
+  assert.equal(await run({ strategy: 'step', for: 'build' }, t.deps), 0);
+  assert.equal(JSON.parse(t.stdout()).guidance, null);
+});
+
+test('with no config, step instructions answer as the default with no options', async () => {
+  const t = commandDeps();
+  assert.equal(await run({ strategy: 'step', for: 'build' }, t.deps), 0);
+  assert.deepEqual(JSON.parse(t.stdout()), { strategy: 'step', for: 'build', resolver: 'subagent', options: [], guidance: null });
 });

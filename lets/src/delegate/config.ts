@@ -13,15 +13,18 @@ export const CONFIG_VERSION = 3;
 // The resolvers built into lets, by the names the chain lists them under.
 export const RESOLVER_NAMES = ['t3', 'cli', 'subagent'] as const;
 export type ResolverName = (typeof RESOLVER_NAMES)[number];
+// The question modes go.questions may set for lets-go.
+export const QUESTION_MODES = ['ask', 'auto'] as const;
+export type QuestionMode = (typeof QUESTION_MODES)[number];
 
 // The file's shape, with the keys this lets does not know dropped. delegate
 // is {} when the file has none. Each resolver is one of RESOLVER_NAMES.
-// review and handoff are as the user wrote them: only lets delegate
+// review, handoff and step are as the user wrote them: only lets delegate
 // <strategy> instructions reads them, through guidanceFor, so a bad entry
 // never stops a run.
 export type Config = {
   version: typeof CONFIG_VERSION;
-  delegate: { resolvers?: ResolverName[]; review?: unknown; handoff?: unknown };
+  delegate: { resolvers?: ResolverName[]; review?: unknown; handoff?: unknown; step?: unknown };
 };
 
 export type ConfigDeps = { env: Deps['env']; io: Io };
@@ -39,10 +42,11 @@ export function readConfig(deps: ConfigDeps): Config | null {
   return text === null ? null : parseConfig(text, path);
 }
 
-// The config in text, read from path. Throws as readConfig does.
-export function parseConfig(text: string, path: string): Config {
+// The document in text, read from path, with every key as written. Throws a
+// UsageError that names the file when it is not YAML, not a mapping, or not
+// version 3. Each command group checks only its own section of it.
+export function parseDocument(text: string, path: string): Record<string, unknown> {
   const fail = (message: string) => new UsageError(`${path}: ${message}.`);
-  const show = (value: unknown) => JSON.stringify(value) ?? String(value);
   let value: unknown;
   try {
     value = parse(text);
@@ -51,6 +55,13 @@ export function parseConfig(text: string, path: string): Config {
   }
   if (!isObject(value)) throw fail(`must be a mapping with version, got ${show(value)}`);
   if (value.version !== CONFIG_VERSION) throw fail(`version must be ${CONFIG_VERSION}, got ${show(value.version)}`);
+  return value;
+}
+
+// The config in text, read from path. Throws as readConfig does.
+export function parseConfig(text: string, path: string): Config {
+  const fail = (message: string) => new UsageError(`${path}: ${message}.`);
+  const value = parseDocument(text, path);
   const delegate = value.delegate ?? {};
   if (!isObject(delegate)) throw fail(`delegate must be a mapping, got ${show(delegate)}`);
   const config: Config = { version: CONFIG_VERSION, delegate: {} };
@@ -62,7 +73,7 @@ export function parseConfig(text: string, path: string): Config {
     });
     config.delegate.resolvers = resolvers;
   }
-  for (const strategy of ['review', 'handoff'] as const) {
+  for (const strategy of ['review', 'handoff', 'step'] as const) {
     if (delegate[strategy] !== undefined) config.delegate[strategy] = delegate[strategy];
   }
   return config;
@@ -86,6 +97,25 @@ export function guidanceFor(config: Config | null, strategy: Strategy, intent: I
   if (guidance === undefined || guidance === null) return null;
   if (typeof guidance !== 'string') throw fail(`delegate.${strategy}.${intent}.guidance`, 'a string', guidance);
   return guidance;
+}
+
+// The default question mode, from go.questions in a document parseDocument
+// checked, or null when go or go.questions is missing or null. Throws a
+// UsageError that names the file and the key when either has the wrong type
+// or value. Other keys under go are not checked.
+export function questionModeFor(document: Record<string, unknown>, path: string): QuestionMode | null {
+  const fail = (key: string, expected: string, value: unknown) => new UsageError(`${path}: ${key} must be ${expected}, got ${show(value)}.`);
+  const { go } = document;
+  if (go === undefined || go === null) return null;
+  if (!isObject(go)) throw fail('go', 'a mapping', go);
+  const { questions } = go;
+  if (questions === undefined || questions === null) return null;
+  if (!(QUESTION_MODES as readonly unknown[]).includes(questions)) throw fail('go.questions', QUESTION_MODES.join(' or '), questions);
+  return questions as QuestionMode;
+}
+
+function show(value: unknown): string {
+  return JSON.stringify(value) ?? String(value);
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

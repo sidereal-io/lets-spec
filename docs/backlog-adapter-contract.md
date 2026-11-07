@@ -15,7 +15,7 @@ not prove preservation of every instruction. Review compares the documented
 responsibilities with the source skills.
 
 The baseline is `skills/lets-setup-backlog/SKILL.md`,
-`skills/lets-shape/SKILL.md`, `skills/lets-build/SKILL.md` and
+`skills/lets-shape/SKILL.md`, `skills/lets-go/SKILL.md` and
 `overlays/AGENTS.md`. Shared policy owns decisions; adapters translate provider
 data and operations; the code host owns branches and pull requests.
 
@@ -40,7 +40,7 @@ data and operations; the code host owns branches and pull requests.
 
 Shaping retains persona, journey, priority and scope decisions, confirmation
 checkpoints, issue splitting and glossary ownership decisions. The adapter stores
-the resulting packets and metadata. Build retains candidate selection, packet
+the resulting packets and metadata. `lets-go` retains candidate selection, packet
 checks, schema choice and OpenSpec orchestration. Setup retains the decision to
 create a missing backlog or repair an existing one. Authentication scope errors
 must remain explicit. No operation may select another provider as recovery.

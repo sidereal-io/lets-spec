@@ -4,13 +4,16 @@
       "schemas": ["lets-standard", "lets-minimal"],
       "skills": [
         "lets-build",
+        "lets-go",
+        "lets-plan",
         "lets-brainstorm",
         "lets-write-specs",
         "lets-write-adrs",
         "lets-write-tasks",
         "lets-test-first",
         "lets-review-plan",
-        "lets-review-code",
+        "lets-review-build",
+        "lets-review-pr",
         "lets-shape",
         "lets-setup-backlog"
       ]
@@ -19,10 +22,14 @@
       "schemas": ["lets-minimal"],
       "skills": [
         "lets-build",
+        "lets-go",
+        "lets-plan",
         "lets-brainstorm",
         "lets-write-specs",
         "lets-write-tasks",
         "lets-test-first",
+        "lets-review-build",
+        "lets-review-pr",
         "lets-shape",
         "lets-setup-backlog"
       ]
