@@ -315,6 +315,14 @@ skill_does_not_say() {
   ! skill_text "$1" | grep -q "${case[@]}" -F -- "$2" || { echo "$1 still says: $2"; return 1; }
 }
 
+# skill_says_once <skill> <fixed text>: the files skill_says reads hold the
+# text exactly once between them, so a rule has one place to change.
+skill_says_once() {
+  local count
+  count="$(skill_text "$1" | grep -oF -- "$2" | wc -l)"
+  [ "$count" -eq 1 ] || { echo "$1 says $((count)) times: $2"; return 1; }
+}
+
 # skill_has_section <skill> <name>: a line of the skill's SKILL.md or a
 # reference file is a heading with that name, at any level.
 skill_has_section() {
@@ -442,6 +450,26 @@ fixture_file() {
 @test "skill_does_not_say passes when no file holds the phrase" {
   fixture_file lets-go references/records.md 'Nothing to see.'
   skill_does_not_say lets-go 'VERDICT:'
+}
+
+@test "the says once check passes a phrase SKILL.md holds once" {
+  fixture_file lets-go SKILL.md '# lets-go' 'Print Done shape:' '<date>. <evidence> here.'
+  skill_says_once lets-go 'Done shape: <date>. <evidence>'
+}
+
+@test "the says once check names a phrase SKILL.md and a reference file both hold" {
+  fixture_file lets-go SKILL.md '# lets-go' 'Print Done shape: <date>. <evidence> here.'
+  fixture_file lets-go references/steps.md 'And Done shape: <date>. <evidence> again.'
+  run skill_says_once lets-go 'Done shape: <date>. <evidence>'
+  [ "$status" -eq 1 ] || { echo "it passed on a phrase written twice"; false; }
+  [ "$output" = 'lets-go says 2 times: Done shape: <date>. <evidence>' ] || { echo "it said: $output"; false; }
+}
+
+@test "the says once check names a phrase no file of the skill holds" {
+  fixture_file lets-go SKILL.md '# lets-go' 'Nothing to see.'
+  run skill_says_once lets-go 'Done shape: <date>. <evidence>'
+  [ "$status" -eq 1 ] || { echo "it passed on a missing phrase"; false; }
+  [ "$output" = 'lets-go says 0 times: Done shape: <date>. <evidence>' ] || { echo "it said: $output"; false; }
 }
 
 @test "each review skill asks lets for its intent's options, then runs with a ranked list" {
@@ -756,6 +784,19 @@ review_build_start() {
   done
   grep -qF '`verified`: the story owns the edits, and *Check the checkpoint* returned `verified`. It carries the checkpoint commits' <<<"$section" ||
     { echo "verified does not carry the checkpoint commits"; false; }
+  ! grep -F -- '- `no-owned-edits`:' <<<"${section//- \`/$'\n'- \`}" | grep -qF '*Check the prerequisite*' ||
+    { echo "no-owned-edits still waits on Check the prerequisite"; false; }
+}
+
+# next and Find the source of demand check the prerequisite, so Claim's
+# preflight does not check it a third time.
+@test "Glossary preflight in Claim checks no prerequisite first" {
+  local opening
+  opening="$(skill_section lets-go 'Glossary preflight')"
+  grep -qF '*Claim* runs the rest of the preflight' <<<"$opening" ||
+    { echo "Glossary preflight does not say Claim runs only the rest: $opening"; false; }
+  ! grep -qF 'Run *Check the prerequisite*, then' <<<"$opening" ||
+    { echo "Glossary preflight still runs Check the prerequisite first"; false; }
 }
 
 @test "lets-go holds the sections that find, confirm, route and claim the issue" {
@@ -778,13 +819,19 @@ review_build_start() {
   done
 }
 
-@test "Find the source of demand runs its Project query once per run" {
+@test "Read the settings runs the Project query once per run, and stops on none or several" {
   local text
-  text="$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')"
-  grep -qF 'Run this query only when `<project>` is not set yet in this run' <<<"$text" ||
-    { echo "Find the source of demand runs its Project query on every pass"; false; }
-  grep -qF 'When an earlier pass set `<project>`, `<owner>` and `<repo>`, use them' <<<"$text" ||
-    { echo "Find the source of demand does not reuse an earlier pass's Project"; false; }
+  text="$(part_section 'Read the settings')"
+  grep -qF 'gh api graphql' <<<"$text" || { echo "Read the settings does not run the Project query"; false; }
+  grep -qF '**None:** say to run the `lets-setup-backlog` skill, and stop.' <<<"$text" ||
+    { echo "Read the settings does not stop on no Project"; false; }
+  grep -qF '**Two or more:** list each one'"'"'s title and URL, ask the user to unlink the extras, and stop.' <<<"$text" ||
+    { echo "Read the settings does not stop on several Projects"; false; }
+  ! grep -qF 'gh api graphql' <<<"$(procedure_text 'Find the source of demand')" ||
+    { echo "Find the source of demand still runs the Project query"; false; }
+  skill_says_once lets-go 'gh api graphql'
+  skill_does_not_say lets-go 'no-project'
+  skill_does_not_say lets-go 'several-projects'
 }
 
 @test "lets-go with nothing takes the next ready issue" {
@@ -811,8 +858,10 @@ review_build_start() {
 }
 
 @test "Pick the first ready story prints Done shape once after a lost claim" {
-  grep -qF 'when this run has not printed it yet' <<<"$(part_section 'Pick the first ready story')" ||
-    { echo "Pick the first ready story prints Done shape again after a lost claim"; false; }
+  grep -qF 'when this run has not printed it yet' <<<"$(skill_section lets-go 'The step lines')" ||
+    { echo "The step lines print Done shape again after a lost claim"; false; }
+  grep -qF '](#the-step-lines)' <<<"$(part_section 'Pick the first ready story')" ||
+    { echo "Pick the first ready story does not link The step lines"; false; }
 }
 
 @test "lets-go sends a failed step back to lets-go" {
@@ -847,7 +896,10 @@ review_build_start() {
   skill_does_not_say lets-go 'If an open issue blocks it, say so and stop' ||
     { echo "Find the source of demand still stops on a blocker of its own"; false; }
   skill_says lets-go 'return to the part that ran it'
-  skill_says lets-go 'When *Claim* ran it, return to *Claim*'
+  grep -qF 'Return to *Claim*, with the result.' <<<"$(skill_section lets-go 'What the preflight returns')" ||
+    { echo "Glossary preflight does not return to Claim"; false; }
+  ! grep -qiF 'return to *Claim*' <<<"$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')" ||
+    { echo "Find the source of demand still returns to Claim, which never runs it"; false; }
   grep -qF '**`found`:** go on to *Confirm the packet*' <<<"$part" ||
     { echo "Check the issue does not go on to Confirm the packet on found"; false; }
   skill_does_not_say lets-go 'Otherwise, go on to [Confirm the packet](#confirm-the-packet).' ||
@@ -880,6 +932,20 @@ review_build_start() {
   first_gh=$(grep -nE '`gh ' "$skill" | head -1 | cut -d: -f1)
   [ "$first_level" -lt "$first_gh" ] ||
     { echo "lets go level is on line $first_level, after a GitHub call on line $first_gh"; false; }
+}
+
+@test "the level rule is written once, in Set the level, and the shape step links it" {
+  local shape level
+  shape="$(part_section 'Run the shape step')"
+  level="$(part_section 'Set the level')"
+  grep -qF '](#set-the-level)' <<<"$shape" || { echo "Run the shape step does not link Set the level"; false; }
+  ! grep -qF 'because your lets config sets go.level' <<<"$shape" ||
+    { echo "Run the shape step still writes the level rule"; false; }
+  grep -qF '`ask` for any other Kind' <<<"$level" || { echo "Set the level names no level for any other Kind"; false; }
+  grep -qF 'Interactivity: ask, because shape has not run yet.' <<<"$level" ||
+    { echo "Set the level does not hold shape's level line"; false; }
+  skill_does_not_say lets-go 'After a shape step, set it again here'
+  skill_says_once lets-go 'Interactivity: <level>, because your lets config sets go.level.'
 }
 
 @test "lets-go runs a shape step for an idea or an unshaped issue" {
@@ -1370,6 +1436,10 @@ overview_row() {
   ! grep -qiF 'a stop in' <<<"$overview" || { echo "the overview still names a stop in a procedure"; false; }
   grep -qF '`taken`' <<<"$(overview_row 'Enter the branch')" || { echo "Enter the branch's row does not name taken"; false; }
   grep -qF '`epic`' <<<"$(overview_row 'Check the issue')" || { echo "Check the issue's row does not name epic"; false; }
+  grep -qF 'finds no Project, or several' <<<"$(overview_row 'Read the settings')" ||
+    { echo "Read the settings' row does not stop on the Project query"; false; }
+  [[ "$(overview_row 'Start from an idea')" == *'| Never |' ]] ||
+    { echo "Start from an idea's row still stops: $(overview_row 'Start from an idea')"; false; }
 }
 
 @test "the overview's Next for Enter the branch names both ways back after a lost claim" {
@@ -1455,8 +1525,14 @@ procedure_stops() {
     'Import the glossary checkpoint' 'Commit the discovery map'; do
     text="$(procedure_text "$procedure")"
     [ -n "$text" ] || { echo "lets-go has no procedure $procedure"; false; }
-    tr -s '[:space:]' ' ' <<<"$text" | grep -qi 'return to the part that ran it' ||
-      { echo "$procedure does not return to the part that ran it"; false; }
+    # Only Claim runs the whole preflight, so it returns there.
+    if [ "$procedure" = 'Glossary preflight' ]; then
+      tr -s '[:space:]' ' ' <<<"$text" | grep -qF 'Return to *Claim*, with the result.' ||
+        { echo "$procedure does not return to Claim"; false; }
+    else
+      tr -s '[:space:]' ' ' <<<"$text" | grep -qi 'return to the part that ran it' ||
+        { echo "$procedure does not return to the part that ran it"; false; }
+    fi
     ! grep -q '^Next: ' <<<"$text" || { echo "$procedure has a Next line"; false; }
     procedure_stops "$procedure"
   done
@@ -1537,7 +1613,7 @@ procedure_stops() {
 @test "Find the source of demand lists its results" {
   local text result
   text="$(procedure_text 'Find the source of demand')"
-  for result in found unresolved matches no-match picked nothing-ready no-project several-projects; do
+  for result in found unresolved matches no-match picked nothing-ready; do
     grep -qF -- "- \`$result\`:" <<<"$text" || { echo "Find the source of demand does not list: $result"; false; }
   done
 }
@@ -1554,10 +1630,10 @@ procedure_stops() {
 @test "each part that finds the source of demand acts on each result it can get there" {
   local part result
   declare -A results=(
-    ['Read the request']='picked nothing-ready no-project several-projects'
-    ['Start from an idea']='matches no-match no-project several-projects'
-    ['Check the issue']='found unresolved no-project several-projects'
-    ['Pick the first ready story']='picked nothing-ready no-project several-projects')
+    ['Read the request']='picked nothing-ready'
+    ['Start from an idea']='matches no-match'
+    ['Check the issue']='found unresolved'
+    ['Pick the first ready story']='picked nothing-ready')
   for part in "${!results[@]}"; do
     for result in ${results[$part]}; do
       grep -qF -- "**\`$result\`:**" <<<"$(part_section "$part")" || { echo "$part does not act on: $result"; false; }
@@ -1592,9 +1668,24 @@ procedure_stops() {
 @test "Enter the branch acts on each result of the claim" {
   local part result
   part="$(part_section 'Enter the branch')"
-  for result in claimed branch-exists taken unresolved checkpoint-failed branch-failed; do
+  for result in claimed taken unresolved checkpoint-failed branch-failed; do
     grep -qF -- "**\`$result\`:**" <<<"$part" || { echo "Enter the branch does not act on: $result"; false; }
   done
+}
+
+# Check the issue looks for the branch, so Claim does not look again.
+@test "Claim looks for no branch, and a late branch fails its creation" {
+  local claim
+  claim="$(procedure_text 'Claim')"
+  skill_does_not_say lets-go 'branch-exists'
+  ! grep -qF 'git branch --list' <<<"$claim" || { echo "Claim still looks for the branch"; false; }
+  ! grep -qF 'already exists' <<<"$claim" || { echo "Claim still checks for an existing branch"; false; }
+  grep -qF 'a local branch with the change'"'"'s name appeared after *Check the issue* looked' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" ||
+    { echo "Claim does not say a late local branch fails its creation"; false; }
+  grep -qF 'only on `origin`' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" ||
+    { echo "Claim says a late branch on origin fails its creation"; false; }
+  grep -qF 'when *Claim* runs *Glossary preflight*' <<<"$(skill_section lets-go 'Check the checkpoint')" ||
+    { echo "Check the checkpoint still runs after a branch check"; false; }
 }
 
 @test "Enter the branch acts on each result of the import" {
@@ -1644,15 +1735,65 @@ walk_section() {
   done
 }
 
+# Each step's done test is written once, in the walk.
+@test "the step table has no Done when column" {
+  local header
+  header="$(awk '/^## The step table$/ { on = 1 } on && /^\| Step \|/ { print; exit }' "$(lets_go_skill)")"
+  [ -n "$header" ] || { echo "the step table has no header row"; false; }
+  [[ "$header" != *'Done when'* ]] || { echo "the step table still has a Done when column: $header"; false; }
+}
+
+@test "the walk's review plan row reads lets-minimal first, then the archive folder" {
+  local walk row minimal archive
+  walk="$(walk_section)"
+  row="${walk#*'**Review plan.**'}"
+  row="${row%%'**Build.**'*}"
+  [ "$row" != "$walk" ] || { echo "the walk has no review plan row"; false; }
+  minimal="${row%%'`lets-minimal`'*}"
+  archive="${row%%'archive folder'*}"
+  [ "$minimal" != "$row" ] && [ "$archive" != "$row" ] || { echo "the review plan row does not name both: $row"; false; }
+  [ "${#minimal}" -lt "${#archive}" ] || { echo "the review plan row reads the archive folder before lets-minimal"; false; }
+  [[ "$row" != *'once plan is done'* ]] || { echo "the review plan row still waits for plan"; false; }
+  grep -qF 'the first of these that matches decides' <<<"$walk" || { echo "the walk does not say which item decides"; false; }
+}
+
+@test "the walk says when a merged or closed pull request stops it" {
+  grep -qF 'a stacked pull request merged into the branch below it' <<<"$(walk_section)" ||
+    { echo "the walk does not say when MERGED runs"; false; }
+  grep -qF 'a pull request closed without merging' <<<"$(walk_section)" ||
+    { echo "the walk does not say when CLOSED runs"; false; }
+}
+
 @test "the walk has no shape row" {
   ! grep -qF -- '**Shape.**' <<<"$(skill_section lets-go 'Walk the step table')" || { echo "the walk still has a shape row"; false; }
 }
 
 @test "Check the issue prints shape's line before the walk" {
-  local part line
-  part="$(part_section 'Check the issue')"
+  local lines line
+  lines="$(skill_section lets-go 'The step lines')"
   for line in "Skipped shape: #<i>'s packet is complete, last edited <date>." 'Done shape: <date>. <evidence>'; do
-    grep -qF -- "$line" <<<"$part" || { echo "Check the issue does not print: $line"; false; }
+    grep -qF -- "$line" <<<"$lines" || { echo "The step lines do not hold: $line"; false; }
+  done
+  grep -qF 'only when no shape step ran in this run' <<<"$lines" ||
+    { echo "The step lines print Skipped shape after a shape step"; false; }
+  grep -qF '](#the-step-lines)' <<<"$(part_section 'Check the issue')" ||
+    { echo "Check the issue does not link The step lines"; false; }
+}
+
+@test "each step line, and what fills it, is written once, in The step lines" {
+  local phrase part lines
+  lines="$(skill_section lets-go 'The step lines')"
+  for phrase in 'Done shape: <date>. <evidence>' "Skipped shape: #<i>'s packet is complete, last edited <date>." \
+    '`evidence`, joined with `; `' 'Failed shape: <reason>' 'Failed review build: <reason>'; do
+    skill_says_once lets-go "$phrase"
+    grep -qF -- "$phrase" <<<"$lines" || { echo "The step lines do not hold: $phrase"; false; }
+  done
+  for part in 'Read the report' 'End of the run'; do
+    grep -qF '](#the-step-lines)' <<<"$(part_section "$part")" || { echo "$part does not link The step lines"; false; }
+  done
+  for phrase in '<date>' '<evidence>' '<reason>'; do
+    skill_rows lets-go "^\| \`$phrase\` \|" | grep -qF '[The step lines](#the-step-lines)' ||
+      { echo "the $phrase row does not name The step lines"; false; }
   done
 }
 
@@ -1664,6 +1805,22 @@ walk_section() {
   [ "$shape" != "$part" ] || { echo "Read the report has no failed shape case"; false; }
   [ "$other" != "$part" ] || { echo "Read the report has no failed case for another step"; false; }
   [ "${#shape}" -lt "${#other}" ] || { echo "Read the report reads another failed step before a failed shape"; false; }
+}
+
+# A step's done report is checked against the records it should have changed.
+@test "Read the report checks a done report against its record" {
+  local part
+  part="$(part_section 'Read the report')"
+  grep -qF 'gh pr view <name> --json number,url,state,isDraft,body' <<<"$part" ||
+    { echo "Read the report does not read the pull request again after done"; false; }
+  grep -qF 'git status --porcelain' <<<"$part" || { echo "Read the report does not read the tree again after done"; false; }
+  grep -qF 'the step reported done, but' <<<"$part" || { echo "Read the report takes a done report on trust"; false; }
+  grep -qF '[Records that disagree](#records-that-disagree)' <<<"$part" ||
+    { echo "Read the report does not stop on records that disagree"; false; }
+  grep -qF 'reports done when its record says otherwise' <<<"$(overview_row 'Walk the step table')" ||
+    { echo "the walk's overview row does not stop on a done report its record contradicts"; false; }
+  skill_rows lets-go '^\| `<reason>` \|' | grep -qF 'the step reported done, but' ||
+    { echo "the <reason> row does not name the done check"; false; }
 }
 
 @test "a failed step on a branch with no pull request prints no URL" {

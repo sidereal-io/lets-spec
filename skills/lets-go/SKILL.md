@@ -31,16 +31,16 @@ part is not a step, and has no step report. The shape step that
 
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
-| [Read the settings](#read-the-settings) | Reads the default level, the default branch and the current branch | this session | *Read the request* | `lets go level` fails |
-| [Read the request](#read-the-request) | Takes a level off the request, then finds the issue from the branch and the request | this session | *Check the issue*, or *Start from an idea* for an idea | An idea on a change's branch, no issue that matches the branch, or *Find the source of demand* returns `nothing-ready`, `no-project` or `several-projects` |
-| [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | *Check the issue* for the same work; otherwise *Run the shape step* | *Find the source of demand* returns `no-project` or `several-projects` |
-| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | *Run the shape step* when the packet needs shaping and shape can run; otherwise *Route* | An open blocker with no branch; *Find the source of demand* returns `unresolved`, `no-project` or `several-projects`; or *Confirm the packet* returns `epic`, or `needs-shape` when shape cannot run |
+| [Read the settings](#read-the-settings) | Reads the default level, the default branch, the current branch and the Project | this session | *Read the request* | `lets go level` fails, or the Project query finds no Project, or several |
+| [Read the request](#read-the-request) | Takes a level off the request, then finds the issue from the branch and the request | this session | *Check the issue*, or *Start from an idea* for an idea | An idea on a change's branch, no issue that matches the branch, or *Find the source of demand* returns `nothing-ready` |
+| [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | *Check the issue* for the same work; otherwise *Run the shape step* | Never |
+| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | *Run the shape step* when the packet needs shaping and shape can run; otherwise *Route* | An open blocker with no branch; *Find the source of demand* returns `unresolved`; or *Confirm the packet* returns `epic`, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | *Check the issue* for one issue; *Pick the first ready story* for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
-| [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | *Check the issue* | *Find the source of demand* returns `nothing-ready`, `no-project` or `several-projects` |
+| [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | *Check the issue* | *Find the source of demand* returns `nothing-ready` |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | *Enter the branch* | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | *Set the level*; *Read the request* or *Pick the first ready story* after a lost claim | *Claim* returns `branch-exists`, `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | *Set the level*; *Read the request* or *Pick the first ready story* after a lost claim | *Claim* returns `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
 | [Set the level](#set-the-level) | Picks `ask` or `recommend`, and says why | this session | *Walk the step table* | Never |
-| [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | *End of the run* | The records disagree, the pull request is merged or closed, or a step fails or asks a settled question again |
+| [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | *End of the run* | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL | this session | Nothing: the run is over | Always |
 
 ## Placeholders
@@ -51,9 +51,9 @@ sets it.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
-| `<project>` | The number of the Project linked to the repository | *Find the source of demand*, from the Project query |
-| `<owner>` | The Project's owner | *Find the source of demand*, from the Project query |
-| `<repo>` | The repository, as `owner/name` | *Find the source of demand*, from the Project query's `repo` |
+| `<project>` | The number of the Project linked to the repository | [Read the settings](#read-the-settings), from the Project query |
+| `<owner>` | The Project's owner | [Read the settings](#read-the-settings), from the Project query |
+| `<repo>` | The repository, as `owner/name` | [Read the settings](#read-the-settings), from the Project query's `repo` |
 | `<i>` | The run's issue: the number the user named, the issue `next` or *Pick the first ready story* picked, or the issue a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
 | `<issue-url>` | The URL of `<i>` | *Confirm the packet*, from the issue's `url` |
 | `<parent>` | A parent issue: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in *Start from an idea* |
@@ -72,11 +72,11 @@ sets it.
 | `<schema>` | The change's schema | [Enter the branch](#enter-the-branch) |
 | `<route line>` | The line *Route* says, such as `Route: lets-minimal, because #<i> is a Chore.` | [Route](#route) |
 | `<title>` | The title of the issue the line names | The command or report line that names the issue |
-| `<date>` | The date on a printed line | The line's own read: a report's `date`, a commit's author date, or the issue's last edit |
+| `<date>` | The date on a printed line | [The step lines](#the-step-lines), for each kind of line |
 | `<sha>` | A commit's short hash, or the commit a review names | [Read the records](#read-the-records), or the review plan report |
 | `<verdict>` | A plan review's verdict | The **Plan review** section, or the review plan report |
-| `<evidence>` | A `done` report's `evidence`, joined with `; ` | [Read the report](#read-the-report) |
-| `<reason>` | A `failed` report's `reason` | [Read the report](#read-the-report) |
+| `<evidence>` | What a `done` report's `evidence` lists | [The step lines](#the-step-lines) |
+| `<reason>` | Why a step failed | [The step lines](#the-step-lines), from a `failed` report's `reason`, or from [Read the report](#read-the-report) when a `done` report's record says otherwise: `the step reported done, but` and what the record holds |
 | `<YYYY-MM-DD>` | The date in an archive folder's name | The folder's name in `openspec/changes/archive/` |
 | `<first>` | The first model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
 | `<second>` | The second model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
@@ -102,6 +102,38 @@ stderr and stop: claim nothing, and run no step. Then find the
 default branch with
 `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`,
 and run `git branch --show-current`.
+
+Then find the Project linked to this repository. Run this query once
+per run:
+
+```bash
+gh api graphql -F owner='{owner}' -F name='{repo}' -f query='
+query($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    nameWithOwner
+    projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } } }
+  }
+  repositoryOwner(login: $owner) {
+    ... on ProjectV2Owner {
+      projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } repositories(first: 100) { nodes { nameWithOwner } } } }
+    }
+  }
+}' --jq '.data.repository.nameWithOwner as $repo
+  | {repo: $repo, projects: ([.data.repository.projectsV2.nodes[], (.data.repositoryOwner.projectsV2.nodes[] | select(any(.repositories.nodes[]; .nameWithOwner == $repo)))]
+      | map(select(.closed | not) | {number, title, url, owner: .owner.login}) | unique_by(.owner, .number))}'
+```
+
+The query lists the Projects linked to the repository, and the
+owner's Projects that link back to it. A user-owned Project can be
+missing from the repository's own listing for a while after it is
+linked, so neither list alone is enough.
+
+- **One Project:** use its `number` as `<project>` and its `owner` as
+  `<owner>` in every `gh project` command of this run. The query's
+  `repo` is the repository, `<repo>`, as `owner/name`.
+- **None:** say to run the `lets-setup-backlog` skill, and stop.
+- **Two or more:** list each one's title and URL, ask the user to unlink
+  the extras, and stop. Never pick one yourself.
 
 Next: [Read the request](#read-the-request).
 
@@ -130,9 +162,6 @@ whole backlog. On its result:
   That issue is `<i>`.
 - **`nothing-ready`:** say the backlog has nothing ready, suggest the
   `lets-shape` skill to shape more, and stop, claiming nothing.
-- **`no-project`:** say to run the `lets-setup-backlog` skill, and stop.
-- **`several-projects`:** list each Project's title and URL it carries,
-  ask the user to unlink the extras, and stop.
 
 On another branch, `<branch>`, when the request is words, say that an
 idea needs the default branch, and stop. Otherwise search for the
@@ -175,10 +204,6 @@ Next: [Check the issue](#check-the-issue) when the entry table found `<i>`;
      builds someone else's issue.
    - **`no-match`:** [run the shape step](#run-the-shape-step) for the
      idea.
-   - **`no-project`:** say to run the `lets-setup-backlog` skill, and
-     stop.
-   - **`several-projects`:** list each Project's title and URL it
-     carries, ask the user to unlink the extras, and stop.
 3. On a yes, that issue is `<i>`. Go on from the blocker read in
    [Check the issue](#check-the-issue).
 4. On a no, [run the shape step](#run-the-shape-step) for the idea.
@@ -219,10 +244,6 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
    - **`found`:** go on to *Confirm the packet*, below.
    - **`unresolved`:** report the unresolved owner or checkpoint it
      carries, and stop, even on a stacked branch.
-   - **`no-project`:** say to run the `lets-setup-backlog` skill, and
-     stop.
-   - **`several-projects`:** list each Project's title and URL it
-     carries, ask the user to unlink the extras, and stop.
 5. Run [Confirm the packet](#confirm-the-packet). On its result:
    - **`complete`:** go on to the shape line, below. For a Story with a
      parent, the result carries the parent's **Shared decisions**:
@@ -240,28 +261,8 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
      run the `lets-shape` skill on `#<i>`, and stop.
    - **`epic`:** say that an epic is built through its stories, list the
      open sub-issues the result carries, and stop.
-6. When *Confirm the packet* returns `complete`, shape is done. When a shape step
-   reported `done` in this run, print its line. `<date>` is the report's
-   `date`, and `<evidence>` is its `evidence`, joined with `; `:
-
-   ```text
-   Done shape: <date>. <evidence>
-   ```
-
-   Otherwise print:
-
-   ```text
-   Skipped shape: #<i>'s packet is complete, last edited <date>.
-   ```
-
-   Here `<date>` is the day of the issue's `lastEditedAt`, from the thread
-   query in *Confirm the packet*, as `YYYY-MM-DD`. When `lastEditedAt`
-   is null, the body was never edited. Use the day the issue was
-   created:
-
-   ```bash
-   gh issue view <i> --json createdAt --jq .createdAt
-   ```
+6. When *Confirm the packet* returns `complete`, shape is done. Print
+   shape's line, as [The step lines](#the-step-lines) says.
 
 Next: [Run the shape step](#run-the-shape-step) when *Confirm the packet*
 returned `needs-shape` and shape can run; otherwise [Route](#route).
@@ -285,19 +286,9 @@ once per run. [Check the issue](#check-the-issue) decides when it runs.
    - **There is none:** say that the map has uncommitted edits, and to
      commit or discard them. Stop, and run no step. If the run went on,
      a discovery's commit could sweep those edits in.
-2. Set `<level>` and print its line. There is no Kind yet, so take the
-   first of these that is set:
-   1. The level the user named. Its line is
-      `Interactivity: <level>, because you asked for it.`
-   2. The level `lets go level` printed in
-      [Read the settings](#read-the-settings), when it is not `null`. Its line is
-      `Interactivity: <level>, because your lets config sets go.level.`
-   3. `ask`, when neither is set. Its line is:
-
-      ```text
-      Interactivity: ask, because shape has not run yet.
-      ```
-
+2. Set `<level>` and print its line, as
+   [Set the level](#set-the-level) says for a level before a shape step.
+   Then go on here, with the next step.
 3. For an idea, check that the answers file is this idea's. Two ideas
    can share their first five words, and so their `<shape-name>`. When
    `.workspace/lets-go/<shape-name>-shape-prompt.md` exists and holds
@@ -338,17 +329,13 @@ of them in this run.
 
      That story is `<i>`. Go on from the blocker read in
      [Check the issue](#check-the-issue) with it, as for an issue number.
-   - **`nothing-ready`:** print the `Done shape` line that
-     *Check the issue* shows, when this run has not printed it yet. Say
+   - **`nothing-ready`:** print the `Done shape` line, as
+     [The step lines](#the-step-lines) says. Say
      that no story under `#<parent>` is
      ready. Name each story, and why it was left out, as the result
      carries it: for example, its blocker, its assignee, an unresolved
      prerequisite, or a packet that is not complete. Say to run `lets-go` with a story's number
      once it is ready. Then stop. Claim nothing, and create no branch.
-   - **`no-project`:** say to run the `lets-setup-backlog` skill, and
-     stop.
-   - **`several-projects`:** list each Project's title and URL it
-     carries, ask the user to unlink the extras, and stop.
 
 A run that stops after discovery and before *Claim*, for any reason,
 leaves the map's edits on the default branch. When
@@ -400,8 +387,6 @@ Next: [Enter the branch](#enter-the-branch).
      with the commits it carries, and act on its result as below. When
      it carries `no-owned-edits`, run no import, and
      [commit the discovery map](#commit-the-discovery-map).
-   - **`branch-exists`:** say so, suggest switching to it and running
-     `lets-go` there, and stop.
    - **`taken`:** when the user named `<i>` or confirmed it, say who has
      it, and stop. Otherwise `next` or *Pick the first ready story*
      picked it: count the lost claim. After the third lost claim in this
@@ -448,17 +433,21 @@ that is set:
 1. The level the user named in the request that started the run.
 2. The level `lets go level` printed in
    [Read the settings](#read-the-settings), when it is not `null`.
-3. The Kind's: `recommend` for a Chore or a Bug, `ask` for a Story.
+3. The Kind's: `recommend` for a Chore or a Bug, and `ask` for any
+   other Kind, a Story included. *Confirm the packet* reads any other
+   Kind as a Story. Before a shape step, the Kind does not count, even
+   when the Project has one, as for a Bug whose packet lacks a line. So
+   before a shape step, the third source is `ask`.
 
 Never ask the user which level to use. The level holds for this run
-only. After a shape step, set it again here, in the same order: the
-Kind is settled now. Do not run `lets go level` again. Print the line
-for the source you used:
+only. Do not run `lets go level` again. Print the line for the source
+you used. The last line is for the third source, before a shape step:
 
 ```text
 Interactivity: <level>, because you asked for it.
 Interactivity: <level>, because your lets config sets go.level.
 Interactivity: <level>, because #<i> is a <Kind>.
+Interactivity: ask, because shape has not run yet.
 ```
 
 At `recommend`, this session answers each question that has a
@@ -484,7 +473,11 @@ records first, in this order:
    on. A new branch has none yet. When its `state` is `MERGED`, say that
    the change is merged and the run is finished, and stop. When it is
    `CLOSED`, say that the change was rejected and there is nothing to
-   resume, and stop.
+   resume, and stop. These two stops run only when the branch still
+   exists and the run finds its issue. That happens for a stacked pull
+   request merged into the branch below it, for a pull request closed
+   without merging, and for a closed issue the user names on the default
+   branch. In the first two cases the issue stays open.
 3. **The archive folder.** Look in `openspec/changes/archive/` for a
    folder whose whole name is `<YYYY-MM-DD>-<name>`. A folder whose name
    only ends in `-<name>` belongs to another change. When the folder
@@ -498,45 +491,52 @@ records first, in this order:
 
 Then walk [The step table](#the-step-table) from the top row.
 *Check the issue* has printed shape's line already. At each row, find
-out whether the step is done:
+out whether the step is done: the first of these that matches decides.
+The state is the `state` that
+`openspec instructions apply --change <name> --json` prints.
 
-- **Plan.** When the archive folder exists, plan is done. When
-  `openspec/changes/<name>/` does not exist, plan is not done.
-  Otherwise run `openspec instructions apply --change <name> --json`,
-  and read its `state`. When the `state` is `ready` or `all_done`, plan
-  is done. When the `state` is `blocked`, plan is not done. For any
-  other `state`, show the user the CLI's `instruction`, and stop. When
-  `openspec/changes/<name>/brainstorm.md` exists and the branch has no
-  pull request, the records disagree. The tree is clean, so the file is
-  committed.
-- **Review plan.** On `lets-minimal`, it is done once plan is done. When
-  the archive folder exists, it is done. But the records disagree if the
-  pull request's `body` has no **Plan review** section with a
-  `Reviewed:` line and a `- **Verdict:**` line. No step can write the
-  section once the change is archived. Otherwise read the pull
-  request's body again, because a step in this run can have opened or
-  changed it:
+- **Plan.**
+  1. When the archive folder exists, plan is done.
+  2. When `openspec/changes/<name>/` does not exist, plan is not done.
+  3. Otherwise run `openspec instructions apply --change <name> --json`,
+     and read its `state`. When the `state` is `ready` or `all_done`,
+     plan is done. When the `state` is `blocked`, plan is not done. For
+     any other `state`, show the user the CLI's `instruction`, and stop.
 
-  ```bash
-  gh pr view <name> --json number,body
-  ```
+  When `openspec/changes/<name>/brainstorm.md` exists and the branch has
+  no pull request, the records disagree. The tree is clean, so the file
+  is committed.
+- **Review plan.**
+  1. On `lets-minimal`, review plan is done.
+  2. When the archive folder exists, review plan is done. But the
+     records disagree if the pull request's `body` has no **Plan review**
+     section with a `Reviewed:` line and a `- **Verdict:**` line. No
+     step can write the section once the change is archived.
+  3. Otherwise read the pull request's body again, because a step in
+     this run can have opened or changed it:
 
-  Review plan is done when the **Plan review** section covers the plan.
-  Follow *Check an earlier review* in the `lets-review-plan` skill. Its
-  four rules say when a new round is needed. It then says when the
-  review is finished, with the fix commits under `APPROVE_WITH_CHANGES`.
-  When no rule calls for a new round and the review is finished, review
-  plan is done. Its reads change nothing:
-  `git merge-base --is-ancestor`, `git log` and `git show`. When review
-  plan is not done, run it, whatever the state.
-- **Build.** When the archive folder exists, build is done. Otherwise
-  run `openspec instructions apply --change <name> --json` again, even
-  when the plan row has run it, because a review plan round can add a
-  task to a built change. When the `state` is `all_done`, build is
-  done. Any `state` other than `blocked`, `ready` or `all_done` stops
-  the run, as for plan.
-- **Review build.** When the archive folder exists, review build is
-  done.
+     ```bash
+     gh pr view <name> --json number,body
+     ```
+
+     Review plan is done when the **Plan review** section covers the
+     plan. Follow *Check an earlier review* in the `lets-review-plan`
+     skill. Its four rules say when a new round is needed. It then says
+     when the review is finished, with the fix commits under
+     `APPROVE_WITH_CHANGES`. When no rule calls for a new round and the
+     review is finished, review plan is done. Its reads change nothing:
+     `git merge-base --is-ancestor`, `git log` and `git show`. When
+     review plan is not done, run it, whatever the state.
+- **Build.**
+  1. When the archive folder exists, build is done.
+  2. Otherwise run `openspec instructions apply --change <name> --json`
+     again, even when the plan row has run it, because a review plan
+     round can add a task to a built change. When the `state` is
+     `all_done`, build is done. When it is `blocked` or `ready`, build is
+     not done. Any other `state` stops the run, as for plan.
+- **Review build.**
+  1. When the archive folder exists, review build is done.
+  2. Otherwise review build is not done.
 
 Read a row's record when you reach the row, not before. A step that runs
 in this walk changes the records the next row reads.
@@ -546,8 +546,8 @@ Then settle the row:
 - **Done:** print its Skip line from the table, filled from
   [Read the records](#read-the-records). Go on to the next row.
 - **Not done:** run the step, as [Run a step](#run-a-step) says. Then
-  [read its report](#read-the-report), which says what to print and
-  whether the walk goes on.
+  [read its report](#read-the-report). It checks a `done` report against
+  the records, and says what to print and whether the walk goes on.
 
 Next: [End of the run](#end-of-the-run), when no row is left.
 
@@ -575,41 +575,12 @@ disagreement. The walk reaches review plan first, and runs it.
 
 ## End of the run
 
-The walk prints each row's line when it settles the row. The line is
-`Skipped` when the step was done before this run, `Done` after a `done`
-report, and `Failed` after a `failed` one. A step can take an hour,
-so print each line as it comes. A run's lines look like this:
+The walk prints each row's line when it settles the row, as
+[The step lines](#the-step-lines) says. A failed step ends the walk.
 
-```text
-Skipped shape: #<i>'s packet is complete, last edited <date>.
-Done plan: <date>. <evidence>
-Skipped review plan: not in the lets-minimal route.
-Done build: <date>. <evidence>
-Done review build: <date>. <evidence>
-```
-
-When a shape step ran in this run, the first line is its `Done` form
-instead:
-
-```text
-Done shape: <date>. <evidence>
-```
-
-`<date>` on a `Done` line is the report's `date`, and `<evidence>` is its
-`evidence`, joined with `; `. Review plan's line is the same form as the
-others:
-
-```text
-Done review plan: <date>. <evidence>
-```
-
-When every step was already done, all five lines are `Skipped` lines. A
-failed step prints `Failed`, the step's name, a colon and the reason,
-such as `Failed review build: <reason>`, and ends the walk. A line names
-a step with a space, never a hyphen.
-
-When `review-build` reports `done`, its *Finish the change* has marked
-the pull request ready for review. When the walk is over, print the pull
+When `review-build` reports `done`, and
+[Read the report](#read-the-report) has checked it against the records,
+its *Finish the change* has marked the pull request ready for review. When the walk is over, print the pull
 request's URL. A failed shape has none: there is no branch yet. Nor
 does a step that failed before the branch had a pull request: say that
 the branch has no pull request yet.
@@ -632,41 +603,9 @@ The parts run these sections. Each one returns to the part that ran it.
 Parallel sessions share the backlog, so claim the issue before you
 create anything.
 
-Find the Project linked to this repository first. Run this query only
-when `<project>` is not set yet in this run. When an earlier pass set
-`<project>`, `<owner>` and `<repo>`, use them, and go on to the cases
-below.
-
-```bash
-gh api graphql -F owner='{owner}' -F name='{repo}' -f query='
-query($owner: String!, $name: String!) {
-  repository(owner: $owner, name: $name) {
-    nameWithOwner
-    projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } } }
-  }
-  repositoryOwner(login: $owner) {
-    ... on ProjectV2Owner {
-      projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } repositories(first: 100) { nodes { nameWithOwner } } } }
-    }
-  }
-}' --jq '.data.repository.nameWithOwner as $repo
-  | {repo: $repo, projects: ([.data.repository.projectsV2.nodes[], (.data.repositoryOwner.projectsV2.nodes[] | select(any(.repositories.nodes[]; .nameWithOwner == $repo)))]
-      | map(select(.closed | not) | {number, title, url, owner: .owner.login}) | unique_by(.owner, .number))}'
-```
-
-The query lists the Projects linked to the repository, and the
-owner's Projects that link back to it. A user-owned Project can be
-missing from the repository's own listing for a while after it is
-linked, so neither list alone is enough.
-
-- **One Project:** use its `number` as `<project>` and its `owner` as
-  `<owner>` in every `gh project` command below. The query's `repo` is
-  the repository, as `owner/name`.
-- **None:** the result is `no-project`: return it now.
-- **Two or more:** the result is `several-projects`: return it now, with
-  each Project's title and URL. Never pick one yourself.
-
-Then take the first case that applies:
+It uses the `<project>`, `<owner>` and `<repo>` that
+[Read the settings](#read-the-settings) set. Take the first case that
+applies:
 
 1. **The run has an issue, `<i>`.** Use it. *Check the issue* has read its
    blockers already, and decided on an open one. Run
@@ -724,12 +663,8 @@ It returns one of these results:
 - `nothing-ready`: `next` has no candidate left. It carries each
   candidate it left out, and why: its blocker, its assignee, an
   unresolved prerequisite, or a packet that is not complete.
-- `no-project`: no Project is linked to the repository.
-- `several-projects`: two or more Projects are linked. It carries each
-  one's title and URL.
 
-When *Claim* ran it, return to *Claim*: it says what comes next.
-Otherwise, return to the part that ran it, with the result.
+Return to the part that ran it, with the result.
 
 ### Confirm the packet
 
@@ -792,10 +727,11 @@ that ran it, with the result.
 ### Glossary preflight
 
 A story whose shaping added glossary terms carries a **Glossary handoff**
-record. These steps check it. "You" is the agent. Run
-*Check the prerequisite*, then, when this story owns the glossary edits,
-*Check the checkpoint*. *Find the source of demand* runs only
-*Check the prerequisite*.
+record. These steps check it. "You" is the agent. `next` and
+*Find the source of demand* run *Check the prerequisite*. *Claim* runs
+the rest of the preflight: read the story's **Glossary handoff**. When
+it has none, or another issue owns the edits, the result is
+`no-owned-edits`. Otherwise run *Check the checkpoint*.
 
 #### Check the prerequisite
 
@@ -818,7 +754,7 @@ Return to the section that ran it, with the result.
 #### Check the checkpoint
 
 Run these steps only when this story owns the glossary edits. Run them
-once, after *Claim*'s branch check passes. Each `checkpoint-failed`
+once, when *Claim* runs *Glossary preflight*. Each `checkpoint-failed`
 below comes before *Claim* assigns the issue, so nothing is claimed and
 no branch exists. Returning `checkpoint-failed` repairs nothing, and
 leaves user edits as they are.
@@ -880,29 +816,26 @@ Return to the section that ran it, with the result.
 
 It returns one of these results:
 
-- `no-owned-edits`: *Check the prerequisite* returned `resolved`, and
-  the story owns no glossary edits: it has no **Glossary handoff**, or
-  another issue owns the edits.
+- `no-owned-edits`: the story owns no glossary edits: it has no
+  **Glossary handoff**, or another issue owns the edits.
 - `verified`: the story owns the edits, and *Check the checkpoint*
   returned `verified`. It carries the checkpoint commits, in their
   recorded order, and the ones the rehearsal found already present.
-- `unresolved`: *Check the prerequisite* returned `unresolved`, the
-  first time or the second. It carries what is unresolved.
+- `unresolved`: *Check the checkpoint* returned it, because
+  *Check the prerequisite* ran again and returned `unresolved`. It
+  carries what is unresolved.
 - `checkpoint-failed`: *Check the checkpoint* returned it. It carries
   what the check found.
 
-When *Claim* ran it, return to *Claim*, with the result. Otherwise,
-return to the part that ran it.
+Return to *Claim*, with the result.
 
 ### Claim
 
 1. Name the change after the issue title. Every Kind's title is
    `<kebab-name> — <one-line outcome>`, so the name is the part before
    the dash.
-2. If a branch with the change's name already exists, the result is
-   `branch-exists`: return it now, before fetching or rehearsing a
-   transfer. Otherwise run [Glossary preflight](#glossary-preflight)
-   against the proposed base. When it returns `unresolved` or
+2. Run [Glossary preflight](#glossary-preflight) against the proposed
+   base. When it returns `unresolved` or
    `checkpoint-failed`, return that result now, with what it carries,
    before you assign the issue.
 3. Claim the issue: check that nobody has it, assign yourself, then move
@@ -917,10 +850,13 @@ return to the part that ran it.
    The first command must print `0`. Anything else means another
    session took it: the result is `taken`, with who has it. Return it
    now.
-4. Create a branch with the change's name off the default branch. If
-   creating the branch fails, release the claim, so another session can
-   pick the issue up. The result is then `branch-failed`, with the
-   error:
+4. Create a branch with the change's name off the default branch. This
+   also fails when a local branch with the change's name appeared after
+   *Check the issue* looked. A branch that appeared only on `origin` does
+   not make it fail: the plan step's first push is then rejected, and
+   that step fails. If creating the branch fails, release the claim, so
+   another session can pick the issue up. The result is then
+   `branch-failed`, with the error:
 
    ```bash
    gh issue edit <i> --remove-assignee @me
@@ -932,7 +868,6 @@ It returns one of these results:
 - `claimed`: the issue is yours, and the branch exists. It carries what
   *Glossary preflight* returned: `no-owned-edits`, or `verified` with
   the checkpoint commits.
-- `branch-exists`: a branch with the change's name exists already.
 - `taken`: another session has the issue. It carries who has it.
 - `unresolved`: *Glossary preflight* returned `unresolved`. It carries
   what is unresolved.
@@ -1018,17 +953,17 @@ for it. Its skill is in [What shape runs](#what-shape-runs), and
 Every other step runs in a fresh session, as [Run a step](#run-a-step)
 says. On `lets-minimal`, review plan never runs.
 
-Each row says which skill the step runs, when the step is done, which
-record shows it, and the line to print when it was done before this run.
-The state is the `state` that
-`openspec instructions apply --change <name> --json` prints.
+Each row says which skill the step runs, which record shows the step
+was done, and the line to print when it was done before this run.
+[Walk the step table](#walk-the-step-table) says when each step is
+done.
 
-| Step | Skill | Done when | Record | Skip line |
-|---|---|---|---|---|
-| `plan` | the `lets-plan` skill | The state is `ready` or `all_done`, or the archive folder exists | The commit that added `tasks.md` | `Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).` |
-| `review-plan` | the `lets-review-plan` skill | The **Plan review** section covers the plan. On `lets-minimal`, plan is done | The section's `Reviewed:` commit | `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.` On `lets-minimal`: `Skipped review plan: not in the lets-minimal route.` |
-| `build` | the `lets-build` skill | The state is `all_done`, or the archive folder exists | The last commit that changed `tasks.md` | `Skipped build: every task is ticked, last task commit <date> (<sha>).` |
-| `review-build` | the `lets-review-build` skill | The archive folder exists | The commit that added the archive's `tasks.md`, and the pull request | `Skipped review build: archived <date> (<sha>); pull request #<pr> is ready for review.` |
+| Step | Skill | Record | Skip line |
+|---|---|---|---|
+| `plan` | the `lets-plan` skill | The commit that added `tasks.md` | `Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).` |
+| `review-plan` | the `lets-review-plan` skill | The section's `Reviewed:` commit | `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.` On `lets-minimal`: `Skipped review plan: not in the lets-minimal route.` |
+| `build` | the `lets-build` skill | The last commit that changed `tasks.md` | `Skipped build: every task is ticked, last task commit <date> (<sha>).` |
+| `review-build` | the `lets-review-build` skill | The commit that added the archive's `tasks.md`, and the pull request | `Skipped review build: archived <date> (<sha>); pull request #<pr> is ready for review.` |
 
 ### Read the records
 
@@ -1037,8 +972,8 @@ from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is
 the short hash, from `%h`. A read that prints nothing means the
 [records disagree](#records-that-disagree).
 
-- **Shape.** *Check the issue* reads the issue's last edit, and prints
-  the line.
+- **Shape.** [The step lines](#the-step-lines) says how to date shape's
+  line.
 - **Plan.** Read the commit that added the task list:
 
   ```bash
@@ -1075,6 +1010,55 @@ the short hash, from `%h`. A read that prints nothing means the
 
 The plan and build reads work after archive too. Archive removes the
 old path, and its history keeps the add and the ticks.
+
+### The step lines
+
+The run prints one line for each step, when it settles the step: `Done`
+after a `done` report, `Skipped` when the step was done before this run,
+and `Failed` after a `failed` report. A step can take an hour, so print
+each line as it comes. A line names a step with a space, never a
+hyphen.
+
+A `Done` line is one of these. `<date>` is the report's `date`, and
+`<evidence>` is its `evidence`, joined with `; `:
+
+```text
+Done shape: <date>. <evidence>
+Done plan: <date>. <evidence>
+Done review plan: <date>. <evidence>
+Done build: <date>. <evidence>
+Done review build: <date>. <evidence>
+```
+
+A `Skipped` line is the Skip line in the step's row of
+[The step table](#the-step-table), with `<date>` and `<sha>` from
+[Read the records](#read-the-records). Shape has no row. Its line is:
+
+```text
+Skipped shape: #<i>'s packet is complete, last edited <date>.
+```
+
+Here `<date>` is the day of the issue's `lastEditedAt`, from the thread
+query in *Confirm the packet*, as `YYYY-MM-DD`. When `lastEditedAt` is
+null, the body was never edited. Use the day the issue was created:
+
+```bash
+gh issue view <i> --json createdAt --jq .createdAt
+```
+
+When every step was already done, all five lines are `Skipped` lines.
+
+A `Failed` line is `Failed`, the step's name, a colon and the reason,
+`<reason>`, such as `Failed review build: <reason>` or
+`Failed shape: <reason>`.
+
+Shape's line prints at most once for an issue. Print `Done shape` after
+a shape step reported `done`, once per run, when this run has not
+printed it yet: *Check the issue* prints it, or
+*Pick the first ready story* when no story is ready. Print
+`Skipped shape` once for each issue whose packet *Check the issue* finds
+complete, and only when no shape step ran in this run. So a story
+picked after a lost claim in a discovery run prints neither.
 
 ### The change's name
 
@@ -1354,14 +1338,34 @@ start with no answers.
 
 - **`done`**: after `shape`, go on as
   [Run the shape step](#run-the-shape-step) says. After any other step,
-  print its `Done` line, as [End of the run](#end-of-the-run) says, and
-  go on to the next row of the [walk](#walk-the-step-table).
+  check the report against the records first. The step may have changed
+  any of them, so a read from before the step cannot answer. Read the
+  three records again, as the [walk](#walk-the-step-table) does before
+  its first row: the tree, the pull request and the archive folder.
+
+  ```bash
+  git status --porcelain
+  gh pr view <name> --json number,url,state,isDraft,body
+  ```
+
+  Apply their rules for records that disagree, then run the row's done
+  test from the walk:
+  - **Done:** print the step's `Done` line, as
+    [The step lines](#the-step-lines) says, and go on to the next row of
+    the walk.
+  - **The records disagree:** stop, as
+    [Records that disagree](#records-that-disagree) says.
+  - **Not done:** the step failed. Its reason starts
+    `the step reported done, but`, then names the record and what it
+    holds, such as `the step reported done, but the change state is blocked`
+    or `the step reported done, but the branch has no pull request`. Go
+    on as for `failed`, below.
 - **`needs-input`**: [relay its questions](#relay-the-questions).
-- **`failed`, for shape**: there is no branch yet. Print
-  `Failed shape: <reason>`. Say to run `lets-shape` on the idea, or on
-  `#<i>`, and name no branch. Stop.
+- **`failed`, for shape**: there is no branch yet. Print shape's
+  `Failed` line, as [The step lines](#the-step-lines) says. Say to run
+  `lets-shape` on the idea, or on `#<i>`, and name no branch. Stop.
 - **`failed`**: print its `Failed` line, as
-  [End of the run](#end-of-the-run) says. The walk ends here. Name the
+  [The step lines](#the-step-lines) says. The walk ends here. Name the
   step and the branch `<name>`, and say that running `lets-go` again on
   that branch carries on from the first unfinished step. The step may
   have opened the pull request, so look for it again:
