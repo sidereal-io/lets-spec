@@ -940,6 +940,9 @@ file per step.
    Interactivity: ask for the rest of this step, because it asked for input five times.
    ```
 
+   The count is per step and per run: a new run, or another step,
+   starts again at none. The settled-question stop above still holds.
+
 3. Otherwise, go through the questions in the report's order, as
    `<level>` says:
    - **At `recommend`, with a `recommendation`**: take it as the answer.
@@ -968,4 +971,6 @@ file per step.
    `lets delegate step run`. Ask for the options again, and rank them
    again. Exit 3 goes to the subagent step as before.
 
-A step's rounds go on until its report is `done` or `failed`.
+A step's rounds go on until its report is `done` or `failed`. From
+its sixth `needs-input` report, the user answers its questions, as the
+limit above says.

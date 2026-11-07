@@ -1666,6 +1666,10 @@ parts_fixture() {
     { echo "Relay the questions does not relay as at ask from the sixth report"; false; }
   grep -qF 'Before the first such question, print this line once' <<<"$section" ||
     { echo "Relay the questions does not print the Interactivity line once"; false; }
+  grep -qF 'The count is per step and per run: a new run, or another step, starts again at none. The settled-question stop above still holds' <<<"$section" ||
+    { echo "Relay the questions does not say the count is per step and per run"; false; }
+  grep -qF 'A step'"'"'s rounds go on until its report is `done` or `failed`. From its sixth `needs-input` report, the user answers its questions, as the limit above says' <<<"$section" ||
+    { echo "the closing sentence does not link the limit"; false; }
 }
 
 # overview_row <part>: the overview's row for the part.
