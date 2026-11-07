@@ -30,6 +30,15 @@ that definition across delegation and backlogs. The glossary-only correction
 is d695d02fa3fa135d3b3c322eed2cf7f7868eb3de. #179 / PR #181 remains the sole
 owner; the original checkpoint is provenance, not the current definition.
 
+On 2026-11-07, during the #136 / PR #172 planning restart, the user explicitly
+approved removing the independent-capture requirement. The selected contract is:
+the agent calls the configured tool, the adapter translates its output, and Lets
+validates the submitted contract and workflow rules. This amendment retains the
+execution hybrid and weakens its provenance guarantee: Lets trusts submitted
+tool observations and cannot independently detect convincingly fabricated output.
+It requires no capture service, host modification or replacement execution path.
+Earlier capture research and prototype checks do not approve a capture design.
+
 ## Decision
 
 Use the execution hybrid project-wide:
@@ -144,7 +153,7 @@ Validate consumed definition structure, required tool/context inputs, operation
 names, result/evidence mappings, option types, cardinality, ambiguous field/value
 mappings, allowed transitions, capabilities and limits. Validate local facts
 before requesting backend actions; backend-dependent facts need bounded read
-actions and independently checkable evidence for required guarantees before
+actions and validated submitted observations for required guarantees before
 mutation. Reject unknown options within consumed objects. Preserve ADR-011's
 tolerance for unrelated future settings, including unrelated delegation keys;
 known misplaced selections and obsolete executable settings remain errors.
@@ -181,8 +190,9 @@ result or typed error, effect certainty, timing/dispatch information, any remote
 identities/session handles, and evidence provenance. Evidence records its source,
 collection time, scope, request correlation and relevant backend revision or
 receipt where available. Redact secrets; do not publish private journal contents.
-Statements supplied by the agent must remain distinguishable from independently
-verified tool/backend evidence.
+Bare agent assertions must remain distinguishable from submitted tool output
+and the normalized facts derived from it. Neither is independently authenticated
+by this contract.
 
 Lets checks schema and operation-specific invariants, identity/scope/input
 correlation, definition compatibility, deadline, expected state and evidence
@@ -193,66 +203,40 @@ that no action occurred. Missing results never mean success or effects none.
 
 ### What can establish remote state
 
+Lets accepts submitted tool observations through the selected adapter. The agent
+executes the requested CLI/MCP action using the inert provider definition and
+submits tool identity, arguments, collection time, outcome and relevant output,
+alongside normalized operation data. The adapter's mappings translate that
+known output into the contract Lets understands. Both shipped and custom
+definitions use this path; neither introduces another provider executor.
+
 | Evidence | What lets can conclude |
 |---|---|
-| Locally validated request, stored action identity and journal | What was requested and previously recorded; not current remote state or proof that dispatch did not happen. |
-| Schema-valid agent report, copied output, screenshot or a second read reported by the same agent | Attributed observations that can aid reconciliation; not independent proof of writes, absence, ownership or merge. |
-| Backend receipt or observation verifiable through an independent trusted channel | Only the facts its provenance, scope, revision and freshness actually establish. An unverifiable receipt copied into a report stays attributed evidence. |
-| Fresh independent ownership/status read or exact code-host merge observation | The observed scoped state at that time; a snapshot is not an exclusive lock or a guarantee against later races. |
+| Validated request and private journal | What was requested and recorded; not current remote state or proof that dispatch did not happen. |
+| Submitted tool output with matching action, scope, timing and normalized data | The reported backend observation, subject to operation-specific checks and trust in the submission. No independent provenance proof. |
+| Fresh submitted ownership/status read or exact code-host merge observation | The reported scoped state at collection time; a snapshot supplies no exclusive lock or guarantee against later races. |
+| Bare success assertion, local branch, archive or old journal entry | Insufficient evidence of current ownership, successful mutation or exact PR merge. |
 
-Lets independently checks local structure, mappings against validated metadata,
-request correlation, deadlines and sequencing. For required remote facts, use
-trusted capture of tool results: the agent initiates the backend call, and a
-trusted harness/tool host or generic capture runner records the actual request
-and response outside the agent's editable report. Lets retrieves and verifies
-that record through the capture channel; the agent may submit its reference,
-but cannot supply or replace the authoritative record.
+Lets checks structure, request correlation, scope, tool/result mappings against
+submitted metadata, deadlines, freshness, complete pagination and blocker
+coverage, current ownership and exact associated merge facts as required by the
+operation. Normalized data must agree with the relevant submitted output. These
+checks can find inconsistencies, omissions and policy violations. They cannot
+prove that the agent actually called the tool or reported its output truthfully.
+A plausible fabricated submission can pass; that is an explicit trust limit.
 
-The channel must bind evidence to the issued action, actual tool/server identity,
-arguments, selected backend/scope, authenticated context, collection time,
-response and execution outcome. Lets checks those against the allowed action
-and the definition's mappings. A receipt for another command, scope or attempt
-cannot establish the requested fact. Tool identity and capture-channel trust
-come from validated runtime setup, not a definition's claim to be trusted.
-Capturing a shell echo, an untrusted substitute CLI or an agent-written result
-file is not authoritative backend evidence. An ordinary local file or a key
-accessible to the agent does not by itself establish an independent trust boundary.
+Independent retrieval of original request/response capture is not required.
+Ordinary configured CLI/MCP tools can supply the output, including a fresh read
+initiated and reported by the same agent. No generic capture runner, daemon,
+protected credential deployment or tool-host change is a prerequisite. Lets does
+not make direct backend verification calls as an implicit fallback.
 
-Capture establishes what the trusted tool returned, not every remote guarantee.
-Lets must still check authoritative scope, freshness, complete pagination and
-blocker coverage, current ownership, and exact associated merge evidence as the
-operation requires. A fresh read initiated by the same agent can qualify when
-lets retrieves its original captured tool result independently; the agent's
-account of that read alone cannot. Snapshot evidence supplies no exclusive lock.
-
-Shipped and custom integrations use this same generic capture channel and their
-single provider definition for tool usage/mappings. Adding a definition for
-existing supported operations does not require provider-specific verifier code
-or a lets release when the available trusted channel can capture its tools.
-The capture runner records the agent-initiated execution; lets validates the
-record rather than making separate provider-specific verification calls. This
-adds neither a second implementation of provider operations nor a plugin loader.
-Direct backend verification reads executed by lets are not an implicit fallback.
-
-This is a target contract, not an assertion that today's CLI/MCP hosts already
-provide independent capture. #180 must demonstrate the channel for fresh claim
-ownership/status and exact PR merge evidence, including rejection of forged,
-agent-editable, mismatched, stale and incomplete records, before claiming the
-migrated GitHub path works. Delegation migration must prove its own evidence
-path. Until the required channel is established, these normal workflow steps
-pause; the limitation is not confined to unusual failures.
-
-If a required guarantee cannot be independently established, lets pauses automatic
-retry and progression and asks the user how to resolve it. Explain the action,
-known/unknown effects, missing evidence and available reconciliation steps. The
-user can provide access to a trusted channel, reconcile the outcome with recorded
-evidence, or stop. Do not retry or progress while the decision or required facts
-remain unresolved. A user approval or edited report alone does not establish the
-missing remote facts. Manual resolution must establish and record the facts and
-provenance under the existing guarantee. Definitions cannot self-certify trust,
-atomicity, complete blocker enumeration or exact merge evidence. If no available
-channel can establish the guarantee, ask the user to reconcile or stop rather
-than silently lower the guarantee or switch execution models.
+If submitted observations cannot establish a required fact under this contract,
+Lets pauses automatic retry and progression. Explain the action, known/unknown
+effects, missing facts and available bounded reconciliation reads or stop choices.
+A user approval or bare success assertion does not replace required ownership,
+coverage or exact merge data. Definitions cannot strengthen backend atomicity,
+declare incomplete enumeration complete or authorize unsupported operations.
 
 ### Deadlines, errors and reconciliation
 
@@ -271,7 +255,7 @@ unknown_outcome, and effects none, partial or unknown. Preserve delegation's
 decline/refusal/unknown distinction; common architecture need not impose identical
 command output. Derive classifications from validated facts, never category words
 in an exception message. A post-dispatch timeout, lost response, unexpected failure
-or expired action has unknown effects unless independently resolved. Local
+or expired action has unknown effects unless resolved through validated reconciliation observations. Local
 rejection before an action is issued can establish none; after issuance, a claim
 of no dispatch needs evidence, not merely an agent assertion.
 
@@ -292,10 +276,10 @@ session-safe release and partial-claim recovery. Best-effort claims remain
 best-effort; assignment followed by status writes is not atomic and supplies no
 new lock. Never release or repair another session's ownership.
 
-Completion requires independently confirmed merge of the exact associated PR,
+Completion requires validated submitted tool observations of the exact associated PR merge,
 including merged reference and merge commit, even after native closing automation.
-Ready PRs, archives, issue text, agent reports and journal entries do not substitute
-for that evidence. Completion remains idempotent; archive/readiness leave work
+Ready PRs, archives, issue text, bare agent assertions and journal entries do not
+substitute for those merge facts. Completion remains idempotent; archive/readiness leave work
 In Progress until confirmed merge. This decision does not reopen the settled
 native-state/private-local-journal design.
 
@@ -321,8 +305,8 @@ GitHub remains the default. #52's release requires GitHub Issues/Projects, Jira
 Cloud, Linear and local Beads. Each integration needs repeatable automated tests
 and real end-to-end acceptance for its declared versions/configurations before
 support is claimed. Offline doubles, schema checks and a definition in a catalog
-do not establish live support. Test tool translation, independently verifiable
-evidence, uncertain effects and recovery, not just well-formed agent reports.
+do not establish live support. Test tool translation, submitted output validation, uncertain effects and
+recovery, not just well-formed result envelopes.
 
 ### Contract migration inventory
 
@@ -334,21 +318,21 @@ not treated as already satisfied by this decision.
 
 | Existing requirement or surface | Required target migration | Guarantees retained |
 |---|---|---|
-| **Contract validation leaves production integrations unchanged**; offline executable harness | Exercise policy/action requests, simulated agent/tool submissions and trusted capture records; keep checks offline and credentials-free. | No production mutation from conformance; deliberate negative cases must fail. |
-| **Executable boundary separates responsibilities**; stdin/stdout JSON, stderr, exit/result pairs, signals and startup | Replace adapter process transport with a versioned bounded-action/submission contract. Test malformed, mismatched, stale, replayed and missing results plus unavailable tools. | Shared policy remains in lets; backend translation stays in definitions; code host owns branches/PRs; untrusted reports cannot authorize progression. |
+| **Contract validation leaves production integrations unchanged**; offline executable harness | Exercise policy/action requests, simulated agent/tool submissions and output mappings; keep checks offline and credentials-free. | No production mutation from conformance; deliberate negative cases must fail. |
+| **Executable boundary separates responsibilities**; stdin/stdout JSON, stderr, exit/result pairs, signals and startup | Replace adapter process transport with a versioned bounded-action/submission contract. Test malformed, mismatched, stale, replayed and missing results plus unavailable tools. | Shared policy remains in lets; backend translation stays in definitions; code host owns branches/PRs; unchecked assertions cannot authorize progression. |
 | That requirement's deadline, SIGKILL and byte-limit scenarios; **Protocol 1** | Replace process supervision with core request expiry/bounded waits and declared bounded tool calls/results. Test ignored cancellation, overflow, late effects and late submissions. | Timeout never proves rollback or effects none; unknown outcomes block retry/progression. A tool that cannot meet required limits is unavailable for that action. |
 | **Configuration separates shared settings from authentication**; executable resolution and default | Select shipped or explicit custom definitions; implement schema/source/version checks, machine tool options and actionable rejection of obsolete executable keys. | One backlog; GitHub default; no silent selection fallback; external auth; mappings and local storage/tracking checked before mutation. |
-| **Mutation errors support safe recovery**; protocol/JSON failures | Validate requests/submissions and independently check required evidence. Retain typed errors and effect certainty; test forged/unverifiable receipts, unavailable capture and same-agent report-only observations. | No error-message inference; original mutation identity, deduplication and reconciliation; no blind repeated create or session launch. |
-| **Four-provider evidence qualifies conformance claims**; profiles and evidence matrix | Distinguish policy tests, agent/tool translation tests, independent verification tests and live acceptance for each provider/configuration. | All four providers remain release requirements; offline profiles are not production integrations. |
+| **Mutation errors support safe recovery**; protocol/JSON failures | Validate requests/submissions and required tool observations. Retain typed errors and effect certainty; test missing output, inconsistent mappings, stale facts and unresolved dispatch. | No error-message inference; original mutation identity, deduplication and reconciliation; no blind repeated create or session launch. |
+| **Four-provider evidence qualifies conformance claims**; profiles and evidence matrix | Distinguish policy tests, agent/tool translation tests, submitted-output validation tests and live acceptance for each provider/configuration. | All four providers remain release requirements; offline profiles are not production integrations. |
 | **Runtime releases exclude unused conformance payloads**; executable bundles | Package core validators/recovery and production definitions; remove obsolete adapter-executable bundles and declare backend-tool dependencies separately. | Offline checks remain runnable; unused kit source, fixtures and docs remain outside runtime packages. |
 | Operation inventory, identity, metadata, capabilities and discovery | Carry complete behavioral scenarios through the request/result boundary, with operation-specific evidence requirements. | Scoped opaque identities, optional URLs, targeted field updates, pagination and complete blocker evidence, native/emulated/unsupported declarations and deterministic ranking. |
-| Claims and recovery | Model dispatch uncertainty, partial acquisition, reconciliation and fresh independent ownership/status checks before progression; preserve private local journals. | Native state is authoritative; session-safe release, no stronger locks, best-effort stays best-effort. A journal replay is not current ownership proof. |
-| References and completion | Verify the exact associated code-host PR merge independently before completion requests; test native auto-close and lost responses. | Exact merged reference/commit, merge-gated completion, idempotence and In Progress until confirmed merge. |
+| Claims and recovery | Model dispatch uncertainty, partial acquisition, reconciliation and fresh validated submitted ownership/status checks before progression; preserve private local journals. | Native state is authoritative; session-safe release, no stronger locks, best-effort stays best-effort. A journal replay is not current ownership proof. |
+| References and completion | Validate submitted observations of the exact associated code-host PR merge before completion requests; test native auto-close and lost responses. | Exact merged reference/commit, merge-gated completion, idempotence and In Progress until confirmed merge. |
 
 #180 implements the GitHub build migration after #179 and #136. It must migrate
 the production caller, contract, conformance invocation and packaging and prove
-its own equivalence, including the trusted capture channel for fresh claims and
-exact merge evidence. #137–#144 retain their provider outcomes and acceptance
+its own equivalence, including validated submitted observations for fresh claims and
+exact merge evidence under this amended trust model. #137–#144 retain their provider outcomes and acceptance
 obligations; #145 covers definition authoring for both capabilities. Its delegation
 part requires the delegation runtime migration below, not merely #180. Until that
 follow-up is shaped and its prerequisite is resolved, #145 is not ready for its
@@ -358,18 +342,20 @@ absence of that link does not make the prerequisite resolved.
 Delegation needs its own runtime migration under #174. Current built-in
 `t3`/`cli`/`subagent` implementations and lookup are not the target's custom
 definition registry. Provider-definition objects, bounded action submission and
-independent evidence verification do not yet exist there. Existing T3 launch/
+submitted tool-output validation do not yet exist there. Existing T3 launch/
 dispatch, token issuance and Git helper deadline gaps also remain. Shape that
 follow-up before implementing it; #180's GitHub work neither implements delegation
 nor proves project-wide compliance. No new runtime story is silently included
 in this documentation correction.
 
-Preserve the native-state/private-local-journal production design. PR #172
-remains ready/unmerged under user control; do not rewrite or merge it. Its
-completed native acceptance is historical evidence for its implementation;
-never repeat those mutations. Fixture PR #14 was user-merged. Recording this
-architecture requires no acceptance mutations. Later migrated behavior needs
-separate scoped equivalence evidence before a support claim.
+Preserve the native-state/private-local-journal design. PR #172 is draft and
+its capture design is reopened. Replanning stays with #136 / #172; coordinate
+#180's migration scope with that existing delivery rather than publish competing
+ownership. Its prototype remains dependent on the withdrawn service and is not
+ready for a full live workflow. Historical acceptance and checks qualify only
+the versions tested; never replay those mutations. Fixture PR #14 was user-merged.
+Later migrated behavior needs fresh scoped acceptance before a support claim.
+This amendment itself authorizes no runtime changes or acceptance mutations.
 
 ## Consequences
 
@@ -378,11 +364,11 @@ separate scoped equivalence evidence before a support claim.
 - Shared policy, sequencing, recovery and validators remain in code, while one
   provider definition describes its backend translation for every workflow.
 - Execution depends on agent tool availability and correct action interpretation.
-  Schema validation alone cannot establish remote truth. Without a proven trusted
-  capture channel, even routine claim/completion steps must pause and ask the
-  user for reconciliation; the architecture alone does not make them usable.
+  Validators can reject incomplete or inconsistent submissions, but cannot
+  independently authenticate remote truth or detect plausible fabricated output.
+  This trust assumption permits ordinary configured tools across agent hosts.
 - Maintainers must version definitions and the request/result contract, validate
-  evidence provenance, reject stale results and retain private recovery state.
+  submitted evidence bindings, reject stale results and retain private recovery state.
 - The design adds no credential sandbox or stronger backend locking primitive.
   Available tools may retain credentials and permissions outside lets.
 
@@ -415,3 +401,12 @@ available tools meet the extension goal without that loading boundary.
 These duplicate policy, sequencing and recovery and allow prose to authorize
 unsupported behavior. The selected hybrid keeps those decisions in lets and
 bounds each requested action; definitions only describe backend translation.
+
+### Independently retrieved original tool capture
+
+The earlier evidence clause required Lets to retrieve original tool records
+outside the agent's report. It offered stronger provenance, but no portable
+qualified interface was demonstrated across both required host environments.
+The proposed separate-account service was withdrawn. On 2026-11-07 the user
+selected submitted tool-output validation instead, accepting the weaker provenance
+guarantee. No alternative capture infrastructure is selected by this amendment.
