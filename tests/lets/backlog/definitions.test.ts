@@ -6,10 +6,11 @@ test('shipped definition renders an inert action from scoped inputs', () => {
   const input = { owner: 'owner', name: 'repo' };
   assert.deepEqual(render(definition.facts.Actor.stdin, null, input).variables, input);
 });
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 const base = () => structuredClone(loadDefinition({name:'github',version:1}, 'github', process.cwd()).definition);
 function custom(definition: unknown, run: (path: string) => void) {
+  mkdirSync('.workspace', { recursive: true });
   const dir = mkdtempSync(join(process.cwd(), '.workspace/definition-'));
   try { const path = join(dir, 'definition.json'); writeFileSync(path, JSON.stringify(definition)); run(path); }
   finally { rmSync(dir, {recursive:true,force:true}); }
@@ -53,6 +54,7 @@ test('custom definition source has a byte bound before parsing',()=>{
   });
 });
 test('custom definition cannot read outside the repository root',()=>{
+  mkdirSync('.workspace', { recursive: true });
   const dir=mkdtempSync(join(process.cwd(),'.workspace/definition-scope-'));
   try{assert.throws(()=>loadDefinition({name:'github',version:1,source:join(process.cwd(),'lets/src/backlog/definitions/github.json')},'github',dir),/within the repository/);}finally{rmSync(dir,{recursive:true,force:true});}
 });

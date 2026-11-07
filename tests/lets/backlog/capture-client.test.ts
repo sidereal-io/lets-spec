@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdtemp, rm, writeFile, chmod } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile, chmod } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { CaptureClient, readCaptureSetup } from '../../../lets/src/backlog/capture-client.ts';
 import { protectedPath } from '../../../lets/src/backlog/capture-service.ts';
@@ -9,6 +9,7 @@ import { sealAction } from '../../../lets/src/backlog/action-contract.ts';
 import type { Capture } from '../../../lets/src/backlog/action-contract.ts';
 
 async function fixture(t: test.TestContext, edit: (capture: Capture) => unknown = c => c) {
+  await mkdir(resolve('.workspace'), { recursive: true });
   const directory = await mkdtemp(resolve('.workspace/capture-client-'));
   const socket = resolve(directory,'socket');
   const tool = {id:'fixture',digest:'a'.repeat(64),authentication:'fixture',executable:process.execPath,argv:[]};

@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { sealAction } from '../../../lets/src/backlog/action-contract.ts';
 import { startCaptureService } from '../../../lets/src/backlog/capture-service.ts';
 import { CaptureClient } from '../../../lets/src/backlog/capture-client.ts';
 
 async function fixture(t: test.TestContext, program?: string, credentialDelay = 0) {
+  await mkdir(resolve('.workspace'), { recursive: true });
   const directory = await mkdtemp(resolve('.workspace/capture-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const tool = { id: 'fixture', executable: process.execPath, argv: ['-e', program ?? 'process.stdin.resume(); process.stdin.on("end",()=>process.stdout.write("{}"))'], digest: 'a'.repeat(64), authentication: 'fixture' };
