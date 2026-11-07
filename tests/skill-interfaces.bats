@@ -2383,6 +2383,24 @@ description_short() {
   [ "$output" = 'the description has 61 words, more than 60' ] || { echo "it said: $output"; false; }
 }
 
+@test "lets-go says what a run started again does" {
+  local text case phrase missing=()
+  text="$(before_overview)"
+  while IFS=$'\t' read -r case phrase; do
+    grep -qF -- "$phrase" <<<"$text" || missing+=("$case: $phrase")
+  done <<'EOF'
+the change's branch	**On the change's branch:** it finds the issue from the branch's name, prints a dated line for each step already done, and goes on from the first unfinished step.
+the default branch with the issue number	**On the default branch, with the issue number:** it finds the change's branch, here or on `origin`, switches to it, and goes on the same way. It does not claim the issue again.
+the default branch with nothing	**On the default branch, with nothing:** it does not resume. It picks the next ready issue, and a claimed issue is never ready.
+a failed step	**After a failed step:** the run that failed never runs that step again. A new run starts it afresh, in a new session, with the answers given so far.
+a failed shape step	A failed shape step has no branch: the run says to run `lets-shape` on the idea or the issue.
+a merged or closed pull request	**After the pull request is merged or closed:** there is nothing to resume, and the run stops.
+EOF
+  [ "${#missing[@]}" -eq 0 ] || { printf 'the resume paragraph does not say, for %s\n' "${missing[@]}"; false; }
+  grep -qF 'running `lets-go` again on that branch carries on from the first unfinished step' \
+    <<<"$(skill_part 'Read the report' | tr -s '[:space:]' ' ')" || { echo "Read the report no longer sends a failed step back"; false; }
+}
+
 @test "the check that lets-go links each glossary term at its first use reads step report apart from step" {
   fixture_file lets-go SKILL.md '# lets-go' '' 'It ends with a [step report](references/terms.md#step-report).' \
     'Each [step](references/terms.md#step) runs in a fresh session.'

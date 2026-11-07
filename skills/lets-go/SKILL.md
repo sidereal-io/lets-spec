@@ -19,10 +19,25 @@ the step's questions or asks the user, as the
 "You" is the agent that runs this skill, and "the user" is the person
 who asked for the run. Run every command below from the repo root.
 
-A run can stop before it finishes. Run `lets-go` again, on the default branch or
-on the change's branch. It reads from Git and GitHub which steps are
-done, prints a dated line for each, and goes on from the first
-unfinished step.
+A run can stop before it finishes. Run `lets-go` again to go on. It
+reads from Git and GitHub which steps are done. What the new run does
+depends on where you run it, and on why the last run stopped:
+
+- **On the change's branch:** it finds the issue from the branch's
+  name, prints a dated line for each step already done, and goes on
+  from the first unfinished step.
+- **On the default branch, with the issue number:** it finds the
+  change's branch, here or on `origin`, switches to it, and goes on the
+  same way. It does not claim the issue again.
+- **On the default branch, with nothing:** it does not resume. It picks
+  the next ready issue, and a claimed issue is never ready. To resume,
+  give the issue number, or run it on the change's branch.
+- **After a failed step:** the run that failed never runs that step
+  again. A new run starts it afresh, in a new session, with the answers
+  given so far. A failed shape step has no branch: the run says to run
+  `lets-shape` on the idea or the issue.
+- **After the pull request is merged or closed:** there is nothing to
+  resume, and the run stops.
 
 ## The run at a glance
 
