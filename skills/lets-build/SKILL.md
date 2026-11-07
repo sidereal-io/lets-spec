@@ -30,6 +30,13 @@ finishes the change after. Run every command below from the repo root.
 
 ## Apply
 
+Read [Backlog commands](references/backlog-commands.md). Before applying tasks,
+use `backlog.json` and the original private continuation file to run
+`lets backlog resume` through its action loop. Require fresh native ownership
+and In Progress. Missing identity or continuation stops work; never adopt an
+assignment or infer the item from a title. Keep handles and tokens out of
+artifacts, reports and PR text.
+
 Invoke the `openspec-apply-change` skill for the change `<branch>`. The
 schema's apply instruction works each task test-first with the
 `lets-test-first` skill. When every task is ticked, stop, and say that

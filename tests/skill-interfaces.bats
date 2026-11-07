@@ -810,8 +810,9 @@ review_build_start() {
   skill_says lets-go 'gh issue view <i> --json createdAt'
   skill_says lets-go 'gh repo view --json defaultBranchRef --jq .defaultBranchRef.name'
   skill_says lets-go "Skipped shape: #<i>'s packet is complete, last edited <date>."
-  # Claim sets the Status, so lets-go sets that field itself.
-  skill_says lets-go 'gh project item-edit'
+  # The runner claims through core policy and independently captured actions.
+  skill_says lets-go 'lets backlog claim'
+  skill_does_not_say lets-go 'gh project item-edit'
 }
 
 @test "lets-go names no section of lets-build" {
@@ -821,19 +822,13 @@ review_build_start() {
   done
 }
 
-@test "Read the settings runs the Project query once per run, and stops on none or several" {
+@test "Read the settings uses the checked backlog scope and stops on ambiguity" {
   local text
   text="$(part_section 'Read the settings')"
-  grep -qF 'gh api graphql' <<<"$text" || { echo "Read the settings does not run the Project query"; false; }
-  grep -qF '**None:** say to run the `lets-setup-backlog` skill, and stop.' <<<"$text" ||
-    { echo "Read the settings does not stop on no Project"; false; }
-  grep -qF '**Two or more:** list each one'"'"'s title and URL, ask the user to unlink the extras, and stop.' <<<"$text" ||
-    { echo "Read the settings does not stop on several Projects"; false; }
-  ! grep -qF 'gh api graphql' <<<"$(procedure_text 'Find the source of demand')" ||
-    { echo "Find the source of demand still runs the Project query"; false; }
-  skill_says_once lets-go 'gh api graphql'
-  skill_does_not_say lets-go 'no-project'
-  skill_does_not_say lets-go 'several-projects'
+  grep -qF 'lets backlog scope' <<<"$text" || { echo "Read the settings does not check scope"; false; }
+  grep -qF 'exactly one linked open Project' <<<"$text" || { echo "implicit scope is ambiguous"; false; }
+  grep -qF 'Missing or ambiguous selection stops the run' <<<"$text" || { echo "scope errors do not stop"; false; }
+  skill_does_not_say lets-go 'gh api graphql'
 }
 
 @test "lets-go with nothing takes the next ready issue" {
@@ -874,7 +869,7 @@ review_build_start() {
   local phrase
   skill_says lets-go 'Questions: <mode>, because #<i> is a <Kind>.'
   skill_says lets-go 'Questions: <mode>, because you asked for it.'
-  skill_says lets-go 'gh issue view <i> --json title,blockedBy'
+  skill_says lets-go 'lets backlog packet'
   skill_says lets-go 'report the unresolved owner or checkpoint it carries, and stop, even on a stacked branch'
   skill_says lets-go 'The question mode is <mode>. At auto, the lets-go session answers each question that has a recommendation'
   skill_says lets-go 'Your rules are the same in both modes.'
@@ -889,7 +884,7 @@ review_build_start() {
 @test "lets-go states the blocker rule before it finds the source of demand" {
   local part read call
   part="$(part_section 'Check the issue')"
-  read="${part%%"gh issue view <i> --json title,blockedBy"*}"
+  read="${part%%"lets backlog packet"*}"
   call="${part%%"[Find the source of demand](#find-the-source-of-demand)"*}"
   [ "$read" != "$part" ] || { echo "Check the issue does not read the blockers"; false; }
   [ "$call" != "$part" ] || { echo "Check the issue does not run Find the source of demand"; false; }
@@ -1007,7 +1002,7 @@ review_build_start() {
   skill_says lets-go 'git fetch origin <name>'
   skill_says lets-go 'git merge --ff-only origin/<name>'
   skill_says lets-go 'git switch <name>'
-  skill_says lets-go 'gh issue list --state open --search "<branch> in:title" --json number,title'
+  skill_says lets-go 'lets backlog resume'
   skill_says lets-go 'Records disagree:'
   skill_does_not_say lets-go '#150 adds resuming' || { echo "lets-go still defers resuming to #150"; false; }
 }
@@ -2412,7 +2407,7 @@ step_row() {
 @test "lets-plan runs openspec-propose and reads the change state when it stops" {
   skill_says lets-plan '`openspec-propose` skill'
   skill_says lets-plan 'openspec instructions apply --change <name> --json'
-  skill_says lets-plan 'gh issue list --state open --search "<branch> in:title" --json number,title'
+  skill_says lets-plan 'lets backlog resume'
 }
 
 @test "lets-plan offers no handoff" {
@@ -2720,7 +2715,7 @@ description_short() {
   while IFS=$'\t' read -r case phrase; do
     grep -qF -- "$phrase" <<<"$text" || missing+=("$case: $phrase")
   done <<'EOF'
-the change's branch	**On the change's branch:** it finds the issue from the branch's name, prints a dated line for each step already done, and goes on from the first unfinished step.
+the change's branch	**On the change's branch:** it verifies the issue from the recorded identity and original private continuation, prints a dated line for each step already done, and goes on from the first unfinished step.
 the default branch with the issue number	**On the default branch, with the issue number:** it finds the change's branch, here or on `origin`, switches to it, and goes on the same way. It does not claim the issue again.
 the default branch with nothing	**On the default branch, with nothing:** it does not resume. It picks the next ready issue, and a claimed issue is never ready.
 a failed step	**After a failed step:** the run that failed never runs that step again. A new run starts it afresh, in a new session, with the answers given so far.

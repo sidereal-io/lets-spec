@@ -16,20 +16,20 @@ root.
 2. Run `git branch --show-current`. On the default branch, say that
    `lets-go` starts an issue, and stop. Otherwise the branch is the
    change's name, `<name>`.
-3. Take the issue, `<i>`, and the route line from the caller. When the
-   caller gives no issue, search for it:
-
-   ```bash
-   gh issue list --state open --search "<branch> in:title" --json number,title
-   ```
-
-   Keep the one whose title starts with `<branch> — `. If none or
-   several match, say that `lets-plan` needs the issue number, and stop.
+3. Read [Backlog commands](../lets-build/references/backlog-commands.md).
+   Take the scoped item and original private continuation file from `lets-go`.
+   When the change has `backlog.json`, run `lets backlog resume` through the
+   action loop and use its verified identity. Never search titles or infer
+   authority from assignees. A legacy change requires explicit identity
+   confirmation and binding with its original handle; missing continuation
+   stops planning.
 
 ## Plan
 
 Invoke the `openspec-propose` skill for the change `<name>`, for issue
-#<i>. Give it the route line for the proposal's commit message. When the
+#<i>. Give it the private continuation file path and scoped item, never the handle
+in artifact text. The brainstorm instruction binds the identity before writing
+its ledger. Give it the route line for the proposal's commit message. When the
 route is `lets-minimal` and the flow's schema is not, say to use the
 schema `lets-minimal`. The flow's schema is the `schema:` line of
 `openspec/config.yaml`.
@@ -37,6 +37,11 @@ schema `lets-minimal`. The flow's schema is the `schema:` line of
 When `openspec/changes/<name>/` exists, say to continue the change. When
 it does not, and you have no route line, stop: say that `lets-go` routes
 and claims the issue.
+
+After propose creates the draft PR, run `lets backlog reference` through the
+action loop with its exact URL, change path and original private handle. It
+checks native closing links and retains the association. Readiness leaves the
+item In Progress. Do not merge.
 
 ## When propose stops
 

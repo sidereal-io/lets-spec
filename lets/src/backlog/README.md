@@ -1,55 +1,36 @@
-# Backlog runtime and adapter conformance kit
+# Backlog runtime and offline conformance
 
-This folder contains the production backlog caller and GitHub adapter, plus an
-offline conformance kit. `fake.ts`, state.ts and the kit helpers are simulations;
-they do not establish production provider support.
-Read [the contract](../../../docs/backlog-adapter-contract.md) before implementing
-an adapter. Node 26 is required; no credentials, network or dependencies are
-needed for the suite:
+The runtime requests bounded actions, independently retrieves protected capture,
+and applies backlog policy to the captured facts. The GitHub provider definition
+is inert JSON consumed by the same loader as custom definitions. There is no
+production executable adapter transport or direct provider executor.
+
+Read the [contract](../../../docs/backlog-adapter-contract.md),
+[agent command loop](../../../docs/backlog-build.md) and
+[capture deployment guide](../../../docs/backlog-capture.md).
+Runtime releases bundle `lets` and `lets-capture`. The latter is a separately
+administered Linux service; offline tests do not establish a deployed trust
+boundary. `flock` from util-linux is required for local workflow serialization.
+
+From a source checkout with Node 26 and installed dependencies:
 
 ```sh
-node --test "tests/lets/backlog/*.test.ts"
+pnpm test:backlog
 ```
 
-From a source checkout, `pnpm test:backlog` runs the same suite. `pnpm test`
-also includes it and type-checks the kit. `nix flake check` checks the repository
-suite and runtime release packaging.
-Runtime releases bundle the CLI and GitHub adapter. They exclude kit source,
-tests and the contract document; run conformance from a source checkout.
-Scratch state lives under `.workspace/` and is removed after each profile.
+The suite covers the action contract, inert definition/configuration loading,
+protected capture service/client, durable workflow reservation and native GitHub
+lifecycle. `pnpm test` also type-checks and runs repository workflow tests.
+`nix flake check` builds the flow and runtime releases.
 
-`protocol.ts` exports required/optional operation definitions and validators.
-`process.ts` exports `invoke(executable, request, options)`; default invocation
-has no shell arguments. Valid provider failures reject with `AdapterFailure`,
-preserving category and effects just like transport failures. This lets
-`recoverMutation` reconcile adapter-reported uncertain writes as well as timeouts. Test options permit an interpreter plus fixture path.
-`conformance.ts` exports `workflowOutcomes(call, provider, evidence)` for a disposable
-acceptance backlog. The suite runs that shared lifecycle once, with named
-provider cases for mappings, references and URL presence; these are behavioral
-variations of one fake, not four API implementations.
-Evidence names the authenticated actor/session and supplies an adapter-specific
-`inspectUnrelated(identity)` callback that snapshots seeded unrelated provider
-data before and after targeted writes. This test-only observation stays outside
-the shared protocol. Supply worker context on calls to test same-account
-session conflicts and release ownership. Atomic declarations additionally run
-competing claims and require one winner; live acceptance must establish the
-underlying primitive, beyond a finite concurrency test.
+`fixtures/workflow-driver.ts` is an offline injected tool/capture boundary.
+`fake.ts`, `state.ts`, `process.ts`, `transport.ts`, `conformance.ts` and
+`recovery.ts` retain representative domain and legacy process-contract tests.
+They are not production providers, installed executable adapters or independent
+live evidence. The runtime bundle excludes this unused simulation code.
 
-The call function returns the operation's result or throws its explicit error.
-Never aim the mutating lifecycle at a user's normal backlog. Adapter authors
-supply a scoped disposable context and their own cleanup.
-
-`fake.ts` is an executable simulation driven through stdin/stdout. It keeps a
-local JSON journal only for these sequential scenarios. Its crash consistency,
-locking and simplified provider storage do not implement a provider guarantee.
-The executable is the single source of provider-side behavior. Claims,
-completion, relationships and replay failures are checked through stdin/stdout.
-`recovery.ts` is a small caller example, not another provider journal. Pass
-the original operation as its third argument; direct and reconciled results
-are validated against that operation before they authorize progression. The fake
-profile labels do not prove live provider support.
-
-Every production adapter still needs automated checks against its actual
-translation, safe retry/reconciliation and credential handling, followed by a
-real end-to-end acceptance run for its pinned provider/configuration. See the
-contract's evidence matrix for assumptions and outstanding live checks.
+Never run the mutating conformance lifecycle against a normal user backlog.
+Live qualification needs a separately authorized disposable scope, actual
+protected request/response capture, authentication/ownership evidence, fault
+recovery and an exact user-merged PR. Historical executable acceptance cannot
+qualify the action workflow.

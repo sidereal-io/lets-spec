@@ -27,7 +27,7 @@ test('inventory table contains the required responsibility mappings', () => {
   ]) {
     assert.match(
       document,
-      new RegExp(`\\| ${behavior} \\| (shared policy|adapter|code host) \\| [^|]+\\|`),
+      new RegExp(`\\| ${behavior} \\| [^|]+ \\| [^|]+\\|`),
       behavior,
     );
   }

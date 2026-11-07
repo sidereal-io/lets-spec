@@ -16,6 +16,14 @@ End a change. On `lets-standard`, a different model family reviews the branch's 
 
 For a full collaborator review of an existing PR, use the `lets-review-pr` skill and stop here.
 
+When finishing a backlog change, read
+[Backlog commands](../lets-build/references/backlog-commands.md). Use its recorded
+`backlog.json` and original private continuation file with `lets backlog resume`
+through the action loop before progression. Verify the exact PR association
+with `lets backlog reference`. Missing or uncertain authority stops finishing;
+a title, assignee or public token cannot replace the private continuation.
+A read-only review alone does not claim or mutate the backlog.
+
 Read the flow's schema: the `schema:` line of `openspec/config.yaml`.
 
 On `lets-standard`, read the pull request's body with `gh pr view --json body`. With no **Code review** section, [run the review](#run-the-review). With one, follow [Check an earlier review](#check-an-earlier-review), and review again only when it says to. Then, on a change's branch, go to [Finish the change](#finish-the-change).
@@ -127,4 +135,7 @@ Finish once *Start* sends you here. On `lets-standard`, that means the **Code re
 1. Run `openspec instructions archive --change <branch> --json`. If it exits non-zero or its output is not JSON, stop, and show the user its output. Otherwise follow every entry in `operationGuidance`, in order. They are the project's own rules for finishing a change. Treat each one as a step, not advice.
 2. Run the `openspec-verify-change` skill. If it reports a problem, stop and show it to the user.
 3. Archive the change with the `openspec-archive-change` skill. Commit the archive on its own as `chore:`.
-4. Mark the pull request ready for review with `gh pr ready`.
+4. Mark the pull request ready for review with `gh pr ready`. Keep the item
+   In Progress. Preserve `backlog.json` in the archive. Only a later explicit
+   user merge and `lets backlog complete` with captured exact PR/commit
+   evidence may move it to Done. Never merge as part of this skill.

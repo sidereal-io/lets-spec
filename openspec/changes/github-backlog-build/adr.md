@@ -1,6 +1,6 @@
 # ADR Review Manifest
 
-- Status: revision in progress
+- Status: reviewed for architecture port
 - Review date: 2026-11-07
 
 ## Review Summary
@@ -20,12 +20,14 @@ change identity and private continuation from the prior implementation.
 
 ## New Durable ADRs Created
 
-None yet. The capture channel's concrete trust boundary and deployment remain
-a blocking prerequisite. Record any new durable choice after it is resolved;
-do not silently treat an editable file or test double as trusted capture.
+ADR-022-protected-capture-runs-under-a-separate-account.md records the concrete
+Linux capture boundary proposed for operator deployment. It builds on the
+accepted request/result architecture. Offline tests verify implementation
+behavior; service installation and live qualification remain gates.
 
 ## Identity record numbering
 
-The prior identity record is ADR-015-persist-backlog-identity-with-the-change.md.
-Main has other records with that numeric prefix. Resolve this collision during
-migration and update references by full filename, preserving their meanings.
+Renamed this branch's identity record from the colliding ADR-015 prefix to
+ADR-021-persist-backlog-identity-with-the-change.md. Its decision is unchanged.
+Main's other records retain their names. Historical plans keep their original
+references as historical evidence.
