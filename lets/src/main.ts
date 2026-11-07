@@ -14,7 +14,7 @@ import type { ReviewOptions } from './delegate/review.ts';
 import { run as step, STEP_TIMEOUT_MINUTES } from './delegate/step.ts';
 import type { StepOptions } from './delegate/step.ts';
 import { STRATEGIES } from './delegate/strategies.ts';
-import { run as level } from './go/level.ts';
+import { run as questions } from './go/questions.ts';
 import type { Intent, Strategy } from './delegate/strategies.ts';
 import { realIo } from './io.ts';
 import type { Deps } from './io.ts';
@@ -353,7 +353,7 @@ program
   .description('Print the default interactivity level, from go.level in the lets config.')
   .addHelpText('after', GO_LEVEL_HELP)
   .action(async () => {
-    process.exitCode = await level(realDeps());
+    process.exitCode = await questions(realDeps());
   });
 
 try {
