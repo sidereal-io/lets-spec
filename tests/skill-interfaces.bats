@@ -252,8 +252,10 @@ says_exit_3() {
   [[ "$output" == *lets-review-plan* ]] || { echo "it said: $output"; false; }
 }
 
+# lets-go's terms.md copies the glossary word for word, and the glossary
+# names the steps as lets delegate step --for takes them, not as a command.
 @test "each lets delegate review, handoff or step the prose names is followed by instructions or run" {
-  run bash -c "$(declare -f prose); repo='$repo'; prose | xargs grep -ohE 'lets delegate (review|handoff|step)( [^ \`]+)?' | grep -vE 'lets delegate (review|handoff|step) (instructions|run)$'"
+  run bash -c "$(declare -f prose); repo='$repo'; prose | grep -vF '/lets-go/references/terms.md' | xargs grep -ohE 'lets delegate (review|handoff|step)( [^ \`]+)?' | grep -vE 'lets delegate (review|handoff|step) (instructions|run)$'"
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
@@ -2159,6 +2161,76 @@ assert_reference_links() {
 
 @test "lets-go states its watermark" {
   skill_says lets-go "The watermark is the later of the body's last edit and the newest read marker"
+}
+
+# The glossary terms lets-go uses. An installed skill cannot link
+# openspec/glossary.md, which is then the project's own, so lets-go carries
+# a copy of each entry.
+lets_go_terms=('Part' 'Procedure' 'Step' 'Step report' 'Interactivity level' 'Packet')
+
+# glossary_entry <file> <term>: the text under the file's ## <term> heading,
+# up to the next heading, each run of whitespace one space. Fails when the
+# file has no such heading.
+glossary_entry() {
+  awk -v name="## $2" "$fence_rules"'
+    !code && /^#+ / { if (on) exit; on = ($0 == name); found = found || on; next }
+    on { print }
+    END { exit !found }' "$1" | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//'
+  [ "${PIPESTATUS[0]}" -eq 0 ]
+}
+
+# terms_match_glossary [terms] [glossary]: each lets-go term has a ## heading
+# in both files, with the same text. Prints each term that differs or is
+# missing.
+terms_match_glossary() {
+  local terms="${1:-$repo/skills/lets-go/references/terms.md}" glossary="${2:-$repo/openspec/glossary.md}"
+  local term copy entry wrong=()
+  for term in "${lets_go_terms[@]}"; do
+    if ! copy="$(glossary_entry "$terms" "$term")"; then wrong+=("terms.md has no entry: $term"); continue; fi
+    if ! entry="$(glossary_entry "$glossary" "$term")"; then wrong+=("the glossary has no entry: $term"); continue; fi
+    [ "$copy" = "$entry" ] || wrong+=("terms.md differs from the glossary: $term")
+  done
+  [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
+}
+
+# terms_fixture <file> <skipped term> <term> <text>: writes a glossary file of
+# the lets-go terms, each with the text Fixture <term>., except that the named
+# term has the given text, and the skipped term has no entry.
+terms_fixture() {
+  local file="$1" skip="$2" changed="$3" text="$4" term
+  for term in "${lets_go_terms[@]}"; do
+    [ "$term" != "$skip" ] || continue
+    if [ "$term" = "$changed" ]; then printf '## %s\n\n%s\n\n' "$term" "$text"
+    else printf '## %s\n\nFixture %s.\n\n' "$term" "$term"; fi
+  done >"$file"
+}
+
+@test "lets-go's terms match the glossary" {
+  terms_match_glossary
+}
+
+@test "the terms match the glossary check names an entry that differs" {
+  terms_fixture "$BATS_TEST_TMPDIR/glossary.md" '' Procedure 'A section that a part runs, run by a part.'
+  terms_fixture "$BATS_TEST_TMPDIR/terms.md" '' Procedure 'A section that a part runs, run by a part or another procedure.'
+  run terms_match_glossary "$BATS_TEST_TMPDIR/terms.md" "$BATS_TEST_TMPDIR/glossary.md"
+  [ "$status" -eq 1 ] || { echo "it passed on an entry that differs"; false; }
+  [ "$output" = 'terms.md differs from the glossary: Procedure' ] || { echo "it said: $output"; false; }
+}
+
+@test "the terms match the glossary check names an entry missing from the copy" {
+  terms_fixture "$BATS_TEST_TMPDIR/glossary.md" '' '' ''
+  terms_fixture "$BATS_TEST_TMPDIR/terms.md" 'Step report' '' ''
+  run terms_match_glossary "$BATS_TEST_TMPDIR/terms.md" "$BATS_TEST_TMPDIR/glossary.md"
+  [ "$status" -eq 1 ] || { echo "it passed on a missing entry"; false; }
+  [ "$output" = 'terms.md has no entry: Step report' ] || { echo "it said: $output"; false; }
+}
+
+@test "the terms match the glossary check names an entry missing from the glossary" {
+  terms_fixture "$BATS_TEST_TMPDIR/glossary.md" Packet '' ''
+  terms_fixture "$BATS_TEST_TMPDIR/terms.md" '' '' ''
+  run terms_match_glossary "$BATS_TEST_TMPDIR/terms.md" "$BATS_TEST_TMPDIR/glossary.md"
+  [ "$status" -eq 1 ] || { echo "it passed on an entry the glossary lacks"; false; }
+  [ "$output" = 'the glossary has no entry: Packet' ] || { echo "it said: $output"; false; }
 }
 
 # prose() deduplicates matches, and SKILL.md already names gh api graphql, so
