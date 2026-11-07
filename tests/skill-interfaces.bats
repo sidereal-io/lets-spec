@@ -2228,7 +2228,9 @@ long_lines() {
 }
 
 @test "lets-go wraps its prose at 72 columns" {
-  long_lines "$(lets_go_skill)"
+  local files
+  mapfile -t files < <(skill_files lets-go)
+  long_lines "${files[@]}"
 }
 
 @test "lets-go wraps its exit-3 sentence at 72 columns" {

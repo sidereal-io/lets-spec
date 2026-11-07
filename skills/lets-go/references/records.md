@@ -10,8 +10,8 @@ from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is
 the short hash, from `%h`. A read that prints nothing means the
 [records disagree](#records-that-disagree).
 
-- **Shape.** [The step lines](../SKILL.md#the-step-lines) says how to date shape's
-  line.
+- **Shape.** [The step lines](../SKILL.md#the-step-lines) says how to
+  date shape's line.
 - **Plan.** Read the commit that added the task list:
 
   ```bash
