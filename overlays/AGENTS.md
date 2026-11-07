@@ -71,11 +71,3 @@ you write it down. Keep that meaning in code names and reviews.
   or a scratch path your tool suggests. Create it if it is missing, and
   keep it out of git. Anything worth keeping belongs in the repo or an
   issue.
-
-- **Build through the backlog boundary.** `lets-build` uses `lets backlog`
-  commands for existing-item operations. Keep versioned `backlog.json` with
-  planning artifacts through archive. Pass the original continuation handle
-  privately into an authorized handoff; another caller cannot adopt it from
-  shared Git storage. Ready/archive remain In Progress; only `lets backlog
-  complete` after verified associated PR merge may mark Done. Setup and shaping
-  continue to own their existing GitHub operations.
