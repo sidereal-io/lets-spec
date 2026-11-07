@@ -1558,12 +1558,20 @@ next_line() {
   [[ "$text" != *'Next: '* ]] || { echo "End of the run has a Next line"; false; }
 }
 
-# procedure_text <name>: the ### procedure of that name in lets-go's
-# SKILL.md, its subsections included, up to the next ### or ## heading.
+# procedure_text <name>: the procedure of that name, a heading at any level
+# in lets-go's SKILL.md or a reference file, its subsections included, up to
+# the next heading at its level or above.
 procedure_text() {
-  awk -v name="### $1" "$fence_rules"'
-    !code && /^##+ / && !/^####/ { on = ($0 == name); next }
-    on' "$(lets_go_skill)"
+  local files
+  mapfile -t files < <(skill_files lets-go)
+  awk -v name="$1" "$fence_rules"'
+    FNR == 1 { level = 0 }
+    !code && /^#+ / {
+      depth = index($0, " ") - 1
+      if (level && depth <= level) level = 0
+      if (!level && substr($0, depth + 2) == name) { level = depth; next }
+    }
+    level' "${files[@]}"
 }
 
 # override_idioms <skill>: each aside, and each stand or stands not followed
@@ -1623,6 +1631,21 @@ procedure_stops() {
   run procedure_stops 'Confirm the packet'
   [ "$status" -eq 1 ] || { echo "it passed on a procedure that says stop"; false; }
   [[ "$output" == 'Confirm the packet:'*'stop'* ]] || { echo "it said: $output"; false; }
+}
+
+@test "the procedure stops check names a procedure in a reference file that says stop" {
+  fixture_file lets-go references/glossary-handoff.md '# Glossary handoff' '' '## Glossary preflight' '' 'Say so, and stop.' \
+    '' '### Check the prerequisite' '' 'Return to the section that ran it.' '' '## Import the glossary checkpoint' '' 'Not this.'
+  run procedure_stops 'Glossary preflight'
+  [ "$status" -eq 1 ] || { echo "it passed on a procedure that says stop"; false; }
+  [ "$output" = 'Glossary preflight:2: Say so, and stop.' ] || { echo "it said: $output"; false; }
+}
+
+@test "procedure_text reads a procedure in a reference file through its subsections" {
+  fixture_file lets-go references/glossary-handoff.md '# Glossary handoff' '## Glossary preflight' 'First.' \
+    '### Check the prerequisite' 'Second.' '## Import the glossary checkpoint' 'Not this.'
+  [ "$(procedure_text 'Glossary preflight' | tr -s '[:space:]' ' ')" = 'First. ### Check the prerequisite Second. ' ] ||
+    { echo "it read: $(procedure_text 'Glossary preflight')"; false; }
 }
 
 @test "the procedure stops check skips stop inside a code span" {
