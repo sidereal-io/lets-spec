@@ -58,7 +58,7 @@ exists, so there were no additional repository review rules.
    5f3689e1. Read packets preserve missing or unrelated values and expose Project
    membership; mutations and immutable binding retain strict checks.
 2. **Critical — unexecuted writes strand recovery. CONFIRMED.** Fixed in
-   d5d44ea4. Protected settlement atomically records non-dispatch and prevents
+   d5d44ea4, with recovery documentation in 610baa19. Protected settlement atomically records non-dispatch and prevents
    later execution of that action ID. Only that evidence permits rollback of
    an entirely unexecuted workflow. Unknown/partial writes remain reserved.
    Fresh read-only reconciliation can continue beyond the original day bound.

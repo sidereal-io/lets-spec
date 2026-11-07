@@ -52,3 +52,8 @@ keep completion pending if merge or independent evidence is unavailable.
 - Task 2.1 remains open because no protected service has been deployed or
   independently qualified. Task 4.3 still requires fresh scoped live evidence.
   Source and fixture completion do not satisfy either delivery gate.
+
+- 2026-11-07: after independent review fixes, pnpm test passed 878 Node
+  tests, type checking and all 369 shell tests. Nix flake checks passed on
+  x86_64-linux. The review and finding-specific commits are recorded in
+  review.md; deployment and fresh live evidence remain open.
