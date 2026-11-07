@@ -929,7 +929,19 @@ file per step.
 1. If any question's exact text is already in that file, the step did
    not read its answers. Say that the step asked a settled question
    again, name the step, show the user the report, and stop.
-2. Go through the questions in the report's order, as `<level>` says:
+2. Count the step's `needs-input` reports in this run, this one
+   included. From the step's sixth `needs-input` report in this run,
+   relay every question of the step as at `ask`, whatever `<level>` is:
+   ask the user each one, show the `recommendation` as the suggested
+   answer, and write the answer as the user gave it, with no marker.
+   Before the first such question, print this line once:
+
+   ```text
+   Interactivity: ask for the rest of this step, because it asked for input five times.
+   ```
+
+3. Otherwise, go through the questions in the report's order, as
+   `<level>` says:
    - **At `recommend`, with a `recommendation`**: take it as the answer.
      Say which question you answered, and the answer you gave. Write the
      answer as the recommendation followed by
@@ -940,7 +952,7 @@ file per step.
      for each answer before the next question. Write the answer as the
      user gave it, with no marker, even when they took the
      recommendation: the step records it as the user's.
-3. Append each pair, in order, to the answers file. It is a YAML list of
+4. Append each pair, in order, to the answers file. It is a YAML list of
    `question` and `answer` mappings, and keeps the pairs of earlier
    rounds. Quote each value, so YAML keeps it whole:
 
@@ -951,7 +963,7 @@ file per step.
      answer: "yes"
    ```
 
-4. [Run the step](#run-a-step) again with the same prompt file. Add
+5. [Run the step](#run-a-step) again with the same prompt file. Add
    `--answers-file .workspace/lets-go/<session>-answers.yaml` to
    `lets delegate step run`. Ask for the options again, and rank them
    again. Exit 3 goes to the subagent step as before.

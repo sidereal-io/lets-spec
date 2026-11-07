@@ -1658,6 +1658,16 @@ parts_fixture() {
     { echo "The shape step's name does not say <slug> is never empty"; false; }
 }
 
+@test "lets-go limits a step's rounds at recommend" {
+  local section
+  section="$(skill_section lets-go 'Relay the questions')"
+  skill_says_once lets-go 'Interactivity: ask for the rest of this step, because it asked for input five times.'
+  grep -qF 'From the step'"'"'s sixth `needs-input` report in this run, relay every question of the step as at `ask`, whatever `<level>` is: ask the user each one, show the `recommendation` as the suggested answer, and write the answer as the user gave it, with no marker' <<<"$section" ||
+    { echo "Relay the questions does not relay as at ask from the sixth report"; false; }
+  grep -qF 'Before the first such question, print this line once' <<<"$section" ||
+    { echo "Relay the questions does not print the Interactivity line once"; false; }
+}
+
 # overview_row <part>: the overview's row for the part.
 overview_row() {
   awk '/^## Placeholders$/ { exit } /^\|/' "$(lets_go_skill)" | grep -F -- "| [$1](#"
