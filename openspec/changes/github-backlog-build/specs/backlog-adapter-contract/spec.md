@@ -3,12 +3,12 @@
 ### Requirement: Contract validation leaves production integrations unchanged
 The backlog adapter contract SHALL provide versioned bounded-action and result
 definitions and an offline conformance harness. Conformance SHALL exercise core
-policy, agent/tool translation and independently retrieved evidence validation
+policy, agent/tool translation and submitted tool-output validation
 without credentials, network access, production mutation or workflow migration.
 
 #### Scenario: Contract work ships
 - **WHEN** a maintainer runs conformance without provider credentials or network access
-- **THEN** local simulated action, result and capture cases execute successfully
+- **THEN** local simulated action, result and tool-output cases execute successfully
 - **AND** no production calls or migration occur
 
 ### Requirement: Executable boundary separates responsibilities
@@ -27,7 +27,7 @@ writes, later steps or retries. Multi-write operations SHALL use explicit bounde
 steps and partial-effect recovery.
 
 #### Scenario: Fake adapter handles a request
-- **WHEN** a simulated agent executes a supported bounded action and submits a matching result with required independently retrievable capture
+- **WHEN** a simulated agent executes a supported bounded action and submits a matching result with required tool output and normalized data
 - **THEN** Lets validates operation-specific invariants before allowing the next transition
 
 #### Scenario: Broken process boundary
@@ -43,8 +43,8 @@ steps and partial-effect recovery.
 - **THEN** Lets does not infer rollback or no effects and requires reconciliation before retry or progression
 
 #### Scenario: Signal interrupts an invocation
-- **WHEN** a captured tool call returns response bytes but terminates by signal without establishing the requested outcome
-- **THEN** Lets rejects those bytes as proof of success and retains unknown effects until independent reconciliation
+- **WHEN** a reported tool call returns response bytes but terminates by signal without establishing the requested outcome
+- **THEN** Lets rejects those bytes as proof of success and retains unknown effects until validated reconciliation
 
 #### Scenario: Adapter ignores graceful termination
 - **WHEN** an agent-initiated tool ignores cancellation and exceeds its action deadline
@@ -103,7 +103,7 @@ agent assertion of no dispatch SHALL NOT establish effects none.
 - **THEN** reconciliation establishes the existing item's identity before another creation can be authorized
 
 #### Scenario: Permission failure
-- **WHEN** independently retrieved evidence establishes a denied update
+- **WHEN** validated submitted tool output establishes a denied update
 - **THEN** Lets identifies the permission failure without switching provider
 
 #### Scenario: Unsupported request protocol
@@ -116,13 +116,13 @@ agent assertion of no dispatch SHALL NOT establish effects none.
 
 #### Scenario: Unexpected adapter implementation error
 - **WHEN** an unexpected post-issuance failure contains a known error-category word in its message
-- **THEN** Lets preserves unknown outcome/effects unless independently resolved instead of classifying by that word
+- **THEN** Lets preserves unknown outcome/effects unless resolved through validated reconciliation observations instead of classifying by that word
 
 ### Requirement: Four-provider evidence qualifies conformance claims
 The contract SHALL retain a traceable behavior inventory and primary-source
 evidence matrix for GitHub, Jira Cloud, Linear and local Beads. Each profile
 SHALL identify native/emulated/unsupported behavior and configuration/version
-limits. Conformance SHALL distinguish policy, translation, independent evidence
+limits. Conformance SHALL distinguish policy, translation, submitted-output
 validation and live acceptance. Offline fixtures SHALL NOT establish production
 support; each production configuration SHALL require its own automated checks
 and real end-to-end evidence before support is claimed.
@@ -133,7 +133,7 @@ and real end-to-end evidence before support is claimed.
 - **AND** the evidence matrix separates documented facts, assumptions and outstanding live qualification
 
 #### Scenario: Fake violates a required guarantee
-- **WHEN** a fixture ignores a blocker, accepts an agent-written receipt as independent proof or duplicates an uncertain creation
+- **WHEN** a fixture ignores a blocker, accepts a bare success assertion without required operation data or duplicates an uncertain creation
 - **THEN** conformance identifies the violated guarantee
 
 ### Requirement: Runtime releases exclude unused conformance payloads
@@ -149,33 +149,39 @@ from the repository.
 
 ## ADDED Requirements
 
-### Requirement: Required remote facts use independently retrieved original capture
-Lets SHALL retrieve authoritative tool request/response records through a trusted
-capture channel outside the agent's editable report. Runtime setup SHALL establish
-tool/channel trust independently of provider definition claims. Records SHALL bind
-action, actual tool/server identity, arguments, backend/scope, authenticated
-context, collection time, response and execution outcome. Lets SHALL check
-freshness, complete pagination/blocker coverage, current ownership and exact
-merge evidence where the operation requires them. Capture SHALL NOT imply
-stronger remote atomicity or exclusive ownership than the backend supplies.
+### Requirement: Required remote facts use validated submitted tool observations
+Lets SHALL accept tool output and normalized facts submitted through the selected
+adapter without requiring independently retrieved capture. The submission SHALL
+identify its action, tool/server, arguments, backend/scope, actor context,
+collection time and execution outcome. Lets SHALL validate these bindings,
+output-to-contract mappings, freshness, complete pagination/blocker coverage,
+current ownership and exact associated merge facts as required by the operation.
+Bare assertions SHALL NOT replace required observations. The contract SHALL
+state that it trusts submissions and cannot independently authenticate output
+or detect convincingly fabricated observations. Shipped and custom definitions
+SHALL use the same validation path without strengthening native atomicity.
 
-#### Scenario: Report contains a plausible receipt body
-- **WHEN** an agent submits a receipt body without a trustworthy independent retrieval reference
-- **THEN** Lets treats it as attributed evidence and rejects it as proof of required remote facts
+#### Scenario: Complete tool output has no capture receipt
+- **WHEN** a submission contains all required matching tool observations and normalized facts but no independently retrievable receipt
+- **THEN** Lets accepts it if its structural and operation-specific checks pass
 
-#### Scenario: Capture belongs to another call
-- **WHEN** a retrieved record names another action, tool, input, actor or scope
+#### Scenario: Submission belongs to another call
+- **WHEN** submitted output or normalized data names another action, tool, input, actor or scope
 - **THEN** Lets rejects it and authorizes no progression
 
-#### Scenario: Display record omits output
-- **WHEN** the available host record is truncated, normalized without the required original fields or incomplete for the requested fact
-- **THEN** Lets reports insufficient evidence rather than accepting its display as a complete original result
+#### Scenario: Output omits required data
+- **WHEN** submitted output is truncated or lacks required pages or merge fields
+- **THEN** Lets reports insufficient evidence rather than inferring missing facts
 
 #### Scenario: Agent initiates a fresh verification read
-- **WHEN** Lets independently retrieves that read's original trusted result and validates all required bindings and coverage
-- **THEN** the fact can qualify even though the same agent initiated the read
+- **WHEN** the same agent submits a fresh read with all required bindings, output and coverage
+- **THEN** the observation qualifies under the submitted-output trust model
 
-#### Scenario: Trusted channel is unavailable
-- **WHEN** required evidence cannot be independently retrieved
-- **THEN** Lets pauses automatic retry/progression and explains the action, known/unknown effects, missing evidence and reconciliation or stop choices
-- **AND** user approval alone does not replace the missing remote facts
+#### Scenario: Normalized facts contradict output
+- **WHEN** normalized data reports sole ownership but submitted tool output contains another owner
+- **THEN** Lets rejects the inconsistent mapping and starts no work
+
+#### Scenario: Required observations are unavailable
+- **WHEN** a submission lacks the facts needed to reconcile an issued mutation
+- **THEN** Lets pauses automatic retry/progression and explains the action, known/unknown effects, missing facts and bounded reconciliation or stop choices
+- **AND** user approval alone does not replace the required operation data

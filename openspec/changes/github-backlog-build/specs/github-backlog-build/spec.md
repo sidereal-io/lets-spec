@@ -13,11 +13,11 @@ T3-only initial support boundary. Both environments SHALL enforce the same
 core operation and evidence guarantees.
 
 #### Scenario: Agent runs in a standalone CLI
-- **WHEN** a standalone coding-agent CLI has the explicitly selected compatible tools and qualified evidence channel
+- **WHEN** a standalone coding-agent CLI has the explicitly selected compatible tools and result-submission support
 - **THEN** the full existing-story GitHub workflow is available without T3
 
 #### Scenario: Agent runs in unchanged T3
-- **WHEN** an agent in unchanged T3 has the explicitly selected compatible tools and qualified evidence channel
+- **WHEN** an agent in unchanged T3 has the explicitly selected compatible tools and result-submission support
 - **THEN** the same GitHub workflow is available without a T3 patch or upstream request
 
 #### Scenario: Configured tools differ by environment
@@ -43,7 +43,7 @@ Lets SHALL require complete repository/Project-scoped candidate, metadata,
 ownership and directional blocker evidence before selecting ready work.
 
 #### Scenario: A page is missing
-- **WHEN** the submitted capture ends before the backend's final candidate page
+- **WHEN** the submitted output ends before the backend's final candidate page
 - **THEN** Lets reports incomplete enumeration and authorizes no claim
 
 #### Scenario: A blocker cannot be read
@@ -61,16 +61,16 @@ contract's deterministic tie-break, retaining packet and glossary prerequisites.
 
 ### Requirement: Claiming preserves GitHub's actual guarantee
 Lets SHALL treat GitHub claiming as best-effort at the authenticated actor level.
-Fresh independently captured sole ownership and In Progress status SHALL be
+Fresh validated submitted sole ownership and In Progress status SHALL be
 required before work starts or resumes. Local recovery state SHALL NOT establish
 current remote ownership or distinguish remote sessions using the same actor.
 
 #### Scenario: Ownership changes during claim
-- **WHEN** assignment is followed by a captured read showing another owner
+- **WHEN** assignment is followed by a validated submitted read showing another owner
 - **THEN** Lets reports conflict and does not authorize work
 
 #### Scenario: Assignment succeeds but status fails
-- **WHEN** captured evidence establishes assignment but not the requested status transition
+- **WHEN** validated submitted output establishes assignment but not the requested status transition
 - **THEN** Lets exposes the partial claim and requires safe recovery before work
 
 ### Requirement: Work identity survives sessions
@@ -97,13 +97,13 @@ trigger bounded release or an explicit unresolved recovery result.
 - **THEN** Lets requests safe release of that claim and reports any unresolved effects
 
 #### Scenario: Another actor takes ownership before cleanup
-- **WHEN** a fresh captured read shows a competing actor before release
+- **WHEN** a fresh validated submitted read shows a competing actor before release
 - **THEN** Lets does not clear that actor or reset their status
 
 ### Requirement: Uncertain writes retain their original identity
 Lets SHALL retain the original mutation input, scope and identity when a result
 is missing, expired or uncertain. Retry and progression SHALL remain blocked
-until independent captured evidence resolves effects under core policy.
+until validated reconciliation observations resolve effects under core policy.
 
 #### Scenario: Claim response is lost
 - **WHEN** a claim may have reached GitHub but its response is unavailable
@@ -115,7 +115,7 @@ until independent captured evidence resolves effects under core policy.
 
 ### Requirement: Completion requires the exact associated merge
 Lets SHALL verify the exact associated PR's native closing relationship and
-merge evidence through independent captured tool results before authorizing
+merge evidence through validated submitted tool output before authorizing
 completion. Readiness or an unrelated PR merge SHALL NOT authorize Done.
 
 #### Scenario: Ready PR is unmerged
@@ -130,24 +130,25 @@ completion. Readiness or an unrelated PR merge SHALL NOT authorize Done.
 - **WHEN** exact merge is established and native automation has already produced the required completed state
 - **THEN** Lets accepts completion without repeating the remote update
 
-### Requirement: Evidence capability is checked before mutation
-Lets SHALL require a qualified independent capture channel before requesting
-GitHub writes whose effects or prerequisites require remote verification.
-Unavailable capture SHALL name the missing capability and pause the workflow.
+### Requirement: Required observation support is checked before mutation
+Lets SHALL validate selected tool capabilities and output mappings before
+requesting GitHub writes. Definitions SHALL cover the reads required for claim,
+recovery and exact associated merge checks. Missing required output SHALL pause
+progression without requiring a capture service or host modification.
 
-#### Scenario: Only agent-saved output is available
-- **WHEN** the agent supplies valid JSON copied from a GitHub read without independently retrievable original capture
-- **THEN** Lets rejects it as independent proof and requests no claim mutation
+#### Scenario: Ordinary configured tool supplies complete output
+- **WHEN** an agent submits complete scoped GitHub tool output using the selected compatible definition
+- **THEN** Lets applies the contract checks without requiring an independent receipt
 
-#### Scenario: Capture becomes unavailable after dispatch
-- **WHEN** a mutation was issued but its original capture cannot be retrieved
-- **THEN** Lets retains uncertainty and offers reconciliation or stopping without another write
+#### Scenario: Mutation result is missing after dispatch
+- **WHEN** a mutation was issued but its result is unavailable
+- **THEN** Lets retains uncertainty and offers bounded reconciliation reads or stopping without another write
 
 ### Requirement: Live support needs fresh scoped acceptance
 The GitHub path SHALL require automated behavior checks and a fresh end-to-end
-acceptance run through its actual evidence channel before support is claimed.
+acceptance run through its actual configured tools and result contract before support is claimed.
 Offline doubles and historical prototype acceptance SHALL NOT qualify it.
 
-#### Scenario: Offline suite passes without a qualified channel
-- **WHEN** policy and capture-double tests pass but no real channel has been demonstrated
+#### Scenario: Offline suite passes without a live run
+- **WHEN** policy and translation-double tests pass but no fresh live workflow has been demonstrated
 - **THEN** the release evidence identifies live support as unqualified
