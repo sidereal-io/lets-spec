@@ -210,14 +210,14 @@ On another branch, `<branch>`, when the request is words, say that an
 idea needs the default branch, and stop. Otherwise read the change's
 `backlog.json`, including its archived location, and use the original
 private continuation file. Check the pull request state first. A merged
-pull request goes directly to the captured completion path in
-[Walk the step table](#walk-the-step-table), using the original identity
-and continuation. A closed pull request stops the run. For open work,
-run `lets backlog resume` through the action loop. Its verified identity
+pull request goes directly to the captured completion path in [Walk the
+step table](#walk-the-step-table), using the original identity and
+continuation. A closed pull request stops the run. For open work, run
+`lets backlog resume` through the action loop. Its verified identity
 supplies the issue reference; a caller's number must agree. Missing
-identity or continuation stops the run. Never infer authority from a branch/title match. An explicitly confirmed
-legacy change may be bound using `lets backlog bind` with its original
-claim handle.
+identity or continuation stops the run. Never infer authority from a
+branch/title match. An explicitly confirmed legacy change may be bound
+using `lets backlog bind` with its original claim handle.
 
 Next: [Check the issue](#check-the-issue) when the entry table found
 `<i>`; [Start from an idea](#start-from-an-idea) for an idea on the
