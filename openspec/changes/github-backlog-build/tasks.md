@@ -8,13 +8,13 @@ independent evidence.
 
 ## 1. Request/result contract
 
-- [ ] 1.1 [complex] Reject malformed, mismatched, replayed, expired and oversized action submissions before progression; retain issued action identity and conservative effects after a missing result. Serialize durable outstanding reservations and atomic acceptance across two callers and crash/restart. (verify: pnpm test)
+- [x] 1.1 [complex] Reject malformed, mismatched, replayed, expired and oversized action submissions before progression; retain issued action identity and conservative effects after a missing result. (verify: pnpm test)
 - [ ] 1.2 [complex] Select versioned shipped/custom definitions as data through one validation path; reject obsolete executable keys, invalid scope/mappings and unavailable required tools without fallback. (verify: pnpm test)
 
-## 2. Independent capture [depends-on: 1]
+## 2. Independent capture [depends-on: 1.1]
 
 - [ ] 2.1 [complex] [parallel] Establish a concrete trusted channel outside the agent's editable report and demonstrate actual action/tool/scope/authentication/time/result correlation. Reject editable, forged, stale, incomplete and unavailable capture. (verify: pnpm test)
-- [ ] 2.2 [complex] [parallel] Pause routine progression and automatic retry when required remote facts lack independently retrieved capture; retain original mutation provenance for reconciliation. (verify: pnpm test)
+- [ ] 2.2 [complex] [parallel] Serialize durable outstanding reservations and atomic acceptance across two callers and crash/restart; pause progression/retry without required capture and retain original mutation provenance for reconciliation. (verify: pnpm test)
 
 ## 3. GitHub lifecycle [depends-on: 2]
 
