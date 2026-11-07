@@ -1424,6 +1424,25 @@ section_moved() {
     'What the preflight returns' 'Import the glossary checkpoint' 'Import the commits' 'Recover from a failed import'
 }
 
+# Most issues carry no glossary handoff, so they need not load its file.
+@test "Find the source of demand reads the glossary file only for an issue with a Glossary handoff" {
+  local text
+  text="$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')"
+  grep -qF 'Read [the glossary handoff](references/glossary-handoff.md) only for an issue whose body has a **Glossary handoff** section.' <<<"$text" ||
+    { echo "Find the source of demand does not gate the glossary file"; false; }
+  grep -qF 'For an issue with none, *Check the prerequisite* returns `resolved`, and you read no file.' <<<"$text" ||
+    { echo "Find the source of demand does not say what an issue with no handoff returns"; false; }
+}
+
+@test "Claim reads the glossary file only for an issue with a Glossary handoff" {
+  local text
+  text="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
+  grep -qF 'When the issue'"'"'s body has no **Glossary handoff** section, *Glossary preflight* returns `no-owned-edits`, and you read no file.' <<<"$text" ||
+    { echo "Claim does not say what an issue with no handoff returns"; false; }
+  grep -qF 'Otherwise run [Glossary preflight](references/glossary-handoff.md#glossary-preflight)' <<<"$text" ||
+    { echo "Claim does not link the glossary file"; false; }
+}
+
 @test "the subagent follows the saved prompt and makes only the step's changes" {
   local section phrase
   section="$(skill_section lets-go 'Run a step in a subagent')"

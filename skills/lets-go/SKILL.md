@@ -582,8 +582,13 @@ Parallel sessions share the backlog, so claim the issue before you
 create anything.
 
 It uses the `<project>`, `<owner>` and `<repo>` that
-[Read the settings](#read-the-settings) set. Take the first case that
-applies:
+[Read the settings](#read-the-settings) set.
+
+Read [the glossary handoff](references/glossary-handoff.md) only for an
+issue whose body has a **Glossary handoff** section. For an issue with
+none, *Check the prerequisite* returns `resolved`, and you read no file.
+
+Take the first case that applies:
 
 1. **The run has an issue, `<i>`.** Use it. *Check the issue* has read its
    blockers already, and decided on an open one. Run
@@ -707,8 +712,10 @@ that ran it, with the result.
 1. Name the change after the issue title. Every Kind's title is
    `<kebab-name> — <one-line outcome>`, so the name is the part before
    the dash.
-2. Run [Glossary preflight](references/glossary-handoff.md#glossary-preflight) against the proposed
-   base. When it returns `unresolved` or
+2. When the issue's body has no **Glossary handoff** section,
+   *Glossary preflight* returns `no-owned-edits`, and you read no file.
+   Otherwise run [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
+   against the proposed base. When it returns `unresolved` or
    `checkpoint-failed`, return that result now, with what it carries,
    before you assign the issue.
 3. Claim the issue: check that nobody has it, assign yourself, then move
