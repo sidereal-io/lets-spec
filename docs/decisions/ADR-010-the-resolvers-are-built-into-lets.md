@@ -14,8 +14,9 @@ description: Architecture decision record (ADR) for running the t3, cli and suba
 > tool execution across delegation and backlogs. Shipped/custom provider definitions
 > replace the closed built-in registry as the target. Explicit selection/order and
 > no adapter executable installation remain. The body below records the earlier
-> built-in runtime; migration and independent evidence verification are not yet
-> implemented by this documentation decision.
+> built-in runtime; migration and submitted tool-output validation are not yet
+> implemented by this documentation decision. ADR-015’s 2026-11-07 amendment
+> removes the earlier independent-capture requirement.
 
 ## Context
 
