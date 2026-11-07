@@ -2,9 +2,8 @@
 
 This checklist retains #136 / draft #172 as the existing delivery owner. It uses
 29 small tasks rather than compressing the migration into the task-writing
-skill's usual twelve-task maximum. The user's instruction to retain this effort's
-scope and ownership takes precedence; no prerequisite story or competing PR is
-created. Each task adds its observable behavior case before implementation.
+skill's usual twelve-task maximum, explicitly approved by the user in brainstorm
+D11. No prerequisite story or competing PR is created. Each task adds its observable behavior case before implementation.
 Nothing is implemented or checked off by this planning restart.
 
 ## 1. Shared configuration and result contract
@@ -64,5 +63,6 @@ No support claim or PR readiness change follows from offline checks alone.
 ## Deviations Ledger
 
 - 2026-11-07, planning: use 29 task lines to preserve the existing #136 / #172
-  scope with separate verifiable behaviors. This is a task-sizing departure,
+  scope with separate verifiable behaviors, explicitly approved by the user in
+  brainstorm D11. This is a task-sizing departure,
   not permission for implementation, a new architecture, remote mutation or merge.

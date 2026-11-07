@@ -19,6 +19,8 @@ This is a fresh planning restart for existing draft [PR #172](https://github.com
 
 | D10 | Must Lets independently retrieve original tool capture? | No. The configured adapter translates tool output into a submitted contract; Lets validates that contract and workflow rules. Explicitly revise ADR-015’s evidence clause, retaining policy/recovery ownership. This trusts submitted observations and cannot detect convincingly fabricated output. | User, 2026-11-07, explicit “yes” to the stated trust-model amendment |
 
+| D11 | How should implementation tasks be sized? | Keep #136 / draft #172 together and allow more than twelve small tasks so the full lifecycle and shared contract migration remain in one plan. | User, explicit answer to task-count question |
+
 ## Changes from the story
 
 The packet's executable transport is superseded by accepted ADR-015. The
