@@ -152,3 +152,15 @@ build_bundles() {
     [ ! -e "$out/$flow/overlay/openspec/glossary.md" ]
   done
 }
+
+@test "the capture runner bundle runs without node_modules" {
+  build_bundles
+  local bin="$BATS_TEST_TMPDIR/bin/lets-capture"
+  mkdir -p "$BATS_TEST_TMPDIR/bin"
+  cp -p "$BATS_TEST_TMPDIR/build/lets-capture" "$bin"
+  [ -x "$bin" ]
+  [ "$(head -n 1 "$bin")" = '#!/usr/bin/env node' ]
+  run node "$bin"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"check protected administrator configuration"* ]]
+}

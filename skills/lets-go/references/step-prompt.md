@@ -4,20 +4,27 @@ Read this file when the run writes the prompt for a step.
 
 ## Write the prompt
 
-If the folder is missing, create it first:
-`mkdir -p .workspace/lets-go`. Then copy the frame below to
+If the folder is missing, create it first: `mkdir -p
+.workspace/lets-go`. Then copy the frame below to
 `.workspace/lets-go/<session>-prompt.md`. Fill in each `<...>`.
-`<schema>`, `<mode>` and `<route line>` are the ones
-[Enter the branch](../SKILL.md#enter-the-branch),
-[Set the question mode](../SKILL.md#set-the-question-mode) and
-[Route](../SKILL.md#route) set. For shape, `<mode>` is the one
-[Run the shape step](../SKILL.md#run-the-shape-step) set. Under
-`## What to run`, put this sentence. `<skill>` is the skill in the
-step's row of [The step table](../SKILL.md#the-step-table):
+`<schema>`, `<mode>` and `<route line>` are the ones [Enter the
+branch](../SKILL.md#enter-the-branch), [Set the question
+mode](../SKILL.md#set-the-question-mode) and [Route](../SKILL.md#route)
+set. For shape, `<mode>` is the one [Run the shape
+step](../SKILL.md#run-the-shape-step) set. Under `## What to run`, put
+this sentence. `<skill>` is the skill in the step's row of [The step
+table](../SKILL.md#the-step-table):
 
 ```text
 Invoke the `<skill>` skill for the change `<name>`, for issue #<i>, and stop where it stops.
 ```
+
+For plan, build and review build, also give the private continuation
+file's path and the scoped item/identity location under `## What to
+run`. Never copy its handle or token into the prompt. The step reads it
+locally and follows the backlog action/submission loop. A missing file
+or unresolved workflow makes the step fail with a reason, without
+publishing private correlation values.
 
 For shape, put the text of [What shape runs](shape.md#what-shape-runs)
 under `## What to run` instead.
@@ -76,23 +83,20 @@ End your final message with a step report: a fenced block tagged
 step-report, holding one YAML mapping. Use one of these three:
 
 ```step-report
-outcome: done
-evidence:
+outcome: done evidence:
   - "commit 3f2a1c0: feat: add the thing"
   - "pull request #12"
 ```
 
 ```step-report
-outcome: needs-input
-questions:
-  - question: Which schema should the change use?
-    recommendation: lets-minimal
+outcome: needs-input questions:
+  - question: Which schema should the change use? recommendation:
+    lets-minimal
   - question: Do you confirm the ledger?
 ```
 
 ```step-report
-outcome: failed
-reason: The tests fail on main before any change.
+outcome: failed reason: The tests fail on main before any change.
 ```
 
 A done report's evidence lists the commits you made, and the pull request

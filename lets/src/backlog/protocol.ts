@@ -148,9 +148,9 @@ export function validateResponse(
       if (!(operation in OUTPUTS)) throw new Error('unknown response operation');
       fields(result, OUTPUTS[operation], 'result');
       if (['item.read', 'item.create', 'item.update'].includes(operation))
-        validateItem(result.item);
+        validateItem(result.item, operation === 'item.read');
       if (['item.search', 'candidate.list'].includes(operation))
-        for (const item of result.items as unknown[]) validateItem(item);
+        for (const item of result.items as unknown[]) validateItem(item, true);
       validateNestedResult(operation, result);
       if (
         'complete' in result &&

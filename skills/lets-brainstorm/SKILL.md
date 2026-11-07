@@ -61,7 +61,10 @@ continue without asking the user to select or confirm a domain.
 
 ### Read the thread
 
-Fetch the issue's thread as [Issue comments](../lets-shape/references/issue-comments.md)
+When the change has backlog.json, use `lets backlog packet` with the recorded
+change path to fetch its complete thread and packet. Otherwise use the explicit
+story supplied by lets-build; never infer identity from a title.
+Interpret the issue's thread as [Issue comments](../lets-shape/references/issue-comments.md)
 says, and show the user the list it describes. A comment labelled `read` needs no
 question. Raise any other comment that bears on the story's scope, behavior
 or acceptance as a question, like any other. Write nothing on the issue: no

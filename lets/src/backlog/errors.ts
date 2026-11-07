@@ -11,3 +11,8 @@ export class AdapterFailure extends Error {
     this.effects = effects;
   }
 }
+
+/** Produced only after validating protected, immutable non-dispatch evidence. */
+export class NonDispatchFailure extends AdapterFailure {
+  constructor() { super('invalid_configuration', 'none', 'trusted runner cancelled or rejected the action before dispatch'); }
+}

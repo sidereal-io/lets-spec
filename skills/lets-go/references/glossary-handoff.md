@@ -4,14 +4,14 @@ Read this file when the issue's body has a **Glossary handoff** section.
 
 ## Glossary preflight
 
-A story whose shaping added glossary terms carries a
-**Glossary handoff** record. These steps check it. `next` and
-[Find the source of demand](../SKILL.md#find-the-source-of-demand) run
-[Check the prerequisite](#check-the-prerequisite).
-[Claim](../SKILL.md#claim) runs the rest of the preflight: read the
-story's **Glossary handoff**. When it has none, or another issue owns
-the edits, the result is `no-owned-edits`. Otherwise run
-[Check the checkpoint](#check-the-checkpoint).
+A story whose shaping added glossary terms carries a **Glossary
+handoff** record. These steps check it. `next` and [Find the source of
+demand](../SKILL.md#find-the-source-of-demand) run [Check the
+prerequisite](#check-the-prerequisite). [Claim](../SKILL.md#claim) runs
+the rest of the preflight: read the story's **Glossary handoff**. When
+it has none, or another issue owns the edits, the result is
+`no-owned-edits`. Otherwise run [Check the
+checkpoint](#check-the-checkpoint).
 
 ### Check the prerequisite
 
@@ -41,11 +41,11 @@ glossary edits. The owned paths are the glossary files those commits may
 change.
 
 Run these steps only when this story owns the glossary edits. Run them
-once, when [Claim](../SKILL.md#claim) runs
-[Glossary preflight](#glossary-preflight). Each `checkpoint-failed`
-below comes before [Claim](../SKILL.md#claim) assigns the issue, so
-nothing is claimed and no branch exists. Returning `checkpoint-failed`
-repairs nothing, and leaves user edits as they are.
+once, when [Claim](../SKILL.md#claim) runs [Glossary
+preflight](#glossary-preflight). Each `checkpoint-failed` below comes
+before [Claim](../SKILL.md#claim) assigns the issue, so nothing is
+claimed and no branch exists. Returning `checkpoint-failed` repairs
+nothing, and leaves user edits as they are.
 
 1. Read the starting base, the owned paths, the remote URL and branch,
    and the ordered checkpoint commits. Fetch the recorded branch if you
@@ -63,12 +63,12 @@ repairs nothing, and leaves user edits as they are.
    `checkpoint-failed`, with what you found.
 3. If the commits come from a source change branch, take only the
    recorded glossary commits and their parents, never implementation
-   commits. Check that the context they need is on the proposed base.
-   If that context is missing from the proposed base, return
+   commits. Check that the context they need is on the proposed base. If
+   that context is missing from the proposed base, return
    `checkpoint-failed`, with what is missing. Never import a commit from
    a planning store into the code repository.
-4. Record the starting branch, and the working tree and index status.
-   If the owned paths do not match the shaping baseline, return
+4. Record the starting branch, and the working tree and index status. If
+   the owned paths do not match the shaping baseline, return
    `checkpoint-failed`, with what differs. Keep any user edits, whether
    they came before or after. Never force a checkout, reset, or stash
    automatically.
@@ -80,18 +80,18 @@ repairs nothing, and leaves user edits as they are.
    applies only in part, or conflicts, return `checkpoint-failed`, with
    the conflict, repairing nothing.
 6. If the owner of the glossary definitions or the proposed base changed
-   since
-   [Find the source of demand](../SKILL.md#find-the-source-of-demand)
-   ran [Check the prerequisite](#check-the-prerequisite), run
-   [Check the prerequisite](#check-the-prerequisite) again, before
+   since [Find the source of
+   demand](../SKILL.md#find-the-source-of-demand) ran [Check the
+   prerequisite](#check-the-prerequisite), run [Check the
+   prerequisite](#check-the-prerequisite) again, before
    [Claim](../SKILL.md#claim) assigns the issue. When that run returns
    `unresolved`, return `unresolved`, claiming nothing, even for an
    issue that `next` picked. Nothing is claimed yet, so the result
    leaves the backlog as it was.
 
 The verified glossary import is the only implementation step this skill
-adds, beside
-[the discovery map commit](shape.md#commit-the-discovery-map).
+adds, beside [the discovery map
+commit](shape.md#commit-the-discovery-map).
 
 It returns one of these results:
 
@@ -99,10 +99,9 @@ It returns one of these results:
   their recorded order, and the ones the rehearsal found already
   present.
 - `checkpoint-failed`: a check failed. It carries what the check found.
-- `unresolved`: the second run of
-  [Check the prerequisite](#check-the-prerequisite) returned
-  `unresolved`. It carries the owner or the definitions that are
-  unresolved.
+- `unresolved`: the second run of [Check the
+  prerequisite](#check-the-prerequisite) returned `unresolved`. It
+  carries the owner or the definitions that are unresolved.
 
 Return to the section that ran it, with the result.
 
@@ -112,10 +111,10 @@ It returns one of these results:
 
 - `no-owned-edits`: the story owns no glossary edits: it has no
   **Glossary handoff**, or another issue owns the edits.
-- `verified`: the story owns the edits, and
-  [Check the checkpoint](#check-the-checkpoint) returned `verified`. It
-  carries the checkpoint commits, in their recorded order, and the ones
-  the rehearsal found already present.
+- `verified`: the story owns the edits, and [Check the
+  checkpoint](#check-the-checkpoint) returned `verified`. It carries the
+  checkpoint commits, in their recorded order, and the ones the
+  rehearsal found already present.
 - `unresolved`: [Check the checkpoint](#check-the-checkpoint) returned
   it, because [Check the prerequisite](#check-the-prerequisite) ran
   again and returned `unresolved`. It carries what is unresolved.
@@ -127,13 +126,12 @@ Return to [Claim](../SKILL.md#claim), with the result.
 ## Import the glossary checkpoint
 
 Run this section only when [Claim](../SKILL.md#claim) returned
-`claimed`, carrying the `verified` result of
-[Glossary preflight](#glossary-preflight). It imports the commits
-`verified` carries. Run it after [Claim](../SKILL.md#claim) created the
-branch, and before
-[Walk the step table](../SKILL.md#walk-the-step-table) reads the tree. A
-resumed change has its glossary edits committed already, and needs no
-transfer and no new claim.
+`claimed`, carrying the `verified` result of [Glossary
+preflight](#glossary-preflight). It imports the commits `verified`
+carries. Run it after [Claim](../SKILL.md#claim) created the branch, and
+before [Walk the step table](../SKILL.md#walk-the-step-table) reads the
+tree. A resumed change has its glossary edits committed already, and
+needs no transfer and no new claim.
 
 ### Import the commits
 
@@ -141,7 +139,12 @@ transfer and no new claim.
    in their recorded order. Skip any the rehearsal found already
    present. Keep them as separate `docs:` commits.
 2. In the issue's **Glossary handoff**, record the destination branch,
-   the resulting commits and, once it exists, the pull request.
+   the resulting commits and, once it exists, the pull request. Use
+   `lets backlog glossary-update` through the action/submission loop
+   with the original private continuation and stable mutation ID. Before
+   planning creates and binds the change, omit `change`: the original
+   claim handle identifies the issue. Change only this section; do not
+   post comments or advance shaping's read marker.
 3. The holding branch is the branch `lets-shape` makes from the default
    branch to keep the checkpoint commits until a story's branch imports
    them. Keep it until the destination holds the edits.
