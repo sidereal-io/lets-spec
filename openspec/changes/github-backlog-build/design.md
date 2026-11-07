@@ -321,3 +321,24 @@ journal facts never authorize starting or resuming work.
   input fields beyond query/variables. Require operation kind to match the
   issued read/write permission. Reject ambiguous/multiple operations before
   execution; neither string prefixes nor keyword presence establish read safety.
+
+### Implemented recovery details
+
+Replay independently retrieves each protected receipt again and validates it
+against the original action; editable normalized journal results are not used
+as evidence. Repeating an already accepted final submission can recover a lost
+acknowledgement without committing an old private-state snapshot over newer
+work. Abandoning a read-only workflow removes preparation keys and restores its
+initial private state. Checkpoints use file and directory synchronization, and
+write effects retain the original reservation until reconciliation resolves.
+
+PR closing-line updates persist the original session and reference-mutation
+request before dispatch. If a receipt is lost, separately captured reads must
+verify original ownership and exact native closing links before restoring the
+private association. Reconciliation cannot repeat the remote body update.
+
+Contract version 1 restricts mutation templates to the shipped bounded shapes.
+Custom definition names and captured result mappings remain data; they cannot
+redirect the mutation's target or add effects. Source and normalized mapping
+sizes are bounded. Capture service and workflow tests exercise these checks
+through explicit offline seams. Deployment and live qualification remain open.
