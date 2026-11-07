@@ -2176,6 +2176,57 @@ text_block_lines() {
   [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; false; }
 }
 
+# long_lines <file>...: each line longer than 72 columns, as
+# <file>:<line>: <length>, the file under the skills folder. A column is one
+# code point: the count leaves out UTF-8 continuation bytes, so it holds in
+# any locale. The frontmatter, table rows, fenced code and its fences, and a
+# line that holds one link and nothing else but indent, a list marker and
+# one closing mark may run longer. references/terms.md copies the glossary,
+# so it keeps the glossary's wrap.
+long_lines() {
+  local file out=""
+  for file in "$@"; do
+    [[ "$file" != */lets-go/references/terms.md ]] || continue
+    out+="$(awk -v name="${file#"${skills_dir:-$repo/skills}/"}" "$fence_rules"'
+      BEGIN { continuation = sprintf("[%c-%c]", 128, 191) }
+      FNR == 1 && $0 == "---" { front = 1; next }
+      front { if ($0 == "---") front = 0; next }
+      code || /^ *\|/ { next }
+      /^ *([-*+]|[0-9]+\.)? *\[[^]]*\]\([^)]*\)[.,;:]?$/ { next }
+      {
+        line = $0; gsub(continuation, "", line)
+        if (length(line) > 72) print name ":" FNR ": " length(line)
+      }' "$file")"
+    [ -z "$out" ] || [[ "$out" == *$'\n' ]] || out+=$'\n'
+  done
+  [ -z "$out" ] || { printf '%s' "$out"; return 1; }
+}
+
+@test "the check that lets-go wraps its prose at 72 columns names a prose line too long" {
+  fixture_file lets-go references/shape.md '# Shape' '' 'Text.' "$(printf 'a%.0s' $(seq 73))"
+  run long_lines "$skills_dir/lets-go/references/shape.md"
+  [ "$status" -eq 1 ] || { echo "it passed on a line of 73 columns"; false; }
+  [ "$output" = 'lets-go/references/shape.md:4: 73' ] || { echo "it said: $output"; false; }
+}
+
+@test "the check that lets-go wraps its prose at 72 columns passes a table row, a command and a lone link" {
+  local long
+  long="$(printf 'b%.0s' $(seq 112))"
+  fixture_file lets-go SKILL.md '---' "description: $long" '---' '# lets-go' '' "| a | $long |" '' '```bash' "echo $long" '```' '' \
+    '1. Run' '   [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint).'
+  long_lines "$(lets_go_skill)"
+}
+
+@test "the check that lets-go wraps its prose at 72 columns counts a wide character once" {
+  fixture_file lets-go SKILL.md '# lets-go' '' "$(printf 'c%.0s' $(seq 65))ログを直す"
+  long_lines "$(lets_go_skill)"
+}
+
+@test "the check that lets-go wraps its prose at 72 columns reads no line of the glossary's copy" {
+  fixture_file lets-go references/terms.md '# Terms' '' "$(printf 'd%.0s' $(seq 80))"
+  long_lines "$skills_dir/lets-go/references/terms.md"
+}
+
 @test "lets-go keeps Check an earlier review in italics" {
   local row
   row="$(walk_section)"
