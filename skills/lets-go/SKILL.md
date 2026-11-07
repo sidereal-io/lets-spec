@@ -165,8 +165,21 @@ Next: [Read the request](#read-the-request).
 
 ## Read the request
 
-Read the request. A leading or trailing `ask` or `recommend` names
-the level: take it off, and keep it for [Set the level](#set-the-level).
+Read the request. A leading or trailing `ask` or `recommend` may name
+the level. When the rest of the request is a number or nothing, the
+word names the level: take it off, and keep it for
+[Set the level](#set-the-level). When the rest is words, on the default
+branch, ask the user whether the word names the level or is part of
+the idea. Show both readings: for `ask before deleting the branch`, the
+level `ask` with the idea `before deleting the branch`, or the idea
+`ask before deleting the branch`. Ask it at either level, before
+[Start from an idea](#start-from-an-idea) runs: it asks what the
+request says, not which level to use. When the user says the word names
+the level, take it off, and keep it for *Set the level*. Otherwise the
+word stays in the idea, and *Set the level* takes the level from its
+next source. On another branch, ask nothing about the word: words stop
+the run there.
+
 What is left is one of these:
 - **A number:** it holds `#<i>`, or is a bare number. It names the
   issue.

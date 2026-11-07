@@ -1624,6 +1624,22 @@ parts_fixture() {
   done
 }
 
+@test "lets-go asks whether a level word beside an idea is the level" {
+  local part phrase
+  part="$(part_section 'Read the request')"
+  for phrase in \
+    'When the rest of the request is a number or nothing, the word names the level: take it off, and keep it for [Set the level](#set-the-level)' \
+    'When the rest is words, on the default branch, ask the user whether the word names the level or is part of the idea' \
+    'Show both readings' \
+    'Ask it at either level, before [Start from an idea](#start-from-an-idea) runs' \
+    'When the user says the word names the level, take it off, and keep it for *Set the level*' \
+    'Otherwise the word stays in the idea, and *Set the level* takes the level from its next source' \
+    'On another branch, ask nothing about the word: words stop the run there'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Read the request does not say: $phrase"; false; }
+  done
+  skill_does_not_say lets-go 'names the level: take it off, and keep it for [Set the level](#set-the-level). What is left'
+}
+
 # overview_row <part>: the overview's row for the part.
 overview_row() {
   awk '/^## Placeholders$/ { exit } /^\|/' "$(lets_go_skill)" | grep -F -- "| [$1](#"
