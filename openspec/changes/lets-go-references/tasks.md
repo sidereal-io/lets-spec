@@ -18,4 +18,13 @@ Move the text word for word. Change only heading levels, links that now cross fi
 
 ## 3. Finish [depends-on: 2]
 
-- [ ] 3.1 [easy] Every check passes, both published flows build, and the pull request body records the measured line count of `skills/lets-go/SKILL.md` from `wc -l` (verify: `pnpm test && nix flake check`)
+- [x] 3.1 [easy] Every check passes, both published flows build, and the pull request body records the measured line count of `skills/lets-go/SKILL.md` from `wc -l` (verify: `pnpm test && nix flake check`) (✓ `pnpm test && nix flake check` passed; the pull request body records 899 lines)
+
+## Deviations Ledger
+
+- 2026-11-06, task 2.1: the `<pr>` row of the Placeholders table named *Read the records* in italics. It is now a link to `references/records.md`, like the `<sha>` row.
+- 2026-11-06, task 2.2: D9's sentence also says where the subagent works, so it replaces "It works in the repo root, on the branch `<name>`. For shape, it works on the default branch." as well as "and may write files". The file's title is *The subagent step*, so its `#` heading does not take the anchor of `## Run a step in a subagent`.
+- 2026-11-06, task 2.5: the `<shape-name>` and `<slug>` rules sit under a new heading in `references/shape.md`, *The shape step's name*. `SKILL.md` keeps *The change's name*, with "`<name>` is the change's name." and the `<session>` paragraph. `shape.md` repeats "`<name>` is the change's name.", so "Shape runs before there is one" keeps what "one" means. The three links to the moved rules in the Placeholders table now read *The shape step's name*. In `shape.md`, a link to one of the three parts goes to the part's heading in `SKILL.md`, not to its steps.
+- 2026-11-06, task 2.6: "Then write the frame below" became "Then copy the frame below", as D6 says.
+- 2026-11-06, task 3.1: the sentence diff of the old `SKILL.md`, at `9848721`, against the new `SKILL.md` and its five reference files, with heading levels and link targets set aside, removed 9 sentences and added 30. Each is from D3, D4, D6, D7, D9 or an entry above.
+
