@@ -1423,6 +1423,35 @@ section_moved() {
   section_moved references/glossary-handoff.md 'Glossary preflight' 'Check the prerequisite' 'Check the checkpoint' \
     'What the preflight returns' 'Import the glossary checkpoint' 'Import the commits' 'Recover from a failed import'
   section_moved references/shape.md 'Commit the discovery map' "The shape step's name" 'What shape runs'
+  section_moved references/step-prompt.md 'Write the prompt'
+}
+
+# frame_block <file>: the line number that opens the first outermost fenced
+# block of the file holding ## What to run, ## Questions and ## The report.
+frame_block() {
+  awk '
+    fence == "" && match($0, /^ *(```+|~~~+)/) {
+      fence = substr($0, RSTART, RLENGTH); sub(/^ */, "", fence); open = NR; found = 0; next
+    }
+    fence != "" {
+      line = $0; sub(/^ */, "", line); sub(/ *$/, "", line)
+      if (line ~ /^(`+|~+)$/ && substr(line, 1, 1) == substr(fence, 1, 1) && length(line) >= length(fence)) {
+        fence = ""; if (found == 3) { print open; exit }
+        next
+      }
+      if ($0 == "## What to run" || $0 == "## Questions" || $0 == "## The report") found++
+    }' "$1"
+}
+
+@test "the prompt frame is one block to copy" {
+  local file="$repo/skills/lets-go/references/step-prompt.md" open
+  [ -f "$file" ] || { echo "lets-go has no references/step-prompt.md"; false; }
+  open="$(frame_block "$file")"
+  [ -n "$open" ] || { echo "no fenced block of step-prompt.md holds the whole frame"; false; }
+  head -n "$((open - 1))" "$file" | tr -s '[:space:]' ' ' | grep -qF '`.workspace/lets-go/<session>-prompt.md`' ||
+    { echo "the text before the frame does not name where to copy it"; false; }
+  grep -qF '](references/step-prompt.md#write-the-prompt)' <<<"$(skill_part 'Run a step')" ||
+    { echo "Run a step does not link the prompt"; false; }
 }
 
 # skill_part <name>: the ## section of that name in lets-go's SKILL.md alone,
