@@ -16,8 +16,9 @@ export type Item = {
   body: string;
   metadata: Metadata;
   owners: string[];
+  projectMember?: boolean;
 };
-export function validateItem(value: unknown): asserts value is Item {
+export function validateItem(value: unknown, incomplete = false): asserts value is Item {
   const item = object(value, 'item');
   validateIdentity(item.identity);
   for (const field of ['reference', 'title', 'body'])
@@ -32,7 +33,7 @@ export function validateItem(value: unknown): asserts value is Item {
     throw new Error('invalid owners');
   const metadata = object(item.metadata, 'metadata');
   for (const [field, values] of Object.entries(METADATA))
-    if (!(values as readonly unknown[]).includes(metadata[field]))
+    if (!(incomplete && metadata[field] === undefined) && !(values as readonly unknown[]).includes(metadata[field]))
       throw new Error(`invalid metadata.${field}`);
   for (const key of Object.keys(metadata))
     if (!(key in METADATA)) throw new Error(`unknown metadata.${key}`);
@@ -137,11 +138,12 @@ export function updateMapped(
   return result;
 }
 
-export function readMapped(data: Record<string, unknown>, mappings: Mappings): Metadata {
+export function readMapped(data: Record<string, unknown>, mappings: Mappings, incomplete = false): Metadata {
   validateMappings(mappings);
   const result: Record<string, string> = {};
   for (const [field, mapping] of Object.entries(mappings)) {
     const stored = data[mapping.field];
+    if (incomplete && stored === undefined) continue;
     if (mapping.cardinality === 'many' ? !Array.isArray(stored) : typeof stored !== 'string')
       throw new AdapterFailure(
         'invalid_configuration',
@@ -151,6 +153,7 @@ export function readMapped(data: Record<string, unknown>, mappings: Mappings): M
     const matches = Object.entries(mapping.values).filter(([, value]) =>
       Array.isArray(stored) ? stored.includes(value) : stored === value,
     );
+    if (incomplete && matches.length === 0) continue;
     if (matches.length !== 1)
       throw new AdapterFailure(
         'invalid_configuration',

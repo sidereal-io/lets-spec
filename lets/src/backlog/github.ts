@@ -82,9 +82,10 @@ export class GitHub {
     if (!issue || issue.id !== id || issue.repository?.nameWithOwner?.toLowerCase() !== this.context.repository.toLowerCase()) fail('not_found', 'issue does not belong to the selected repository');
     return issue;
   }
-  async projectItem(id: string) {
+  async projectItem(id: string, optional = false) {
     const items = await this.pages('IssueProjects', { id }, data => data.node?.projectItems);
     const matches = items.filter(item => item?.project?.id === this.context.backlog);
+    if (optional && matches.length === 0) return '';
     if (matches.length !== 1) fail('not_found', 'issue must already belong to the selected Project');
     return matches[0].id as string;
   }
@@ -103,12 +104,13 @@ export class GitHub {
       return owner.login;
     });
   }
-  async read(id: string, mappings?: Mappings): Promise<Item> {
+  async read(id: string, mappings?: Mappings, strict = false): Promise<Item> {
     const config = await this.project(mappings);
     const issue = await this.issue(id);
-    const values = await this.values(await this.projectItem(id));
+    const projectItem = await this.projectItem(id, !strict);
+    const values = projectItem ? await this.values(projectItem) : {};
     return { identity: { provider: 'github', backlog: this.context.backlog!, id }, reference: `#${issue.number}`, url: issue.url,
-      title: issue.title, body: issue.body, metadata: readMapped(values, config.mappings), owners: await this.owners(id) };
+      title: issue.title, body: issue.body, metadata: readMapped(values, config.mappings, !strict), projectMember: !!projectItem, owners: await this.owners(id) };
   }
   async packet(id: string, mappings?: Mappings) {
     const item = await this.read(id, mappings);

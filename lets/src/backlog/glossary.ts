@@ -32,7 +32,7 @@ export async function updateGlossary(claims: Claims, request: Record<string, any
       }
     }
     try {
-      const item = await github.read(id, claims.mappings);
+      const item = await github.read(id, claims.mappings, true);
       if (item.body !== body) fail('conflict', 'glossary body changed during update');
       const result = { item }; store.write(name, { request, state: 'applied', result }); return result;
     } catch (error) {
@@ -51,7 +51,7 @@ export async function reconcileGlossary(claims: Claims, mutationId: string) {
     const entry = store.read(name); if (!entry) return { state: 'unknown' };
     const claim = (await claims.read(entry.request.input.item.id)).claim;
     if (claim.actor !== context.actor || claim.session !== context.session || claim.status !== 'In Progress') fail('conflict', 'glossary ownership changed');
-    const item = await claims.github.read(entry.request.input.item.id, claims.mappings);
+    const item = await claims.github.read(entry.request.input.item.id, claims.mappings, true);
     if (item.body !== entry.request.input.patch.body) return { state: entry.state === 'absent' ? 'absent' : 'unknown' };
     entry.state = 'applied'; entry.result = { item }; store.write(name, entry); return { state: 'applied', result: entry.result };
   });

@@ -55,9 +55,7 @@ test('directional blockers traverse every page', async () => {
 for (const [name, overrides, category] of [
   ['actor mismatch', { Actor: { viewer: { login: 'someone' } } }, 'authentication'],
   ['foreign repository', { Issue: { node: { id: 'I', repository: { nameWithOwner: 'other/repo' } } } }, 'not_found'],
-  ['missing membership', { IssueProjects: { node: { projectItems: page([]) } } }, 'not_found'],
   ['unsupported mapping type', { ProjectFields: { node: { fields: page(fields.map(field => ({ ...field, dataType: 'TEXT' }))) } } }, 'invalid_configuration'],
-  ['missing value', { ItemValues: { node: { fieldValues: page([]) } } }, 'invalid_configuration'],
 ] as const) {
   test(`packet rejects ${name}`, async () => {
     await assert.rejects(new GitHub(context, packetQuery(overrides)).packet('I'), category === 'invalid_configuration' ? /invalid_configuration/ : (error: any) => error.category === category);
@@ -86,3 +84,15 @@ test('executable normalizes a complete GitHub item', () => withGithub(async ({ c
   assert.equal(item.metadata.Status, 'Todo');
   assert.ok(state().calls.some((call: any) => call.name === 'ItemValues'));
 }));
+test('packet preserves unshaped items and Epics without inventing metadata',async()=>{
+  const github=new GitHub(context,packetQuery({ItemValues:{node:{fieldValues:page([{field:{id:'F-Kind'},optionId:'V-Epic'}])}}}));
+  const result=await github.packet('I');assert.equal(result.item.metadata.Kind,'Epic');assert.equal(result.item.metadata.Status,undefined);
+});
+test('packet can inspect an issue outside the selected Project for shaping',async()=>{
+  const result=await new GitHub(context,packetQuery({IssueProjects:{node:{projectItems:page([])}}})).packet('I');
+  assert.equal(result.item.projectMember,false);assert.deepEqual(result.item.metadata,{});assert.equal(result.item.title,'story');
+});
+test('candidate enumeration tolerates unrelated native options',async()=>{
+  const github=new GitHub(context,packetQuery({ProjectItems:{node:{items:page([{content:{id:'I',closed:false,repository:{nameWithOwner:'owner/repo'}}}])}},ItemValues:{node:{fieldValues:page([{field:{id:'F-Status'},optionId:'V-InReview'}])}}}));
+  assert.equal((await github.candidates()).length,1);
+});
