@@ -14,20 +14,22 @@ or commits the discovery map.
 
    When a parent's `Input:` line holds the idea word for word, say that
    a discovery of this idea is in progress at `#<parent>`. Skip the
-   search below, and [run the shape step](../SKILL.md#run-the-shape-step) for the
-   idea: its round resumes that parent.
+   search below, and
+   [run the shape step](../SKILL.md#run-the-shape-step) for the idea:
+   its round resumes that parent.
 2. Run the second case of
-   [Find the source of demand](../SKILL.md#find-the-source-of-demand): the run has
-   described work, but no issue. It searches open issue titles for the
-   idea's words. On its result:
+   [Find the source of demand](../SKILL.md#find-the-source-of-demand):
+   the run has described work, but no issue. It searches open issue
+   titles for the idea's words. On its result:
    - **`matches`:** show the user the matches it carries, and ask
      whether one is the same work. Ask at either level: a wrong yes
      builds someone else's issue.
-   - **`no-match`:** [run the shape step](../SKILL.md#run-the-shape-step) for the
-     idea.
+   - **`no-match`:**
+     [run the shape step](../SKILL.md#run-the-shape-step) for the idea.
 3. On a yes, that issue is `<i>`. Go on from the blocker read in
    [Check the issue](../SKILL.md#check-the-issue).
-4. On a no, [run the shape step](../SKILL.md#run-the-shape-step) for the idea.
+4. On a no, [run the shape step](../SKILL.md#run-the-shape-step) for the
+   idea.
 
 ## Run the shape step
 
@@ -35,33 +37,36 @@ The shape step turns an idea, or an issue whose packet is not complete,
 into one shaped issue. When the work is too large for one issue, it runs
 discovery instead, which files a parent issue and its stories. It runs
 on the default branch, before any branch or change exists, and at most
-once per run. [Check the issue](../SKILL.md#check-the-issue) decides when it runs.
+once per run. [Check the issue](../SKILL.md#check-the-issue) decides
+when it runs.
 
 1. Check the discovery map. Run `git status --porcelain`. When it lists
    `openspec/discovery.md`, look for this input's discovery: an open
    parent issue that says `Discovery status: in-progress`, and whose
    `Input:` line names this input, the idea's words or `#<i>`. For an
-   idea, use what *Start from an idea* found. For an issue, run the
-   query in *Start from an idea*.
+   idea, use what [Start from an idea](#start-from-an-idea) found. For
+   an issue, run the query in [Start from an idea](#start-from-an-idea).
    - **There is one:** the edits are that discovery's confirmed phases.
      Go on: the step resumes it, and its map commit takes them.
    - **There is none:** say that the map has uncommitted edits, and to
      commit or discard them. Stop, and run no step. If the run went on,
      a discovery's commit could sweep those edits in.
 2. Set `<level>` and print its line, as
-   [Set the level](../SKILL.md#set-the-level) says for a level before a shape step.
-   Then go on here, with the next step.
+   [Set the level](../SKILL.md#set-the-level) says for a level before a
+   shape step. Then go on here, with the next step.
 3. For an idea, check that the answers file is this idea's. Two ideas
    can share their first five words, and so their `<shape-name>`. When
    `.workspace/lets-go/<shape-name>-shape-prompt.md` exists and holds
-   another idea, an earlier run stopped before it finished, on that other idea. In
-   that case, remove `.workspace/lets-go/<shape-name>-shape-answers.yaml`
-   before you write the prompt.
-4. Run the `shape` step, as [Run a step](../SKILL.md#run-a-step) says.
-5. When it reports `done`, [Read the report](../SKILL.md#read-the-report) says
-   what it shaped:
+   another idea, an earlier run stopped before it finished, on that
+   other idea. In that case, remove
+   `.workspace/lets-go/<shape-name>-shape-answers.yaml` before you write
+   the prompt.
+4. Run the shape step, as [Run a step](../SKILL.md#run-a-step) says.
+5. When it reports `done`,
+   [Read the report](../SKILL.md#read-the-report) says what it shaped:
    - **One issue:** that issue is `<i>`. Go on from the blocker read in
-     [Check the issue](../SKILL.md#check-the-issue) with it, as for an issue number.
+     [Check the issue](../SKILL.md#check-the-issue) with it, as for an
+     issue number.
    - **A parent and its stories:**
      [pick the first ready story](../SKILL.md#pick-the-first-ready-story).
 
@@ -71,13 +76,15 @@ Discovery filed a parent issue, `#<parent>`, and its stories. Build one
 of them in this run.
 
 1. Run the third case, `next`, of
-   [Find the source of demand](../SKILL.md#find-the-source-of-demand), with one
-   narrowing: the candidates are the stories the report named, and no
-   other issue. Run its two commands as the section writes them. Rank
-   as it does: Must, then Should, then Could, then the lowest issue
-   number. Run *Check the prerequisite* and *Confirm the packet* on
-   each candidate, in rank order. A ready story is one that `next`
-   would take.
+   [Find the source of demand](../SKILL.md#find-the-source-of-demand),
+   with one narrowing: the candidates are the stories the report named,
+   and no other issue. Run its two commands as the section writes them.
+   Rank as it does: Must, then Should, then Could, then the lowest issue
+   number. Run
+   [Check the prerequisite](glossary-handoff.md#check-the-prerequisite)
+   and [Confirm the packet](../SKILL.md#confirm-the-packet) on each
+   candidate, in rank order. A ready story is one that `next` would
+   take.
 2. On its result:
    - **`picked`:** print:
 
@@ -86,17 +93,19 @@ of them in this run.
      ```
 
      That story is `<i>`. Go on from the blocker read in
-     [Check the issue](../SKILL.md#check-the-issue) with it, as for an issue number.
+     [Check the issue](../SKILL.md#check-the-issue) with it, as for an
+     issue number.
    - **`nothing-ready`:** print the `Done shape` line, as
      [The step lines](../SKILL.md#the-step-lines) says. Say
      that no story under `#<parent>` is
      ready. Name each story, and why it was left out, as the result
      carries it: for example, its blocker, its assignee, an unresolved
-     prerequisite, or a packet that is not complete. Say to run `lets-go` with a story's number
-     once it is ready. Then stop. Claim nothing, and create no branch.
+     prerequisite, or a packet that is not complete. Say to run
+     `lets-go` with a story's number once it is ready. Then stop. Claim
+     nothing, and create no branch.
 
-A run that stops after discovery and before *Claim*, for any reason,
-leaves the map's edits on the default branch. When
+A run that stops after discovery and before [Claim](../SKILL.md#claim),
+for any reason, leaves the map's edits on the default branch. When
 `git status --porcelain` lists `openspec/discovery.md`, say that it
 holds the discovery's map, uncommitted on the default branch. While the
 parent still says `Discovery status: in-progress`, say to leave the map
@@ -110,8 +119,8 @@ Discovery edits `openspec/discovery.md` on the default branch, and the
 new branch carries the edits with it. When a shape step ran in this
 run, and `git status --porcelain` lists `openspec/discovery.md`, commit
 the edits on the new branch, before
-[Walk the step table](../SKILL.md#walk-the-step-table) reads the tree. Otherwise
-make no commit.
+[Walk the step table](../SKILL.md#walk-the-step-table) reads the tree.
+Otherwise make no commit.
 
 ```bash
 git add openspec/discovery.md

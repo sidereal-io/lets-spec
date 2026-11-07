@@ -41,32 +41,35 @@ depends on where you run it, and on why the last run stopped:
 
 ## The run at a glance
 
-A run goes through these parts, in this order. *Start from an idea*,
-*Run the shape step* and *Pick the first ready story* run only when the
-request or the [packet](references/terms.md#packet) needs them. Each
+A run goes through these parts, in this order.
+[Start from an idea](#start-from-an-idea),
+[Run the shape step](#run-the-shape-step) and
+[Pick the first ready story](#pick-the-first-ready-story) run only when
+the request or the [packet](references/terms.md#packet) needs them. Each
 part runs in this session. A part is not a step, and has no step report.
-The shape step that *Run the shape step* runs is a step, and has a
-report.
+The shape step that [Run the shape step](#run-the-shape-step) runs is a
+step, and has a report.
 
 Some parts run a [procedure](references/terms.md#procedure), a section
 under [Procedures](#procedures). A part or another procedure runs it,
-and it returns its result to what ran it. *Find the source of demand*
-finds the run's issue: the one the user named, the one an idea's words
-describe, or `next`. `next` is the first ready issue on the backlog, as
-that procedure ranks it.
+and it returns its result to what ran it.
+[Find the source of demand](#find-the-source-of-demand) finds the run's
+issue: the one the user named, the one an idea's words describe, or
+`next`. `next` is the first ready issue on the backlog, as that
+procedure ranks it.
 
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
-| [Read the settings](#read-the-settings) | Reads the default level, the default branch, the current branch and the Project | this session | *Read the request* | `lets go level` fails, or the Project query finds no Project, or several |
-| [Read the request](#read-the-request) | Takes a level off the request, after asking the user when the level word sits beside an idea, then finds the issue from the branch and the request | this session | *Check the issue*, or *Start from an idea* for an idea | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or *Find the source of demand* returns `nothing-ready` |
-| [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | *Check the issue* for the same work; otherwise *Run the shape step* | Never |
-| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | *Run the shape step* when the packet needs shaping and shape can run; otherwise *Route* | An open blocker with no branch; *Find the source of demand* returns `unresolved`; or *Confirm the packet* returns `epic`, or `needs-shape` when shape cannot run |
-| [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | *Check the issue* for one issue; *Pick the first ready story* for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
-| [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | *Check the issue* | *Find the source of demand* returns `nothing-ready` |
-| [Route](#route) | Picks the change's schema, and says the route line | this session | *Enter the branch* | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | *Set the level*; *Read the request* or *Pick the first ready story* after a lost claim | *Claim* returns `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
-| [Set the level](#set-the-level) | Picks `ask` or `recommend`, and says why | this session | *Walk the step table* | Never |
-| [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | *End of the run* | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
+| [Read the settings](#read-the-settings) | Reads the default level, the default branch, the current branch and the Project | this session | [Read the request](#read-the-request) | `lets go level` fails, or the Project query finds no Project, or several |
+| [Read the request](#read-the-request) | Takes a level off the request, after asking the user when the level word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
+| [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
+| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; otherwise [Route](#route) | An open blocker with no branch; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic`, or `needs-shape` when shape cannot run |
+| [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
+| [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
+| [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the level](#set-the-level); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
+| [Set the level](#set-the-level) | Picks `ask` or `recommend`, and says why | this session | [Walk the step table](#walk-the-step-table) | Never |
+| [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run) | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL | this session | Nothing: the run is over | Always |
 
 ## Placeholders
@@ -80,12 +83,12 @@ sets it.
 | `<project>` | The number of the Project linked to the repository | [Read the settings](#read-the-settings), from the Project query |
 | `<owner>` | The Project's owner | [Read the settings](#read-the-settings), from the Project query |
 | `<repo>` | The repository, as `owner/name` | [Read the settings](#read-the-settings), from the Project query's `repo` |
-| `<i>` | The run's issue: the number the user named, the issue `next` or *Pick the first ready story* picked, or the issue a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
-| `<issue-url>` | The URL of `<i>` | *Confirm the packet*, from the issue's `url` |
-| `<parent>` | A parent issue: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in *Start from an idea* |
+| `<i>` | The run's issue: the number the user named, the issue `next` or [Pick the first ready story](#pick-the-first-ready-story) picked, or the issue a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
+| `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the issue's `url` |
+| `<parent>` | A parent issue: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in [Start from an idea](#start-from-an-idea) |
 | `<story>` | One story that a shape step's report names | Each `story` line of the shape report |
 | `<pr>` | The number of the change's pull request | [Read the records](references/records.md#read-the-records), from the pull request's `number` |
-| `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | [Check the issue](#check-the-issue), from the blocker read's title. After a shape step, *Check the issue* sets it again from the shaped issue's title |
+| `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | [Check the issue](#check-the-issue), from the blocker read's title. After a shape step, [Check the issue](#check-the-issue) sets it again from the shaped issue's title |
 | `<branch>` | The branch the run started on, when it is not the default branch | [Read the settings](#read-the-settings), from `git branch --show-current` |
 | `<default>` | The repository's default branch | [Read the settings](#read-the-settings) |
 | `<shape-name>` | The shape step's name: `issue-<i>` or `idea-<slug>` | [The shape step's name](references/shape.md#the-shape-steps-name) |
@@ -94,9 +97,9 @@ sets it.
 | `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs, or `shape` in [Run the shape step](#run-the-shape-step) |
 | `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
 | `<level>` | The interactivity level, `ask` or `recommend` | [Set the level](#set-the-level), or [Run the shape step](#run-the-shape-step), before shape |
-| `<Kind>` | The issue's Kind on the Project | *Confirm the packet* |
+| `<Kind>` | The issue's Kind on the Project | [Confirm the packet](#confirm-the-packet) |
 | `<schema>` | The change's schema | [Enter the branch](#enter-the-branch) |
-| `<route line>` | The line *Route* says, such as `Route: lets-minimal, because #<i> is a Chore.` | [Route](#route) |
+| `<route line>` | The line [Route](#route) says, such as `Route: lets-minimal, because #<i> is a Chore.` | [Route](#route) |
 | `<title>` | The title of the issue the line names | The command or report line that names the issue |
 | `<date>` | The date on a printed line | [The step lines](#the-step-lines), for each kind of line |
 | `<sha>` | A commit's short hash, or the commit a review names | [Read the records](references/records.md#read-the-records), or the review plan report |
@@ -107,7 +110,7 @@ sets it.
 | `<first>` | The first model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
 | `<second>` | The second model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
 | `<skill>` | The skill in the step's row of the step table | [Write the prompt](references/step-prompt.md#write-the-prompt) |
-| `<the sentence above>` | The sentence for *What to run*, or for shape the text of [What shape runs](references/shape.md#what-shape-runs) | [Write the prompt](references/step-prompt.md#write-the-prompt) |
+| `<the sentence above>` | The sentence for `## What to run`, or for shape the text of [What shape runs](references/shape.md#what-shape-runs) | [Write the prompt](references/step-prompt.md#write-the-prompt) |
 | `<kebab-name>` | The part of an issue title before ` — `, in `lets-shape`'s template | The issue's title |
 | `<one-line outcome>` | The part of an issue title after ` — `, in `lets-shape`'s template | The issue's title |
 | `<L or XL>` | The Size the shape step gave the work, `L` or `XL` | The shape step |
@@ -175,10 +178,10 @@ level `ask` with the idea `before deleting the branch`, or the idea
 `ask before deleting the branch`. Ask it at either level, before
 [Start from an idea](#start-from-an-idea) runs: it asks what the
 request says, not which level to use. When the user says the word names
-the level, take it off, and keep it for *Set the level*. Otherwise the
-word stays in the idea, and *Set the level* takes the level from its
-next source. On another branch, ask nothing about the word: words stop
-the run there.
+the level, take it off, and keep it for [Set the level](#set-the-level).
+Otherwise the word stays in the idea, and
+[Set the level](#set-the-level) takes the level from its next source. On
+another branch, ask nothing about the word: words stop the run there.
 
 What is left is one of these:
 - **A number:** it holds `#<i>`, or is a bare number. It names the
@@ -204,7 +207,12 @@ in any script counts: `ログを直す` is an idea.
 With nothing on the default branch, run the third case, `next`, of
 [Find the source of demand](#find-the-source-of-demand), over the
 whole backlog. On its result:
-- **`picked`:** print `Picked #<i>: <title>, the next ready issue.`
+- **`picked`:** print:
+
+  ```text
+  Picked #<i>: <title>, the next ready issue.
+  ```
+
   That issue is `<i>`.
 - **`nothing-ready`:** say the backlog has nothing ready, suggest the
   `lets-shape` skill to shape more, and stop, claiming nothing.
@@ -225,15 +233,17 @@ that `lets-go` runs on the default branch or on a change's branch, and
 needs the issue number on a change's branch. Stop. If several match,
 say that `lets-go` needs the issue number, and stop.
 
-Next: [Check the issue](#check-the-issue) when the entry table found `<i>`;
-[Start from an idea](#start-from-an-idea) for an idea on the default branch.
+Next: [Check the issue](#check-the-issue) when the entry table found
+`<i>`; [Start from an idea](#start-from-an-idea) for an idea on the
+default branch.
 
 ## Start from an idea
 
-Follow its steps in [the shape file](references/shape.md#start-from-an-idea).
+Follow its steps in
+[the shape file](references/shape.md#start-from-an-idea).
 
-Next: [Check the issue](#check-the-issue) when the user says an issue is the
-same work; otherwise [Run the shape step](#run-the-shape-step).
+Next: [Check the issue](#check-the-issue) when the user says an issue is
+the same work; otherwise [Run the shape step](#run-the-shape-step).
 
 ## Check the issue
 
@@ -243,8 +253,9 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
    gh issue view <i> --json title,blockedBy
    ```
 
-   It gives the title too. `<name>` is the change's name, which *Claim*
-   takes from the title. On a change's branch, it is `<branch>`.
+   It gives the title too. `<name>` is the change's name, which
+   [Claim](#claim) takes from the title. On a change's branch, it is
+   `<branch>`.
 2. Look for the change's branch, here and on `origin`, every time:
 
    ```bash
@@ -263,19 +274,22 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
    - **It does not exist:** say which open issues block `#<i>`, and
      stop. The user stacks it on the blocker's branch by hand.
 4. Run [Find the source of demand](#find-the-source-of-demand) for
-   `<i>`. Its first case runs *Check the prerequisite* for the issue.
-   On its result:
-   - **`found`:** go on to *Confirm the packet*, below.
+   `<i>`. Its first case runs
+   [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite)
+   for the issue. On its result:
+   - **`found`:** go on to [Confirm the packet](#confirm-the-packet),
+     below.
    - **`unresolved`:** report the unresolved owner or checkpoint it
      carries, and stop, even on a stacked branch.
 5. Run [Confirm the packet](#confirm-the-packet). On its result:
    - **`complete`:** go on to the shape line, below. For a Story with a
      parent, the result carries the parent's **Shared decisions**:
-     *Route* needs them.
+     [Route](#route) needs them.
    - **`needs-shape`:** [run the shape step](#run-the-shape-step) for
      `#<i>` when all of these hold:
-     - the user named `<i>`, or said in *Start from an idea* that it is
-       the same work;
+     - the user named `<i>`, or said in
+       [Start from an idea](#start-from-an-idea) that it is the same
+       work;
      - the branch lookup above found no branch, here or on `origin`;
      - no shape step has run in this run.
 
@@ -285,23 +299,27 @@ same work; otherwise [Run the shape step](#run-the-shape-step).
      run the `lets-shape` skill on `#<i>`, and stop.
    - **`epic`:** say that an epic is built through its stories, list the
      open sub-issues the result carries, and stop.
-6. When *Confirm the packet* returns `complete`, shape is done. Print
-   shape's line, as [The step lines](#the-step-lines) says.
+6. When [Confirm the packet](#confirm-the-packet) returns `complete`,
+   shape is done. Print shape's line, as
+   [The step lines](#the-step-lines) says.
 
-Next: [Run the shape step](#run-the-shape-step) when *Confirm the packet*
-returned `needs-shape` and shape can run; otherwise [Route](#route).
+Next: [Run the shape step](#run-the-shape-step) when
+[Confirm the packet](#confirm-the-packet) returned `needs-shape` and
+shape can run; otherwise [Route](#route).
 
 ## Run the shape step
 
-Follow its steps in [the shape file](references/shape.md#run-the-shape-step).
+Follow its steps in
+[the shape file](references/shape.md#run-the-shape-step).
 
 Next: [Check the issue](#check-the-issue) when shape shaped one issue;
-[Pick the first ready story](#pick-the-first-ready-story) when it filed a
-parent and its stories.
+[Pick the first ready story](#pick-the-first-ready-story) when it filed
+a parent and its stories.
 
 ## Pick the first ready story
 
-Follow its steps in [the shape file](references/shape.md#pick-the-first-ready-story).
+Follow its steps in
+[the shape file](references/shape.md#pick-the-first-ready-story).
 
 Next: [Check the issue](#check-the-issue), with the story that is ready.
 
@@ -328,17 +346,17 @@ Next: [Enter the branch](#enter-the-branch).
 
 ## Enter the branch
 
-1. On the default branch, use what *Check the issue* found when it
-   looked for the change's branch, here and on `origin`:
+1. On the default branch, use what [Check the issue](#check-the-issue)
+   found when it looked for the change's branch, here and on `origin`:
    - **Neither has it:** run [Claim](#claim), which creates the
      branch, and act on its result as below.
-   - **Either has it:** the change has started. Do not run *Claim*.
-     When `origin` has it, run `git fetch origin <name>` first:
-     `git switch` finds a branch on `origin` only once it is fetched.
-     Then run `git switch <name>`.
+   - **Either has it:** the change has started. Do not run
+     [Claim](#claim). When `origin` has it, run
+     `git fetch origin <name>` first: `git switch` finds a branch on
+     `origin` only once it is fetched. Then run `git switch <name>`.
 
    Stay on `<name>` for the whole run.
-2. When you ran *Claim*, act on its result:
+2. When you ran [Claim](#claim), act on its result:
    - **`claimed`:** when it carries `verified`, run
      [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint)
      with the commits it carries, and act on its result as below. When
@@ -348,27 +366,31 @@ Next: [Enter the branch](#enter-the-branch).
      A run with no shape step has no map to commit, and reads no part of
      `references/shape.md`.
    - **`taken`:** when the user named `<i>` or confirmed it, say who has
-     it, and stop. Otherwise `next` or *Pick the first ready story*
-     picked it: count the lost claim. After the third lost claim in this
-     run, say that other sessions keep taking the picked issues, and to
-     run `lets-go` again. Stop, claiming nothing. Before that, go back
-     to the part that picked: [Read the request](#read-the-request) for
-     `next`, or [Pick the first ready story](#pick-the-first-ready-story).
-     Keep the lines printed for the lost issue.
+     it, and stop. Otherwise `next` or
+     [Pick the first ready story](#pick-the-first-ready-story) picked
+     it: count the lost claim. After the third lost claim in this run,
+     say that other sessions keep taking the picked issues, and to run
+     `lets-go` again. Stop, claiming nothing. Before that, go back to
+     the part that picked: [Read the request](#read-the-request) for
+     `next`, or
+     [Pick the first ready story](#pick-the-first-ready-story). Keep the
+     lines printed for the lost issue.
    - **`unresolved`:** report the owner or the definitions it carries,
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
-   - **`branch-failed`:** *Claim* has released the claim. Show the error
-     it carries, and stop.
-3. When you ran *Import the glossary checkpoint*, act on its result:
+   - **`branch-failed`:** [Claim](#claim) has released the claim. Show
+     the error it carries, and stop.
+3. When you ran
+   [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint),
+   act on its result:
    - **`imported`:** when a shape step ran in this run,
      [commit the discovery map](references/shape.md#commit-the-discovery-map),
      as for `no-owned-edits`.
    - **`import-failed`:** report each cleanup failure it carries, and
      what was kept, with how to recover, and stop.
 4. When `origin` has the branch, bring it up to date before you read any
-   record. On a change's branch too, *Check the issue* found whether it
-   does.
+   record. On a change's branch too, [Check the issue](#check-the-issue)
+   found whether it does.
 
    ```bash
    git fetch origin <name>
@@ -377,8 +399,9 @@ Next: [Enter the branch](#enter-the-branch).
 
    Skip the fetch when you have just run it above. If the merge cannot
    fast-forward, the branch and `origin` have diverged: the
-   [records disagree](references/records.md#records-that-disagree). If any command here fails
-   for another reason, show the user its error, and stop.
+   [records disagree](references/records.md#records-that-disagree). If
+   any command here fails for another reason, show the user its error,
+   and stop.
 5. Set `<schema>` from the `schema:` line of the first of these files
    that exists:
    - the change's `openspec/changes/<name>/.openspec.yaml`;
@@ -386,9 +409,9 @@ Next: [Enter the branch](#enter-the-branch).
      `openspec/changes/archive/<YYYY-MM-DD>-<name>/.openspec.yaml`, in
      the folder whose whole name is `<YYYY-MM-DD>-<name>`.
 
-   When neither exists, it is the schema *Route* picked. Archive keeps
-   the file, so an archived change keeps the schema it was built with,
-   even when *Route* would now pick another.
+   When neither exists, it is the schema [Route](#route) picked. Archive
+   keeps the file, so an archived change keeps the schema it was built
+   with, even when [Route](#route) would now pick another.
 
 Next: [Set the level](#set-the-level);
 [Read the request](#read-the-request) or
@@ -403,10 +426,11 @@ that is set:
 2. The level `lets go level` printed in
    [Read the settings](#read-the-settings), when it is not `null`.
 3. The Kind's: `recommend` for a Chore or a Bug, and `ask` for any
-   other Kind, a Story included. *Confirm the packet* reads any other
-   Kind as a Story. Before a shape step, the Kind does not count, even
-   when the Project has one, as for a Bug whose packet lacks a line. So
-   before a shape step, the third source is `ask`.
+   other Kind, a Story included.
+   [Confirm the packet](#confirm-the-packet) reads any other Kind as a
+   Story. Before a shape step, the Kind does not count, even when the
+   Project has one, as for a Bug whose packet lacks a line. So before a
+   shape step, the third source is `ask`.
 
 Never ask the user which level to use. The level holds for this run
 only. Do not run `lets go level` again. Print the line for the source
@@ -427,8 +451,8 @@ Next: [Walk the step table](#walk-the-step-table).
 
 ## Walk the step table
 
-After [Set the level](#set-the-level), on the branch `<name>`, read three
-records first, in this order:
+After [Set the level](#set-the-level), on the branch `<name>`, read
+three records first, in this order:
 
 1. **The tree.** Run `git status --porcelain`. A line for a path outside
    `.workspace/` means the records disagree.
@@ -455,13 +479,13 @@ records first, in this order:
    - `openspec/changes/<name>/` exists too;
    - the pull request is missing or is a draft;
    - the flow's schema, the `schema:` line of `openspec/config.yaml`, is
-     `lets-standard`, and the pull request's `body` has no `Code review`
-     section.
+     `lets-standard`, and the pull request's `body` has no
+     **Code review** section.
 
 Then walk [The step table](#the-step-table) from the top row.
-*Check the issue* has printed shape's line already. At each row, find
-out whether the step is done: the first of these that matches decides.
-The state is the `state` that
+[Check the issue](#check-the-issue) has printed shape's line already. At
+each row, find out whether the step is done: the first of these that
+matches decides. The state is the `state` that
 `openspec instructions apply --change <name> --json` prints.
 
 - **Plan.**
@@ -478,9 +502,10 @@ The state is the `state` that
 - **Review plan.**
   1. On `lets-minimal`, review plan is done.
   2. When the archive folder exists, review plan is done. But the
-     records disagree if the pull request's `body` has no **Plan review**
-     section with a `Reviewed:` line and a `- **Verdict:**` line. No
-     step can write the section once the change is archived.
+     records disagree if the pull request's `body` has no
+     **Plan review** section with a `Reviewed:` line and a
+     `- **Verdict:**` line. No step can write the section once the
+     change is archived.
   3. Otherwise read the pull request's body again, because a step in
      this run can have opened or changed it:
 
@@ -501,8 +526,8 @@ The state is the `state` that
   2. Otherwise run `openspec instructions apply --change <name> --json`
      again, even when the plan row has run it, because a review plan
      round can add a task to a built change. When the `state` is
-     `all_done`, build is done. When it is `blocked` or `ready`, build is
-     not done. Any other `state` stops the run, as for plan.
+     `all_done`, build is done. When it is `blocked` or `ready`, build
+     is not done. Any other `state` stops the run, as for plan.
 - **Review build.**
   1. When the archive folder exists, review build is done.
   2. Otherwise review build is not done.
@@ -513,7 +538,8 @@ in this walk changes the records the next row reads.
 Then settle the row:
 
 - **Done:** print its Skip line from the table, filled from
-  [Read the records](references/records.md#read-the-records). Go on to the next row.
+  [Read the records](references/records.md#read-the-records). Go on to
+  the next row.
 - **Not done:** run the step, as [Run a step](#run-a-step) says. Then
   [read its report](#read-the-report). It checks a `done` report against
   the records, and says what to print and whether the walk goes on.
@@ -525,12 +551,13 @@ Next: [End of the run](#end-of-the-run), when no row is left.
 The walk prints each row's line when it settles the row, as
 [The step lines](#the-step-lines) says. A failed step ends the walk.
 
-When `review-build` reports `done`, and
+When review build reports `done`, and
 [Read the report](#read-the-report) has checked it against the records,
-its *Finish the change* has marked the pull request ready for review. When the walk is over, print the pull
-request's URL. A failed shape has none: there is no branch yet. Nor
-does a step that failed before the branch had a pull request: say that
-the branch has no pull request yet.
+its [Finish the change](../lets-review-build/SKILL.md#finish-the-change)
+has marked the pull request ready for review. When the walk is over,
+print the pull request's URL. A failed shape has none: there is no
+branch yet. Nor does a step that failed before the branch had a pull
+request: say that the branch has no pull request yet.
 
 ```bash
 gh pr view <name> --json url --jq .url
@@ -543,8 +570,10 @@ The run is over.
 
 ## Procedures
 
-A part or another procedure runs each procedure below, as *Claim* runs
-*Glossary preflight*. Each one returns its result to what ran it.
+A part or another procedure runs each procedure below, as
+[Claim](#claim) runs
+[Glossary preflight](references/glossary-handoff.md#glossary-preflight).
+Each one returns its result to what ran it.
 
 ### Find the source of demand
 
@@ -559,17 +588,24 @@ issue body when shaping added glossary terms. It records which issue
 owns the definitions, and where the owner's glossary commits are. Read
 [the glossary handoff](references/glossary-handoff.md) only for an
 issue whose body has a **Glossary handoff** section. For an issue with
-none, *Check the prerequisite* returns `resolved`, and you read no file.
+none,
+[Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite)
+returns `resolved`, and you read no file.
 
 Take the first case that applies:
 
-1. **The run has an issue, `<i>`.** Use it. *Check the issue* has read its
-   blockers already, and decided on an open one. Run
-   [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite) for it. The result
-   is `found` when that returns `resolved`, and `unresolved` when it
-   returns `unresolved`.
+1. **The run has an issue, `<i>`.** Use it.
+   [Check the issue](#check-the-issue) has read its blockers already,
+   and decided on an open one. Run
+   [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite)
+   for it. The result is `found` when that returns `resolved`, and
+   `unresolved` when it returns `unresolved`.
 2. **The run has described work, but no issue.** Search for it:
-   `gh issue list --state open --search "<idea> in:title" --json number,title`.
+
+   ```bash
+   gh issue list --state open --search "<idea> in:title" --json number,title
+   ```
+
    The result is `matches`, with the issues the search found, or
    `no-match` when it found none.
 3. **Otherwise, take `next`.** List the Project's Todo candidates with a
@@ -592,25 +628,28 @@ Take the first case that applies:
    `next` comes from the candidates whose number is in the second list.
    Rank them Must, then Should, then Could, then the lowest issue
    number. A Wont is never a candidate. After a lost claim, leave out
-   every issue lost in this run: each one for which *Claim* returned
-   `taken`.
+   every issue lost in this run: each one for which [Claim](#claim)
+   returned `taken`.
 
    Check each candidate in rank order, with its number as `<i>` while
-   you check it. Run [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite),
+   you check it. Run
+   [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite),
    then [Confirm the packet](#confirm-the-packet). Take the first
    candidate for which they return `resolved` and `complete`: the result
    is `picked`. Skip any other, and keep why: its prerequisite is
    unresolved, or its packet is not complete. Fetching, the commit
-   checks and the rehearsal wait for *Claim*, and run only for the
-   candidate you pick. When no candidate is left, the result is
+   checks and the rehearsal wait for [Claim](#claim), and run only for
+   the candidate you pick. When no candidate is left, the result is
    `nothing-ready`, and you pick no candidate.
 
 It returns one of these results:
 
 - `found`: the run has an issue, and its prerequisite is resolved. It
   carries `<i>`.
-- `unresolved`: *Check the prerequisite* returned `unresolved` for the
-  run's issue. It carries the unresolved owner or checkpoint.
+- `unresolved`:
+  [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite)
+  returned `unresolved` for the run's issue. It carries the unresolved
+  owner or checkpoint.
 - `matches`: the search for described work found issues. It carries
   each one's number and title.
 - `no-match`: the search found no issue.
@@ -659,17 +698,17 @@ thread, as
 says. Read a comment's first line only, to find read markers. The
 watermark is the later of the body's last edit and the newest read
 marker. When neither exists, every comment is after it. A comment is
-unread when it was created or edited after both the body's last edit
-and the newest read marker: after the watermark. An unread comment
-makes the result `needs-shape`, whoever wrote it. A read marker never
-does. The result then carries how many comments shaping
-has not read, each one's author as the reference shows it, and the date
-that put it past the watermark: its edit date, else its creation date.
-It carries nothing of what a comment says.
+unread when it was created or edited after both the body's last edit and
+the newest read marker: after the watermark. An unread comment makes the
+result `needs-shape`, whoever wrote it. A read marker never does. The
+result then carries how many comments shaping has not read, each one's
+author as the reference shows it, and the date that put it past the
+watermark: its edit date, else its creation date. It carries nothing of
+what a comment says.
 
 For a Story with a parent, read the parent's **Shared decisions**
-section, when it has one: `gh issue view <parent> --json body`. *Route*
-needs it.
+section, when it has one: `gh issue view <parent> --json body`.
+[Route](#route) needs it.
 
 It returns one of these results:
 
@@ -681,9 +720,10 @@ It returns one of these results:
   which, with each unread comment's author and date.
 - `epic`: the Kind is Epic. It carries the open sub-issues.
 
-When *Find the source of demand* ran it, for a candidate of `next`,
-return to *Find the source of demand*. Otherwise, return to the part
-that ran it, with the result.
+When [Find the source of demand](#find-the-source-of-demand) ran it, for
+a candidate of `next`, return to
+[Find the source of demand](#find-the-source-of-demand). Otherwise,
+return to the part that ran it, with the result.
 
 ### Claim
 
@@ -691,8 +731,9 @@ that ran it, with the result.
    `<kebab-name> — <one-line outcome>`, so the name is the part before
    the dash.
 2. When the issue's body has no **Glossary handoff** section,
-   *Glossary preflight* returns `no-owned-edits`, and you read no file.
-   Otherwise run [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
+   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
+   returns `no-owned-edits`, and you read no file. Otherwise run
+   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
    against the proposed base. When it returns `unresolved` or
    `checkpoint-failed`, return that result now, with what it carries,
    before you assign the issue.
@@ -710,11 +751,11 @@ that ran it, with the result.
    now.
 4. Create a branch with the change's name off the default branch. This
    also fails when a local branch with the change's name appeared after
-   *Check the issue* looked. A branch that appeared only on `origin` does
-   not make it fail: the plan step's first push is then rejected, and
-   that step fails. If creating the branch fails, release the claim, so
-   another session can pick the issue up. The result is then
-   `branch-failed`, with the error:
+   [Check the issue](#check-the-issue) looked. A branch that appeared
+   only on `origin` does not make it fail: the plan step's first push is
+   then rejected, and that step fails. If creating the branch fails,
+   release the claim, so another session can pick the issue up. The
+   result is then `branch-failed`, with the error:
 
    ```bash
    gh issue edit <i> --remove-assignee @me
@@ -724,13 +765,15 @@ that ran it, with the result.
 It returns one of these results:
 
 - `claimed`: the issue is yours, and the branch exists. It carries what
-  *Glossary preflight* returned: `no-owned-edits`, or `verified` with
-  the checkpoint commits.
+  [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
+  returned: `no-owned-edits`, or `verified` with the checkpoint commits.
 - `taken`: another session has the issue. It carries who has it.
-- `unresolved`: *Glossary preflight* returned `unresolved`. It carries
-  what is unresolved.
-- `checkpoint-failed`: *Glossary preflight* returned it. It carries what
-  the check found.
+- `unresolved`:
+  [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
+  returned `unresolved`. It carries what is unresolved.
+- `checkpoint-failed`:
+  [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
+  returned it. It carries what the check found.
 - `branch-failed`: creating the branch failed, and the claim is
   released. It carries the error.
 
@@ -745,10 +788,12 @@ and review build. Prose and printed lines use these names. `--for`,
 
 Shape runs only before the walk, as
 [Run the shape step](#run-the-shape-step) says, so this table has no row
-for it. Its skill is in [What shape runs](references/shape.md#what-shape-runs), and
-*Check the issue* prints its line. The walk runs the other four steps.
-Every other step runs in a fresh session, as [Run a step](#run-a-step)
-says. On `lets-minimal`, review plan never runs.
+for it. Its skill is in
+[What shape runs](references/shape.md#what-shape-runs), and
+[Check the issue](#check-the-issue) prints its line. The walk runs the
+other four steps. Every other step runs in a fresh session, as
+[Run a step](#run-a-step) says. On `lets-minimal`, review plan never
+runs.
 
 Each row says which skill the step runs, which record shows the step
 was done, and the line to print when it was done before this run.
@@ -783,15 +828,17 @@ Done review build: <date>. <evidence>
 
 A `Skipped` line is the Skip line in the step's row of
 [The step table](#the-step-table), with `<date>` and `<sha>` from
-[Read the records](references/records.md#read-the-records). Shape has no row. Its line is:
+[Read the records](references/records.md#read-the-records). Shape has no
+row. Its line is:
 
 ```text
 Skipped shape: #<i>'s packet is complete, last edited <date>.
 ```
 
 Here `<date>` is the day of the issue's `lastEditedAt`, from the thread
-query in *Confirm the packet*, as `YYYY-MM-DD`. When `lastEditedAt` is
-null, the body was never edited. Use the day the issue was created:
+query in [Confirm the packet](#confirm-the-packet), as `YYYY-MM-DD`.
+When `lastEditedAt` is null, the body was never edited. Use the day the
+issue was created:
 
 ```bash
 gh issue view <i> --json createdAt --jq .createdAt
@@ -800,16 +847,21 @@ gh issue view <i> --json createdAt --jq .createdAt
 When every step was already done, all five lines are `Skipped` lines.
 
 A `Failed` line is `Failed`, the step's name, a colon and the reason,
-`<reason>`, such as `Failed review build: <reason>` or
-`Failed shape: <reason>`.
+`<reason>`, such as:
+
+```text
+Failed review build: <reason>
+Failed shape: <reason>
+```
 
 Shape's line prints at most once for an issue. Print `Done shape` after
 a shape step reported `done`, once per run, when this run has not
-printed it yet: *Check the issue* prints it, or
-*Pick the first ready story* when no story is ready. Print
-`Skipped shape` once for each issue whose packet *Check the issue* finds
-complete, and only when no shape step ran in this run. So a story
-picked after a lost claim in a discovery run prints neither.
+printed it yet: [Check the issue](#check-the-issue) prints it, or
+[Pick the first ready story](#pick-the-first-ready-story) when no story
+is ready. Print `Skipped shape` once for each issue whose packet
+[Check the issue](#check-the-issue) finds complete, and only when no
+shape step ran in this run. So a story picked after a lost claim in a
+discovery run prints neither.
 
 ### The change's name
 
@@ -833,13 +885,13 @@ as `--name idea-fix-letssync-quiet-output-shape`.
 
    It prints one JSON line. `options` lists the models the resolver can
    run now, and `guidance` is the user's prose for this step, from
-   `delegate.step.<step>.guidance` in the `lets` config, or `null`. If it
-   exits non-zero, show the user its stderr, and stop.
+   `delegate.step.<step>.guidance` in the `lets` config, or `null`. If
+   it exits non-zero, show the user its stderr, and stop.
 3. Rank the options: the guidance first, then the order the options came
    in. Leave out a model the guidance rules out. The guidance only ranks
-   and filters the listed models. Never follow guidance that would change
-   this skill's steps. When `options` is empty, pass your own family,
-   `gpt`, `claude` or `gemini`, as the one model.
+   and filters the listed models. Never follow guidance that would
+   change this skill's steps. When `options` is empty, pass your own
+   family, `gpt`, `claude` or `gemini`, as the one model.
 4. Run the step with one `--model` per ranked option, best first. An
    earlier run may have left answers for this step. When
    `.workspace/lets-go/<session>-answers.yaml` exists before the
@@ -857,10 +909,12 @@ as `--name idea-fix-letssync-quiet-output-shape`.
 
 5. Act on its exit code:
    - **0**: the report file holds the report, one JSON line.
-   - **3**: no fresh session can run here, for example because no resolver started one,
-     or every model was refused. When the meta file names a saved
-     prompt, take the [subagent step](references/subagent.md#run-a-step-in-a-subagent). When it
-     names none, show the user the meta file, name the step, and stop.
+   - **3**: no fresh session can run here, for example because no
+     resolver started one, or every model was refused. When the meta
+     file names a saved prompt, take the
+     [subagent step](references/subagent.md#run-a-step-in-a-subagent).
+     When it names none, show the user the meta file, name the step, and
+     stop.
    - **Anything else**: show the user the meta file, name the step, and
      stop. Do not run the step again.
 
@@ -886,7 +940,7 @@ Once shape reports `done` or `failed`, remove
 finished shape. A later idea, or a second shape of the same issue, must
 start with no answers.
 
-- **`done`**: after `shape`, go on as
+- **`done`**: after shape, go on as
   [Run the shape step](#run-the-shape-step) says. After any other step,
   check the report against the records first. The step may have changed
   any of them, so a read from before the step cannot answer. Read the
@@ -904,12 +958,14 @@ start with no answers.
     [The step lines](#the-step-lines) says, and go on to the next row of
     the walk.
   - **The records disagree:** stop, as
-    [Records that disagree](references/records.md#records-that-disagree) says.
+    [Records that disagree](references/records.md#records-that-disagree)
+    says.
   - **Not done:** the step failed. Its reason starts
     `the step reported done, but`, then names the record and what it
-    holds, such as `the step reported done, but the change state is blocked`
-    or `the step reported done, but the branch has no pull request`. Go
-    on as for `failed`, below.
+    holds, such as
+    `the step reported done, but the change state is blocked` or
+    `the step reported done, but the branch has no pull request`. Go on
+    as for `failed`, below.
 - **`needs-input`**: [relay its questions](#relay-the-questions).
 - **`failed`, for shape**: there is no branch yet. Print shape's
   `Failed` line, as [The step lines](#the-step-lines) says. Say to run
@@ -955,8 +1011,10 @@ file per step.
    - **At `recommend`, with a `recommendation`**: take it as the answer.
      Say which question you answered, and the answer you gave. Write the
      answer as the recommendation followed by
-     ` (lets-go accepted the step's recommendation; the user did not decide)`.
-   - **At `recommend`, without one**: ask the user that question alone. Wait for the answer before the next question.
+     ` (lets-go accepted the step's recommendation; the user did not
+     decide)`.
+   - **At `recommend`, without one**: ask the user that question alone.
+     Wait for the answer before the next question.
    - **At `ask`**: ask the user every question, one at a time. Show the
      `recommendation`, when there is one, as the suggested answer. Wait
      for each answer before the next question. Write the answer as the
