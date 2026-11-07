@@ -211,7 +211,7 @@ The runner validates ownership/write permissions of configuration, executable
 and parent paths. It clears inherited environment, fixes cwd to its protected
 state directory and uses no shell. Agent input supplies only stdin data and the
 bounded action identity. Definitions cannot mark a tool trusted. For the GitHub
-tool, the installed command is gh api graphql --hostname api.github.com
+tool, the installed command is gh api graphql --hostname github.com
 --input -, with protected authentication. The administrator's tool rule
 requires a query for a read action and a mutation for a write action.
 

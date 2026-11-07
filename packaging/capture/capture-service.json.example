@@ -8,7 +8,7 @@
       "digest": "REPLACE_WITH_SHA256_OF_ADMIN_INSTALLED_GH",
       "authentication": "github-work-account",
       "executable": "/opt/lets-capture/bin/gh",
-      "argv": ["api", "graphql", "--hostname", "api.github.com", "--input", "-"],
+      "argv": ["api", "graphql", "--hostname", "github.com", "--input", "-"],
       "classifier": "graphql",
       "credentialsFile": "/etc/lets/gh-environment.json"
     }
