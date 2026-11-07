@@ -204,7 +204,12 @@ in any script counts: `ログを直す` is an idea.
 With nothing on the default branch, run the third case, `next`, of
 [Find the source of demand](#find-the-source-of-demand), over the
 whole backlog. On its result:
-- **`picked`:** print `Picked #<i>: <title>, the next ready issue.`
+- **`picked`:** print:
+
+  ```text
+  Picked #<i>: <title>, the next ready issue.
+  ```
+
   That issue is `<i>`.
 - **`nothing-ready`:** say the backlog has nothing ready, suggest the
   `lets-shape` skill to shape more, and stop, claiming nothing.
@@ -800,8 +805,12 @@ gh issue view <i> --json createdAt --jq .createdAt
 When every step was already done, all five lines are `Skipped` lines.
 
 A `Failed` line is `Failed`, the step's name, a colon and the reason,
-`<reason>`, such as `Failed review build: <reason>` or
-`Failed shape: <reason>`.
+`<reason>`, such as:
+
+```text
+Failed review build: <reason>
+Failed shape: <reason>
+```
 
 Shape's line prints at most once for an issue. Print `Done shape` after
 a shape step reported `done`, once per run, when this run has not

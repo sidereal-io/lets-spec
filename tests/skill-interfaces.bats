@@ -2154,6 +2154,28 @@ section_code_spans() {
     <<<"$(skill_section lets-go 'The step table')" || { echo "The step table does not give the --for names in code font"; false; }
 }
 
+# text_block_lines <name>: each line of a fenced text block in the section
+# of lets-go's SKILL.md with that heading, at any level, up to the next
+# heading, without its indent.
+text_block_lines() {
+  awk -v name="$1" "$fence_rules"'
+    !code && /^#+ / { on = (substr($0, index($0, " ") + 1) == name); next }
+    !on { next }
+    code && fence == "" { block = 0; next }
+    code && !block { block = 1; text = ($0 ~ /^ *```+text *$/); next }
+    code && text { line = $0; sub(/^ */, "", line); print line }' "$(lets_go_skill)"
+}
+
+@test "lets-go gives a whole printed line in a text block" {
+  local wrong=()
+  grep -qxF 'Picked #<i>: <title>, the next ready issue.' <<<"$(text_block_lines 'Read the request')" ||
+    wrong+=('Read the request has no text block with the Picked line')
+  for line in 'Failed review build: <reason>' 'Failed shape: <reason>'; do
+    grep -qxF -- "$line" <<<"$(text_block_lines 'The step lines')" || wrong+=("The step lines have no text block with: $line")
+  done
+  [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; false; }
+}
+
 @test "lets-go keeps Check an earlier review in italics" {
   local row
   row="$(walk_section)"
