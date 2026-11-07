@@ -9,7 +9,7 @@ Then copy the frame below to `.workspace/lets-go/<session>-prompt.md`.
 Fill in each `<...>`. `<schema>`, `<level>` and `<route line>` are the
 ones [Enter the branch](../SKILL.md#enter-the-branch), [Set the level](../SKILL.md#set-the-level)
 and [Route](../SKILL.md#route) set. For shape, `<level>` is the one
-[Run the shape step](../SKILL.md#run-the-shape-step) set. Under *What to run*, put this sentence. `<skill>` is
+[Run the shape step](../SKILL.md#run-the-shape-step) set. Under `## What to run`, put this sentence. `<skill>` is
 the skill in the step's row of [The step table](../SKILL.md#the-step-table):
 
 ```text
@@ -17,10 +17,10 @@ Invoke the `<skill>` skill for the change `<name>`, for issue #<i>, and stop whe
 ```
 
 For shape, put the text of [What shape runs](shape.md#what-shape-runs) under
-*What to run* instead.
+`## What to run` instead.
 
 For shape, the first two lines differ. There is no change, the branch is
-the default branch, `<default>`, and *Route* has not run, so there is no
+the default branch, `<default>`, and [Route](../SKILL.md#route) has not run, so there is no
 schema and no route line. For an issue, they are:
 
 ```text

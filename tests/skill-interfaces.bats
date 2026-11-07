@@ -784,7 +784,7 @@ review_build_start() {
   for result in no-owned-edits verified unresolved checkpoint-failed; do
     grep -qF -- "- \`$result\`:" <<<"$section" || { echo "Glossary preflight does not list: $result"; false; }
   done
-  grep -qF '`verified`: the story owns the edits, and *Check the checkpoint* returned `verified`. It carries the checkpoint commits' <<<"$section" ||
+  grep -qF '`verified`: the story owns the edits, and [Check the checkpoint](#check-the-checkpoint) returned `verified`. It carries the checkpoint commits' <<<"$section" ||
     { echo "verified does not carry the checkpoint commits"; false; }
   ! grep -F -- '- `no-owned-edits`:' <<<"${section//- \`/$'\n'- \`}" | grep -qF '*Check the prerequisite*' ||
     { echo "no-owned-edits still waits on Check the prerequisite"; false; }
@@ -795,7 +795,7 @@ review_build_start() {
 @test "Glossary preflight in Claim checks no prerequisite first" {
   local opening
   opening="$(skill_section lets-go 'Glossary preflight')"
-  grep -qF '*Claim* runs the rest of the preflight' <<<"$opening" ||
+  grep -qF '[Claim](../SKILL.md#claim) runs the rest of the preflight' <<<"$opening" ||
     { echo "Glossary preflight does not say Claim runs only the rest: $opening"; false; }
   ! grep -qF 'Run *Check the prerequisite*, then' <<<"$opening" ||
     { echo "Glossary preflight still runs Check the prerequisite first"; false; }
@@ -898,7 +898,7 @@ review_build_start() {
   skill_does_not_say lets-go 'If an open issue blocks it, say so and stop' ||
     { echo "Find the source of demand still stops on a blocker of its own"; false; }
   skill_says lets-go 'return to the part that ran it'
-  grep -qF 'Return to *Claim*, with the result.' <<<"$(skill_section lets-go 'What the preflight returns')" ||
+  grep -qF 'Return to [Claim](../SKILL.md#claim), with the result.' <<<"$(skill_section lets-go 'What the preflight returns')" ||
     { echo "Glossary preflight does not return to Claim"; false; }
   ! grep -qiF 'return to *Claim*' <<<"$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')" ||
     { echo "Find the source of demand still returns to Claim, which never runs it"; false; }
@@ -1796,7 +1796,7 @@ procedure_stops() {
     [ -n "$text" ] || { echo "lets-go has no procedure $procedure"; false; }
     # Only Claim runs the whole preflight, so it returns there.
     if [ "$procedure" = 'Glossary preflight' ]; then
-      tr -s '[:space:]' ' ' <<<"$text" | grep -qF 'Return to *Claim*, with the result.' ||
+      tr -s '[:space:]' ' ' <<<"$text" | grep -qF 'Return to [Claim](../SKILL.md#claim), with the result.' ||
         { echo "$procedure does not return to Claim"; false; }
     else
       tr -s '[:space:]' ' ' <<<"$text" | grep -qi 'return to the part that ran it' ||
@@ -1968,7 +1968,7 @@ procedure_stops() {
     { echo "Claim does not say a late local branch fails its creation"; false; }
   grep -qF 'only on `origin`' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" ||
     { echo "Claim says a late branch on origin fails its creation"; false; }
-  grep -qF 'when *Claim* runs *Glossary preflight*' <<<"$(skill_section lets-go 'Check the checkpoint')" ||
+  grep -qF 'when [Claim](../SKILL.md#claim) runs [Glossary preflight](#glossary-preflight)' <<<"$(skill_section lets-go 'Check the checkpoint')" ||
     { echo "Check the checkpoint still runs after a branch check"; false; }
 }
 
@@ -2038,11 +2038,11 @@ section_names() {
 # the file under the skills folder. references/terms.md copies the glossary,
 # which names sections in italics, so it is not read.
 section_italics() {
-  local names file out=""
+  local names file found out=""
   names="$(section_names)"
   for file in "$@"; do
     [[ "$file" != */lets-go/references/terms.md ]] || continue
-    out+="$(prose_text "$file" | awk -v name="${file#"${skills_dir:-$repo/skills}/"}" '
+    found="$(prose_text "$file" | awk -v name="${file#"${skills_dir:-$repo/skills}/"}" '
       NR == FNR { names[$0] = 1; next }
       {
         line = $0; sub(/:.*/, "", line); text = substr($0, length(line) + 3)
@@ -2053,7 +2053,7 @@ section_italics() {
           text = substr(text, RSTART + RLENGTH)
         }
       }' <(printf '%s\n' "$names") -)"
-    [ -z "$out" ] || out+=$'\n'
+    [ -z "$found" ] || out+="$found"$'\n'
   done
   [ -z "$out" ] || { printf '%s' "$out"; return 1; }
 }
@@ -2085,7 +2085,22 @@ section_italics() {
 }
 
 @test "lets-go links each section it names" {
-  section_italics "$(lets_go_skill)"
+  local files
+  mapfile -t files < <(skill_files lets-go)
+  section_italics "${files[@]}"
+}
+
+@test "the section link check reads no italics in the glossary's copy" {
+  fixture_file lets-go SKILL.md '# lets-go' '' '## Route' '' 'Text.'
+  fixture_file lets-go references/terms.md '# Terms' '' 'such as *Route* or *Walk the step table*'
+  section_italics "$(lets_go_skill)" "$skills_dir/lets-go/references/terms.md"
+}
+
+@test "lets-go writes the prompt frame's heading as it is typed" {
+  local text
+  text="$(skill_section lets-go 'Write the prompt')"
+  grep -qF '`## What to run`' <<<"$text" || { echo "Write the prompt does not say: \`## What to run\`"; false; }
+  skill_does_not_say lets-go '*What to run*'
 }
 
 @test "lets-go links Finish the change in lets-review-build" {

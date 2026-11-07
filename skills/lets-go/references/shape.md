@@ -41,8 +41,8 @@ once per run. [Check the issue](../SKILL.md#check-the-issue) decides when it run
    `openspec/discovery.md`, look for this input's discovery: an open
    parent issue that says `Discovery status: in-progress`, and whose
    `Input:` line names this input, the idea's words or `#<i>`. For an
-   idea, use what *Start from an idea* found. For an issue, run the
-   query in *Start from an idea*.
+   idea, use what [Start from an idea](#start-from-an-idea) found. For an issue, run the
+   query in [Start from an idea](#start-from-an-idea).
    - **There is one:** the edits are that discovery's confirmed phases.
      Go on: the step resumes it, and its map commit takes them.
    - **There is none:** say that the map has uncommitted edits, and to
@@ -75,7 +75,7 @@ of them in this run.
    narrowing: the candidates are the stories the report named, and no
    other issue. Run its two commands as the section writes them. Rank
    as it does: Must, then Should, then Could, then the lowest issue
-   number. Run *Check the prerequisite* and *Confirm the packet* on
+   number. Run [Check the prerequisite](glossary-handoff.md#check-the-prerequisite) and [Confirm the packet](../SKILL.md#confirm-the-packet) on
    each candidate, in rank order. A ready story is one that `next`
    would take.
 2. On its result:
@@ -95,7 +95,7 @@ of them in this run.
      prerequisite, or a packet that is not complete. Say to run `lets-go` with a story's number
      once it is ready. Then stop. Claim nothing, and create no branch.
 
-A run that stops after discovery and before *Claim*, for any reason,
+A run that stops after discovery and before [Claim](../SKILL.md#claim), for any reason,
 leaves the map's edits on the default branch. When
 `git status --porcelain` lists `openspec/discovery.md`, say that it
 holds the discovery's map, uncommitted on the default branch. While the
