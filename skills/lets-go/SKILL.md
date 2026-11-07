@@ -61,7 +61,7 @@ procedure ranks it.
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
 | [Read the settings](#read-the-settings) | Reads the default question mode, the default branch, the current branch and the Project | this session | [Read the request](#read-the-request) | `lets go questions` fails, or the Project query finds no Project, or several |
-| [Read the request](#read-the-request) | Takes a level off the request, after asking the user when the level word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
+| [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; otherwise [Route](#route) | An open blocker with no branch; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic`, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
@@ -168,22 +168,22 @@ Next: [Read the request](#read-the-request).
 
 ## Read the request
 
-Read the request. A leading or trailing `ask` or `recommend` may name
-the level. When the rest of the request is a number or nothing, the
-word names the level: take it off, and keep it for
+Read the request. A leading or trailing `ask` or `auto` may name the
+question mode. When the rest of the request is a number or nothing, the
+word names the question mode: take it off, and keep it for
 [Set the question mode](#set-the-question-mode). When the rest is
 words, on the default branch, ask the user whether the word names the
-level or is part of the idea. Show both readings: for
-`ask before deleting the branch`, the level `ask` with the idea
+question mode or is part of the idea. Show both readings: for
+`ask before deleting the branch`, the question mode `ask` with the idea
 `before deleting the branch`, or the idea
-`ask before deleting the branch`. Ask it at either level, before
+`ask before deleting the branch`. Ask it in either mode, before
 [Start from an idea](#start-from-an-idea) runs: it asks what the
-request says, not which level to use. When the user says the word names
-the level, take it off, and keep it for
+request says, not which question mode to use. When the user says the
+word names the question mode, take it off, and keep it for
 [Set the question mode](#set-the-question-mode). Otherwise the word
 stays in the idea, and [Set the question mode](#set-the-question-mode)
-takes the level from its next source. On another branch, ask nothing
-about the word: words stop the run there.
+takes the question mode from its next source. On another branch, ask
+nothing about the word: words stop the run there.
 
 What is left is one of these:
 - **A number:** it holds `#<i>`, or is a bare number. It names the

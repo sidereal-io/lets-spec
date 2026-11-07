@@ -1625,20 +1625,24 @@ parts_fixture() {
   done
 }
 
-@test "lets-go asks whether a level word beside an idea is the level" {
+@test "lets-go asks whether a mode word beside an idea names the question mode" {
   local part phrase
   part="$(part_section 'Read the request')"
   for phrase in \
-    'When the rest of the request is a number or nothing, the word names the level: take it off, and keep it for [Set the question mode](#set-the-question-mode)' \
-    'When the rest is words, on the default branch, ask the user whether the word names the level or is part of the idea' \
+    'A leading or trailing `ask` or `auto` may name the question mode' \
+    'When the rest of the request is a number or nothing, the word names the question mode: take it off, and keep it for [Set the question mode](#set-the-question-mode)' \
+    'When the rest is words, on the default branch, ask the user whether the word names the question mode or is part of the idea' \
     'Show both readings' \
-    'Ask it at either level, before [Start from an idea](#start-from-an-idea) runs' \
-    'When the user says the word names the level, take it off, and keep it for [Set the question mode](#set-the-question-mode)' \
-    'Otherwise the word stays in the idea, and [Set the question mode](#set-the-question-mode) takes the level from its next source' \
+    'Ask it in either mode, before [Start from an idea](#start-from-an-idea) runs' \
+    'When the user says the word names the question mode, take it off, and keep it for [Set the question mode](#set-the-question-mode)' \
+    'Otherwise the word stays in the idea, and [Set the question mode](#set-the-question-mode) takes the question mode from its next source' \
     'On another branch, ask nothing about the word: words stop the run there'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Read the request does not say: $phrase"; false; }
   done
-  skill_does_not_say lets-go 'names the level: take it off, and keep it for [Set the question mode](#set-the-question-mode). What is left'
+  ! grep -qiE '\blevel\b|`recommend`' <<<"$part" || { echo "Read the request still names the level"; false; }
+  grep -qF 'Takes a question mode off the request, after asking the user when the mode word sits beside an idea' <<<"$(overview_row 'Read the request')" ||
+    { echo "Read the request's row does not name the question mode: $(overview_row 'Read the request')"; false; }
+  skill_does_not_say lets-go 'names the question mode: take it off, and keep it for [Set the question mode](#set-the-question-mode). What is left'
 }
 
 @test "lets-go stops an idea with no letter or digit" {
