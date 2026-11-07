@@ -1265,11 +1265,26 @@ lets_go_skill() {
 }
 
 # part_section <name>: the ## section of that name in lets-go's SKILL.md, its
-# subsections included, up to the next ## heading, on one line.
+# subsections included, up to the next ## heading, then the section of the
+# same name in a reference file, at any level, up to the next heading at its
+# level or above, on one line. A part whose steps moved keeps its heading and
+# its Next: line in SKILL.md.
 part_section() {
-  awk -v name="## $1" "$fence_rules"'
-    !code && /^## / { on = ($0 == name); next }
-    on' "$(lets_go_skill)" | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//'
+  local files
+  mapfile -t files < <(skill_files lets-go)
+  {
+    awk -v name="## $1" "$fence_rules"'
+      !code && /^## / { on = ($0 == name); next }
+      on' "${files[0]}"
+    [ "${#files[@]}" -lt 2 ] || awk -v name="$1" "$fence_rules"'
+      FNR == 1 { level = 0 }
+      !code && /^#+ / {
+        depth = index($0, " ") - 1
+        if (level && depth <= level) level = 0
+        if (!level && substr($0, depth + 2) == name) { level = depth; next }
+      }
+      level' "${files[@]:1}"
+  } | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//'
 }
 
 # parts_listed: the overview table before ## Placeholders has one row for
@@ -1436,6 +1451,13 @@ parts_fixture() {
   fixture_file lets-go SKILL.md '# lets-go' '## Route' 'First,' '````text' '## not a heading' '````' '### Sub' 'last.' '## Enter the branch' 'Not this.'
   run part_section 'Route'
   [ "$output" = 'First, ````text ## not a heading ```` ### Sub last.' ] || { echo "it read: $output"; false; }
+}
+
+@test "part_section reads a part's steps in a reference file after its SKILL.md section" {
+  fixture_file lets-go SKILL.md '# lets-go' '## Run the shape step' 'Its steps are in shape.md.' '' 'Next: [Route](#route).' '## Route' 'Not this.'
+  fixture_file lets-go references/shape.md '# Shape' '## Run the shape step' 'Check the discovery map.' '### More' 'Its subsection.' '## Commit the discovery map' 'Not this.'
+  run part_section 'Run the shape step'
+  [ "$output" = 'Its steps are in shape.md. Next: [Route](#route). Check the discovery map. ### More Its subsection.' ] || { echo "it read: $output"; false; }
 }
 
 @test "the part overview check passes every part, listed and in order" {
