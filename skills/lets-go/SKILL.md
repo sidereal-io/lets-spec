@@ -58,7 +58,7 @@ sets it.
 | `<issue-url>` | The URL of `<i>` | *Confirm the packet*, from the issue's `url` |
 | `<parent>` | A parent issue: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in *Start from an idea* |
 | `<story>` | One story that a shape step's report names | Each `story` line of the shape report |
-| `<pr>` | The number of the change's pull request | *Read the records*, from the pull request's `number` |
+| `<pr>` | The number of the change's pull request | [Read the records](references/records.md#read-the-records), from the pull request's `number` |
 | `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | [Check the issue](#check-the-issue), from the blocker read's title. After a shape step, *Check the issue* sets it again from the shaped issue's title |
 | `<branch>` | The branch the run started on, when it is not the default branch | [Read the settings](#read-the-settings), from `git branch --show-current` |
 | `<default>` | The repository's default branch | [Read the settings](#read-the-settings) |
@@ -73,7 +73,7 @@ sets it.
 | `<route line>` | The line *Route* says, such as `Route: lets-minimal, because #<i> is a Chore.` | [Route](#route) |
 | `<title>` | The title of the issue the line names | The command or report line that names the issue |
 | `<date>` | The date on a printed line | [The step lines](#the-step-lines), for each kind of line |
-| `<sha>` | A commit's short hash, or the commit a review names | [Read the records](#read-the-records), or the review plan report |
+| `<sha>` | A commit's short hash, or the commit a review names | [Read the records](references/records.md#read-the-records), or the review plan report |
 | `<verdict>` | A plan review's verdict | The **Plan review** section, or the review plan report |
 | `<evidence>` | What a `done` report's `evidence` lists | [The step lines](#the-step-lines) |
 | `<reason>` | Why a step failed | [The step lines](#the-step-lines), from a `failed` report's `reason`, or from [Read the report](#read-the-report) when a `done` report's record says otherwise: `the step reported done, but` and what the record holds |
@@ -415,7 +415,7 @@ Next: [Enter the branch](#enter-the-branch).
 
    Skip the fetch when you have just run it above. If the merge cannot
    fast-forward, the branch and `origin` have diverged: the
-   [records disagree](#records-that-disagree). If any command here fails
+   [records disagree](references/records.md#records-that-disagree). If any command here fails
    for another reason, show the user its error, and stop.
 5. Set `<schema>`. When `openspec/changes/<name>/.openspec.yaml` exists,
    it is that file's `schema:` line. Otherwise it is the schema *Route*
@@ -544,34 +544,12 @@ in this walk changes the records the next row reads.
 Then settle the row:
 
 - **Done:** print its Skip line from the table, filled from
-  [Read the records](#read-the-records). Go on to the next row.
+  [Read the records](references/records.md#read-the-records). Go on to the next row.
 - **Not done:** run the step, as [Run a step](#run-a-step) says. Then
   [read its report](#read-the-report). It checks a `done` report against
   the records, and says what to print and whether the walk goes on.
 
 Next: [End of the run](#end-of-the-run), when no row is left.
-
-### Records that disagree
-
-When the records disagree, print `Records disagree:` and what you found.
-Say what to fix by hand, and stop before any step. Repair nothing: each
-repair means choosing which record is right, and that is the user's
-choice.
-
-| What you found | What to fix by hand |
-|---|---|
-| `git status --porcelain` lists a path outside `.workspace/` | Commit or discard the path. |
-| The branch and `origin/<name>` have diverged | Reconcile the two, and push. |
-| A change folder and an archive folder for the same name | Keep the folder that is right, and remove the other. |
-| An archive folder, and the pull request is missing or a draft, or has no `Code review` section on `lets-standard` | Open the pull request, review it, or mark it ready, as `lets-review-build` does. Or revert the archive commit. |
-| `brainstorm.md` is committed, and the branch has no pull request | Push the branch, and open the draft pull request. |
-| An archived change on a schema other than `lets-minimal`, and the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line | Review the plan with the `lets-review-plan` skill, which writes the section. Or revert the archive commit. |
-| A `git log` read for a skipped step finds no commit | Name the command, and find out why the step's record is missing. |
-
-The printed line names what you found, such as the path, or the pull
-request's `isDraft`. A built change that is not archived,
-and whose pull request has no **Plan review** section, is not a
-disagreement. The walk reaches review plan first, and runs it.
 
 ## End of the run
 
@@ -965,52 +943,6 @@ done.
 | `build` | the `lets-build` skill | The last commit that changed `tasks.md` | `Skipped build: every task is ticked, last task commit <date> (<sha>).` |
 | `review-build` | the `lets-review-build` skill | The commit that added the archive's `tasks.md`, and the pull request | `Skipped review build: archived <date> (<sha>); pull request #<pr> is ready for review.` |
 
-### Read the records
-
-One read dates each skip line. `<date>` is the commit's author date,
-from `%as`, as `YYYY-MM-DD`. A rebase keeps it. `<sha>` is
-the short hash, from `%h`. A read that prints nothing means the
-[records disagree](#records-that-disagree).
-
-- **Shape.** [The step lines](#the-step-lines) says how to date shape's
-  line.
-- **Plan.** Read the commit that added the task list:
-
-  ```bash
-  git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md
-  ```
-
-- **Review plan.** On `lets-minimal`, there is no record, and the line
-  has no date. On any other schema, the `lets-review-plan` skill records
-  the review in the pull request's `body`. Find the `## Plan review`
-  heading, and read the section up to the next `## ` heading or the end
-  of the body. Inside it, `<sha>` comes from the line that starts
-  `Reviewed: `, and `<verdict>` from the line that starts
-  `- **Verdict:** `. Do not search the whole body: a **Code review**
-  section has a `Reviewed:` line too. `<pr>` is the pull request's
-  `number`. Date the line by the reviewed commit:
-
-  ```bash
-  git log -1 --format=%as <sha>
-  ```
-
-- **Build.** Read the last commit that changed the task list: the last
-  task's tick.
-
-  ```bash
-  git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md
-  ```
-
-- **Review build.** Read the commit that archived the change. `<pr>` is
-  the pull request's `number`.
-
-  ```bash
-  git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/archive/<YYYY-MM-DD>-<name>/tasks.md
-  ```
-
-The plan and build reads work after archive too. Archive removes the
-old path, and its history keeps the add and the ticks.
-
 ### The step lines
 
 The run prints one line for each step, when it settles the step: `Done`
@@ -1032,7 +964,7 @@ Done review build: <date>. <evidence>
 
 A `Skipped` line is the Skip line in the step's row of
 [The step table](#the-step-table), with `<date>` and `<sha>` from
-[Read the records](#read-the-records). Shape has no row. Its line is:
+[Read the records](references/records.md#read-the-records). Shape has no row. Its line is:
 
 ```text
 Skipped shape: #<i>'s packet is complete, last edited <date>.
@@ -1354,7 +1286,7 @@ start with no answers.
     [The step lines](#the-step-lines) says, and go on to the next row of
     the walk.
   - **The records disagree:** stop, as
-    [Records that disagree](#records-that-disagree) says.
+    [Records that disagree](references/records.md#records-that-disagree) says.
   - **Not done:** the step failed. Its reason starts
     `the step reported done, but`, then names the record and what it
     holds, such as `the step reported done, but the change state is blocked`

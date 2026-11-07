@@ -1387,6 +1387,40 @@ anchors_resolve() {
   anchors_resolve lets-go
 }
 
+# has_heading <file> <name>: a line of the file outside code is a heading
+# with that name, at any level.
+has_heading() {
+  awk -v name="$2" "$fence_rules"'
+    !code && /^#+ / && substr($0, index($0, " ") + 1) == name { found = 1 }
+    END { exit !found }' "$1"
+}
+
+# section_moved <file> <name>...: each section is a heading of lets-go's
+# <file>, and no heading of its SKILL.md. Prints each one that is not.
+section_moved() {
+  local dir="${skills_dir:-$repo/skills}/lets-go" file="$1" name wrong=()
+  shift
+  for name in "$@"; do
+    [ -f "$dir/$file" ] && has_heading "$dir/$file" "$name" || wrong+=("lets-go/$file has no heading: $name")
+    ! has_heading "$dir/SKILL.md" "$name" || wrong+=("lets-go/SKILL.md still has a heading: $name")
+  done
+  [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
+}
+
+@test "the moved section check names a section left behind" {
+  fixture_file lets-go SKILL.md '# lets-go' '' '### Records that disagree' '' 'Text.'
+  fixture_file lets-go references/records.md '# Records' '' '## Records that disagree' '' 'Text.'
+  run section_moved references/records.md 'Records that disagree'
+  [ "$status" -eq 1 ] || { echo "it passed on a section left behind"; false; }
+  [ "$output" = 'lets-go/SKILL.md still has a heading: Records that disagree' ] || { echo "it said: $output"; false; }
+}
+
+# The three parts whose steps moved keep a heading in SKILL.md, so they are
+# not rows here.
+@test "lets-go keeps each moved section in its reference file" {
+  section_moved references/records.md 'Read the records' 'Records that disagree'
+}
+
 @test "the link check passes a link to a heading in another file" {
   fixture_file lets-go SKILL.md '# lets-go' '' 'See where [records disagree](references/records.md#records-that-disagree).'
   fixture_file lets-go references/records.md '# Records' '' '## Records that disagree' '' 'Text.'
@@ -1917,7 +1951,7 @@ walk_section() {
     { echo "Read the report does not read the pull request again after done"; false; }
   grep -qF 'git status --porcelain' <<<"$part" || { echo "Read the report does not read the tree again after done"; false; }
   grep -qF 'the step reported done, but' <<<"$part" || { echo "Read the report takes a done report on trust"; false; }
-  grep -qF '[Records that disagree](#records-that-disagree)' <<<"$part" ||
+  grep -qF '[Records that disagree](references/records.md#records-that-disagree)' <<<"$part" ||
     { echo "Read the report does not stop on records that disagree"; false; }
   grep -qF 'reports done when its record says otherwise' <<<"$(overview_row 'Walk the step table')" ||
     { echo "the walk's overview row does not stop on a done report its record contradicts"; false; }
