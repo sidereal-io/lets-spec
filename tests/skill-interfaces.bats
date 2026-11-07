@@ -2073,6 +2073,18 @@ load support/release
   done
 }
 
+# A flow ships only some skills, so a link that resolves in the source can
+# break where a flow leaves its target out.
+@test "lets-go's links resolve in each published flow" {
+  local flow out schemas
+  for flow in standard minimal; do
+    out="$BATS_TEST_TMPDIR/$flow"
+    schemas="$(jq -r --arg flow "$flow" '.flows[$flow].schemas | join(",")' "$repo/flows.json")"
+    build "$out" "$schemas" $(flow_skills "$flow") >/dev/null
+    skills_dir="$out/overlay/.agents/skills" anchors_resolve lets-go || { echo "in the $flow flow"; false; }
+  done
+}
+
 @test "review vocabulary inputs resolve in the published standard flow" {
   local out="$BATS_TEST_TMPDIR/standard" skill
   build "$out" lets-standard,lets-minimal $(flow_skills standard)
