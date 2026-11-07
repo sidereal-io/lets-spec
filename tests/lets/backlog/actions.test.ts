@@ -27,7 +27,7 @@ for (const [name, patch] of Object.entries({
 })) {
   test(`capture cannot authorize progression with ${name}`, () => {
     const original = capture(); original.bytes = Buffer.byteLength(original.stdout);
-    assert.throws(() => verifyCapture(action(), { ...original, ...patch }, 'receipt-1', 2000), (error: any) => error.category === 'unknown_outcome' && error.effects === 'unknown');
+    assert.throws(() => verifyCapture(action(), { ...original, ...patch }, 'receipt-1', 2000), (error: any) => error.effects === (name === 'missing original capture' ? 'none' : 'unknown'));
   });
 }
 for (const [name, patch] of Object.entries({
@@ -38,7 +38,7 @@ for (const [name, patch] of Object.entries({
 })) {
   test(`capture cannot authorize progression after ${name}`, () => {
     const c = capture(); c.bytes = Buffer.byteLength(c.stdout);
-    assert.throws(() => verifyCapture(action(), { ...c, ...patch }, 'receipt-1', 2000), (e: any) => e.category === 'unknown_outcome' && e.effects === 'unknown');
+    assert.throws(() => verifyCapture(action(), { ...c, ...patch }, 'receipt-1', 2000), (e: any) => e.effects === (name === 'truncated output' || name === 'overflow' ? 'unknown' : 'none'));
   });
 }
 test('late submission cannot reactivate the expired action', () => {

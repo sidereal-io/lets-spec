@@ -44,6 +44,12 @@ export function validateAction(value: unknown, now = Date.now()): asserts value 
   const { digest: expected, ...body } = a;
   if (expected !== digest(body)) throw new AdapterFailure('invalid_request', 'none', 'action digest mismatch');
 }
+export function capturedReadFailure(c: Capture): AdapterFailure {
+  let errors:any[]=[];try{const response=JSON.parse(c.stdout);if(Array.isArray(response?.errors))errors=response.errors;}catch{}
+  const types=errors.map(error=>error?.type??error?.extensions?.type);
+  const category=types.some(type=>['FORBIDDEN','INSUFFICIENT_SCOPES'].includes(type))?'permission':types.includes('NOT_FOUND')?'not_found':types.some(type=>['UNAUTHORIZED','BAD_CREDENTIALS'].includes(type))?'authentication':'unsupported';
+  return new AdapterFailure(category,'none','captured backend read failed');
+}
 export function verifyCapture(action: Action, capture: unknown, reference: string, now = Date.now(), historical = false): Capture {
   const unknown = () => new AdapterFailure('unknown_outcome', 'unknown', 'independent capture is unavailable, mismatched, stale or incomplete; reconcile original action');
   const c = capture as Capture;
@@ -58,6 +64,9 @@ export function verifyCapture(action: Action, capture: unknown, reference: strin
       c.bytes !== Buffer.byteLength(c.stdout) + Buffer.byteLength(c.stderr) || c.bytes > action.maxBytes) throw unknown();
   if (c.state === 'rejected' && c.dispatched === false && c.exitCode === null && c.signal === null && c.bytes === 0)
     throw new NonDispatchFailure();
-  if (c.state !== 'complete' || !c.dispatched || c.exitCode !== 0 || c.signal !== null) throw unknown();
+  if (c.state !== 'complete' || !c.dispatched || c.exitCode !== 0 || c.signal !== null) {
+    if(action.mode==='read'&&c.dispatched)throw capturedReadFailure(c);
+    throw unknown();
+  }
   return c;
 }

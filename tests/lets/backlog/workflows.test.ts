@@ -145,3 +145,8 @@ test('trusted cancellation clears an unexecuted write and its private preparatio
   assert.equal(engine.store.read('mutation-fixture'),undefined);
   assert.equal((await engine.start('claim',input)).state,'action-required');
 },async(_command,_input,cwd)=>{new Store(cwd).write('mutation-fixture',{request:{context:input,mutationId:'m',operation:'claim.acquire',input:{}},state:'pending'});await transaction.getStore()!.query!('FieldStatus',{project:'P',item:'PI',field:'status',option:'progress'});}));
+for(const exitCode of [0,1])test(`captured permission read failure exits cleanly (${exitCode})`,()=>fixture(async(engine,receipts)=>{
+  const first=await engine.start('select',input);const c=capture(first.action,'failed');c.exitCode=exitCode;c.state=exitCode?'unknown':'complete';c.stdout=JSON.stringify({errors:[{type:'FORBIDDEN',message:'permission denied'}]});c.bytes=Buffer.byteLength(c.stdout);receipts.set('failed',c);
+  await assert.rejects(engine.submit({workflow:first.workflow,actionId:first.action.id,receipt:'failed'}),(e:any)=>e.category==='permission'&&e.effects==='none');
+  assert.equal((await engine.start('select',input)).state,'action-required');
+}));

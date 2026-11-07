@@ -5,7 +5,7 @@ import {transaction,ActionYield} from './runtime-context.ts';
 import {readConfiguration} from './repository-config.ts';
 import {render} from './definitions.ts';
 import {AdapterFailure,NonDispatchFailure} from './errors.ts';
-import {digest,sealAction,verifyCapture} from './action-contract.ts';
+import {digest,sealAction,verifyCapture,capturedReadFailure} from './action-contract.ts';
 import type {Action,CaptureReader,TrustedTool} from './action-contract.ts';
 import type {Query} from './github.ts';
 type Entry={action:Action;result?:any;receipt?:string;notDispatched?:boolean};
@@ -27,6 +27,13 @@ export class WorkflowEngine {
     const baseline=workflow.baseline??workflow.initial;
     workflow.commit=baseline;workflow.remove=readdirSync(this.store.root).filter(name=>/^(claim-|current-local-claim-|mutation-|reference-|session-).*\.json$/.test(name)).map(name=>name.slice(0,-5)).filter(name=>!Object.hasOwn(baseline,name));
     workflow.status='complete';workflow.result={state:'absent'};this.store.write(this.name(workflow.handle),workflow);this.recover(workflow);return true;
+  }
+  private submissionFailure(workflow:Workflow, error:AdapterFailure):never {
+    const issuedWrite=[...workflow.history??[],...workflow.entries].some(entry=>entry.action.mode==='write'&&!entry.notDispatched);
+    if(!issuedWrite&&error.effects==='none'){
+      const baseline=workflow.baseline??workflow.initial;workflow.commit=baseline;workflow.remove=readdirSync(this.store.root).filter(name=>/^(claim-|current-local-claim-|mutation-|reference-|session-).*\.json$/.test(name)).map(name=>name.slice(0,-5)).filter(name=>!Object.hasOwn(baseline,name));workflow.status='complete';this.store.write(this.name(workflow.handle),workflow);this.recover(workflow);throw error;
+    }
+    throw Object.assign(new AdapterFailure(error.category,issuedWrite?'unknown':error.effects,error.message),{workflow:workflow.handle,actionId:workflow.entries.at(-1)?.action.id});
   }
   async start(command:string,input:Record<string,any>):Promise<any>{
     return this.store.lock('workflow',async()=>{
@@ -61,6 +68,7 @@ export class WorkflowEngine {
       catch(error){
         if(error instanceof NonDispatchFailure){entry.notDispatched=true;this.store.write(this.name(workflow.handle),workflow);if(this.cancelUnsent(workflow))throw error;}
         const failure=error instanceof AdapterFailure?error:new AdapterFailure('unknown_outcome','unknown','independent capture unavailable; retain original workflow');
+        if(failure.effects==='none')this.submissionFailure(workflow,failure);
         const sessions=Object.entries(workflow.commit??{}).filter(([name,value])=>name.startsWith('session-')&&value.context?.session===entry.action.scope.session);
         // Checkpoint commits have already been applied, so recover the exact
         // original local session by scope rather than adopting another claim.
@@ -68,10 +76,10 @@ export class WorkflowEngine {
         throw Object.assign(failure,{workflow:workflow.handle,actionId:entry.action.id,...(matches.length===1?{continuationHandle:matches[0][1].handle}:{})});
       }
       let response;
-      try{response=JSON.parse(captured.stdout);}catch{throw new AdapterFailure('unknown_outcome','unknown','captured result is not JSON');}
-      if(!response||typeof response!=='object'||response.errors?.length)throw new AdapterFailure('unknown_outcome','unknown','captured backend result failed; reconcile original action');
+      try{response=JSON.parse(captured.stdout);}catch{this.submissionFailure(workflow,new AdapterFailure('unsupported',entry.action.mode==='read'?'none':'unknown','captured result is not JSON'));}
+      if(!response||typeof response!=='object'||response.errors?.length)this.submissionFailure(workflow,entry.action.mode==='read'?capturedReadFailure(captured):new AdapterFailure('unknown_outcome','unknown','captured backend result failed; reconcile original action'));
       const definition=readConfiguration(this.cwd).definition;
-      try{entry.result=render(definition.facts[entry.action.name].result,response);}catch{throw new AdapterFailure('unknown_outcome','unknown','captured response cannot establish the required normalized facts; reconcile original action');}
+      try{entry.result=render(definition.facts[entry.action.name].result,response);}catch{this.submissionFailure(workflow,new AdapterFailure('unknown_outcome',entry.action.mode==='read'?'none':'unknown','captured response cannot establish the required normalized facts; reconcile original action'));}
       entry.receipt=input.receipt;
       this.store.write(this.name(workflow.handle),workflow);
       return this.advance(workflow);

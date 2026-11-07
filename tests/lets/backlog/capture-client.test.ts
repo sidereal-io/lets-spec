@@ -37,7 +37,7 @@ for (const [name,edit] of Object.entries({
   uncertain:(c:Capture)=>({...c,state:'unknown'}),
 })) test(`client rejects ${name} receipt`,async t=>{
   const {client,action}=await fixture(t,edit);
-  await assert.rejects(client.read(action.id,action),(error:any)=>error.effects==='unknown');
+  await assert.rejects(client.read(action.id,action),(error:any)=>error.effects===(name==='uncertain'?'none':'unknown'));
 });
 
 test('client accepts the original complete capture',async t=>{
