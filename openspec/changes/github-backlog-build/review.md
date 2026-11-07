@@ -44,3 +44,14 @@ approval of the completed artifact. Demonstrated separate-account isolation,
 pinned real tools/authentication and new live claim/merge evidence remain
 mandatory before support/readiness. Earlier executable reviews and acceptance
 remain historical under history/executable-boundary.
+
+## Port code review status
+
+A fresh read-only independent-family review was requested through T3 using
+Gemini gemini-4-argon-high, excluding the GPT and Claude author families.
+The requested range is origin/main at 6524fbff through b7f3cc18. There is
+no REVIEW.md in the repository. The reviewer runtime requested command
+approval before producing findings; no review verdict has been received.
+This request does not count as completed independent review. Subsequent
+source commits 5945bf14 and e6ef8bf6 only wrap continuation-routing prose;
+7b44540a records implementation behavior in this change's design.
