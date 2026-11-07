@@ -2227,6 +2227,16 @@ long_lines() {
   long_lines "$skills_dir/lets-go/references/terms.md"
 }
 
+@test "lets-go wraps its prose at 72 columns" {
+  long_lines "$(lets_go_skill)"
+}
+
+@test "lets-go wraps its exit-3 sentence at 72 columns" {
+  ! grep -qF '**3**: no fresh session can run here, for example because no resolver started one' "$(lets_go_skill)" ||
+    { echo "the exit-3 sentence sits on one line"; false; }
+  says_exit_3 lets-go
+}
+
 @test "lets-go keeps Check an earlier review in italics" {
   local row
   row="$(walk_section)"
