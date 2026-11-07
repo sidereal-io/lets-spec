@@ -25,7 +25,7 @@ independent evidence.
 ## 4. Workflow and release [depends-on: 3]
 
 - [x] 4.1 [complex] Integrate explicit private continuation into lets-go, lets-plan, lets-build and lets-review-build while preserving their current step ownership; document callable actions/submissions and error handling. (verify: pnpm test)
-- [ ] 4.2 [complex] Replace executable transport conformance/packaging with offline request/result and capture cases and production-consumed definitions. Preserve behavioral coverage and exclude unused kit payloads. (verify: nix flake check)
+- [x] 4.2 [complex] Replace executable transport conformance/packaging with offline request/result and capture cases and production-consumed definitions. Preserve behavioral coverage and exclude unused kit payloads. (verify: nix flake check)
 - [ ] 4.3 [complex] Run automated repository checks and fresh scoped live equivalence acceptance, including independent claim and exact merge evidence. Historical mutations must not be repeated. (verify: pnpm test)
 
 Task 2.1's command verifies offline validation only. Completing that task
@@ -47,6 +47,8 @@ keep completion pending if merge or independent evidence is unavailable.
 
 - 2026-11-07: pnpm test passed 865 Node tests, type checking and 369
   shell tests. Strict validation of github-backlog-build passed.
+- 2026-11-07: nix flake check passed on x86_64-linux, including the
+  captured-action runner bundle, release distribution and both flows.
 - Task 2.1 remains open because no protected service has been deployed or
   independently qualified. Task 4.3 still requires fresh scoped live evidence.
   Source and fixture completion do not satisfy either delivery gate.
