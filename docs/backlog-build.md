@@ -11,7 +11,8 @@ Every workflow input requires `repository` (the code-host `owner/name`) and
 `gh api /user --jq .login`. These identify the requested scope; captured facts
 must independently confirm the actor. Each issued tool action has a 4500 ms
 execution limit, a 1 MiB combined output bound and a three-minute submission
-window. A workflow has a one-day bound. An interruption does not undo writes.
+window. New progression has a one-day bound; explicit read-only reconciliation
+can continue afterward. An interruption does not undo writes.
 
 ## Execute the action loop
 
@@ -31,7 +32,10 @@ a same-account runner or direct provider command.
 
 On uncertain capture, retain the original workflow and action IDs. Run
 `lets backlog reconcile` with `{"workflow":"<original>"}` to request fresh
-reconciliation reads, then follow the same action/submission loop. Unknown
+reconciliation reads, then follow the same action/submission loop. The protected
+runner first settles an unexecuted write when possible, preventing later dispatch
+of that action ID. Only proven non-dispatch permits rollback of an entirely
+unexecuted workflow. Unknown
 native state retains the reservation and blocks further writes. Only an applied
 or conclusively absent result resolves it. `lets backlog abandon` accepts the
 same handle for a read-only workflow; it cannot discard an issued write.
