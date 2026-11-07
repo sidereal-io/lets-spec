@@ -1,4 +1,5 @@
-import { randomUUID } from 'node:crypto';
+import { ActionYield } from './runtime-context.ts';
+import { randomUUID } from './runtime-context.ts';
 import { Store, hash, scope } from './store.ts';
 import { fail } from './github.ts';
 import type { Context } from './github.ts';
@@ -20,6 +21,7 @@ export async function acquireSession(context: Context, item: Identity, connect: 
     verifyClaim(fresh, session.context, session.token!);
     return { handle, claim: fresh };
   } catch (error) {
+        if (error instanceof ActionYield) throw error;
     if (error instanceof Error) Object.assign(error, { continuationHandle: handle });
     throw error;
   }

@@ -1,7 +1,8 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from './runtime-context.ts';
 import { readConfiguration } from './repository-config.ts';
 import type { Selection } from './repository-config.ts';
-import { invoke } from './transport.ts';
+import { dispatch } from './github-main.ts';
+import { transaction } from './runtime-context.ts';
 import { enumerate } from './selection.ts';
 import type { Context } from './github.ts';
 import { fail } from './github.ts';
@@ -17,7 +18,9 @@ export class Client {
     if (!Number.isFinite(this.timeoutMs) || this.timeoutMs <= 0 || this.timeoutMs > 2_147_483_647) fail('invalid_request', 'timeoutMs must be positive and at most 2147483647');
   }
   call = async (operation: string, input: Record<string, any> = {}, mutationId?: string, session = this.context.session) => {
-    return (await invoke(this.selection.executable, { protocol: 1, operation, context: { ...this.context, session }, input, ...(mutationId ? { mutationId } : {}) }, { timeoutMs: this.timeoutMs })).result;
+    const query = transaction.getStore()?.query;
+    if (!query) fail('invalid_configuration', 'backlog actions require a resumable workflow');
+    return dispatch({ protocol: 1, operation, context: { ...this.context, session }, input, ...(mutationId ? { mutationId } : {}) }, (name, variables) => query(name, variables, { ...this.context, session }));
   };
   connect = (session: string) => (operation: string, input?: Record<string, any>, key?: string) => this.call(operation, input, key, session);
   async resolve() {

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from './runtime-context.ts';
 import { pullNumber } from './completion.ts';
 import { readIdentity, checkSelection, resume } from './identity.ts';
 import { loadSession } from './sessions.ts';

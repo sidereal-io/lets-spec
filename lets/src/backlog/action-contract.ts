@@ -15,7 +15,7 @@ export type Capture = {
   state: 'complete' | 'unknown' | 'rejected'; exitCode: number | null; signal: string | null;
   stdout: string; stderr: string; bytes: number;
 };
-export interface CaptureReader { read(reference: string, action: Action): Promise<Capture> }
+export interface CaptureReader { read(reference: string, action: Action, options?: { historical?: boolean }): Promise<Capture> }
 export function canonical(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
   if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']';
@@ -44,10 +44,10 @@ export function validateAction(value: unknown, now = Date.now()): asserts value 
   const { digest: expected, ...body } = a;
   if (expected !== digest(body)) throw new AdapterFailure('invalid_request', 'none', 'action digest mismatch');
 }
-export function verifyCapture(action: Action, capture: unknown, reference: string, now = Date.now()): Capture {
+export function verifyCapture(action: Action, capture: unknown, reference: string, now = Date.now(), historical = false): Capture {
   const unknown = () => new AdapterFailure('unknown_outcome', 'unknown', 'independent capture is unavailable, mismatched, stale or incomplete; reconcile original action');
-  try { validateAction(action, now); } catch { throw unknown(); }
   const c = capture as Capture;
+  try { validateAction(action, historical ? c?.startedAt : now); } catch { throw unknown(); }
   if (!keys(c, ['version', 'id', 'actionId', 'actionDigest', 'tool', 'stdin', 'startedAt', 'finishedAt', 'dispatched', 'state', 'exitCode', 'signal', 'stdout', 'stderr', 'bytes']) ||
       c.version !== 1 || c.id !== reference || c.actionId !== action.id || c.actionDigest !== action.digest ||
       canonical(c.tool) !== canonical(action.tool) || canonical(c.stdin) !== canonical(action.stdin) ||

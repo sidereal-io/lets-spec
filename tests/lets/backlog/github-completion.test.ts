@@ -59,3 +59,15 @@ test('native reference rejects incomplete closing links', () => withGithub(async
   set('PullClosingIssues', { repository: { pullRequest: { closingIssuesReferences: { nodes: [{ id: 'I', repository: { nameWithOwner: 'owner/repo' } }], pageInfo: { hasNextPage: true, endCursor: 'loop' } } } } });
   await assert.rejects(call('reference.write', { item, reference }, 'reference'), /repeated/);
 }));
+test('raw completion cannot fabricate the remote merge state',()=>withGithub(async({call,set,state})=>{
+  await call('claim.acquire',{item},'acquire');await call('reference.write',{item,reference},'reference');
+  set('PullRequest',{repository:{pullRequest:{url:reference,merged:false,mergeCommit:null,repository:{nameWithOwner:'owner/repo'}}}});
+  const writes=state().calls.filter((call:any)=>call.name==='FieldStatus').length;
+  await assert.rejects(call('completion.write',{item,merge:{reference,merged:true,commit:'forged'}},'complete'),/merge/);
+  assert.equal(state().calls.filter((call:any)=>call.name==='FieldStatus').length,writes);
+}));
+test('raw completion requires the exact captured merge commit',()=>withGithub(async({call,set})=>{
+  await call('claim.acquire',{item},'acquire');await call('reference.write',{item,reference},'reference');
+  set('PullRequest',{repository:{pullRequest:{url:reference,merged:true,mergeCommit:{oid:'actual'},repository:{nameWithOwner:'owner/repo'}}}});
+  await assert.rejects(call('completion.write',{item,merge:{reference,merged:true,commit:'different'}},'complete'),/merge/);
+}));

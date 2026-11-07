@@ -9,10 +9,9 @@ import { join } from 'node:path';
 import { validateRequest, validateResponse, parseRequest, MUTATIONS } from './protocol.ts';
 import { GitHub, fail } from './github.ts';
 import type { Context, Query } from './github.ts';
-import { ghQuery } from './gh.ts';
 import { AdapterFailure } from './errors.ts';
 import type { Mappings } from './items.ts';
-export async function dispatch(request: Record<string, any>, query: Query = ghQuery(request.context.cwd)): Promise<any> {
+export async function dispatch(request: Record<string, any>, query: Query): Promise<any> {
   validateRequest(request as unknown);
   const context = request.context as Context;
   const github = new GitHub(context, query);
@@ -63,7 +62,7 @@ export async function main() {
   try {
     const input = await readStdin();
     request = parseRequest(input);
-    const response = { protocol: 1, ok: true, result: await dispatch(request) };
+    const response = { protocol: 1, ok: true, result: await dispatch(request, async () => { throw new AdapterFailure('invalid_configuration', 'none', 'standalone executable adapters are retired; use lets backlog'); }) };
     validateResponse(response as unknown, 0, request.operation); process.stdout.write(JSON.stringify(response) + '\n');
   } catch (error) {
     const failure = error instanceof AdapterFailure ? error : MUTATIONS.includes(request?.operation)

@@ -1,3 +1,4 @@
+import { ActionYield } from './runtime-context.ts';
 import { Claims } from './claims.ts';
 import { fail } from './github.ts';
 import { Store, scope, mutationName, hash } from './store.ts';
@@ -28,6 +29,12 @@ export class Completion {
     const links = await github.pages('PullClosingIssues', github.variables({ number }), data => data.repository?.pullRequest?.closingIssuesReferences);
     if (!links.some(issue => issue.id === id && issue.repository?.nameWithOwner?.toLowerCase() === github.context.repository.toLowerCase())) fail('conflict', 'PR does not natively close the recorded issue');
   }
+  async merged(reference: string, commit: string) {
+    const github=this.claims.github;
+    const number=pullNumber(reference,github.context.repository);
+    const pull=(await github.query('PullRequest',github.variables({number}))).repository?.pullRequest;
+    if(!pull||pull.url!==reference||pull.repository?.nameWithOwner?.toLowerCase()!==github.context.repository.toLowerCase()||pull.merged!==true||typeof pull.mergeCommit?.oid!=='string'||!pull.mergeCommit.oid.trim()||pull.mergeCommit.oid!==commit)fail('conflict','captured exact PR merge and commit are required');
+  }
   async write(request: Record<string, any>) {
     const github = this.claims.github; const context = github.context; const id = request.input.item.id;
     const store = new Store(context.cwd); const name = mutationName(request);
@@ -40,6 +47,7 @@ export class Completion {
       await this.linked(reference, id);
       if (association && association.reference !== reference) fail('conflict', 'item is associated with a different PR');
       if (completing && (!association || request.input.merge.merged !== true || !request.input.merge.commit?.trim())) fail('conflict', 'completion requires associated PR merge and nonempty commit evidence');
+      if(completing)await this.merged(reference,request.input.merge.commit);
       const result = completing ? { status: 'Done' } : { reference };
       if ((completing && state.status === 'Done') || (!completing && association)) {
         store.write(name, { request, state: 'applied', result }); return result;
@@ -52,10 +60,12 @@ export class Completion {
         else store.write('reference-' + hash([scope(context), context.actor, context.session, id]), { reference });
         changed = true;
         await this.linked(reference, id);
+        if(completing)await this.merged(reference,request.input.merge.commit);
         const fresh = await this.current(id); const linked = this.association(fresh);
         if (linked?.reference !== reference || (completing && fresh.status !== 'Done')) fail('conflict', 'PR mutation did not retain expected association and state');
         entry.state = 'applied'; store.write(name, entry); return result;
       } catch (error) {
+        if (error instanceof ActionYield) throw error;
         if (error instanceof AdapterFailure) {
           if (changed) throw new AdapterFailure(error.category, 'partial', error.message);
           if (error.effects === 'none') { entry.state = 'absent'; store.write(name, entry); }
@@ -73,6 +83,7 @@ export class Completion {
       const state = await this.current(entry.request.input.item.id); const linked = this.association(state);
       const completing = entry.request.operation === 'completion.write'; const reference = completing ? entry.request.input.merge.reference : entry.request.input.reference;
       await this.linked(reference, entry.request.input.item.id);
+      if(completing)await this.merged(reference,entry.request.input.merge.commit);
       if (linked && linked.reference !== reference) fail('conflict', 'PR association changed after mutation');
       if (linked?.reference !== reference || (completing && state.status !== 'Done')) return { state: entry.state === 'absent' ? 'absent' : 'unknown' };
       entry.state = 'applied'; entry.result = completing ? { status: 'Done' } : { reference }; store.write(name, entry);

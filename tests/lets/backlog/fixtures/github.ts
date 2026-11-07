@@ -2,7 +2,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { invoke } from '../../../../lets/src/backlog/transport.ts';
+import { AdapterFailure } from '../../../../lets/src/backlog/errors.ts';
 import { METADATA } from '../../../../lets/src/backlog/items.ts';
 export const page = (nodes: any[], hasNextPage = false, endCursor: string | null = null) => ({ nodes, pageInfo: { hasNextPage, endCursor } });
 export const context = { cwd: process.cwd(), provider: 'github', repository: 'owner/repo', actor: 'me', session: 's', backlog: 'P' };
@@ -20,6 +20,7 @@ export function data() {
     IssueOwners: { node: { assignees: page([]) } },
     IssueProjects: { node: { projectItems: page([{ id: 'PI', project: { id: 'P' } }]) } },
     ItemValues: { node: { fieldValues: page(Object.entries({ Kind: 'Story', Priority: 'Must', Size: 'S', Status: 'Todo' }).map(([field, value]) => ({ field: { id: `F-${field}` }, optionId: `V-${value}` }))) } },
+    PullRequest: {repository:{pullRequest:{id:'PR',url:'https://github.com/owner/repo/pull/7',body:'Closes #2',merged:true,mergeCommit:{oid:'merge'},repository:{nameWithOwner:'owner/repo'}}}},
     PullClosingIssues: { repository: { pullRequest: { closingIssuesReferences: page([{ id: 'I', repository: { nameWithOwner: 'owner/repo' } }]) } } },
     IssueComments: { node: { comments: page([]) } },
     IssueBlockers: { node: { blockedBy: page([]) } },
@@ -41,13 +42,19 @@ export async function withGithub(run: (fixture: { call: (operation: string, inpu
   const adapter = join(cwd, 'adapter');
   writeFileSync(adapter, `#!${process.execPath}\nprocess.env.PATH=${JSON.stringify(cwd + ":" + process.env.PATH)}; await import(${JSON.stringify(entry)});`); chmodSync(adapter, 0o700);
   symlinkSync(adapter, join(cwd, 'lets-backlog-github'));
-  const main = fileURLToPath(new URL('../../../../lets/src/main.ts', import.meta.url));
+  const main = fileURLToPath(new URL('./workflow-driver.ts', import.meta.url));
   try {
     await run({ cwd, command: (name, input = {}) => {
-      const result = spawnSync(process.execPath, [main, 'backlog', name], { cwd, env: { ...process.env, PATH: cwd + ':' + process.env.PATH }, encoding: 'utf8', input: JSON.stringify({ repository: context.repository, actor: context.actor, timeoutMs: 15000, ...input }) });
+      const result = spawnSync(process.execPath, [main, name, ghEntry], { cwd, env: { ...process.env, BACKLOG_TEST_STATE:path, PATH: cwd + ':' + process.env.PATH }, encoding: 'utf8', input: JSON.stringify({ repository: context.repository, actor: context.actor, timeoutMs: 15000, ...input }) });
       if (!result.stdout) throw new Error(result.stderr);
       return { status: result.status, result: JSON.parse(result.stdout) };
     }, state: () => JSON.parse(readFileSync(path, 'utf8')), set: (name, value) => { const state = JSON.parse(readFileSync(path, 'utf8')); state.responses[name] = value; writeFileSync(path, JSON.stringify(state)); },
-      call: async (operation, input = {}, mutationId, contextPatch = {}) => (await invoke(adapter, { protocol: 1, operation, context: { ...context, cwd, ...contextPatch }, input, ...(mutationId ? { mutationId } : {}) }, { timeoutMs: 15000 })).result });
+      call: async (operation, input = {}, mutationId, contextPatch = {}) => {
+        const child = spawnSync(process.execPath,[main,'fixture-request',ghEntry],{cwd,env:{...process.env,BACKLOG_TEST_STATE:path},encoding:'utf8',input:JSON.stringify({protocol:1,operation,context:{...context,cwd,...contextPatch},input,...(mutationId?{mutationId}:{})})});
+        if(!child.stdout)throw Error(child.stderr);
+        const result=JSON.parse(child.stdout);
+        if(result.error)throw new AdapterFailure(result.error.category,result.error.effects,result.error.message);
+        return result;
+      } });
   } finally { rmSync(cwd, { recursive: true, force: true }); }
 }

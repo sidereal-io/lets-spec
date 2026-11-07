@@ -56,9 +56,9 @@ export class CaptureClient implements CaptureReader {
     if (!exactKeys(result, ['reference']) || result.reference !== action.id) throw new AdapterFailure('unknown_outcome', 'unknown', 'invalid capture reference; reconcile original action');
     return {reference:result.reference};
   }
-  async read(reference: string, action: Action): Promise<Capture> {
+  async read(reference: string, action: Action, options: {historical?:boolean} = {}): Promise<Capture> {
     this.verifyTool(action);
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(reference)) throw new AdapterFailure('unknown_outcome', 'unknown', 'invalid capture reference');
-    return verifyCapture(action, await this.exchange(`/receipts/${reference}`), reference);
+    return verifyCapture(action, await this.exchange(`/receipts/${reference}`), reference, Date.now(), options.historical);
   }
 }

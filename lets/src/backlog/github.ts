@@ -4,7 +4,7 @@ import { AdapterFailure } from './errors.ts';
 import type { ErrorCategory } from './errors.ts';
 
 export type Context = { cwd: string; repository: string; provider: string; actor: string; session: string; backlog?: string };
-export type Query = (name: string, variables: Record<string, unknown>) => Promise<any>;
+export type Query = (name: string, variables: Record<string, unknown>, context?: Context) => Promise<any>;
 export function fail(category: ErrorCategory, message: string): never { throw new AdapterFailure(category, 'none', message); }
 export class GitHub {
   readonly context: Context;

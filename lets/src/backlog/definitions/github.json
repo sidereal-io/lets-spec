@@ -1,0 +1,298 @@
+{
+  "version": 1,
+  "name": "github",
+  "provider": "github",
+  "contract": 1,
+  "backendVersions": [
+    "GitHub GraphQL v4",
+    "GitHub CLI 2.102 or compatible"
+  ],
+  "facts": {
+    "PullClosingIssues": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query PullClosingIssues($owner:String!,$name:String!,$number:Int!,$cursor:String) { repository(owner:$owner,name:$name) { pullRequest(number:$number) { closingIssuesReferences(first:100,after:$cursor) { nodes { id repository { nameWithOwner } } pageInfo { hasNextPage endCursor } } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "UpdateIssueBody": {
+      "tool": "github-graphql",
+      "mode": "write",
+      "stdin": {
+        "query": "mutation UpdateIssueBody($id:ID!,$body:String!) { updateIssue(input:{id:$id,body:$body}) { issue { id } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "PullRequest": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query PullRequest($owner:String!,$name:String!,$number:Int!) { repository(owner:$owner,name:$name) { pullRequest(number:$number) { id url body merged mergeCommit { oid } repository { nameWithOwner } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "UpdatePRBody": {
+      "tool": "github-graphql",
+      "mode": "write",
+      "stdin": {
+        "query": "mutation UpdatePRBody($id:ID!,$body:String!) { updatePullRequest(input:{pullRequestId:$id,body:$body}) { pullRequest { id } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "FieldStatus": {
+      "tool": "github-graphql",
+      "mode": "write",
+      "stdin": {
+        "query": "mutation FieldStatus($project:ID!,$item:ID!,$field:ID!,$option:String!) { updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{singleSelectOptionId:$option}}) { projectV2Item { id } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "Unassign": {
+      "tool": "github-graphql",
+      "mode": "write",
+      "stdin": {
+        "query": "mutation Unassign($issue:ID!,$actor:ID!) { removeAssigneesFromAssignable(input:{assignableId:$issue,assigneeIds:[$actor]}) { assignable { ... on Issue { id } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "Assign": {
+      "tool": "github-graphql",
+      "mode": "write",
+      "stdin": {
+        "query": "mutation Assign($issue:ID!,$actor:ID!) { addAssigneesToAssignable(input:{assignableId:$issue,assigneeIds:[$actor]}) { assignable { ... on Issue { id } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "Actor": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query Actor($owner:String!,$name:String!) { viewer { login id } repository(owner:$owner,name:$name) { nameWithOwner viewerPermission } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "RepositoryProjects": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query RepositoryProjects($owner:String!,$name:String!,$cursor:String) { repository(owner:$owner,name:$name) { projectsV2(first:100,after:$cursor) { nodes { id title url closed } pageInfo { hasNextPage endCursor } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "OwnerProjects": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query OwnerProjects($owner:String!,$cursor:String) { repositoryOwner(login:$owner) { ... on ProjectV2Owner { projectsV2(first:100,after:$cursor) { nodes { id title url closed } pageInfo { hasNextPage endCursor } } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "ProjectRepositories": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query ProjectRepositories($id:ID!,$cursor:String) { node(id:$id) { ... on ProjectV2 { repositories(first:100,after:$cursor) { nodes { nameWithOwner } pageInfo { hasNextPage endCursor } } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "Project": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query Project($id:ID!) { node(id:$id) { ... on ProjectV2 { id title url closed viewerCanUpdate } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "ProjectFields": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query ProjectFields($id:ID!,$cursor:String) { node(id:$id) { ... on ProjectV2 { fields(first:100,after:$cursor) { nodes { ... on ProjectV2Field { id name dataType } ... on ProjectV2SingleSelectField { id name dataType options { id name } } ... on ProjectV2IterationField { id name dataType } } pageInfo { hasNextPage endCursor } } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "Issue": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query Issue($id:ID!) { node(id:$id) { ... on Issue { id number title body url closed lastEditedAt repository { nameWithOwner } parent { id number body closed repository { nameWithOwner } } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "NamedIssue": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query NamedIssue($owner:String!,$name:String!,$number:Int!) { repository(owner:$owner,name:$name) { issue(number:$number) { id } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "IssueOwners": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query IssueOwners($id:ID!,$cursor:String) { node(id:$id) { ... on Issue { assignees(first:100,after:$cursor) { nodes { login id } pageInfo { hasNextPage endCursor } } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "IssueProjects": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query IssueProjects($id:ID!,$cursor:String) { node(id:$id) { ... on Issue { projectItems(first:100,after:$cursor,includeArchived:true) { nodes { id project { id } } pageInfo { hasNextPage endCursor } } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "ItemValues": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query ItemValues($id:ID!,$cursor:String) { node(id:$id) { ... on ProjectV2Item { fieldValues(first:100,after:$cursor) { nodes { ... on ProjectV2ItemFieldSingleSelectValue { optionId field { ... on ProjectV2SingleSelectField { id } } } ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2Field { id } } } } pageInfo { hasNextPage endCursor } } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "IssueComments": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query IssueComments($id:ID!,$cursor:String) { node(id:$id) { ... on Issue { comments(first:100,after:$cursor) { nodes { id url body createdAt updatedAt lastEditedAt authorAssociation author { __typename login } } pageInfo { hasNextPage endCursor } } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "IssueBlockers": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query IssueBlockers($id:ID!,$cursor:String) { node(id:$id) { ... on Issue { blockedBy(first:100,after:$cursor) { nodes { id closed repository { nameWithOwner } } pageInfo { hasNextPage endCursor } } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "IssueChildren": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query IssueChildren($id:ID!,$cursor:String) { node(id:$id) { ... on Issue { subIssues(first:100,after:$cursor) { nodes { id closed repository { nameWithOwner } } pageInfo { hasNextPage endCursor } } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    },
+    "ProjectItems": {
+      "tool": "github-graphql",
+      "mode": "read",
+      "stdin": {
+        "query": "query ProjectItems($id:ID!,$cursor:String) { node(id:$id) { ... on ProjectV2 { items(first:100,after:$cursor) { nodes { id content { ... on Issue { id closed repository { nameWithOwner } } } } pageInfo { hasNextPage endCursor } } } } }",
+        "variables": {
+          "$input": ""
+        }
+      },
+      "result": {
+        "$path": "/data"
+      }
+    }
+  }
+}

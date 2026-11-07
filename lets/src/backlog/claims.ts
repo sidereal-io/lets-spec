@@ -1,4 +1,5 @@
-import { randomUUID } from 'node:crypto';
+import { ActionYield } from './runtime-context.ts';
+import { randomUUID } from './runtime-context.ts';
 import { GitHub, fail } from './github.ts';
 import { Store, scope, mutationName, hash } from './store.ts';
 import { AdapterFailure } from './errors.ts';
@@ -69,6 +70,7 @@ export class Claims {
         const result = await this.read(id); entry.state = 'applied'; entry.result = result; store.write(name, entry);
         return result;
       } catch (error) {
+        if (error instanceof ActionYield) throw error;
         if (error instanceof AdapterFailure) throw new AdapterFailure(error.category, started ? error.effects === 'unknown' ? 'unknown' : 'partial' : 'none', error.message);
         throw new AdapterFailure('unknown_outcome', 'unknown', 'claim interrupted; reconcile mutation before progression');
       }
@@ -142,6 +144,7 @@ export class Claims {
         this.require(await this.snapshot(id), { ...record, state: 'released' }, [], ['Todo']);
         entry.state = 'applied'; entry.result = { released: true }; store.write(name, entry); return entry.result;
       } catch (error) {
+        if (error instanceof ActionYield) throw error;
         if (error instanceof AdapterFailure) {
           if (!changed && error.effects === 'none') { entry.state = 'absent'; store.write(name, entry); throw error; }
           throw new AdapterFailure(error.category, error.effects === 'unknown' ? 'unknown' : 'partial', error.message);

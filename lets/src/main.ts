@@ -278,8 +278,8 @@ program
     process.exitCode = await sync({ check: check === true }, realDeps());
   });
 
-const backlog = program.command('backlog').description('Build existing items through the configured executable backlog adapter. Commands read one JSON input from stdin; see docs/backlog-build.md.');
-for (const command of ['request', 'select', 'claim', 'release', 'bind', 'resume', 'packet', 'reference', 'complete', 'glossary-update']) {
+const backlog = program.command('backlog').description('Build existing items through bounded actions and independently captured results. Commands read one JSON input from stdin; see docs/backlog-build.md.');
+for (const command of ['act', 'submit', 'reconcile', 'abandon', 'request', 'select', 'claim', 'release', 'bind', 'resume', 'packet', 'reference', 'complete', 'glossary-update']) {
   backlog.command(command).description(`Run backlog ${command} using one JSON input on stdin.`).action(async () => { await backlogCommand(command); });
 }
 

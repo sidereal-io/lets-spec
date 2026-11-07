@@ -1,3 +1,4 @@
+import { ActionYield } from './runtime-context.ts';
 import { AdapterFailure } from './errors.ts';
 import { Claims } from './claims.ts';
 import { fail } from './github.ts';
@@ -25,6 +26,7 @@ export async function updateGlossary(claims: Claims, request: Record<string, any
       store.write(name, { request, state: 'pending' });
       try { await github.query('UpdateIssueBody', { id, body }); }
       catch (error) {
+        if (error instanceof ActionYield) throw error;
         if (error instanceof AdapterFailure && error.effects === 'none') store.write(name, { request, state: 'absent' });
         throw error;
       }
@@ -34,6 +36,7 @@ export async function updateGlossary(claims: Claims, request: Record<string, any
       if (item.body !== body) fail('conflict', 'glossary body changed during update');
       const result = { item }; store.write(name, { request, state: 'applied', result }); return result;
     } catch (error) {
+        if (error instanceof ActionYield) throw error;
       if (body !== current.issue.body || previous?.state === 'pending') {
         if (error instanceof AdapterFailure) throw new AdapterFailure(error.category, error.effects === 'unknown' ? 'unknown' : 'partial', error.message);
         throw new AdapterFailure('unknown_outcome', 'unknown', 'glossary verification interrupted after write');
