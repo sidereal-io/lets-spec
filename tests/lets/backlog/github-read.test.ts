@@ -96,3 +96,7 @@ test('candidate enumeration tolerates unrelated native options',async()=>{
   const github=new GitHub(context,packetQuery({ProjectItems:{node:{items:page([{content:{id:'I',closed:false,repository:{nameWithOwner:'owner/repo'}}}])}},ItemValues:{node:{fieldValues:page([{field:{id:'F-Status'},optionId:'V-InReview'}])}}}));
   assert.equal((await github.candidates()).length,1);
 });
+test('packet exposes captured closed state for deleted-branch completion routing',async()=>{
+ const issue={id:'I',number:2,title:'work',body:'packet',closed:true,repository:{nameWithOwner:'owner/repo'}};
+ assert.equal((await new GitHub(context,packetQuery({Issue:{node:issue}})).packet('I')).item.closed,true);
+});

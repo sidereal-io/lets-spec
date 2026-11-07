@@ -20,7 +20,10 @@ When finishing a backlog change, read
 [Backlog commands](../lets-build/references/backlog-commands.md). Use its recorded
 `backlog.json` and original private continuation file with `lets backlog resume`
 through the action loop before progression. Verify the exact PR association
-with `lets backlog reference`. Missing or uncertain authority stops finishing;
+with `lets backlog reference` when the PR targets the default branch. For a
+stacked PR targeting a feature branch, keep association pending until it is
+retargeted after its parent merges; never substitute a body line for native
+closing evidence. Missing or uncertain claim authority stops finishing;
 a title, assignee or public token cannot replace the private continuation.
 A read-only review alone does not claim or mutate the backlog.
 

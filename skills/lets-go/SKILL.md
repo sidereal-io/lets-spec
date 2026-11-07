@@ -239,6 +239,13 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
    action loop for both. The packet gives the title; `<name>` is its
    part before ` — `. On a resumed branch, the recorded identity
    supplies the issue and the branch stays `<branch>`.
+   If the captured item is closed, do not claim it or create a branch.
+   Find its immutable `backlog.json` in the active or archived changes,
+   matching the scoped item. Use only its original private continuation
+   and associated PR URL with `lets backlog complete` through the action
+   loop, even if both Git branches have been deleted. Missing identity,
+   continuation or exact merge evidence leaves completion pending. Stop
+   after this path; an explicitly closed issue never starts a new claim.
 2. Look for the change's branch, here and on `origin`, every time:
 
    ```bash
@@ -445,6 +452,9 @@ After [Set the question mode](#set-the-question-mode), on the branch
    complete`, through the action loop. Only captured exact
    merged-PR/commit and native closing-link evidence permits Done. If
    the continuation or evidence is missing, leave completion pending.
+   A merge into a feature branch alone cannot satisfy native closing
+   evidence: keep it pending. Stacks merge bottom-up after retargeting
+   each remaining PR to the default branch.
    Then stop. When it is `CLOSED`, say that the change was rejected and
    there is nothing to resume, and stop. These two stops run only when
    the branch still exists and the run finds its issue. That happens for

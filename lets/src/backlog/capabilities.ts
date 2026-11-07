@@ -32,6 +32,7 @@ export function readyWork(items: Candidate[], repository: string): Candidate[] {
     .filter(
       (item) =>
         item.repository === repository &&
+        item.closed !== true &&
         item.metadata.Status === 'Todo' &&
         item.metadata.Kind !== 'Epic' &&
         ['Must', 'Should', 'Could'].includes(item.metadata.Priority) &&

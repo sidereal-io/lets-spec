@@ -17,6 +17,7 @@ export type Item = {
   metadata: Metadata;
   owners: string[];
   projectMember?: boolean;
+  closed?: boolean;
 };
 export function validateItem(value: unknown, incomplete = false): asserts value is Item {
   const item = object(value, 'item');

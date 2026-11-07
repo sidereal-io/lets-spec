@@ -38,10 +38,15 @@ When `openspec/changes/<name>/` exists, say to continue the change. When
 it does not, and you have no route line, stop: say that `lets-go` routes
 and claims the issue.
 
-After propose creates the draft PR, run `lets backlog reference` through the
-action loop with its exact URL, change path and original private handle. It
-checks native closing links and retains the association. Readiness leaves the
-item In Progress. Do not merge.
+After propose creates the draft PR targeting the default branch, run
+`lets backlog reference` through the action loop with its exact URL,
+change path and original private handle. It checks native closing links
+and retains the association. For a stacked PR targeting a feature branch,
+record association as pending: GitHub has no native closing links yet.
+Keep its closing line and original continuation. Merge stacks bottom-up,
+retarget the remaining PR to the default branch, then run `reference`
+before completion. A body line alone cannot authorize Done. Readiness
+leaves the item In Progress. Do not merge.
 
 ## When propose stops
 

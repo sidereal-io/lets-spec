@@ -110,7 +110,7 @@ export class GitHub {
     const projectItem = await this.projectItem(id, !strict);
     const values = projectItem ? await this.values(projectItem) : {};
     return { identity: { provider: 'github', backlog: this.context.backlog!, id }, reference: `#${issue.number}`, url: issue.url,
-      title: issue.title, body: issue.body, metadata: readMapped(values, config.mappings, !strict), projectMember: !!projectItem, owners: await this.owners(id) };
+      title: issue.title, body: issue.body, metadata: readMapped(values, config.mappings, !strict), projectMember: !!projectItem, closed: issue.closed, owners: await this.owners(id) };
   }
   async packet(id: string, mappings?: Mappings) {
     const item = await this.read(id, mappings);
