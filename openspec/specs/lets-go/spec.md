@@ -102,7 +102,7 @@ When *Confirm the packet* returns `complete`, and no shape step ran in this run,
 - **THEN** `lets-go` prints the `Picked` line for #192, and no second `Done shape:` line
 
 ### Requirement: Review plan runs as a step, or is not in the route
-When the schema is `lets-minimal`, review plan never runs. `lets-go` SHALL print `Skipped review plan: not in the lets-minimal route.` after the plan step is done, and before the build step. That line SHALL carry no date. When the schema is not `lets-minimal`, review plan SHALL be a step of its own. It SHALL run as *Each step runs through lets delegate step* says, with `--for review-plan` and `--name <name>-review-plan`. Its prompt SHALL say to invoke the `lets-review-plan` skill for the change, as *The step prompt says what to run, the level, and how to report* says. That skill reviews the plan, or lets its *Check an earlier review* decide, runs its own rounds, and records the review in the pull request description under **Plan review**. When the walk reaches review plan, the first of these that matches SHALL decide whether it is done. First, on `lets-minimal`, review plan is done. Second, when the archive folder exists, review plan is done, and the records disagree when the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line. Third, otherwise, review plan SHALL count as done when that section covers the plan: `lets-review-plan`'s *Check an earlier review* finds no reason to run the skill again, and says the review is finished. When the walk reaches review plan and no section covers the plan, review plan SHALL run, whatever the change's `state`. So a `ready` change with no covering review goes to review plan, not build. `lets-go` SHALL read the pull request's body when it reaches the row, with `gh pr view <name> --json number,body`, because a step in this run can have opened or changed it. When review plan was done before this run, `lets-go` SHALL print `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.` `<pr>` SHALL be the pull request's number. `<sha>` and `<verdict>` SHALL come from the **Plan review** section of the pull request's body. `lets-go` SHALL find the `## Plan review` heading first, and read the section up to the next `## ` heading or the end of the body. Inside it, `<sha>` SHALL come from the line that starts `Reviewed: `, and `<verdict>` from the line that starts `- **Verdict:** `. `<date>` SHALL be `<sha>`'s author date, as `YYYY-MM-DD`, from `git log -1 --format=%as <sha>`. When the review plan step reports `done` in this run, `lets-go` SHALL print `Done review plan: <date>. <evidence>`, with the report's `date` and its `evidence` joined with `; `, as for any other step. The schema SHALL be the `schema:` line of the change's `.openspec.yaml` when the change folder exists, and the route's schema when it does not.
+When the schema is `lets-minimal`, review plan never runs. `lets-go` SHALL print `Skipped review plan: not in the lets-minimal route.` after the plan step is done, and before the build step. That line SHALL carry no date. When the schema is not `lets-minimal`, review plan SHALL be a step of its own. It SHALL run as *Each step runs through lets delegate step* says, with `--for review-plan` and `--name <name>-review-plan`. Its prompt SHALL say to invoke the `lets-review-plan` skill for the change, as *The step prompt says what to run, the level, and how to report* says. That skill reviews the plan, or lets its *Check an earlier review* decide, runs its own rounds, and records the review in the pull request description under **Plan review**. When the walk reaches review plan, the first of these that matches SHALL decide whether it is done. First, on `lets-minimal`, review plan is done. Second, when the archive folder exists, review plan is done, and the records disagree when the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line. Third, otherwise, review plan SHALL count as done when that section covers the plan: `lets-review-plan`'s *Check an earlier review* finds no reason to run the skill again, and says the review is finished. When the walk reaches review plan and no section covers the plan, review plan SHALL run, whatever the change's `state`. So a `ready` change with no covering review goes to review plan, not build. `lets-go` SHALL read the pull request's body when it reaches the row, with `gh pr view <name> --json number,body`, because a step in this run can have opened or changed it. When review plan was done before this run, `lets-go` SHALL print `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.` `<pr>` SHALL be the pull request's number. `<sha>` and `<verdict>` SHALL come from the **Plan review** section of the pull request's body. `lets-go` SHALL find the `## Plan review` heading first, and read the section up to the next `## ` heading or the end of the body. Inside it, `<sha>` SHALL come from the line that starts `Reviewed: `, and `<verdict>` from the line that starts `- **Verdict:** `. `<date>` SHALL be `<sha>`'s author date, as `YYYY-MM-DD`, from `git log -1 --format=%as <sha>`. When the review plan step reports `done` in this run, `lets-go` SHALL print `Done review plan: <date>. <evidence>`, with the report's `date` and its `evidence` joined with `; `, as for any other step. The schema SHALL be the `schema:` line of the first of these files that exists: the change's `openspec/changes/<name>/.openspec.yaml`, then the archived change's `openspec/changes/archive/<YYYY-MM-DD>-<name>/.openspec.yaml`. When neither exists, it SHALL be the route's schema. So an archived change keeps the schema it was built with, even when the route would now pick another.
 
 #### Scenario: A chore's route
 - **WHEN** the schema is `lets-minimal` and the plan step reports `done`
@@ -129,7 +129,7 @@ When the schema is `lets-minimal`, review plan never runs. `lets-go` SHALL print
 - **THEN** `lets-go` reads the body with `gh pr view <name> --json number,body` when it reaches review plan, not from the read before the plan step
 
 #### Scenario: An archived change on lets-minimal
-- **WHEN** the route's schema is `lets-minimal`, the archive folder `openspec/changes/archive/2026-11-04-lets-go-chore` exists, and pull request #167's body has no **Plan review** section
+- **WHEN** `openspec/changes/archive/2026-11-04-lets-go-chore/.openspec.yaml` says `schema: lets-minimal`, the issue's Size has since changed to M so that the route would pick `lets-standard`, and pull request #167's body has no **Plan review** section
 - **THEN** `lets-go` prints `Skipped review plan: not in the lets-minimal route.`, and prints no `Records disagree:` line for the missing section
 
 ### Requirement: lets-go picks the interactivity level and says why
@@ -231,11 +231,15 @@ In *Read the settings*, before it asks GitHub for anything, `lets-go` SHALL run 
 - **THEN** `lets-go` writes `.workspace/lets-go/lets-go-story-review-plan-prompt.md`, and runs `step run --for review-plan --name lets-go-story-review-plan` with it
 
 ### Requirement: Exit 3 runs the step in a subagent
-When `step run` exits 3, `lets-go` SHALL run the step in a subagent. The subagent SHALL start with no context from the `lets-go` session, and may write files. Its prompt SHALL be the file `lets` saved, `.workspace/lets-delegate/<session>.prompt.md`. `lets-go` SHALL read the last `step-report` block from the subagent's final message by the rules `lets` uses. The block opens with three or more backticks and `step-report`. It closes with at least as many backticks alone on a line. It holds one YAML mapping whose `outcome` is `done`, `needs-input` or `failed`. A `done` report holds `evidence`, a non-empty list of strings. A `needs-input` report holds `questions`, a non-empty list of mappings, each with a string `question` and an optional string `recommendation`. A `failed` report holds a string `reason`. A final message that breaks any of these rules SHALL count as a `failed` report whose reason says what is missing or wrong. For a `done` report `lets-go` SHALL stamp the date itself, as the current time in ISO 8601 UTC. It SHALL write the report it read to `.workspace/lets-go/<session>-report.json`.
+When `step run` exits 3, `lets-go` SHALL run the step in a subagent. The subagent SHALL start with no context from the `lets-go` session. It SHALL follow the saved prompt, work only in this repository, on the branch `<name>` or, for shape, on the default branch, and make only the changes that the step calls for. Its prompt SHALL be the file `lets` saved, `.workspace/lets-delegate/<session>.prompt.md`. `lets-go` SHALL read the last `step-report` block from the subagent's final message by the rules `lets` uses. The block opens with three or more backticks and `step-report`. It closes with at least as many backticks alone on a line. It holds one YAML mapping whose `outcome` is `done`, `needs-input` or `failed`. A `done` report holds `evidence`, a non-empty list of strings. A `needs-input` report holds `questions`, a non-empty list of mappings, each with a string `question` and an optional string `recommendation`. A `failed` report holds a string `reason`. A final message that breaks any of these rules SHALL count as a `failed` report whose reason says what is missing or wrong. For a `done` report `lets-go` SHALL stamp the date itself, as the current time in ISO 8601 UTC. It SHALL write the report it read to `.workspace/lets-go/<session>-report.json`.
 
 #### Scenario: The subagent step
 - **WHEN** `step run --for build` exits 3 and its stderr names `.workspace/lets-delegate/lets-go-chore-build.prompt.md`
 - **THEN** `lets-go` runs a subagent with that prompt file, and reads the `step-report` block at the end of its final message
+
+#### Scenario: What the subagent may change
+- **WHEN** the skill-interfaces test reads *Run a step in a subagent*
+- **THEN** it says that the subagent follows the saved prompt, works only in this repository on the branch `<name>`, and makes only the changes that the step calls for, and it does not say `may write files`
 
 #### Scenario: A subagent with no block
 - **WHEN** the subagent's final message holds no `step-report` block
@@ -287,6 +291,8 @@ Each step prompt SHALL name the step, the change, the issue, the branch, the sch
 ### Requirement: lets-go relays a needs-input report at the recommend level
 When a report's outcome is `needs-input`, `lets-go` SHALL go through its questions in order. For a question with a `recommendation`, it SHALL take the recommendation as the answer, and tell the user the question and the answer it gave. It SHALL write that answer as the recommendation followed by ` (lets-go accepted the step's recommendation; the user did not decide)`. For a question without one, it SHALL ask the user that question alone, and wait for the answer before the next. It SHALL append every pair, in order, to `.workspace/lets-go/<session>-answers.yaml`. That file is a YAML list of `question` and `answer` mappings, and keeps the pairs of earlier rounds. `lets-go` SHALL then run the step again with the same `--prompt-file` and `--answers-file <that file>`, through the same `step instructions`, `step run` and exit 3 rules.
 
+The rounds at `recommend` SHALL have a limit. From a step's sixth `needs-input` report in a run, `lets-go` SHALL relay every question of that step as at `ask`: it SHALL ask the user each one, show the recommendation as the suggested answer, and write the answer as the user gave it, with no marker. Before the first such question, it SHALL print `Interactivity: ask for the rest of this step, because it asked for input five times.` once. The count SHALL be per step and per run: a new run, or another step, starts again at none.
+
 #### Scenario: A mixed report
 - **WHEN** the plan step reports `needs-input` with `Which schema?` recommended `lets-minimal`, then `Confirm the ledger?` with no recommendation
 - **THEN** `lets-go` tells the user it answered `Which schema?` with `lets-minimal`, asks the user `Confirm the ledger?`, writes both pairs to the answers file with the first marked as accepted by `lets-go`, and runs `step run --for plan` again with `--answers-file .workspace/lets-go/lets-go-chore-plan-answers.yaml`
@@ -295,8 +301,16 @@ When a report's outcome is `needs-input`, `lets-go` SHALL go through its questio
 - **WHEN** the resumed step reports `needs-input` with one new question
 - **THEN** the answers file holds the earlier pairs and the new one, in order, and the step runs a third time with it
 
+#### Scenario: A step that keeps asking
+- **WHEN** the level is `recommend`, and the build step reports `needs-input` for the sixth time in this run, with `Which flag name?` recommended `--quiet`
+- **THEN** `lets-go` prints `Interactivity: ask for the rest of this step, because it asked for input five times.`, asks the user `Which flag name?` with `--quiet` as the suggested answer, and writes the user's answer with no marker
+
+#### Scenario: The fifth round is still answered
+- **WHEN** the level is `recommend`, and the build step reports `needs-input` for the fifth time in this run, with every question recommended
+- **THEN** `lets-go` takes each recommendation as the answer, as for the first round, and prints no `Interactivity:` line
+
 ### Requirement: A run ends on done, failed, or a repeated question
-`lets-go` SHALL run a step's rounds until its report is `done` or `failed`. When a `needs-input` report holds a question that is already in the answers file, `lets-go` SHALL stop, say the step asked a settled question again, and show the report. *Read the report* SHALL handle a failed shape step before any other failed step. For a failed shape step there is no branch: `lets-go` SHALL print `Failed shape: <reason>`, say to run `lets-shape` on the idea or the issue, name no branch and print no pull request URL. On a `failed` report from any other step it SHALL show the reason, name the step and the branch, and stop. It SHALL say that running `lets-go` again on the branch carries on from the first unfinished step. It SHALL print the pull request's URL only when the branch has a pull request. When it has none, it SHALL print no URL, and SHALL say that the branch has no pull request yet. It SHALL not run a failed step again in the same run.
+`lets-go` SHALL run a step's rounds until its report is `done` or `failed`. At `recommend`, from a step's sixth `needs-input` report in a run, the user answers every question of that step, as *lets-go relays a needs-input report at the recommend level* says. When a `needs-input` report holds a question that is already in the answers file, `lets-go` SHALL stop, say the step asked a settled question again, and show the report. *Read the report* SHALL handle a failed shape step before any other failed step. For a failed shape step there is no branch: `lets-go` SHALL print `Failed shape: <reason>`, say to run `lets-shape` on the idea or the issue, name no branch and print no pull request URL. On a `failed` report from any other step it SHALL show the reason, name the step and the branch, and stop. It SHALL say that running `lets-go` again on the branch carries on from the first unfinished step. It SHALL print the pull request's URL only when the branch has a pull request. When it has none, it SHALL print no URL, and SHALL say that the branch has no pull request yet. It SHALL not run a failed step again in the same run.
 
 #### Scenario: A failed apply
 - **WHEN** the build step reports `failed` with reason `tests fail on main`
@@ -596,7 +610,7 @@ At the `ask` level, when a report's outcome is `needs-input`, `lets-go` SHALL as
 - **THEN** `lets-go` asks the user that question alone, as it does at `recommend`
 
 ### Requirement: lets-go takes one issue number or an idea
-`lets-go` SHALL take one issue number, or an idea in words, or nothing. A request names an issue when it holds `#<i>` or is a bare number. A leading or trailing `ask` or `recommend` names the level and SHALL not count as part of the idea. On the default branch, every other request with words SHALL be the idea, kept word for word. On the default branch, when the request holds neither a number nor words, `lets-go` SHALL take `next`: the third case of *Find the source of demand*, over the whole backlog. That case keeps its rank, and its *Check the prerequisite* and *Confirm the packet* on each candidate, as *Only an idea or a named issue goes to the shape step* says. `lets-go` SHALL print `Picked #<i>: <title>, the next ready issue.` and go on from the blocker read with that issue as `<i>`. When the case returns `nothing-ready`, `lets-go` SHALL say the backlog has nothing ready, suggest the `lets-shape` skill, and stop, claiming nothing. On a change's branch, when it is given no number, it SHALL find the issue by the branch name. It SHALL run `gh issue list --state open --search "<branch> in:title" --json number,title` and keep the issues whose title starts with `<branch> — `. Exactly one match SHALL be the issue. Otherwise it SHALL say that it needs the issue number, and stop. When it is given a number on a change's branch, that issue's title SHALL start with `<branch> — `. If it does not, `lets-go` SHALL say the issue and the branch do not match, and stop. When it is given words on a change's branch, it SHALL say that an idea needs the default branch, and stop. It SHALL take an issue number as *Find the source of demand* takes a named issue. It SHALL take an idea as that section takes described work.
+`lets-go` SHALL take one issue number, or an idea in words, or nothing. A request names an issue when it holds `#<i>` or is a bare number. A leading or trailing `ask` or `recommend` SHALL name the level when the rest of the request is a number or nothing. When the rest is words on the default branch, `lets-go` SHALL ask the user whether that word names the level or is part of the idea, and show both readings. It SHALL ask at either level, before *Start from an idea* runs. Only when the user says the word names the level SHALL `lets-go` take it off, as the level. Otherwise the word SHALL stay in the idea, and *Set the level* SHALL take the level from its next source. On the default branch, every other request with words SHALL be the idea, kept word for word. When the idea holds no letter or digit, in any script, `lets-go` SHALL say that an idea needs at least one letter or digit, and stop. It SHALL stop before the discovery query and the title search, claiming nothing and running no step. On the default branch, when the request holds neither a number nor words, `lets-go` SHALL take `next`: the third case of *Find the source of demand*, over the whole backlog. That case keeps its rank, and its *Check the prerequisite* and *Confirm the packet* on each candidate, as *Only an idea or a named issue goes to the shape step* says. `lets-go` SHALL print `Picked #<i>: <title>, the next ready issue.` and go on from the blocker read with that issue as `<i>`. When the case returns `nothing-ready`, `lets-go` SHALL say the backlog has nothing ready, suggest the `lets-shape` skill, and stop, claiming nothing. On a change's branch, when it is given no number, it SHALL find the issue by the branch name. It SHALL run `gh issue list --state open --search "<branch> in:title" --json number,title` and keep the issues whose title starts with `<branch> — `. Exactly one match SHALL be the issue. Otherwise it SHALL say that it needs the issue number, and stop. When it is given a number on a change's branch, that issue's title SHALL start with `<branch> — `. If it does not, `lets-go` SHALL say the issue and the branch do not match, and stop. When it is given words on a change's branch, it SHALL say that an idea needs the default branch, and stop. It SHALL take an issue number as *Find the source of demand* takes a named issue. It SHALL take an idea as that section takes described work.
 
 #### Scenario: Neither a number nor words
 - **WHEN** the user runs `lets-go` alone on the default branch, and `next` finds `#149 lets-go-chore — ...` as the first ready issue
@@ -615,8 +629,24 @@ At the `ask` level, when a report's outcome is `needs-input`, `lets-go` SHALL as
 - **THEN** `lets-go` takes `add a --quiet flag to lets sync` as the idea, and searches for an existing issue as *Find the source of demand* does for described work
 
 #### Scenario: An idea with a level
-- **WHEN** the user runs `lets-go recommend add a --quiet flag to lets sync` on the default branch
+- **WHEN** the user runs `lets-go recommend add a --quiet flag to lets sync` on the default branch, and answers that `recommend` names the level
 - **THEN** the idea is `add a --quiet flag to lets sync`, and the level is `recommend`
+
+#### Scenario: A level word that is part of the idea
+- **WHEN** the user runs `lets-go ask before deleting the branch` on the default branch, and answers that `ask` is part of the idea
+- **THEN** the idea is `ask before deleting the branch`, and *Set the level* takes the level from `go.level` or the Kind
+
+#### Scenario: A level with a number
+- **WHEN** the user runs `lets-go ask #149`
+- **THEN** the level is `ask`, the issue is `#149`, and `lets-go` asks no question about the word
+
+#### Scenario: An idea with no letters or digits
+- **WHEN** the user runs `lets-go ???` on the default branch
+- **THEN** `lets-go` says that an idea needs at least one letter or digit, and stops, claiming nothing, before the discovery query and the title search
+
+#### Scenario: Letters in another script
+- **WHEN** the user runs `lets-go ログを直す` on the default branch
+- **THEN** the idea is `ログを直す`, and the run goes to *Start from an idea*
 
 #### Scenario: No issue number on a change's branch
 - **WHEN** the user runs `lets-go` with no issue number on the branch `lets-go-chore`, and one open issue's title starts with `lets-go-chore — `
@@ -865,7 +895,7 @@ Neither `SKILL.md` nor any reference file SHALL hold `<n>`, `<p>`, `<url>`, `<is
 - **THEN** `<name>` is `lets-sync-quiet`, and *Claim* creates the branch `lets-sync-quiet`, not `issue-180`
 
 ### Requirement: The lets-go checks read the skill's reference files
-Every skill-interfaces check that `lets-go` holds a string, or does not hold one, SHALL read `skills/lets-go/SKILL.md` and every `skills/lets-go/references/*.md` as one text. It SHALL collapse each run of whitespace, line breaks included, to one space before it matches, so a string may wrap across lines. A check that a string is present SHALL pass when any of those files holds it. A check that a string is absent SHALL fail when any of those files holds it, and SHALL name the string. A check that greps a table row of `lets-go`, such as a step's row or a row of the disagreements table, SHALL read the same files. Some checks test reading order or a relative link. They SHALL read `SKILL.md` alone. These are the checks of the section of each part and of the *Walk the step table* section. So are the checks of the order of the overview and the parts, and of the place of the `## Placeholders` section. So are the rule that `lets go level` comes before the first GitHub call, and the links to other skills' reference files. The check that each link names a heading reads each file against its own headings.
+Every skill-interfaces check that `lets-go` holds a string, or does not hold one, SHALL read `skills/lets-go/SKILL.md` and every `skills/lets-go/references/*.md` as one text. It SHALL collapse each run of whitespace, line breaks included, to one space before it matches, so a string may wrap across lines. A check that a string is present SHALL pass when any of those files holds it. A check that a string is absent SHALL fail when any of those files holds it, and SHALL name the string. A check that greps a table row of `lets-go`, such as a step's row or a row of the disagreements table, SHALL read the same files. Some checks test reading order or a relative link. They SHALL read `SKILL.md` alone. These are the checks of the *Walk the step table* section, of the order of the overview and the parts, of the place of the `## Placeholders` section, and of each part's `Next:` line. So are the rule that `lets go level` comes before the first GitHub call, and the links to other skills' reference files. A check of a part's section SHALL read the part's `##` section in `SKILL.md`, then the section with the same name in a reference file, when one has it, so a check of a part's steps follows the steps into `references/shape.md`. A check of a procedure SHALL read the procedure's section in `SKILL.md` or in a reference file, at any heading level. The check that each link names a heading reads each file against its own headings, and each link to another file against that file's headings.
 
 #### Scenario: A fixed line that wraps in a reference file
 - **WHEN** a skills folder holds `lets-go/SKILL.md` without `Records disagree:`, and `lets-go/references/records.md` holds `Records` at the end of one line and `disagree:` at the start of the next
@@ -882,6 +912,14 @@ Every skill-interfaces check that `lets-go` holds a string, or does not hold one
 #### Scenario: The lost race
 - **WHEN** the skill-interfaces test checks what `lets-go` does after another session claims the issue `next` picked
 - **THEN** it checks for `leave out every issue lost in this run`, and does not check for a step number
+
+#### Scenario: A part's steps in a reference file
+- **WHEN** a skills folder holds `lets-go/SKILL.md` with `## Run the shape step` and a `Next:` line, and `lets-go/references/shape.md` holds `## Run the shape step` followed by `Check the discovery map.`
+- **THEN** the section of *Run the shape step* holds both the `Next:` line and `Check the discovery map.`
+
+#### Scenario: A procedure in a reference file
+- **WHEN** a skills folder holds `lets-go/references/glossary-handoff.md` with `## Glossary preflight` followed by `Say so, and stop.`
+- **THEN** the check that each procedure holds no `stop` fails, and its output names `Glossary preflight`
 
 ### Requirement: A lets-go section may sit in a reference file, at any heading level
 The skill-interfaces check that `lets-go` holds a section SHALL pass when a heading whose text is the section's name, at any level from `#` to `######`, is a line of `SKILL.md` or of a file in `skills/lets-go/references/`. It SHALL fail when no such heading exists, and SHALL name the section. This holds for *Find the source of demand*, *Confirm the packet*, *Route*, *Glossary preflight*, *Claim*, *Import the glossary checkpoint*, *Check the prerequisite*, *Check the checkpoint*, *Import the commits* and *Recover from a failed import*.
@@ -1020,7 +1058,7 @@ An edit that the rehearsal finds already present on the base SHALL not be a fail
 - On the default branch, a number goes to *Check the issue*. An idea goes to *Start from an idea*. Nothing runs `next`: a pick prints `Picked #<i>: <title>, the next ready issue.` and goes to *Check the issue*, and an empty backlog stops.
 - On another branch, a number goes to *Check the issue* when it is one of the open issues whose title starts with the branch's name and ` — `, and stops otherwise. An idea stops: an idea needs the default branch. Nothing goes to *Check the issue* when exactly one open issue's title starts that way, and stops when none or several do.
 
-The table SHALL replace the bullets *Start* step 2 held, with the same results. A leading or trailing `ask` or `recommend` SHALL still be taken off the request before the table decides.
+The table SHALL replace the bullets *Start* step 2 held, with the same results. A leading or trailing `ask` or `recommend` SHALL be read before the table decides, as *lets-go takes one issue number or an idea* says. On another branch, words stop the run, so `lets-go` SHALL ask no question about the word there.
 
 #### Scenario: An idea on the default branch
 - **WHEN** the user runs `lets-go add a --quiet flag to lets sync` on `main`, the default branch
@@ -1077,7 +1115,7 @@ Every part but *End of the run* SHALL end its own text with a line that starts `
 - **THEN** it finds `**Find or create the issue**` and `**Confirm, then write**`
 
 ### Requirement: Every link inside lets-go names one of its headings
-This holds for `skills/lets-go/SKILL.md` and for each file in `skills/lets-go/references/`. A link to a place in the same file is written `](#<anchor>)`. Outside code, each such link SHALL match the anchor GitHub makes from one of that file's own headings. GitHub makes it from the heading's text: in lower case, with each space made a hyphen. It drops every character other than a letter, a digit, a hyphen or an underscore. The skill-interfaces check SHALL fail on a link that matches no heading, and SHALL name the file and the anchor.
+This holds for `skills/lets-go/SKILL.md` and for each file in `skills/lets-go/references/`. A link to a place in the same file is written `](#<anchor>)`. Outside code, each such link SHALL match the anchor GitHub makes from one of that file's own headings. GitHub makes it from the heading's text: in lower case, with each space made a hyphen. It drops every character other than a letter, a digit, a hyphen or an underscore. A link to another file is written with a path relative to the linking file, such as `](references/records.md#records-that-disagree)` or `](../SKILL.md#walk-the-step-table)`. Outside code, the path SHALL name a file that exists, and an anchor after it SHALL match one of that file's headings. A link that leaves the skills folder, or that starts with a URL scheme such as `https:`, is not checked here. The skill-interfaces check SHALL fail on a link that matches no file or no heading, and SHALL name the linking file and the link. It SHALL run on the source skills, and on `lets-go` as the release build installs it in each published flow, `standard` and `minimal`.
 
 #### Scenario: Every link resolves
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
@@ -1090,6 +1128,22 @@ This holds for `skills/lets-go/SKILL.md` and for each file in `skills/lets-go/re
 #### Scenario: A link in a reference file
 - **WHEN** `lets-go/references/glossary-preflight.md` links `[Check the prerequisite](#check-the-prerequisite)` and has a heading `## Check the prerequisite`
 - **THEN** the check passes for that file
+
+#### Scenario: A link to a heading in another file
+- **WHEN** a skills folder holds `lets-go/SKILL.md` linking `[records disagree](references/records.md#records-that-disagree)`, and `lets-go/references/records.md` has a heading `## Records that disagree`
+- **THEN** the check passes
+
+#### Scenario: A link to a missing file
+- **WHEN** a skills folder holds `lets-go/SKILL.md` linking `[the frame](references/frame.md)`, and there is no `lets-go/references/frame.md`
+- **THEN** the check fails, and its output names `SKILL.md` and `references/frame.md`
+
+#### Scenario: A link to a heading another file does not have
+- **WHEN** a skills folder holds `lets-go/references/shape.md` linking `[Check the issue](../SKILL.md#check-the-issue)`, and `lets-go/SKILL.md` has no heading `Check the issue`
+- **THEN** the check fails, and its output names `references/shape.md` and `../SKILL.md#check-the-issue`
+
+#### Scenario: The links in both published flows
+- **WHEN** the release build installs the `standard` flow and the `minimal` flow
+- **THEN** every link in each installed file of `lets-go` resolves to a file and a heading inside the installed skills
 
 ### Requirement: The Project query runs once per run
 `lets-go` SHALL run its Project query once per run, in *Read the settings*, right after it finds the default branch and the current one. The query sets `<project>`, `<owner>` and `<repo>` for the whole run. When it finds no Project, `lets-go` SHALL say to run the `lets-setup-backlog` skill, and stop. When it finds two or more, `lets-go` SHALL list each one's title and URL, ask the user to unlink the extras, and stop. It SHALL never pick one itself. These two stops SHALL come before every other stop of the run but a failed `lets go level`. No other part SHALL hold them. *Find the source of demand* SHALL not run the query, and SHALL return neither `no-project` nor `several-projects`.
@@ -1111,7 +1165,7 @@ This holds for `skills/lets-go/SKILL.md` and for each file in `skills/lets-go/re
 - **THEN** *Read the settings* holds the Project query, and no part or procedure holds `no-project` or `several-projects`
 
 ### Requirement: Each lets-go procedure returns a result
-Each section under `## Procedures` in `lets-go` SHALL end by returning to the part that ran it, with a result. *Glossary preflight*, which only *Claim* runs, SHALL return to *Claim*. A procedure SHALL not tell the agent to stop, and SHALL not name the part that runs next: the part that ran it decides. Outside code, a procedure's text, its subsections included, SHALL not hold the word `stop` or `stops`, in any case. A procedure that can end more than one way SHALL list its results. Each result is a name in backticks, with when it is returned and what it carries, such as the issue, who has it, or what to tell the user. The results SHALL be these:
+Each procedure of `lets-go` SHALL end by returning to the part that ran it, with a result. A procedure is a section under `## Procedures` in `SKILL.md`, or one of *Glossary preflight*, *Import the glossary checkpoint* and *Commit the discovery map* in a reference file. *Glossary preflight*, which only *Claim* runs, SHALL return to *Claim*. A procedure SHALL not tell the agent to stop, and SHALL not name the part that runs next: the part that ran it decides. Outside code, a procedure's text, its subsections included, SHALL not hold the word `stop` or `stops`, in any case. A procedure that can end more than one way SHALL list its results. Each result is a name in backticks, with when it is returned and what it carries, such as the issue, who has it, or what to tell the user. The results SHALL be these:
 
 | Procedure | Results |
 |---|---|
@@ -1126,7 +1180,7 @@ Each section under `## Procedures` in `lets-go` SHALL end by returning to the pa
 *Glossary preflight* returns `no-owned-edits` when the story owns no glossary edits, and otherwise passes on what *Check the checkpoint* returns. `verified` carries the checkpoint commits to import. *Claim*'s `claimed` carries what *Glossary preflight* returned, so *Enter the branch* runs *Import the glossary checkpoint* only after `verified`. *Commit the discovery map* ends one way only, so it names no result.
 
 #### Scenario: Every procedure returns
-- **WHEN** the skill-interfaces test reads each procedure of `lets-go`
+- **WHEN** the skill-interfaces test reads each procedure of `lets-go`, in `SKILL.md` and in its reference files
 - **THEN** each one says it returns to the part that ran it, or, for *Glossary preflight*, to *Claim*, has no `Next:` line, and holds no `stop` or `stops` outside code
 
 #### Scenario: A procedure that stops
@@ -1281,3 +1335,228 @@ A rule written once MAY run more than once. `next` runs *Check the prerequisite*
 #### Scenario: No return to Claim
 - **WHEN** the skill-interfaces test reads *Find the source of demand*
 - **THEN** it does not say `When *Claim* ran it, return to *Claim*`
+
+### Requirement: lets-go keeps what only some runs need in reference files
+`skills/lets-go/references/` SHALL hold these six files. Each SHALL open with a `#` title and one line that says when a run reads it.
+
+| File | What it holds |
+|---|---|
+| `glossary-handoff.md` | *Glossary preflight*, with *Check the prerequisite*, *Check the checkpoint* and *What the preflight returns*, and *Import the glossary checkpoint*, with *Import the commits* and *Recover from a failed import* |
+| `shape.md` | The steps of *Start from an idea*, *Run the shape step* and *Pick the first ready story*, *Commit the discovery map*, the `<shape-name>` and `<slug>` rules of *The change's name*, and *What shape runs* |
+| `step-prompt.md` | *Write the prompt*: the rules that fill the frame, and the frame as one fenced block that the agent copies to `.workspace/lets-go/<session>-prompt.md` and fills |
+| `records.md` | *Read the records* and *Records that disagree* |
+| `subagent.md` | *Run a step in a subagent* |
+| `terms.md` | The glossary's entries for the terms `lets-go` uses, as *lets-go carries the glossary's entries for its own terms* says |
+
+`SKILL.md` SHALL hold no heading of a section in this table, except the three parts. *Start from an idea*, *Run the shape step* and *Pick the first ready story* SHALL each keep, in `SKILL.md`, its `##` heading, its row in the overview, a sentence that links its steps in `shape.md`, and its `Next:` line. `shape.md` SHALL hold each part's steps under a heading with the part's name. Every link to a moved section SHALL name the file that holds it. The moved text SHALL keep its words, except for heading levels, links that now cross files, and what *lets-go reads the glossary file only for a story with a glossary handoff* and *Exit 3 runs the step in a subagent* change.
+
+#### Scenario: The moved sections are in their files
+- **WHEN** the skill-interfaces test lists the headings of each file of `lets-go`
+- **THEN** it finds *Records that disagree* and *Read the records* in `references/records.md`, *Run a step in a subagent* in `references/subagent.md`, *Write the prompt* in `references/step-prompt.md`, *What shape runs* and *Commit the discovery map* in `references/shape.md`, and *Glossary preflight* and *Import the glossary checkpoint* in `references/glossary-handoff.md`, and none of them in `SKILL.md`
+
+#### Scenario: A part whose steps moved
+- **WHEN** the skill-interfaces test reads the *Run the shape step* section of `SKILL.md`
+- **THEN** it links `references/shape.md#run-the-shape-step`, its last paragraph starts `Next:`, and `references/shape.md` has a heading `Run the shape step`
+
+#### Scenario: The prompt frame is one block to copy
+- **WHEN** the skill-interfaces test reads `references/step-prompt.md`
+- **THEN** one fenced block holds `## What to run`, `## Questions` and `## The report`, and the text before it names `.workspace/lets-go/<session>-prompt.md`
+
+#### Scenario: A section left behind
+- **WHEN** a skills folder holds `lets-go/SKILL.md` with a heading `Records that disagree`
+- **THEN** the check fails, and its output names `Records that disagree`
+
+### Requirement: lets-go reads the glossary file only for a story with a glossary handoff
+`SKILL.md` SHALL say to read `references/glossary-handoff.md` only when the issue's body has a **Glossary handoff** section. Where *Find the source of demand* runs *Check the prerequisite*, and where *Claim* runs *Glossary preflight*, `SKILL.md` SHALL say what each returns for an issue with no such section: `resolved` and `no-owned-edits`, without reading the file. These are the results the moved text already gives for a story with no glossary handoff.
+
+#### Scenario: An issue with no glossary handoff
+- **WHEN** the skill-interfaces test reads *Find the source of demand* and *Claim* in `SKILL.md`
+- **THEN** each names **Glossary handoff** and links `references/glossary-handoff.md`, *Find the source of demand* names `resolved`, and *Claim* names `no-owned-edits`
+
+### Requirement: lets-go carries the glossary's entries for its own terms
+`skills/lets-go/references/terms.md` SHALL hold the entries of `openspec/glossary.md` for *Part*, *Procedure*, *Step*, *Step report*, *Interactivity level* and *Packet*. Each entry SHALL be a `##` heading with the term, as in the glossary, and its text SHALL be the glossary entry's text, word for word. The file SHALL hold no other entry. An installed skill cannot link `openspec/glossary.md`: in a project that installs `lets-go`, that path is the project's own glossary. So this file is how the definitions travel with the skill. The skill-interfaces check SHALL fail when an entry's text differs from the glossary's, or when an entry is missing from either file, and SHALL name the term.
+
+#### Scenario: The copy matches the glossary
+- **WHEN** the skill-interfaces test reads `skills/lets-go/references/terms.md` and `openspec/glossary.md`
+- **THEN** each of the six terms has a `##` heading in both files, the text under each heading is the same once whitespace is collapsed, and the check passes
+
+#### Scenario: The glossary changes and the copy does not
+- **WHEN** a fixture glossary's *Procedure* entry says `run by a part` and the fixture `terms.md` says `run by a part or another procedure`
+- **THEN** the check fails, and its output names `Procedure`
+
+#### Scenario: A term missing from the copy
+- **WHEN** the fixture `terms.md` has no `## Step report` heading
+- **THEN** the check fails, and its output names `Step report`
+
+### Requirement: lets-go links each glossary term at its first use
+In `skills/lets-go/SKILL.md`, the first mention of each of *Packet*, *Step*, *Step report* and *Interactivity level*, in any case and outside the frontmatter and code, SHALL sit in a link to that term's heading in `references/terms.md`, such as `[step report](references/terms.md#step-report)`. A mention of *Step report* SHALL not count as a mention of *Step*. The skill SHALL not repeat a definition that `terms.md` holds.
+
+#### Scenario: Each term links at its first mention
+- **WHEN** the skill-interfaces test finds, in `SKILL.md` outside the frontmatter and code, the first line that mentions each of `packet`, `step`, `step report` and `interactivity level`
+- **THEN** that line holds a link to `references/terms.md#packet`, `#step`, `#step-report` or `#interactivity-level`, as the term is
+
+#### Scenario: A term used before its link
+- **WHEN** a fixture `SKILL.md` says `the issue's packet` on one line, and links `[packet](references/terms.md#packet)` on a later line
+- **THEN** the check fails, and its output names `packet`
+
+### Requirement: lets-go explains each of its own terms where it first appears
+`lets-go` SHALL explain each term below, in the section where it first appears, in the same sentence or the one before it. The explanation SHALL say what the term is, not only where it is used.
+
+| Term | Where | What the explanation says |
+|---|---|---|
+| *Find the source of demand* and `next` | The paragraph before the overview table in `SKILL.md` | *Find the source of demand* finds the run's issue: the one the user named, the one an idea's words describe, or `next`. `next` is the first ready issue on the backlog, as that procedure ranks it. |
+| *Procedure* | The same paragraph | A part or another procedure runs it, and it returns a result to what ran it. It links `references/terms.md#procedure`. |
+| *read marker* and the unread-comment rule | *Confirm the packet* | A read marker is a comment that `lets-shape` posts when it has read the thread, as the issue-comments reference says. A comment is unread when it was created or edited after both the body's last edit and the newest read marker. The sentence `The watermark is the later of the body's last edit and the newest read marker` stays. |
+| *Glossary handoff* | Its first mention in `SKILL.md`, in *Find the source of demand* | The section `lets-shape` writes in a story's issue body when shaping added glossary terms. It records which issue owns the definitions, and where the owner's glossary commits are. |
+| *prerequisite* | *Check the prerequisite*, in `references/glossary-handoff.md` | The glossary definitions a story needs that another issue owns. |
+| *checkpoint* and *owned paths* | *Check the checkpoint* | The checkpoint is the ordered `docs:` commits that hold shaping's glossary edits. The owned paths are the glossary files those commits may change. |
+| *rehearse* | *Check the checkpoint*, at its first use | Try the import first in a throwaway checkout, and keep the real working tree as it is. |
+| *holding branch* | *Import the commits* | The branch `lets-shape` makes from the default branch to keep the checkpoint commits until a story's branch imports them. |
+
+The opening paragraphs of `SKILL.md`, before the overview, SHALL say that "you" is the agent that runs the skill, and "the user" is the person who asked for the run. No reference file SHALL say it again.
+
+The `## Procedures` section of `SKILL.md` SHALL say, before its first procedure, that a part or another procedure runs each procedure, and that each returns to what ran it.
+
+#### Scenario: The explanations are in their sections
+- **WHEN** the skill-interfaces test reads the paragraph before the overview table, *Confirm the packet*, *Find the source of demand*, *Check the prerequisite*, *Check the checkpoint* and *Import the commits*
+- **THEN** each holds its row's explanation, and *Confirm the packet* still holds `The watermark is the later of the body's last edit and the newest read marker`
+
+#### Scenario: Who "you" is
+- **WHEN** the skill-interfaces test reads `SKILL.md` up to the overview table
+- **THEN** it says `"You" is the agent`, and no file in `skills/lets-go/references/` says it
+
+#### Scenario: A procedure that another runs
+- **WHEN** the skill-interfaces test reads `## Procedures` up to its first `###` heading
+- **THEN** it says that a part or another procedure runs each procedure
+
+### Requirement: The lets-go description says when to use it in about 50 words
+The `description` in the frontmatter of `skills/lets-go/SKILL.md` SHALL start with `Use when`, and SHALL hold at most 60 words. It SHALL name these requests: a story, bug or chore, or an idea in words, built end to end to a pull request ready for review; the next story; the change on the current branch; and `lets-go` run again after a run stopped. It SHALL say that `lets-go` runs each step in a fresh session. It SHALL leave the levels, the shape rules and the resume details to the body.
+
+#### Scenario: The description as it ships
+- **WHEN** the skill-interfaces test reads the frontmatter of `skills/lets-go/SKILL.md`
+- **THEN** its `description` starts `Use when`, holds at most 60 words, and holds `next story`, `current branch` and `fresh session`
+
+#### Scenario: A description that grew
+- **WHEN** a fixture `SKILL.md` has a `description` of 61 words that starts `Use when`
+- **THEN** the check fails, and its output names the word count
+
+### Requirement: The resume paragraph says what a run started again does
+The paragraph near the top of `SKILL.md` that tells the user to run `lets-go` again after a run stops SHALL say what the new run does in each of these cases:
+
+- **On the change's branch:** it finds the issue from the branch's name, prints a dated line for each step already done, and goes on from the first unfinished step.
+- **On the default branch, with the issue number:** it finds the change's branch, here or on `origin`, switches to it, and goes on the same way. It does not claim the issue again.
+- **On the default branch, with nothing:** it does not resume. It picks the next ready issue, and a claimed issue is never ready. To resume, give the issue number, or run it on the change's branch.
+- **After a failed step:** the run that failed never runs that step again. A new run starts it afresh, in a new session, with the answers given so far. A failed shape step has no branch: the run says to run `lets-shape` on the idea or the issue.
+- **After the pull request is merged or closed:** there is nothing to resume, and the run stops.
+
+#### Scenario: Each case is named
+- **WHEN** the skill-interfaces test reads `SKILL.md` up to the overview table
+- **THEN** it names the change's branch, the default branch with the issue number, the default branch with nothing, a failed step and a merged or closed pull request, each with what the new run does
+
+### Requirement: Enter the branch opens the shape file only after a shape step
+*Enter the branch* SHALL link *Commit the discovery map* in `references/shape.md` only for a run in which a shape step ran. For a run with no shape step, it SHALL say that there is no map to commit, so the run reads no part of `references/shape.md`. *Commit the discovery map* keeps its own rule, so a map is committed exactly when *lets-go commits the discovery map on the story's branch* says.
+
+#### Scenario: A claim with no shape step
+- **WHEN** the skill-interfaces test reads *Enter the branch*
+- **THEN** each link to `references/shape.md#commit-the-discovery-map` sits in a sentence that says a shape step ran in this run
+
+### Requirement: lets-go wraps its prose at 72 columns
+No line of `skills/lets-go/SKILL.md` or of a file in `skills/lets-go/references/` SHALL be longer than 72 columns, outside these exceptions. A column is one character (one Unicode code point), not one byte.
+
+- the frontmatter, between the opening and closing `---`;
+- a table row, a line whose first character other than a space is `|`;
+- a line inside a fenced code block, the fence lines included;
+- a line that holds one link and nothing else but leading spaces, a list marker such as `-` or `1.`, and one closing `.`, `,`, `;` or `:`;
+- every line of `references/terms.md`, which copies `openspec/glossary.md` word for word.
+
+The skill-interfaces check SHALL fail on any other line longer than 72 columns, and its output SHALL name the file, the line number and the length.
+
+#### Scenario: The source wraps
+- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
+- **THEN** it finds no line longer than 72 columns outside the exceptions
+
+#### Scenario: A prose line too long
+- **WHEN** a skills folder holds `lets-go/references/shape.md` whose line 4 is 73 characters of prose
+- **THEN** the check fails, and its output names `references/shape.md`, line `4` and the length `73`
+
+#### Scenario: A table row, a command and a lone link
+- **WHEN** a skills folder holds `lets-go/SKILL.md` with a 120-column table row, a 120-column line inside a ```` ```bash ```` block, and a line longer than 72 columns that holds only `   [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint).`
+- **THEN** the check passes
+
+#### Scenario: Wide characters count once
+- **WHEN** a skills folder holds `lets-go/SKILL.md` with a prose line of 70 characters, five of them `ログを直す`
+- **THEN** the check passes
+
+#### Scenario: The exit-3 sentence wraps
+- **WHEN** the skill-interfaces test reads *Run a step* in `skills/lets-go/SKILL.md`
+- **THEN** `**3**: no fresh session can run here, for example because no resolver started one` spans more than one line, and the exit-3 check still passes
+
+### Requirement: lets-go links each section it names
+`skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/` SHALL name a section of a file by a link to its heading, every time, in prose and in table cells, the overview's *Next* column included. A link to a section of another `lets-go` file, or of another skill, SHALL use a path relative to the linking file, as *Every link inside lets-go names one of its headings* says. A section of another skill that a published flow does not install, such as *Check an earlier review* in `lets-review-plan`, which the `minimal` flow leaves out, SHALL stay in italics, so that every link resolves in both flows. A heading inside the step prompt frame, which is not a heading of the file, SHALL be written as it is typed, in a code span, such as `## What to run`. `references/terms.md` is exempt: it copies `openspec/glossary.md` word for word, and the glossary names sections such as *Route* and *Claim* in italics.
+
+Outside fenced code blocks, inline code spans and `references/terms.md`, the skill-interfaces check SHALL fail on italic text, `*...*`, that equals the text of a heading outside code in a `lets-go` file, or of a heading that a `lets-go` link points to in another skill. Its output SHALL name the file, the line number and the text.
+
+#### Scenario: Every section reference is a link
+- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`, outside code
+- **THEN** it finds no italic text that equals a heading of those files, such as `*Claim*` or `*Check the issue*`
+
+#### Scenario: An italic section name comes back
+- **WHEN** a skills folder holds `lets-go/SKILL.md` with a heading `## Route` and, on line 12, the text `otherwise *Route*`
+- **THEN** the check fails, and its output names `SKILL.md`, line `12` and `Route`
+
+#### Scenario: A section of another skill
+- **WHEN** the skill-interfaces test reads *End of the run* in `skills/lets-go/SKILL.md`
+- **THEN** it finds a link to `../lets-review-build/SKILL.md#finish-the-change`
+
+#### Scenario: A section the minimal flow does not install
+- **WHEN** the skill-interfaces test reads the review plan row of *Walk the step table*
+- **THEN** it finds `*Check an earlier review*` in italics and the `lets-review-plan` skill named, and no link to `../lets-review-plan/`
+
+#### Scenario: A heading of the prompt frame
+- **WHEN** the skill-interfaces test reads *Write the prompt* in `references/step-prompt.md`
+- **THEN** it finds `` `## What to run` `` and no `*What to run*`
+
+#### Scenario: The glossary's copy keeps its italics
+- **WHEN** the skill-interfaces test reads `references/terms.md`, which says `such as *Route* or *Walk the step table*`
+- **THEN** the check passes, and `terms.md` still matches `openspec/glossary.md`
+
+#### Scenario: Italics that name no section
+- **WHEN** a skills folder holds `lets-go/SKILL.md` with no heading `Resume mode`, and the text `*Resume mode*` inside a fenced code block
+- **THEN** the check passes
+
+### Requirement: lets-go names a pull request section in bold
+`skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/` SHALL name a section of a pull request's body in bold, such as **Code review** and **Plan review**. A heading the agent searches for, such as `## Plan review`, and a printed line SHALL stay in code font. The skill-interfaces check SHALL fail on an inline code span that holds only `Code review` or `Plan review`, and its output SHALL name the file and the line number.
+
+#### Scenario: The sections are bold
+- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
+- **THEN** it finds `**Code review**` in *Walk the step table* and in *Records that disagree*, and no code span that holds only `Code review` or `Plan review`
+
+#### Scenario: A section name in code font comes back
+- **WHEN** a skills folder holds `lets-go/references/records.md` whose line 30 says ``has no `Code review` section``
+- **THEN** the check fails, and its output names `references/records.md` and line `30`
+
+#### Scenario: A heading to search for
+- **WHEN** `references/records.md` says ``Find the `## Plan review` heading``
+- **THEN** the check passes
+
+### Requirement: lets-go names a step in plain words in prose
+In prose, `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/` SHALL name a step as *The step table* says: shape, plan, review plan, build or review build, in plain words. Code font SHALL stay for a `--for` value, a file name, a config key and the step table's *Step* column.
+
+#### Scenario: The steps named in code font are plain
+- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
+- **THEN** none of them says ``Run the `shape` step``, ``When `review-build` reports`` or ``after `shape`, go on``
+
+#### Scenario: The `--for` names stay in code font
+- **WHEN** the skill-interfaces test reads *The step table*
+- **THEN** it still says that `--for` uses `shape`, `plan`, `review-plan`, `build` and `review-build`
+
+### Requirement: lets-go gives a whole printed line in a text block
+`skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/` SHALL give each whole line the run prints in a fenced `text` block. A part of a line, such as the `Records disagree:` prefix, a line named in passing, and a line in a table cell, such as a Skip line in *The step table*, SHALL be an inline code span.
+
+#### Scenario: The Picked line of next
+- **WHEN** the skill-interfaces test reads *Read the request* in `skills/lets-go/SKILL.md`
+- **THEN** `Picked #<i>: <title>, the next ready issue.` is a line of a `text` block, as `Picked #<i>: <title>, the first ready story under #<parent>.` is in `references/shape.md`
+
+#### Scenario: The Failed examples
+- **WHEN** the skill-interfaces test reads *The step lines*
+- **THEN** `Failed review build: <reason>` and `Failed shape: <reason>` are lines of a `text` block
