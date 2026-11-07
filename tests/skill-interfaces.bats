@@ -2297,6 +2297,29 @@ before_overview() {
   done
 }
 
+# overview_paragraph: the last paragraph of lets-go's SKILL.md before the
+# overview table, on one line.
+overview_paragraph() {
+  awk '/^\| Part \|/ { exit } /^ *$/ { fresh = 1; next } fresh { text = ""; fresh = 0 } { text = text " " $0 } END { print text }' \
+    "$(lets_go_skill)" |
+    tr -s '[:space:]' ' '
+}
+
+@test "lets-go explains its procedures before the overview" {
+  local text intro phrase
+  text="$(overview_paragraph)"
+  for phrase in "*Find the source of demand* finds the run's issue: the one the user named, the one an idea's words describe, or \`next\`." \
+    '`next` is the first ready issue on the backlog, as that procedure ranks it.' \
+    'A part or another procedure runs it, and it returns its result to what ran it.' \
+    '](references/terms.md#procedure)'; do
+    grep -qF -- "$phrase" <<<"$text" || { echo "the paragraph before the overview does not say: $phrase"; false; }
+  done
+  intro="$(awk '/^## Procedures$/ { on = 1; next } on && /^#/ { exit } on' "$(lets_go_skill)" | tr -s '[:space:]' ' ')"
+  for phrase in 'A part or another procedure runs each procedure below' 'Each one returns its result to what ran it.'; do
+    grep -qF -- "$phrase" <<<"$intro" || { echo "the Procedures intro does not say: $phrase"; false; }
+  done
+}
+
 @test "the check that lets-go links each glossary term at its first use reads step report apart from step" {
   fixture_file lets-go SKILL.md '# lets-go' '' 'It ends with a [step report](references/terms.md#step-report).' \
     'Each [step](references/terms.md#step) runs in a fresh session.'

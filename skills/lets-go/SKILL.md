@@ -33,6 +33,13 @@ part runs in this session. A part is not a step, and has no step report.
 The shape step that *Run the shape step* runs is a step, and has a
 report.
 
+Some parts run a [procedure](references/terms.md#procedure), a section
+under [Procedures](#procedures). A part or another procedure runs it,
+and it returns its result to what ran it. *Find the source of demand*
+finds the run's issue: the one the user named, the one an idea's words
+describe, or `next`. `next` is the first ready issue on the backlog, as
+that procedure ranks it.
+
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
 | [Read the settings](#read-the-settings) | Reads the default level, the default branch, the current branch and the Project | this session | *Read the request* | `lets go level` fails, or the Project query finds no Project, or several |
@@ -489,7 +496,8 @@ The run is over.
 
 ## Procedures
 
-The parts run these sections. Each one returns to the part that ran it.
+A part or another procedure runs each procedure below, as *Claim* runs
+*Glossary preflight*. Each one returns its result to what ran it.
 
 ### Find the source of demand
 
