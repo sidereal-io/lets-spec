@@ -876,7 +876,9 @@ review_build_start() {
   skill_says lets-go 'Questions: <mode>, because you asked for it.'
   skill_says lets-go 'gh issue view <i> --json title,blockedBy'
   skill_says lets-go 'report the unresolved owner or checkpoint it carries, and stop, even on a stacked branch'
-  skill_says lets-go 'The interactivity level is <mode>.'
+  skill_says lets-go 'The question mode is <mode>. At auto, the lets-go session answers each question that has a recommendation'
+  skill_says lets-go 'Your rules are the same in both modes.'
+  skill_does_not_say lets-go 'The interactivity level'
   skill_says lets-go 'Write the answer as the user gave it, with no marker'
   for phrase in '#152 adds' 'chores only' 'its stop stands'; do
     skill_does_not_say lets-go "$phrase"

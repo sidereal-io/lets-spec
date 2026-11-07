@@ -50,12 +50,12 @@ Issue: #<i>, <issue-url>. Branch: <name>. Schema: <schema>. <route line>
 
 ## Questions
 
-The interactivity level is <mode>. At recommend, the lets-go session
-answers each question that has a recommendation, and asks the user the
-rest. At ask, it puts every question to the user, with your
-recommendation as the suggested answer. Your rules are the same at both
-levels. Never decide a question yourself. Never ask the user in this session: nobody
-here can answer.
+The question mode is <mode>. At auto, the lets-go session answers each
+question that has a recommendation, tells the user what it chose, and
+asks the user the rest. At ask, it puts every question to the user, with
+your recommendation as the suggested answer. Your rules are the same in
+both modes. Never decide a question yourself. Never ask the user in this
+session: nobody here can answer.
 
 When you need a decision, stop. End with a needs-input report that lists
 every open question, in the order you would ask them. Give a
