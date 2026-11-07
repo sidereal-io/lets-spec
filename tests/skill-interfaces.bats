@@ -2488,7 +2488,7 @@ assert_reference_links() {
 # The glossary terms lets-go uses. An installed skill cannot link
 # openspec/glossary.md, which is then the project's own, so lets-go carries
 # a copy of each entry.
-lets_go_terms=('Part' 'Procedure' 'Step' 'Step report' 'Interactivity level' 'Packet')
+lets_go_terms=('Part' 'Procedure' 'Step' 'Step report' 'Question mode' 'Packet')
 
 # glossary_entry <file> <term>: the text under the file's ## <term> heading,
 # up to the next heading, each run of whitespace one space. Fails when the
@@ -2570,7 +2570,7 @@ terms_fixture() {
 
 # first_term_links [skill.md]: in lets-go's SKILL.md, outside the frontmatter
 # and code, the first line that mentions each of packet, step, step report
-# and interactivity level links that term's heading in references/terms.md.
+# and question mode links that term's heading in references/terms.md.
 # A mention of step report is not one of step, and a link's target is not a
 # mention. Prints each term whose first mention has no link.
 first_term_links() {
@@ -2578,13 +2578,14 @@ first_term_links() {
   # Blank out the frontmatter, so prose_text keeps the line numbers.
   awk 'NR == 1 && /^---$/ { front = 1; print ""; next } front { if (/^---$/) front = 0; print ""; next } { print }' \
     "$skill" >"$file"
-  for term in packet step 'step report' 'interactivity level'; do
+  for term in packet step 'step report' 'question mode'; do
     case "$term" in
       packet) pattern='packets?' ;;
       step) pattern='steps?' ;;
       'step report') pattern='step reports?' ;;
-      # Interactivity comes only before level, which may wrap to the next line.
-      'interactivity level') pattern='interactivity' ;;
+      # Question alone is too common to stand for the term, so the first
+      # mention must keep question mode on one line.
+      'question mode') pattern='question modes?' ;;
     esac
     anchor="$(heading_anchor "$term")"
     first="$(prose_text "$file" | awk -v pattern="(^|[^a-z-])$pattern([^a-z-]|\$)" -v term="$term" '{
@@ -2603,7 +2604,7 @@ first_term_links() {
 @test "lets-go links each glossary term at its first use" {
   local anchor
   first_term_links
-  for anchor in packet step step-report interactivity-level; do
+  for anchor in packet step step-report question-mode; do
     grep -qF "](references/terms.md#$anchor)" "$(lets_go_skill)" || { echo "SKILL.md never links terms.md#$anchor"; false; }
   done
 }
