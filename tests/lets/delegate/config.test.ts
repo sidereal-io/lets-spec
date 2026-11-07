@@ -182,7 +182,7 @@ test('questionModeFor gives null when the config sets no question mode', () => {
   }
 });
 
-test('questionModeFor ignores go.level', () => {
+test('questionModeFor ignores the old level key under go', () => {
   assert.equal(questionsIn('go:\n  level: recommend\n'), null);
   assert.equal(questionsIn('go:\n  level: loud\n  questions: auto\n'), 'auto');
 });
