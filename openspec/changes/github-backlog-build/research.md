@@ -128,8 +128,8 @@ Conclusion: richer history retrieval exists, but the checked interfaces do not
 yet demonstrate the complete original capture and trusted context required by
 ADR-015. No compliant ready-to-use channel is established. This is a concrete
 integration gap, not evidence that a root service or an architecture reversal
-is necessary. A host capability enhancement remains possible but unselected;
-its ownership, delivery and setup would need agreement before design completion.
+is necessary. The user subsequently ruled out T3 changes and requests to its
+maintainers; a T3 enhancement is outside this plan, not a delivery option.
 
 ## Alternatives considered during clarification
 
@@ -178,14 +178,15 @@ Artifact instruction lookup is unavailable in this checkout because the ignored
 `lets-standard` installation is absent; the tracked standard schema and templates
 were read directly. No generated skill/schema copies were edited.
 
-The next product decision is the initial host support boundary. A T3-hosted
-capture capability could reuse the existing host rather than require another
-local service, but would need missing host properties designed and delivered.
-It is not selected, available or qualified. A host-neutral promise without any
-qualified channel would leave normal workflow progression blocked. Ask the user
-whether to target T3 first, with explicit host prerequisites, before planning a
-host-specific replacement or adding host work to this story. No such extension
-has been implemented or filed as separate work.
+The host support boundary is now settled by the user: both unchanged T3 and
+standalone coding-agent CLIs must work. Select compatible integrations through
+explicit configuration, as elsewhere in the project. The earlier suggestion
+to target T3 first or consider a T3 enhancement is rejected. No T3 change or
+request may be planned as a dependency. No such extension was implemented or
+filed. The remaining investigation concerns existing configurable tool/evidence
+capabilities usable across both environments. It must demonstrate actual
+capture properties; making a source configurable does not establish trust or
+original-result availability.
 
 ## Discussion and ownership sources
 

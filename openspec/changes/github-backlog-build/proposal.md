@@ -20,6 +20,9 @@ active plan must be replaced before implementation continues (D1, D5).
   ordinary history views and agent-created receipts do not qualify (D3).
 - Keep lets-go as the only runner and pass identity/recovery context through
   its existing planning, build and review steps (D4).
+- Support the workflow from both unchanged T3 and standalone coding-agent
+  CLIs through explicit integration configuration. Do not make T3 changes,
+  upstream requests or T3-only initial support prerequisites (D9).
 - Replace transport-specific conformance tests without dropping behavioral
   guarantees. Require fresh scoped live acceptance after implementation (D7).
 
@@ -44,7 +47,8 @@ Affects backlog contracts/runtime, definition loading, machine and repository
 configuration, conformance, workflow instructions and release contents.
 Backend CLI/MCP authentication remains with those tools. No root installation,
 service, socket, protected credential deployment or platform restriction is
-selected by this proposal.
+selected by this proposal. Backend and machine tool/channel choices are
+explicit configuration, not implicit selection based on the agent host.
 
 The scope is #136 and existing draft PR #172. No competing PR, new claim or
 Project mutation belongs to this restart. Setup/shaping writes, other backend

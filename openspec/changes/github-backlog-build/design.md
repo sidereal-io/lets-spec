@@ -13,11 +13,14 @@ The user approved following current decisions; no new architecture is proposed.
 
 **Goals:** preserve the existing GitHub journey through one agent-executed
 request/result path; make required evidence checkable by Lets; retain bounded
-operations, native ownership and conservative recovery across sessions.
+operations, native ownership and conservative recovery across sessions; work
+from both unchanged T3 and standalone coding-agent CLIs through explicit
+integration configuration.
 
 **Non-Goals:** a new runner, stronger GitHub locking, setup/shaping migration,
 delegation migration, another backend, automatic merges or selection of the
-withdrawn service as a prerequisite.
+withdrawn service as a prerequisite. T3 modifications, requests to its
+maintainers and a T3-only initial support boundary are explicitly outside scope.
 
 ## Test Seams
 
@@ -48,6 +51,23 @@ introduced. Lets-go remains the only runner.
 Definitions share one schema/validation path, with explicit source/version and
 supported operation/tool versions. They cannot grant trust, introduce operations,
 decide readiness, permit retries or strengthen backend guarantees.
+
+### Select integrations explicitly across agent environments
+
+Use the existing ownership boundaries: user configuration names the delegation
+resolver chain and machine tool/connection options; repository `lets.backlog`
+selects the backlog provider/definition, scope and mappings. A resolver is a
+delegation adapter; the GitHub backlog integration uses a provider definition.
+Do not treat T3 as a backlog provider or require T3 merely because the agent
+runs there. These are uses of existing vocabulary, not new glossary definitions.
+
+Both host environments must use the same supported backlog operations, core
+policy and definition validation. Their configured backend tools may differ.
+Validate the explicitly selected tools and evidence capabilities; do not detect
+a host and silently substitute a backend, resolver or evidence guarantee. Exact
+new machine option keys remain undesigned and are not presented as working
+configuration. A configurable definition describes tool usage; it does not
+make an unavailable independent evidence channel available.
 
 ### Preserve semantic recovery requirements without adopting prototype storage
 
@@ -99,9 +119,11 @@ merge remains a separate user action.
 ## Blocking design question
 
 No examined interface is yet qualified to provide the complete original record,
-trusted tool/backend context and independent retrieval ADR-015 requires. The
-next decision is whether an existing host can expose these missing properties
-through a supported integration, and what setup that entails. This changes what
-must be built, so it is a design blocker, not a task or a deferrable open question.
+trusted tool/backend context and independent retrieval ADR-015 requires from
+both required host environments. Investigate existing configurable tool/channel
+capabilities that work without T3 changes. T3-only support and host enhancement
+are not pending options. Configuration is the integration selection mechanism;
+it is not proof of independently retrievable evidence. This remains a design
+blocker, not an implementation task or a deferrable open question.
 Do not claim this design ready, write implementation tasks around an invented
 channel, or change an ADR to bypass the blocker.

@@ -5,6 +5,25 @@ preserving native ownership, safe recovery and completion after verified merge.
 
 ## ADDED Requirements
 
+### Requirement: Explicit configuration supports both agent environments
+The GitHub backlog workflow SHALL work from both unchanged T3 and standalone
+coding-agent CLIs using explicitly configured compatible integrations. Its
+support SHALL NOT depend on T3 code changes, requests to T3 maintainers or a
+T3-only initial support boundary. Both environments SHALL enforce the same
+core operation and evidence guarantees.
+
+#### Scenario: Agent runs in a standalone CLI
+- **WHEN** a standalone coding-agent CLI has the explicitly selected compatible tools and qualified evidence channel
+- **THEN** the full existing-story GitHub workflow is available without T3
+
+#### Scenario: Agent runs in unchanged T3
+- **WHEN** an agent in unchanged T3 has the explicitly selected compatible tools and qualified evidence channel
+- **THEN** the same GitHub workflow is available without a T3 patch or upstream request
+
+#### Scenario: Configured tools differ by environment
+- **WHEN** users explicitly select different compatible tool connections in the two environments
+- **THEN** Lets applies the same operation, policy and evidence validation without switching backlog provider or relaxing guarantees
+
 ### Requirement: GitHub selection is explicit and validated
 Lets SHALL select one GitHub backlog for item operations using validated release
 defaults or explicit repository provider/definition and scope settings.

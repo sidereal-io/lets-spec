@@ -15,6 +15,7 @@ This is a fresh planning restart for existing draft [PR #172](https://github.com
 | D6 | What can happen during this restart? | Planning and read-only investigation; no capture implementation, installation, Project mutation, archive, readiness change, merge or competing PR. | User, planning restart request |
 | D7 | What acceptance can qualify a later implementation? | Fresh scoped acceptance in mstelz/test-repo-pls-ignore and mstelz Project 7 after planning and implementation; historical fixtures and PRs cannot be replayed or mutated. | User, planning restart request |
 | D8 | Should this restart select another architecture? | Follow the current accepted decisions, retaining earlier decisions where compatible; propose a change only when concrete evidence shows it is necessary. | User, 2026-11-07, clarification after comparing ADR-010 and ADR-015 |
+| D9 | Which agent environments must work? | Both T3 and standalone coding-agent CLIs, through explicit configuration of integrations; no T3 code changes or requests to its maintainers, and no T3-first support restriction. | User, 2026-11-07, host support clarification |
 
 ## Changes from the story
 
@@ -28,7 +29,8 @@ glossary remains unchanged.
 
 ## Open decision
 
-Which existing host interface can satisfy the accepted evidence guarantee,
+Which existing configurable tool/capture interface can satisfy the accepted
+evidence guarantee from both unchanged T3 and standalone coding-agent CLIs,
 and what user setup does it actually require? Follow ADR-015 and ADR-020;
 do not select another execution strategy or weaken evidence requirements.
 ADR-010's retained selection/configuration principles still apply, while
@@ -36,7 +38,8 @@ ADR-015 governs the target execution and extension boundary. This does not
 select two competing execution paths.
 
 See [the evidence assessment](research.md) for actual interfaces and unresolved
-trust properties. Investigate host integration first. No capture implementation
+trust properties. The earlier T3-first suggestion is rejected by D9; do not
+plan T3 enhancements or requests as a prerequisite. No capture implementation
 is selected or proven. Reconsidering an ADR is exceptional and needs concrete
 evidence of necessity plus an explicit user decision.
 
