@@ -1,6 +1,6 @@
 ---
 name: lets-go
-description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Given nothing, it takes the next ready issue on the backlog. It claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, plan, review plan, build and review build each run in a fresh session. lets-minimal skips review plan. Every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation. A story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch, it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, or wants to start the next story. Also use when the user wants to carry on the change on the current branch, says lets-go, or runs it again after a run stopped.
+description: Use when the user wants a story, bug or chore, or an idea in words, built end to end to a pull request ready for review; wants the next story; wants to carry on the change on the current branch; says lets-go; or runs it again after a run stopped. It runs each step in a fresh session.
 ---
 
 # Let's go

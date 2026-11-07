@@ -2355,6 +2355,34 @@ EOF
   ! grep -qiF 'rehears' <<<"$before" || { echo "Check the checkpoint says rehearse before it explains it"; false; }
 }
 
+# description_short [skill.md]: lets-go's frontmatter description starts Use
+# when and holds at most 60 words. Prints what is wrong.
+description_short() {
+  local description words wrong=()
+  description="$(sed -n 's/^description: //p' "${1:-$(lets_go_skill)}" | head -n 1)"
+  words="$(wc -w <<<"$description")"
+  [[ "$description" == 'Use when '* ]] || wrong+=('the description does not start Use when')
+  [ "$words" -le 60 ] || wrong+=("the description has $words words, more than 60")
+  [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
+}
+
+@test "lets-go's description says when to use it" {
+  local description phrase
+  description_short
+  description="$(sed -n 's/^description: //p' "$(lets_go_skill)" | head -n 1)"
+  for phrase in 'next story' 'current branch' 'fresh session' 'story, bug or chore, or an idea in words' \
+    'pull request ready for review' 'again after a run stopped'; do
+    grep -qF -- "$phrase" <<<"$description" || { echo "the description does not say: $phrase"; false; }
+  done
+}
+
+@test "the check that lets-go's description says when to use it names a description of 61 words" {
+  fixture_file lets-go SKILL.md '---' "description: Use when $(printf 'word %.0s' {1..59})" '---' '# lets-go'
+  run description_short "$skills_dir/lets-go/SKILL.md"
+  [ "$status" -eq 1 ] || { echo "it passed on 61 words"; false; }
+  [ "$output" = 'the description has 61 words, more than 60' ] || { echo "it said: $output"; false; }
+}
+
 @test "the check that lets-go links each glossary term at its first use reads step report apart from step" {
   fixture_file lets-go SKILL.md '# lets-go' '' 'It ends with a [step report](references/terms.md#step-report).' \
     'Each [step](references/terms.md#step) runs in a fresh session.'
