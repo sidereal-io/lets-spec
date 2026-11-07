@@ -1,6 +1,6 @@
 ---
 name: lets-go
-description: Take one story, bug or chore, or an idea in words, to a pull request ready for review, in one run. Given nothing, it takes the next ready issue on the backlog. It claims the issue here. Given an idea, it first searches the open issues for the same work. An idea with no match, or an issue whose packet is not complete, goes to a shape step that runs lets-shape. A large idea runs lets-shape discovery first, and lets-go builds the first ready story it files. Shape, plan, review plan, build and review build each run in a fresh session. lets-minimal skips review plan. Every question a step has comes back to this conversation. A chore or a bug runs at recommend, where lets-go answers each question that has a recommendation. A story or a shape runs at ask, where the user answers every question. Name a level, or set go.level in the lets config, to pick the other. On a change's branch, it picks the change up at its first unfinished step, and prints each step it skips with its evidence and date. Use when the user wants an issue or an idea built end to end, or wants to start the next story. Also use when the user wants to carry on the change on the current branch, says lets-go, or runs it again after a run stopped.
+description: Use when the user wants a story, bug or chore, or an idea in words, built end to end to a pull request ready for review; wants the next story; wants to carry on the change on the current branch; says lets-go; or runs it again after a run stopped. It runs each step in a fresh session.
 ---
 
 # Let's go
@@ -8,26 +8,52 @@ description: Take one story, bug or chore, or an idea in words, to a pull reques
 Take one story, bug or chore to a pull request ready for review, in one
 run. Start from its issue number, from an idea in words, or from
 nothing, which takes the next ready issue. The run claims the issue in
-this session. Then each step runs in a fresh session: shape when the
-issue needs it, then plan, review plan, build and review build.
-`lets-minimal` skips review plan. An idea too large for one issue runs
-discovery in the shape step, and the run builds the first ready story it
-files. A step never asks the user: it ends with a report. This session
-answers the step's questions or asks the user, as the interactivity
-level says. Run every command below from the repo root.
+this session. Then each [step](references/terms.md#step) runs in a
+fresh session: shape when the issue needs it, then plan, review plan,
+build and review build. `lets-minimal` skips review plan. An idea too
+large for one issue runs discovery in the shape step, and the run builds
+the first ready story it files. A step never asks the user: it ends with
+a [step report](references/terms.md#step-report). This session answers
+the step's questions or asks the user, as the
+[interactivity level](references/terms.md#interactivity-level) says.
+"You" is the agent that runs this skill, and "the user" is the person
+who asked for the run. Run every command below from the repo root.
 
-A run can stop before it finishes. Run `lets-go` again, on the default branch or
-on the change's branch. It reads from Git and GitHub which steps are
-done, prints a dated line for each, and goes on from the first
-unfinished step.
+A run can stop before it finishes. Run `lets-go` again to go on. It
+reads from Git and GitHub which steps are done. What the new run does
+depends on where you run it, and on why the last run stopped:
+
+- **On the change's branch:** it finds the issue from the branch's
+  name, prints a dated line for each step already done, and goes on
+  from the first unfinished step.
+- **On the default branch, with the issue number:** it finds the
+  change's branch, here or on `origin`, switches to it, and goes on the
+  same way. It does not claim the issue again.
+- **On the default branch, with nothing:** it does not resume. It picks
+  the next ready issue, and a claimed issue is never ready. To resume,
+  give the issue number, or run it on the change's branch.
+- **After a failed step:** the run that failed never runs that step
+  again. A new run starts it afresh, in a new session, with the answers
+  given so far. A failed shape step has no branch: the run says to run
+  `lets-shape` on the idea or the issue.
+- **After the pull request is merged or closed:** there is nothing to
+  resume, and the run stops.
 
 ## The run at a glance
 
 A run goes through these parts, in this order. *Start from an idea*,
 *Run the shape step* and *Pick the first ready story* run only when the
-request or the packet needs them. Each part runs in this session. A
-part is not a step, and has no step report. The shape step that
-*Run the shape step* runs is a step, and has a report.
+request or the [packet](references/terms.md#packet) needs them. Each
+part runs in this session. A part is not a step, and has no step report.
+The shape step that *Run the shape step* runs is a step, and has a
+report.
+
+Some parts run a [procedure](references/terms.md#procedure), a section
+under [Procedures](#procedures). A part or another procedure runs it,
+and it returns its result to what ran it. *Find the source of demand*
+finds the run's issue: the one the user named, the one an idea's words
+describe, or `next`. `next` is the first ready issue on the backlog, as
+that procedure ranks it.
 
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
@@ -296,8 +322,11 @@ Next: [Enter the branch](#enter-the-branch).
    - **`claimed`:** when it carries `verified`, run
      [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint)
      with the commits it carries, and act on its result as below. When
-     it carries `no-owned-edits`, run no import, and
+     it carries `no-owned-edits`, run no import. Then, when a shape step
+     ran in this run,
      [commit the discovery map](references/shape.md#commit-the-discovery-map).
+     A run with no shape step has no map to commit, and reads no part of
+     `references/shape.md`.
    - **`taken`:** when the user named `<i>` or confirmed it, say who has
      it, and stop. Otherwise `next` or *Pick the first ready story*
      picked it: count the lost claim. After the third lost claim in this
@@ -312,7 +341,9 @@ Next: [Enter the branch](#enter-the-branch).
    - **`branch-failed`:** *Claim* has released the claim. Show the error
      it carries, and stop.
 3. When you ran *Import the glossary checkpoint*, act on its result:
-   - **`imported`:** [commit the discovery map](references/shape.md#commit-the-discovery-map).
+   - **`imported`:** when a shape step ran in this run,
+     [commit the discovery map](references/shape.md#commit-the-discovery-map),
+     as for `no-owned-edits`.
    - **`import-failed`:** report each cleanup failure it carries, and
      what was kept, with how to recover, and stop.
 4. When `origin` has the branch, bring it up to date before you read any
@@ -485,7 +516,8 @@ The run is over.
 
 ## Procedures
 
-The parts run these sections. Each one returns to the part that ran it.
+A part or another procedure runs each procedure below, as *Claim* runs
+*Glossary preflight*. Each one returns its result to what ran it.
 
 ### Find the source of demand
 
@@ -495,7 +527,10 @@ create anything.
 It uses the `<project>`, `<owner>` and `<repo>` that
 [Read the settings](#read-the-settings) set.
 
-Read [the glossary handoff](references/glossary-handoff.md) only for an
+A **Glossary handoff** is the section `lets-shape` writes in a story's
+issue body when shaping added glossary terms. It records which issue
+owns the definitions, and where the owner's glossary commits are. Read
+[the glossary handoff](references/glossary-handoff.md) only for an
 issue whose body has a **Glossary handoff** section. For an issue with
 none, *Check the prerequisite* returns `resolved`, and you read no file.
 
@@ -590,12 +625,17 @@ the result is `needs-shape`: return it now, naming the line. Never
 write or fix the packet yourself.
 
 Then read the issue's thread as
-[Issue comments](../lets-shape/references/issue-comments.md) says. Read
-a comment's first line only, to find read markers. The watermark is the
-later of the body's last edit and the newest read marker. When neither
-exists, every comment is after it. A comment created or edited after
-the watermark makes the result `needs-shape`, whoever wrote it. A read
-marker never does. The result then carries how many comments shaping
+[Issue comments](../lets-shape/references/issue-comments.md) says. A
+read marker is a comment that `lets-shape` posts when it has read the
+thread, as
+[The read marker](../lets-shape/references/issue-comments.md#the-read-marker)
+says. Read a comment's first line only, to find read markers. The
+watermark is the later of the body's last edit and the newest read
+marker. When neither exists, every comment is after it. A comment is
+unread when it was created or edited after both the body's last edit
+and the newest read marker: after the watermark. An unread comment
+makes the result `needs-shape`, whoever wrote it. A read marker never
+does. The result then carries how many comments shaping
 has not read, each one's author as the reference shows it, and the date
 that put it past the watermark: its edit date, else its creation date.
 It carries nothing of what a comment says.

@@ -5,13 +5,16 @@ Read this file when the issue's body has a **Glossary handoff** section.
 ## Glossary preflight
 
 A story whose shaping added glossary terms carries a **Glossary handoff**
-record. These steps check it. "You" is the agent. `next` and
+record. These steps check it. `next` and
 *Find the source of demand* run *Check the prerequisite*. *Claim* runs
 the rest of the preflight: read the story's **Glossary handoff**. When
 it has none, or another issue owns the edits, the result is
 `no-owned-edits`. Otherwise run *Check the checkpoint*.
 
 ### Check the prerequisite
+
+The prerequisite is the glossary definitions a story needs that another
+issue owns.
 
 1. Read **Glossary handoff** in the story, and in any shaping parent or
    owner issue it references. A missing blocker link does not mean the
@@ -30,6 +33,10 @@ It returns `resolved` when nothing is unresolved. Otherwise it returns
 Return to the section that ran it, with the result.
 
 ### Check the checkpoint
+
+The checkpoint is the ordered `docs:` commits that hold shaping's
+glossary edits. The owned paths are the glossary files those commits may
+change.
 
 Run these steps only when this story owns the glossary edits. Run them
 once, when *Claim* runs *Glossary preflight*. Each `checkpoint-failed`
@@ -62,12 +69,13 @@ leaves user edits as they are.
    `checkpoint-failed`, with what differs. Keep any user edits, whether
    they came before or after. Never force a checkout, reset, or stash
    automatically.
-5. Before claiming, rehearse the import on the proposed base in a
-   throwaway checkout under `.workspace/`. Compare patches and contents
-   to find edits already present, and import no duplicate. An edit
-   already present is skipped, which is not a failure. If a patch applies
-   only in part, or conflicts, return `checkpoint-failed`, with the
-   conflict, repairing nothing. Leave the real working tree unchanged.
+5. Before claiming, rehearse the import on the proposed base: try it
+   first in a throwaway checkout, and keep the real working tree as it
+   is. Make the checkout under `.workspace/`. Compare patches and
+   contents to find edits already present, and import no duplicate. An
+   edit already present is skipped, which is not a failure. If a patch
+   applies only in part, or conflicts, return `checkpoint-failed`, with
+   the conflict, repairing nothing.
 6. If the owner of the glossary definitions or the proposed base changed
    since *Find the source of demand* ran *Check the prerequisite*, run
    [Check the prerequisite](#check-the-prerequisite) again, before
@@ -124,7 +132,9 @@ and no new claim.
    Keep them as separate `docs:` commits.
 2. In the issue's **Glossary handoff**, record the destination branch, the
    resulting commits and, once it exists, the pull request.
-3. Keep the holding branch until the destination holds the edits.
+3. The holding branch is the branch `lets-shape` makes from the default
+   branch to keep the checkpoint commits until a story's branch imports
+   them. Keep it until the destination holds the edits.
 
 When the import succeeds, the result is `imported`. Return to the part
 that ran it, with the result.

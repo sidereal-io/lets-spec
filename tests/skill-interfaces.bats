@@ -252,8 +252,10 @@ says_exit_3() {
   [[ "$output" == *lets-review-plan* ]] || { echo "it said: $output"; false; }
 }
 
+# lets-go's terms.md copies the glossary word for word, and the glossary
+# names the steps as lets delegate step --for takes them, not as a command.
 @test "each lets delegate review, handoff or step the prose names is followed by instructions or run" {
-  run bash -c "$(declare -f prose); repo='$repo'; prose | xargs grep -ohE 'lets delegate (review|handoff|step)( [^ \`]+)?' | grep -vE 'lets delegate (review|handoff|step) (instructions|run)$'"
+  run bash -c "$(declare -f prose); repo='$repo'; prose | grep -vF '/lets-go/references/terms.md' | xargs grep -ohE 'lets delegate (review|handoff|step)( [^ \`]+)?' | grep -vE 'lets delegate (review|handoff|step) (instructions|run)$'"
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
@@ -2159,6 +2161,277 @@ assert_reference_links() {
 
 @test "lets-go states its watermark" {
   skill_says lets-go "The watermark is the later of the body's last edit and the newest read marker"
+}
+
+@test "Confirm the packet explains the read marker" {
+  local text phrase
+  text="$(procedure_text 'Confirm the packet' | tr -s '[:space:]' ' ')"
+  for phrase in 'A read marker is a comment that `lets-shape` posts when it has read the thread, as' \
+    '](../lets-shape/references/issue-comments.md#the-read-marker)' \
+    "A comment is unread when it was created or edited after both the body's last edit and the newest read marker" \
+    "The watermark is the later of the body's last edit and the newest read marker"; do
+    grep -qF -- "$phrase" <<<"$text" || { echo "Confirm the packet does not say: $phrase"; false; }
+  done
+}
+
+# The glossary terms lets-go uses. An installed skill cannot link
+# openspec/glossary.md, which is then the project's own, so lets-go carries
+# a copy of each entry.
+lets_go_terms=('Part' 'Procedure' 'Step' 'Step report' 'Interactivity level' 'Packet')
+
+# glossary_entry <file> <term>: the text under the file's ## <term> heading,
+# up to the next heading, each run of whitespace one space. Fails when the
+# file has no such heading.
+glossary_entry() {
+  awk -v name="## $2" "$fence_rules"'
+    !code && /^#+ / { if (on) exit; on = ($0 == name); found = found || on; next }
+    on { print }
+    END { exit !found }' "$1" | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//'
+  [ "${PIPESTATUS[0]}" -eq 0 ]
+}
+
+# terms_match_glossary [terms] [glossary]: each lets-go term has a ## heading
+# in both files, with the same text, and terms.md has no other ## heading.
+# Prints each term that differs, is missing or is extra.
+terms_match_glossary() {
+  local terms="${1:-$repo/skills/lets-go/references/terms.md}" glossary="${2:-$repo/openspec/glossary.md}"
+  local term copy entry heading wrong=()
+  for term in "${lets_go_terms[@]}"; do
+    if ! copy="$(glossary_entry "$terms" "$term")"; then wrong+=("terms.md has no entry: $term"); continue; fi
+    if ! entry="$(glossary_entry "$glossary" "$term")"; then wrong+=("the glossary has no entry: $term"); continue; fi
+    [ "$copy" = "$entry" ] || wrong+=("terms.md differs from the glossary: $term")
+  done
+  while IFS= read -r heading; do
+    for term in "${lets_go_terms[@]}"; do [ "$heading" != "$term" ] || continue 2; done
+    wrong+=("terms.md has an entry lets-go does not use: $heading")
+  done < <(awk "$fence_rules"' !code && /^## / { print substr($0, 4) }' "$terms")
+  [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
+}
+
+# terms_fixture <file> <skipped term> <term> <text>: writes a glossary file of
+# the lets-go terms, each with the text Fixture <term>., except that the named
+# term has the given text, and the skipped term has no entry.
+terms_fixture() {
+  local file="$1" skip="$2" changed="$3" text="$4" term
+  for term in "${lets_go_terms[@]}"; do
+    [ "$term" != "$skip" ] || continue
+    if [ "$term" = "$changed" ]; then printf '## %s\n\n%s\n\n' "$term" "$text"
+    else printf '## %s\n\nFixture %s.\n\n' "$term" "$term"; fi
+  done >"$file"
+}
+
+@test "lets-go's terms match the glossary" {
+  terms_match_glossary
+}
+
+@test "the terms match the glossary check names an entry that differs" {
+  terms_fixture "$BATS_TEST_TMPDIR/glossary.md" '' Procedure 'A section that a part runs, run by a part.'
+  terms_fixture "$BATS_TEST_TMPDIR/terms.md" '' Procedure 'A section that a part runs, run by a part or another procedure.'
+  run terms_match_glossary "$BATS_TEST_TMPDIR/terms.md" "$BATS_TEST_TMPDIR/glossary.md"
+  [ "$status" -eq 1 ] || { echo "it passed on an entry that differs"; false; }
+  [ "$output" = 'terms.md differs from the glossary: Procedure' ] || { echo "it said: $output"; false; }
+}
+
+@test "the terms match the glossary check names an entry missing from the copy" {
+  terms_fixture "$BATS_TEST_TMPDIR/glossary.md" '' '' ''
+  terms_fixture "$BATS_TEST_TMPDIR/terms.md" 'Step report' '' ''
+  run terms_match_glossary "$BATS_TEST_TMPDIR/terms.md" "$BATS_TEST_TMPDIR/glossary.md"
+  [ "$status" -eq 1 ] || { echo "it passed on a missing entry"; false; }
+  [ "$output" = 'terms.md has no entry: Step report' ] || { echo "it said: $output"; false; }
+}
+
+@test "the terms match the glossary check names an entry missing from the glossary" {
+  terms_fixture "$BATS_TEST_TMPDIR/glossary.md" Packet '' ''
+  terms_fixture "$BATS_TEST_TMPDIR/terms.md" '' '' ''
+  run terms_match_glossary "$BATS_TEST_TMPDIR/terms.md" "$BATS_TEST_TMPDIR/glossary.md"
+  [ "$status" -eq 1 ] || { echo "it passed on an entry the glossary lacks"; false; }
+  [ "$output" = 'the glossary has no entry: Packet' ] || { echo "it said: $output"; false; }
+}
+
+@test "the terms match the glossary check names an entry the copy should not hold" {
+  terms_fixture "$BATS_TEST_TMPDIR/glossary.md" '' '' ''
+  terms_fixture "$BATS_TEST_TMPDIR/terms.md" '' '' ''
+  printf '## Backlog\n\nFixture Backlog.\n' >>"$BATS_TEST_TMPDIR/terms.md"
+  run terms_match_glossary "$BATS_TEST_TMPDIR/terms.md" "$BATS_TEST_TMPDIR/glossary.md"
+  [ "$status" -eq 1 ] || { echo "it passed on an extra entry"; false; }
+  [ "$output" = 'terms.md has an entry lets-go does not use: Backlog' ] || { echo "it said: $output"; false; }
+}
+
+# first_term_links [skill.md]: in lets-go's SKILL.md, outside the frontmatter
+# and code, the first line that mentions each of packet, step, step report
+# and interactivity level links that term's heading in references/terms.md.
+# A mention of step report is not one of step, and a link's target is not a
+# mention. Prints each term whose first mention has no link.
+first_term_links() {
+  local skill="${1:-$(lets_go_skill)}" file="$BATS_TEST_TMPDIR/first-terms.md" term pattern anchor first wrong=()
+  # Blank out the frontmatter, so prose_text keeps the line numbers.
+  awk 'NR == 1 && /^---$/ { front = 1; print ""; next } front { if (/^---$/) front = 0; print ""; next } { print }' \
+    "$skill" >"$file"
+  for term in packet step 'step report' 'interactivity level'; do
+    case "$term" in
+      packet) pattern='packets?' ;;
+      step) pattern='steps?' ;;
+      'step report') pattern='step reports?' ;;
+      # Interactivity comes only before level, which may wrap to the next line.
+      'interactivity level') pattern='interactivity' ;;
+    esac
+    anchor="$(heading_anchor "$term")"
+    first="$(prose_text "$file" | awk -v pattern="(^|[^a-z-])$pattern([^a-z-]|\$)" -v term="$term" '{
+      line = $0; sub(/:.*/, "", line); text = tolower(substr($0, length(line) + 3))
+      gsub(/\]\([^)]*\)/, "]", text)
+      if (term == "step") gsub(/step reports?/, "", text)
+      if (text ~ pattern) { print line; exit }
+    }')"
+    [ -n "$first" ] || continue
+    sed -n "${first}p" "$file" | grep -qF "](references/terms.md#$anchor)" ||
+      wrong+=("$term: line $first does not link references/terms.md#$anchor")
+  done
+  [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
+}
+
+@test "lets-go links each glossary term at its first use" {
+  local anchor
+  first_term_links
+  for anchor in packet step step-report interactivity-level; do
+    grep -qF "](references/terms.md#$anchor)" "$(lets_go_skill)" || { echo "SKILL.md never links terms.md#$anchor"; false; }
+  done
+}
+
+@test "the check that lets-go links each glossary term at its first use names a term used before its link" {
+  fixture_file lets-go SKILL.md '---' 'description: Read the packet.' '---' '# lets-go' '' "Read the issue's packet." \
+    'Then confirm the [packet](references/terms.md#packet).'
+  run first_term_links "$skills_dir/lets-go/SKILL.md"
+  [ "$status" -eq 1 ] || { echo "it passed on a term used before its link"; false; }
+  [ "$output" = 'packet: line 6 does not link references/terms.md#packet' ] || { echo "it said: $output"; false; }
+}
+
+# before_overview: lets-go's SKILL.md after the frontmatter, up to the
+# overview table, on one line.
+before_overview() {
+  awk 'NR == 1 && /^---$/ { front = 1; next } front { if (/^---$/) front = 0; next } /^\| Part \|/ { exit } { print }' \
+    "$(lets_go_skill)" | tr -s '[:space:]' ' '
+}
+
+@test "lets-go says who you is before the overview" {
+  local file
+  grep -qF '"You" is the agent that runs this skill, and "the user" is the person who asked for the run.' \
+    <<<"$(before_overview)" || { echo "the opening does not say who you and the user are"; false; }
+  for file in "$repo"/skills/lets-go/references/*.md; do
+    ! tr -s '[:space:]' ' ' <"$file" | grep -qF '"You" is the agent' || { echo "${file#"$repo/"} still says who you is"; false; }
+  done
+}
+
+# overview_paragraph: the last paragraph of lets-go's SKILL.md before the
+# overview table, on one line.
+overview_paragraph() {
+  awk '/^\| Part \|/ { exit } /^ *$/ { fresh = 1; next } fresh { text = ""; fresh = 0 } { text = text " " $0 } END { print text }' \
+    "$(lets_go_skill)" |
+    tr -s '[:space:]' ' '
+}
+
+@test "lets-go explains its procedures before the overview" {
+  local text intro phrase
+  text="$(overview_paragraph)"
+  for phrase in "*Find the source of demand* finds the run's issue: the one the user named, the one an idea's words describe, or \`next\`." \
+    '`next` is the first ready issue on the backlog, as that procedure ranks it.' \
+    'A part or another procedure runs it, and it returns its result to what ran it.' \
+    '](references/terms.md#procedure)'; do
+    grep -qF -- "$phrase" <<<"$text" || { echo "the paragraph before the overview does not say: $phrase"; false; }
+  done
+  intro="$(awk '/^## Procedures$/ { on = 1; next } on && /^#/ { exit } on' "$(lets_go_skill)" | tr -s '[:space:]' ' ')"
+  for phrase in 'A part or another procedure runs each procedure below' 'Each one returns its result to what ran it.'; do
+    grep -qF -- "$phrase" <<<"$intro" || { echo "the Procedures intro does not say: $phrase"; false; }
+  done
+}
+
+@test "lets-go explains each glossary handoff term in its section" {
+  local section term phrase text before
+  # Each row: the section, the term, and its explanation, which comes before
+  # any other mention of the term in the section.
+  while IFS=$'\t' read -r section term phrase; do
+    text="$(procedure_text "$section" | tr -s '[:space:]' ' ')"
+    grep -qF -- "$phrase" <<<"$text" || { echo "$section does not say: $phrase"; false; }
+    before="${text%%"$phrase"*}"
+    ! grep -qiF -- "$term" <<<"$before" || { echo "$section says $term before it explains it"; false; }
+  done <<'EOF'
+Find the source of demand	glossary handoff	A **Glossary handoff** is the section `lets-shape` writes in a story's issue body when shaping added glossary terms. It records which issue owns the definitions, and where the owner's glossary commits are.
+Check the prerequisite	prerequisite	The prerequisite is the glossary definitions a story needs that another issue owns.
+Check the checkpoint	checkpoint	The checkpoint is the ordered `docs:` commits that hold shaping's glossary edits.
+Check the checkpoint	owned paths	The owned paths are the glossary files those commits may change.
+Import the commits	holding branch	The holding branch is the branch `lets-shape` makes from the default branch to keep the checkpoint commits until a story's branch imports them.
+EOF
+  # Rehearse is explained in the sentence that first says it.
+  text="$(procedure_text 'Check the checkpoint' | tr -s '[:space:]' ' ')"
+  grep -qF 'rehearse the import on the proposed base: try it first in a throwaway checkout, and keep the real working tree as it is.' \
+    <<<"$text" || { echo "Check the checkpoint does not explain rehearse"; false; }
+  before="${text%%rehearse the import on the proposed base: try it first*}"
+  ! grep -qiF 'rehears' <<<"$before" || { echo "Check the checkpoint says rehearse before it explains it"; false; }
+}
+
+# description_short [skill.md]: lets-go's frontmatter description starts Use
+# when and holds at most 60 words. Prints what is wrong.
+description_short() {
+  local description words wrong=()
+  description="$(sed -n 's/^description: //p' "${1:-$(lets_go_skill)}" | head -n 1)"
+  words="$(wc -w <<<"$description")"
+  [[ "$description" == 'Use when '* ]] || wrong+=('the description does not start Use when')
+  [ "$words" -le 60 ] || wrong+=("the description has $words words, more than 60")
+  [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
+}
+
+@test "lets-go's description says when to use it" {
+  local description phrase
+  description_short
+  description="$(sed -n 's/^description: //p' "$(lets_go_skill)" | head -n 1)"
+  for phrase in 'next story' 'current branch' 'fresh session' 'story, bug or chore, or an idea in words' \
+    'pull request ready for review' 'again after a run stopped'; do
+    grep -qF -- "$phrase" <<<"$description" || { echo "the description does not say: $phrase"; false; }
+  done
+}
+
+@test "the check that lets-go's description says when to use it names a description of 61 words" {
+  fixture_file lets-go SKILL.md '---' "description: Use when $(printf 'word %.0s' {1..59})" '---' '# lets-go'
+  run description_short "$skills_dir/lets-go/SKILL.md"
+  [ "$status" -eq 1 ] || { echo "it passed on 61 words"; false; }
+  [ "$output" = 'the description has 61 words, more than 60' ] || { echo "it said: $output"; false; }
+}
+
+@test "lets-go says what a run started again does" {
+  local text case phrase missing=()
+  text="$(before_overview)"
+  while IFS=$'\t' read -r case phrase; do
+    grep -qF -- "$phrase" <<<"$text" || missing+=("$case: $phrase")
+  done <<'EOF'
+the change's branch	**On the change's branch:** it finds the issue from the branch's name, prints a dated line for each step already done, and goes on from the first unfinished step.
+the default branch with the issue number	**On the default branch, with the issue number:** it finds the change's branch, here or on `origin`, switches to it, and goes on the same way. It does not claim the issue again.
+the default branch with nothing	**On the default branch, with nothing:** it does not resume. It picks the next ready issue, and a claimed issue is never ready.
+a failed step	**After a failed step:** the run that failed never runs that step again. A new run starts it afresh, in a new session, with the answers given so far.
+a failed shape step	A failed shape step has no branch: the run says to run `lets-shape` on the idea or the issue.
+a merged or closed pull request	**After the pull request is merged or closed:** there is nothing to resume, and the run stops.
+EOF
+  [ "${#missing[@]}" -eq 0 ] || { printf 'the resume paragraph does not say, for %s\n' "${missing[@]}"; false; }
+  grep -qF 'running `lets-go` again on that branch carries on from the first unfinished step' \
+    <<<"$(skill_part 'Read the report' | tr -s '[:space:]' ' ')" || { echo "Read the report no longer sends a failed step back"; false; }
+}
+
+# A run that never shaped has no map, so it need not open shape.md.
+@test "Enter the branch opens the shape file only after a shape step" {
+  local text links sentence
+  text="$(skill_part 'Enter the branch' | tr -s '[:space:]' ' ')"
+  links="$(sed 's/\. /.\n/g' <<<"$text" | grep -F '](references/shape.md#commit-the-discovery-map)')"
+  [ -n "$links" ] || { echo "Enter the branch does not link Commit the discovery map"; false; }
+  while IFS= read -r sentence; do
+    grep -qF 'a shape step ran in this run' <<<"$sentence" ||
+      { echo "Enter the branch links the map without a shape step: $sentence"; false; }
+  done <<<"$links"
+  grep -qF 'A run with no shape step has no map to commit' <<<"$text" ||
+    { echo "Enter the branch does not say a run with no shape step has no map"; false; }
+}
+
+@test "the check that lets-go links each glossary term at its first use reads step report apart from step" {
+  fixture_file lets-go SKILL.md '# lets-go' '' 'It ends with a [step report](references/terms.md#step-report).' \
+    'Each [step](references/terms.md#step) runs in a fresh session.'
+  first_term_links "$skills_dir/lets-go/SKILL.md"
 }
 
 # prose() deduplicates matches, and SKILL.md already names gh api graphql, so
