@@ -201,3 +201,87 @@ Its client still unconditionally reads `/etc/lets/capture-client.json` and
 requires an independent service account/socket. Withdrawing ADR-022 did not
 remove that runtime dependency. It cannot qualify a live workflow without
 further agreed work, and must not be presented as ready to install or test.
+
+## Portable channel investigation
+
+Further documentation/source review establishes the following distinction:
+existing configurable MCP support is available, but an independently retrievable
+capture service is not a standard feature of MCP. No config-only solution has
+been demonstrated for the full ADR-015 requirement. This does not prove that no
+third-party service could provide one; none has been qualified here.
+
+### Existing capabilities
+
+- [Codex MCP configuration](https://learn.chatgpt.com/docs/extend/mcp) supports
+  stdio servers launched as local subprocesses and HTTP servers. This establishes
+  a normal client integration mechanism, not capture behavior.
+- [Claude Code MCP configuration](https://code.claude.com/docs/en/mcp) also
+  supports local stdio servers through an explicitly configured command.
+- The checked T3 Codex adapter overrides its own MCP entries while preserving
+  other launch-configured MCP servers. This is source-level evidence for reuse
+  of the existing integration mechanism without T3 changes, not a live test.
+  T3 Claude also supplies MCP servers through its SDK, but complete inheritance
+  of every user-configured server was not established by the checked snippets.
+  Do not generalize Codex's verified merge behavior to every T3 provider.
+- [MCP tools](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)
+  define discovery and calls with results. They do not define a general
+  original-call receipt lookup. Stateful capture needs implementation-specific
+  handles and storage; resources or tool schemas alone do not make it trusted.
+- [Codex's security guidance](https://learn.chatgpt.com/docs/enterprise/security-cookbook)
+  distinguishes server identity from trust in its launch context and permissions.
+  A configured command alone does not protect executable/dependency integrity or
+  authoritative captured state. No enterprise deployment model is adopted here.
+
+### Concrete candidate for discussion, not selected design
+
+Package one generic tool host with Lets and expose it as an ordinary configured
+stdio MCP server. The coding agent starts it through its existing MCP support.
+There is no proposed boot service, root configuration, separate account or T3
+modification. This would be a new Lets capability to implement after agreement,
+not an existing tool that can be enabled today.
+
+The candidate interaction is:
+
+1. Core policy issues a bounded action and retains its identity inside the host.
+2. The agent invokes the generic capture tool for that issued action. The tool
+   runs the configured backend CLI/MCP call and retains the actual invocation,
+   original result and execution outcome before returning a reference.
+3. Result validation retrieves that host-owned record, not a body supplied by
+   the agent. Shipped/custom definitions provide translation through this one
+   path; the generic host adds no provider-specific verification implementation.
+
+ADR-015 permits a generic capture runner for agent-initiated execution, so this
+candidate does not inherently require a different execution architecture.
+However, that permission does not qualify this proposed implementation.
+
+Mandatory unresolved details before selecting it:
+
+- **Authoritative process and client:** core action issuance and evidence
+  acceptance must reach the same authentic host instance. Independently started
+  CLI/server instances cannot pretend to share authoritative in-memory records.
+  Moving the control surface to MCP is a real product/interface choice.
+- **Trust boundary:** original records must be inaccessible to report editing
+  and protected against substitution via executable, environment, configuration
+  or state changes. A separate process or installed package is not by itself
+  proof of independence. State the supported runtime restrictions and validate
+  them in both host environments before promising compliance.
+- **Lifetime and recovery:** stdio servers end/restart with client sessions.
+  In-memory records alone do not survive that. A mutation with lost capture
+  remains uncertain; an ordinary journal is not authoritative capture. Prove
+  independently captured reconciliation can safely recover required operations,
+  or define a qualified durable record channel. Do not solve this by silently
+  adding a daemon, accepting editable disk receipts or replaying a write.
+- **Existing configuration:** establish how the supported T3 providers and
+  standalone CLI clients actually load this server; custom MCP support in one
+  client does not establish universal availability.
+
+The simpler alternative is to trust agent-submitted backend results while
+retaining core policy, action correlation and conservative recovery. That would
+change ADR-015's independent-evidence clause and weaken its stated guarantee;
+it cannot be selected as an implementation detail. Switching all execution to
+built-in providers is not necessary to discuss that narrower change.
+
+Conclusion: ordinary configured tools alone do not currently settle capture.
+Either select and qualify an additional generic capture capability, or explicitly
+reconsider the independent-evidence requirement. No capture code was written,
+installed or configured during this investigation, and no ADR was changed.

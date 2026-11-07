@@ -127,3 +127,19 @@ it is not proof of independently retrievable evidence. This remains a design
 blocker, not an implementation task or a deferrable open question.
 Do not claim this design ready, write implementation tasks around an invented
 channel, or change an ADR to bypass the blocker.
+
+## Candidate awaiting discussion
+
+The portable investigation now distinguishes a new generic capture tool,
+packaged with Lets and started as an ordinary stdio MCP integration, from the
+rejected operating-system service. MCP configuration is supported by the checked
+CLI clients and preserved by the checked T3 Codex integration. No new host API
+is assumed. This candidate is permitted in principle by ADR-015's generic capture
+runner, but it is not selected or qualified. It needs a concrete authoritative
+process, trust boundary and safe cross-session recovery design. See
+[Portable channel investigation](research.md#portable-channel-investigation).
+
+If the user expects only existing ordinary tool calls and no added capture
+capability, the independent-evidence clause is the unresolved conflict. Trusting
+agent-submitted output would require explicit reconsideration of that clause;
+configuration alone cannot satisfy it. No such change has been authorized.
