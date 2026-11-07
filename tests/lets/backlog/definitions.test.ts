@@ -39,3 +39,16 @@ test('custom definition cannot redirect a bounded mutation',()=>{
   const definition=base();definition.facts.Assign.stdin={query:'mutation Assign { deleteIssue(input:{issueId:"other"}) { clientMutationId } }',variables:{$input:''}};
   custom(definition,source=>assert.throws(()=>loadDefinition({name:'github',version:1,source},'github',process.cwd()),/mutation/));
 });
+test('custom definition uses the production loader without a core registry entry',()=>{
+  const definition=base();definition.name='company-github';
+  custom(definition,source=>{
+    const selected=loadDefinition({name:'company-github',version:1,source},'github',process.cwd());
+    assert.equal(selected.definition.name,'company-github');assert.equal(render(selected.definition.facts.Actor.stdin,null,{owner:'owner',name:'repo'}).variables.owner,'owner');
+  });
+});
+test('custom definition source has a byte bound before parsing',()=>{
+  custom(base(),source=>{
+    writeFileSync(source,JSON.stringify(base())+' '.repeat(300000));
+    assert.throws(()=>loadDefinition({name:'github',version:1,source},'github',process.cwd()),/bound/);
+  });
+});

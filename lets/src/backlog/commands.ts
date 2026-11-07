@@ -48,6 +48,7 @@ export async function execute(command: string, input: Record<string, any>, cwd: 
     return {protocol:1,ok:true,result:await dispatch(envelope, (name,variables)=>transaction.getStore()!.query!(name,variables,envelope.context))};
   }
   const client = await new Client(cwd, input).resolve(); const { context, call, connect } = client;
+  if (command === 'scope') return {context};
   if (command === 'select') return { context, ...await select(call, context.repository, input.reference) };
   if (command === 'claim') {
     const { capabilities } = await call('capability.read');
@@ -71,7 +72,7 @@ export async function execute(command: string, input: Record<string, any>, cwd: 
   if (command === 'resume') { const result = await resume(context, input.change, input.handle, connect); return { identity: result.identity, handle: input.handle }; }
   if (command === 'reference' || command === 'complete') {
     const { capabilities } = await call('capability.read'); requireCapability(capabilities, command === 'reference' ? 'references' : 'completion');
-    return (command === 'reference' ? referenceChange : completeChange)(context, input.change, input.handle, input.reference, connect, (name,variables)=>transaction.getStore()!.query!(name,variables,context));
+    return (command === 'reference' ? referenceChange : completeChange)(context, input.change, input.handle, input.reference, connect, (name,variables,scope=context)=>transaction.getStore()!.query!(name,variables,scope));
   }
   if (command === 'packet') {
     if (context.provider !== 'github') fail('unsupported', 'supplemental packet reads are currently GitHub-only');

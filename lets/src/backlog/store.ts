@@ -1,7 +1,7 @@
 import { transaction } from './runtime-context.ts';
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { chmodSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, openSync, closeSync, fsyncSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { AdapterFailure } from './errors.ts';
 import type { Context } from './github.ts';
@@ -27,7 +27,18 @@ export class Store {
     const active = transaction.getStore();
     if (active) { active.records[name] = structuredClone(value); return; }
     const path = join(this.root, name + '.json'); const temporary = path + '.' + randomUUID();
-    writeFileSync(temporary, JSON.stringify(value), { mode: 0o600, flag: 'wx' }); renameSync(temporary, path);
+    const file = openSync(temporary, 'wx', 0o600);
+    try { writeFileSync(file, JSON.stringify(value)); fsyncSync(file); } finally { closeSync(file); }
+    renameSync(temporary, path);
+    const directory = openSync(this.root, 'r');
+    try { fsyncSync(directory); } finally { closeSync(directory); }
+  }
+  remove(name: string) {
+    const active = transaction.getStore();
+    if (active) { delete active.records[name]; return; }
+    try { unlinkSync(join(this.root, name + '.json')); } catch (error: any) { if (error.code !== 'ENOENT') throw error; }
+    const directory = openSync(this.root, 'r');
+    try { fsyncSync(directory); } finally { closeSync(directory); }
   }
   async lock<T>(scope: unknown, run: () => Promise<T>): Promise<T> {
     if (transaction.getStore()) return run();

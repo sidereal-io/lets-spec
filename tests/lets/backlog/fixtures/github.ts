@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AdapterFailure } from '../../../../lets/src/backlog/errors.ts';
@@ -38,10 +38,6 @@ export async function withGithub(run: (fixture: { call: (operation: string, inpu
   const ghEntry = fileURLToPath(new URL('./gh-process.mjs', import.meta.url));
   writeFileSync(gh, `#!${process.execPath}\nprocess.env.BACKLOG_TEST_STATE=${JSON.stringify(path)}; await import(${JSON.stringify(ghEntry)});`);
   chmodSync(gh, 0o700);
-  const entry = fileURLToPath(new URL('../../../../lets/src/backlog/github-entry.ts', import.meta.url));
-  const adapter = join(cwd, 'adapter');
-  writeFileSync(adapter, `#!${process.execPath}\nprocess.env.PATH=${JSON.stringify(cwd + ":" + process.env.PATH)}; await import(${JSON.stringify(entry)});`); chmodSync(adapter, 0o700);
-  symlinkSync(adapter, join(cwd, 'lets-backlog-github'));
   const main = fileURLToPath(new URL('./workflow-driver.ts', import.meta.url));
   try {
     await run({ cwd, command: (name, input = {}) => {

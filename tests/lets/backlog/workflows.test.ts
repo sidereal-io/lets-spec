@@ -84,3 +84,57 @@ test('editable replay cache cannot fabricate captured facts',()=>fixture(async(e
   receipts.set('second',capture(second.action,'second'));
   assert.equal((await engine.submit({workflow:first.workflow,actionId:second.action.id,receipt:'second'})).result.viewer.login,'me');
 },async()=>{const first=await transaction.getStore()!.query!('Actor',{owner:'owner',name:'repo'});await transaction.getStore()!.query!('Actor',{owner:'owner',name:'repo'});return first;}));
+test('simultaneous callers obtain only one outstanding workflow',()=>fixture(async(engine)=>{
+  const results=await Promise.allSettled([engine.start('select',input),engine.start('select',input)]);
+  assert.equal(results.filter(result=>result.status==='fulfilled').length,1);
+  assert.equal(results.filter(result=>result.status==='rejected').length,1);
+}));
+test('post-write uncertainty retains the workflow reservation',()=>fixture(async(engine,receipts)=>{
+  const first=await engine.start('claim',input);receipts.set('write',capture(first.action,'write'));
+  await assert.rejects(engine.submit({workflow:first.workflow,actionId:first.action.id,receipt:'write'}),/uncertain/);
+  await assert.rejects(engine.start('select',input),/outstanding/);
+},async(_command,_input,cwd)=>{
+  const {AdapterFailure}=await import('../../../lets/src/backlog/errors.ts');
+  new Store(cwd).write('mutation-fixture',{state:'pending',request:{operation:'claim.acquire',context:input,mutationId:'m',input:{}}});
+  await transaction.getStore()!.query!('FieldStatus',{project:'P',item:'PI',field:'status',option:'progress'});
+  throw new AdapterFailure('conflict','partial','uncertain after write');
+}));
+test('lost final acknowledgement can be recovered without rewriting private state',()=>fixture(async(engine,receipts)=>{
+  const first=await engine.start('select',input);receipts.set('r',capture(first.action,'r'));
+  const submission={workflow:first.workflow,actionId:first.action.id,receipt:'r'};
+  const complete=await engine.submit(submission);
+  engine.store.write('session-marker',{value:2});
+  assert.deepEqual(await engine.submit(submission),complete);
+  assert.deepEqual(engine.store.read('session-marker'),{value:2});
+},async(_command,_input,cwd)=>{
+  new Store(cwd).write('session-marker',{value:1});return await transaction.getStore()!.query!('Actor',{owner:'owner',name:'repo'});
+}));
+test('abandoning an undispatched workflow rolls back private preparation',()=>fixture(async(engine)=>{
+  const first=await engine.start('claim',input);assert.deepEqual(engine.store.read('session-prepared'),{value:1});
+  await engine.abandon({workflow:first.workflow});assert.equal(engine.store.read('session-prepared'),undefined);
+},async(_command,_input,cwd)=>{
+  new Store(cwd).write('session-prepared',{value:1});return await transaction.getStore()!.query!('Actor',{owner:'owner',name:'repo'});
+}));
+test('stale ownership facts cannot authorize a later write',async()=>{
+  const originalNow=Date.now;const start=originalNow();let clock=start;Date.now=()=>clock;
+  try{await fixture(async(engine,receipts)=>{
+    const first=await engine.start('claim',input);receipts.set('r',capture(first.action,'r'));
+    await assert.rejects(engine.submit({workflow:first.workflow,actionId:first.action.id,receipt:'r'}),/fresh/);
+  },async()=>{await transaction.getStore()!.query!('Actor',{owner:'owner',name:'repo'});clock=start+180001;return await transaction.getStore()!.query!('FieldStatus',{project:'P',item:'PI',field:'status',option:'progress'});});}
+  finally{Date.now=originalNow;}
+});
+test('unmappable dispatched write result retains unknown effects',()=>fixture(async(engine,receipts)=>{
+  const first=await engine.start('claim',input);const result=capture(first.action,'r');result.stdout='{}';result.bytes=2;receipts.set('r',result);
+  await assert.rejects(engine.submit({workflow:first.workflow,actionId:first.action.id,receipt:'r'}),(error:any)=>error.effects==='unknown');
+  await assert.rejects(engine.start('select',input),/outstanding/);
+},async()=>await transaction.getStore()!.query!('FieldStatus',{project:'P',item:'PI',field:'status',option:'progress'})));
+test('restart reapplies an interrupted private checkpoint idempotently',()=>fixture(async(engine,receipts,cwd)=>{
+  const first=await engine.start('select',input);const {hash}=await import('../../../lets/src/backlog/store.ts');const name='workflow-'+hash(first.workflow);const file=engine.store.read(name);
+  file.commit={'session-a':{value:1},'session-b':{value:2}};engine.store.write(name,file);engine.store.write('session-a',{value:1});
+  receipts.set('r',capture(first.action,'r'));const restarted=new WorkflowEngine(cwd,engine.options);
+  await restarted.submit({workflow:first.workflow,actionId:first.action.id,receipt:'r'});
+  // The replay transaction reconstructs original policy state; the WAL is
+  // fully applied before policy resumes and is no longer pending afterwards.
+  assert.equal(restarted.store.read(name).commit,undefined);
+  assert.deepEqual(restarted.store.read('session-b'),{value:2});
+}));

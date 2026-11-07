@@ -85,7 +85,8 @@ export class Completion {
       await this.linked(reference, entry.request.input.item.id);
       if(completing)await this.merged(reference,entry.request.input.merge.commit);
       if (linked && linked.reference !== reference) fail('conflict', 'PR association changed after mutation');
-      if (linked?.reference !== reference || (completing && state.status !== 'Done')) return { state: entry.state === 'absent' ? 'absent' : 'unknown' };
+      if (!completing && !linked) store.write('reference-' + hash([scope(context), context.actor, context.session, state.issue.id]), { reference });
+      if ((completing && linked?.reference !== reference) || (completing && state.status !== 'Done')) return { state: entry.state === 'absent' ? 'absent' : 'unknown' };
       entry.state = 'applied'; entry.result = completing ? { status: 'Done' } : { reference }; store.write(name, entry);
       return { state: 'applied', result: entry.result };
     });

@@ -1,5 +1,5 @@
 import shipped from './definitions/github.json' with { type: 'json' };
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { canonical, digest } from './action-contract.ts';
 import { AdapterFailure } from './errors.ts';
@@ -8,7 +8,9 @@ export type Definition = { version: 1; name: string; provider: string; contract:
 export function loadDefinition(selection: { name: string; version: number; source?: string }, provider: string, cwd: string): { definition: Definition; digest: string } {
   try {
     if (selection.version !== 1) throw new Error('unsupported definition version');
-    const definition = selection.source ? JSON.parse(readFileSync(resolve(cwd, selection.source), 'utf8')) : shipped;
+    const source = selection.source ? resolve(cwd, selection.source) : undefined;
+    if (source && statSync(source).size > 262144) throw new Error('definition source exceeds byte bound');
+    const definition = source ? JSON.parse(readFileSync(source, 'utf8')) : shipped;
     if (definition.version !== 1 || definition.contract !== 1 || definition.name !== selection.name || definition.provider !== provider) throw new Error('incompatible definition selection');
     validateDefinition(definition);
     return { definition, digest: digest(definition) };
