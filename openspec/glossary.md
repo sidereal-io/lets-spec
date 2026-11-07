@@ -80,8 +80,9 @@ step's questions, each with a recommendation when the step has one; or
 `failed`, with the reason. `lets delegate step run` prints it as one JSON
 line.
 
-## Interactivity level
+## Question mode
 
-How many decisions `lets-go` and its steps put to the user. `ask` puts
-every decision to the user. `recommend` asks only where there is no
-recommendation.
+How `lets-go` handles a step's questions. `ask` puts every question to
+the user, with the step's recommendation as the suggested answer. `auto`
+answers each question that has a recommendation, tells the user what it
+chose, and asks the user the rest.
