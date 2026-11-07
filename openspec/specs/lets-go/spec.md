@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Says what the `lets-go` skill does for a shaped Chore, Bug or Story, or for an idea in words: where it starts, how it shapes an idea or an unshaped issue, how it runs discovery for a large idea and picks the first ready story, what it skips and how it says so, which interactivity level it picks, how it runs each step and reads its report, how it relays a step's questions to the user, and how the run ends.
+Says what the `lets-go` skill does for a shaped Chore, Bug or Story, or for an idea in words: where it starts, how it shapes an idea or an unshaped issue, how it runs discovery for a large idea and picks the first ready story, what it skips and how it says so, which question mode it picks, how it runs each step and reads its report, how it relays a step's questions to the user, and how the run ends.
 
 ## Requirements
 
@@ -135,7 +135,7 @@ When the schema is `lets-minimal`, review plan never runs. `lets-go` SHALL print
 ### Requirement: lets-go picks the interactivity level and says why
 In *Read the settings*, before it asks GitHub for anything, `lets-go` SHALL run `lets go level` from the repo root, once per run. When the command exits non-zero, `lets-go` SHALL show the user its stderr and stop. It SHALL then claim nothing and run no step. Otherwise it SHALL keep the `level` the command printed for the whole run. Each time it picks the level, it SHALL take the first of these that is set. First, the level the user named in the request. Then the kept `level`, when it is not `null`. Then the Kind's default: `recommend` for a Chore or a Bug, and `ask` for a Story or any other Kind, because *Confirm the packet* reads any other Kind as a Story. It SHALL print the line for the source it used. For the request's level: `Interactivity: <level>, because you asked for it.` For the config's: `Interactivity: <level>, because your lets config sets go.level.` For the Kind's: `Interactivity: <level>, because #<i> is a <Kind>.` Before a shape step, the Kind is not settled. The level for the shape step SHALL be the request's, when named; else the config's, when set; else `ask`. In that last case the line SHALL read `Interactivity: ask, because shape has not run yet.` After the shape step, `lets-go` SHALL pick the level again, in the same order, and print its line. *Set the level* SHALL hold this rule, and *Run the shape step* SHALL link to it, not write it again. `lets-go` SHALL never ask the user which level to use. The level SHALL hold for the whole run and SHALL not be kept for a later run. It SHALL put the level, and what it means for the step, into every step prompt.
 
-#### Scenario: The level line
+#### Scenario: The question mode line
 - **WHEN** issue `#149` is a Chore and Start has passed
 - **THEN** `lets-go` prints `Interactivity: recommend, because #149 is a Chore.` before it runs plan
 
@@ -147,7 +147,7 @@ In *Read the settings*, before it asks GitHub for anything, `lets-go` SHALL run 
 - **WHEN** the issue is a Bug
 - **THEN** `lets-go` prints `Interactivity: recommend, because #<i> is a Bug.` with the issue's number
 
-#### Scenario: The user names the level
+#### Scenario: The user names the question mode
 - **WHEN** the user runs `lets-go` for `#152`, a Story, and says `recommend`
 - **THEN** `lets-go` prints `Interactivity: recommend, because you asked for it.` and relays at `recommend`
 
@@ -155,35 +155,35 @@ In *Read the settings*, before it asks GitHub for anything, `lets-go` SHALL run 
 - **WHEN** an earlier run of `lets-go` for `#152` ran at `recommend` because the user said so, and the user runs `lets-go` for `#152` again without naming a level
 - **THEN** `lets-go` prints `Interactivity: ask, because #152 is a Story.`
 
-#### Scenario: The shape step's level
+#### Scenario: The shape step's question mode
 - **WHEN** the user runs `lets-go add a --quiet flag to lets sync` without naming a level
 - **THEN** `lets-go` prints `Interactivity: ask, because shape has not run yet.` before the shape step, and relays its questions at `ask`
 
-#### Scenario: The level after shape
+#### Scenario: The question mode after shape
 - **WHEN** the shape step wrote `#181` as a Chore, and the user named no level
 - **THEN** `lets-go` prints `Interactivity: recommend, because #181 is a Chore.` before it runs plan
 
-#### Scenario: A named level holds through shape
+#### Scenario: A named question mode holds through shape
 - **WHEN** the user runs `lets-go recommend add a --quiet flag to lets sync`, and the shape step writes a Story
 - **THEN** `lets-go` prints `Interactivity: recommend, because you asked for it.` before the shape step and again before plan
 
-#### Scenario: The config sets the level
+#### Scenario: The config sets the question mode
 - **WHEN** the `lets` config holds `go.level: recommend`, issue `#152` is a Story, the user named no level, and Start has passed
 - **THEN** `lets-go` prints `Interactivity: recommend, because your lets config sets go.level.` before it runs plan, and relays at `recommend`
 
-#### Scenario: The request's level beats the config's
+#### Scenario: The request's question mode beats the config's
 - **WHEN** the `lets` config holds `go.level: recommend`, and the user runs `lets-go` for `#152`, a Story, and says `ask`
 - **THEN** `lets-go` prints `Interactivity: ask, because you asked for it.`
 
-#### Scenario: The config's level before shape
+#### Scenario: The config's question mode before shape
 - **WHEN** the `lets` config holds `go.level: recommend`, and the user runs `lets-go add a --quiet flag to lets sync` without naming a level
 - **THEN** `lets-go` prints `Interactivity: recommend, because your lets config sets go.level.` before the shape step, and again before plan
 
-#### Scenario: The config holds no level
+#### Scenario: The config holds no question mode
 - **WHEN** `lets go level` prints `{"level":null}`, issue `#152` is a Story, and the user named no level
 - **THEN** `lets-go` prints `Interactivity: ask, because #152 is a Story.`
 
-#### Scenario: lets go level fails
+#### Scenario: lets go questions fails
 - **WHEN** the `lets` config holds `go.level: loud`, and the user runs `lets-go` for `#152`
 - **THEN** `lets-go` shows the user the command's stderr, which names `go.level`, claims nothing, and runs no step
 
@@ -628,15 +628,15 @@ At the `ask` level, when a report's outcome is `needs-input`, `lets-go` SHALL as
 - **WHEN** the user runs `lets-go add a --quiet flag to lets sync` on the default branch
 - **THEN** `lets-go` takes `add a --quiet flag to lets sync` as the idea, and searches for an existing issue as *Find the source of demand* does for described work
 
-#### Scenario: An idea with a level
+#### Scenario: An idea with a question mode
 - **WHEN** the user runs `lets-go recommend add a --quiet flag to lets sync` on the default branch, and answers that `recommend` names the level
 - **THEN** the idea is `add a --quiet flag to lets sync`, and the level is `recommend`
 
-#### Scenario: A level word that is part of the idea
+#### Scenario: A question mode word that is part of the idea
 - **WHEN** the user runs `lets-go ask before deleting the branch` on the default branch, and answers that `ask` is part of the idea
 - **THEN** the idea is `ask before deleting the branch`, and *Set the level* takes the level from `go.level` or the Kind
 
-#### Scenario: A level with a number
+#### Scenario: A question mode with a number
 - **WHEN** the user runs `lets-go ask #149`
 - **THEN** the level is `ask`, the issue is `#149`, and `lets-go` asks no question about the word
 
@@ -752,7 +752,7 @@ The shape prompt SHALL say all of this. It SHALL order the step's entry points, 
 - **WHEN** the answers file holds that question with the answer `no`
 - **THEN** the step ends `failed`, with a reason that says the work is too large for one issue and discovery was declined, and `lets-go` prints `Failed shape:` with it
 
-#### Scenario: At recommend
+#### Scenario: At auto
 - **WHEN** the user ran `lets-go recommend` with the idea, and the shape step reports the discovery question
 - **THEN** `lets-go` answers `yes` itself, tells the user, and runs the step again with the answers file
 
