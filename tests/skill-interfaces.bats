@@ -2401,6 +2401,20 @@ EOF
     <<<"$(skill_part 'Read the report' | tr -s '[:space:]' ' ')" || { echo "Read the report no longer sends a failed step back"; false; }
 }
 
+# A run that never shaped has no map, so it need not open shape.md.
+@test "Enter the branch opens the shape file only after a shape step" {
+  local text links sentence
+  text="$(skill_part 'Enter the branch' | tr -s '[:space:]' ' ')"
+  links="$(sed 's/\. /.\n/g' <<<"$text" | grep -F '](references/shape.md#commit-the-discovery-map)')"
+  [ -n "$links" ] || { echo "Enter the branch does not link Commit the discovery map"; false; }
+  while IFS= read -r sentence; do
+    grep -qF 'a shape step ran in this run' <<<"$sentence" ||
+      { echo "Enter the branch links the map without a shape step: $sentence"; false; }
+  done <<<"$links"
+  grep -qF 'A run with no shape step has no map to commit' <<<"$text" ||
+    { echo "Enter the branch does not say a run with no shape step has no map"; false; }
+}
+
 @test "the check that lets-go links each glossary term at its first use reads step report apart from step" {
   fixture_file lets-go SKILL.md '# lets-go' '' 'It ends with a [step report](references/terms.md#step-report).' \
     'Each [step](references/terms.md#step) runs in a fresh session.'

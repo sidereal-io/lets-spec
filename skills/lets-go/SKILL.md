@@ -322,8 +322,11 @@ Next: [Enter the branch](#enter-the-branch).
    - **`claimed`:** when it carries `verified`, run
      [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint)
      with the commits it carries, and act on its result as below. When
-     it carries `no-owned-edits`, run no import, and
+     it carries `no-owned-edits`, run no import. Then, when a shape step
+     ran in this run,
      [commit the discovery map](references/shape.md#commit-the-discovery-map).
+     A run with no shape step has no map to commit, and reads no part of
+     `references/shape.md`.
    - **`taken`:** when the user named `<i>` or confirmed it, say who has
      it, and stop. Otherwise `next` or *Pick the first ready story*
      picked it: count the lost claim. After the third lost claim in this
@@ -338,7 +341,9 @@ Next: [Enter the branch](#enter-the-branch).
    - **`branch-failed`:** *Claim* has released the claim. Show the error
      it carries, and stop.
 3. When you ran *Import the glossary checkpoint*, act on its result:
-   - **`imported`:** [commit the discovery map](references/shape.md#commit-the-discovery-map).
+   - **`imported`:** when a shape step ran in this run,
+     [commit the discovery map](references/shape.md#commit-the-discovery-map),
+     as for `no-owned-edits`.
    - **`import-failed`:** report each cleanup failure it carries, and
      what was kept, with how to recover, and stop.
 4. When `origin` has the branch, bring it up to date before you read any
