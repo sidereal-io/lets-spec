@@ -135,3 +135,9 @@ test('GraphQL documents have a token budget',async t=>{
   const {digest:_,...body}=action;
   await assert.rejects(client.execute(sealAction({...body,stdin:{query:`{ ${'field '.repeat(10001)} }`}})));
 });
+test('settlement durably cancels an unexecuted action and forbids later dispatch',async t=>{
+  const {client,action}=await fixture(t);
+  await assert.rejects(client.settle(action),(e:any)=>e.effects==='none');
+  await client.execute(action);
+  await assert.rejects(client.read(action.id,action),(e:any)=>e.effects==='none');
+});

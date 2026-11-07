@@ -111,7 +111,7 @@ export async function startCaptureService(config: CaptureServiceConfig, boundary
     let activeId: string | undefined;
     const reply = (status: number, body: unknown) => { response.writeHead(status, {'content-type': 'application/json'}); response.end(JSON.stringify(body)); };
     try {
-      if (request.method === 'POST' && request.url === '/execute') {
+      if (request.method === 'POST' && ['/execute','/settle'].includes(request.url ?? '')) {
         const chunks: Buffer[] = []; let size = 0;
         for await (const chunk of request) { size += chunk.length; if (size > 2 * 1048576) { reply(413, {error: 'request too large'}); return; } chunks.push(chunk); }
         const action: Action = JSON.parse(Buffer.concat(chunks).toString());
@@ -122,10 +122,19 @@ export async function startCaptureService(config: CaptureServiceConfig, boundary
         inFlight.set(action.id, canonical(action)); activeId = action.id;
         const reservationPath = join(config.stateDirectory, `${action.id}.reservation.json`);
         try { const previous = JSON.parse(await readFile(reservationPath, 'utf8')); if (previous.actionDigest !== action.digest || previous.request !== canonical(action)) { reply(409, {error:'action ID conflict'}); return; } reply(200, {reference: action.id}); return; } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
-        validateAction(action);
+        validateAction(action, request.url === '/settle' ? action.issuedAt : Date.now());
         const tool = config.tools[action.tool.id];
         if (!tool) throw new Error('untrusted tool');
         permission(action, tool);
+        if (request.url === '/settle') {
+          const now=Date.now();
+          const capture:Capture={version:1,id:action.id,actionId:action.id,actionDigest:action.digest,tool:action.tool,stdin:action.stdin,startedAt:now,finishedAt:now,dispatched:false,state:'rejected',exitCode:null,signal:null,stdout:'',stderr:'',bytes:0};
+          if (!await durableCreate(reservationPath,{actionDigest:action.digest,request:canonical(action),capture},config.stateDirectory)) {
+            const previous=JSON.parse(await readFile(reservationPath,'utf8'));
+            if(previous.request!==canonical(action)){reply(409,{error:'action ID conflict'});return;}
+          }
+          reply(200,{reference:action.id});return;
+        }
         await (boundary.verifyPaths ?? verifyPaths)(config);
         const environment = await credentials(tool.credentialsFile);
         validateAction(action);

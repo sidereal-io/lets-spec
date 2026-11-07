@@ -56,6 +56,12 @@ export class CaptureClient implements CaptureReader {
     if (!exactKeys(result, ['reference']) || result.reference !== action.id) throw new AdapterFailure('unknown_outcome', 'unknown', 'invalid capture reference; reconcile original action');
     return {reference:result.reference};
   }
+  async settle(action: Action): Promise<Capture> {
+    this.verifyTool(action);
+    const result = await this.exchange('/settle', action);
+    if (!exactKeys(result, ['reference']) || result.reference !== action.id) throw new AdapterFailure('unknown_outcome', 'unknown', 'invalid settlement reference');
+    return this.read(action.id, action, {historical:true});
+  }
   async read(reference: string, action: Action, options: {historical?:boolean} = {}): Promise<Capture> {
     this.verifyTool(action);
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(reference)) throw new AdapterFailure('unknown_outcome', 'unknown', 'invalid capture reference');

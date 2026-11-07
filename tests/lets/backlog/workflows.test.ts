@@ -138,3 +138,10 @@ test('restart reapplies an interrupted private checkpoint idempotently',()=>fixt
   assert.equal(restarted.store.read(name).commit,undefined);
   assert.deepEqual(restarted.store.read('session-b'),{value:2});
 }));
+test('trusted cancellation clears an unexecuted write and its private preparation',()=>fixture(async(engine,receipts)=>{
+  const first=await engine.start('claim',input);
+  engine.options.capture.settle=async(action)=>{const {NonDispatchFailure}=await import('../../../lets/src/backlog/errors.ts');throw new NonDispatchFailure();};
+  assert.equal((await engine.reconcile({workflow:first.workflow})).result.state,'absent');
+  assert.equal(engine.store.read('mutation-fixture'),undefined);
+  assert.equal((await engine.start('claim',input)).state,'action-required');
+},async(_command,_input,cwd)=>{new Store(cwd).write('mutation-fixture',{request:{context:input,mutationId:'m',operation:'claim.acquire',input:{}},state:'pending'});await transaction.getStore()!.query!('FieldStatus',{project:'P',item:'PI',field:'status',option:'progress'});}));

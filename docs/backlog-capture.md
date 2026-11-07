@@ -112,3 +112,11 @@ node --test tests/lets/backlog/capture-service.test.ts tests/lets/backlog/captur
 
 Their explicit programmatic system-boundary substitutions are test seams. No
 production CLI or environment option enables those substitutions.
+
+`POST /settle` accepts an original action and atomically reserves a rejected,
+non-dispatched outcome if that action has never been reserved. An existing
+reservation always wins, including an in-flight or unknown dispatch. Settlement
+never executes a tool and prevents any later execution of that action ID.
+This lets recovery distinguish a cancelled action from an unknown write without
+trusting an agent's assertion that it did not run. Expired actions can be settled;
+their structure, digest and tool permissions still have to match.

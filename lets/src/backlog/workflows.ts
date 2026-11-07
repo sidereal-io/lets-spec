@@ -4,12 +4,12 @@ import {Store,hash} from './store.ts';
 import {transaction,ActionYield} from './runtime-context.ts';
 import {readConfiguration} from './repository-config.ts';
 import {render} from './definitions.ts';
-import {AdapterFailure} from './errors.ts';
+import {AdapterFailure,NonDispatchFailure} from './errors.ts';
 import {digest,sealAction,verifyCapture} from './action-contract.ts';
 import type {Action,CaptureReader,TrustedTool} from './action-contract.ts';
 import type {Query} from './github.ts';
-type Entry={action:Action;result?:any;receipt?:string};
-type Workflow={version:1;handle:string;command:string;input:Record<string,any>;configuration:string;created:number;initial:Record<string,any>;entries:Entry[];status:'active'|'complete';history?:Entry[];readOnly?:boolean;result?:any;remove?:string[];commit?:Record<string,any>};
+type Entry={action:Action;result?:any;receipt?:string;notDispatched?:boolean};
+type Workflow={version:1;handle:string;command:string;input:Record<string,any>;configuration:string;created:number;initial:Record<string,any>;entries:Entry[];status:'active'|'complete';history?:Entry[];readOnly?:boolean;baseline?:Record<string,any>;result?:any;remove?:string[];commit?:Record<string,any>};
 type Options={tools:Record<string,TrustedTool>;capture:CaptureReader;execute:(command:string,input:Record<string,any>,cwd:string)=>Promise<any>};
 function failure(message:string):never {throw new AdapterFailure('conflict','none',message);}
 export class WorkflowEngine {
@@ -20,6 +20,13 @@ export class WorkflowEngine {
   private name(handle:string){if(typeof handle!=='string'||!handle)failure('original workflow handle required');return 'workflow-'+hash(handle);}
   private recover(workflow:Workflow){
     if(workflow.commit){for(const [name,value] of Object.entries(workflow.commit))this.store.write(name,value);for(const name of workflow.remove??[])this.store.remove(name);delete workflow.remove;delete workflow.commit;this.store.write(this.name(workflow.handle),workflow);}
+  }
+  private cancelUnsent(workflow:Workflow) {
+    const writes=[...workflow.history??[],...workflow.entries].filter(entry=>entry.action.mode==='write');
+    if(!writes.length||writes.some(entry=>!entry.notDispatched))return false;
+    const baseline=workflow.baseline??workflow.initial;
+    workflow.commit=baseline;workflow.remove=readdirSync(this.store.root).filter(name=>/^(claim-|current-local-claim-|mutation-|reference-|session-).*\.json$/.test(name)).map(name=>name.slice(0,-5)).filter(name=>!Object.hasOwn(baseline,name));
+    workflow.status='complete';workflow.result={state:'absent'};this.store.write(this.name(workflow.handle),workflow);this.recover(workflow);return true;
   }
   async start(command:string,input:Record<string,any>):Promise<any>{
     return this.store.lock('workflow',async()=>{
@@ -52,6 +59,7 @@ export class WorkflowEngine {
       let captured;
       try{captured=verifyCapture(entry.action,await this.options.capture.read(input.receipt,entry.action),input.receipt);}
       catch(error){
+        if(error instanceof NonDispatchFailure){entry.notDispatched=true;this.store.write(this.name(workflow.handle),workflow);if(this.cancelUnsent(workflow))throw error;}
         const failure=error instanceof AdapterFailure?error:new AdapterFailure('unknown_outcome','unknown','independent capture unavailable; retain original workflow');
         const sessions=Object.entries(workflow.commit??{}).filter(([name,value])=>name.startsWith('session-')&&value.context?.session===entry.action.scope.session);
         // Checkpoint commits have already been applied, so recover the exact
@@ -84,6 +92,11 @@ export class WorkflowEngine {
       if(digest(readConfiguration(this.cwd))!==workflow.configuration)failure('workflow configuration changed');
       this.recover(workflow);
       const entries=[...workflow.history??[],...workflow.entries];
+      const unsettled=entries.findLast(entry=>entry.action.mode==='write'&&!entry.receipt&&!entry.notDispatched);
+      if(unsettled&&this.options.capture.settle){
+        try{await this.options.capture.settle(unsettled.action);}catch(error){if(error instanceof NonDispatchFailure){unsettled.notDispatched=true;this.store.write(this.name(workflow.handle),workflow);if(this.cancelUnsent(workflow))return {state:'complete',result:{state:'absent'}};}}
+      }
+
       if(!entries.some(entry=>entry.action.mode==='write')){
         const current=workflow.entries.at(-1);if(current&&!current.receipt){workflow.entries.pop();workflow.history=[...workflow.history??[],current];}
         return this.advance(workflow);
@@ -95,6 +108,7 @@ export class WorkflowEngine {
       const request=workflow.readOnly?workflow.input.request:pending.length===1?pending[0][1].request:undefined;
       if(!request)failure('original mutation provenance unavailable; manual reconciliation required');
       const sessions=Object.entries(records).filter(([name,value])=>name.startsWith('session-')&&value.context?.session===request.context.session);
+      workflow.baseline??=workflow.initial;
       workflow.history=entries;workflow.entries=[];workflow.initial=records;workflow.command='reconcile-internal';workflow.input={request,...(sessions.length===1?{handle:sessions[0][1].handle}:{})};workflow.readOnly=true;
       this.store.write(this.name(workflow.handle),workflow);
       return this.advance(workflow);
@@ -103,7 +117,7 @@ export class WorkflowEngine {
   private async advance(workflow:Workflow,replayOnly=false):Promise<any>{
     const configuration=readConfiguration(this.cwd);
     if(digest(configuration)!==workflow.configuration)failure('workflow configuration changed; original definition and scope required');
-    if(Date.now()-workflow.created>86400000||workflow.entries.length>10000)failure('workflow bound exceeded; reconcile original continuation');
+    if((!workflow.readOnly&&Date.now()-workflow.created>86400000)||workflow.entries.length>10000)failure('workflow bound exceeded; reconcile original continuation');
     const tx={root:this.store.root,records:structuredClone(workflow.initial),seed:workflow.handle,nextId:0,query:undefined as Query|undefined};
     const requireFresh = () => {
       const latest=new Map<string,Entry>();

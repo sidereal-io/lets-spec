@@ -55,3 +55,7 @@ for (const patch of [{ timeoutMs: 3_000_000_000 }, { maxBytes: 0 }, { scope: { a
     assert.throws(() => validateAction(sealAction(body), 2000), (e: any) => e.category === 'invalid_request' && e.effects === 'none');
   });
 }
+test('protected rejection after expiry still proves non-dispatch',()=>{
+  const c={...capture(),state:'rejected',dispatched:false,exitCode:null,stdout:'',bytes:0,startedAt:6000,finishedAt:6000};
+  assert.throws(()=>verifyCapture(action(),c,c.id,7000),(e:any)=>e.effects==='none');
+});
