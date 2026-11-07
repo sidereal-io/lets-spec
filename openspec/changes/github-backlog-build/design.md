@@ -83,18 +83,12 @@ cannot establish remote state. No separate provider-specific verification
 executor is a fallback. Reject forged, editable, mismatched, stale,
 replayed, incomplete and unavailable capture.
 
-**Blocking prerequisite:** no concrete trusted channel is established yet.
-Resolve its interface, isolation and deployment before implementing dependent
-production integration or claiming the plan is ready. If none exists, design
-and demonstrate a generic capture service outside the agent's write access.
-Resolve who administers capture, the independently retrievable interface,
-trusted executable/server identity, authenticated backend context, immutable
-record retention and retrieval authorization. Specify finite retrieval and
-output bounds, pagination/completeness and unavailable-record handling. A
-protected signing key alone does not prove actual tool identity or context.
-A service running with agent-editable state or an agent-accessible signing
-key is not independent capture. A test double establishes validation behavior
-only; it cannot qualify the live trust boundary.
+The concrete service, trust setup, wire operations and resumption design are
+specified below. Building and testing those components does not require an
+existing deployed service. Installing the service requires operator approval
+of the completed deployment artifact. Qualifying live support requires the
+separate-account deployment, trusted real tool/authentication and live evidence.
+A test double never qualifies that trust boundary.
 
 ### 4. Preserve sequencing and conservative recovery
 
@@ -192,3 +186,138 @@ silently ignore it. Retain native assignments, immutable identity and private
 journals for reconciliation. Rollback must not release remote claims or replay
 unknown operations. The original PR remains the delivery branch; merge is
 user-owned.
+
+## Concrete capture and resumption design, 2026-11-07
+
+No existing capture interface has been identified. The implementation choice
+is a generic protected local runner, administered separately from the agent.
+This is an engineering assumption within ADR-015, not user approval to install
+a system service. Prepare the implementation and deployment files first;
+operator approval and demonstrated isolation gate installation/live acceptance.
+The pure and offline implementation does not require a pre-existing service.
+
+### Capture service
+
+Ship a generic lets-capture entry that listens on a Unix socket. An operator
+installs it under a separate OS account with a private state directory,
+protected credential context and administrator-owned tool configuration.
+The client trusts only an administrator-owned setup file and verifies the
+socket ownership and protected directory. No environment variable, repository
+file or provider definition can replace that trust setup in production.
+
+The administrator pins each available tool's absolute immutable executable,
+digest, fixed argv, authentication-context ID and environment/credential source.
+The runner validates ownership/write permissions of configuration, executable
+and parent paths. It clears inherited environment, fixes cwd to its protected
+state directory and uses no shell. Agent input supplies only stdin data and the
+bounded action identity. Definitions cannot mark a tool trusted. For the GitHub
+tool, the installed command is gh api graphql --hostname api.github.com
+--input -, with protected authentication. The administrator's tool rule
+requires a query for a read action and a mutation for a write action.
+
+POST /execute accepts a version-1 action with ID, immutable request digest,
+logical tool ID, expected trusted executable digest/authentication context,
+stdin, effects permission, issue/expiry times and byte/deadline limits. Before
+execution the runner durably reserves the action ID and records dispatched
+uncertainty. Duplicate IDs with different input are conflicts. Identical
+requests return the original record or its pending/unknown status, never
+execute again. Bound execution and combined output; termination is not rollback.
+
+GET /receipts/<id> returns the service's original immutable capture, not an
+agent-supplied replacement. Records bind actual pinned executable/argv/stdin,
+action digest, timestamps, authentication context, exit/signal/byte outcome
+and stdout/stderr. No API can insert, edit or delete a receipt. Retrieval is
+bounded. Service restart never reruns a dispatched reservation. The client
+retrieves the record and compares actual tool/input to the issued action.
+A copied record in a submitted report is ignored as authority.
+
+Offline tests use an injected runner client and fake tools. These are test
+seams, not production environment flags and not proof of deployed isolation.
+Live qualification requires an operator-approved separate-account deployment,
+pinned real gh and real fresh claim and exact merged-PR capture. If deployment
+or authentication is unavailable, the implementation remains draft and reports
+the missing facts; do not lower the guarantee or perform direct verifier reads.
+
+### One definition and generic capture path
+
+Move GitHub tool documents out of executable gh.ts into an inert shipped
+provider definition. Each supported semantic fact/action names a trusted
+logical tool, immutable stdin template, read/write mode and output mapping.
+The only template language is constants, JSON-pointer substitution and
+object/array construction, with bounded nesting/size. It has no arbitrary
+code, imports, shell, policy, loops or trust declarations. Compatible explicit
+custom definitions use the same interpreter and validation without a release.
+
+The existing native lifecycle is reexpressed as shared state policy over
+normalized backend facts: authenticated actor/repository permissions, linked
+backlogs, native mapped fields, item membership/content/owners/relations,
+PR closing links and exact merge facts. Only the definition translates tool
+requests and captured native responses. The core never invokes gh or an
+adapter process. Supplied agent-normalized facts do not replace mapped facts
+from the independently retrieved capture. Configuration pins definition source,
+version and content digest in each workflow, and rejects obsolete executable
+selection. Retain the original behavior tests while moving their seam.
+
+### Resumable CLI
+
+Existing lets backlog workflow commands start a private workflow and return
+{state:action-required, workflow:<opaque handle>, action:<bounded action>}.
+The agent calls the runner with that action, then lets backlog submit with
+{workflow, actionId, receipt:<reference>}. Lets retrieves the original capture,
+validates it and returns the next action or {state:complete,result:...}.
+A submit never accepts a report body as capture. An explicit abandon operation
+can end a read-only workflow; an issued write remains reconciliation-required.
+
+The CLI persists one outstanding workflow reservation per repository to keep
+concurrent invocations from crossing native writes. The reservation survives
+process exit. Submission and issuing the next action use one scope lock,
+generation comparison and atomic journal replacement. Same input can recover
+the outstanding workflow only with its private handle; a new caller cannot
+adopt it by scanning storage. Accepted submission replay returns the same
+checkpoint without remote replay. Expired issued writes remain uncertain.
+
+To preserve current native recovery while making calls resumable, run the
+core workflow against a journal transaction and an ordered action transcript.
+Replay only previously captured results to reconstruct the next checkpoint;
+never replay a tool invocation. Snapshot initial private state and pin config,
+definition and inputs. Allocate random session/mutation IDs deterministically
+from a persisted per-workflow ID sequence. Journal writes at each yield commit
+atomically with the outstanding action; replay reconstructs from the initial
+snapshot and commits only changed keys. Suspension is a distinct control-flow
+signal and must propagate through mutation catch blocks unchanged. It is not
+an operation failure or permission to reconcile early. Immutable change binding
+is idempotent; no other filesystem writes occur outside journal checkpoints.
+
+Reject divergent action transcripts, changed configuration/definitions, missing
+or repeated action IDs, stale captures and changed continuation inputs. Bound
+workflow lifetime/transcript size and output. On crash after service execution,
+retrieve that action's existing service receipt; never start another attempt.
+On crash after local acceptance, replay the accepted checkpoint. At the end of
+a claim, require the latest captured ownership and Status reads; old cached
+journal facts never authorize starting or resuming work.
+
+### Required review corrections
+
+- Replace the old stale-PID symlink takeover. Use an OS-released exclusive
+  flock lock held by a fixed no-shell helper process for the callback lifetime.
+  Closing the parent pipe ends the helper; OS lock release requires no stale
+  unlink. Missing flock is an actionable prerequisite error, never an unsafe
+  fallback. Declare/package that platform dependency and test simultaneous
+  stale-owner recovery. Live qualification is scoped to Linux initially.
+- An issued write with a permanently unavailable receipt enters reconciling
+  while retaining the original reservation, action and mutation identity.
+  That state can issue separately identified read actions to observe native
+  effects. No write can be issued until those captured reads resolve the
+  original operation. Absent is allowed only with trusted no-dispatch/no-effect
+  evidence. Native partial state remains unknown. An explicit reconcile
+  command never silently abandons the write or creates a new claim session.
+- Historical replay reuses persisted action descriptors and previously accepted
+  outcomes; it is not a new submission or proof of current state. Check expiry
+  when accepting a new capture. Required fresh ownership and exact merge
+  checkpoints always request new captures rather than adopting historical
+  facts. Test delayed replay and stale final-ownership refusal separately.
+- Parse the actual submitted GraphQL document using the standard parser.
+  Support exactly one operation, with no operationName override and no extra
+  input fields beyond query/variables. Require operation kind to match the
+  issued read/write permission. Reject ambiguous/multiple operations before
+  execution; neither string prefixes nor keyword presence establish read safety.

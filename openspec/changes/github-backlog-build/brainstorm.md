@@ -24,7 +24,7 @@ transport is superseded by ADR-015. #180's earlier exclusion of rewriting
 #172 is superseded by that explicit instruction; unrelated provider and
 delegation work stays outside this change.
 
-## Unresolved prerequisite
+## Capture implementation assumption
 
 The repository and available tool catalog do not identify an established
 trusted capture channel. The user has been asked for an existing service
@@ -32,6 +32,9 @@ interface. If none exists, a generic capture service must be designed and
 deployed outside the agent's write access. Its trust, tool identity and
 request/response provenance must be demonstrated before routine claims
 or completion can progress. Approval alone cannot establish those facts.
-This is a blocking prerequisite, not a waived acceptance condition.
+The selected implementation assumption is a generic separately administered
+runner, specified in the design. No system-service installation is authorized
+by this assumption. Deployment and live qualification remain required gates;
+pure/offline implementation can proceed after review of the concrete design.
 
 Confirmed by user: yes

@@ -2,8 +2,9 @@
 
 The original 20 completed tasks are historical under
 history/executable-boundary/tasks.md. They do not qualify this port.
-The capture channel decision blocks dependent production integration and
-plan approval. Never count a test double as live independent evidence.
+The concrete capture design requires review before implementation. Deployment
+and live qualification remain gated. Never count a test double as live
+independent evidence.
 
 ## 1. Request/result contract
 
@@ -12,8 +13,8 @@ plan approval. Never count a test double as live independent evidence.
 
 ## 2. Independent capture [depends-on: 1]
 
-- [ ] 2.1 [complex] Establish a concrete trusted channel outside the agent's editable report and demonstrate actual action/tool/scope/authentication/time/result correlation. Reject editable, forged, stale, incomplete and unavailable capture. (verify: pnpm test)
-- [ ] 2.2 [complex] Pause routine progression and automatic retry when required remote facts lack independently retrieved capture; retain original mutation provenance for reconciliation. (verify: pnpm test)
+- [ ] 2.1 [complex] [parallel] Establish a concrete trusted channel outside the agent's editable report and demonstrate actual action/tool/scope/authentication/time/result correlation. Reject editable, forged, stale, incomplete and unavailable capture. (verify: pnpm test)
+- [ ] 2.2 [complex] [parallel] Pause routine progression and automatic retry when required remote facts lack independently retrieved capture; retain original mutation provenance for reconciliation. (verify: pnpm test)
 
 ## 3. GitHub lifecycle [depends-on: 2]
 

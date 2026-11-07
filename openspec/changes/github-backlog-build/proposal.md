@@ -43,7 +43,8 @@ remain external dependencies. Delegation migration stays separate (D6).
 
 ## Delivery prerequisite
 
-The capture channel is not established in this environment. Defining JSON
-reports or a local file format does not resolve that prerequisite. The port
-cannot claim a working GitHub build journey until independent capture proves
-fresh ownership/status and exact associated merge evidence (D4).
+No capture channel is deployed in this environment. The concrete design
+prepares a generic separately administered runner. Its implementation can be
+reviewed and tested offline; installation requires operator approval of the
+completed artifact. Live support cannot be claimed until independent capture
+proves fresh ownership/status and exact associated merge evidence (D4).

@@ -1,57 +1,46 @@
 ## Review Metadata
 
-- Review round: 2
-- Prior round: historical executable plan, APPROVE_WITH_CHANGES
+- Review round: 3
+- Prior round: REVISE; no concrete capture implementation selected
 - Reviewer context: fresh-context subagent, same family
 - Reviewer model: gpt-6.1-sol
-- Independent model family: no; configured plan resolver returned no options
-- Reviewed base commit: e6905592; revised artifacts were uncommitted
-- Tool restrictions: read-only; no scripts, tests, backend calls or writes
+- Independent model family: no; configured resolver returned no options
+- Reviewed base commit: 4deabdb5; concrete design appendix was uncommitted
+- Tool restrictions: read-only, no scripts/backend calls/writes
 
 ## Findings and disposition
 
-1. **Critical — apply/finish cycle. CONFIRMED, fixed.** Task 4.3 no longer
-   includes verification/archive/readiness. Those are review-build gates
-   after all apply tasks finish.
-2. **Critical — capture is not established. CONFIRMED, open.** The plan
-   remains blocked. Task 2.1 now distinguishes offline validation from
-   deployed trust-boundary evidence; passing pnpm test cannot establish the
-   channel. The user's channel-interface question is still pending.
-3. **Moderate — action concurrency/crash semantics. CONFIRMED, fixed.**
-   Design decision 5 requires durable single-flight reservations, generation
-   checks and atomic acceptance across CLI calls. It names both crash
-   windows and prevents expiry from freeing uncertain mutations.
-4. **Moderate — raw blocker bypass. CONFIRMED, fixed.** The lets-go delta's
-   interface scenario now requires the bounded captured blocker read.
-5. **Moderate — unsafe branch cleanup. CONFIRMED, fixed.** The branch-failure
-   requirement/scenario gates release on fresh ownership and preserves
-   conflict/unknown state while reporting both branch and release outcomes.
-6. **Suggestion — long lets-go requirement. CONFIRMED, deferred.** The delta
-   preserves the full existing requirement as required by archive; shorten
-   paragraphs during final contract reconciliation without losing scenarios.
-
-## Remaining decisions before dependent implementation
-
-Establish an actual capture administrator/interface and demonstrate tool,
-authentication, action and immutable-response provenance. Specify bounded
-retrieval, retention and access. Resolve concrete wire/definition formats and
-mapping language alongside that interface. Design decision 7 now specifies
-explicit archived completion routing before merged-PR early stop, original
-continuation transport and behavior when that input is inaccessible.
+1. **Moderate — stale-lock takeover race. CONFIRMED, fixed in plan.**
+   Required corrections mandate OS-released exclusive flock serialization,
+   no stale unlink, explicit missing-tool failure and race tests.
+2. **Moderate — uncertain reservation blocks reconciliation reads.
+   CONFIRMED, fixed in plan.** A reconciling state retains original write
+   identity but can request separately identified captured reads. It cannot
+   issue another write until independently resolved.
+3. **Moderate — historical replay versus freshness. CONFIRMED, fixed in
+   plan.** Replay uses stored descriptors/outcomes without treating them as
+   current evidence; new submissions and required fresh checkpoints remain
+   subject to freshness. Add distinct delayed replay and stale ownership cases.
+4. **Moderate — imprecise GraphQL read/write classifier. CONFIRMED, fixed
+   in plan.** Parse the actual document; support one operation only and no
+   operationName override. Check operation kind, rejecting multi-operation
+   documents before execution.
 
 ## Verdict
 
-VERDICT: REVISE
-CHANGES_APPLIED: no
+VERDICT: APPROVE_WITH_CHANGES
+CHANGES_APPLIED: yes
 
-Five local corrections are applied. The critical capture prerequisite remains
-open; this is not approval to implement dependent production integration.
-No new review is needed for these listed corrections. Once the capture design
-is resolved, the changed plan requires a fresh review.
+The listed unambiguous changes are applied in the design's Required review
+corrections. The reviewer permits safe implementation after those edits;
+no new review is required for them. This is not independent-family approval,
+and it does not qualify a deployed trust channel or live GitHub support.
 
-## Safe independent work
+## Delivery gates
 
-Operation/test inventory, pure contract/state-machine design, inert definition
-formats and offline forged/replayed/incomplete-evidence scenarios can proceed.
-Production dispatch, acceptance of captures, remote mutations, live support
-claims and removal of the old executor remain gated on the resolved boundary.
+Prepare core, generic runner, inert definitions, offline validation and
+protected deployment artifacts. Installing a system service requires operator
+approval of the completed artifact. Demonstrated separate-account isolation,
+pinned real tools/authentication and new live claim/merge evidence remain
+mandatory before support/readiness. Earlier executable reviews and acceptance
+remain historical under history/executable-boundary.
