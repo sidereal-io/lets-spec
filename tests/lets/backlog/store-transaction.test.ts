@@ -33,3 +33,9 @@ test('scope lock uses a kernel-released regular lock file', async () => {
     await store.lock('scope',async()=>assert.equal(lstatSync(join(store.root,hash('scope')+'.lock')).isFile(),true));
   } finally {rmSync(cwd,{recursive:true,force:true});}
 });
+test('scope lock reports helper loss without hanging cleanup',{skip:process.platform!=='linux',timeout:5000},async()=>{
+  const {readFileSync}=await import('node:fs');const cwd=mkdtempSync(join(process.cwd(),'.workspace/lost-lock-'));
+  try{execFileSync('git',['init','--quiet'],{cwd});const store=new Store(cwd);
+    await assert.rejects(store.lock('scope',async()=>{const children=readFileSync(`/proc/self/task/${process.pid}/children`,'utf8').trim().split(/\s+/).map(Number);assert.equal(children.length,1);process.kill(children[0],'SIGTERM');await new Promise(resolve=>setTimeout(resolve,40));}),(e:any)=>e.category==='unknown_outcome');
+  }finally{rmSync(cwd,{recursive:true,force:true});}
+});

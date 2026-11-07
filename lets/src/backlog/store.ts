@@ -53,7 +53,7 @@ export class Store {
       helper.once('exit', () => reject(new AdapterFailure('conflict', 'none', 'another local backlog operation holds the scope lock')));
       helper.stdout.once('data', () => resolve());
     });
-    try { return await run(); } finally { await new Promise<void>(resolve => { helper.once('exit', () => resolve()); helper.stdin.end(); }); }
+    try { const result=await run(); if(helper.exitCode!==null||helper.signalCode!==null)throw new AdapterFailure('unknown_outcome','unknown','scope lock helper exited during the operation; reconcile before progression'); return result; } finally { await new Promise<void>(resolve => { if(helper.exitCode!==null||helper.signalCode!==null){helper.stdin.destroy();resolve();return;} helper.once('exit', () => resolve()); helper.stdin.end(); }); }
 
   }
 }
