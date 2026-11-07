@@ -1,3 +1,20 @@
+## Current disposition — 2026-11-07
+
+The investigation below records the earlier ADR-015 capture requirement and why
+it was not demonstrated across the required hosts. It is historical research,
+not the current implementation prerequisite. After discussing the distinction,
+the user explicitly selected option B: trust submitted configured tool output
+and validate its translated contract. Brainstorm D10 and the amended ADR-015
+record that decision. No capture capability is selected or required, including
+the generic MCP candidate discussed below. The current design is in design.md.
+
+The trade-off is explicit: Lets can check structure, consistency, freshness and
+workflow rules but cannot independently detect convincingly fabricated output.
+Both unchanged T3 and standalone coding-agent CLIs remain required. No backend
+mutations, capture implementation or host changes were made by this research.
+
+## Historical investigation before D10
+
 # Evidence assessment for the planning restart
 
 Checked 2026-11-07. Planning baseline: main
