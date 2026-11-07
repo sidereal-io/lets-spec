@@ -1,0 +1,16 @@
+{
+  "socket": "/run/lets-capture/capture.sock",
+  "stateDirectory": "/var/lib/lets-capture",
+  "serviceUid": 999,
+  "tools": {
+    "github-graphql": {
+      "id": "github-graphql",
+      "digest": "REPLACE_WITH_SHA256_OF_ADMIN_INSTALLED_GH",
+      "authentication": "github-work-account",
+      "executable": "/opt/lets-capture/bin/gh",
+      "argv": ["api", "graphql", "--hostname", "api.github.com", "--input", "-"],
+      "classifier": "graphql",
+      "credentialsFile": "/etc/lets/gh-environment.json"
+    }
+  }
+}
