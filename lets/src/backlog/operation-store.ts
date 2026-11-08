@@ -1,4 +1,4 @@
-import { nextPrAction, prAction, reconcilePrCreation } from './pr-actions.ts';
+import { nextPrAction, prAction, reconcilePrCreation, reconcilePrUpdate } from './pr-actions.ts';
 import { projectArguments } from './projections.ts';
 import { resourceKeys as scopedKeys, coordinationKeys } from './resource-keys.ts';
 import { acquireResourceLock } from './resource-lock.ts';
@@ -84,6 +84,8 @@ export class OperationStore {
       if (original.request.operation === 'pull-request.create') {
         const target = knownPrIdentity(record, original);
         action = prAction(original, target ? 'verify' : 'read-existing', now, target);
+      } else if (original.request.operation === 'pull-request.update') {
+        action = prAction(original, 'verify', now, (original.request.input as { pullRequest: string }).pullRequest);
       } else {
         if (!['claim.acquire', 'claim.release'].includes(original.request.operation))
           throw new AdapterFailure('unsupported', 'unknown', 'original operation needs a supported bounded reconciliation read');
@@ -156,6 +158,7 @@ export class OperationStore {
           const origin = record.originalAction!;
           let reconciliation: string;
           if (origin.request.operation === 'pull-request.create') reconciliation = reconcilePrCreation(origin, record.result, action.targetPullRequest);
+          else if (origin.request.operation === 'pull-request.update') reconciliation = reconcilePrUpdate(origin, record.result);
           else {
             const claim = record.result.claim as Record<string, unknown>;
             reconciliation = origin.request.operation === 'claim.acquire' && claim.actor === origin.request.context.actor && claim.status === 'In Progress' ? 'applied' : 'unresolved';

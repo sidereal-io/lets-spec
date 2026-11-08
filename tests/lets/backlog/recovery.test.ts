@@ -192,9 +192,7 @@ test('new step recovers uncertain PR creation through the original read-only con
     const first = submittedPr();
     const store = new OperationStore(join(dir, 'private'));
     const issued = store.issue(first);
-    const second = submittedPr();
-    second.request.context.session = 'new-step';
-    second.request.context.cwd = '/another-worktree';
+    const second = submittedPr('pull-request.create', { session: 'new-step', cwd: '/another-worktree' });
     const blocked = new OperationStore(join(dir, 'private')).issue(second);
     assert.equal(blocked.state, 'needs-reconciliation');
     assert.deepEqual(blocked.continuation, issued.continuation);
@@ -290,3 +288,46 @@ test('creation reconciliation reads the known PR after partial confirmation', ()
     assert.equal(result.result.reconciliation, 'applied');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+test('uncertain PR body update reconciles the recorded prepared bytes', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-body-recovery-');
+  try {
+    const body = 'Closes #1\n\n## Existing section\nKeep this\n\n## Plan review\nNew evidence';
+    const action = submittedPr('pull-request.update', { body });
+    const store = new OperationStore(join(dir, 'private'));
+    store.issue(action);
+    const resumed = new OperationStore(join(dir, 'private')).resume(action.operationId, 6000);
+    assert.deepEqual(resumed.action.allowedEffects, []);
+    assert.equal(resumed.action.targetPullRequest, 'PR1');
+    const result = store.submit(resumed.continuation, submissionFor(resumed.action, {
+      data: { viewer: { login: 'actor' }, node: { ...rawPr, body } },
+    }), 6100);
+    assert.equal(result.state, 'complete');
+    if (!('result' in result)) throw new Error('read-only reconciliation required');
+    assert.equal(result.result.reconciliation, 'applied');
+    assert.equal(store.get(action.operationId).pending, false);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+for (const [name, observed] of [
+  ['missing PR', null],
+  ['unrelated remote edits', { ...rawPr, body: 'Closes #1\n\nUnrelated new text\n\n## Plan review\nNew evidence' }],
+] as const) {
+  test(`uncertain body update preserves ${name} without a repair write`, () => {
+    mkdirSync('.workspace', { recursive: true });
+    const dir = mkdtempSync('.workspace/pr-body-conflict-');
+    try {
+      const action = submittedPr('pull-request.update', { body: 'Closes #1\n\n## Plan review\nNew evidence' });
+      const store = new OperationStore(join(dir, 'private'));
+      store.issue(action);
+      const resumed = store.resume(action.operationId, 6000);
+      const result = store.submit(resumed.continuation, submissionFor(resumed.action, {
+        data: { viewer: { login: 'actor' }, node: observed },
+      }), 6100);
+      assert.equal(result.state, 'needs-reconciliation');
+      if (!('result' in result)) throw new Error('read-only observation required');
+      assert.equal(result.result.reconciliation, 'unresolved');
+      assert.equal(store.get(action.operationId).pending, true);
+      assert.deepEqual(store.get(action.operationId).action.allowedEffects, []);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+}

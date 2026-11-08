@@ -179,3 +179,10 @@ caused write issuance returns recovery, not another copy of write permission.
 A PR identity learned from a partial write result selects an exact-PR recovery
 read. It survives subsequent resumes; a later branch match cannot replace it.
 Conflicting recorded identities or repository scope fail without another write.
+
+An uncertain body update resumes with an exact-PR read and compares its body
+with the recorded prepared bytes. It needs no original scratch or body file.
+Only an exact match clears the reservation as applied. An absent PR or other
+remote edits remain unresolved; recovery never restores a stale body or removes
+unrelated sections or closing text. Callers must reread after reconciliation
+before preparing any subsequent update.

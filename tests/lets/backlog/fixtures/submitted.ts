@@ -48,14 +48,14 @@ export function submissionFor(action: ReturnType<typeof issueAction>, output: un
 
 import { githubDefinition } from '../../../../lets/src/backlog/config.ts';
 import { projectArguments } from '../../../../lets/src/backlog/projections.ts';
-export function submittedPr(operation: 'pull-request.create' | 'pull-request.update' | 'pull-request.ready' = 'pull-request.create') {
+export function submittedPr(operation: 'pull-request.create' | 'pull-request.update' | 'pull-request.ready' = 'pull-request.create', options: { body?: string; session?: string; cwd?: string } = {}) {
   const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
   const step = operation.slice('pull-request.'.length);
   const input = operation === 'pull-request.create'
     ? { title: 'Draft', bodyFile: '/repo/body.md', base: 'main', head: 'feature', headRepository: 'R1' }
     : { pullRequest: 'PR1', ...(operation === 'pull-request.update' ? { bodyFile: '/repo/body.md' } : {}) };
-  const preparedBody = operation === 'pull-request.ready' ? undefined : { path: '/repo/body.md', body: 'Closes #1', digest: 'fixture-digest' };
-  const context = { cwd: '/repo', provider: 'github', repository: 'R1', actor: 'actor', session: 'original-worker' };
+  const preparedBody = operation === 'pull-request.ready' ? undefined : { path: '/repo/body.md', body: options.body ?? 'Closes #1', digest: 'fixture-digest' };
+  const context = { cwd: options.cwd ?? '/repo', provider: 'github', repository: 'R1', actor: 'actor', session: options.session ?? 'original-worker' };
   const mapping = definition.definition.operations[operation].actions[step].bindings.gh;
   return issueAction({ contractVersion: 1, operation, context, input }, definition,
     { name: 'local', binding: 'gh', options: {} }, {
