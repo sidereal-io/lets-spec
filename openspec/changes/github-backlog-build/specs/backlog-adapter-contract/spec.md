@@ -268,27 +268,78 @@ The store SHALL NOT claim cross-machine or cross-account visibility.
 - **THEN** both see the item's pending mutation while retaining their distinct provenance
 - **AND** the backend guarantee remains actor-level best-effort ownership
 
-### Requirement: Code-host observations stay separate from backlog translation
-The shared action engine SHALL support the existing-story repository and PR
-operations through a separately selected inert code-host definition. Its
-repository.read, pull-request.read, pull-request.create, pull-request.update
-and pull-request.ready operations SHALL bind exact repository and PR scope,
-inputs, effects and recovery just as backlog actions do. This role SHALL NOT
-require the backlog provider to implement a code-host service. Branch operations
-SHALL remain Git and merging SHALL remain user-owned. Both roles SHALL use the
-same validators, loader and submission path without a second executor.
+### Requirement: One GitHub definition covers repository and PR actions
+The selected GitHub definition SHALL translate repository.read,
+pull-request.read, pull-request.create, pull-request.update and
+pull-request.ready through the same bounded action and submission path as issue
+and Project actions. These operations SHALL bind exact repository and PR scope,
+inputs, effects and recovery. Commands and configuration SHALL remain under
+backlog and lets.backlog without a separate code-host adapter selection.
+Repository and PR facts SHALL retain their GitHub code-host provenance and SHALL
+NOT substitute for Project status. Git branch operations SHALL remain local Git
+and merging SHALL remain user-owned. Other providers SHALL retain their offline
+contracts without a claim of production mixed-provider PR support.
 
-#### Scenario: Backlog and code host differ
-- **WHEN** a Linear backlog fixture refers to a GitHub PR
-- **THEN** merge facts come from the selected code-host definition and any Done request goes to the backlog definition only after qualifying merge evidence
+#### Scenario: Repository and backlog use GitHub
+- **WHEN** the workflow reads an issue, its selected Project and the associated GitHub PR
+- **THEN** each operation uses the same selected GitHub definition without a second adapter or configuration
 
 #### Scenario: GitHub reference is already in the PR
 - **WHEN** reference.write receives an existing GitHub PR association
 - **THEN** it validates the supplied relationship without editing GitHub or introducing a runner association step
 
-#### Scenario: Code-host write loses its result
+#### Scenario: PR write loses its result
 - **WHEN** a bounded PR create, update or ready action has an uncertain result
 - **THEN** the original scoped operation requires reconciliation before retry without changing the workflow's owning step
+
+### Requirement: Repository writes reserve their scoped resources
+Before issuing a PR create, the core SHALL reserve its endpoint, provider,
+target repository, head repository and head ref in the shared private store.
+An update or ready action SHALL reserve endpoint, provider, repository and PR ID.
+Known issue scope SHALL also be bound as an alias. Every new write SHALL check
+the same resource keys regardless of worker, worktree or operation ID. Unknown
+effects SHALL block another write for that resource until reconciliation.
+
+A new operation without context.session SHALL receive a core-allocated worker
+ID before action issuance and expose it as workerId in the operation response.
+Returned worker identity SHALL be reused within that
+operation. Each delegated step SHALL own its worker context; conflict blocking
+SHALL NOT depend on inheriting the runner's ID. A failed step SHALL include its
+original uncertain operation ID and recovery command in the existing reason
+string without changing the step-report schema.
+
+#### Scenario: New step retries a lost PR creation
+- **WHEN** one plan session's PR create has unknown effects and a later session requests a create for the same repository and head
+- **THEN** the later call receives the original recovery handle and issues no new create until reconciliation
+
+#### Scenario: PR is updated from another worktree
+- **WHEN** one worktree has an uncertain PR update and another requests ready for that same PR
+- **THEN** the second call finds the pending resource record and requests no ready write
+
+#### Scenario: Failed step reports an uncertain write
+- **WHEN** the step cannot establish a PR write's outcome
+- **THEN** its failed reason carries the operation ID and resume remedy so the runner can report recovery without inventing new report fields
+
+### Requirement: Connection choice is explicit for each operation
+Machine settings SHALL define named tool connections under `backlog.connections`
+and a default name under `backlog.connection`. A new operation SHALL accept an
+explicit `--connection <name>` that selects only a compatible tool binding of the
+repository-selected definition. It SHALL NOT change provider, definition,
+backlog or mappings. Core SHALL record the chosen connection in the operation.
+Submit and resume SHALL use that recorded connection without default fallback.
+Delegated steps SHALL validate their selected tools independently before actions.
+
+#### Scenario: Hosts on one machine choose different tools
+- **WHEN** T3 and a standalone CLI explicitly select different compatible named connections
+- **THEN** they use the same repository provider and policy without implicit host detection or tool fallback
+
+#### Scenario: A delegated step lacks the selected tools
+- **WHEN** a step session cannot access its explicitly selected connection's required tool
+- **THEN** it reports the missing prerequisite before issuing any affected action
+
+#### Scenario: Default changes while a mutation is uncertain
+- **WHEN** the configured default connection changes after a write becomes uncertain
+- **THEN** reconciliation remains bound to its original connection or reports that prerequisite as unavailable instead of using the new default
 
 ### Requirement: Recovery handles survive scratch loss
 A blocked or needs-reconciliation result SHALL include the original durable

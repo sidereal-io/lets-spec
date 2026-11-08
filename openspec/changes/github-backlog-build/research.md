@@ -60,6 +60,9 @@ in this migration. Native GitHub/Project automation retains its current role.
 
 ### Round-two review disposition after D13 and D14
 
+Task numbers in this historical disposition refer to that revision. The current
+checklist is reordered after D15; the round-three table below gives current IDs.
+
 - **C1, stale terminal association — confirmed:** remove the added historical
   lookup and terminal completion caller. Reopened issues and deleted rejected
   branches cannot trigger those added actions. Tasks 5.8–5.11 preserve main's
@@ -401,11 +404,11 @@ Either select and qualify an additional generic capture capability, or explicitl
 reconsider the independent-evidence requirement. No capture code was written,
 installed or configured during this investigation, and no ADR was changed.
 
-## Round-three correction status
+## Round-three correction status before D15
 
 Reviewed `46ff2100`: REVISE, independent fresh Claude Opus 5.5 context. The raw
-report is retained locally for audit. No fourth review is authorized by these
-edits alone.
+report is retained locally for audit. At this checkpoint the integration choice was still pending. D15 subsequently
+resolves the pause and authorizes the one-integration correction.
 
 C1 is confirmed: operation-ID resume and reconstructed handles now survive
 scratch loss and worktree changes; tasks 2.11 and 2.12 cover them. C2 is confirmed:
@@ -419,7 +422,7 @@ and unqualified-live-evidence wording are corrected. Remaining role/configuratio
 step-write scope/identity, host tool selection and task-order changes depend on
 the code-host decision (M1, M2, M4 and M5). The separate role is not approved.
 
-### Concrete choice for the GitHub repository and PR calls
+### Alternatives presented before D15
 
 **Option A, recommended:** keep one configured GitHub integration for this
 slice. Its inert definition describes the existing issue, Project, repository
@@ -440,5 +443,33 @@ qualification. Nothing in D14 approves this additional role.
 Both options use agents to execute bounded actions, the same inert loader and
 core validation/recovery, existing workflow owners and user-owned merge. Neither
 option reinstates capture infrastructure or implements backend calls in Lets.
-The user has been asked to choose; this document records alternatives, not an
-accepted replacement. Do not implement the role-dependent tasks meanwhile.
+These were the alternatives at the round-three pause. The user subsequently
+selected option A in D15. Option B is rejected; it is not an active plan.
+
+## Current review disposition after D15
+
+D15 explicitly selects one configured GitHub integration for issue, Project,
+repository and PR actions. The prior separate-role draft is withdrawn. No new
+code-host adapter, command group or configuration section is selected. The
+existing Adapter glossary meaning applies without a new term or a new ADR.
+The next fresh review must assess this revision, not the withdrawn role.
+
+| Round-three finding | Disposition and current evidence |
+|---|---|
+| C1: recovery depends on scratch handles | Confirmed; durable operation-ID resume and reconstructed handles cover cross-worktree and scratch-loss recovery. Tasks 2.11–2.12. |
+| C2: issue-comments contradiction and missing fields | Confirmed; four full issue-comments requirement deltas use complete item.read facts for lets-go and brainstorm, preserving shaping's query and shared marker rules. Task 3.4 covers later pages and author/edit fields. |
+| M1: unapproved code-host role and config | Confirmed; D15 chooses one GitHub definition. All affected commands use lets backlog and settings stay under backlog/lets.backlog. Custom MCP compatibility is offline-only until its own actual connection is live-qualified. Tasks 1.15–1.17, 3.6–3.7 and 6.12. |
+| M2: step writes lack worker/resource identity | Confirmed; core allocates worker IDs for new callers; PR writes reserve repository/head or PR resource keys independently of worker IDs. Failed report reasons carry recovery references without new fields. Tasks 1.18, 2.13–2.14, 3.8 and 6.4. |
+| M3: PR lookup introduces a stop | Confirmed; inspected GitHub CLI source uses open-first then newest. Preserve that rule after repository/head qualification, including when several matches exist. Task 3.5. |
+| M4: same-machine hosts and sandbox prerequisites | Confirmed; explicit named connections and --connection avoid host detection. Resume binds the original connection. Document all-action state access and qualify an actual delegated step in live acceptance. Tasks 1.14, 1.16–1.17 and 6.13. |
+| M5: tasks precede dependencies | Confirmed; repository/PR action support is now section 3, resume/conformance section 5, callers and terminal checks section 6. Documentation and release finish section 7. |
+| M6: removed identity file still assumed | Confirmed; resolve scope per invocation and bind each request. The conflicting-identity scenario now compares bound scope with branch-resolved issue. Tasks 1.5, 1.8 and 5.1. |
+| S1: unnamed ownership check | Accepted; Check work ownership has core verdicts and an explicit caller/overview stop for every failure. It performs no claim or repair. Tasks 5.8–5.10 and 6.11. |
+| S2: multiple Projects differ from old unlink rule | Accepted; the parity table records ADR-015's explicit selection and existing storage prerequisites. Tasks 1.2 and 3.2. |
+| S3: purpose and unqualified support | Accepted; purpose no longer promises a production completion caller. Task 7.2 checks explicit unqualified live evidence. |
+| S4: ADR history | Accepted; ADR-015 records D12/D14 and D15 provenance. GitHub caller details stay in this plan rather than a durable architecture rule. |
+| S5: plain language | Accepted; active changed paragraphs are split and wrapped. Full MODIFIED spec blocks retain main's detailed baseline requirements and all original scenario names. |
+
+The current plan remains planning-only and requires a fresh independent verdict.
+No prior REVISE becomes an approval because these edits validate structurally.
+Publication, implementation, live mutation and merge remain outside this restart.

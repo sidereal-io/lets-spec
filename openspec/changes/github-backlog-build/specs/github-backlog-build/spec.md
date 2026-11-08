@@ -21,7 +21,7 @@ core operation and evidence guarantees.
 - **THEN** the same GitHub workflow is available without a T3 patch or upstream request
 
 #### Scenario: Configured tools differ by environment
-- **WHEN** users explicitly select different compatible tool connections in the two environments
+- **WHEN** T3 and a standalone CLI on the same machine explicitly select different compatible named connections with --connection
 - **THEN** Lets applies the same operation, policy and evidence validation without switching backlog provider or relaxing guarantees
 
 ### Requirement: GitHub selection is explicit and validated
@@ -209,3 +209,14 @@ the existing merged or rejected stop without updating Project status.
 #### Scenario: Rejected PR branch was deleted
 - **WHEN** a historical PR was closed without merge and its branch no longer exists
 - **THEN** that PR does not impose a new rejected-work stop on the existing new-work path
+
+### Requirement: Live qualification names its actual connection
+The default shipped gh CLI binding SHALL NOT establish live MCP-only support.
+Custom MCP compatibility SHALL remain an offline conformance claim until a
+fresh live run qualifies the specific definition, connection and versions.
+Both required hosts SHALL be qualified through their actual selected tools,
+including an actual delegated step, without implying support for other bindings.
+
+#### Scenario: CLI acceptance passes without an MCP run
+- **WHEN** both required hosts pass fresh CLI acceptance but no MCP-only live run has passed
+- **THEN** release evidence qualifies the tested CLI configurations and lists MCP-only live support as unqualified

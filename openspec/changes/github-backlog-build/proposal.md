@@ -1,8 +1,8 @@
 ## Why
 
 Existing GitHub stories need to pass through the shared backlog boundary while
-preserving the current workflow and its existing ownership and recovery behavior. The
-existing PR prototype depends on a withdrawn capture-service design, so its
+preserving the current workflow and its ownership and recovery behavior.
+The existing PR prototype depends on a withdrawn capture-service design, so its
 active plan must be replaced before implementation continues (D1, D5).
 
 ## What Changes
@@ -28,7 +28,8 @@ active plan must be replaced before implementation continues (D1, D5).
   status check before unfinished work. A mismatch stops without reassigning,
   claiming again or changing status (D14). Keep ADR-015's existing rule.
 - Replace the existing-story journey's remaining repository and PR callouts,
-  including step and review callers, through the configured code-host boundary.
+  including step and review callers, through the same configured GitHub
+  definition as issue and Project actions (D15).
   This uses the same bounded action engine; it does not execute tools in Lets.
 - Preserve today’s merged and rejected PR stops. Do not add a terminal
   completion write, historical PR lookup or committed identity file. Keep the
@@ -52,7 +53,7 @@ active plan must be replaced before implementation continues (D1, D5).
 
 - `backlog-adapter-contract`: replace the executable transport and settings
   with bounded actions, inert provider definitions and validated submitted
-  tool observations while retaining operation semantics and conformance obligations.
+  tool observations. Retain operation semantics and conformance obligations.
 - `issue-comments`: keep labels, markers and shaping behavior while routing
   lets-go and brainstorm thread reads through complete adapter observations.
 - `lets-go`: route existing-story backlog operations through the shared

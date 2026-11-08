@@ -24,8 +24,10 @@ cross-machine lock. Terminal PRs retain the existing merged/rejected stops
 without a completion write. Exact merge proof remains necessary for any actual
 completion request in the shared contract. Removing the prior terminal-caller
 paragraph corrects an author extrapolation; it is not a new user-approved
-completion strategy. Repository/PR facts use the separate code-host role and
-the same bounded action engine, as the existing responsibility boundary requires.
+completion strategy. D15 places repository/PR actions in the same GitHub definition and backlog
+command group. No separate code-host selection or configuration is introduced.
+GitHub code-host facts retain their scope and source under the existing
+responsibility boundary. This also preserves ADR-011’s command-shaped settings.
 No provider definition becomes a runner or executor. ADR-012's comment boundary
 and the step-report ADRs remain in force. Delegation runtime migration is outside
 this slice.

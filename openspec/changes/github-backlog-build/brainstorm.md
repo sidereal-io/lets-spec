@@ -21,6 +21,7 @@ This is a fresh planning restart for existing draft [PR #172](https://github.com
 | D12 | Is resume adapter-specific workflow? | No. Lets-go already owns resume. Preserve that shared behavior; the adapter supplies backend observations. Remove the plan's accidental requirement for an original private continuation for ordinary resume. Completion policy also belongs to shared Lets/lets-go, not the GitHub definition. | User, “doesnt lets go already do that? why is it specific to this adapter?” followed by “Right” to the shared-ownership clarification |
 | D13 | Does this migration change existing workflow behavior? | No. Preserve today’s functionality across the workflow, replacing hard-coded GitHub tool callouts with the configured adapter. Do not add automatic claiming on an existing branch, an unapproved resume ownership gate, committed identity files or a completion update to the merged-PR stop as incidental migration work. Any conflict with an accepted ADR must be explained before amending it. | User, latest clarification: “exact same functionality we have today across the board” |
 | D14 | How does an existing branch satisfy ADR-015? | Before resuming unfinished work, read ownership and status through the adapter. Continue only when the authenticated actor is sole assignee and the item is In Progress; otherwise explain the mismatch or missing facts and stop. Never claim again, reassign or change status on that path. Keep the accepted ADR rather than narrowing it. | User, “Ah so just check”, followed by “Cool do it” after the read-only rule was stated |
+| D15 | Should repository and PR actions use a second configured adapter? | No. Keep one GitHub integration. Its selected provider definition covers the existing repository and PR actions as well as issues and Projects, under the same command/configuration boundary. Do not add a separate code-host adapter or selection. | User, explicit “Keep one GitHub integration (Recommended)” answer |
 
 ## Changes from the story
 
@@ -41,7 +42,10 @@ In Progress before unfinished work starts; a mismatch stops without a write.
 This is the explicit exception to D13's behavior parity. Terminal PRs retain
 the existing stops and do not pass through an ownership-for-work gate.
 
-No new vocabulary definitions or scope split have been agreed. The shared
+D15 removes the separately configured code-host role proposed during drafting.
+GitHub still supplies repository and PR facts, but through the same selected
+definition as its issue and Project actions. No new vocabulary definitions or
+scope split have been agreed. The shared
 glossary remains unchanged.
 
 ## Resolved evidence decision

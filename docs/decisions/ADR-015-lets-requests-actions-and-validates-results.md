@@ -44,6 +44,11 @@ and D14's explicit approval of read-only ownership checks on existing branches.
 The shared local recovery store is a design application of that recovery
 boundary, not a user-approved distributed locking guarantee. It remains private
 mutation recovery rather than workflow step-completion state.
+The user subsequently selected D15: one GitHub definition covers issue, Project,
+repository and PR actions for this migration. It uses the same command-shaped
+backlog configuration and introduces no separately configured code-host adapter.
+GitHub still supplies repository and merge facts in its code-host responsibility.
+
 
 ## Decision
 
