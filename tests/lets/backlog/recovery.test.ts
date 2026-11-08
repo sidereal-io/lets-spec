@@ -193,6 +193,7 @@ test('uncertain claim resumes through a fresh read of original scope', () => {
     assert.equal(resumed.action.request.operation, 'claim.read');
     const confirmed = store.submit(resumed.continuation, submissionFor(resumed.action, { data: { claim: {
       actor: 'me', session: null, token: null, status: 'In Progress', guarantee: 'best-effort',
+      item: { provider: 'github', backlog: 'P1', id: 'I1' }, assignees: ['me'], assigneesComplete: true,
     } } }), 6100);
     assert.notEqual(confirmed.state, 'action');
     if (!('result' in confirmed)) throw new Error('reconciliation must finish');
@@ -476,3 +477,18 @@ for (const [label, assignees, status, complete] of [
     assert.equal(existsSync(marker), false);
   }));
 }
+test('legacy reconciliation cannot clear reservation from incomplete assignee facts', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/incomplete-reconciliation-');
+  try {
+    const { action } = submittedClaim();
+    const store = new OperationStore(join(dir, 'private'));
+    store.issue(action);
+    const resumed = store.resume(action.operationId, 200);
+    const response = store.submit(resumed.continuation, submissionFor(resumed.action, { data: { claim: {
+      actor: 'me', session: null, token: null, status: 'In Progress', guarantee: 'best-effort',
+    } } }), 201);
+    assert.equal(response.state, 'needs-reconciliation');
+    assert.equal(store.get(action.operationId).pending, true);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

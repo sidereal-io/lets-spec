@@ -497,3 +497,29 @@ test('ready transition requires a fresh exact-PR confirmation', () => {
     assert.equal(complete.state, 'complete');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+import { submittedClaim } from './fixtures/submitted.ts';
+import { issueAction } from '../../../lets/src/backlog/actions.ts';
+for (const [label, facts, expected] of [
+  ['missing coverage', { assignees: ['me'] }, 'unavailable'],
+  ['duplicate assignees', { assignees: ['me', 'me'], assigneesComplete: true }, 'unavailable'],
+  ['nontext assignee', { assignees: ['me', 5], assigneesComplete: true }, 'unavailable'],
+  ['several assignees', { assignees: ['me', 'other'], assigneesComplete: true }, 'multiple'],
+  ['changed historic token', { assignees: ['me'], assigneesComplete: true, session: 'different', token: 'different' }, 'sole-actor'],
+] as const) {
+  test(`ownership submission validates ${label}`, () => {
+    const base = submittedClaim().action;
+    const action = issueAction({ ...base.request, operation: 'claim.read' }, base.definition, base.connection, {
+      step: 'read', toolArguments: [], allowedEffects: [], requiredCapabilities: [],
+      timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000,
+    }, 100);
+    const result = validateSubmission(action, submissionFor(action, { data: { claim: {
+      item: (base.request.input as { item: unknown }).item, actor: 'me', session: 'historic', token: 'historic',
+      status: 'In Progress', guarantee: 'best-effort', ...facts,
+    } } }), { op: 'path', path: ['data'] }, 101);
+    const claim = result.claim as Record<string, unknown>;
+    assert.equal(claim.verdict, expected);
+    assert.equal(claim.session, null);
+    assert.equal(claim.token, null);
+  });
+}

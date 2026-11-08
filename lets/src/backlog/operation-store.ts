@@ -178,7 +178,7 @@ export class OperationStore {
           else if (origin.request.operation === 'completion.write') reconciliation = reconcileCompletion(origin, record.result);
           else {
             const claim = record.result.claim as Record<string, unknown>;
-            reconciliation = origin.request.operation === 'claim.acquire' && claim.actor === origin.request.context.actor && claim.status === 'In Progress' ? 'applied' : 'unresolved';
+            reconciliation = origin.request.operation === 'claim.acquire' && claim.verdict === 'sole-actor' ? 'applied' : 'unresolved';
           }
           const resolved = ['applied', 'absent'].includes(reconciliation);
           record.result = { observation: record.result, reconciliation, reservationCleared: resolved };
