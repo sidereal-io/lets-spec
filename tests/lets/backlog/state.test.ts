@@ -143,3 +143,25 @@ test('pending item mutation blocks a different worker in another worktree', () =
     assert.deepEqual(blocked.continuation, original.continuation);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+import { issueAction } from '../../../lets/src/backlog/actions.ts';
+test('runner ownership read preserves the uncertain step operation', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/continuations-');
+  try {
+    const { action } = submittedClaim();
+    const store = new OperationStore(join(dir, 'private'));
+    const original = store.issue(action, []);
+    const before = store.get(action.operationId);
+    const runnerRead = issueAction({ ...action.request, operation: 'claim.read',
+      context: { ...action.request.context, session: 'runner' } }, action.definition, action.connection, {
+      allowedEffects: [], requiredCapabilities: [], toolArguments: ['read'], timeoutMs: 1000,
+      maxOutputBytes: 4096, acceptanceMs: 5000,
+    }, 200);
+    const pending = store.issue(runnerRead, []);
+    assert.equal(pending.state, 'needs-reconciliation');
+    assert.notEqual(runnerRead.operationId, action.operationId);
+    assert.deepEqual(pending.continuation, original.continuation);
+    assert.deepEqual(store.get(action.operationId), before);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
