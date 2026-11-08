@@ -14,5 +14,7 @@ export function resourceKeys(action: IssuedAction): string[] {
       throw new AdapterFailure('invalid_request', 'none', 'item differs from issued provider/backlog scope');
     keys.push(JSON.stringify(['item', ...prefix, input.item.backlog, input.item.id]));
   }
+  if (action.request.operation === 'pull-request.create')
+    keys.push(JSON.stringify(['pr-create', ...prefix, input.headRepository, input.head]));
   return keys;
 }

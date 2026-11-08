@@ -165,3 +165,22 @@ test('runner ownership read preserves the uncertain step operation', () => {
     assert.deepEqual(store.get(action.operationId), before);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('PR creation reserves its repository and head across workers', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-reservation-');
+  try {
+    const { action: fixture } = submittedRead();
+    const create = (session: string) => issueAction({ contractVersion: 1, operation: 'pull-request.create',
+      context: { ...fixture.request.context, session, cwd: `/${session}` },
+      input: { title: 'Draft', bodyFile: '/repo/body.md', base: 'main', head: 'feature', headRepository: 'R1' },
+    }, fixture.definition, fixture.connection, { toolArguments: ['create'], allowedEffects: ['pull-request-create'],
+      requiredCapabilities: [], timeoutMs: 1000, maxOutputBytes: 4096, acceptanceMs: 5000 }, 100);
+    const first = create('plan-one');
+    const store = new OperationStore(join(dir, 'private'));
+    store.issue(first);
+    const blocked = new OperationStore(join(dir, 'private')).issue(create('plan-two'));
+    assert.equal(blocked.state, 'needs-reconciliation');
+    assert.equal(blocked.operationId, first.operationId);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
