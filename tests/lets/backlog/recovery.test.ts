@@ -446,3 +446,33 @@ test('ready reconciliation retains uncertainty while the PR is draft', () => {
     assert.deepEqual(store.get(action.operationId).action.allowedEffects, []);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+for (const [label, assignees, status, complete] of [
+  ['unassigned Todo', [], 'Todo', true],
+  ['sole actor Todo', ['actor'], 'Todo', true],
+  ['sole actor Done', ['actor'], 'Done', true],
+  ['another owner', ['other'], 'In Progress', true],
+  ['multiple owners', ['actor', 'other'], 'In Progress', true],
+  ['incomplete owners', ['actor'], 'In Progress', false],
+] as const) {
+  test(`existing branch refuses work for ${label}`, () => withBacklogCli(async ({ dir, call, request, marker }) => {
+    const item = { provider: 'github', backlog: 'P1', id: 'I1' };
+    const issued = await call(['claim.read', '--request-file', request('claim.read', { item })]);
+    assert.equal(issued.state, 'action', issued.reason);
+    assert.deepEqual(issued.action.allowedEffects, []);
+    const path = join(dir, 'ownership.json');
+    writeFileSync(path, JSON.stringify(submissionFor(issued.action, { data: { claim: {
+      item, actor: 'actor', session: 'old-worker', token: 'old-token', status,
+      guarantee: 'best-effort', assignees, assigneesComplete: complete,
+    } } })));
+    const response = await call(['submit', '--continuation-file', issued.continuationFile, '--submission-file', path]);
+    assert.equal(response.state, 'complete', response.reason);
+    assert.notEqual(response.result.claim.verdict, 'sole-actor');
+    assert.equal(response.result.claim.token, null);
+    const records = readdirSync(join(dir, 'private', 'operations'));
+    assert.equal(records.length, 1);
+    const record = JSON.parse(readFileSync(join(dir, 'private', 'operations', records[0]), 'utf8'));
+    assert.equal(record.action.request.operation, 'claim.read');
+    assert.deepEqual(record.action.allowedEffects, []);
+    assert.equal(existsSync(marker), false);
+  }));
+}

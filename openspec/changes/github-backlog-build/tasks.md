@@ -78,7 +78,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 5.5 [medium] Return completed without a repeated explicit contract status write when native automation already completed the item. (✓ pnpm test:backlog passed, 350 tests; tsc --noEmit passed)
 - [x] 5.6 [medium] Resume a uniquely resolved legacy branch without a recovery record or invented original release authority. (✓ node --test tests/lets/backlog/recovery.test.ts passed, 26 tests; tsc --noEmit passed; branch uniqueness retained by 5.1)
 - [x] 5.7 [medium] Keep the runner and each step's worker context separate without changing delegated step-report fields. (✓ bats tests/skill-interfaces.bats passed, 273 tests)
-- [ ] 5.8 [medium] Stop an existing-branch run for unassigned Todo, another status, multiple assignees or unavailable facts without issuing assignment or status writes. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [x] 5.8 [medium] Stop an existing-branch run for unassigned Todo, another status, multiple assignees or unavailable facts without issuing assignment or status writes. (✓ node --test tests/lets/backlog/recovery.test.ts passed, 32 tests)
 - [ ] 5.9 [medium] Refresh ownership before each later unfinished step and stop after an intervening ownership change. (verify: bats tests/skill-interfaces.bats)
 - [ ] 5.10 [medium] Return each named read-only ownership verdict without acquiring or releasing a claim. (verify: node --test tests/lets/backlog/claims.test.ts)
 
