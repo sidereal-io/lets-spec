@@ -80,6 +80,7 @@ sets it.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
+| `<connection>` | The configured default backlog connection name | [Read the settings](#read-the-settings) |
 | `<project>` | The number of the Project linked to the repository | [Read the settings](#read-the-settings), from the Project query |
 | `<owner>` | The Project's owner | [Read the settings](#read-the-settings), from the Project query |
 | `<repo>` | The repository, as `owner/name` | [Read the settings](#read-the-settings), from the Project query's `repo` |
@@ -131,6 +132,14 @@ stderr and stop: claim nothing, and run no step. Then find the
 default branch with
 `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`,
 and run `git branch --show-current`.
+
+Resolve `backlog.connection` from the machine configuration as the
+configured default for this run's bounded operations. With no settings,
+use the shipped gh connection; with several connections require a valid
+default. Retain the name confirmed by the issued action's
+`connection.name` as `<connection>` for delegated prompts. Do not parse
+`--connection` as a lets-go request token or select by host detection.
+Direct backlog callers can explicitly select a connection.
 
 Keep the backlog `workerId` in this lets-go invocation. Omit
 `context.session` on its first bounded request, then reuse the returned

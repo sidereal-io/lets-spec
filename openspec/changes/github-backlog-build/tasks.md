@@ -88,7 +88,7 @@ Nothing is implemented or checked off by this planning restart.
 
 ## 6. Workflow integration [depends-on: 5]
 
-- [ ] 6.1 [medium] Carry the configured default connection into delegated step prompts without adding runner request tokens, report fields or resolver selection. (verify: bats tests/skill-interfaces.bats)
+- [x] 6.1 [medium] Carry the configured default connection into delegated step prompts without adding runner request tokens, report fields or resolver selection. (✓ bats tests/skill-interfaces.bats: 277 behavior tests passed; corrected wrapping verified by focused rerun)
 - [ ] 6.2 [medium] Route lets-go's existing-story backlog lifecycle through the shared boundary while steps retain their own work and reports. (verify: bats tests/skill-interfaces.bats)
 - [ ] 6.3 [medium] Replace existing-story callouts in runner, plan, brainstorm, build, reviews, draft-PR schemas and the shared issue-comments fetch reference through the same GitHub definition, asserting the reference routes runner and brainstorm to item.read. (verify: bats tests/skill-interfaces.bats)
 - [ ] 6.4 [medium] Include original uncertain-operation ID and recovery command in a failed step's existing reason string. (verify: bats tests/skill-interfaces.bats)

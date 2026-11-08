@@ -3069,3 +3069,14 @@ pr_reference_says() {
   [[ "$enter" == *'absent'*'stop'* ]] || false
   [[ "$claim" == *'branch creation continuation'* ]] || false
 }
+
+@test "delegated prompt carries the configured backlog default" {
+  local settings prompt
+  settings="$(part_section 'Read the settings' | tr -s '[:space:]' ' ')"
+  prompt="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-go/references/step-prompt.md")"
+  [[ "$settings" == *'backlog.connection'*'configured default'* ]] || false
+  [[ "$prompt" == *'Backlog connection: <connection>.'* ]] || false
+  [[ "$prompt" == *'verify the selected connection'*'required tools'* ]] || false
+  [[ "$prompt" == *'before backend issuance'*'failed'* ]] || false
+  [[ "$prompt" == *'no fallback'* ]] || false
+}

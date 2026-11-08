@@ -38,6 +38,10 @@ You run one step of a lets-go run: shape, for an idea.
 Issue: none yet. The idea is: <idea>. Branch: <default>.
 ```
 
+Fill `<connection>` from the configured default confirmed in
+[Read the settings](../SKILL.md#read-the-settings). It is execution
+context for the step's own calls, not a request token or resolver
+choice.
 The rest of the frame is the same for every step.
 
 ````text
@@ -49,6 +53,13 @@ Issue: #<i>, <issue-url>. Branch: <name>. Schema: <schema>. <route line>
 <the sentence above>
 
 ## Backlog calls
+
+Backlog connection: <connection>.
+Independently verify the selected connection and its required tools,
+bounds and writable shared private state before backend issuance.
+If a prerequisite is missing, return failed with the prerequisite and
+remedy in the existing reason string; no fallback to another connection
+or tool. Use the configured default and verify it matches this name.
 
 Use your own worker ID for bounded backlog calls. Omit `context.session`
 on your first request, then reuse its returned `workerId` within this
