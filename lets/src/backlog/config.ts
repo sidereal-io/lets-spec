@@ -134,3 +134,17 @@ function selectConnection(settings: Record<string, unknown>, definition: LoadedD
     throw new AdapterFailure('invalid_configuration', 'none', `${file}: backlog.connection: ${String(error)}; select a compatible named connection; no fallback`);
   }
 }
+
+import { digest } from './definitions.ts';
+import type { IssuedAction } from './actions.ts';
+/** Recovery may use only the original binding and non-secret options. */
+export function resolveRecordedConnection(action: IssuedAction, machine: unknown, userFile: string): Connection {
+  const document = object(machine, userFile);
+  if (document.version !== undefined && document.version !== 3)
+    throw new AdapterFailure('invalid_configuration', 'none', `${userFile}: version must be 3`);
+  const settings = document.backlog === undefined ? {} : object(document.backlog, 'backlog');
+  const connection = selectConnection(settings, action.definition, userFile, action.connection.name);
+  if (digest(connection) !== action.connection.digest)
+    throw new AdapterFailure('invalid_configuration', 'none', `${userFile}: original operation connection changed; restore original connection options for reconciliation; no fallback`);
+  return connection;
+}

@@ -129,3 +129,23 @@ test('direct caller can explicitly select another declared connection', () => {
     a: { binding: 'gh' }, b: { binding: 'gh' },
   } } }, { ...sourceFiles, connection: 'b' }).connection.name, 'b');
 });
+
+import { resolveRecordedConnection } from '../../../lets/src/backlog/config.ts';
+import { submittedRead } from './fixtures/submitted.ts';
+test('recovery uses its original connection after the default changes', () => {
+  const { action } = submittedRead();
+  const connection = resolveRecordedConnection(action, { version: 3, backlog: { connection: 'other', connections: {
+    local: { binding: 'gh' }, other: { binding: 'gh' },
+  } } }, '/user/config.yaml');
+  assert.equal(connection.name, 'local');
+});
+for (const [name, connections] of [
+  ['removed original', { other: { binding: 'gh' } }],
+  ['changed original options', { local: { binding: 'gh', options: { endpoint: 'other' } } }],
+] as const) {
+  test(`recovery rejects ${name} instead of adopting the default`, () => {
+    const { action } = submittedRead();
+    assert.throws(() => resolveRecordedConnection(action, { version: 3, backlog: { connections } }, '/user/config.yaml'),
+      /original.*connection.*reconcil|connection.*no fallback/);
+  });
+}
