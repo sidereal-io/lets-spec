@@ -135,3 +135,20 @@ test('rejected write cannot regain authority through corrected output', () => {
     assert.deepEqual(resumed.action.allowedEffects, []);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+import { requireOriginalWorker } from '../../../lets/src/backlog/operation-store.ts';
+test('reconciliation preserves original worker provenance for release', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/provenance-');
+  try {
+    const { action } = submittedClaim();
+    const store = new OperationStore(join(dir, 'private'));
+    store.issue(action, []);
+    const resumed = new OperationStore(join(dir, 'private')).resume(action.operationId, 6000);
+    assert.equal(resumed.workerId, action.workerId);
+    assert.throws(() => requireOriginalWorker(store.get(action.operationId), {
+      ...action.request.context, session: 'new-worker',
+    }), /original.*worker/);
+    assert.doesNotThrow(() => requireOriginalWorker(store.get(action.operationId), action.request.context));
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

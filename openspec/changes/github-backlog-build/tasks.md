@@ -39,7 +39,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 2.7 [medium] Reconcile unknown effects after rejection of a write submission without reactivating write permission. (✓ node --test tests/lets/backlog/recovery.test.ts passed, 9 tests)
 - [x] 2.8 [complex] Recover a proven stale local lock without stealing a live or ambiguous holder's lock. (✓ node --test tests/lets/backlog/state.test.ts passed, 17 tests)
 - [x] 2.9 [complex] Block work and new writes for an outstanding item mutation across local worktrees using the same configured store, regardless of a new operation or worker ID. (✓ node --test tests/lets/backlog/state.test.ts passed, 18 tests)
-- [ ] 2.10 [medium] Preserve original operation provenance for uncertain-write reconciliation and release without requiring it for ordinary resume on another machine. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [x] 2.10 [medium] Preserve original operation provenance for uncertain-write reconciliation and release without requiring it for ordinary resume on another machine. (✓ node --test tests/lets/backlog/recovery.test.ts passed, 10 tests)
 - [ ] 2.11 [medium] Reconstruct the original continuation in another worktree or after scratch loss without repeating the write. (verify: node --test tests/lets/backlog/recovery.test.ts)
 - [ ] 2.12 [medium] Keep uncertain step-write continuations distinct from subsequent runner reads. (verify: node --test tests/lets/backlog/state.test.ts)
 - [ ] 2.13 [medium] Reserve PR creation by endpoint, repository and head identity across worktrees and worker IDs. (verify: node --test tests/lets/backlog/state.test.ts)
