@@ -88,3 +88,22 @@ test('opaque ID ordering compares raw code points', () => {
     ['a', 'a!', '\uE000', '\u{10000}'],
   );
 });
+
+import { checkActionPrerequisites } from '../../../lets/src/backlog/capabilities.ts';
+for (const [name, observation, category] of [
+  ['unavailable tool', { toolAvailable: false, login: true, timeoutMs: 1000, maxOutputBytes: 4096 }, 'unsupported'],
+  ['missing login', { toolAvailable: true, login: false, timeoutMs: 1000, maxOutputBytes: 4096 }, 'authentication'],
+  ['unconfirmed login', { toolAvailable: true, timeoutMs: 1000, maxOutputBytes: 4096 }, 'authentication'],
+  ['missing timeout', { toolAvailable: true, login: true, maxOutputBytes: 4096 }, 'unsupported'],
+  ['missing output bound', { toolAvailable: true, login: true, timeoutMs: 1000 }, 'unsupported'],
+  ['unbounded timeout', { toolAvailable: true, login: true, timeoutMs: Infinity, maxOutputBytes: 4096 }, 'unsupported'],
+] as const) {
+  test(`action preflight rejects ${name} without fallback`, () => {
+    assert.throws(() => checkActionPrerequisites('gh', observation),
+      (error: unknown) => error instanceof Error && 'category' in error && error.category === category &&
+        'effects' in error && error.effects === 'none');
+  });
+}
+test('bounded login preflight does not require the login it checks', () => {
+  assert.doesNotThrow(() => checkActionPrerequisites('gh', { toolAvailable: true, timeoutMs: 1000, maxOutputBytes: 4096 }, true));
+});
