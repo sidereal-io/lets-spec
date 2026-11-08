@@ -84,4 +84,48 @@ prompt criteria were intentionally added. Existing command blocks and
 machine-readable report blocks remain intact. The diff was also inspected
 for changes to conditions, order, permissions and stop points.
 
-Final repository checks and the code review are recorded below when complete.
+## Code review
+
+Reviewed: main 6524fbff438faa0894d67bba9e5d81b034c774fd..3c3b081fea0277c2d6bf8952a69ec7e3d8a470a1
+
+GPT-6 Astra reviewed the committed diff in a fresh, read-only subagent
+context and returned `(none)`: no findings. The working tree was clean
+before and after the review. The configured resolver listed no external
+models, so this was a same-family review, not independent across model
+families. No project `REVIEW.md` exists. The review did not run tests.
+
+## Requirement and scenario coverage
+
+| Requirement | Implementation and evidence |
+|---|---|
+| Apply plain language to instructions and outputs | All 13 skills, both schema instruction sets and the overlay link the shared method. Task-specific templates address readers without the conversation. The source walkthrough and selection exercise cover locating a procedure and understanding its actor, conditions, action and stop. |
+| Preserve meaning and exact interfaces | The shared method requires asking before resolving uncertain meaning. Source comparison and existing interface tests cover command/report formats; the ambiguous-instruction and invalid-report exercises check judgment without inventing permission. |
+| Review reader difficulties with evidence | Plan, build and collaborator review prompts name reader tasks and concrete consequences. The short ambiguous and long clear samples exercise both sides of the rule. |
+| Supply guidance to fresh sessions and both flows | Actual prompt frames carry the criteria and resolved method path while retaining their trust boundary. The installed-reference test covers both release flows; the agent exercise uses fresh context. No minimal-flow review stage was added. |
+| Verify reader tasks and report limits | This report separates source inspection, automated checks and the fresh-agent exercise, and explicitly records that no human trial has run. |
+
+All five design decisions are reflected in the implementation: one shipped
+reference, task-based criteria, targeted structural edits, guidance in
+consumer prompts, and separate contract and reader checks. The reference
+location follows the existing domain-language pattern. No executable
+application behavior, permissions or agreed glossary definitions changed.
+
+## Final verification
+
+| Dimension | Result |
+|---|---|
+| Completeness | All 6 tasks complete; all 5 requirements mapped to implementation. |
+| Correctness | All 9 scenarios covered by the source walkthrough, existing interface checks or sampled reader exercises as described above. Human comprehension and live workflow execution were not tested. |
+| Coherence | All 5 design decisions followed; reference placement, naming and test changes fit the existing project patterns. |
+
+`pnpm test` passed: 688 Node tests, the type check and 368 Bats tests.
+`nix flake check` passed for x86_64-linux, including both release flows and
+the release folder. Nix omitted the incompatible aarch64-darwin and
+aarch64-linux systems; those platforms were not checked locally.
+`openspec validate plain-language-skills --strict` and `git diff --check`
+also passed.
+
+No critical issues, warnings or suggestions were found in implementation
+verification. The planned source, interface and agent checks passed. The
+change is ready for archive with the human-testing and platform limits
+stated above; this is not a claim of formal ISO compliance.

@@ -11,7 +11,7 @@
 ## 3. Verification [depends-on: 2]
 
 - [x] 3.1 [medium] Exercise skill selection, glossary handoff and plain-language judgment in a fresh agent context and record actual results and human-testing limits (verify: git diff --check) (✓ sampled tasks completed correctly; evidence and limits in verification.md)
-- [ ] 3.2 [medium] Verify both release flows and the repository checks, then record the complete sweep and remaining limits (verify: pnpm test)
+- [x] 3.2 [medium] Verify both release flows and the repository checks, then record the complete sweep and remaining limits (verify: pnpm test) (✓ 688 Node tests, type check and 368 Bats tests; nix flake check passed for x86_64-linux)
 
 ## Deviations Ledger
 
