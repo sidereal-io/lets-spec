@@ -39,6 +39,12 @@ tool observations and cannot independently detect convincingly fabricated output
 It requires no capture service, host modification or replacement execution path.
 Earlier capture research and prototype checks do not approve a capture design.
 
+The planning restart also records D12's clarification that lets-go owns resume
+and D14's explicit approval of read-only ownership checks on existing branches.
+The shared local recovery store is a design application of that recovery
+boundary, not a user-approved distributed locking guarantee. It remains private
+mutation recovery rather than workflow step-completion state.
+
 ## Decision
 
 Use the execution hybrid project-wide:
@@ -296,8 +302,7 @@ In Progress until confirmed merge. This decision does not reopen the settled
 native-state/private-local-journal design. The shared runner chooses when to
 associate a PR and request completion; a provider definition only translates
 the bounded backend actions and observations. Defining a completion operation
-does not require the runner to call it on a merged-PR stop. The GitHub migration
-preserves the existing terminal stops; any actual completion request still requires the merge facts above.
+does not require the runner to call it on a merged-PR stop. Any actual completion request still requires the merge facts above.
 
 ## Packaging, release evidence and migration
 

@@ -8,8 +8,8 @@
 - the Project query, run once in *Read the settings*, as *The Project query runs once per run* says;
 - the shared blocker read with title and directional blocker facts above;
 - `lets backlog claim.read` for fresh ownership and status checks;
-- `lets backlog submit --continuation-file .workspace/backlog-continuation.json --submission-file .workspace/backlog-submission.json` and `lets backlog resume --continuation-file .workspace/backlog-continuation.json` in the shared bounded action loop;
-- the scoped shared operations using `--request-file .workspace/backlog-request.json`;
+- `lets backlog submit --continuation-file .workspace/lets-backlog/<operation-id>/continuation.json --submission-file .workspace/lets-backlog/<operation-id>/submission.json` and `lets backlog resume --continuation-file .workspace/lets-backlog/<operation-id>/continuation.json` in the shared bounded action loop;
+- the scoped shared operations using `--request-file .workspace/lets-backlog/<request-id>/request.json`;
 - the shared issue read for creation time, run only when the issue's `lastEditedAt` is null;
 - the issue search of *lets-go takes one issue number or an idea*;
 - `git branch --list <name>` and `git ls-remote --heads origin refs/heads/<name>`, to find the change's branch, and the fetch, switch and fast-forward above;
@@ -147,6 +147,7 @@ Each procedure of `lets-go` SHALL end by returning to the part that ran it, with
 |---|---|
 | *Find the source of demand* | `found`, `unresolved`, `matches`, `no-match`, `picked`, `nothing-ready` |
 | *Confirm the packet* | `complete`, `needs-shape`, `epic` |
+| *Check work ownership* | `sole-actor`, `unassigned`, `other`, `multiple`, `status-mismatch`, `unavailable`, `pending-mutation` |
 | *Check the prerequisite* | `resolved`, `unresolved` |
 | *Check the checkpoint* | `verified`, `checkpoint-failed`, `unresolved` |
 | *Glossary preflight* | `no-owned-edits`, `verified`, `unresolved`, `checkpoint-failed` |
@@ -211,7 +212,7 @@ unresolved release SHALL remain visible with its recovery reference.
 ### Requirement: The resume paragraph says what a run started again does
 The paragraph near the top of `SKILL.md` that tells the user to run `lets-go` again after a run stops SHALL say what the new run does in each of these cases:
 
-- **On the change's branch:** it finds the issue from the branch's name, prints a dated line for each step already done, and, after the fresh adapter ownership check passes, goes on from the first unfinished step.
+- **On the change's branch:** it finds the issue from the branch's name, prints a dated line for each step already done, and, after the fresh adapter ownership check passes, goes on from the first unfinished step. If it fails, it reports the mismatch and ends without changing assignment or status.
 - **On the default branch, with the issue number:** it finds the change's branch, here or on `origin`, switches to it, and goes on the same way. It does not claim the issue again.
 - **On the default branch, with nothing:** it does not resume. It picks the next ready issue, and a claimed issue is never ready. To resume, give the issue number, or run it on the change's branch.
 - **After a failed step:** the run that failed never runs that step again. A new run starts it afresh, in a new session, with the answers given so far. A failed shape step has no branch: the run says to run `lets-shape` on the idea or the issue.
@@ -237,6 +238,9 @@ When the pull request's `state` is `MERGED`, `lets-go` SHALL say the change is m
 - **THEN** `lets-go` finds #202 by the branch name, reads `MERGED`, says the change is merged, and runs no step
 
 ### Requirement: lets-go walks the step table
+Successful unfinished-step scenarios below assume the fresh ownership check
+returns `sole-actor` and no known pending mutation blocks the item.
+
 After *Set the question mode*, on the change's branch, `lets-go` SHALL read the records Git and GitHub keep, in this order. First, `git status --porcelain`: a line for a path outside `.workspace/` is a disagreement. Second, the pull request for the branch, with `lets codehost pull-request.read`. A missing pull request is noted, not a stop. Third, the archive folder, whose whole name is `<YYYY-MM-DD>-<name>` in `openspec/changes/archive/`. When it exists, every step is done. Then `lets-go` SHALL walk the step table from the top: plan, review plan, build, review build. The step table SHALL have no row for shape: shape runs before the walk, in *Run the shape step*, and *Check the issue* prints its `Skipped shape` or `Done shape` line. When the walk reaches a row, it SHALL read whether that step is done. Each row's done test SHALL be written once, in the walk, as an ordered list: the first item that matches decides. The step table SHALL not restate it. The plan row and the build row each read the change state when the walk reaches them: `openspec instructions apply --change <name> --json`, run when `openspec/changes/<name>/` exists and there is no archive folder. Plan is done when the `state` is `ready` or `all_done`, or the archive folder exists. Build is done when the `state` is `all_done`, or the archive folder exists. The build row SHALL read the state again, even when the plan row read it, because a review plan round can add a task. Any `state` other than `blocked`, `ready` or `all_done` SHALL show the CLI's `instruction` and stop. Review plan is done as *Review plan runs as a step, or is not in the route* says. Review build is done when the archive folder exists. A done step SHALL print its line, as *A skipped step's line carries its evidence and date* says. Before an unfinished step starts, the fresh adapter ownership check SHALL pass as *Resume validates current authority* says. An unfinished step SHALL run, as *Each step runs through lets delegate step* says. Its report SHALL be read as *A run ends on done, failed, or a repeated question* says. After a `done` report, the walk SHALL check it as *A done report is checked against its record* says, and go on to the next row only when the check passes. `lets-go` SHALL read a row's record when it reaches the row, not before, because a step run in this round changes the records the next row reads.
 
 #### Scenario: A branch with no change
@@ -708,6 +712,17 @@ Step skills SHALL retain their own steps and reports rather than becoming runner
 - **THEN** it returns its step report and lets-go decides the next workflow step
 
 ### Requirement: Resume validates current authority
+The named procedure *Check work ownership* SHALL invoke `lets backlog claim.read`
+and return the core verdict `sole-actor`, `unassigned`, `other`, `multiple`,
+`status-mismatch`, `unavailable` or `pending-mutation`. It SHALL use the provider's
+declared claim guarantee; GitHub remains best-effort at the authenticated actor
+level, and a fresh observation SHALL NOT invent an old worker session or token.
+The owning walk SHALL continue only for `sole-actor`, report every other result
+and end. The overview's *Stops when* column SHALL name those results. Its remedy
+SHALL explain the required sole assignment and In Progress status through the
+existing authorized workflow, without issuing a repair or directing an agent
+to bypass Project-field ownership rules with a direct provider command.
+
 After the existing tree, PR and record checks, lets-go SHALL use fresh validated
 adapter observations before starting any unfinished work step. The authenticated
 actor SHALL be the sole assignee and Status SHALL be In Progress. It SHALL
@@ -762,6 +777,11 @@ the existing step prompt or report contract.
 #### Scenario: Terminal PR keeps its current stop
 - **WHEN** the existing branch-scoped PR read reports MERGED or CLOSED, after a clean tree check
 - **THEN** lets-go reports the existing terminal message without an ownership check, a workflow step or a completion write
+
+
+#### Scenario: Ownership procedure uses only reads
+- **WHEN** the skill-interface check reads Check work ownership and its owning walk
+- **THEN** it finds claim.read, the named verdicts and their actions, and no claim.acquire or claim.release in the check
 
 ### Requirement: Existing-story callouts use configured integration boundaries
 All backlog, repository and PR callouts reachable in the existing-story journey

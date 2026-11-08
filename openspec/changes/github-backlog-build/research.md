@@ -18,6 +18,20 @@ baseline below is tracked main at `6524fbff`, not the old #172 prototype.
 | Plan, build and review skills: repository facts, PR reads, review text updates and marking ready. | Map code-host operations separately from backlog operations. Keep existing skill ownership and user-owned merge. Do not assume every backlog backend supplies code-host facts. |
 | Setup and shape skills: Project setup, issue and comment writes, relationships and metadata. | Preserve their current behavior and owners in the shared inventory. The current proposal excludes their production migration; that exclusion cannot justify claiming all skills are migrated. Reconcile delivery coverage before declaring the plan complete. |
 
+Additional accepted contract constraints differ from the current callouts:
+all recorded actions, including reads, need writable private recovery storage;
+an unwritable sandbox fails preflight with a configuration remedy. This is a
+runtime prerequisite, not evidence of a remote mutation. Multiple linked
+Projects may be resolved by explicit configuration under ADR-015 rather than
+forcing the user to unlink all others. Record both differences in acceptance.
+
+Verified GitHub CLI's branch-PR lookup against upstream
+`pkg/cmd/pr/shared/finder.go` on 2026-11-08: results are newest-created first,
+then stably sorted to put open PRs first; the first scope/ref match is returned.
+A closed historic PR plus a newer open PR must not introduce a new ambiguity
+stop. Do not adopt the review's suggested several-open ambiguity rule without
+evidence: the inspected source uses the same open-first newest rule there too.
+
 This audit concerns callout coverage, not literal command equivalence. Complete
 pagination and typed recovery remain accepted contract guarantees; no definition
 may claim that a fixed item limit proves enumeration complete. A CLI definition
@@ -386,3 +400,45 @@ Conclusion: ordinary configured tools alone do not currently settle capture.
 Either select and qualify an additional generic capture capability, or explicitly
 reconsider the independent-evidence requirement. No capture code was written,
 installed or configured during this investigation, and no ADR was changed.
+
+## Round-three correction status
+
+Reviewed `46ff2100`: REVISE, independent fresh Claude Opus 5.5 context. The raw
+report is retained locally for audit. No fourth review is authorized by these
+edits alone.
+
+C1 is confirmed: operation-ID resume and reconstructed handles now survive
+scratch loss and worktree changes; tasks 2.11 and 2.12 cover them. C2 is confirmed:
+the issue-comments delta and explicit complete thread fields reconcile the
+current query requirement, including brainstorm reads. M6 and S1 are addressed
+by per-invocation identity, named read-only verdicts and the failed-check remedy.
+M3's parity concern is confirmed; inspected gh source uses open-first then
+newest, so the suggested multiple-open ambiguity is not adopted. S2 and the
+private-state prerequisite are now explicit parity differences. S3's purpose
+and unqualified-live-evidence wording are corrected. Remaining role/configuration,
+step-write scope/identity, host tool selection and task-order changes depend on
+the code-host decision (M1, M2, M4 and M5). The separate role is not approved.
+
+### Concrete choice for the GitHub repository and PR calls
+
+**Option A, recommended:** keep one configured GitHub integration for this
+slice. Its inert definition describes the existing issue, Project, repository
+and PR actions. Name the additional supported commands under `lets backlog`,
+for example `lets backlog repository.read` and `lets backlog pull-request.read`.
+User settings remain under `backlog` and repository selection under
+`lets.backlog`, following ADR-011 and the current ADR-015 configuration boundary.
+The facts still come from GitHub's code-host APIs; their source and semantics
+remain distinct from Project status. No second configured adapter or new
+provider-selection role is added. This does not claim a production cross-provider
+PR integration for Jira, Linear or Beads; retain their scoped offline contracts.
+
+**Option B:** retain a separately configurable code-host adapter as currently
+drafted. It requires an explicit durable architecture decision and aligned
+command/configuration paths, plus defined mixed-provider facts and live support
+qualification. Nothing in D14 approves this additional role.
+
+Both options use agents to execute bounded actions, the same inert loader and
+core validation/recovery, existing workflow owners and user-owned merge. Neither
+option reinstates capture infrastructure or implements backend calls in Lets.
+The user has been asked to choose; this document records alternatives, not an
+accepted replacement. Do not implement the role-dependent tasks meanwhile.

@@ -19,9 +19,9 @@ coding-agent CLIs; checked output translation; durable private recovery; native
 best-effort GitHub ownership; exact associated merge before completion.
 
 **Non-Goals:** a capture runner or service, independent output authentication,
-T3 changes, another runner, a plugin loader, backend calls executed directly by
-Lets, stronger GitHub locking, automatic merges, new backend implementations,
-committed runner metadata or automatic completion on a terminal-PR stop.
+T3 changes, another runner or a plugin loader. Lets does not execute backend
+calls, strengthen GitHub locking, merge PRs or implement other backends here.
+The runner gains no committed metadata or automatic terminal completion.
 
 ## Test Seams
 
@@ -61,13 +61,13 @@ exposing their production journey in this slice. The related repository/PR
 interface and its migrated callers are specified in section 6. Proposed invocation forms are:
 
 ```bash
-lets backlog candidate.list --request-file .workspace/backlog-request.json
-lets backlog item.read --request-file .workspace/backlog-request.json
-lets backlog relationship.list --request-file .workspace/backlog-request.json
-lets backlog claim.acquire --request-file .workspace/backlog-request.json
-lets backlog claim.read --request-file .workspace/backlog-request.json
-lets backlog submit --continuation-file .workspace/backlog-continuation.json --submission-file .workspace/backlog-submission.json
-lets backlog resume --continuation-file .workspace/backlog-continuation.json
+lets backlog candidate.list --request-file .workspace/lets-backlog/<request-id>/request.json
+lets backlog item.read --request-file .workspace/lets-backlog/<request-id>/request.json
+lets backlog relationship.list --request-file .workspace/lets-backlog/<request-id>/request.json
+lets backlog claim.acquire --request-file .workspace/lets-backlog/<request-id>/request.json
+lets backlog claim.read --request-file .workspace/lets-backlog/<request-id>/request.json
+lets backlog submit --continuation-file .workspace/lets-backlog/<operation-id>/continuation.json --submission-file .workspace/lets-backlog/<operation-id>/submission.json
+lets backlog resume --continuation-file .workspace/lets-backlog/<operation-id>/continuation.json
 ```
 
 These are interfaces to implement, not commands available on main. Requests carry
@@ -83,6 +83,21 @@ scoped action and its definition; `complete` carries the validated operation
 result; the other states carry typed reasons, effects and known remote IDs.
 Diagnostics go to stderr. No response itself executes a provider tool.
 
+`lets backlog resume --operation-id <id>` also resumes a recorded operation
+without a scratch file. Every blocked or `needs-reconciliation` response SHALL
+return the original operation ID and a reconstructed continuation from durable
+state. A scoped item lookup finds the pending operation even from another
+worktree. Reconstructing its handle grants reconciliation, not adoption of the
+original worker's claim or permission to release it. Bind every lookup to the
+recorded backend, repository, item, definition and authenticated context.
+
+Use a unique request directory before issuance and an operation-specific
+scratch directory after issuance. Runner reads and step writes never overwrite
+another operation's continuation. Losing `.workspace/` does not discard durable
+recovery facts or force state deletion. Original recovery records remain private;
+only their bounded handle and known IDs are returned to the caller.
+
+
 Skill-interface checks look for the literal `lets backlog backlog.list`,
 `lets backlog backlog.check`, `lets backlog candidate.list`,
 `lets backlog item.read`, `lets backlog relationship.list`, `lets backlog claim.acquire`,
@@ -95,8 +110,9 @@ Separate action identity, stable mutation identity and attempt identity. Bind
 the request to exact input, operation, definition version/content digest,
 provider, repository/backlog/item IDs, actor/session, allowed effects, required
 capabilities, issue/expiry times and execution/output limits. Subsequent steps
-of a partial mutation retain the original mutation identity. A continuation file is a scratch handle for the private **recovery record**
-that identifies this recorded operation; it is not a remote lock.
+of a partial mutation retain the original mutation identity. A continuation
+file is a scratch handle for the private **recovery record** that identifies
+this recorded operation; it is not a remote lock.
 
 A single request/result path follows amended ADR-015. A direct executor fallback
 would duplicate provider behavior. A generic capture MCP host would add another
@@ -213,9 +229,9 @@ Serialize local transitions with an exclusive local lock and atomic state-file
 replacement. The lock records an owner nonce and process identity. Reclaim a
 stale lock only after proving its local holder is gone, using owner checks that
 avoid PID reuse. If liveness cannot be established, return a bounded lock-busy
-result with a remedy. Never delete a possibly live lock or wait indefinitely. Persist an action as
-issued before returning it. There is at most
-one outstanding action per operation. A mutation reserves its scoped item in
+result with a remedy. Never delete a possibly live lock or wait indefinitely.
+Persist an action as issued before returning it. There is at most one outstanding
+action per operation. A mutation reserves its scoped item in
 this shared store before issuance. Every invocation checks that item's pending
 operations, regardless of actor, worktree or worker session; another invocation
 cannot bypass an uncertain write by creating a new operation ID. Reads needed
@@ -257,8 +273,8 @@ Check private-state create, lock, atomic replace and durable write access before
 issuing an action. Backend-dependent prerequisites such as login or permissions
 are checked through separately bounded preflight reads; these reads require
 local safety checks, not the backend condition they are checking. No affected
-mutation is issued until those preflight observations qualify. An unwritable default state directory produces a prerequisite
-failure naming its path and a machine-local configuration or access remedy.
+mutation is issued until those preflight observations qualify. An unwritable
+default state directory produces a prerequisite failure naming its path and a machine-local configuration or access remedy.
 Do not silently choose a different recovery store. Sandbox access must be
 configured explicitly; state-directory access is not an assumed host feature.
 After issuance, cancellation, overflow or signal termination preserves unknown
@@ -320,6 +336,11 @@ GitHub assignment remains best-effort and supplies no exclusive remote lock.
 
 ### 6. Replace callouts without adding workflow policy
 
+> **Open after round three:** the separate configurable code-host role below
+> is an author proposal, not an accepted decision. The user is choosing between
+> keeping these GitHub actions in one definition and introducing a separate
+> role. Do not implement this section or its dependent tasks before resolution.
+
 Keep the eleven runner parts and five step skills. Backlog calls use the
 selected backlog definition. Repository and PR calls use a selected code-host
 definition and the same core bounded-action, submission and recovery engine.
@@ -348,8 +369,10 @@ provider. No command merges a PR. No tool is invoked directly by the core.
 Code-host requests carry `contractVersion`, `operation`, `context` and `input`.
 Context binds the exact repository, authenticated actor, worker ID and selected
 code-host role. A PR read takes either an exact PR ID or a branch name within
-that repository, never both; zero branch matches returns absent and multiple
-matches returns ambiguity. Create takes title, body-file reference, base and
+that repository, never both; zero branch matches returns absent. Among matching PRs, select open PRs
+first, then newest creation time, matching the existing GitHub CLI behavior.
+Qualify repository and head ownership before selection. Do not introduce an
+ambiguity stop merely because a branch has both old closed and current open PRs. Create takes title, body-file reference, base and
 head refs; update takes exact PR identity and prepared body-file reference;
 ready takes exact PR identity. Validate file bounds and bind the content digest
 before issuing a write. Every PR result binds its repository and immutable PR
@@ -362,7 +385,7 @@ adds the operation/action/attempt correlation and limits described above.
 | Default repository and branch | `repository.read`: exact repository ID, owner/name, URL and default branch. Local branch operations remain Git. |
 | Branch issue search, idea and discovery search | `item.search`: scoped state/title/body filters, complete matching items and their IDs. Preserve the existing exact prefix and discovery Input matching in shared policy. |
 | Packet, Project fields, issue date and parent body | `item.read`: scoped identity, body, timestamps, Kind/Priority/Size/Status, assignees and parent. Parent body is a separate scoped item read. No fixed 500-item Project scan remains in Confirm the packet. |
-| Thread freshness and glossary handoff | `item.read` and `relationship.list`: bounded comment/edit observations and complete parent/child/blocker data; code-host `pull-request.read` supplies prerequisite PR facts. Preserve ADR-012's evidence-only comments. |
+| Thread freshness and glossary handoff | `item.read` and `relationship.list`: complete paginated comment/edit observations and complete parent/child/blocker data; code-host `pull-request.read` supplies prerequisite PR facts. Preserve ADR-012's evidence-only comments. |
 | PR state, URL, body, base, head and merge facts | `pull-request.read`: exact repository/PR identity or unambiguous branch lookup, state, draft flag, body, URL, base/head refs and SHAs, merge ref/commit when applicable. No historical closing-PR scan is added. |
 | Draft PR created during planning | `pull-request.create`: existing title/body/base/head inputs and returned exact identity/URL; preserve `Closes #<n>` and user-owned merge. Reconcile uncertain creation before retry. |
 | Plan/build review body sections | `pull-request.update`: exact PR and prepared body-file input. Preserve other sections and closing text using the existing fresh-read-and-replace procedure. Reconcile uncertain writes. |

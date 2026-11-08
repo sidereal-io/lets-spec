@@ -1,7 +1,7 @@
 ## Purpose
 
 Carry an existing GitHub story through the shared backlog workflow while
-preserving native ownership, safe recovery and completion after verified merge.
+preserving existing ownership, recovery, PR and finishing behavior.
 
 ## ADDED Requirements
 
@@ -74,9 +74,9 @@ current remote ownership or distinguish remote sessions using the same actor.
 - **THEN** Lets exposes the partial claim and requires safe recovery before work
 
 ### Requirement: Work identity survives sessions
-Lets SHALL retain immutable provider, backlog, repository and item identity
-through branch creation, planning and resume, and in any explicit association
-or completion request. It SHALL NOT add a committed identity file.
+Lets SHALL resolve the scoped provider, backlog, repository and item identity
+on each invocation and bind it into every request, including any explicit
+association or completion request. It SHALL NOT add a committed identity file.
 Lets-go SHALL use its existing scoped branch/issue lookup plus fresh native ownership/status
 observations for ordinary resume, without requiring the original
 recovery record or making another claim. Legacy branches SHALL be able to bind a
@@ -86,17 +86,17 @@ reconciliation and claim release; public identity alone SHALL NOT grant those
 authorities.
 
 #### Scenario: Resume has a conflicting identity
-- **WHEN** the change identity names a different Project or item from the requested issue
+- **WHEN** the request's bound Project or item differs from the issue resolved from the branch
 - **THEN** Lets reports disagreement and requests no mutation
 
-#### Scenario: Private continuation is unavailable
+#### Scenario: Recovery record is unavailable
 - **WHEN** a caller resolves the issue by its existing branch lookup but lacks the original recovery record
 - **THEN** Lets permits ordinary resume after fresh sole-owner/In Progress verification when no known uncertainty blocks it
 - **AND** it does not adopt the original worker's private claim or authorize its release
 
 #### Scenario: Legacy claim has no journal
 - **WHEN** an in-progress branch predates private journals and uniquely resolves to the selected issue with the authenticated actor as sole owner and In Progress
-- **THEN** lets-go resumes the existing work without a new claim or fabricated original continuation
+- **THEN** lets-go resumes the existing work without a new claim or fabricated recovery record
 
 ### Requirement: Release preserves other workers
 Lets SHALL verify current ownership before each release step and SHALL NOT

@@ -53,6 +53,8 @@ active plan must be replaced before implementation continues (D1, D5).
 - `backlog-adapter-contract`: replace the executable transport and settings
   with bounded actions, inert provider definitions and validated submitted
   tool observations while retaining operation semantics and conformance obligations.
+- `issue-comments`: keep labels, markers and shaping behavior while routing
+  lets-go and brainstorm thread reads through complete adapter observations.
 - `lets-go`: route existing-story backlog operations through the shared
   request/result path while preserving sole runner and step ownership.
 

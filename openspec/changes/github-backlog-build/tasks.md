@@ -40,6 +40,9 @@ Nothing is implemented or checked off by this planning restart.
 - [ ] 2.9 [complex] Block work and new writes for an outstanding item mutation across local worktrees using the same configured store, regardless of a new operation or worker ID. (verify: node --test tests/lets/backlog/state.test.ts)
 - [ ] 2.10 [medium] Preserve original operation provenance for uncertain-write reconciliation and release without requiring it for ordinary resume on another machine. (verify: node --test tests/lets/backlog/recovery.test.ts)
 
+- [ ] 2.11 [medium] Reconstruct the original reconciliation handle in another worktree or after scratch loss without repeating the write. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [ ] 2.12 [medium] Keep uncertain step-write handles distinct from subsequent runner reads. (verify: node --test tests/lets/backlog/state.test.ts)
+
 ## 3. GitHub reads and claim lifecycle [depends-on: 2]
 
 - [ ] 3.0 [complex] Translate scrubbed real GitHub GraphQL output through the shipped definition, including Project array selection, unions/nulls, connection coverage and partial structured errors. (verify: node --test tests/lets/backlog/providers.test.ts)
@@ -74,7 +77,7 @@ Nothing is implemented or checked off by this planning restart.
 - [ ] 5.4 [medium] Package consumed runtime and definitions while excluding obsolete adapter bundles and unused conformance payloads. (verify: nix flake check)
 - [ ] 5.5 [medium] Apply identical policy with explicitly configured compatible tool connections in both required hosts. (verify: node --test tests/lets/backlog/config.test.ts)
 - [ ] 5.6 [medium] Check the literal operation and file-argument forms in the owning procedures and shared action loop. (verify: bats tests/skill-interfaces.bats)
-- [ ] 5.7 [medium] Read packet fields, parent body and thread freshness through scoped complete observations without a fixed Project scan limit. (verify: node --test tests/lets/backlog/items.test.ts)
+- [ ] 5.7 [medium] Read packet fields, parent body and complete thread facts, including later-page unread comments and author/edit metadata, without a fixed Project scan limit. (verify: node --test tests/lets/backlog/items.test.ts)
 - [ ] 5.8 [medium] Preserve the clean-tree check followed by the existing merged-PR stop without ownership checks or a completion write. (verify: bats tests/skill-interfaces.bats)
 - [ ] 5.9 [medium] Ignore historical merged or rejected PRs when the branch no longer exists instead of adding a terminal lookup or Done update. (verify: bats tests/skill-interfaces.bats)
 - [ ] 5.10 [medium] Preserve the existing stop for a surviving stacked branch's merged PR without claiming the issue is completed. (verify: bats tests/skill-interfaces.bats)
@@ -82,6 +85,10 @@ Nothing is implemented or checked off by this planning restart.
 - [ ] 5.12 [medium] Rewrite docs/backlog-adapter-contract.md for the bounded action and submitted-output protocol, including recorded read attempts and retained completion conformance. (verify: node --test tests/lets/backlog/inventory.test.ts)
 
 ## 6. Existing-story code-host callouts [depends-on: 5]
+
+The separate configurable role remains an author proposal pending the round-three
+user decision. Its command/configuration and dependent task order must be
+reconciled before this checklist can guide implementation.
 
 - [ ] 6.1 [medium] Resolve the separately selected code-host definition and machine connection without implicit fallback or requiring the backlog provider to host PRs. (verify: node --test tests/lets/backlog/config.test.ts)
 - [ ] 6.2 [medium] Validate bounded repository.read and pull-request.read requests and normalized result fields through the same action engine. (verify: node --test tests/lets/backlog/protocol.test.ts)
@@ -106,6 +113,8 @@ verify command timeout and output limits plus writable shared private-state
 storage. Failure must name the missing prerequisite before backend issuance. A user-directed merge is
 required for the merged-path acceptance; no task authorizes an automatic merge.
 No support claim or PR readiness change follows from offline checks alone.
+Release documentation must identify live support as unqualified until the
+required real configurations have passed acceptance.
 
 ## Deviations Ledger
 

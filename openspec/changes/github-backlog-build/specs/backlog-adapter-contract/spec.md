@@ -289,3 +289,39 @@ same validators, loader and submission path without a second executor.
 #### Scenario: Code-host write loses its result
 - **WHEN** a bounded PR create, update or ready action has an uncertain result
 - **THEN** the original scoped operation requires reconciliation before retry without changing the workflow's owning step
+
+### Requirement: Recovery handles survive scratch loss
+A blocked or needs-reconciliation result SHALL include the original durable
+operation ID and a continuation rebuilt from that operation's recovery record.
+Resume SHALL accept the operation ID without a scratch file and validate its
+original scope and provenance before requesting reconciliation reads. Callers
+SHALL isolate scratch handles by operation. Reconstructing a handle SHALL NOT
+transfer claim-release authority or authorize a new mutation.
+
+#### Scenario: Another worktree reconciles the original operation
+- **WHEN** one worktree records an uncertain mutation and another finds it by scoped item identity
+- **THEN** the second receives the original operation ID and can resume its reconciliation without the first worktree's scratch file
+
+#### Scenario: Scratch files have been removed
+- **WHEN** all workspace scratch files are lost but the private recovery record survives
+- **THEN** resume by original operation ID reconstructs the handle without deleting state or issuing the write again
+
+#### Scenario: A runner read follows an uncertain step write
+- **WHEN** a step has an uncertain write and the runner issues a separate claim.read
+- **THEN** their operation-specific handles remain distinct and the write can still be reconciled
+
+### Requirement: Item reads expose complete thread facts
+For packet and brainstorm checks, item.read SHALL provide the issue's lastEditedAt
+and every comment's URL, author login, author type, author association, createdAt,
+lastEditedAt and body. Deleted authors and never-edited timestamps SHALL be
+explicitly null where applicable. Thread enumeration SHALL prove all required
+pages complete before watermark or read-marker policy can authorize progression.
+Labels and read-marker interpretation SHALL remain shared policy.
+
+#### Scenario: Unread comment is on a later page
+- **WHEN** an unread or edited comment appears after the first thread page
+- **THEN** item.read includes it before the caller computes freshness or fails with incomplete coverage without authorizing a claim
+
+#### Scenario: Deleted author and bot have different provenance
+- **WHEN** the thread includes a deleted account and a GitHub App
+- **THEN** the result retains the nullable author facts and bot type needed for the existing ghost and outside labels
