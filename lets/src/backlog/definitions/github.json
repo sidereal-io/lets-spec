@@ -1758,7 +1758,7 @@
                   },
                   {
                     "op": "literal",
-                    "value": "query=query($id:ID!,$endCursor:String){viewer{login}node(id:$id){... on ProjectV2{id items(first:100,after:$endCursor){nodes{id content{__typename ... on Issue{id number title body url state createdAt lastEditedAt repository{id name owner{login}} assignees(first:100){nodes{id login}totalCount pageInfo{hasNextPage endCursor}}projectItems(first:100){nodes{id project{id number title}fieldValues(first:100){nodes{__typename ... on ProjectV2ItemFieldSingleSelectValue{name optionId field{... on ProjectV2SingleSelectField{id name}}}}pageInfo{hasNextPage endCursor}}}pageInfo{hasNextPage endCursor}}}}}totalCount pageInfo{hasNextPage endCursor}}}}}"
+                    "value": "query=query($id:ID!,$endCursor:String){viewer{login}node(id:$id){... on ProjectV2{id items(first:100,after:$endCursor){nodes{id content{__typename ... on Issue{id number title body url state createdAt lastEditedAt repository{id name owner{login}} blockedBy(first:100){nodes{id state}totalCount pageInfo{hasNextPage endCursor}}assignees(first:100){nodes{id login}totalCount pageInfo{hasNextPage endCursor}}projectItems(first:100){nodes{id project{id number title}fieldValues(first:100){nodes{__typename ... on ProjectV2ItemFieldSingleSelectValue{name optionId field{... on ProjectV2SingleSelectField{id name}}}}pageInfo{hasNextPage endCursor}}}pageInfo{hasNextPage endCursor}}}}}totalCount pageInfo{hasNextPage endCursor}}}}}"
                   },
                   {
                     "op": "literal",
@@ -2453,6 +2453,107 @@
                             "path": [
                               "login"
                             ]
+                          }
+                        },
+                        "repository": {
+                          "op": "path",
+                          "path": [
+                            "repository",
+                            "id"
+                          ]
+                        },
+                        "blockers": {
+                          "op": "object",
+                          "fields": {
+                            "complete": {
+                              "op": "literal",
+                              "value": true
+                            },
+                            "open": {
+                              "op": "map",
+                              "source": {
+                                "op": "filter",
+                                "source": {
+                                  "op": "map",
+                                  "source": {
+                                    "op": "connection",
+                                    "source": {
+                                      "op": "path",
+                                      "path": [
+                                        "blockedBy"
+                                      ]
+                                    }
+                                  },
+                                  "value": {
+                                    "op": "object",
+                                    "fields": {
+                                      "id": {
+                                        "op": "path",
+                                        "path": [
+                                          "id"
+                                        ]
+                                      },
+                                      "state": {
+                                        "op": "enum",
+                                        "source": {
+                                          "op": "path",
+                                          "path": [
+                                            "state"
+                                          ]
+                                        },
+                                        "values": {
+                                          "OPEN": "OPEN",
+                                          "CLOSED": "CLOSED"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "path": [
+                                  "state"
+                                ],
+                                "equals": {
+                                  "op": "literal",
+                                  "value": "OPEN"
+                                }
+                              },
+                              "value": {
+                                "op": "object",
+                                "fields": {
+                                  "provider": {
+                                    "op": "scope",
+                                    "path": [
+                                      "provider"
+                                    ]
+                                  },
+                                  "backlog": {
+                                    "op": "scope",
+                                    "path": [
+                                      "backlog"
+                                    ]
+                                  },
+                                  "id": {
+                                    "op": "path",
+                                    "path": [
+                                      "id"
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "state": {
+                          "op": "enum",
+                          "source": {
+                            "op": "path",
+                            "path": [
+                              "state"
+                            ]
+                          },
+                          "values": {
+                            "OPEN": "OPEN",
+                            "CLOSED": "CLOSED"
                           }
                         }
                       }

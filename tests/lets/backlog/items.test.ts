@@ -103,6 +103,7 @@ const issueOutput = JSON.parse(readFileSync(new URL('./fixtures/github-issue.jso
 function candidatePage(id: string, next: boolean, cursor: string) {
   const issue = structuredClone(issueOutput.data.node);
   issue.id = id;
+  issue.blockedBy = { nodes: [], totalCount: 0, pageInfo: { hasNextPage: false, endCursor: null } };
   return { data: { viewer: { login: 'actor' }, node: { id: 'P1', items: {
     nodes: [{ id: `PI-${id}`, content: { ...issue, __typename: 'Issue' } }], totalCount: 2,
     pageInfo: { hasNextPage: next, endCursor: cursor },
@@ -197,4 +198,68 @@ test('requested thread facts cannot be omitted by a custom mapping', () => {
     'item.read', 'read', 'gh', issueOutput, action.request.context).item;
   assert.throws(() => validateSubmission(action, submissionFor(action, { data: { item } }),
     { op: 'path', path: ['data'] }, 101), /thread/);
+});
+
+import { OperationStore } from '../../../lets/src/backlog/operation-store.ts';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+function rankedCandidate(number: number, priority: string, options: { owned?: boolean; blocked?: boolean; epic?: boolean } = {}) {
+  const content = candidatePage(`I${number}`, false, 'last').data.node.items.nodes[0].content;
+  content.number = number;
+  content.assignees.nodes = options.owned ? [{ id: 'U1', login: 'actor' }] : [];
+  content.assignees.totalCount = content.assignees.nodes.length;
+  for (const node of content.projectItems.nodes[0].fieldValues.nodes) {
+    if (node.field?.name === 'Priority') node.name = priority;
+    if (node.field?.name === 'Status') node.name = 'Todo';
+    if (node.field?.name === 'Kind' && options.epic) node.name = 'Epic';
+  }
+  content.blockedBy = { nodes: options.blocked ? [{ id: 'BLOCKER', state: 'OPEN' }] : [],
+    totalCount: options.blocked ? 1 : 0, pageInfo: { hasNextPage: false, endCursor: null } };
+  return { id: `PI${number}`, content };
+}
+function submitCandidates(nodes: ReturnType<typeof rankedCandidate>[]) {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/rank-candidates-');
+  try {
+    const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+    const action = issueAction({ contractVersion: 1, operation: 'candidate.list', context: {
+      cwd: '/repo', provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor',
+    }, input: {} }, definition, { name: 'local', binding: 'gh', options: {} }, {
+      toolArguments: [], allowedEffects: [], requiredCapabilities: [], timeoutMs: 1000, maxOutputBytes: 262144, acceptanceMs: 5000,
+    }, 100);
+    const output = [{ data: { viewer: { login: 'actor' }, node: { id: 'P1', items: { nodes,
+      totalCount: nodes.length, pageInfo: { hasNextPage: false, endCursor: 'last' } } } } }];
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action);
+    const result = store.submit(issued.continuation, submissionFor(action, output), 200);
+    assert.equal(result.state, 'complete');
+    if (!('result' in result)) throw new Error('ranked result required');
+    return result.result.items as { reference: string }[];
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+}
+test('submitted complete GitHub candidates use shared readiness ranking', () => {
+  const nodes = [rankedCandidate(2, 'Should'), rankedCandidate(11, 'Must', { owned: true }),
+    rankedCandidate(12, 'Must', { blocked: true }), rankedCandidate(13, 'Wont'),
+    rankedCandidate(14, 'Must', { epic: true }), rankedCandidate(7, 'Must'), rankedCandidate(3, 'Must')];
+  assert.deepEqual(submitCandidates(nodes).map((item) => item.reference), ['#3', '#7', '#2']);
+});
+test('closed GitHub issues cannot be selected from Todo Project items', () => {
+  const closed = rankedCandidate(1, 'Must');
+  closed.content.state = 'CLOSED';
+  assert.deepEqual(submitCandidates([closed, rankedCandidate(2, 'Should')]).map((item) => item.reference), ['#2']);
+});
+for (const fault of ['missing blockers', 'incomplete blockers', 'unknown blocker state', 'unknown issue state'] as const) {
+  test(`candidate readiness fails closed for ${fault}`, () => {
+    const candidate = rankedCandidate(1, 'Must', { blocked: true });
+    if (fault === 'missing blockers') delete candidate.content.blockedBy;
+    if (fault === 'incomplete blockers') candidate.content.blockedBy.pageInfo.hasNextPage = true;
+    if (fault === 'unknown blocker state') candidate.content.blockedBy.nodes[0].state = 'UNKNOWN';
+    if (fault === 'unknown issue state') candidate.content.state = 'UNKNOWN';
+    assert.throws(() => submitCandidates([candidate]), /missing|coverage|enum/);
+  });
+}
+test('closed blockers allow candidate selection', () => {
+  const candidate = rankedCandidate(1, 'Must', { blocked: true });
+  candidate.content.blockedBy.nodes[0].state = 'CLOSED';
+  assert.deepEqual(submitCandidates([candidate]).map((item) => item.reference), ['#1']);
 });

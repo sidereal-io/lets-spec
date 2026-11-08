@@ -120,6 +120,16 @@ operation. Output limits apply to the entire submitted page array, and a
 structured error on any page stops progression. A missing intermediate page
 cannot satisfy totalCount coverage.
 
+Candidate submissions include repository identity, native issue state and
+complete directional blocker facts (`blockers.complete` and scoped
+`blockers.open` identities). The shipped query validates every blockedBy
+connection and accepts only OPEN or CLOSED states. Core selection requires
+complete enumeration and applies shared readiness and ranking to open issues:
+unassigned Todo stories, bugs or chores with Must, Should or Could priority
+and no open blockers. Priority comes first, then the stable scoped issue order.
+Closed issues remain in enumeration observations but cannot be selected.
+Custom definitions must supply the same required facts.
+
 `item.read` accepts optional `includeThread`, default false. The `read` action
 reads the issue body, metadata, creation/edit times and parent identity without
 requesting comments. `includeThread: true` selects `read-thread`, which returns

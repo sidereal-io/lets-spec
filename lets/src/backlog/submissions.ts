@@ -6,6 +6,9 @@ import { object } from './protocol.ts';
 import { deriveResult, validateObservedScope } from './projections.ts';
 import type { Projection } from './projections.ts';
 import type { IssuedAction } from './actions.ts';
+import { readyWork } from './capabilities.ts';
+import type { Candidate } from './capabilities.ts';
+import { validateIdentity } from './protocol.ts';
 
 /** Submitted bytes are trusted observations, never independently authenticated. */
 export function validateSubmission(action: IssuedAction, value: unknown, projection: Projection,
@@ -98,6 +101,21 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
   const result = deriveResult(operation, projection, output,
     { ...action.request.context, input: action.request.input }, submission.normalized);
   const input = action.request.input as Record<string, unknown>;
+  if (operation === 'candidate.list') {
+    if (result.complete !== true)
+      throw new AdapterFailure('unknown_outcome', 'unknown', 'candidate selection requires complete enumeration');
+    for (const value of result.items as unknown[]) {
+      const item = object(value, 'candidate');
+      const blockers = object(item.blockers, 'candidate blockers');
+      if (item.repository !== action.request.context.repository || blockers.complete !== true || !Array.isArray(blockers.open))
+        throw new AdapterFailure('unknown_outcome', 'unknown', 'candidate repository or complete blocker facts missing');
+      for (const blocker of blockers.open) validateIdentity(blocker);
+      if (action.request.context.provider === 'github' && !['OPEN', 'CLOSED'].includes(item.state as string))
+        throw new AdapterFailure('unknown_outcome', 'unknown', 'candidate issue state is missing or unknown');
+    }
+    const candidates = result.items as (Candidate & { state?: string })[];
+    result.items = readyWork(candidates.filter((item) => action.request.context.provider !== 'github' || item.state === 'OPEN'), action.request.context.repository);
+  }
   if (operation === 'item.read') {
     const item = object(result.item, 'item');
     if (!isDeepStrictEqual(item.identity, input.item))
