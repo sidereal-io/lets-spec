@@ -1,3 +1,4 @@
+import { resourceKeys as scopedKeys } from './resource-keys.ts';
 import { acquireResourceLock } from './resource-lock.ts';
 import { object } from './protocol.ts';
 import { issueAction } from './actions.ts';
@@ -30,6 +31,7 @@ export type ActionResponse = {
   contractVersion: 1; operationId: string; workerId: string;
   state: 'action'; action: IssuedAction; continuation: Continuation;
 };
+export type BlockedResponse = { contractVersion: 1; operationId: string; workerId: string; state: 'needs-reconciliation'; reason: 'pending-mutation'; effects: 'unknown'; continuation: Continuation };
 export type CompleteResponse = { contractVersion: 1; operationId: string; workerId: string; state: 'complete' | 'needs-reconciliation'; result: Record<string, unknown>; continuation: Continuation };
 /** Durable per-operation facts coordinate one user's local worktrees. */
 export class OperationStore {
@@ -147,12 +149,19 @@ export class OperationStore {
         state: record.state === 'complete' ? 'complete' : 'needs-reconciliation', result: record.result!, continuation: record.continuation };
     });
   }
-  issue(action: IssuedAction, resourceKeys: string[]): ActionResponse {
+  issue(action: IssuedAction, aliases: string[] = []): ActionResponse | BlockedResponse {
+    const resourceKeys = [...new Set([...scopedKeys(action), ...aliases])].sort();
     return this.locked([`operation:${action.operationId}`, ...resourceKeys], () => {
       try {
         lstatSync(this.file(action.operationId));
         throw new AdapterFailure('conflict', 'none', 'operation already issued; use its continuation');
       } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+      for (const file of readdirSync(join(this.path, 'operations')).filter((name) => name.endsWith('.json'))) {
+        const pending = this.get(file.slice(0, -5));
+        if (pending.pending && pending.resourceKeys.some((key) => resourceKeys.includes(key)))
+          return { contractVersion: 1, operationId: pending.action.operationId, workerId: pending.action.workerId,
+            state: 'needs-reconciliation', reason: 'pending-mutation', effects: 'unknown', continuation: pending.continuation };
+      }
       const record: OperationRecord = {
         journalVersion: 1, action: structuredClone(action), resourceKeys: [...new Set(resourceKeys)].sort(),
         continuation: { operationId: action.operationId, token: randomUUID() },

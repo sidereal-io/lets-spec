@@ -124,3 +124,22 @@ for (const [name, owner, succeeds] of [
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 }
+
+import { submittedClaim } from './fixtures/submitted.ts';
+test('pending item mutation blocks a different worker in another worktree', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/shared-');
+  try {
+    const { action } = submittedClaim();
+    const store = new OperationStore(join(dir, 'private'));
+    const original = store.issue(action, []);
+    const { action: another } = submittedClaim();
+    another.request.context.cwd = '/another-worktree';
+    another.request.context.session = 'another-worker';
+    another.workerId = 'another-worker';
+    const blocked = new OperationStore(join(dir, 'private')).issue(another, []);
+    assert.equal(blocked.state, 'needs-reconciliation');
+    assert.equal(blocked.operationId, action.operationId);
+    assert.deepEqual(blocked.continuation, original.continuation);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
