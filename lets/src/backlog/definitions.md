@@ -161,6 +161,11 @@ Successful release consumes the original acquisition authority; a new operation
 cannot reuse that old token. Unknown release effects retain their reservation,
 and resume issues only verification reads. A sole original actor with Todo
 remains partial; missing ownership cannot authorize repeated cleanup writes.
+If branch creation fails and release cannot safely finish, report the branch
+error together with the release outcome. A blocked release identifies the
+unreleased acquisition, scoped item/repository and original release operation's
+read-only resume command. Retain this context rather than reporting the claim
+as released or repeating cleanup.
 
 `item.read` accepts optional `includeThread`, default false. The `read` action
 reads the issue body, metadata, creation/edit times and parent identity without

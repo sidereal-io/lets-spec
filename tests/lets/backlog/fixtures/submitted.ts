@@ -63,3 +63,51 @@ export function submittedPr(operation: 'pull-request.create' | 'pull-request.upd
       allowedEffects: [operation], requiredCapabilities: [], timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000,
     }, 100);
 }
+
+import type { OperationStore } from '../../../../lets/src/backlog/operation-store.ts';
+export function nativeClaimFixture() {
+  const base = submittedRead().action;
+  const steps = ['preflight', 'assign', 'read-assignment', 'status', 'verify', 'reset-status', 'read-before-unassign', 'unassign', 'verify-release'];
+  const definition = loadDefinition([{ source: 'fixture:native-claim', value: {
+    ...base.definition.definition, operations: { 'claim.acquire': { actions: Object.fromEntries(steps.map((step) => [step, {
+      bindings: { gh: { arguments: ['api', step], projection: { op: 'path', path: ['data'] } } },
+    }])) }, 'claim.release': { actions: Object.fromEntries(steps.map((step) => [step, {
+      bindings: { gh: { arguments: ['api', step], projection: { op: 'path', path: ['data'] } } },
+    }])) } },
+  } }]);
+  const action = issueAction({ contractVersion: 1, operation: 'claim.acquire', context: base.request.context,
+    input: { item: { provider: 'github', backlog: 'P1', id: 'I1' } } }, definition, base.connection, {
+    step: 'preflight', validationOperation: 'item.read', toolArguments: [], allowedEffects: [], requiredCapabilities: ['claims'],
+    timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000,
+  }, 100);
+  const item = { identity: { provider: 'github', backlog: 'P1', id: 'I1' }, reference: '#1', title: 'Story', body: '',
+    metadata: { Kind: 'Story', Priority: 'Must', Size: 'S', Status: 'Todo' }, owners: [], repository: 'R1',
+    blockers: { complete: true, open: [] }, state: 'OPEN', claimContext: {
+      actorId: 'U1', projectItemId: 'PI1', statusFieldId: 'F1', todoOptionId: 'TODO', inProgressOptionId: 'PROGRESS',
+      linkedBacklogs: ['P1'],
+    } };
+  return { action, item };
+}
+
+export function acquiredClaim(store: OperationStore) {
+  const { response, item, operationId } = pendingClaimVerification(store);
+  store.submit(response.continuation, submissionFor(response.action, { data: {
+    item: { ...item, owners: ['me'], metadata: { ...item.metadata, Status: 'In Progress' } },
+  } }), 103);
+  const release = issueAction({ ...response.action.request, operation: 'claim.release', input: { item: item.identity, token: operationId } },
+    response.action.definition, response.action.connection, { step: 'preflight', validationOperation: 'item.read',
+      toolArguments: [], allowedEffects: [], requiredCapabilities: ['claims'], timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000 }, 200);
+  return { item, release, operationId };
+}
+
+export function pendingClaimVerification(store: OperationStore) {
+  const { action, item } = nativeClaimFixture();
+  const issued = store.issue(action);
+  let response = store.submit(issued.continuation, submissionFor(action, { data: { item } }), 101);
+  for (const output of [{ valid: true, gaps: [] }, { item: { ...item, owners: ['me'] } }, { valid: true, gaps: [] }]) {
+    if (response.state !== 'action') throw new Error('claim action required');
+    response = store.submit(issued.continuation, submissionFor(response.action, { data: output }), 102);
+  }
+  if (response.state !== 'action') throw new Error('verification action required');
+  return { response, item, operationId: action.operationId };
+}

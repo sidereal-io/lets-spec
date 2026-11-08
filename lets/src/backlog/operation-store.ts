@@ -184,7 +184,13 @@ export class OperationStore {
           let next: IssuedAction | null;
           try { next = nextClaimAction(action, record.result, now) ?? nextPrAction(action, record.result, now); }
           catch (error) {
-            const failure = error instanceof AdapterFailure ? error : new AdapterFailure('unknown_outcome', 'unknown', String(error));
+            let failure = error instanceof AdapterFailure ? error : new AdapterFailure('unknown_outcome', 'unknown', String(error));
+            if (action.request.operation === 'claim.release') {
+              const input = action.request.input as { item: { id: string }; token: string };
+              failure = new AdapterFailure(failure.category, failure.effects,
+                `claim remains unreleased for acquisition ${input.token}; ${failure.message}; inspect current ownership and reconcile with lets backlog resume --operation-id ${action.operationId}; do not repeat cleanup blindly`,
+                { item: input.item.id, repository: action.request.context.repository });
+            }
             record.state = failure.effects === 'none' ? 'failed' : 'needs-reconciliation';
             record.pending = failure.effects !== 'none';
             this.write(record);

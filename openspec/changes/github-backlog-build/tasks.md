@@ -66,7 +66,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 4.3 [complex] Return a partial-claim recovery result when the assignment action succeeds but the bounded status action does not. (✓ node --test tests/lets/backlog/claims.test.ts tests/lets/backlog/cli.test.ts tests/lets/backlog/state.test.ts tests/lets/backlog/recovery.test.ts passed, 54 tests; tsc --noEmit passed)
 - [x] 4.4 [medium] Authorize work only after a fresh sole-owner/In Progress read for the recorded claim. (✓ node --test tests/lets/backlog/claims.test.ts tests/lets/backlog/recovery.test.ts tests/lets/backlog/state.test.ts tests/lets/backlog/cli.test.ts passed, 60 tests; tsc --noEmit passed)
 - [x] 4.5 [complex] Release only recorded claim state after fresh ownership checks before each cleanup write. (✓ node --test tests/lets/backlog/claims.test.ts tests/lets/backlog/cli.test.ts tests/lets/backlog/recovery.test.ts tests/lets/backlog/state.test.ts passed, 66 tests; pnpm test:backlog passed, 329 tests; tsc --noEmit passed)
-- [ ] 4.6 [medium] Return explicit recovery when branch-creation failure cannot safely release its newly acquired claim. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [x] 4.6 [medium] Return explicit recovery when branch-creation failure cannot safely release its newly acquired claim. (✓ node --test tests/lets/backlog/recovery.test.ts tests/lets/backlog/claims.test.ts passed, 39 tests; tsc --noEmit passed)
 - [ ] 4.7 [medium] Return named uncertain/unavailable claim results and report the release outcome with branch failure. (verify: bats tests/skill-interfaces.bats)
 
 ## 5. Resume and retained completion contract [depends-on: 4]

@@ -97,6 +97,32 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { OperationStore } from '../../../lets/src/backlog/operation-store.ts';
 import { submittedClaim, submissionFor } from './fixtures/submitted.ts';
+import { acquiredClaim } from './fixtures/submitted.ts';
+import { AdapterFailure } from '../../../lets/src/backlog/errors.ts';
+test('branch failure retains explicit recovery when claim release is blocked', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/branch-release-recovery-');
+  try {
+    const store = new OperationStore(join(dir, 'private'));
+    const { item, release, operationId } = acquiredClaim(store);
+    const issued = store.issue(release);
+    if (issued.state !== 'action') throw new Error('release preflight required');
+    assert.throws(() => store.submit(issued.continuation, submissionFor(issued.action, { data: {
+      item: { ...item, owners: ['other'], metadata: { ...item.metadata, Status: 'In Progress' } },
+    } }), 201), (error: unknown) => {
+      assert.ok(error instanceof AdapterFailure);
+      assert.match(error.message, /claim remains unreleased/);
+      assert.ok(error.message.includes(operationId));
+      assert.ok(error.message.includes(`lets backlog resume --operation-id ${release.operationId}`));
+      assert.deepEqual(error.knownRemoteIds, { item: 'I1', repository: 'R1' });
+      return true;
+    });
+    const resumed = store.resume(release.operationId, 300);
+    assert.deepEqual(resumed.action.allowedEffects, []);
+    assert.equal(resumed.action.request.operation, 'claim.release');
+    assert.equal(store.get(operationId).result?.claim !== undefined, true);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
 test('uncertain claim resumes through a fresh read of original scope', () => {
   mkdirSync('.workspace', { recursive: true });
   const dir = mkdtempSync('.workspace/reconcile-');
