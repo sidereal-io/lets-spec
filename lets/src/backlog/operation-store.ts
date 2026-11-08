@@ -1,3 +1,4 @@
+import { issueAction } from './actions.ts';
 import { isDeepStrictEqual } from 'node:util';
 import { validateSubmission } from './submissions.ts';
 import { closeSync, constants, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync,
@@ -13,6 +14,8 @@ export type Continuation = { operationId: string; token: string };
 export type OperationRecord = {
   journalVersion: 1;
   action: IssuedAction;
+  originalAction?: IssuedAction;
+  reconciling?: boolean;
   resourceKeys: string[];
   continuation: Continuation;
   state: 'issued' | 'complete' | 'failed' | 'needs-reconciliation';
@@ -25,7 +28,7 @@ export type ActionResponse = {
   contractVersion: 1; operationId: string; workerId: string;
   state: 'action'; action: IssuedAction; continuation: Continuation;
 };
-export type CompleteResponse = { contractVersion: 1; operationId: string; workerId: string; state: 'complete'; result: Record<string, unknown>; continuation: Continuation };
+export type CompleteResponse = { contractVersion: 1; operationId: string; workerId: string; state: 'complete' | 'needs-reconciliation'; result: Record<string, unknown>; continuation: Continuation };
 /** Durable per-operation facts coordinate one user's local worktrees. */
 export class OperationStore {
   readonly path: string;
@@ -77,6 +80,31 @@ export class OperationStore {
       }
     }
   }
+  resume(id: string, now: number): ActionResponse {
+    const initial = this.get(id);
+    return this.locked([`operation:${id}`, ...initial.resourceKeys], () => {
+      const record = this.get(id);
+      const original = record.originalAction ?? record.action;
+      if (record.state === 'complete') throw new AdapterFailure('conflict', 'none', 'operation already resolved');
+      if (!['claim.acquire', 'claim.release'].includes(original.request.operation))
+        throw new AdapterFailure('unsupported', 'unknown', 'original operation needs a supported bounded reconciliation read');
+      const mapping = original.definition.definition.operations['claim.read']?.actions.read?.bindings[original.connection.binding];
+      if (!mapping) throw new AdapterFailure('unsupported', 'unknown', 'original definition must provide claim.read for reconciliation');
+      const action = issueAction({ ...original.request, operation: 'claim.read', input: { item: (original.request.input as { item: import('./protocol.ts').Identity }).item } },
+        original.definition, original.connection, { step: 'read', toolArguments: mapping.arguments,
+          allowedEffects: [], requiredCapabilities: original.requiredCapabilities,
+          ...original.limits, acceptanceMs: original.expiresAt - original.issuedAt }, now,
+        { operationId: original.operationId });
+      if (original.mutationId) action.mutationId = original.mutationId;
+      record.originalAction = original;
+      record.reconciling = true;
+      record.action = action;
+      record.state = 'issued';
+      this.write(record);
+      return { contractVersion: 1, operationId: id, workerId: action.workerId, state: 'action', action,
+        continuation: record.continuation };
+    });
+  }
   submit(continuation: Continuation, submission: unknown, now: number): CompleteResponse {
     const initial = this.get(continuation.operationId);
     return this.locked([`operation:${continuation.operationId}`, ...initial.resourceKeys], () => {
@@ -93,12 +121,21 @@ export class OperationStore {
         record.result = validateSubmission(action, submission, mapping.projection, now);
         record.attempts.push({ receivedAt: now, submission: structuredClone(submission), accepted: true });
         record.acceptedSubmission = structuredClone(submission);
-        record.state = 'complete';
-        record.pending = false;
+        if (record.reconciling) {
+          const origin = record.originalAction!;
+          const claim = record.result.claim as Record<string, unknown>;
+          const applied = origin.request.operation === 'claim.acquire' && claim.actor === origin.request.context.actor && claim.status === 'In Progress';
+          record.result = { observation: record.result, reconciliation: applied ? 'applied' : 'unresolved', reservationCleared: applied };
+          record.state = applied ? 'complete' : 'needs-reconciliation';
+          record.pending = !applied;
+        } else {
+          record.state = 'complete';
+          record.pending = false;
+        }
         this.write(record);
       }
       return { contractVersion: 1, operationId: record.action.operationId, workerId: record.action.workerId,
-        state: 'complete', result: record.result!, continuation: record.continuation };
+        state: record.state === 'complete' ? 'complete' : 'needs-reconciliation', result: record.result!, continuation: record.continuation };
     });
   }
   issue(action: IssuedAction, resourceKeys: string[]): ActionResponse {

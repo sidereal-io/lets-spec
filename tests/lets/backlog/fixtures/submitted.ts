@@ -24,3 +24,24 @@ export function submittedRead() {
   };
   return { action, submission, projection: { op: 'path' as const, path: ['data'] } };
 }
+export function submittedClaim() {
+  const { action: read } = submittedRead();
+  const definition = loadDefinition([{ source: 'fixture:github', value: {
+    ...read.definition.definition,
+    operations: { 'claim.read': { actions: { read: { bindings: {
+      gh: { arguments: ['api', 'graphql', 'read-ownership'], projection: { op: 'path', path: ['data'] } },
+    } } } } },
+  } }]);
+  const action = issueAction({ contractVersion: 1, operation: 'claim.acquire', context: read.request.context,
+    input: { item: { provider: 'github', backlog: 'P1', id: 'I1' } } }, definition, read.connection, {
+    step: 'assign', toolArguments: ['api', 'graphql', 'assign'], allowedEffects: ['assignment'],
+    requiredCapabilities: ['claims'], timeoutMs: 1000, maxOutputBytes: 4096, acceptanceMs: 5000,
+  }, 100);
+  return { action };
+}
+export function submissionFor(action: ReturnType<typeof issueAction>, output: unknown) {
+  return { contractVersion: 1, operationId: action.operationId, actionId: action.actionId,
+    attemptId: action.attemptId, inputDigest: action.inputDigest, definitionDigest: action.definition.digest,
+    connectionDigest: action.connection.digest, context: action.request.context, tool: action.tool,
+    execution: { outcome: 'success', exitCode: 0 }, output };
+}

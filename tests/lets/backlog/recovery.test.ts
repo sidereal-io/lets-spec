@@ -92,3 +92,28 @@ for (const phase of ['before', 'after']) {
     );
   });
 }
+
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { OperationStore } from '../../../lets/src/backlog/operation-store.ts';
+import { submittedClaim, submissionFor } from './fixtures/submitted.ts';
+test('uncertain claim resumes through a fresh read of original scope', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/reconcile-');
+  try {
+    const { action } = submittedClaim();
+    const store = new OperationStore(join(dir, 'private'));
+    store.issue(action, ['item:R1:P1:I1']);
+    const resumed = new OperationStore(join(dir, 'private')).resume(action.operationId, 6000);
+    assert.equal(resumed.state, 'action');
+    assert.deepEqual(resumed.action.allowedEffects, []);
+    assert.equal(resumed.action.operationId, action.operationId);
+    assert.notEqual(resumed.action.actionId, action.actionId);
+    assert.equal(resumed.action.request.operation, 'claim.read');
+    const confirmed = store.submit(resumed.continuation, submissionFor(resumed.action, { data: { claim: {
+      actor: 'me', session: null, token: null, status: 'In Progress', guarantee: 'best-effort',
+    } } }), 6100);
+    assert.equal(confirmed.result.reconciliation, 'applied');
+    assert.equal(store.get(action.operationId).pending, false);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
