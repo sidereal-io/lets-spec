@@ -1,5 +1,5 @@
 import { nextPrAction, prAction, reconcilePrCreation, reconcilePrUpdate, reconcilePrReady } from './pr-actions.ts';
-import { nextClaimAction, claimAction, reconcileClaimAcquisition } from './claim-actions.ts';
+import { nextClaimAction, claimAction, reconcileClaimAcquisition, reconcileClaimRelease } from './claim-actions.ts';
 import { projectArguments } from './projections.ts';
 import { resourceKeys as scopedKeys, coordinationKeys } from './resource-keys.ts';
 import { acquireResourceLock } from './resource-lock.ts';
@@ -90,6 +90,8 @@ export class OperationStore {
       } else if (original.request.operation === 'claim.acquire' &&
           original.definition.definition.operations['claim.acquire']?.actions.preflight) {
         action = claimAction(original, 'verify', now);
+      } else if (original.request.operation === 'claim.release' && original.claimState) {
+        action = claimAction(original, 'verify-release', now);
       } else {
         if (!['claim.acquire', 'claim.release'].includes(original.request.operation))
           throw new AdapterFailure('unsupported', 'unknown', 'original operation needs a supported bounded reconciliation read');
@@ -168,6 +170,8 @@ export class OperationStore {
           else if (origin.request.operation === 'pull-request.ready') reconciliation = reconcilePrReady(origin, record.result);
           else if (origin.request.operation === 'claim.acquire' && origin.definition.definition.operations['claim.acquire']?.actions.preflight)
             reconciliation = reconcileClaimAcquisition(origin, record.result);
+          else if (origin.request.operation === 'claim.release' && origin.claimState)
+            reconciliation = reconcileClaimRelease(origin, record.result);
           else {
             const claim = record.result.claim as Record<string, unknown>;
             reconciliation = origin.request.operation === 'claim.acquire' && claim.actor === origin.request.context.actor && claim.status === 'In Progress' ? 'applied' : 'unresolved';
@@ -209,12 +213,27 @@ export class OperationStore {
   issue(action: IssuedAction, aliases: string[] = []): ActionResponse | BlockedResponse {
     const resourceKeys = [...new Set([...scopedKeys(action), ...aliases])].sort();
     return this.locked([`operation:${action.operationId}`, ...resourceKeys, ...coordinationKeys(action)], () => {
+      if (action.request.operation === 'claim.release') {
+        const input = action.request.input as { item: unknown; token: string };
+        const acquisition = this.get(input.token);
+        const origin = acquisition.originalAction ?? acquisition.action;
+        requireOriginalWorker(acquisition, action.request.context);
+        if (origin.request.operation !== 'claim.acquire' || acquisition.pending || acquisition.state !== 'complete' ||
+            !isDeepStrictEqual((origin.request.input as { item: unknown }).item, input.item) ||
+            origin.definition.digest !== action.definition.digest || origin.connection.digest !== action.connection.digest || !origin.claimState)
+          throw new AdapterFailure('conflict', 'none', 'release requires a resolved matching original acquisition, definition and connection; reconcile outstanding effects first');
+        action = claimAction(action, 'preflight', action.issuedAt, origin.claimState);
+      }
       try {
         lstatSync(this.file(action.operationId));
         throw new AdapterFailure('conflict', 'none', 'operation already issued; use its continuation');
       } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
       for (const file of readdirSync(join(this.path, 'operations')).filter((name) => name.endsWith('.json'))) {
         const pending = this.get(file.slice(0, -5));
+        if (action.request.operation === 'claim.release' && pending.action.request.operation === 'claim.release' &&
+            (pending.action.request.input as { token: string }).token === (action.request.input as { token: string }).token &&
+            pending.state === 'complete' && (pending.result?.released === true || pending.result?.reconciliation === 'applied'))
+          throw new AdapterFailure('conflict', 'none', 'original acquisition was already released; old release authority cannot be reused');
         if (pending.pending && pending.resourceKeys.some((key) => resourceKeys.includes(key)))
           return { contractVersion: 1, operationId: pending.action.operationId, workerId: pending.action.workerId,
             state: 'needs-reconciliation', reason: 'pending-mutation', effects: 'unknown', continuation: pending.continuation };
@@ -222,7 +241,7 @@ export class OperationStore {
       const record: OperationRecord = {
         journalVersion: 1, action: structuredClone(action), resourceKeys: [...new Set(resourceKeys)].sort(),
         continuation: { operationId: action.operationId, token: randomUUID() },
-        state: 'issued', pending: action.allowedEffects.length > 0 || ['claim.acquire', 'pull-request.create', 'pull-request.update', 'pull-request.ready'].includes(action.request.operation), attempts: [],
+        state: 'issued', pending: action.allowedEffects.length > 0 || ['claim.acquire', 'claim.release', 'pull-request.create', 'pull-request.update', 'pull-request.ready'].includes(action.request.operation), attempts: [],
       };
       this.write(record);
       return { contractVersion: 1, operationId: action.operationId, workerId: action.workerId,

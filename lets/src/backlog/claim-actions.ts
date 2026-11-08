@@ -9,16 +9,18 @@ import { projectArguments } from './projections.ts';
 export function claimAction(origin: IssuedAction, step: string, now: number, claimState = origin.claimState): IssuedAction {
   const operation = origin.request.operation;
   if (step === 'preflight')
-    for (const required of ['preflight', 'assign', 'read-assignment', 'status', 'verify'])
+    for (const required of operation === 'claim.release'
+      ? ['preflight', 'reset-status', 'read-before-unassign', 'unassign', 'verify-release']
+      : ['preflight', 'assign', 'read-assignment', 'status', 'verify'])
       if (!origin.definition.definition.operations[operation]?.actions[required]?.bindings[origin.connection.binding])
         throw new AdapterFailure('unsupported', 'none', `selected definition must map ${operation}/${required} before issuance`);
   const mapping = origin.definition.definition.operations[operation]?.actions[step]?.bindings[origin.connection.binding];
   if (!mapping) throw new AdapterFailure('unsupported', 'none', `selected definition does not map ${operation}/${step}`);
-  const writing = ['assign', 'status'].includes(step);
+  const writing = ['assign', 'status', 'reset-status', 'unassign'].includes(step);
   const action = issueAction(origin.request, origin.definition, origin.connection, {
     step, claimState, validationOperation: writing ? 'backlog.check' : 'item.read',
     toolArguments: projectArguments(mapping.arguments, origin.request.input, { ...origin.request.context, claim: claimState }),
-    allowedEffects: writing ? [step === 'assign' ? 'assignment' : 'status'] : [],
+    allowedEffects: writing ? [['assign', 'unassign'].includes(step) ? 'assignment' : 'status'] : [],
     requiredCapabilities: ['claims'], ...origin.limits, acceptanceMs: origin.expiresAt - origin.issuedAt,
   }, now, { operationId: origin.operationId, mutationId: origin.mutationId });
   if (origin.mutationId) action.mutationId = origin.mutationId;
@@ -26,6 +28,7 @@ export function claimAction(origin: IssuedAction, step: string, now: number, cla
 }
 
 export function nextClaimAction(action: IssuedAction, result: Record<string, unknown>, now: number): IssuedAction | null {
+  if (action.request.operation === 'claim.release') return nextReleaseAction(action, result, now);
   if (action.request.operation !== 'claim.acquire' || !['preflight', 'assign', 'read-assignment', 'status', 'verify'].includes(action.step)) return null;
   if (action.step === 'preflight') {
     const item = object(result.item, 'claim item');
@@ -72,6 +75,35 @@ export function nextClaimAction(action: IssuedAction, result: Record<string, unk
   return null;
 }
 
+function nextReleaseAction(action: IssuedAction, result: Record<string, unknown>, now: number): IssuedAction | null {
+  const changed = action.step !== 'preflight';
+  if (!action.claimState)
+    throw new AdapterFailure('conflict', 'none', 'release requires recorded acquisition state');
+  if (['preflight', 'read-before-unassign'].includes(action.step)) {
+    const item = object(result.item, 'release item');
+    const owners = item.owners as string[];
+    const status = object(item.metadata, 'metadata').Status;
+    if (owners.length !== 1 || owners[0] !== action.request.context.actor ||
+        !['Todo', 'In Progress'].includes(status as string) || (action.step === 'read-before-unassign' && status !== 'Todo'))
+      throw new AdapterFailure('conflict', changed ? 'partial' : 'none', 'release ownership or status changed; no cleanup write authorized');
+    return claimAction(action, action.step === 'preflight'
+      ? status === 'In Progress' ? 'reset-status' : 'read-before-unassign' : 'unassign', now);
+  }
+  if (['reset-status', 'unassign'].includes(action.step)) {
+    if (result.valid !== true)
+      throw new AdapterFailure('unknown_outcome', 'partial', 'release response is unconfirmed; reconcile original release');
+    return claimAction(action, action.step === 'reset-status' ? 'read-before-unassign' : 'verify-release', now);
+  }
+  if (action.step !== 'verify-release')
+    throw new AdapterFailure('unsupported', 'unknown', 'unknown release stage');
+  const item = object(result.item, 'released item');
+  if ((item.owners as string[]).length || object(item.metadata, 'metadata').Status !== 'Todo')
+    throw new AdapterFailure('unknown_outcome', 'partial', 'fresh read does not confirm release; reconcile original operation');
+  delete result.item;
+  result.released = true;
+  return null;
+}
+
 export function reconcileClaimAcquisition(origin: IssuedAction, result: Record<string, unknown>): 'applied' | 'absent' | 'partial' | 'unresolved' {
   if (origin.step === 'preflight') return 'absent';
   const item = object(result.item, 'claim reconciliation item');
@@ -80,5 +112,17 @@ export function reconcileClaimAcquisition(origin: IssuedAction, result: Record<s
   if (owners.length === 1 && owners[0] === origin.request.context.actor)
     return status === 'In Progress' ? 'applied' : status === 'Todo' ? 'partial' : 'unresolved';
   // An issued mutation cannot be proven absent merely by an empty assignee set.
+  return 'unresolved';
+}
+
+export function reconcileClaimRelease(origin: IssuedAction, result: Record<string, unknown>): 'applied' | 'absent' | 'partial' | 'unresolved' {
+  if (origin.step === 'preflight') return 'absent';
+  const item = object(result.item, 'release reconciliation item');
+  const owners = item.owners as string[];
+  const status = object(item.metadata, 'metadata').Status;
+  if (status === 'Todo') {
+    if (owners.length === 0) return 'applied';
+    if (owners.length === 1 && owners[0] === origin.request.context.actor) return 'partial';
+  }
   return 'unresolved';
 }

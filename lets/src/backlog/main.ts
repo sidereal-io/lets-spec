@@ -89,7 +89,7 @@ async function run(operation: string, options: Options): Promise<void> {
         (config.backlog !== undefined && request.context.backlog !== config.backlog))
       throw new AdapterFailure('invalid_request', 'none', 'request scope differs from selected repository/backlog');
     const prWrite = ['pull-request.create', 'pull-request.update', 'pull-request.ready'].includes(operation);
-    const claimWrite = operation === 'claim.acquire';
+    const claimWrite = ['claim.acquire', 'claim.release'].includes(operation);
     if (MUTATIONS.includes(operation) && !prWrite && !claimWrite) throw new AdapterFailure('unsupported', 'none', 'production mutation sequencing is not available yet');
     const relationshipKind = (request.input as { kind?: string }).kind;
     const step = operation === 'relationship.list' && relationshipKind !== 'blocked_by' ? `read-${relationshipKind}` : prWrite || claimWrite ? 'preflight' : operation === 'pull-request.read' && (request.input as { branch?: string }).branch !== undefined ? 'read-branch' : operation === 'item.read' && (request.input as { includeThread?: boolean }).includeThread === true ? 'read-thread' : 'read';

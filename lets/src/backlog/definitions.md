@@ -150,6 +150,18 @@ resolves applied effects; a sole-owner Todo item remains partial. Empty or
 conflicting ownership cannot prove an issued write absent. Once reconciliation
 clears a reservation, the caller must still check fresh work authority.
 
+`claim.release` requires the resolved original acquisition record named by its
+token, matching original worker provenance and the recorded definition and
+connection. It maps `preflight`, `reset-status`, `read-before-unassign`,
+`unassign` and `verify-release`. Before resetting In Progress to Todo, a fresh
+read must show only the original actor. Before removing that actor, another
+fresh read must still show sole ownership and Todo. A conflicting actor or
+status stops cleanup. Final verification requires no assignees and Todo.
+Successful release consumes the original acquisition authority; a new operation
+cannot reuse that old token. Unknown release effects retain their reservation,
+and resume issues only verification reads. A sole original actor with Todo
+remains partial; missing ownership cannot authorize repeated cleanup writes.
+
 `item.read` accepts optional `includeThread`, default false. The `read` action
 reads the issue body, metadata, creation/edit times and parent identity without
 requesting comments. `includeThread: true` selects `read-thread`, which returns

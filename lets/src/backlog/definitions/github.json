@@ -8239,6 +8239,2428 @@
           }
         }
       }
+    },
+    "claim.release": {
+      "actions": {
+        "preflight": {
+          "bindings": {
+            "gh": {
+              "arguments": {
+                "op": "array",
+                "values": [
+                  {
+                    "op": "literal",
+                    "value": "api"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "graphql"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "query=query($id:ID!){viewer{login} node(id:$id){... on Issue{id number title body url state createdAt lastEditedAt parent{id} repository{id name owner{login}} assignees(first:100){nodes{id login}totalCount pageInfo{hasNextPage endCursor}}projectItems(first:100){nodes{id project{id number title}fieldValues(first:100){nodes{__typename ... on ProjectV2ItemFieldSingleSelectValue{name optionId field{... on ProjectV2SingleSelectField{id name}}}}pageInfo{hasNextPage endCursor}}}pageInfo{hasNextPage endCursor}}}}}"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "id=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "item",
+                        "id"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "projection": {
+                "op": "object",
+                "fields": {
+                  "item": {
+                    "op": "at",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "data",
+                        "node"
+                      ]
+                    },
+                    "value": {
+                      "op": "object",
+                      "fields": {
+                        "identity": {
+                          "op": "object",
+                          "fields": {
+                            "provider": {
+                              "op": "literal",
+                              "value": "github"
+                            },
+                            "backlog": {
+                              "op": "scope",
+                              "path": [
+                                "backlog"
+                              ]
+                            },
+                            "id": {
+                              "op": "path",
+                              "path": [
+                                "id"
+                              ]
+                            }
+                          }
+                        },
+                        "reference": {
+                          "op": "text",
+                          "source": {
+                            "op": "path",
+                            "path": [
+                              "number"
+                            ]
+                          },
+                          "prefix": "#"
+                        },
+                        "url": {
+                          "op": "path",
+                          "path": [
+                            "url"
+                          ]
+                        },
+                        "title": {
+                          "op": "path",
+                          "path": [
+                            "title"
+                          ]
+                        },
+                        "body": {
+                          "op": "path",
+                          "path": [
+                            "body"
+                          ]
+                        },
+                        "metadata": {
+                          "op": "object",
+                          "fields": {
+                            "Kind": {
+                              "op": "at",
+                              "source": {
+                                "op": "select",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "projectItems"
+                                    ]
+                                  }
+                                },
+                                "path": [
+                                  "project",
+                                  "id"
+                                ],
+                                "equals": {
+                                  "op": "scope",
+                                  "path": [
+                                    "backlog"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "at",
+                                "source": {
+                                  "op": "select",
+                                  "source": {
+                                    "op": "map",
+                                    "source": {
+                                      "op": "connection",
+                                      "source": {
+                                        "op": "path",
+                                        "path": [
+                                          "fieldValues"
+                                        ]
+                                      }
+                                    },
+                                    "value": {
+                                      "op": "nullable",
+                                      "source": {
+                                        "op": "path",
+                                        "path": []
+                                      },
+                                      "value": {
+                                        "op": "union",
+                                        "source": {
+                                          "op": "path",
+                                          "path": []
+                                        },
+                                        "tag": [
+                                          "__typename"
+                                        ],
+                                        "cases": {
+                                          "ProjectV2ItemFieldUserValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldRepositoryValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldPullRequestValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldTextValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldDateValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldIterationValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldLabelValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldMilestoneValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldNumberValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldReviewerValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldSingleSelectValue": {
+                                            "op": "object",
+                                            "fields": {
+                                              "field": {
+                                                "op": "path",
+                                                "path": [
+                                                  "field",
+                                                  "name"
+                                                ]
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": [
+                                                  "name"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "path": [
+                                    "field"
+                                  ],
+                                  "equals": {
+                                    "op": "literal",
+                                    "value": "Kind"
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "value"
+                                  ]
+                                }
+                              }
+                            },
+                            "Priority": {
+                              "op": "at",
+                              "source": {
+                                "op": "select",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "projectItems"
+                                    ]
+                                  }
+                                },
+                                "path": [
+                                  "project",
+                                  "id"
+                                ],
+                                "equals": {
+                                  "op": "scope",
+                                  "path": [
+                                    "backlog"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "at",
+                                "source": {
+                                  "op": "select",
+                                  "source": {
+                                    "op": "map",
+                                    "source": {
+                                      "op": "connection",
+                                      "source": {
+                                        "op": "path",
+                                        "path": [
+                                          "fieldValues"
+                                        ]
+                                      }
+                                    },
+                                    "value": {
+                                      "op": "nullable",
+                                      "source": {
+                                        "op": "path",
+                                        "path": []
+                                      },
+                                      "value": {
+                                        "op": "union",
+                                        "source": {
+                                          "op": "path",
+                                          "path": []
+                                        },
+                                        "tag": [
+                                          "__typename"
+                                        ],
+                                        "cases": {
+                                          "ProjectV2ItemFieldUserValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldRepositoryValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldPullRequestValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldTextValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldDateValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldIterationValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldLabelValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldMilestoneValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldNumberValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldReviewerValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldSingleSelectValue": {
+                                            "op": "object",
+                                            "fields": {
+                                              "field": {
+                                                "op": "path",
+                                                "path": [
+                                                  "field",
+                                                  "name"
+                                                ]
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": [
+                                                  "name"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "path": [
+                                    "field"
+                                  ],
+                                  "equals": {
+                                    "op": "literal",
+                                    "value": "Priority"
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "value"
+                                  ]
+                                }
+                              }
+                            },
+                            "Size": {
+                              "op": "at",
+                              "source": {
+                                "op": "select",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "projectItems"
+                                    ]
+                                  }
+                                },
+                                "path": [
+                                  "project",
+                                  "id"
+                                ],
+                                "equals": {
+                                  "op": "scope",
+                                  "path": [
+                                    "backlog"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "at",
+                                "source": {
+                                  "op": "select",
+                                  "source": {
+                                    "op": "map",
+                                    "source": {
+                                      "op": "connection",
+                                      "source": {
+                                        "op": "path",
+                                        "path": [
+                                          "fieldValues"
+                                        ]
+                                      }
+                                    },
+                                    "value": {
+                                      "op": "nullable",
+                                      "source": {
+                                        "op": "path",
+                                        "path": []
+                                      },
+                                      "value": {
+                                        "op": "union",
+                                        "source": {
+                                          "op": "path",
+                                          "path": []
+                                        },
+                                        "tag": [
+                                          "__typename"
+                                        ],
+                                        "cases": {
+                                          "ProjectV2ItemFieldUserValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldRepositoryValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldPullRequestValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldTextValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldDateValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldIterationValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldLabelValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldMilestoneValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldNumberValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldReviewerValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldSingleSelectValue": {
+                                            "op": "object",
+                                            "fields": {
+                                              "field": {
+                                                "op": "path",
+                                                "path": [
+                                                  "field",
+                                                  "name"
+                                                ]
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": [
+                                                  "name"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "path": [
+                                    "field"
+                                  ],
+                                  "equals": {
+                                    "op": "literal",
+                                    "value": "Size"
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "value"
+                                  ]
+                                }
+                              }
+                            },
+                            "Status": {
+                              "op": "at",
+                              "source": {
+                                "op": "select",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "projectItems"
+                                    ]
+                                  }
+                                },
+                                "path": [
+                                  "project",
+                                  "id"
+                                ],
+                                "equals": {
+                                  "op": "scope",
+                                  "path": [
+                                    "backlog"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "at",
+                                "source": {
+                                  "op": "select",
+                                  "source": {
+                                    "op": "map",
+                                    "source": {
+                                      "op": "connection",
+                                      "source": {
+                                        "op": "path",
+                                        "path": [
+                                          "fieldValues"
+                                        ]
+                                      }
+                                    },
+                                    "value": {
+                                      "op": "nullable",
+                                      "source": {
+                                        "op": "path",
+                                        "path": []
+                                      },
+                                      "value": {
+                                        "op": "union",
+                                        "source": {
+                                          "op": "path",
+                                          "path": []
+                                        },
+                                        "tag": [
+                                          "__typename"
+                                        ],
+                                        "cases": {
+                                          "ProjectV2ItemFieldUserValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldRepositoryValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldPullRequestValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldTextValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldDateValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldIterationValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldLabelValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldMilestoneValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldNumberValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldReviewerValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldSingleSelectValue": {
+                                            "op": "object",
+                                            "fields": {
+                                              "field": {
+                                                "op": "path",
+                                                "path": [
+                                                  "field",
+                                                  "name"
+                                                ]
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": [
+                                                  "name"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "path": [
+                                    "field"
+                                  ],
+                                  "equals": {
+                                    "op": "literal",
+                                    "value": "Status"
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "value"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "owners": {
+                          "op": "map",
+                          "source": {
+                            "op": "connection",
+                            "source": {
+                              "op": "path",
+                              "path": [
+                                "assignees"
+                              ]
+                            }
+                          },
+                          "value": {
+                            "op": "path",
+                            "path": [
+                              "login"
+                            ]
+                          }
+                        },
+                        "createdAt": {
+                          "op": "path",
+                          "path": [
+                            "createdAt"
+                          ]
+                        },
+                        "lastEditedAt": {
+                          "op": "path",
+                          "path": [
+                            "lastEditedAt"
+                          ]
+                        },
+                        "parent": {
+                          "op": "nullable",
+                          "source": {
+                            "op": "path",
+                            "path": [
+                              "parent"
+                            ]
+                          },
+                          "value": {
+                            "op": "object",
+                            "fields": {
+                              "provider": {
+                                "op": "literal",
+                                "value": "github"
+                              },
+                              "backlog": {
+                                "op": "scope",
+                                "path": [
+                                  "backlog"
+                                ]
+                              },
+                              "id": {
+                                "op": "path",
+                                "path": [
+                                  "id"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "observations": {
+                "actor": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "viewer",
+                    "login"
+                  ]
+                },
+                "repository": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "repository",
+                    "id"
+                  ]
+                },
+                "item": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "id"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "reset-status": {
+          "bindings": {
+            "gh": {
+              "arguments": {
+                "op": "array",
+                "values": [
+                  {
+                    "op": "literal",
+                    "value": "api"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "graphql"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "query=mutation($project:ID!,$item:ID!,$field:ID!,$option:String!){status:updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{singleSelectOptionId:$option}}){projectV2Item{id content{... on Issue{id repository{id}}}}}}"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "project=",
+                    "source": {
+                      "op": "scope",
+                      "path": [
+                        "backlog"
+                      ]
+                    }
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "item=",
+                    "source": {
+                      "op": "scope",
+                      "path": [
+                        "claim",
+                        "projectItemId"
+                      ]
+                    }
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "field=",
+                    "source": {
+                      "op": "scope",
+                      "path": [
+                        "claim",
+                        "statusFieldId"
+                      ]
+                    }
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "option=",
+                    "source": {
+                      "op": "scope",
+                      "path": [
+                        "claim",
+                        "todoOptionId"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "projection": {
+                "op": "object",
+                "fields": {
+                  "valid": {
+                    "op": "literal",
+                    "value": true
+                  },
+                  "gaps": {
+                    "op": "array",
+                    "values": []
+                  }
+                }
+              },
+              "observations": {
+                "item": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "status",
+                    "projectV2Item",
+                    "content",
+                    "id"
+                  ]
+                },
+                "repository": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "status",
+                    "projectV2Item",
+                    "content",
+                    "repository",
+                    "id"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "read-before-unassign": {
+          "bindings": {
+            "gh": {
+              "arguments": {
+                "op": "array",
+                "values": [
+                  {
+                    "op": "literal",
+                    "value": "api"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "graphql"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "query=query($id:ID!){viewer{login} node(id:$id){... on Issue{id number title body url state createdAt lastEditedAt parent{id} repository{id name owner{login}} assignees(first:100){nodes{id login}totalCount pageInfo{hasNextPage endCursor}}projectItems(first:100){nodes{id project{id number title}fieldValues(first:100){nodes{__typename ... on ProjectV2ItemFieldSingleSelectValue{name optionId field{... on ProjectV2SingleSelectField{id name}}}}pageInfo{hasNextPage endCursor}}}pageInfo{hasNextPage endCursor}}}}}"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "id=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "item",
+                        "id"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "projection": {
+                "op": "object",
+                "fields": {
+                  "item": {
+                    "op": "at",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "data",
+                        "node"
+                      ]
+                    },
+                    "value": {
+                      "op": "object",
+                      "fields": {
+                        "identity": {
+                          "op": "object",
+                          "fields": {
+                            "provider": {
+                              "op": "literal",
+                              "value": "github"
+                            },
+                            "backlog": {
+                              "op": "scope",
+                              "path": [
+                                "backlog"
+                              ]
+                            },
+                            "id": {
+                              "op": "path",
+                              "path": [
+                                "id"
+                              ]
+                            }
+                          }
+                        },
+                        "reference": {
+                          "op": "text",
+                          "source": {
+                            "op": "path",
+                            "path": [
+                              "number"
+                            ]
+                          },
+                          "prefix": "#"
+                        },
+                        "url": {
+                          "op": "path",
+                          "path": [
+                            "url"
+                          ]
+                        },
+                        "title": {
+                          "op": "path",
+                          "path": [
+                            "title"
+                          ]
+                        },
+                        "body": {
+                          "op": "path",
+                          "path": [
+                            "body"
+                          ]
+                        },
+                        "metadata": {
+                          "op": "object",
+                          "fields": {
+                            "Kind": {
+                              "op": "at",
+                              "source": {
+                                "op": "select",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "projectItems"
+                                    ]
+                                  }
+                                },
+                                "path": [
+                                  "project",
+                                  "id"
+                                ],
+                                "equals": {
+                                  "op": "scope",
+                                  "path": [
+                                    "backlog"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "at",
+                                "source": {
+                                  "op": "select",
+                                  "source": {
+                                    "op": "map",
+                                    "source": {
+                                      "op": "connection",
+                                      "source": {
+                                        "op": "path",
+                                        "path": [
+                                          "fieldValues"
+                                        ]
+                                      }
+                                    },
+                                    "value": {
+                                      "op": "nullable",
+                                      "source": {
+                                        "op": "path",
+                                        "path": []
+                                      },
+                                      "value": {
+                                        "op": "union",
+                                        "source": {
+                                          "op": "path",
+                                          "path": []
+                                        },
+                                        "tag": [
+                                          "__typename"
+                                        ],
+                                        "cases": {
+                                          "ProjectV2ItemFieldUserValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldRepositoryValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldPullRequestValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldTextValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldDateValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldIterationValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldLabelValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldMilestoneValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldNumberValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldReviewerValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldSingleSelectValue": {
+                                            "op": "object",
+                                            "fields": {
+                                              "field": {
+                                                "op": "path",
+                                                "path": [
+                                                  "field",
+                                                  "name"
+                                                ]
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": [
+                                                  "name"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "path": [
+                                    "field"
+                                  ],
+                                  "equals": {
+                                    "op": "literal",
+                                    "value": "Kind"
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "value"
+                                  ]
+                                }
+                              }
+                            },
+                            "Priority": {
+                              "op": "at",
+                              "source": {
+                                "op": "select",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "projectItems"
+                                    ]
+                                  }
+                                },
+                                "path": [
+                                  "project",
+                                  "id"
+                                ],
+                                "equals": {
+                                  "op": "scope",
+                                  "path": [
+                                    "backlog"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "at",
+                                "source": {
+                                  "op": "select",
+                                  "source": {
+                                    "op": "map",
+                                    "source": {
+                                      "op": "connection",
+                                      "source": {
+                                        "op": "path",
+                                        "path": [
+                                          "fieldValues"
+                                        ]
+                                      }
+                                    },
+                                    "value": {
+                                      "op": "nullable",
+                                      "source": {
+                                        "op": "path",
+                                        "path": []
+                                      },
+                                      "value": {
+                                        "op": "union",
+                                        "source": {
+                                          "op": "path",
+                                          "path": []
+                                        },
+                                        "tag": [
+                                          "__typename"
+                                        ],
+                                        "cases": {
+                                          "ProjectV2ItemFieldUserValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldRepositoryValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldPullRequestValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldTextValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldDateValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldIterationValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldLabelValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldMilestoneValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldNumberValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldReviewerValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldSingleSelectValue": {
+                                            "op": "object",
+                                            "fields": {
+                                              "field": {
+                                                "op": "path",
+                                                "path": [
+                                                  "field",
+                                                  "name"
+                                                ]
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": [
+                                                  "name"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "path": [
+                                    "field"
+                                  ],
+                                  "equals": {
+                                    "op": "literal",
+                                    "value": "Priority"
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "value"
+                                  ]
+                                }
+                              }
+                            },
+                            "Size": {
+                              "op": "at",
+                              "source": {
+                                "op": "select",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "projectItems"
+                                    ]
+                                  }
+                                },
+                                "path": [
+                                  "project",
+                                  "id"
+                                ],
+                                "equals": {
+                                  "op": "scope",
+                                  "path": [
+                                    "backlog"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "at",
+                                "source": {
+                                  "op": "select",
+                                  "source": {
+                                    "op": "map",
+                                    "source": {
+                                      "op": "connection",
+                                      "source": {
+                                        "op": "path",
+                                        "path": [
+                                          "fieldValues"
+                                        ]
+                                      }
+                                    },
+                                    "value": {
+                                      "op": "nullable",
+                                      "source": {
+                                        "op": "path",
+                                        "path": []
+                                      },
+                                      "value": {
+                                        "op": "union",
+                                        "source": {
+                                          "op": "path",
+                                          "path": []
+                                        },
+                                        "tag": [
+                                          "__typename"
+                                        ],
+                                        "cases": {
+                                          "ProjectV2ItemFieldUserValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldRepositoryValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldPullRequestValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldTextValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldDateValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldIterationValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldLabelValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldMilestoneValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldNumberValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldReviewerValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldSingleSelectValue": {
+                                            "op": "object",
+                                            "fields": {
+                                              "field": {
+                                                "op": "path",
+                                                "path": [
+                                                  "field",
+                                                  "name"
+                                                ]
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": [
+                                                  "name"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "path": [
+                                    "field"
+                                  ],
+                                  "equals": {
+                                    "op": "literal",
+                                    "value": "Size"
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "value"
+                                  ]
+                                }
+                              }
+                            },
+                            "Status": {
+                              "op": "at",
+                              "source": {
+                                "op": "select",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "projectItems"
+                                    ]
+                                  }
+                                },
+                                "path": [
+                                  "project",
+                                  "id"
+                                ],
+                                "equals": {
+                                  "op": "scope",
+                                  "path": [
+                                    "backlog"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "at",
+                                "source": {
+                                  "op": "select",
+                                  "source": {
+                                    "op": "map",
+                                    "source": {
+                                      "op": "connection",
+                                      "source": {
+                                        "op": "path",
+                                        "path": [
+                                          "fieldValues"
+                                        ]
+                                      }
+                                    },
+                                    "value": {
+                                      "op": "nullable",
+                                      "source": {
+                                        "op": "path",
+                                        "path": []
+                                      },
+                                      "value": {
+                                        "op": "union",
+                                        "source": {
+                                          "op": "path",
+                                          "path": []
+                                        },
+                                        "tag": [
+                                          "__typename"
+                                        ],
+                                        "cases": {
+                                          "ProjectV2ItemFieldUserValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldRepositoryValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldPullRequestValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldTextValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldDateValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldIterationValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldLabelValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldMilestoneValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldNumberValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldReviewerValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldSingleSelectValue": {
+                                            "op": "object",
+                                            "fields": {
+                                              "field": {
+                                                "op": "path",
+                                                "path": [
+                                                  "field",
+                                                  "name"
+                                                ]
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": [
+                                                  "name"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "path": [
+                                    "field"
+                                  ],
+                                  "equals": {
+                                    "op": "literal",
+                                    "value": "Status"
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "value"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "owners": {
+                          "op": "map",
+                          "source": {
+                            "op": "connection",
+                            "source": {
+                              "op": "path",
+                              "path": [
+                                "assignees"
+                              ]
+                            }
+                          },
+                          "value": {
+                            "op": "path",
+                            "path": [
+                              "login"
+                            ]
+                          }
+                        },
+                        "createdAt": {
+                          "op": "path",
+                          "path": [
+                            "createdAt"
+                          ]
+                        },
+                        "lastEditedAt": {
+                          "op": "path",
+                          "path": [
+                            "lastEditedAt"
+                          ]
+                        },
+                        "parent": {
+                          "op": "nullable",
+                          "source": {
+                            "op": "path",
+                            "path": [
+                              "parent"
+                            ]
+                          },
+                          "value": {
+                            "op": "object",
+                            "fields": {
+                              "provider": {
+                                "op": "literal",
+                                "value": "github"
+                              },
+                              "backlog": {
+                                "op": "scope",
+                                "path": [
+                                  "backlog"
+                                ]
+                              },
+                              "id": {
+                                "op": "path",
+                                "path": [
+                                  "id"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "observations": {
+                "actor": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "viewer",
+                    "login"
+                  ]
+                },
+                "repository": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "repository",
+                    "id"
+                  ]
+                },
+                "item": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "id"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "unassign": {
+          "bindings": {
+            "gh": {
+              "arguments": {
+                "op": "array",
+                "values": [
+                  {
+                    "op": "literal",
+                    "value": "api"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "graphql"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "query=mutation($id:ID!,$actor:ID!){assignment:removeAssigneesFromAssignable(input:{assignableId:$id,assigneeIds:[$actor]}){assignable{... on Issue{id repository{id}}}}}"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "id=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "item",
+                        "id"
+                      ]
+                    }
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "actor=",
+                    "source": {
+                      "op": "scope",
+                      "path": [
+                        "claim",
+                        "actorId"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "projection": {
+                "op": "object",
+                "fields": {
+                  "valid": {
+                    "op": "literal",
+                    "value": true
+                  },
+                  "gaps": {
+                    "op": "array",
+                    "values": []
+                  }
+                }
+              },
+              "observations": {
+                "item": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "assignment",
+                    "assignable",
+                    "id"
+                  ]
+                },
+                "repository": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "assignment",
+                    "assignable",
+                    "repository",
+                    "id"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "verify-release": {
+          "bindings": {
+            "gh": {
+              "arguments": {
+                "op": "array",
+                "values": [
+                  {
+                    "op": "literal",
+                    "value": "api"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "graphql"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "query=query($id:ID!){viewer{login} node(id:$id){... on Issue{id number title body url state createdAt lastEditedAt parent{id} repository{id name owner{login}} assignees(first:100){nodes{id login}totalCount pageInfo{hasNextPage endCursor}}projectItems(first:100){nodes{id project{id number title}fieldValues(first:100){nodes{__typename ... on ProjectV2ItemFieldSingleSelectValue{name optionId field{... on ProjectV2SingleSelectField{id name}}}}pageInfo{hasNextPage endCursor}}}pageInfo{hasNextPage endCursor}}}}}"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "id=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "item",
+                        "id"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "projection": {
+                "op": "object",
+                "fields": {
+                  "item": {
+                    "op": "at",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "data",
+                        "node"
+                      ]
+                    },
+                    "value": {
+                      "op": "object",
+                      "fields": {
+                        "identity": {
+                          "op": "object",
+                          "fields": {
+                            "provider": {
+                              "op": "literal",
+                              "value": "github"
+                            },
+                            "backlog": {
+                              "op": "scope",
+                              "path": [
+                                "backlog"
+                              ]
+                            },
+                            "id": {
+                              "op": "path",
+                              "path": [
+                                "id"
+                              ]
+                            }
+                          }
+                        },
+                        "reference": {
+                          "op": "text",
+                          "source": {
+                            "op": "path",
+                            "path": [
+                              "number"
+                            ]
+                          },
+                          "prefix": "#"
+                        },
+                        "url": {
+                          "op": "path",
+                          "path": [
+                            "url"
+                          ]
+                        },
+                        "title": {
+                          "op": "path",
+                          "path": [
+                            "title"
+                          ]
+                        },
+                        "body": {
+                          "op": "path",
+                          "path": [
+                            "body"
+                          ]
+                        },
+                        "metadata": {
+                          "op": "object",
+                          "fields": {
+                            "Kind": {
+                              "op": "at",
+                              "source": {
+                                "op": "select",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "projectItems"
+                                    ]
+                                  }
+                                },
+                                "path": [
+                                  "project",
+                                  "id"
+                                ],
+                                "equals": {
+                                  "op": "scope",
+                                  "path": [
+                                    "backlog"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "at",
+                                "source": {
+                                  "op": "select",
+                                  "source": {
+                                    "op": "map",
+                                    "source": {
+                                      "op": "connection",
+                                      "source": {
+                                        "op": "path",
+                                        "path": [
+                                          "fieldValues"
+                                        ]
+                                      }
+                                    },
+                                    "value": {
+                                      "op": "nullable",
+                                      "source": {
+                                        "op": "path",
+                                        "path": []
+                                      },
+                                      "value": {
+                                        "op": "union",
+                                        "source": {
+                                          "op": "path",
+                                          "path": []
+                                        },
+                                        "tag": [
+                                          "__typename"
+                                        ],
+                                        "cases": {
+                                          "ProjectV2ItemFieldUserValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldRepositoryValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldPullRequestValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldTextValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldDateValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldIterationValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldLabelValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldMilestoneValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldNumberValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldReviewerValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldSingleSelectValue": {
+                                            "op": "object",
+                                            "fields": {
+                                              "field": {
+                                                "op": "path",
+                                                "path": [
+                                                  "field",
+                                                  "name"
+                                                ]
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": [
+                                                  "name"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "path": [
+                                    "field"
+                                  ],
+                                  "equals": {
+                                    "op": "literal",
+                                    "value": "Kind"
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "value"
+                                  ]
+                                }
+                              }
+                            },
+                            "Priority": {
+                              "op": "at",
+                              "source": {
+                                "op": "select",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "projectItems"
+                                    ]
+                                  }
+                                },
+                                "path": [
+                                  "project",
+                                  "id"
+                                ],
+                                "equals": {
+                                  "op": "scope",
+                                  "path": [
+                                    "backlog"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "at",
+                                "source": {
+                                  "op": "select",
+                                  "source": {
+                                    "op": "map",
+                                    "source": {
+                                      "op": "connection",
+                                      "source": {
+                                        "op": "path",
+                                        "path": [
+                                          "fieldValues"
+                                        ]
+                                      }
+                                    },
+                                    "value": {
+                                      "op": "nullable",
+                                      "source": {
+                                        "op": "path",
+                                        "path": []
+                                      },
+                                      "value": {
+                                        "op": "union",
+                                        "source": {
+                                          "op": "path",
+                                          "path": []
+                                        },
+                                        "tag": [
+                                          "__typename"
+                                        ],
+                                        "cases": {
+                                          "ProjectV2ItemFieldUserValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldRepositoryValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldPullRequestValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldTextValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldDateValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldIterationValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldLabelValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldMilestoneValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldNumberValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldReviewerValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldSingleSelectValue": {
+                                            "op": "object",
+                                            "fields": {
+                                              "field": {
+                                                "op": "path",
+                                                "path": [
+                                                  "field",
+                                                  "name"
+                                                ]
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": [
+                                                  "name"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "path": [
+                                    "field"
+                                  ],
+                                  "equals": {
+                                    "op": "literal",
+                                    "value": "Priority"
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "value"
+                                  ]
+                                }
+                              }
+                            },
+                            "Size": {
+                              "op": "at",
+                              "source": {
+                                "op": "select",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "projectItems"
+                                    ]
+                                  }
+                                },
+                                "path": [
+                                  "project",
+                                  "id"
+                                ],
+                                "equals": {
+                                  "op": "scope",
+                                  "path": [
+                                    "backlog"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "at",
+                                "source": {
+                                  "op": "select",
+                                  "source": {
+                                    "op": "map",
+                                    "source": {
+                                      "op": "connection",
+                                      "source": {
+                                        "op": "path",
+                                        "path": [
+                                          "fieldValues"
+                                        ]
+                                      }
+                                    },
+                                    "value": {
+                                      "op": "nullable",
+                                      "source": {
+                                        "op": "path",
+                                        "path": []
+                                      },
+                                      "value": {
+                                        "op": "union",
+                                        "source": {
+                                          "op": "path",
+                                          "path": []
+                                        },
+                                        "tag": [
+                                          "__typename"
+                                        ],
+                                        "cases": {
+                                          "ProjectV2ItemFieldUserValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldRepositoryValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldPullRequestValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldTextValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldDateValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldIterationValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldLabelValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldMilestoneValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldNumberValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldReviewerValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldSingleSelectValue": {
+                                            "op": "object",
+                                            "fields": {
+                                              "field": {
+                                                "op": "path",
+                                                "path": [
+                                                  "field",
+                                                  "name"
+                                                ]
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": [
+                                                  "name"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "path": [
+                                    "field"
+                                  ],
+                                  "equals": {
+                                    "op": "literal",
+                                    "value": "Size"
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "value"
+                                  ]
+                                }
+                              }
+                            },
+                            "Status": {
+                              "op": "at",
+                              "source": {
+                                "op": "select",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "projectItems"
+                                    ]
+                                  }
+                                },
+                                "path": [
+                                  "project",
+                                  "id"
+                                ],
+                                "equals": {
+                                  "op": "scope",
+                                  "path": [
+                                    "backlog"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "at",
+                                "source": {
+                                  "op": "select",
+                                  "source": {
+                                    "op": "map",
+                                    "source": {
+                                      "op": "connection",
+                                      "source": {
+                                        "op": "path",
+                                        "path": [
+                                          "fieldValues"
+                                        ]
+                                      }
+                                    },
+                                    "value": {
+                                      "op": "nullable",
+                                      "source": {
+                                        "op": "path",
+                                        "path": []
+                                      },
+                                      "value": {
+                                        "op": "union",
+                                        "source": {
+                                          "op": "path",
+                                          "path": []
+                                        },
+                                        "tag": [
+                                          "__typename"
+                                        ],
+                                        "cases": {
+                                          "ProjectV2ItemFieldUserValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldRepositoryValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldPullRequestValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldTextValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldDateValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldIterationValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldLabelValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldMilestoneValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldNumberValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldReviewerValue": {
+                                            "op": "literal",
+                                            "value": null
+                                          },
+                                          "ProjectV2ItemFieldSingleSelectValue": {
+                                            "op": "object",
+                                            "fields": {
+                                              "field": {
+                                                "op": "path",
+                                                "path": [
+                                                  "field",
+                                                  "name"
+                                                ]
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": [
+                                                  "name"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "path": [
+                                    "field"
+                                  ],
+                                  "equals": {
+                                    "op": "literal",
+                                    "value": "Status"
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "value"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "owners": {
+                          "op": "map",
+                          "source": {
+                            "op": "connection",
+                            "source": {
+                              "op": "path",
+                              "path": [
+                                "assignees"
+                              ]
+                            }
+                          },
+                          "value": {
+                            "op": "path",
+                            "path": [
+                              "login"
+                            ]
+                          }
+                        },
+                        "createdAt": {
+                          "op": "path",
+                          "path": [
+                            "createdAt"
+                          ]
+                        },
+                        "lastEditedAt": {
+                          "op": "path",
+                          "path": [
+                            "lastEditedAt"
+                          ]
+                        },
+                        "parent": {
+                          "op": "nullable",
+                          "source": {
+                            "op": "path",
+                            "path": [
+                              "parent"
+                            ]
+                          },
+                          "value": {
+                            "op": "object",
+                            "fields": {
+                              "provider": {
+                                "op": "literal",
+                                "value": "github"
+                              },
+                              "backlog": {
+                                "op": "scope",
+                                "path": [
+                                  "backlog"
+                                ]
+                              },
+                              "id": {
+                                "op": "path",
+                                "path": [
+                                  "id"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "observations": {
+                "actor": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "viewer",
+                    "login"
+                  ]
+                },
+                "repository": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "repository",
+                    "id"
+                  ]
+                },
+                "item": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "id"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

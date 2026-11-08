@@ -77,6 +77,36 @@ test('claim CLI starts with read-only eligibility preflight', () => withBacklogC
   assert.deepEqual(response.action.allowedEffects, []);
   assert.equal(existsSync(marker), false);
 }));
+test('claim release CLI uses the acquired private provenance', () => withBacklogCli(async ({ dir, call, request, marker }) => {
+  const item = { identity: { provider: 'github', backlog: 'P1', id: 'I1' }, reference: '#1', title: 'Story', body: '', owners: [],
+    metadata: { Kind: 'Story', Priority: 'Must', Size: 'S', Status: 'Todo' }, repository: 'R1', state: 'OPEN',
+    blockers: { complete: true, open: [] }, claimContext: { actorId: 'U1', projectItemId: 'PI1', statusFieldId: 'F1',
+      todoOptionId: 'TODO', inProgressOptionId: 'PROGRESS', linkedBacklogs: ['P1'] } };
+  let response = await call(['claim.acquire', '--request-file', request('claim.acquire', { item: item.identity })]);
+  const submit = async (output: unknown) => {
+    const path = join(dir, 'submission.json');
+    writeFileSync(path, JSON.stringify(submissionFor(response.action, { data: output })));
+    return call(['submit', '--continuation-file', response.continuationFile, '--submission-file', path]);
+  };
+  const owned = { ...item, owners: ['actor'] };
+  const active = { ...owned, metadata: { ...item.metadata, Status: 'In Progress' } };
+  for (const output of [{ item }, { valid: true, gaps: [] }, { item: owned }, { valid: true, gaps: [] }, { item: active }])
+    response = await submit(output);
+  assert.equal(response.state, 'complete', response.reason);
+  const claim = response.result.claim;
+  const releaseFile = request('claim.release', { item: item.identity, token: claim.token });
+  const releaseRequest = JSON.parse(readFileSync(releaseFile, 'utf8'));
+  releaseRequest.context.session = claim.session;
+  writeFileSync(releaseFile, JSON.stringify(releaseRequest));
+  response = await call(['claim.release', '--request-file', releaseFile]);
+  assert.equal(response.state, 'action', response.reason);
+  assert.deepEqual(response.action.allowedEffects, []);
+  for (const output of [{ item: active }, { valid: true, gaps: [] }, { item: owned }, { valid: true, gaps: [] }, { item }])
+    response = await submit(output);
+  assert.equal(response.state, 'complete', response.reason);
+  assert.deepEqual(response.result, { released: true });
+  assert.equal(existsSync(marker), false);
+}));
 test('PR creation CLI requests repository preflight before any write', () => withBacklogCli(async ({ dir, call, request, marker }) => {
   const bodyFile = join(dir, 'body.md');
   writeFileSync(bodyFile, 'Closes #1');

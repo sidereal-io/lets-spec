@@ -9,12 +9,15 @@ import { submittedRead, submissionFor } from './fixtures/submitted.ts';
 import { mkdirSync, mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { githubDefinition } from '../../../lets/src/backlog/config.ts';
+import { projectArguments } from '../../../lets/src/backlog/projections.ts';
 
 function nativeClaimFixture() {
   const base = submittedRead().action;
-  const steps = ['preflight', 'assign', 'read-assignment', 'status', 'verify'];
+  const steps = ['preflight', 'assign', 'read-assignment', 'status', 'verify', 'reset-status', 'read-before-unassign', 'unassign', 'verify-release'];
   const definition = loadDefinition([{ source: 'fixture:native-claim', value: {
     ...base.definition.definition, operations: { 'claim.acquire': { actions: Object.fromEntries(steps.map((step) => [step, {
+      bindings: { gh: { arguments: ['api', step], projection: { op: 'path', path: ['data'] } } },
+    }])) }, 'claim.release': { actions: Object.fromEntries(steps.map((step) => [step, {
       bindings: { gh: { arguments: ['api', step], projection: { op: 'path', path: ['data'] } } },
     }])) } },
   } }]);
@@ -31,6 +34,109 @@ function nativeClaimFixture() {
     } };
   return { action, item };
 }
+function acquiredClaim(store: OperationStore) {
+  const { response, item, operationId } = pendingClaimVerification(store);
+  store.submit(response.continuation, submissionFor(response.action, { data: {
+    item: { ...item, owners: ['me'], metadata: { ...item.metadata, Status: 'In Progress' } },
+  } }), 103);
+  const release = issueAction({ ...response.action.request, operation: 'claim.release', input: { item: item.identity, token: operationId } },
+    response.action.definition, response.action.connection, { step: 'preflight', validationOperation: 'item.read',
+      toolArguments: [], allowedEffects: [], requiredCapabilities: ['claims'], timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000 }, 200);
+  return { item, release, operationId };
+}
+test('release refreshes ownership before each cleanup write', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/release-native-claim-');
+  try {
+    const store = new OperationStore(join(dir, 'private'));
+    const { item, release } = acquiredClaim(store);
+    const issued = store.issue(release);
+    if (issued.state !== 'action') throw new Error('release preflight required');
+    let response = store.submit(issued.continuation, submissionFor(issued.action, { data: {
+      item: { ...item, owners: ['me'], metadata: { ...item.metadata, Status: 'In Progress' } },
+    } }), 201);
+    assert.equal(response.state, 'action');
+    if (response.state !== 'action') throw new Error('reset action required');
+    assert.equal(response.action.step, 'reset-status');
+    response = store.submit(response.continuation, submissionFor(response.action, { data: { valid: true, gaps: [] } }), 202);
+    if (response.state !== 'action') throw new Error('fresh ownership read required');
+    assert.equal(response.action.step, 'read-before-unassign');
+    assert.deepEqual(response.action.allowedEffects, []);
+    assert.throws(() => store.submit(response.continuation, submissionFor(response.action, { data: {
+      item: { ...item, owners: ['other'], metadata: { ...item.metadata, Status: 'Todo' } },
+    } }), 203), (error: unknown) => error instanceof AdapterFailure && error.effects === 'partial');
+    assert.equal(store.get(release.operationId).action.step, 'read-before-unassign');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+test('release cannot adopt another worker acquisition', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/adopt-native-claim-');
+  try {
+    const store = new OperationStore(join(dir, 'private'));
+    const { release } = acquiredClaim(store);
+    const other = issueAction({ ...release.request, context: { ...release.request.context, session: 'other-worker' } },
+      release.definition, release.connection, { step: 'preflight', validationOperation: 'item.read', toolArguments: [], allowedEffects: [],
+        requiredCapabilities: ['claims'], timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000 }, 200);
+    assert.throws(() => store.issue(other), /original.*worker/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+test('completed release consumes its original acquisition authority', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/complete-native-release-');
+  try {
+    const store = new OperationStore(join(dir, 'private'));
+    const { item, release } = acquiredClaim(store);
+    let response: ReturnType<OperationStore['submit']> = store.issue(release);
+    for (const output of [
+      { item: { ...item, owners: ['me'], metadata: { ...item.metadata, Status: 'In Progress' } } },
+      { valid: true, gaps: [] }, { item: { ...item, owners: ['me'] } }, { valid: true, gaps: [] }, { item },
+    ]) {
+      if (response.state !== 'action') throw new Error('release action required');
+      response = store.submit(response.continuation, submissionFor(response.action, { data: output }), 201);
+    }
+    assert.equal(response.state, 'complete');
+    if (!('result' in response)) throw new Error('release result required');
+    assert.deepEqual(response.result, { released: true });
+    const repeated = issueAction(release.request, release.definition, release.connection, { step: 'preflight',
+      validationOperation: 'item.read', toolArguments: [], allowedEffects: [], requiredCapabilities: ['claims'],
+      timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000 }, 202);
+    assert.throws(() => store.issue(repeated), /already released/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+test('shipped release targets the recorded actor and Todo option', () => {
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const release = definition.definition.operations['claim.release'];
+  assert.ok(release, 'shipped release mappings required');
+  const scope = { backlog: 'P1', claim: { actorId: 'U1', projectItemId: 'PI1', statusFieldId: 'F1', todoOptionId: 'TODO' } };
+  const input = { item: { provider: 'github', backlog: 'P1', id: 'I1' } };
+  const reset = projectArguments(release.actions['reset-status'].bindings.gh.arguments, input, scope) as string[];
+  const unassign = projectArguments(release.actions.unassign.bindings.gh.arguments, input, scope) as string[];
+  assert.ok(reset.includes('option=TODO'));
+  assert.ok(reset.includes('item=PI1'));
+  assert.ok(unassign.includes('actor=U1'));
+  assert.ok(unassign.some((argument) => argument.includes('removeAssigneesFromAssignable')));
+});
+test('uncertain release reconciles through reads without repeating cleanup', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/resume-native-release-');
+  try {
+    const store = new OperationStore(join(dir, 'private'));
+    const { item, release } = acquiredClaim(store);
+    const issued = store.issue(release);
+    if (issued.state !== 'action') throw new Error('release preflight required');
+    const reset = store.submit(issued.continuation, submissionFor(issued.action, { data: {
+      item: { ...item, owners: ['me'], metadata: { ...item.metadata, Status: 'In Progress' } },
+    } }), 201);
+    if (reset.state !== 'action') throw new Error('reset required');
+    const resumed = new OperationStore(join(dir, 'private')).resume(release.operationId, 300);
+    assert.deepEqual(resumed.action.allowedEffects, []);
+    const response = store.submit(resumed.continuation, submissionFor(resumed.action, { data: { item } }), 301);
+    assert.equal(response.state, 'complete');
+    if (!('result' in response)) throw new Error('release reconciliation required');
+    assert.equal(response.result.reconciliation, 'applied');
+    assert.equal(response.result.reservationCleared, true);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
 function pendingClaimVerification(store: OperationStore) {
   const { action, item } = nativeClaimFixture();
   const issued = store.issue(action);
