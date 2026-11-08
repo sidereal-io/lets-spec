@@ -274,3 +274,12 @@ for (const [input, category] of [
     assert.equal(response.error.effects, 'none');
   });
 }
+
+import { deriveResult } from '../../../lets/src/backlog/projections.ts';
+test('optional normalized fields cannot contradict structured output', () => {
+  assert.throws(() => deriveResult('claim.read',
+    { op: 'path', path: ['data', 'ownership'] },
+    { data: { ownership: { claim: { actor: 'other', session: null, token: null, status: 'In Progress', guarantee: 'best-effort' } } } },
+    {}, { claim: { actor: 'me', session: null, token: null, status: 'In Progress', guarantee: 'best-effort' } }),
+  /normalized.*disagrees/);
+});

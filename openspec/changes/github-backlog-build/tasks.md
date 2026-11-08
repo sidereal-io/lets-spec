@@ -12,7 +12,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 1.1 [medium] Reject incompatible or conflicting inert definition sources before issuing an action. (✓ node --test --test-isolation=none tests/lets/backlog/config.test.ts passed, 14 tests)
 - [x] 1.2 [medium] Resolve repository selection separately from machine tool settings without explicit-selection fallback. (✓ node --test --test-isolation=none tests/lets/backlog/config.test.ts passed, 17 tests)
 - [x] 1.3 [easy] Reject obsolete executable configuration with its file/key and supported migration remedy. (✓ node --test --test-isolation=none tests/lets/backlog/config.test.ts passed, 14 tests)
-- [ ] 1.4 [medium] Reject optional supplied normalized operation fields that disagree with the definition's projections from submitted structured tool output. (verify: node --test tests/lets/backlog/protocol.test.ts)
+- [x] 1.4 [medium] Reject optional supplied normalized operation fields that disagree with the definition's projections from submitted structured tool output. (✓ node --test tests/lets/backlog/protocol.test.ts passed, 46 tests)
 - [ ] 1.5 [medium] Issue a versioned action binding the exact operation/input/scope to its attempt and required effects. (verify: node --test tests/lets/backlog/scopes.test.ts)
 - [ ] 1.6 [medium] Accept complete matching submitted tool observations without an independent capture receipt. (verify: node --test tests/lets/backlog/protocol.test.ts)
 - [ ] 1.7 [medium] Reject expired, oversized or uncertain-termination submissions as authority to progress without inferring no remote effects. (verify: node --test tests/lets/backlog/process.test.ts)
