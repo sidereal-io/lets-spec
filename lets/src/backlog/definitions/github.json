@@ -391,13 +391,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Priority"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -524,13 +526,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Size"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -657,13 +661,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Status"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             }
@@ -1182,13 +1188,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Priority"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -1315,13 +1323,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Size"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -1448,13 +1458,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Status"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             }
@@ -2262,13 +2274,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Priority"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -2395,13 +2409,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Size"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -2528,13 +2544,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Status"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             }
@@ -6028,13 +6046,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Priority"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -6161,13 +6181,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Size"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -6294,13 +6316,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Status"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             }
@@ -7236,13 +7260,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Priority"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -7369,13 +7395,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Size"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -7502,13 +7530,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Status"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             }
@@ -8093,13 +8123,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Priority"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -8226,13 +8258,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Size"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -8359,13 +8393,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Status"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             }
@@ -8832,13 +8868,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Priority"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -8965,13 +9003,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Size"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -9098,13 +9138,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Status"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             }
@@ -9689,13 +9731,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Priority"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -9822,13 +9866,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Size"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -9955,13 +10001,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Status"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             }
@@ -10515,13 +10563,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Priority"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -10648,13 +10698,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Size"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -10781,13 +10833,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Status"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             }
@@ -11343,13 +11397,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Priority"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -11476,13 +11532,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Size"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             },
@@ -11609,13 +11667,15 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Status"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
                               }
                             }

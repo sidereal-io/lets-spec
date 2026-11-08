@@ -58,7 +58,8 @@ export function validateItem(value: unknown): asserts value is Item {
   }
   const metadata = object(item.metadata, 'metadata');
   for (const [field, values] of Object.entries(METADATA))
-    if (!(values as readonly unknown[]).includes(metadata[field]))
+    if (!(metadata.Kind === 'Epic' && field !== 'Kind' && metadata[field] === undefined) &&
+        !(values as readonly unknown[]).includes(metadata[field]))
       throw new Error(`invalid metadata.${field}`);
   for (const key of Object.keys(metadata))
     if (!(key in METADATA)) throw new Error(`unknown metadata.${key}`);

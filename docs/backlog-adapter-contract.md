@@ -116,6 +116,9 @@ fail explicitly. The internal protocol-1 simulation envelope is a test harness,
 not a separately installed adapter transport.
 
 Items retain scoped identity, reference, body, metadata and complete owners.
+Parent Epics may have only Kind; their absent Priority, Size and Status do not
+prevent a body read. Stories, bugs and chores still require all four fields.
+Any supplied metadata value must be valid, and ambiguous fields are rejected.
 Shared metadata meanings are Kind, Priority, Size and Status from METADATA;
 unknown values or incomplete required facts cannot establish readiness. Generic
 Status repair is not an existing-branch resume action. GitHub numeric references

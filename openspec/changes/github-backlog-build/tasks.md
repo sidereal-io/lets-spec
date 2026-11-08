@@ -59,6 +59,8 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 3.9 [medium] Reconcile uncertain prepared PR-body updates while preserving unrelated sections and closing text. (✓ node --test tests/lets/backlog/recovery.test.ts tests/lets/backlog/cli.test.ts passed, 26 tests; tsc --noEmit passed)
 - [x] 3.10 [medium] Confirm the existing ready transition through bounded action results without merging. (✓ node --test tests/lets/backlog/protocol.test.ts tests/lets/backlog/recovery.test.ts passed, 108 tests; tsc --noEmit passed)
 
+- [x] 3.11 [medium] Read a parent Epic whose Project metadata contains only Kind while retaining strict story metadata and ambiguity checks. (✓ focused item/provider suite passed, 75 tests; nix flake check passed with the additional missing-story-field and ambiguous-Epic regressions)
+
 ## 4. GitHub claim lifecycle [depends-on: 3]
 
 - [x] 4.1 [medium] Reject readiness when directional blocker observations are incomplete. (✓ node --test tests/lets/backlog/relationships.test.ts tests/lets/backlog/providers.test.ts passed, 42 tests; tsc --noEmit passed)
@@ -153,3 +155,5 @@ required real configurations have passed acceptance.
   boundary. Remove the proposed separate code-host role. Reorder task groups so
   repository/PR observations and action support precede their callers and
   completion conformance; documentation and release packaging finish the list.
+
+- 2026-11-08, implementation: add task 3.11 after the parent-body regression exposed a requirement for story ranking fields on an Epic. Permit absent non-Kind Epic fields without weakening story validation or accepting ambiguous fields.

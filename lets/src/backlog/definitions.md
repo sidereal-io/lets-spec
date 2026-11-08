@@ -77,6 +77,8 @@ The closed projection vocabulary includes `path` (current value), `scope`
 `map`, `select` (exactly one equality match), `enum`, tagged `union`, explicit
 `nullable`, `text` (primitive with a fixed prefix), and `connection`. Paths
 contain field names or array indexes; prototype-related names are forbidden.
+A `select` with `optional: true` returns a missing value for zero matches, but
+still rejects several matches. Use an optional path to consume that value.
 Unknown operators, extra fields and excessive nesting fail definition loading.
 Arguments may be a constant string array or a projection of the operation input.
 Lets returns the resulting argument array as data; it performs no shell expansion.

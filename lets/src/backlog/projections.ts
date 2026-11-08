@@ -14,7 +14,7 @@ export type Projection =
   | { op: 'where' | 'contains'; source: Projection; value: Projection }
   | { op: 'object'; fields: Record<string, Projection> }
   | { op: 'at' | 'map'; source: Projection; value: Projection }
-  | { op: 'select' | 'filter'; source: Projection; path: Path; equals: Projection }
+  | { op: 'select' | 'filter'; source: Projection; path: Path; equals: Projection; optional?: boolean }
   | { op: 'enum'; source: Projection; values: Record<string, unknown> }
   | { op: 'union'; source: Projection; tag: Path; cases: Record<string, Projection> }
   | { op: 'nullable'; source: Projection; value: Projection }
@@ -84,6 +84,7 @@ export function project(projection: Projection, output: unknown, scope: Record<s
       const expected = read(projection.equals);
       const selected = array.filter((entry) => isDeepStrictEqual(fieldPath(entry, projection.path, true), expected));
       if (projection.op === 'filter') return selected;
+      if (selected.length === 0 && projection.optional) return undefined;
       if (selected.length !== 1) return gap(`projection select requires exactly one match for ${projection.path.join('.')}`);
       return selected[0];
     }
@@ -157,7 +158,7 @@ export function validateProjection(value: unknown, depth = 0): asserts value is 
     nullable: ['source', 'value'], text: ['source', 'prefix'], connection: ['source'],
   };
   const fields = shapes[String(projection.op)];
-  if (!fields || Object.keys(projection).some((key) => key !== 'op' && !(projection.op === 'path' && key === 'optional') && !fields.includes(key)) || fields.some((key) => !Object.hasOwn(projection, key)))
+  if (!fields || Object.keys(projection).some((key) => key !== 'op' && !(['path', 'select'].includes(String(projection.op)) && key === 'optional') && !fields.includes(key)) || fields.some((key) => !Object.hasOwn(projection, key)))
     throw new Error('projection has unknown operator or fields');
   if ('optional' in projection && typeof projection.optional !== 'boolean') throw new Error('projection optional flag must be boolean');
   for (const key of ['path', 'tag']) if (key in projection) validatePath(projection[key]);

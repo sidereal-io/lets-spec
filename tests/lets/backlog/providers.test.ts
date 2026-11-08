@@ -282,3 +282,41 @@ for (const mode of ['closed', 'unlinked', 'incomplete'] as const) {
     else assert.deepEqual(discoveredProjects(output).items.map((item) => item.id), ['P1']);
   });
 }
+
+test('shipped parent body read accepts an Epic with only Kind', () => {
+  const output = structuredClone(githubIssue);
+  const fields = output.data.node.projectItems.nodes[0].fieldValues;
+  fields.nodes = fields.nodes.filter((field: any) => field.field?.name === 'Kind');
+  fields.nodes[0].name = 'Epic';
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const action = issueAction({ contractVersion: 1, operation: 'item.read', context: {
+    cwd: '/repo', provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor',
+  }, input: { item: { provider: 'github', backlog: 'P1', id: 'I1' }, includeThread: false } }, definition,
+    { name: 'local', binding: 'gh', options: {} }, { step: 'read', toolArguments: [], allowedEffects: [], requiredCapabilities: [],
+      timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000 }, 100);
+  const result = validateSubmission(action, submissionFor(action, output), definition.definition.operations['item.read'].actions.read.bindings.gh.projection, 101);
+  assert.equal((result.item as any).metadata.Kind, 'Epic');
+  assert.equal((result.item as any).body, output.data.node.body);
+  assert.equal((result.item as any).comments, undefined);
+});
+
+for (const field of ['Priority', 'Size', 'Status']) {
+  test(`shipped story read rejects missing ${field}`, () => {
+    const output = structuredClone(githubIssue);
+    const fields = output.data.node.projectItems.nodes[0].fieldValues;
+    fields.nodes = fields.nodes.filter((value: any) => value.field?.name !== field);
+    assert.throws(() => deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+      'item.read', 'read', 'gh', output, { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' }),
+    new RegExp(`invalid metadata.${field}`));
+  });
+}
+
+test('shipped Epic read rejects ambiguous optional metadata', () => {
+  const output = structuredClone(githubIssue);
+  const fields = output.data.node.projectItems.nodes[0].fieldValues;
+  fields.nodes.find((field: any) => field.field?.name === 'Kind').name = 'Epic';
+  fields.nodes.push(structuredClone(fields.nodes.find((field: any) => field.field?.name === 'Priority')));
+  assert.throws(() => deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'item.read', 'read', 'gh', output, { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' }),
+  /exactly one match/);
+});
