@@ -128,10 +128,18 @@ lets go questions
 It prints one JSON line, such as `{"questions":"auto"}`. Keep its
 `questions` for the whole run: `ask`, `auto`, or `null` when the
 `lets` config sets none. If it exits non-zero, show the user its
-stderr and stop: claim nothing, and run no step. Then find the
-default branch with
-`gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`,
-and run `git branch --show-current`.
+stderr and stop: claim nothing, and run no step. Read the exact
+repository
+owner/name from the configured endpoint and `git remote get-url origin`.
+Request `lets backlog repository.read --request-file` with that
+owner/name
+bootstrap input, repository owner/name in context and no assumed actor.
+Use the [Backlog action loop](references/backlog-actions.md) for this
+and every backlog call below. Keep its validated immutable repository
+ID,
+authenticated actor and `repository.defaultBranch` for later requests.
+Then run `git branch --show-current`. A missing tool, bound, login or
+writable shared state ends the run with its prerequisite and remedy.
 
 Resolve `backlog.connection` from the machine configuration as the
 configured default for this run's bounded operations. With no settings,
@@ -149,37 +157,20 @@ runner's worker ID, claim token or release authority into its session.
 Worker context stays in memory and private request scratch, never a
 runner metadata commit or an extra report field.
 
-Then find the Project linked to this repository. Run this query once
-per run:
+Then request `lets backlog backlog.list --request-file` once per run,
+with the immutable repository and authenticated actor, omitting backlog
+from the discovery context. Use complete linked-Project observations.
+An explicitly configured `lets.backlog.id` must identify a linked
+Project. Without one, require exactly one linked open Project. Retain
+its immutable ID for scoped calls; use its URL's Project number and
+owner as `<project>` and `<owner>`, and the validated repository
+owner/name as `<repo>`.
 
-```bash
-gh api graphql -F owner='{owner}' -F name='{repo}' -f query='
-query($owner: String!, $name: String!) {
-  repository(owner: $owner, name: $name) {
-    nameWithOwner
-    projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } } }
-  }
-  repositoryOwner(login: $owner) {
-    ... on ProjectV2Owner {
-      projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } repositories(first: 100) { nodes { nameWithOwner } } } }
-    }
-  }
-}' --jq '.data.repository.nameWithOwner as $repo
-  | {repo: $repo, projects: ([.data.repository.projectsV2.nodes[], (.data.repositoryOwner.projectsV2.nodes[] | select(any(.repositories.nodes[]; .nameWithOwner == $repo)))]
-      | map(select(.closed | not) | {number, title, url, owner: .owner.login}) | unique_by(.owner, .number))}'
-```
-
-The query lists the Projects linked to the repository, and the
-owner's Projects that link back to it. A user-owned Project can be
-missing from the repository's own listing for a while after it is
-linked, so neither list alone is enough.
-
-- **One Project:** use its `number` as `<project>` and its `owner` as
-  `<owner>` in every `gh project` command of this run. The query's
-  `repo` is the repository, `<repo>`, as `owner/name`.
+- **One selected Project:** use its scoped identity throughout the run.
 - **None:** say to run the `lets-setup-backlog` skill, and stop.
-- **Two or more:** list each one's title and URL, ask the user to unlink
-  the extras, and stop. Never pick one yourself.
+- **Several without a selection:** list their titles and URLs, ask the
+  user to set `lets.backlog.id` or unlink the extras, and stop. Never
+  pick one yourself.
 
 Next: [Read the request](#read-the-request).
 
@@ -271,13 +262,15 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
 
 ## Check the issue
 
-1. Read the blockers of `<i>`:
-
-   ```bash
-   gh issue view <i> --json title,blockedBy
-   ```
-
-   It gives the title too. `<name>` is the change's name, which
+1. Resolve `<i>` with `lets backlog item.search --request-file`,
+   restricted to the scoped repository and exact issue number. Retain
+   its full provider/backlog/item identity; a missing or nonunique match
+   ends the run. Read its title with `lets backlog item.read
+   --request-file`
+   and its directional blockers with
+   `lets backlog relationship.list --request-file`, kind `blocked_by`.
+   Require complete coverage. A blocker whose normalized status is not
+   Done is open. `<name>` is the change's name, which
    [Claim](#claim) takes from the title. On a change's branch, it is
    `<branch>`.
 2. Look for the change's branch, here and on `origin`, every time:
@@ -292,7 +285,7 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
    what you found: [Enter the branch](#enter-the-branch) reads it, and
    does not look again.
 3. Decide on an open blocker before anything else in this part runs. A
-   blocker whose `state` is `OPEN` is open. When one is:
+   blocker whose normalized status is not Done is open. When one is:
    - **The branch exists**, here or on `origin`: the user has stacked it
      by hand. Name the open blockers by number, and go on.
    - **It does not exist:** say which open issues block `#<i>`, and
@@ -497,10 +490,11 @@ After [Set the question mode](#set-the-question-mode), on the branch
 
 1. **The tree.** Run `git status --porcelain`. A line for a path outside
    `.workspace/` means the records disagree.
-2. **The pull request.** Run:
+2. **The pull request.** Request a scoped read with input
+   `{"branch":"<name>"}` through the shared action loop. Run:
 
    ```bash
-   gh pr view <name> --json number,url,state,isDraft,body
+   lets backlog pull-request.read --request-file
    ```
 
    When it finds none, note that the branch has no pull request, and go
@@ -551,7 +545,7 @@ matches decides. The state is the `state` that
      this run can have opened or changed it:
 
      ```bash
-     gh pr view <name> --json number,body
+     lets backlog pull-request.read --request-file
      ```
 
      Review plan is done when the **Plan review** section covers the
@@ -615,7 +609,7 @@ branch yet. Nor does a step that failed before the branch had a pull
 request: say that the branch has no pull request yet.
 
 ```bash
-gh pr view <name> --json url --jq .url
+lets backlog pull-request.read --request-file
 ```
 
 `lets-go` keeps no state of its own. Its files in `.workspace/lets-go/`
@@ -676,36 +670,25 @@ Take the first case that applies:
    [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite)
    for it. The result is `found` when that returns `resolved`, and
    `unresolved` when it returns `unresolved`.
-2. **The run has described work, but no issue.** Search for it:
+2. **The run has described work, but no issue.** Search for it through
+   the shared action loop with the scoped repository, open state and
+   `<idea> in:title` search semantics:
 
    ```bash
-   gh issue list --state open --search "<idea> in:title" --json number,title
+   lets backlog item.search --request-file
    ```
 
    The result is `matches`, with the issues the search found, or
    `no-match` when it found none.
-3. **Otherwise, take `next`.** List the Project's Todo candidates with a
-   priority of Must, Should or Could. Any Kind but Epic counts, and
-   items from other repositories are left out:
-
-   ```bash
-   gh project item-list <project> --owner <owner> --format json --limit 500 \
-     --jq '.items[] | select(.content.repository == "<repo>" and .status == "Todo" and .kind != "Epic" and (.priority | IN("Must", "Should", "Could")))
-           | "\(.priority)\t\(.kind)\t\(.size // "-")\t#\(.content.number)\t\(.content.title)\t\(.content.url)"'
-   ```
-
-   Then list the open issues that nobody is assigned to and nothing
-   blocks:
-
-   ```bash
-   gh issue list --search "is:open no:assignee -is:blocked" --limit 500 --json number --jq '.[].number'
-   ```
-
-   `next` comes from the candidates whose number is in the second list.
-   Rank them Must, then Should, then Could, then the lowest issue
-   number. A Wont is never a candidate. After a lost claim, leave out
-   every issue lost in this run: each one for which [Claim](#claim)
-   returned `taken`.
+3. **Otherwise, take `next`.** Request
+   `lets backlog candidate.list --request-file` through the shared
+   action
+   loop. Core returns eligible candidates from complete observations:
+   open unassigned Todo work in this repository, no open directional
+   blocker, any Kind but Epic, priority Must, Should or Could. It ranks
+   Must, then Should, then Could, then the lowest issue number. A Wont
+   is never a candidate. After a lost claim, leave out every issue lost
+   in this run: each one for which [Claim](#claim) returned `taken`.
 
    Check each candidate in rank order, with its number as `<i>` while
    you check it. Run
@@ -739,16 +722,14 @@ Return to the part that ran it, with the result.
 
 ### Confirm the packet
 
-Read the issue, and its fields on the Project:
+Request `lets backlog item.read --request-file` for the resolved scoped
+identity with `includeThread: false`, using the shared action loop. Its
+metadata supplies Kind, Priority, Size and Status from the selected
+Project, without scanning a fixed number of Project items.
 
-```bash
-gh issue view <i> --json number,title,body,url,parent
-gh project item-list <project> --owner <owner> --format json --limit 500 \
-  --jq '.items[] | select(.content.repository == "<repo>" and .content.number == <i>) | {kind, priority, size, status}'
-```
-
-- If the second command prints nothing, or no `kind`, the issue is not
-  shaped. The result is `needs-shape`: return it now.
+- If the scoped item has no Kind, the issue is not shaped. The result
+  is `needs-shape`: return it now. Missing or incomplete observations
+  are unavailable facts, not evidence that an item is unshaped.
 - If its Kind is Epic, the result is `epic`: return it now, with the
   epic's open sub-issues.
 
@@ -783,7 +764,10 @@ watermark: its edit date, else its creation date. It carries nothing of
 what a comment says.
 
 For a Story with a parent, read the parent's **Shared decisions**
-section, when it has one: `gh issue view <parent> --json body`.
+section, when it has one: request `lets backlog item.read
+--request-file`
+for its full parent identity with `includeThread: false`. Parent reads
+fetch the body without the comment thread.
 [Route](#route) needs it.
 
 It returns one of these results:
@@ -937,9 +921,9 @@ query in [Confirm the packet](#confirm-the-packet), as `YYYY-MM-DD`.
 When `lastEditedAt` is null, the body was never edited. Use the day the
 issue was created:
 
-```bash
-gh issue view <i> --json createdAt --jq .createdAt
-```
+Request `lets backlog item.read --request-file` with `includeThread:
+true`
+and use the validated `createdAt`.
 
 When every step was already done, all five lines are `Skipped` lines.
 
@@ -1046,7 +1030,7 @@ start with no answers.
 
   ```bash
   git status --porcelain
-  gh pr view <name> --json number,url,state,isDraft,body
+  lets backlog pull-request.read --request-file
   ```
 
   Apply their rules for records that disagree, then run the row's done
@@ -1074,7 +1058,7 @@ start with no answers.
   have opened the pull request, so look for it again:
 
   ```bash
-  gh pr view <name> --json url --jq .url
+  lets backlog pull-request.read --request-file
   ```
 
   When it finds one, print the pull request's URL. When it finds none,

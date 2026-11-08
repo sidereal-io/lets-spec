@@ -1,3 +1,4 @@
+import { selectBacklog } from './selection.ts';
 import { openSync, readSync, fstatSync, closeSync, constants } from 'node:fs';
 import { isDeepStrictEqual } from 'node:util';
 import { AdapterFailure } from './errors.ts';
@@ -122,6 +123,10 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
     if (complete) claim.actor = assignees.length === 1 ? assignees[0] : null;
     claim.session = null;
     claim.token = null;
+  }
+  if (operation === 'backlog.list') {
+    result.selectedBacklog = selectBacklog(result as unknown as import('./types.ts').Page<import('./types.ts').LinkedBacklog>,
+      action.request.context.provider, input.selected as string | undefined);
   }
   if (operation === 'candidate.list') {
     if (result.complete !== true)

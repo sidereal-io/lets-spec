@@ -807,8 +807,8 @@ review_build_start() {
     'Check the prerequisite' 'Check the checkpoint' 'Import the commits' 'Recover from a failed import'; do
     skill_has_section lets-go "$section"
   done
-  skill_says lets-go 'gh issue view <i> --json createdAt'
-  skill_says lets-go 'gh repo view --json defaultBranchRef --jq .defaultBranchRef.name'
+  skill_says lets-go 'lets backlog item.read --request-file'
+  skill_says lets-go 'lets backlog repository.read --request-file'
   skill_says lets-go "Skipped shape: #<i>'s packet is complete, last edited <date>."
   # Claim sets the Status, so lets-go sets that field itself.
   skill_says lets-go 'lets backlog claim.acquire'
@@ -822,19 +822,14 @@ review_build_start() {
   done
 }
 
-@test "Read the settings runs the Project query once per run, and stops on none or several" {
+@test "Read the settings discovers the Project once and requires selection on ambiguity" {
   local text
-  text="$(part_section 'Read the settings')"
-  grep -qF 'gh api graphql' <<<"$text" || { echo "Read the settings does not run the Project query"; false; }
-  grep -qF '**None:** say to run the `lets-setup-backlog` skill, and stop.' <<<"$text" ||
-    { echo "Read the settings does not stop on no Project"; false; }
-  grep -qF '**Two or more:** list each one'"'"'s title and URL, ask the user to unlink the extras, and stop.' <<<"$text" ||
-    { echo "Read the settings does not stop on several Projects"; false; }
-  ! grep -qF 'gh api graphql' <<<"$(procedure_text 'Find the source of demand')" ||
-    { echo "Find the source of demand still runs the Project query"; false; }
-  skill_says_once lets-go 'gh api graphql'
-  skill_does_not_say lets-go 'no-project'
-  skill_does_not_say lets-go 'several-projects'
+  text="$(part_section 'Read the settings' | tr -s '[:space:]' ' ')"
+  grep -qF 'lets backlog backlog.list --request-file' <<<"$text" || false
+  grep -qF '**None:** say to run the `lets-setup-backlog` skill, and stop.' <<<"$text" || false
+  grep -qF '**Several without a selection:**' <<<"$text" || false
+  grep -qF 'lets.backlog.id' <<<"$text" || false
+  skill_says_once lets-go 'lets backlog backlog.list'
 }
 
 @test "lets-go with nothing takes the next ready issue" {
@@ -875,7 +870,7 @@ review_build_start() {
   local phrase
   skill_says lets-go 'Questions: <mode>, because #<i> is a <Kind>.'
   skill_says lets-go 'Questions: <mode>, because you asked for it.'
-  skill_says lets-go 'gh issue view <i> --json title,blockedBy'
+  skill_says lets-go 'lets backlog relationship.list --request-file'
   skill_says lets-go 'report the unresolved owner or checkpoint it carries, and stop, even on a stacked branch'
   skill_says lets-go 'The question mode is <mode>. At auto, the lets-go session answers each question that has a recommendation'
   skill_says lets-go 'Your rules are the same in both modes.'
@@ -890,7 +885,7 @@ review_build_start() {
 @test "lets-go states the blocker rule before it finds the source of demand" {
   local part read call
   part="$(part_section 'Check the issue')"
-  read="${part%%"gh issue view <i> --json title,blockedBy"*}"
+  read="${part%%"lets backlog relationship.list --request-file"*}"
   call="${part%%"[Find the source of demand](#find-the-source-of-demand)"*}"
   [ "$read" != "$part" ] || { echo "Check the issue does not read the blockers"; false; }
   [ "$call" != "$part" ] || { echo "Check the issue does not run Find the source of demand"; false; }
@@ -933,7 +928,7 @@ review_build_start() {
   skill_says lets-go 'Questions: <mode>, because your lets config sets go.questions.'
   skill_says lets-go 'lets go questions'
   first_mode=$(grep -n 'lets go questions' "$skill" | head -1 | cut -d: -f1)
-  first_gh=$(grep -nE '`gh ' "$skill" | head -1 | cut -d: -f1)
+  first_gh=$(grep -nE '`lets backlog repository.read' "$skill" | head -1 | cut -d: -f1)
   [ "$first_mode" -lt "$first_gh" ] ||
     { echo "lets go questions is on line $first_mode, after a GitHub call on line $first_gh"; false; }
 }
@@ -1023,7 +1018,7 @@ review_build_start() {
   skill_says lets-go "git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md"
   skill_says lets-go "git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md"
   skill_says lets-go 'git log -1 --format=%as <sha>'
-  skill_says lets-go 'gh pr view <name> --json number,body'
+  skill_says lets-go 'lets backlog pull-request.read --request-file'
 }
 
 # A placeholder that names two things lets an agent send an issue number
@@ -2315,7 +2310,7 @@ walk_section() {
 @test "lets-go walks the step table and reads each row when it reaches it" {
   local phrase
   for phrase in '[The step table](#the-step-table)' 'openspec instructions apply --change <name> --json' \
-    'gh pr view <name> --json number,body' '*Check an earlier review*' 'not before'; do
+    'lets backlog pull-request.read --request-file' '*Check an earlier review*' 'not before'; do
     grep -qF -- "$phrase" <<<"$(walk_section)" || { echo "the walk does not say: $phrase"; false; }
   done
 }
@@ -2396,7 +2391,7 @@ walk_section() {
 @test "Read the report checks a done report against its record" {
   local part
   part="$(part_section 'Read the report')"
-  grep -qF 'gh pr view <name> --json number,url,state,isDraft,body' <<<"$part" ||
+  grep -qF 'lets backlog pull-request.read --request-file' <<<"$part" ||
     { echo "Read the report does not read the pull request again after done"; false; }
   grep -qF 'git status --porcelain' <<<"$part" || { echo "Read the report does not read the tree again after done"; false; }
   grep -qF 'the step reported done, but' <<<"$part" || { echo "Read the report takes a done report on trust"; false; }
@@ -2411,7 +2406,7 @@ walk_section() {
 @test "a failed step on a branch with no pull request prints no URL" {
   local part
   part="$(part_section 'Read the report')"
-  grep -qF 'gh pr view <name> --json url --jq .url' <<<"$part" || { echo "Read the report does not look for the pull request again"; false; }
+  grep -qF 'lets backlog pull-request.read --request-file' <<<"$part" || { echo "Read the report does not look for the pull request again"; false; }
   grep -qF 'no pull request yet' <<<"$part" || { echo "Read the report does not say the branch has no pull request yet"; false; }
 }
 
@@ -3079,4 +3074,14 @@ pr_reference_says() {
   [[ "$prompt" == *'verify the selected connection'*'required tools'* ]] || false
   [[ "$prompt" == *'before backend issuance'*'failed'* ]] || false
   [[ "$prompt" == *'no fallback'* ]] || false
+}
+
+@test "runner existing-story lifecycle uses the shared bounded boundary" {
+  local text operation
+  text="$(cat "$(lets_go_skill)")"
+  for operation in repository.read backlog.list item.search item.read relationship.list candidate.list pull-request.read; do
+    grep -qF "lets backlog $operation" <<<"$text" || false
+  done
+  ! grep -qE 'gh (repo|api|issue|project|pr)' <<<"$text" || false
+  grep -qF 'references/backlog-actions.md' <<<"$text" || false
 }

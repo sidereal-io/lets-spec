@@ -36,7 +36,7 @@ export type InputMap = {
   'pull-request.create': { title: string; bodyFile: string; base: string; head: string; headRepository: string; item?: Identity };
   'pull-request.update': { pullRequest: string; bodyFile: string; item?: Identity };
   'pull-request.ready': { pullRequest: string; item?: Identity };
-  'backlog.list': { cursor?: string };
+  'backlog.list': { cursor?: string; selected?: string };
   'backlog.create': { title: string };
   'backlog.check': Record<string, never>;
   'item.search': { query: string; cursor?: string };

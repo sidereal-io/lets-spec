@@ -203,3 +203,22 @@ test('repository bootstrap discovers actor without assuming one', () => withBack
   assert.equal(response.action.step, 'bootstrap');
   assert.deepEqual(response.action.allowedEffects, []);
 }));
+
+test('configured Project is selected after discovery without preexisting backlog context', () => withBacklogCli(async ({ dir, call, request }) => {
+  const provider = join(dir, 'provider.json');
+  const definition = JSON.parse(readFileSync(provider, 'utf8'));
+  definition.operations['backlog.list'] = definition.operations['repository.read'];
+  writeFileSync(provider, JSON.stringify(definition));
+  const config = join(dir, 'openspec', 'config.yaml');
+  writeFileSync(config, readFileSync(config, 'utf8') + '    id: P1\n');
+  const issued = await call(['backlog.list', '--request-file', request('backlog.list', {})]);
+  assert.equal(issued.state, 'action', issued.reason);
+  assert.equal(issued.action.request.input.selected, 'P1');
+  const path = join(dir, 'projects.json');
+  writeFileSync(path, JSON.stringify(submissionFor(issued.action, { data: {
+    items: [{ provider: 'github', id: 'P1', title: 'Selected' }], complete: true, nextCursor: null,
+  } })));
+  const result = await call(['submit', '--continuation-file', issued.continuationFile, '--submission-file', path]);
+  assert.equal(result.state, 'complete', result.reason);
+  assert.equal(result.result.selectedBacklog.id, 'P1');
+}));

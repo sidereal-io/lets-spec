@@ -248,3 +248,16 @@ test('shipped bootstrap binds the exact repository before discovering actor', ()
   output.data.repository.nameWithOwner = 'other/repo';
   assert.throws(() => validateSubmission(action, submissionFor(action, output), projection, 101), /scope/);
 });
+
+test('submitted Project discovery applies configured selection in core', () => {
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const action = issueAction({ contractVersion: 1, operation: 'backlog.list', context: {
+    cwd: '/repo', provider: 'github', repository: 'R1', actor: 'actor',
+  }, input: { selected: 'P1' } }, definition, { name: 'local', binding: 'gh', options: {} }, {
+    step: 'read', toolArguments: [], allowedEffects: [], requiredCapabilities: [],
+    timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000,
+  }, 100);
+  const projection = definition.definition.operations['backlog.list'].actions.read.bindings.gh.projection;
+  const result = validateSubmission(action, submissionFor(action, linkedProjects), projection, 101);
+  assert.equal((result.selectedBacklog as { id: string }).id, 'P1');
+});

@@ -86,8 +86,10 @@ async function run(operation: string, options: Options): Promise<void> {
     const request = parseActionRequest(readInput(options.requestFile!));
     if (request.operation !== operation) throw new AdapterFailure('invalid_request', 'none', 'request operation differs from command');
     if (request.context.cwd !== process.cwd() || request.context.provider !== config.provider ||
-        (config.backlog !== undefined && request.context.backlog !== config.backlog))
+        (config.backlog !== undefined && !['backlog.list', 'repository.read'].includes(operation) && request.context.backlog !== config.backlog))
       throw new AdapterFailure('invalid_request', 'none', 'request scope differs from selected repository/backlog');
+    if (operation === 'backlog.list' && config.backlog !== undefined)
+      (request.input as { selected?: string }).selected = config.backlog;
     const prWrite = ['pull-request.create', 'pull-request.update', 'pull-request.ready'].includes(operation);
     const claimWrite = ['claim.acquire', 'claim.release'].includes(operation);
     if (MUTATIONS.includes(operation) && !prWrite && !claimWrite) throw new AdapterFailure('unsupported', 'none', 'production mutation sequencing is not available yet');

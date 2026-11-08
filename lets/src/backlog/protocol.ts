@@ -196,7 +196,7 @@ export const INPUTS: Record<string, Record<string, string>> = {
   'pull-request.create': { title: 'text', bodyFile: 'text', base: 'text', head: 'text', headRepository: 'text', 'item?': 'identity' },
   'pull-request.update': { pullRequest: 'text', bodyFile: 'text', 'item?': 'identity' },
   'pull-request.ready': { pullRequest: 'text', 'item?': 'identity' },
-  'backlog.list': { 'cursor?': 'text' },
+  'backlog.list': { 'cursor?': 'text', 'selected?': 'text' },
   'backlog.create': { title: 'text' },
   'backlog.check': {},
   'item.search': { query: 'text', 'cursor?': 'text' },
