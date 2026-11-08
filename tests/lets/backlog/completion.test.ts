@@ -73,6 +73,28 @@ test('uncertain explicit completion reconciles without another status write', ()
     assert.equal(result.result.reservationCleared, true);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+test('native Done with exact merge proof completes without another status write', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/native-completed-item-');
+  try {
+    const store = new OperationStore(join(dir, 'private'));
+    for (let invocation = 0; invocation < 2; invocation++) {
+      const { action, item } = submittedCompletion();
+      item.metadata.Status = 'Done';
+      Object.assign(item.pullRequestObservation.pullRequest, { state: 'MERGED', isDraft: false, mergeCommit: 'merge-sha' });
+      const issued = store.issue(action);
+      const submission = submissionFor(action, { data: { item } });
+      const response = store.submit(issued.continuation, submission, 101);
+      assert.equal(response.state, 'complete');
+      if (!('result' in response)) throw new Error('completion result required');
+      assert.deepEqual(response.result, { status: 'Done' });
+      assert.equal(store.get(action.operationId).attempts.length, 1);
+      assert.equal(store.get(action.operationId).pending, false);
+      assert.deepEqual(store.get(action.operationId).action.allowedEffects, []);
+      assert.deepEqual(store.submit(issued.continuation, submission, 102), response);
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
 for (const fault of ['wrong merge commit', 'feature merge without closing relationship', 'already Done but unmerged'] as const) {
   test(`explicit completion refuses ${fault}`, () => {
     mkdirSync('.workspace', { recursive: true });

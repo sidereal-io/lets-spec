@@ -80,7 +80,7 @@ export function project(projection: Projection, output: unknown, scope: Record<s
 }
 export function deriveResult(operation: string, projection: Projection, output: unknown,
   scope: Record<string, unknown>, normalized?: unknown): Record<string, unknown> {
-  let result = object(project(projection, output, scope), 'projected result');
+  let result = object(structuredClone(project(projection, output, scope)), 'projected result');
   if (operation === 'pull-request.read' && 'pullRequests' in result) {
     if (Object.keys(result).length !== 1 || !Array.isArray(result.pullRequests))
       throw new AdapterFailure('invalid_request', 'unknown', 'PR candidate result must contain only the complete pullRequests array');

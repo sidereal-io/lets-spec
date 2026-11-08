@@ -201,6 +201,10 @@ cannot establish that proof. Only then may the configured `complete` action
 request a status write; `verify` must freshly confirm the same proof and Done.
 An uncertain completion reserves the item and resumes through reads only.
 This retained contract does not add a terminal-completion caller to lets-go.
+When that exact proof is valid and the fresh item is already Done, return Done
+without issuing `complete`. Repeated explicit requests and duplicate accepted
+submissions preserve that result without another status write. Native Done
+alone still cannot substitute for the associated merge proof.
 
 `item.read` accepts optional `includeThread`, default false. The `read` action
 reads the issue body, metadata, creation/edit times and parent identity without

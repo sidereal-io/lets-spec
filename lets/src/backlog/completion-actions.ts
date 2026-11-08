@@ -35,7 +35,14 @@ export function nextCompletionAction(action: IssuedAction, result: Record<string
       if (action.step === 'read') throw error;
       throw new AdapterFailure('unknown_outcome', 'partial', `completion proof is unavailable after issuance: ${String(error)}`);
     }
-    if (action.step === 'read') return completionAction(action, 'complete', now);
+    if (action.step === 'read') {
+      if (object(object(result.item, 'completion item').metadata, 'metadata').Status === 'Done') {
+        delete result.item;
+        result.status = 'Done';
+        return null;
+      }
+      return completionAction(action, 'complete', now);
+    }
     if (action.step === 'complete') return completionAction(action, 'verify', now);
     if (action.step !== 'verify') throw new AdapterFailure('unsupported', 'unknown', 'unknown explicit completion stage');
     if (object(object(result.item, 'completed item').metadata, 'metadata').Status !== 'Done')
