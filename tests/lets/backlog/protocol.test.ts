@@ -431,3 +431,34 @@ test('read submission has at most two corrections', () => {
     assert.equal(store.get(action.operationId).attempts.length, 4);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+import { selectPullRequest } from '../../../lets/src/backlog/pull-requests.ts';
+test('branch PR lookup prefers an open PR over a newer closed PR', () => {
+  const found = selectPullRequest([
+    { ...prResult, id: 'CLOSED', state: 'CLOSED', createdAt: '2026-11-09T00:00:00Z' },
+    { ...prResult, id: 'OPEN', createdAt: '2026-11-01T00:00:00Z' },
+  ], { repository: 'R1', branch: 'feature' });
+  assert.equal(found?.id, 'OPEN');
+});
+test('branch PR lookup selects the newest of several open PRs', () => {
+  const found = selectPullRequest([
+    { ...prResult, id: 'OLD', createdAt: '2026-11-01T00:00:00Z' },
+    { ...prResult, id: 'NEW', createdAt: '2026-11-09T00:00:00Z' },
+  ], { repository: 'R1', branch: 'feature' });
+  assert.equal(found?.id, 'NEW');
+});
+for (const [field, value] of [['repository', 'OTHER'], ['headRepository', 'FORK'], ['headRef', 'other']] as const) {
+  test(`branch PR lookup qualifies ${field} before selection`, () => {
+    const found = selectPullRequest([
+      { ...prResult, [field]: value, id: 'UNSCOPED', createdAt: '2026-11-09T00:00:00Z' }, prResult,
+    ], { repository: 'R1', branch: 'feature' });
+    assert.equal(found?.id, 'PR1');
+  });
+}
+test('branch PR lookup reports absent when no qualified PR exists', () => {
+  assert.equal(selectPullRequest([prResult], { repository: 'R1', branch: 'other' }), null);
+});
+test('branch PR lookup does not turn malformed observations into absence', () => {
+  assert.throws(() => selectPullRequest([{ ...prResult, createdAt: 'unknown' }],
+    { repository: 'R1', branch: 'feature' }), /createdAt/);
+});

@@ -130,3 +130,8 @@ Deleted authors remain explicit nulls. Required thread facts cannot be omitted
 by a custom mapping. Parent bodies use a separate ordinary scoped issue read;
 no Project-wide item scan is needed. Thread-page cases and the absent parent
 are synthetic extensions to the scrubbed issue fixture.
+
+Branch PR selection belongs to core. It qualifies repository, head repository
+and head ref before sorting matching PRs: OPEN first, then newest createdAt.
+Several historic or open matches do not add an ambiguity stop. No matching PR
+returns null; malformed observations remain failures rather than absence.
