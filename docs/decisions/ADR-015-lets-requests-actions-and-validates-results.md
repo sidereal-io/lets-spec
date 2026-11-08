@@ -280,12 +280,23 @@ session-safe release and partial-claim recovery. Best-effort claims remain
 best-effort; assignment followed by status writes is not atomic and supplies no
 new lock. Never release or repair another session's ownership.
 
+Private recovery records must not become an extra gate on the runner's ordinary
+resume. Committed scoped identity and fresh native ownership/status establish
+whether work may continue; original operation records remain necessary for
+uncertain mutation reconciliation and session-safe release. Share pending item
+mutations across local worktrees using the same user-configured store. This
+supplies no distributed lock or visibility into another machine's private state.
+
 Completion requires validated submitted tool observations of the exact associated PR merge,
 including merged reference and merge commit, even after native closing automation.
 Ready PRs, archives, issue text, bare agent assertions and journal entries do not
 substitute for those merge facts. Completion remains idempotent; archive/readiness leave work
 In Progress until confirmed merge. This decision does not reopen the settled
-native-state/private-local-journal design.
+native-state/private-local-journal design. The shared runner chooses when to
+associate a PR and request completion; a provider definition only translates
+the bounded backend actions and observations. The GitHub plan connects the
+merged-PR stop to completion on the next explicit lets-go run, without merging
+or rerunning build steps.
 
 ## Packaging, release evidence and migration
 

@@ -76,16 +76,26 @@ current remote ownership or distinguish remote sessions using the same actor.
 ### Requirement: Work identity survives sessions
 Lets SHALL retain immutable provider, backlog, repository and item identity
 through branch creation, planning, resume, PR association and completion.
-Private continuation SHALL remain separate from committed identity and SHALL
-NOT be reconstructed from an item number as authority to adopt a session.
+Lets-go SHALL use committed item identity plus fresh native ownership/status
+observations for ordinary resume, without requiring the original private
+continuation or making another claim. Legacy branches SHALL be able to bind a
+uniquely scoped issue through the same fresh read. Private continuation SHALL
+remain separate and SHALL be required for original-operation uncertainty
+reconciliation and claim release; public identity alone SHALL NOT grant those
+authorities.
 
 #### Scenario: Resume has a conflicting identity
-- **WHEN** the change identity names a different Project or item from the requested continuation
+- **WHEN** the change identity names a different Project or item from the requested issue
 - **THEN** Lets reports disagreement and requests no mutation
 
 #### Scenario: Private continuation is unavailable
 - **WHEN** a caller has committed item identity but lacks the original private continuation
-- **THEN** Lets does not silently adopt the original session or authorize its release
+- **THEN** Lets permits ordinary resume after fresh sole-owner/In Progress verification when no known uncertainty blocks it
+- **AND** it does not adopt the original worker's private claim or authorize its release
+
+#### Scenario: Legacy claim has no journal
+- **WHEN** an in-progress branch predates private journals and uniquely resolves to the selected issue with the authenticated actor as sole owner and In Progress
+- **THEN** lets-go resumes the existing work without a new claim or fabricated original continuation
 
 ### Requirement: Release preserves other workers
 Lets SHALL verify current ownership before each release step and SHALL NOT
@@ -113,10 +123,22 @@ until validated reconciliation observations resolve effects under core policy.
 - **WHEN** a result arrives after its action expires
 - **THEN** Lets can retain it for reconciliation but does not accept it as permission to progress
 
+#### Scenario: Uncertain write exists in another local worktree
+- **WHEN** worktree A records an uncertain write for an item and worktree B attempts to continue that item using the same user-configured store
+- **THEN** Lets finds the original operation by scoped item identity and requires reconciliation before more work or writes
+
+#### Scenario: Resume occurs on another machine
+- **WHEN** committed identity is available on another machine without the original private recovery store
+- **THEN** Lets uses fresh native reads for ordinary resume and does not claim to know unseen outstanding writes
+- **AND** known unresolved effects or incomplete observations pause the affected work without granting release authority
+
 ### Requirement: Completion requires the exact associated merge
 Lets SHALL verify the exact associated PR's native closing relationship and
 merge evidence through validated submitted tool output before authorizing
-completion. Readiness or an unrelated PR merge SHALL NOT authorize Done.
+completion. Lets-go SHALL invoke this shared operation on the explicit run
+that finds the associated PR merged; the GitHub definition SHALL NOT choose
+that workflow transition. Readiness or an unrelated PR merge SHALL NOT
+authorize Done.
 
 #### Scenario: Ready PR is unmerged
 - **WHEN** the associated PR is ready for review but has not merged

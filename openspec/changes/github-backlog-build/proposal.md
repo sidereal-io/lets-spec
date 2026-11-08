@@ -19,8 +19,14 @@ active plan must be replaced before implementation continues (D1, D5).
   Lets validates correlation, mappings, freshness, coverage and workflow rules.
   Amend ADR-015 explicitly to remove independent capture. This trusts submitted
   observations and cannot detect plausible fabricated output (D10).
-- Keep lets-go as the only runner and pass identity/recovery context through
-  its existing planning, build and review steps (D4).
+- Keep lets-go as the only runner and preserve its existing resume behavior.
+  The adapter supplies backend facts; shared workflow policy decides when to
+  continue. Private recovery is for uncertain operations, not an extra login
+  requirement for ordinary resume (D4, D12).
+- Connect PR association and exact-merge completion to lets-go. An explicit run
+  after merge verifies completion without rerunning build steps; native Done
+  is accepted without a repeated update. This extends the existing merged-PR
+  stop within the shared workflow.
 - Support the workflow from both unchanged T3 and standalone coding-agent
   CLIs through explicit integration configuration. Do not make T3 changes,
   upstream requests or T3-only initial support prerequisites (D9).

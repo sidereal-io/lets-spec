@@ -16,10 +16,9 @@ This is a fresh planning restart for existing draft [PR #172](https://github.com
 | D7 | What acceptance can qualify a later implementation? | Fresh scoped acceptance in mstelz/test-repo-pls-ignore and mstelz Project 7 after planning and implementation; historical fixtures and PRs cannot be replayed or mutated. | User, planning restart request |
 | D8 | Should this restart select another architecture? | Follow the current accepted decisions, retaining earlier decisions where compatible; propose a change only when concrete evidence shows it is necessary. | User, 2026-11-07, clarification after comparing ADR-010 and ADR-015 |
 | D9 | Which agent environments must work? | Both T3 and standalone coding-agent CLIs, through explicit configuration of integrations; no T3 code changes or requests to its maintainers, and no T3-first support restriction. | User, 2026-11-07, host support clarification |
-
 | D10 | Must Lets independently retrieve original tool capture? | No. The configured adapter translates tool output into a submitted contract; Lets validates that contract and workflow rules. Explicitly revise ADR-015’s evidence clause, retaining policy/recovery ownership. This trusts submitted observations and cannot detect convincingly fabricated output. | User, 2026-11-07, explicit “yes” to the stated trust-model amendment |
-
 | D11 | How should implementation tasks be sized? | Keep #136 / draft #172 together and allow more than twelve small tasks so the full lifecycle and shared contract migration remain in one plan. | User, explicit answer to task-count question |
+| D12 | Is resume adapter-specific workflow? | No. Lets-go already owns resume. Preserve that shared behavior; the adapter supplies backend observations. Remove the plan's accidental requirement for an original private continuation for ordinary resume. Completion policy also belongs to shared Lets/lets-go, not the GitHub definition. | User, “doesnt lets go already do that? why is it specific to this adapter?” followed by “Right” to the shared-ownership clarification |
 
 ## Changes from the story
 
@@ -27,6 +26,12 @@ The packet's executable transport is superseded by accepted ADR-015. The
 restart preserves observable lifecycle outcomes while amending the evidence
 trust requirement as explicitly approved in D10. The old branch's
 ledger and claims of user confirmation do not confirm this replacement plan.
+
+Resume preserves the existing runner behavior. The design connects the already
+scoped merge-gated completion operation to that same runner's terminal-PR path;
+this extends the current merged-PR stop and is not an adapter-specific runner.
+The detailed caller and recovery corrections are design work under D4 and D12,
+not a claim that the user approved the old prototype or its private-state layout.
 
 No new vocabulary definitions or scope split have been agreed. The shared
 glossary remains unchanged.

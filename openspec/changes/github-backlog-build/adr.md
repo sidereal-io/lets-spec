@@ -14,7 +14,12 @@ Update ADR-010's reconciliation note to match; preserve its historical body.
 
 ADR-017 governs workflow step completion read from Git/GitHub. The private
 backlog operation journal records mutation recovery, not step completion; it
-is not a replacement run log. ADR-012's packet/comment instruction boundary and
+is not a replacement run log. Ordinary resume uses immutable identity plus fresh
+native ownership, without an original private continuation. The store shares
+outstanding item mutations across local worktrees; it supplies no distributed
+lock or cross-machine recovery. Association and completion are invoked by
+lets-go, not by a provider-specific runner. ADR-012's packet/comment instruction
+boundary and
 ADR-014/015's step reports remain unchanged. Delegation runtime migration is
 outside this slice and is not claimed by the backlog design.
 

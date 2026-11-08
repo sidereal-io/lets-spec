@@ -237,7 +237,10 @@ new write or progression. Corrected output SHALL NOT reactivate write permission
 Lets SHALL check required tool availability, login, execution and output bounds,
 and private-state write and locking access before issuing backend actions.
 Missing prerequisites SHALL return an actionable typed failure without tool
-substitution, automatic store relocation or backend effects.
+substitution or automatic store relocation. Backend-dependent login/permission
+checks SHALL use separately bounded preflight read actions after local safety
+checks; these reads SHALL NOT require the condition they are checking. A missing
+backend prerequisite SHALL issue no affected mutation and have no write effects.
 
 #### Scenario: Private-state directory is unwritable
 - **WHEN** the configured state directory cannot support private durable writes and locking
@@ -247,3 +250,20 @@ substitution, automatic store relocation or backend effects.
 - **WHEN** the configured host provides the declared finite command timeout and output limits for gh
 - **THEN** Lets accepts that bound without requiring a gh timeout flag or GNU timeout
 - **AND** expiry after issuance does not establish rollback or no effects
+
+### Requirement: Outstanding item mutations are shared across local worktrees
+Private recovery SHALL key outstanding item mutations by backend endpoint,
+provider, repository, backlog and item in one user-configured machine store.
+Worker and worktree provenance SHALL be fields, not isolation keys for blocking.
+Every new item operation SHALL check outstanding mutations before permitting
+work or writes. Original-operation reconciliation reads SHALL remain available.
+The store SHALL NOT claim cross-machine or cross-account visibility.
+
+#### Scenario: Another local session uses a new operation ID
+- **WHEN** an item has an outstanding mutation in one worktree and another worktree requests a new write for that item
+- **THEN** Lets reports the original pending mutation and issues no new write until its effects are reconciled
+
+#### Scenario: Same actor has two worker sessions
+- **WHEN** two local worker sessions use the same authenticated backend account and configured store
+- **THEN** both see the item's pending mutation while retaining their distinct provenance
+- **AND** the backend guarantee remains actor-level best-effort ownership
