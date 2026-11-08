@@ -16,5 +16,7 @@ export function resourceKeys(action: IssuedAction): string[] {
   }
   if (action.request.operation === 'pull-request.create')
     keys.push(JSON.stringify(['pr-create', ...prefix, input.headRepository, input.head]));
+  if (action.request.operation.startsWith('pull-request.') && typeof input.pullRequest === 'string')
+    keys.push(JSON.stringify(['pr', ...prefix, input.pullRequest]));
   return keys;
 }

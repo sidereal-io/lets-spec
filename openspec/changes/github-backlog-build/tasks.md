@@ -43,7 +43,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 2.11 [medium] Reconstruct the original continuation in another worktree or after scratch loss without repeating the write. (✓ node --test tests/lets/backlog/recovery.test.ts passed, 11 tests; covered by operation-ID resume from 2.3 and shared lookup from 2.9)
 - [x] 2.12 [medium] Keep uncertain step-write continuations distinct from subsequent runner reads. (✓ node --test tests/lets/backlog/state.test.ts passed, 19 tests; per-operation records from 2.1 preserve blocked-read recovery)
 - [x] 2.13 [medium] Reserve PR creation by endpoint, repository and head identity across worktrees and worker IDs. (✓ node --test tests/lets/backlog/state.test.ts passed, 20 tests)
-- [ ] 2.14 [medium] Block ready or update while an uncertain operation reserves the same PR ID. (verify: node --test tests/lets/backlog/state.test.ts)
+- [x] 2.14 [medium] Block ready or update while an uncertain operation reserves the same PR ID. (✓ node --test tests/lets/backlog/state.test.ts passed, 21 tests; tsc --noEmit passed)
 
 ## 3. GitHub observations and PR actions [depends-on: 2]
 

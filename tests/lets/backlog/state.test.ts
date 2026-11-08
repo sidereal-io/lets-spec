@@ -184,3 +184,21 @@ test('PR creation reserves its repository and head across workers', () => {
     assert.equal(blocked.operationId, first.operationId);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('ready is blocked by an uncertain update of the same PR', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-update-');
+  try {
+    const { action: fixture } = submittedRead();
+    const write = (operation: 'pull-request.update' | 'pull-request.ready') => issueAction({ contractVersion: 1, operation,
+      context: fixture.request.context, input: { pullRequest: 'PR1', ...(operation === 'pull-request.update' ? { bodyFile: '/repo/body.md' } : {}) },
+    }, fixture.definition, fixture.connection, { toolArguments: [operation], allowedEffects: [operation],
+      requiredCapabilities: [], timeoutMs: 1000, maxOutputBytes: 4096, acceptanceMs: 5000 }, 100);
+    const update = write('pull-request.update');
+    const store = new OperationStore(join(dir, 'private'));
+    store.issue(update);
+    const blocked = new OperationStore(join(dir, 'private')).issue(write('pull-request.ready'));
+    assert.equal(blocked.state, 'needs-reconciliation');
+    assert.equal(blocked.operationId, update.operationId);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
