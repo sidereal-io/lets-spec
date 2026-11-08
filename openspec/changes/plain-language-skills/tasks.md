@@ -1,0 +1,18 @@
+## 1. Shared guidance
+
+- [ ] 1.1 [medium] Give every shipped skill and schema writing step a working reference to the same reader-focused plain-language method (verify: pnpm exec bats tests/skill-interfaces.bats)
+
+## 2. Instructions and outputs [depends-on: 1]
+
+- [ ] 2.1 [medium] Make skill selection, shaping and planning instructions clear about their inputs, decisions and outputs (verify: pnpm exec bats tests/skill-interfaces.bats)
+- [ ] 2.2 [medium] Make writing and test-first guidance usable without the earlier conversation while preserving required formats (verify: pnpm exec bats tests/skill-interfaces.bats)
+- [ ] 2.3 [medium] Give delegated reviewers reader-task criteria and make the review procedures and reports easy to follow (verify: pnpm exec bats tests/skill-interfaces.bats)
+
+## 3. Verification [depends-on: 2]
+
+- [ ] 3.1 [medium] Exercise skill selection, glossary handoff and plain-language judgment in a fresh agent context and record actual results and human-testing limits (verify: git diff --check)
+- [ ] 3.2 [medium] Verify both release flows and the repository checks, then record the complete sweep and remaining limits (verify: pnpm test)
+
+## Deviations Ledger
+
+None.
