@@ -142,3 +142,21 @@ test('timer-overflow deadlines are rejected before launching an adapter', async 
   });
   assert.equal(launched, false);
 });
+
+import { validateSubmission } from '../../../lets/src/backlog/submissions.ts';
+import { submittedRead } from './fixtures/submitted.ts';
+for (const [name, patch, receivedAt] of [
+  ['expired', {}, 5101],
+  ['oversized', { output: { data: { valid: true, gaps: ['x'.repeat(5000)] } } }, 200],
+  ['signal termination', { execution: { outcome: 'success', exitCode: 0, signal: 'SIGTERM' } }, 200],
+  ['uncertain termination', { execution: { outcome: 'unknown' } }, 200],
+  ['overflow', { execution: { outcome: 'success', exitCode: 0, outputLimitExceeded: true } }, 200],
+  ['timeout', { execution: { outcome: 'success', exitCode: 0, timedOut: true } }, 200],
+] as const) {
+  test(`submitted ${name} cannot establish no effects`, () => {
+    const { action, submission, projection } = submittedRead();
+    action.allowedEffects = ['assignment'];
+    assert.throws(() => validateSubmission(action, { ...submission, ...patch }, projection, receivedAt),
+      (error: unknown) => error instanceof Error && 'effects' in error && error.effects === 'unknown');
+  });
+}
