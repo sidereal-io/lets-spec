@@ -94,7 +94,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 6.4 [medium] Include original uncertain-operation ID and recovery command in a failed step's existing reason string. (✓ focused bats recovery-reason and prose checks passed)
 - [x] 6.5 [medium] Preserve the clean-tree check followed by the existing merged-PR stop without ownership checks or a completion write. (✓ focused bats clean-tree/merged-stop ordering check passed)
 - [x] 6.6 [medium] Ignore historical merged or rejected PRs when the branch no longer exists instead of adding a terminal lookup or Done update. (✓ focused bats absent-branch and prose checks passed)
-- [ ] 6.7 [medium] Preserve the existing stop for a surviving stacked branch's merged PR without claiming the issue is completed. (verify: bats tests/skill-interfaces.bats)
+- [x] 6.7 [medium] Preserve the existing stop for a surviving stacked branch's merged PR without claiming the issue is completed. (✓ focused bats surviving stacked merged-PR check passed)
 - [ ] 6.8 [easy] Preserve the surviving branch's rejected-PR stop without claiming, completion or build actions. (verify: bats tests/skill-interfaces.bats)
 - [ ] 6.9 [medium] Retain the four-provider inventory with attributed code-host fixture facts, marking pull-request.* outside non-GitHub production profiles pending a routing decision. (verify: node --test tests/lets/backlog/inventory.test.ts)
 - [ ] 6.10 [medium] Apply identical policy with explicitly configured compatible tool connections in both required hosts. (verify: node --test tests/lets/backlog/config.test.ts)

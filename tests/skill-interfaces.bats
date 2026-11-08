@@ -3127,3 +3127,12 @@ pr_reference_says() {
   [[ "$enter" == *'Neither has it'*'historical merged or rejected PRs'*'no terminal lookup'* ]] || false
   [[ "$enter" == *'no Done update'* ]] || false
 }
+
+@test "surviving stacked merged PR stops without completing the issue" {
+  local walk terminal
+  walk="$(walk_section)"
+  terminal="${walk%%'3. **The archive folder.**'*}"
+  [[ "$terminal" == *'`MERGED`'*'the change is merged and the run is finished, and stop'* ]] || false
+  [[ "$terminal" == *'branch still exists'*'stacked pull request merged into the branch below it'*'issue stays open'* ]] || false
+  ! grep -qE 'Check work ownership|claim.acquire|claim.release|completion.write' <<<"$terminal" || false
+}
