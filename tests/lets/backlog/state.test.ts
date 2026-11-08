@@ -19,7 +19,7 @@ for (const [field, invalid] of [
 }
 
 import { preflightStore } from '../../../lets/src/backlog/private-store.ts';
-import { mkdirSync, mkdtempSync, writeFileSync, rmSync, readdirSync, statSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync, readdirSync, statSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 test('private store preflight fails with the configured path remedy', () => {
   mkdirSync('.workspace', { recursive: true });
@@ -81,5 +81,20 @@ test('accepted submission is acknowledged identically after restart', () => {
     const reopened = new OperationStore(join(dir, 'private'));
     assert.deepEqual(reopened.submit(issued.continuation, submission, 300), first);
     assert.equal(reopened.get(action.operationId).attempts.length, 1);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('unsupported journal version remains untouched', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/version-');
+  try {
+    const { action } = submittedRead();
+    const store = new OperationStore(join(dir, 'private'));
+    store.issue(action, []);
+    const path = join(dir, 'private', 'operations', `${action.operationId}.json`);
+    const original = { ...store.get(action.operationId), journalVersion: 99 };
+    writeFileSync(path, JSON.stringify(original));
+    assert.throws(() => store.get(action.operationId), /unsupported.*journal.*retain/);
+    assert.equal(JSON.parse(readFileSync(path, 'utf8')).journalVersion, 99);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

@@ -1,3 +1,4 @@
+import { object } from './protocol.ts';
 import { issueAction } from './actions.ts';
 import { isDeepStrictEqual } from 'node:util';
 import { validateSubmission } from './submissions.ts';
@@ -42,7 +43,11 @@ export class OperationStore {
     return join(this.path, 'operations', `${id}.json`);
   }
   get(id: string): OperationRecord {
-    return JSON.parse(readFileSync(this.file(id), 'utf8')) as OperationRecord;
+    const path = this.file(id);
+    const value = object(JSON.parse(readFileSync(path, 'utf8')), 'recovery record');
+    if (value.journalVersion !== 1)
+      throw new AdapterFailure('unsupported', 'unknown', `${path}: unsupported private journal version; retain the record and reconcile with its compatible runtime; do not replay or delete it`);
+    return value as OperationRecord;
   }
   private write(record: OperationRecord): void {
     const target = this.file(record.action.operationId);
