@@ -152,3 +152,25 @@ test('reconciliation preserves original worker provenance for release', () => {
     assert.doesNotThrow(() => requireOriginalWorker(store.get(action.operationId), action.request.context));
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+import { writeFileSync } from 'node:fs';
+test('operation ID recovers its original continuation after scratch loss', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/scratch-loss-');
+  try {
+    const { action } = submittedClaim();
+    const statePath = join(dir, 'private');
+    const store = new OperationStore(statePath);
+    const original = store.issue(action, []);
+    const scratch = join(dir, 'continuation.json');
+    writeFileSync(scratch, JSON.stringify(original.continuation));
+    rmSync(scratch);
+    const { action: later } = submittedClaim();
+    const found = new OperationStore(statePath).issue(later, []);
+    assert.equal(found.operationId, action.operationId);
+    const resumed = new OperationStore(statePath).resume(found.operationId, 6000);
+    assert.deepEqual(resumed.continuation, original.continuation);
+    assert.deepEqual(resumed.action.allowedEffects, []);
+    assert.equal(resumed.action.request.context.repository, 'R1');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
