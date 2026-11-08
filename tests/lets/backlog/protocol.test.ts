@@ -303,3 +303,21 @@ for (const [field, replacement] of [
       /invalid_request.*binding/);
   });
 }
+
+import { parseActionRequest } from '../../../lets/src/backlog/actions.ts';
+for (const [name, input, category] of [
+  ['malformed JSON', '{', 'invalid_request'],
+  ['unsupported contract', JSON.stringify({ contractVersion: 99 }), 'unsupported'],
+  ['unknown operation', JSON.stringify({ contractVersion: 1, operation: 'invented', context, input: {} }), 'invalid_request'],
+  ['unknown input', JSON.stringify({ contractVersion: 1, operation: 'backlog.check', context, input: { bypass: true } }), 'invalid_request'],
+] as const) {
+  test(`action request rejects ${name} with a typed error`, () => {
+    assert.throws(() => parseActionRequest(input),
+      (error: unknown) => error instanceof Error && 'category' in error && error.category === category);
+  });
+}
+test('submission rejects an unsupported contract without inferring no effects', () => {
+  const { action, submission, projection } = submittedRead();
+  assert.throws(() => validateSubmission(action, { ...submission, contractVersion: 99 }, projection, 200),
+    (error: unknown) => error instanceof Error && 'category' in error && error.category === 'unsupported' && 'effects' in error && error.effects === 'unknown');
+});

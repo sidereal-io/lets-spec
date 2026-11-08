@@ -49,3 +49,21 @@ export function issueAction<R extends ActionRequest>(request: R, definition: Loa
     limits: { timeoutMs: parameters.timeoutMs, maxOutputBytes: parameters.maxOutputBytes },
   });
 }
+
+import { AdapterFailure } from './errors.ts';
+import { object, MUTATIONS, validateRequest } from './protocol.ts';
+import { keys } from './definitions.ts';
+export function parseActionRequest(json: string): ActionRequest {
+  let value: Record<string, unknown>;
+  try { value = object(JSON.parse(json), 'request'); }
+  catch { throw new AdapterFailure('invalid_request', 'none', 'malformed request JSON object'); }
+  if (value.contractVersion !== 1) throw new AdapterFailure('unsupported', 'none', 'unsupported operation contract version');
+  try {
+    keys(value, ['contractVersion', 'operation', 'context', 'input'], 'request');
+    const context = object(value.context, 'context');
+    keys(context, ['cwd', 'provider', 'repository', 'backlog', 'actor', 'session'], 'context');
+    validateRequest({ protocol: 1, operation: value.operation, context, input: value.input,
+      ...(MUTATIONS.includes(value.operation as string) ? { mutationId: 'core-allocated' } : {}) });
+    return value as ActionRequest;
+  } catch (error) { throw new AdapterFailure('invalid_request', 'none', String(error)); }
+}

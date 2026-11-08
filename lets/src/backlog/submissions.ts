@@ -1,5 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { AdapterFailure } from './errors.ts';
+import { keys } from './definitions.ts';
 import { object } from './protocol.ts';
 import { deriveResult } from './projections.ts';
 import type { Projection } from './projections.ts';
@@ -9,6 +10,13 @@ import type { IssuedAction } from './actions.ts';
 export function validateSubmission(action: IssuedAction, value: unknown, projection: Projection,
   receivedAt: number): Record<string, unknown> {
   const submission = object(value, 'submission');
+  if (submission.contractVersion !== 1)
+    throw new AdapterFailure('unsupported', 'unknown', 'unsupported submission contract version');
+  try {
+    keys(submission, ['contractVersion', 'operationId', 'actionId', 'attemptId', 'inputDigest',
+      'definitionDigest', 'connectionDigest', 'context', 'tool', 'execution', 'output', 'normalized',
+      'diagnostics'], 'submission');
+  } catch (error) { throw new AdapterFailure('invalid_request', 'unknown', String(error)); }
   const bindings = {
     operationId: action.operationId, actionId: action.actionId, attemptId: action.attemptId,
     inputDigest: action.inputDigest, definitionDigest: action.definition.digest,
