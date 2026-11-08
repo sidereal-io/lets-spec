@@ -7,10 +7,12 @@ import { dirname, isAbsolute, join } from 'node:path';
 import { homedir } from 'node:os';
 import { AdapterFailure } from './errors.ts';
 import { keys, loadDefinition, text } from './definitions.ts';
+import type { Connection } from './actions.ts';
 import type { LoadedDefinition } from './definitions.ts';
 
 export type Configuration = {
   provider: string;
+  connection: Connection;
   backlog?: string;
   mappings?: Mappings;
   storage?: { path: string; tracking: 'tracked' | 'ignored' };
@@ -18,6 +20,7 @@ export type Configuration = {
   definition: LoadedDefinition;
 };
 export type ConfigurationSources = {
+  connection?: string;
   repositoryFile: string;
   userFile: string;
   readDefinition?: (path: string) => unknown;
@@ -87,6 +90,7 @@ export function resolveConfiguration(repository: unknown, machine: unknown, sour
   const env = sources.env ?? process.env;
   return {
     provider, definition: loaded,
+    connection: selectConnection(settings, loaded, sources.userFile, sources.connection),
     ...(selection.id === undefined ? {} : { backlog: selection.id as string }),
     ...(selection.mappings === undefined ? {} : { mappings: selection.mappings as Mappings }),
     ...(selection.storage === undefined ? {} : { storage: selection.storage as Configuration['storage'] }),
@@ -97,4 +101,36 @@ export function resolveConfiguration(repository: unknown, machine: unknown, sour
 function rejectExecutable(settings: Record<string, unknown>, path: string): void {
   for (const key of ['executable', 'adapter', 'path'])
     if (key in settings) throw new Error(`${path}.${key} is obsolete; select an inert definition in lets.backlog.definition and configure tools under backlog.connections`);
+}
+
+function selectConnection(settings: Record<string, unknown>, definition: LoadedDefinition,
+  file: string, explicit?: string): Connection {
+  try {
+    const connections = settings.connections === undefined ? { gh: { binding: 'gh' } } : object(settings.connections, 'backlog.connections');
+    for (const [name, value] of Object.entries(connections)) {
+      text(name, 'backlog.connections name');
+      const entry = object(value, `backlog.connections.${name}`);
+      keys(entry, ['binding', 'options'], `backlog.connections.${name}`);
+      text(entry.binding, `backlog.connections.${name}.binding`);
+      if (!Object.hasOwn(definition.definition.bindings, entry.binding))
+        throw new Error(`backlog.connections.${name}.binding must belong to the selected definition`);
+      if (entry.options !== undefined) {
+        const options = object(entry.options, `backlog.connections.${name}.options`);
+        keys(options, ['endpoint', 'timeoutMs', 'maxOutputBytes', 'acceptanceMs'], `backlog.connections.${name}.options`);
+        if (options.endpoint !== undefined) text(options.endpoint, `backlog.connections.${name}.options.endpoint`);
+        for (const key of ['timeoutMs', 'maxOutputBytes', 'acceptanceMs'])
+          if (options[key] !== undefined && (!Number.isSafeInteger(options[key]) || (options[key] as number) <= 0 || (options[key] as number) > 2147483647))
+            throw new Error(`backlog.connections.${name}.options.${key} must be a finite positive bound`);
+      }
+    }
+    if (settings.connection !== undefined) text(settings.connection, 'backlog.connection');
+    const names = Object.keys(connections);
+    const name = explicit ?? settings.connection ?? (names.length === 1 ? names[0] : undefined);
+    if (typeof name !== 'string' || !Object.hasOwn(connections, name))
+      throw new Error('backlog.connection must select a configured name; set a default for several connections');
+    const selected = object(connections[name], `backlog.connections.${name}`);
+    return { name, binding: selected.binding as string, options: structuredClone(selected.options ?? {}) as Record<string, unknown> };
+  } catch (error) {
+    throw new AdapterFailure('invalid_configuration', 'none', `${file}: backlog.connection: ${String(error)}; select a compatible named connection; no fallback`);
+  }
 }

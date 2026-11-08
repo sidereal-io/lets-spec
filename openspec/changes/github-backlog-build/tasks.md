@@ -24,7 +24,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 1.13 [medium] Accept timely submissions using Lets receipt time when exact tool timestamps and optional MCP server version are unavailable. (✓ node --test tests/lets/backlog/protocol.test.ts passed, 66 tests)
 - [x] 1.14 [medium] Fail before issuance when private state cannot support durable private writes and locking. (✓ node --test tests/lets/backlog/state.test.ts passed, 9 tests)
 - [x] 1.15 [medium] Validate the repository and PR operation input/result fields under the same selected GitHub definition. (✓ node --test tests/lets/backlog/protocol.test.ts passed, 74 tests; tsc --noEmit passed)
-- [ ] 1.16 [medium] Resolve implicit gh, sole-entry and named-default connections, rejecting several entries without a default or invalid explicit selection. (verify: node --test tests/lets/backlog/config.test.ts)
+- [x] 1.16 [medium] Resolve implicit gh, sole-entry and named-default connections, rejecting several entries without a default or invalid explicit selection. (✓ node --test tests/lets/backlog/config.test.ts passed, 24 tests)
 - [ ] 1.17 [medium] Reject a default-connection change as a replacement for an uncertain operation's recorded connection. (verify: node --test tests/lets/backlog/config.test.ts)
 - [ ] 1.18 [medium] Allocate and return a worker ID before action issuance when a new caller supplies none. (verify: node --test tests/lets/backlog/scopes.test.ts)
 

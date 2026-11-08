@@ -102,3 +102,30 @@ test('custom definition rejects an unknown projection operator at load', () => {
   invalid.operations['claim.read'].actions.read.bindings.gh.projection.op = 'eval';
   assert.throws(() => loadDefinition([{ source: '/repo/custom.json', value: invalid }]), /projection.*operator/);
 });
+
+const sourceFiles = { repositoryFile: '/repo/config.yaml', userFile: '/user/config.yaml' };
+for (const [name, backlog, expected] of [
+  ['implicit gh', {}, 'gh'],
+  ['sole entry', { connections: { local: { binding: 'gh', options: {} } } }, 'local'],
+  ['named default', { connection: 'second', connections: { first: { binding: 'gh', options: {} }, second: { binding: 'gh', options: {} } } }, 'second'],
+] as const) {
+  test(`connection default resolves ${name}`, () => {
+    assert.equal(resolveConfiguration({}, { version: 3, backlog }, sourceFiles).connection.name, expected);
+  });
+}
+for (const [name, backlog, connection] of [
+  ['several without default', { connections: { a: { binding: 'gh' }, b: { binding: 'gh' } } }, undefined],
+  ['invalid explicit name', {}, 'missing'],
+  ['undeclared binding', { connections: { local: { binding: 'mcp' } } }, undefined],
+  ['invalid named default', { connection: 'absent' }, undefined],
+] as const) {
+  test(`connection selection rejects ${name}`, () => {
+    assert.throws(() => resolveConfiguration({}, { version: 3, backlog }, { ...sourceFiles, connection }),
+      /user\/config.yaml.*backlog.connection.*no fallback/);
+  });
+}
+test('direct caller can explicitly select another declared connection', () => {
+  assert.equal(resolveConfiguration({}, { version: 3, backlog: { connection: 'a', connections: {
+    a: { binding: 'gh' }, b: { binding: 'gh' },
+  } } }, { ...sourceFiles, connection: 'b' }).connection.name, 'b');
+});

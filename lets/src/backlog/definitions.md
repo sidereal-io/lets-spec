@@ -47,3 +47,12 @@ A sandbox must grant those operations at the configured shared path. If access
 fails, configure machine `backlog.stateDir` to an accessible shared private
 location or grant access to the existing one. Do not choose a per-worktree
 store or delete recovery records to bypass outstanding mutations.
+
+Machine `backlog.connections` maps names to `{ binding, options }`. Options may
+set the endpoint and finite `timeoutMs`, `maxOutputBytes`, and `acceptanceMs`.
+Bindings must already be declared by the repository-selected definition.
+`backlog.connection` names the default. Without connection settings the shipped
+`gh` binding is implicit; one configured entry becomes the default; several
+require a default name. Invalid selection never falls back. Direct backlog
+callers may select `--connection`; lets-go retains its existing request syntax
+and uses the configured default.
