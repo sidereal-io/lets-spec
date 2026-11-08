@@ -2,7 +2,7 @@ import { validateProjection } from './projections.ts';
 import type { Projection } from './projections.ts';
 import { createHash } from 'node:crypto';
 import { AdapterFailure } from './errors.ts';
-import { object, OPERATIONS } from './protocol.ts';
+import { object, OPERATIONS, ERRORS } from './protocol.ts';
 
 export type ToolBinding = { kind: 'cli' | 'mcp'; tool: string; versions: string[] };
 export type ActionTranslation = { arguments: unknown; projection: Projection };
@@ -12,7 +12,7 @@ export type ProviderDefinition = {
   name: string;
   version: string;
   contractVersions: number[];
-  backend: { name: string; versions: string[] };
+  backend: { name: string; versions: string[]; errorTypes?: Record<string, import('./errors.ts').ErrorCategory> };
   bindings: Record<string, ToolBinding>;
   operations: Record<string, OperationDefinition>;
 };
@@ -46,9 +46,12 @@ export function loadDefinition(sources: readonly { source: string; value: unknow
         definition.contractVersions.some((entry) => !Number.isInteger(entry)))
       throw new Error('contractVersions must support operation contract 1');
     const backend = object(definition.backend, 'backend');
-    keys(backend, ['name', 'versions'], 'backend');
+    keys(backend, ['name', 'versions', 'errorTypes'], 'backend');
     text(backend.name, 'backend.name');
     strings(backend.versions, 'backend.versions');
+    if (backend.errorTypes !== undefined)
+      for (const category of Object.values(object(backend.errorTypes, 'backend.errorTypes')))
+        if (!(ERRORS as readonly unknown[]).includes(category)) throw new Error('backend.errorTypes contains an unknown category');
     const bindings = object(definition.bindings, 'bindings');
     if (!Object.keys(bindings).length) throw new Error('bindings must declare a tool');
     for (const [name, value] of Object.entries(bindings)) {

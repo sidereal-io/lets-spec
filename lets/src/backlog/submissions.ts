@@ -79,6 +79,14 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
   } else outputBytes = Buffer.byteLength(JSON.stringify(output) ?? '');
   if (outputBytes + diagnosticsBytes > action.limits.maxOutputBytes)
     uncertain('submitted output exceeds issued bound');
+  if (output && typeof output === 'object' && !Array.isArray(output) &&
+      Array.isArray((output as Record<string, unknown>).errors) && ((output as Record<string, unknown>).errors as unknown[]).length) {
+    const errors = (output as { errors: unknown[] }).errors;
+    const categories = errors.map((error) => error && typeof error === 'object' && typeof (error as Record<string, unknown>).type === 'string'
+      ? action.definition.definition.backend.errorTypes?.[(error as { type: string }).type] : undefined);
+    const category = categories.every((entry) => entry !== undefined && entry === categories[0]) ? categories[0]! : 'unknown_outcome';
+    throw new AdapterFailure(category, action.allowedEffects.length || category === 'unknown_outcome' ? 'unknown' : 'none', 'structured provider errors require resolution; partial data does not prove no mutation');
+  }
   const execution = object(submission.execution, 'execution');
   if (execution.outcome !== 'success' || execution.exitCode !== 0 || execution.signal !== undefined ||
       execution.outputLimitExceeded === true || execution.timedOut === true)

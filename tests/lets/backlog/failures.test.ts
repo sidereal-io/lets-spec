@@ -123,3 +123,23 @@ for (const category of ['conflict', 'permission', 'invalid_request']) {
       );
     }));
 }
+
+import { validateSubmission } from '../../../lets/src/backlog/submissions.ts';
+import { submittedRead } from './fixtures/submitted.ts';
+test('structured provider error preserves permission without claiming no write effects', () => {
+  const { action, submission, projection } = submittedRead();
+  action.allowedEffects = ['assignment'];
+  action.definition.definition.backend.errorTypes = { FORBIDDEN: 'permission' };
+  assert.throws(() => validateSubmission(action, { ...submission,
+    output: { data: { assignment: { id: 'I1' } }, errors: [{ type: 'FORBIDDEN', message: 'details' }] },
+  }, projection, 200), (error: unknown) => error instanceof Error && 'category' in error && error.category === 'permission' &&
+    'effects' in error && error.effects === 'unknown');
+});
+test('stderr category words never classify an uncertain write', () => {
+  const { action, submission, projection } = submittedRead();
+  action.allowedEffects = ['assignment'];
+  assert.throws(() => validateSubmission(action, { ...submission,
+    execution: { outcome: 'failure', exitCode: 1 }, diagnostics: 'permission authentication denied',
+  }, projection, 200), (error: unknown) => error instanceof Error && 'category' in error && error.category === 'unknown_outcome' &&
+    'effects' in error && error.effects === 'unknown');
+});
