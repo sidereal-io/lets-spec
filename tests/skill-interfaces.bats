@@ -509,14 +509,14 @@ fixture_file() {
   skill_says lets-review-build 'Reviewed: <base> <base-sha>..<head-sha>'
   skill_says lets-review-build '**Code review**'
   skill_says lets-review-build '## Code review'
-  skill_says lets-review-build 'gh pr edit --body-file'
+  skill_says lets-review-build 'lets backlog pull-request.update --request-file'
 }
 
 @test "lets-review-build finishes the change after its review" {
   skill_says lets-review-build 'operationGuidance'
   skill_says lets-review-build '`openspec-verify-change` skill'
   skill_says lets-review-build '`openspec-archive-change` skill'
-  skill_says lets-review-build 'gh pr ready'
+  skill_says lets-review-build 'lets backlog pull-request.ready --request-file'
 }
 
 @test "each review skill ranks by the guidance, then other families, then the order given" {
@@ -965,7 +965,7 @@ review_build_start() {
   skill_says lets-go 'Picked #<i>: <title>, the first ready story under #<parent>.'
   skill_says lets-go 'docs: the discovery map from #<parent>'
   skill_says lets-go 'Discovery status: in-progress'
-  skill_says lets-go "gh issue list --state open --search '\"Discovery status: in-progress\" in:body' --json number,title,body"
+  skill_says lets-go 'lets backlog item.search --request-file'
   skill_says lets-go '*Resume mode*'
   skill_says lets-go 'Finalize has started on that parent'
   skill_says lets-go 'the edits are that discovery'"'"'s confirmed phases'
@@ -2453,7 +2453,7 @@ step_row() {
 @test "lets-plan runs openspec-propose and reads the change state when it stops" {
   skill_says lets-plan '`openspec-propose` skill'
   skill_says lets-plan 'openspec instructions apply --change <name> --json'
-  skill_says lets-plan 'gh issue list --state open --search "<branch> in:title" --json number,title'
+  skill_says lets-plan 'lets backlog item.search --request-file'
 }
 
 @test "lets-plan offers no handoff" {
@@ -3084,4 +3084,20 @@ pr_reference_says() {
   done
   ! grep -qE 'gh (repo|api|issue|project|pr)' <<<"$text" || false
   grep -qF 'references/backlog-actions.md' <<<"$text" || false
+}
+
+@test "existing-story step callers share the configured GitHub boundary" {
+  local skill text schema
+  for skill in lets-plan lets-build lets-brainstorm lets-review-plan lets-review-build; do
+    text="$(cat "$repo/skills/$skill/SKILL.md")"
+    ! grep -qE 'gh (repo|api|issue|project|pr)' <<<"$text" || { echo "$skill bypasses the boundary"; false; }
+    grep -qF 'backlog-actions.md' <<<"$text" || false
+  done
+  text="$(cat "$repo/skills/lets-shape/references/issue-comments.md")"
+  grep -qF 'lets backlog item.read --request-file' <<<"$text" || false
+  grep -qF 'includeThread: true' <<<"$text" || false
+  grep -qF 'lets-shape' <<<"$text" || false
+  for schema in lets-minimal lets-standard; do
+    grep -qF 'lets backlog pull-request.create --request-file' "$repo/schemas/$schema/schema.yaml" || false
+  done
 }

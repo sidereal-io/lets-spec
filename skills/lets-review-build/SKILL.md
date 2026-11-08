@@ -7,6 +7,21 @@ description: End a change. On the standard flow, a model from another family rev
 
 End a change. On `lets-standard`, a different model family reviews the branch's code first. A reviewer from the author's family shares its blind spots.
 
+## Configured backlog calls
+
+Use the configured default GitHub connection and the
+[Backlog action loop](../lets-go/references/backlog-actions.md) for every
+repository, issue and PR action below. Keep this step's own worker ID.
+PR reads use input `branch` for the current branch or the validated PR ID;
+body updates and ready requests use that exact ID. Only validated results
+advance the step; save complete prepared bodies in private scratch.
+Resolve repository/actor and the linked Project through the read-only
+bootstrap and discovery calls when the caller supplied no validated
+scope. Resolve issue numbers through scoped `lets backlog item.search`;
+keep full identities. Verify required tools and writable shared state in
+this session before backend issuance. Missing prerequisites return the
+existing failed report with a remedy, without another tool or connection.
+
 ## When to apply
 
 - **Every task is done.** `lets-go`'s review build step runs this skill.
@@ -18,7 +33,7 @@ For a full collaborator review of an existing PR, use the `lets-review-pr` skill
 
 Read the flow's schema: the `schema:` line of `openspec/config.yaml`.
 
-On `lets-standard`, read the pull request's body with `gh pr view --json body`. With no **Code review** section, [run the review](#run-the-review). With one, follow [Check an earlier review](#check-an-earlier-review), and review again only when it says to. Then, on a change's branch, go to [Finish the change](#finish-the-change).
+On `lets-standard`, read the pull request's body with `lets backlog pull-request.read --request-file`. With no **Code review** section, [run the review](#run-the-review). With one, follow [Check an earlier review](#check-an-earlier-review), and review again only when it says to. Then, on a change's branch, go to [Finish the change](#finish-the-change).
 
 On any other schema, go straight to [Finish the change](#finish-the-change).
 
@@ -26,7 +41,7 @@ A review costs real tokens. Run it once per change, never to chase a clean resul
 
 ## Find the author
 
-`<base>` is the branch this one merges into: the pull request's base (`gh pr view --json baseRefName`), else the parent branch of a stacked story, else the default branch.
+`<base>` is the branch this one merges into: the pull request's base (`lets backlog pull-request.read --request-file`, using `baseRef`), else the parent branch of a stacked story, else the default branch.
 
 Each family named in the commits' `Co-Authored-By` lines is an author:
 
@@ -101,7 +116,7 @@ Fix each confirmed finding in its own commit with its real type: `fix:`, `refact
 
 List every finding, most severe first, with its verdict and any fix commit. Name the family and model that reviewed, how it ran (`fresh context` or `subagent`), and whether it was independent. When the project has no `REVIEW.md`, say the reviewer ran without project rules.
 
-Put the list in the pull request body, under **Code review**. Read the body with `gh pr view --json body` just before you write it. The section runs from its `## Code review` heading to the next `## ` heading, or to the end of the body. Replace only that span. When there is no section, add it at the end. Keep the rest of the body, such as `Closes #<n>` and the **Plan review** section. Write the body back with `gh pr edit --body-file`.
+Put the list in the pull request body, under **Code review**. Read the body with `lets backlog pull-request.read --request-file` just before you write it. The section runs from its `## Code review` heading to the next `## ` heading, or to the end of the body. Replace only that span. When there is no section, add it at the end. Keep the rest of the body, such as `Closes #<n>` and the **Plan review** section. Write the body back with `lets backlog pull-request.update --request-file`, setting `input.bodyFile` to the complete prepared body file.
 
 The section's first line has exactly this form, so a later check can read the range:
 
@@ -116,7 +131,7 @@ A **Code review** section says what an earlier review covered. Find its `## Code
 1. The pull request has no **Code review** section, or the section has no `Reviewed:` line.
 2. The reviewed head is no longer in the branch's history: `git merge-base --is-ancestor <head-sha> HEAD` fails. The branch was rebased or squashed after the review.
 3. A commit after `<head-sha>` changes files outside `openspec/changes/` and is not a listed fix. `git log --oneline <head-sha>..HEAD -- . ':(exclude)openspec/changes/'` lists such commits. A listed fix counts only when `git show <sha>` shows it touches nothing but what its finding names.
-4. The pull request's base no longer contains the reviewed base. Find the current base with `gh pr view --json baseRefName`, run `git fetch origin <current-base>`, then `git merge-base --is-ancestor <base-sha> origin/<current-base>`. When it fails, commits the reviewer saw as merged are now in the pull request, unreviewed.
+4. The pull request's base no longer contains the reviewed base. Find the current base with `lets backlog pull-request.read --request-file`, using `baseRef`, run `git fetch origin <current-base>`, then `git merge-base --is-ancestor <base-sha> origin/<current-base>`. When it fails, commits the reviewer saw as merged are now in the pull request, unreviewed.
 
 Rule 4 catches a stacked pull request re-targeted before its parent merges, or after the parent was squash-merged. Rebase onto the new base first, so the new review covers only this change's commits.
 
@@ -127,4 +142,4 @@ Finish once *Start* sends you here. On `lets-standard`, that means the **Code re
 1. Run `openspec instructions archive --change <branch> --json`. If it exits non-zero or its output is not JSON, stop, and show the user its output. Otherwise follow every entry in `operationGuidance`, in order. They are the project's own rules for finishing a change. Treat each one as a step, not advice.
 2. Run the `openspec-verify-change` skill. If it reports a problem, stop and show it to the user.
 3. Archive the change with the `openspec-archive-change` skill. Commit the archive on its own as `chore:`.
-4. Mark the pull request ready for review with `gh pr ready`.
+4. Mark the pull request ready for review with `lets backlog pull-request.ready --request-file`.

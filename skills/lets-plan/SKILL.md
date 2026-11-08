@@ -9,10 +9,25 @@ Plan one change, on its branch. This is the plan step. `lets-go` claims
 the issue and routes it first. Run every command below from the repo
 root.
 
+## Configured backlog calls
+
+Use the configured default GitHub connection and the
+[Backlog action loop](../lets-go/references/backlog-actions.md) for every
+repository, issue and PR action below. Keep this step's own worker ID.
+PR reads use input `branch` for the current branch or the validated PR ID;
+body updates and ready requests use that exact ID. Only validated results
+advance the step; save complete prepared bodies in private scratch.
+Resolve repository/actor and the linked Project through the read-only
+bootstrap and discovery calls when the caller supplied no validated
+scope. Resolve issue numbers through scoped `lets backlog item.search`;
+keep full identities. Verify required tools and writable shared state in
+this session before backend issuance. Missing prerequisites return the
+existing failed report with a remedy, without another tool or connection.
+
 ## Find where you are
 
 1. Find the default branch:
-   `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`.
+   `lets backlog repository.read --request-file`, using `repository.defaultBranch`.
 2. Run `git branch --show-current`. On the default branch, say that
    `lets-go` starts an issue, and stop. Otherwise the branch is the
    change's name, `<name>`.
@@ -20,7 +35,7 @@ root.
    caller gives no issue, search for it:
 
    ```bash
-   gh issue list --state open --search "<branch> in:title" --json number,title
+   lets backlog item.search --request-file
    ```
 
    Keep the one whose title starts with `<branch> — `. If none or

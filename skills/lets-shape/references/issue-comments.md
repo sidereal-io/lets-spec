@@ -12,22 +12,21 @@ pastes the comment's text.
 
 ## Fetch the thread
 
-```bash
-gh api graphql -F owner='{owner}' -F name='{repo}' -F number=<i> -f query='
-query($owner: String!, $name: String!, $number: Int!, $after: String) {
-  repository(owner: $owner, name: $name) {
-    issue(number: $number) {
-      lastEditedAt
-      comments(first: 100, after: $after) {
-        pageInfo { hasNextPage endCursor }
-        nodes { url author { __typename login } authorAssociation createdAt lastEditedAt body }
-      }
-    }
-  }
-}'
-```
+For lets-go and brainstorm, request
+`lets backlog item.read --request-file` for the scoped identity with
+`includeThread: true`. Use the configured default GitHub definition and
+[Backlog action loop](../../lets-go/references/backlog-actions.md).
+Keep the complete validated comment pages and body edit date. Resolve a
+number through scoped item.search first when its identity is not known.
+A parent-body read uses `includeThread: false` and fetches no thread.
 
-While `hasNextPage` is true, run it again with `-f after=<endCursor>`.
+Lets-shape keeps its existing production reads and writes outside this
+migration. It may fetch the same native thread with `gh api graphql`,
+following `comments.pageInfo.hasNextPage` with its `endCursor` until
+coverage is complete. Require each comment's URL, nullable author with
+`__typename` and login, authorAssociation, createdAt, lastEditedAt and
+body, plus the issue's lastEditedAt. Never infer missing pages as empty.
+
 The issue's `lastEditedAt` is the body's last edit. A comment's is null
 until someone edits it. To find what is new since an earlier fetch,
 compare each comment's `url` and `lastEditedAt`, never the local clock.

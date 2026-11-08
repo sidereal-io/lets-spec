@@ -7,6 +7,21 @@ description: Use for explicit plan-only review, including a plan in a PR. Full c
 
 Have a different model family attack a plan before anyone builds on it. A reviewer from the author's family shares the author's blind spots. This skill writes the prompt, runs it read-only in a fresh session with a fixed method, and checks what comes back.
 
+## Configured backlog calls
+
+Use the configured default GitHub connection and the
+[Backlog action loop](../lets-go/references/backlog-actions.md) for every
+repository, issue and PR action below. Keep this step's own worker ID.
+PR reads use input `branch` for the current branch or the validated PR ID;
+body updates and ready requests use that exact ID. Only validated results
+advance the step; save complete prepared bodies in private scratch.
+Resolve repository/actor and the linked Project through the read-only
+bootstrap and discovery calls when the caller supplied no validated
+scope. Resolve issue numbers through scoped `lets backlog item.search`;
+keep full identities. Verify required tools and writable shared state in
+this session before backend issuance. Missing prerequisites return the
+existing failed report with a remedy, without another tool or connection.
+
 ## When to apply
 
 - **Before build.** `lets-go`'s review plan step runs this skill before the build step builds an OpenSpec change on `lets-standard`. The plan is finished, brainstorm.md through tasks.md. [Start](#start) says where to begin, and [For an OpenSpec change](#for-an-openspec-change) says what to review.
@@ -16,7 +31,7 @@ This skill does not fire on its own when someone writes one of these. Each run c
 
 ## Start
 
-For an OpenSpec change on its branch, read the pull request's body with `gh pr view --json body`.
+For an OpenSpec change on its branch, read the pull request's body with `lets backlog pull-request.read --request-file`.
 
 - **No Plan review section:** [run the review](#run-the-review).
 - **A Plan review section:** follow [Check an earlier review](#check-an-earlier-review).
@@ -31,7 +46,7 @@ For any other plan, run the review.
 Find who wrote the plan. First answer wins:
 
 - **A provenance note** on the plan.
-- **The commits' trailers**, for an OpenSpec change. Each family named in the `Co-Authored-By` lines of the plan's commits is an author. `<base>` is the pull request's base, from `gh pr view --json baseRefName`:
+- **The commits' trailers**, for an OpenSpec change. Each family named in the `Co-Authored-By` lines of the plan's commits is an author. `<base>` is the pull request's base, from `lets backlog pull-request.read --request-file`, using `baseRef`:
 
   ```bash
   git log --format='%(trailers:key=Co-Authored-By,valueonly)' <base>..HEAD -- openspec/changes/<name>/ docs/decisions/ | sort -u
@@ -172,7 +187,7 @@ Each full review replaces the previous one and increments the round counter. Car
 
 List every finding with its check, most severe first. Name the family that reviewed, how the review ran, and whether it was independent. When *Find the author* took your own family, say that the plan's author was not recorded.
 
-For an OpenSpec change, also put the review in the pull request description, under **Plan review**. The person who merges sees it there, and a later session checks it there. Read the body with `gh pr view --json body` just before you write it. The section runs from its `## Plan review` heading to the next `## ` heading, or to the end of the body. Replace only that span. When there is no section, add it at the end. Keep the rest of the body, such as `Closes #<n>` and a **Code review** section. Write the body back with `gh pr edit --body-file`.
+For an OpenSpec change, also put the review in the pull request description, under **Plan review**. The person who merges sees it there, and a later session checks it there. Read the body with `lets backlog pull-request.read --request-file` just before you write it. The section runs from its `## Plan review` heading to the next `## ` heading, or to the end of the body. Replace only that span. When there is no section, add it at the end. Keep the rest of the body, such as `Closes #<n>` and a **Code review** section. Write the body back with `lets backlog pull-request.update --request-file`, setting `input.bodyFile` to the complete prepared body file.
 
 The section has this shape. `<sha>` is the commit you reviewed. The verdict line starts `- **Verdict:** `, so a later check can read it.
 

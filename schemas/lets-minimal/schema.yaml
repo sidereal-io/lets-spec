@@ -44,7 +44,15 @@ artifacts:
          `Confirmed by user: yes`. Until then it stays `no`.
 
       Commit brainstorm.md on its own as `docs:`. Then push the branch and
-      open a draft pull request whose description says `Closes #<n>`.
+      use `lets backlog pull-request.read --request-file` for this branch
+      through the configured GitHub definition and shared action loop in
+      `.agents/skills/lets-go/references/backlog-actions.md`. Reuse an existing
+      draft. When none exists, prepare the body with `Closes #<n>` in a local
+      file, then request `lets backlog pull-request.create --request-file`.
+      Input names that bodyFile, title, base, head and immutable headRepository,
+      plus the scoped item. The create operation requires draft confirmation.
+      Do not repeat creation after uncertain or partial effects; drive read-only
+      resume with its original operation ID and preserve recovery context.
     requires: []
 
   - id: specs

@@ -2,6 +2,14 @@
 
 Read this file when the issue's body has a **Glossary handoff** section.
 
+Use the [Backlog action loop](backlog-actions.md) and the configured
+GitHub definition for prerequisite reads. Request
+`lets backlog item.read --request-file` with `includeThread: false` for
+the story, parent and owner issue bodies. Request
+`lets backlog pull-request.read --request-file` for the exact owner's
+PR and its merge/base facts. Keep native Git fetch and commit checks;
+these reads never assign, repair Status or mark work complete.
+
 ## Glossary preflight
 
 A story whose shaping added glossary terms carries a
