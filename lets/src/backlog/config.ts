@@ -1,3 +1,4 @@
+import shippedGithub from './definitions/github.json' with { type: 'json' };
 import { resolve } from 'node:path';
 import { object } from './protocol.ts';
 import { validateMappings } from './items.ts';
@@ -27,14 +28,7 @@ export type ConfigurationSources = {
   env?: Record<string, string | undefined>;
   home?: string;
 };
-// Initial shipped identity. Operation translations are added with the GitHub
-// runtime; this object authorizes no backend calls by itself.
-export const githubDefinition = {
-  schemaVersion: 1, name: 'github', version: '1.0.0', contractVersions: [1],
-  backend: { name: 'github', versions: ['graphql-v4'] },
-  bindings: { gh: { kind: 'cli', tool: 'gh', versions: ['>=2'] } },
-  operations: {},
-};
+export const githubDefinition = shippedGithub;
 /** Repository selection and machine settings never override one another. */
 export function resolveConfiguration(repository: unknown, machine: unknown, sources: ConfigurationSources): Configuration {
   const fail = (path: string, message: string): never => {

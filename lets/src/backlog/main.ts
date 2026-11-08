@@ -1,3 +1,4 @@
+import { projectArguments } from './projections.ts';
 import { accessSync, closeSync, constants, lstatSync, mkdirSync, openSync, readFileSync, readSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { delimiter, isAbsolute, join, resolve } from 'node:path';
@@ -94,7 +95,7 @@ async function run(operation: string, options: Options): Promise<void> {
       timeoutMs: bounds.timeoutMs as number | undefined, maxOutputBytes: bounds.maxOutputBytes as number | undefined }, true);
     store = new OperationStore(config.stateDir);
     const action = issueAction(request, config.definition, config.connection, {
-      step: 'read', toolArguments: mapping.arguments, allowedEffects: [], requiredCapabilities: [],
+      step: 'read', toolArguments: projectArguments(mapping.arguments, request.input, request.context), allowedEffects: [], requiredCapabilities: [],
       timeoutMs: bounds.timeoutMs as number, maxOutputBytes: bounds.maxOutputBytes as number,
       acceptanceMs: bounds.acceptanceMs as number | undefined ?? 60000,
     }, Date.now());

@@ -1,3 +1,4 @@
+import { projectArguments } from './projections.ts';
 import { resourceKeys as scopedKeys } from './resource-keys.ts';
 import { acquireResourceLock } from './resource-lock.ts';
 import { object } from './protocol.ts';
@@ -82,7 +83,7 @@ export class OperationStore {
       const mapping = original.definition.definition.operations['claim.read']?.actions.read?.bindings[original.connection.binding];
       if (!mapping) throw new AdapterFailure('unsupported', 'unknown', 'original definition must provide claim.read for reconciliation');
       const action = issueAction({ ...original.request, operation: 'claim.read', input: { item: (original.request.input as { item: import('./protocol.ts').Identity }).item } },
-        original.definition, original.connection, { step: 'read', toolArguments: mapping.arguments,
+        original.definition, original.connection, { step: 'read', toolArguments: projectArguments(mapping.arguments, original.request.input, original.request.context),
           allowedEffects: [], requiredCapabilities: original.requiredCapabilities,
           ...original.limits, acceptanceMs: original.expiresAt - original.issuedAt }, now,
         { operationId: original.operationId });

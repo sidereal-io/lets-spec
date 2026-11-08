@@ -71,3 +71,27 @@ the recorded definition and connection, including when the default changes.
 It issues bounded reads; a resumed action never repeats the uncertain write.
 These interfaces do not qualify a live tool configuration. Production GitHub
 translation and mutation sequencing are separate implementation tasks.
+
+The closed projection vocabulary includes `path` (current value), `scope`
+(issued context), `literal`, `object`, `array`, `at` (change the current value),
+`map`, `select` (exactly one equality match), `enum`, tagged `union`, explicit
+`nullable`, `text` (primitive with a fixed prefix), and `connection`. Paths
+contain field names or array indexes; prototype-related names are forbidden.
+Unknown operators, extra fields and excessive nesting fail definition loading.
+Arguments may be a constant string array or a projection of the operation input.
+Lets returns the resulting argument array as data; it performs no shell expansion.
+
+`connection` requires nodes and pageInfo, a false hasNextPage, and an endCursor
+that is null or text. When totalCount is supplied it must equal the observed
+node count. A final page may still have an endCursor. Truncated connections do
+not establish coverage. Tagged unions require an explicit case for every
+observed member; a nullable mapping accepts an explicit null, not missing data.
+
+The shipped GitHub item query addresses the immutable issue ID and selects the
+configured Project within its Project-item connection. Its translation fixture
+is a scrubbed real GraphQL issue response: identifiers, actor, URLs and packet
+text have been replaced. Added cases exercise irrelevant Projects, explicit
+null nodes, unknown union members and incomplete connections. Structured
+GraphQL errors stop progression even alongside usable partial data. Declared
+error types determine the category; unknown types retain unknown effects.
+These fixtures verify translation only and do not qualify live support.

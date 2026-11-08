@@ -34,3 +34,66 @@ for (const [fault, outcome] of [
   test(`conformance detects ${fault} fixture`, () =>
     assert.rejects(runWorkflow(fault), outcome));
 }
+
+import { readFileSync } from 'node:fs';
+import { loadDefinition } from '../../../lets/src/backlog/definitions.ts';
+import { deriveDefinitionResult } from '../../../lets/src/backlog/projections.ts';
+import { githubDefinition } from '../../../lets/src/backlog/config.ts';
+const githubIssue = JSON.parse(readFileSync(new URL('./fixtures/github-issue.json', import.meta.url), 'utf8'));
+test('shipped GitHub projection selects scoped Project field unions', () => {
+  const output = structuredClone(githubIssue);
+  const correct = output.data.node.projectItems.nodes[0];
+  const other = structuredClone(correct);
+  other.project.id = 'OTHER';
+  other.fieldValues.nodes.find((node: { name: string }) => node.name === 'Must').name = 'Could';
+  output.data.node.projectItems.nodes.unshift(other);
+  correct.fieldValues.nodes.unshift(null);
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const result = deriveDefinitionResult(definition, 'item.read', 'read', 'gh', output,
+    { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' });
+  assert.deepEqual(result, { item: { identity: { provider: 'github', backlog: 'P1', id: 'I1' },
+    reference: '#1', url: 'https://github.com/fixture/repo/issues/1', title: 'story — fixture', body: 'Fixture packet',
+    metadata: { Kind: 'Story', Priority: 'Must', Size: 'M', Status: 'In Progress' }, owners: ['actor'] } });
+});
+for (const name of ['missing page', 'unknown union', 'count mismatch']) {
+  test(`shipped GitHub mapping rejects ${name}`, () => {
+    const output = structuredClone(githubIssue);
+    const issue = output.data.node;
+    if (name === 'missing page') issue.projectItems.pageInfo.hasNextPage = true;
+    if (name === 'unknown union') issue.projectItems.nodes[0].fieldValues.nodes.push({ __typename: 'UnknownFutureValue' });
+    if (name === 'count mismatch') issue.assignees.totalCount = 2;
+    assert.throws(() => deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+      'item.read', 'read', 'gh', output, { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' }),
+      /coverage|union/);
+  });
+}
+
+import { projectArguments } from '../../../lets/src/backlog/projections.ts';
+test('shipped query arguments bind the immutable input ID without shell interpolation', () => {
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const mapping = definition.definition.operations['item.read'].actions.read.bindings.gh;
+  const args = projectArguments(mapping.arguments, { item: { id: 'I1' } });
+  assert.equal((args as string[]).at(-1), 'id=I1');
+});
+
+import { issueAction } from '../../../lets/src/backlog/actions.ts';
+import { validateSubmission } from '../../../lets/src/backlog/submissions.ts';
+import { submissionFor } from './fixtures/submitted.ts';
+import { AdapterFailure } from '../../../lets/src/backlog/errors.ts';
+for (const [type, category, effects] of [
+  ['FORBIDDEN', 'permission', 'none'],
+  ['FUTURE_ERROR', 'unknown_outcome', 'unknown'],
+] as const) {
+  test(`shipped partial GraphQL ${type} stops result progression`, () => {
+    const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+    const mapping = definition.definition.operations['item.read'].actions.read.bindings.gh;
+    const action = issueAction({ contractVersion: 1, operation: 'item.read', context: {
+      cwd: '/repo', provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor',
+    }, input: { item: { provider: 'github', backlog: 'P1', id: 'I1' } } }, definition,
+    { name: 'local', binding: 'gh', options: {} }, { toolArguments: [], allowedEffects: [],
+      requiredCapabilities: [], timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000 }, 100);
+    const output = { ...structuredClone(githubIssue), errors: [{ type, path: ['node', 'projectItems'] }] };
+    assert.throws(() => validateSubmission(action, submissionFor(action, output), mapping.projection, 101),
+      (error: unknown) => error instanceof AdapterFailure && error.category === category && error.effects === effects);
+  });
+}
