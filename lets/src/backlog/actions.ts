@@ -6,6 +6,7 @@ import type { BacklogRequest, WorkerContext } from './types.ts';
 export type ActionRequest = Omit<BacklogRequest, 'protocol' | 'context'> & { contractVersion: 1; context: Omit<WorkerContext, 'session'> & { session?: string } };
 export type Connection = { name: string; binding: string; options: Record<string, unknown> };
 export type ActionParameters = {
+  step?: string;
   toolArguments: unknown;
   allowedEffects: string[];
   requiredCapabilities: string[];
@@ -17,6 +18,7 @@ export type IssuedAction<R extends ActionRequest = ActionRequest> = {
   contractVersion: 1;
   operationId: string;
   workerId: string;
+  step: string;
   actionId: string;
   attemptId: string;
   mutationId?: string;
@@ -40,7 +42,7 @@ export function issueAction<R extends ActionRequest>(request: R, definition: Loa
   const workerId = request.context.session ?? randomUUID();
   return structuredClone({
     contractVersion: 1, operationId: identity.operationId ?? randomUUID(),
-    workerId, actionId: randomUUID(), attemptId: randomUUID(),
+    workerId, step: parameters.step ?? 'read', actionId: randomUUID(), attemptId: randomUUID(),
     ...(parameters.allowedEffects.length ? { mutationId: identity.mutationId ?? randomUUID() } : {}),
     request: { ...request, context: { ...request.context, session: workerId } },
     inputDigest: digest({ ...request, context: { ...request.context, session: workerId } }), definition,

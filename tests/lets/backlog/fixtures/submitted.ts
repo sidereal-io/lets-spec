@@ -4,7 +4,9 @@ export function submittedRead() {
   const definition = loadDefinition([{ source: 'fixture:github', value: {
     schemaVersion: 1, name: 'github', version: '1', contractVersions: [1],
     backend: { name: 'github', versions: ['graphql-v4'] },
-    bindings: { gh: { kind: 'cli', tool: 'gh', versions: ['>=2'] } }, operations: {},
+    bindings: { gh: { kind: 'cli', tool: 'gh', versions: ['>=2'] } }, operations: { 'backlog.check': { actions: { read: { bindings: {
+      gh: { arguments: ['api', 'graphql'], projection: { op: 'path', path: ['data'] } },
+    } } } } },
   } }]);
   const action = issueAction({ contractVersion: 1, operation: 'backlog.check', context: {
     cwd: '/repo', provider: 'github', repository: 'R1', backlog: 'P1', actor: 'me', session: 'worker',

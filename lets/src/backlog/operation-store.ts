@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from 'node:util';
+import { validateSubmission } from './submissions.ts';
 import { closeSync, constants, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync,
   readdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -17,11 +19,13 @@ export type OperationRecord = {
   pending: boolean;
   attempts: unknown[];
   result?: Record<string, unknown>;
+  acceptedSubmission?: unknown;
 };
 export type ActionResponse = {
   contractVersion: 1; operationId: string; workerId: string;
   state: 'action'; action: IssuedAction; continuation: Continuation;
 };
+export type CompleteResponse = { contractVersion: 1; operationId: string; workerId: string; state: 'complete'; result: Record<string, unknown>; continuation: Continuation };
 /** Durable per-operation facts coordinate one user's local worktrees. */
 export class OperationStore {
   readonly path: string;
@@ -72,6 +76,30 @@ export class OperationStore {
         if (owner.nonce === lock.nonce) unlinkSync(lock.path);
       }
     }
+  }
+  submit(continuation: Continuation, submission: unknown, now: number): CompleteResponse {
+    const initial = this.get(continuation.operationId);
+    return this.locked([`operation:${continuation.operationId}`, ...initial.resourceKeys], () => {
+      const record = this.get(continuation.operationId);
+      if (!isDeepStrictEqual(record.continuation, continuation))
+        throw new AdapterFailure('invalid_request', 'unknown', 'continuation does not match original operation');
+      if (record.state === 'complete') {
+        if (!isDeepStrictEqual(record.acceptedSubmission, submission))
+          throw new AdapterFailure('conflict', 'unknown', 'conflicting reuse of accepted submission');
+      } else {
+        const action = record.action;
+        const mapping = action.definition.definition.operations[action.request.operation]?.actions[action.step]?.bindings[action.connection.binding];
+        if (!mapping) throw new AdapterFailure('unsupported', 'unknown', 'recorded definition mapping unavailable');
+        record.result = validateSubmission(action, submission, mapping.projection, now);
+        record.attempts.push({ receivedAt: now, submission: structuredClone(submission), accepted: true });
+        record.acceptedSubmission = structuredClone(submission);
+        record.state = 'complete';
+        record.pending = false;
+        this.write(record);
+      }
+      return { contractVersion: 1, operationId: record.action.operationId, workerId: record.action.workerId,
+        state: 'complete', result: record.result!, continuation: record.continuation };
+    });
   }
   issue(action: IssuedAction, resourceKeys: string[]): ActionResponse {
     return this.locked([`operation:${action.operationId}`, ...resourceKeys], () => {

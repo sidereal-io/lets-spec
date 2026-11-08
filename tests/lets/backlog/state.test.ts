@@ -70,3 +70,16 @@ test('an issued operation cannot be overwritten by another issuance', () => {
     assert.deepEqual(store.get(action.operationId).resourceKeys, ['item:R1:P1:I1']);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+test('accepted submission is acknowledged identically after restart', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/accepted-');
+  try {
+    const { action, submission } = submittedRead();
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action, []);
+    const first = store.submit(issued.continuation, submission, 200);
+    const reopened = new OperationStore(join(dir, 'private'));
+    assert.deepEqual(reopened.submit(issued.continuation, submission, 300), first);
+    assert.equal(reopened.get(action.operationId).attempts.length, 1);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
