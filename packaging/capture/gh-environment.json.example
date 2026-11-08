@@ -1,6 +1,0 @@
-{
-  "GH_TOKEN": "REPLACE_WITH_OPERATOR_PROVIDED_SCOPED_TOKEN",
-  "GH_HOST": "github.com",
-  "GH_CONFIG_DIR": "/var/lib/lets-capture/gh-config",
-  "HOME": "/var/lib/lets-capture"
-}

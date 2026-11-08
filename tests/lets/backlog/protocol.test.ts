@@ -1,6 +1,7 @@
+import { AdapterFailure } from '../../../lets/src/backlog/errors.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateRequest } from '../../../lets/src/backlog/protocol.ts';
+import { validateRequest, validateResponse } from '../../../lets/src/backlog/protocol.ts';
 const context = {
   cwd: '/repo',
   provider: 'github',
@@ -272,5 +273,253 @@ for (const [input, category] of [
     const response = JSON.parse(result.stdout);
     assert.equal(response.error.category, category);
     assert.equal(response.error.effects, 'none');
+  });
+}
+
+import { deriveResult } from '../../../lets/src/backlog/projections.ts';
+test('optional normalized fields cannot contradict structured output', () => {
+  assert.throws(() => deriveResult('claim.read',
+    { op: 'path', path: ['data', 'ownership'] },
+    { data: { ownership: { claim: { actor: 'other', session: null, token: null, status: 'In Progress', guarantee: 'best-effort' } } } },
+    {}, { claim: { actor: 'me', session: null, token: null, status: 'In Progress', guarantee: 'best-effort' } }),
+  /normalized.*disagrees/);
+});
+
+import { validateSubmission } from '../../../lets/src/backlog/submissions.ts';
+import { submittedRead } from './fixtures/submitted.ts';
+test('matching tool output qualifies without a capture receipt', () => {
+  const { action, submission, projection } = submittedRead();
+  assert.deepEqual(validateSubmission(action, submission, projection, 200), { valid: true, gaps: [] });
+});
+
+for (const [field, replacement] of [
+  ['operationId', 'another-operation'], ['actionId', 'another-action'], ['attemptId', 'another-attempt'],
+  ['inputDigest', 'another-input'], ['definitionDigest', 'another-definition'], ['connectionDigest', 'another-connection'],
+  ['context', { cwd: '/repo', provider: 'github', repository: 'OTHER', backlog: 'P1', actor: 'me', session: 'worker' }],
+  ['tool', { kind: 'cli', name: 'gh', arguments: ['api', 'other'] }],
+] as const) {
+  test(`submission cannot replace issued ${field}`, () => {
+    const { action, submission, projection } = submittedRead();
+    assert.throws(() => validateSubmission(action, { ...submission, [field]: replacement }, projection, 200),
+      /invalid_request.*binding/);
+  });
+}
+
+import { parseActionRequest } from '../../../lets/src/backlog/actions.ts';
+for (const [name, input, category] of [
+  ['malformed JSON', '{', 'invalid_request'],
+  ['unsupported contract', JSON.stringify({ contractVersion: 99 }), 'unsupported'],
+  ['unknown operation', JSON.stringify({ contractVersion: 1, operation: 'invented', context, input: {} }), 'invalid_request'],
+  ['unknown input', JSON.stringify({ contractVersion: 1, operation: 'backlog.check', context, input: { bypass: true } }), 'invalid_request'],
+] as const) {
+  test(`action request rejects ${name} with a typed error`, () => {
+    assert.throws(() => parseActionRequest(input),
+      (error: unknown) => error instanceof Error && 'category' in error && error.category === category);
+  });
+}
+test('submission rejects an unsupported contract without inferring no effects', () => {
+  const { action, submission, projection } = submittedRead();
+  assert.throws(() => validateSubmission(action, { ...submission, contractVersion: 99 }, projection, 200),
+    (error: unknown) => error instanceof Error && 'category' in error && error.category === 'unsupported' && 'effects' in error && error.effects === 'unknown');
+});
+
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+test('output file supplies the structured result without transcription', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/submitted-');
+  try {
+    const { action, submission, projection } = submittedRead();
+    const path = join(dir, 'output.json');
+    writeFileSync(path, JSON.stringify(submission.output));
+    const { output, ...envelope } = submission;
+    assert.deepEqual(validateSubmission(action, { ...envelope, outputFiles: [path] }, projection, 200), { valid: true, gaps: [] });
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+for (const [name, path, contents] of [
+  ['oversized', 'large.json', 'x'.repeat(5000)],
+  ['missing', 'missing.json', null],
+  ['malformed', 'bad.json', '{'],
+] as const) {
+  test(`submitted output file rejects ${name} bytes`, () => {
+    mkdirSync('.workspace', { recursive: true });
+    const dir = mkdtempSync('.workspace/submitted-');
+    try {
+      const { action, submission, projection } = submittedRead();
+      const file = join(dir, path);
+      if (contents !== null) writeFileSync(file, contents);
+      const { output, ...envelope } = submission;
+      assert.throws(() => validateSubmission(action, { ...envelope, outputFiles: [file] }, projection, 200),
+        (error: unknown) => error instanceof Error && 'effects' in error && error.effects === 'unknown');
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+}
+
+test('timely receipt accepts an unreported optional server version', () => {
+  const { action, submission, projection } = submittedRead();
+  assert.deepEqual(validateSubmission(action, { ...submission, observed: { serverVersion: 'unreported' } }, projection, 200),
+    { valid: true, gaps: [] });
+});
+test('optional tool time cannot rescue a late receipt', () => {
+  const { action, submission, projection } = submittedRead();
+  assert.throws(() => validateSubmission(action, { ...submission, observed: { finishedAt: 200 } }, projection, 6000),
+    /acceptance window/);
+});
+
+const repositoryContext = { cwd: '/repo', provider: 'github', repository: 'R1', actor: 'me', session: 'worker' };
+test('repository request needs no Project selection', () => {
+  assert.equal(parseActionRequest(JSON.stringify({ contractVersion: 1, operation: 'repository.read', context: repositoryContext, input: {} })).operation,
+    'repository.read');
+});
+test('branch PR read is a repository-scoped operation', () => {
+  assert.equal(parseActionRequest(JSON.stringify({ contractVersion: 1, operation: 'pull-request.read', context: repositoryContext, input: { branch: 'feature' } })).operation,
+    'pull-request.read');
+});
+test('PR read cannot select both branch and immutable PR', () => {
+  assert.throws(() => parseActionRequest(JSON.stringify({ contractVersion: 1, operation: 'pull-request.read', context: repositoryContext,
+    input: { branch: 'feature', pullRequest: 'PR1' } })), /exactly one/);
+});
+test('PR create validates the prepared body input', () => {
+  assert.equal(parseActionRequest(JSON.stringify({ contractVersion: 1, operation: 'pull-request.create', context: repositoryContext,
+    input: { title: 'Draft', bodyFile: '/repo/.workspace/body.md', base: 'main', head: 'feature', headRepository: 'R1' } })).operation,
+    'pull-request.create');
+});
+test('repository result requires immutable identity', () => {
+  assert.throws(() => validateResponse({ protocol: 1, ok: true, result: { repository: { name: 'repo' } } }, 0, 'repository.read'), /repository.id/);
+});
+
+const prResult = { id: 'PR1', repository: 'R1', headRepository: 'R1', number: 1,
+  url: 'https://github.com/fixture/repo/pull/1', state: 'OPEN', isDraft: true, body: 'Closes #1',
+  createdAt: '2026-11-08T12:00:00Z', baseRef: 'main', headRef: 'feature', baseSha: null,
+  headSha: null, mergeCommit: null, mergeRef: null };
+for (const [name, input, observed] of [
+  ['repository', { branch: 'feature' }, { ...prResult, repository: 'OTHER' }],
+  ['immutable PR', { pullRequest: 'PR1' }, { ...prResult, id: 'PR2' }],
+  ['head branch', { branch: 'feature' }, { ...prResult, headRef: 'other' }],
+] as const) {
+  test(`PR submission cannot replace scoped ${name}`, () => {
+    const { action, submission, projection } = submittedRead();
+    const prAction = { ...action, request: { contractVersion: 1 as const, operation: 'pull-request.read' as const,
+      context: repositoryContext, input } };
+    assert.throws(() => validateSubmission(prAction,
+      { ...submission, context: repositoryContext, output: { data: { pullRequest: observed } } }, projection, 200), /scope/);
+  });
+}
+
+import { OperationStore } from '../../../lets/src/backlog/operation-store.ts';
+test('malformed read submission can be corrected within its original window', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/correction-');
+  try {
+    const { action, submission } = submittedRead();
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action, []);
+    assert.throws(() => store.submit(issued.continuation, '{', 200), /invalid_request/);
+    const result = store.submit(issued.continuation, submission, 300);
+    assert.equal(result.state, 'complete');
+    assert.equal(store.get(action.operationId).attempts.length, 2);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+test('read submission has at most two corrections', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/correction-');
+  try {
+    const { action, submission } = submittedRead();
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action, []);
+    for (let attempt = 0; attempt < 3; attempt++) assert.throws(() => store.submit(issued.continuation, '{', 200 + attempt));
+    assert.throws(() => store.submit(issued.continuation, submission, 300), /correction.*exhausted/);
+    assert.equal(store.get(action.operationId).attempts.length, 4);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+import { selectPullRequest } from '../../../lets/src/backlog/pull-requests.ts';
+test('branch PR lookup prefers an open PR over a newer closed PR', () => {
+  const found = selectPullRequest([
+    { ...prResult, id: 'CLOSED', state: 'CLOSED', createdAt: '2026-11-09T00:00:00Z' },
+    { ...prResult, id: 'OPEN', createdAt: '2026-11-01T00:00:00Z' },
+  ], { repository: 'R1', branch: 'feature' });
+  assert.equal(found?.id, 'OPEN');
+});
+test('branch PR lookup selects the newest of several open PRs', () => {
+  const found = selectPullRequest([
+    { ...prResult, id: 'OLD', createdAt: '2026-11-01T00:00:00Z' },
+    { ...prResult, id: 'NEW', createdAt: '2026-11-09T00:00:00Z' },
+  ], { repository: 'R1', branch: 'feature' });
+  assert.equal(found?.id, 'NEW');
+});
+for (const [field, value] of [['repository', 'OTHER'], ['headRepository', 'FORK'], ['headRef', 'other']] as const) {
+  test(`branch PR lookup qualifies ${field} before selection`, () => {
+    const found = selectPullRequest([
+      { ...prResult, [field]: value, id: 'UNSCOPED', createdAt: '2026-11-09T00:00:00Z' }, prResult,
+    ], { repository: 'R1', branch: 'feature' });
+    assert.equal(found?.id, 'PR1');
+  });
+}
+test('branch PR lookup reports absent when no qualified PR exists', () => {
+  assert.equal(selectPullRequest([prResult], { repository: 'R1', branch: 'other' }), null);
+});
+test('branch PR lookup does not turn malformed observations into absence', () => {
+  assert.throws(() => selectPullRequest([{ ...prResult, createdAt: 'unknown' }],
+    { repository: 'R1', branch: 'feature' }), /createdAt/);
+});
+
+import { submittedPr } from './fixtures/submitted.ts';
+import { submissionFor } from './fixtures/submitted.ts';
+test('ready result cannot confirm a PR that remains draft', () => {
+  const action = submittedPr('pull-request.ready');
+  const mapping = action.definition.definition.operations['pull-request.ready'].actions.ready.bindings.gh;
+  const raw = JSON.parse(readFileSync(new URL('./fixtures/github-pr.json', import.meta.url), 'utf8')).data.node;
+  assert.throws(() => validateSubmission(action, submissionFor(action, {
+    data: { markPullRequestReadyForReview: { pullRequest: raw } },
+  }), mapping.projection, 200), (error: unknown) => error instanceof AdapterFailure && error.effects === 'partial');
+});
+test('ready transition requires a fresh exact-PR confirmation', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-ready-');
+  try {
+    const action = submittedPr('pull-request.ready');
+    const raw = JSON.parse(readFileSync(new URL('./fixtures/github-pr.json', import.meta.url), 'utf8')).data.node;
+    const ready = { ...raw, isDraft: false };
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action);
+    const verify = store.submit(issued.continuation, submissionFor(action, {
+      data: { markPullRequestReadyForReview: { pullRequest: ready } },
+    }), 200);
+    assert.equal(verify.state, 'action');
+    if (verify.state !== 'action') throw new Error('fresh read required');
+    assert.deepEqual(verify.action.allowedEffects, []);
+    assert.equal(verify.action.targetPullRequest, 'PR1');
+    assert.equal((action.tool.arguments as string[]).some((arg) => arg.includes('mergePullRequest')), false);
+    const complete = store.submit(verify.continuation, submissionFor(verify.action, {
+      data: { viewer: { login: 'actor' }, node: ready },
+    }), 300);
+    assert.equal(complete.state, 'complete');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+import { submittedClaim } from './fixtures/submitted.ts';
+import { issueAction } from '../../../lets/src/backlog/actions.ts';
+for (const [label, facts, expected] of [
+  ['missing coverage', { assignees: ['me'] }, 'unavailable'],
+  ['duplicate assignees', { assignees: ['me', 'me'], assigneesComplete: true }, 'unavailable'],
+  ['nontext assignee', { assignees: ['me', 5], assigneesComplete: true }, 'unavailable'],
+  ['several assignees', { assignees: ['me', 'other'], assigneesComplete: true }, 'multiple'],
+  ['changed historic token', { assignees: ['me'], assigneesComplete: true, session: 'different', token: 'different' }, 'sole-actor'],
+] as const) {
+  test(`ownership submission validates ${label}`, () => {
+    const base = submittedClaim().action;
+    const action = issueAction({ ...base.request, operation: 'claim.read' }, base.definition, base.connection, {
+      step: 'read', toolArguments: [], allowedEffects: [], requiredCapabilities: [],
+      timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000,
+    }, 100);
+    const result = validateSubmission(action, submissionFor(action, { data: { claim: {
+      item: (base.request.input as { item: unknown }).item, actor: 'me', session: 'historic', token: 'historic',
+      status: 'In Progress', guarantee: 'best-effort', ...facts,
+    } } }), { op: 'path', path: ['data'] }, 101);
+    const claim = result.claim as Record<string, unknown>;
+    assert.equal(claim.verdict, expected);
+    assert.equal(claim.session, null);
+    assert.equal(claim.token, null);
   });
 }

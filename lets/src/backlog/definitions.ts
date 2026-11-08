@@ -1,91 +1,95 @@
-import shipped from './definitions/github.json' with { type: 'json' };
-import { readFileSync, statSync, realpathSync } from 'node:fs';
-import { resolve, relative, isAbsolute } from 'node:path';
-import { canonical, digest } from './action-contract.ts';
+import { validateProjection } from './projections.ts';
+import type { Projection } from './projections.ts';
+import { createHash } from 'node:crypto';
 import { AdapterFailure } from './errors.ts';
-export type Fact = { tool: string; mode: 'read' | 'write'; stdin: unknown; result: unknown };
-export type Definition = { version: 1; name: string; provider: string; contract: 1; backendVersions: string[]; facts: Record<string, Fact> };
-export function loadDefinition(selection: { name: string; version: number; source?: string }, provider: string, cwd: string): { definition: Definition; digest: string } {
+import { object, OPERATIONS, ERRORS } from './protocol.ts';
+
+export type ToolBinding = { kind: 'cli' | 'mcp'; tool: string; versions: string[] };
+export type ActionTranslation = { arguments: Projection | string[]; projection: Projection; observations?: Partial<Record<'actor' | 'repository' | 'backlog' | 'item', Projection>> };
+export type OperationDefinition = { actions: Record<string, { bindings: Record<string, ActionTranslation> }> };
+export type ProviderDefinition = {
+  schemaVersion: 1;
+  name: string;
+  version: string;
+  contractVersions: number[];
+  backend: { name: string; versions: string[]; errorTypes?: Record<string, import('./errors.ts').ErrorCategory> };
+  bindings: Record<string, ToolBinding>;
+  operations: Record<string, OperationDefinition>;
+};
+export type LoadedDefinition = { source: string; digest: string; definition: ProviderDefinition };
+export function digest(value: unknown): string {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
+export function keys(record: Record<string, unknown>, allowed: string[], path: string): void {
+  for (const key of Object.keys(record))
+    if (!allowed.includes(key)) throw new Error(`${path}.${key} is unsupported`);
+}
+export function text(value: unknown, path: string): asserts value is string {
+  if (typeof value !== 'string' || !value) throw new Error(`${path} must be nonempty text`);
+}
+function strings(value: unknown, path: string): void {
+  if (!Array.isArray(value) || value.length === 0) throw new Error(`${path} must be a nonempty list`);
+  for (const entry of value) text(entry, path);
+}
+/** Load data only. Neither provider discovery nor executable hooks are supported. */
+export function loadDefinition(sources: readonly { source: string; value: unknown }[]): LoadedDefinition {
+  const location = sources.map((entry) => entry.source).join(', ') || 'definition';
   try {
-    if (selection.version !== 1) throw new Error('unsupported definition version');
-    const source = selection.source ? realpathSync(resolve(cwd, selection.source)) : undefined;
-    if (source) { const inside=relative(realpathSync(cwd),source); if(!inside || inside==='..' || inside.startsWith('../') || isAbsolute(inside) || !statSync(source).isFile()) throw new Error('definition source must be a file within the repository'); }
-    if (source && statSync(source).size > 262144) throw new Error('definition source exceeds byte bound');
-    const definition = source ? JSON.parse(readFileSync(source, 'utf8')) : shipped;
-    if (definition.version !== 1 || definition.contract !== 1 || definition.name !== selection.name || definition.provider !== provider) throw new Error('incompatible definition selection');
-    validateDefinition(definition);
-    return { definition, digest: digest(definition) };
-  } catch (error) { throw new AdapterFailure('invalid_configuration', 'none', String(error)); }
-}
-const writes = new Set(['Assign', 'Unassign', 'FieldStatus', 'UpdateIssueBody', 'UpdatePRBody']);
-const invalid = (message: string): never => { throw new Error(`invalid definition: ${message}`); };
-function record(value: unknown): value is Record<string, any> { return !!value && typeof value === 'object' && !Array.isArray(value); }
-function pointer(value: unknown): asserts value is string {
-  if (typeof value !== 'string' || (value !== '' && !value.startsWith('/')) || /~(?![01])/u.test(value)) invalid('template pointer');
-}
-function template(value: unknown, result: boolean, depth = 0, budget = {nodes:0}) {
-  if (++budget.nodes > 10000 || depth > 16) invalid('template bound');
-  if (Array.isArray(value)) {
-    if (result) invalid('result arrays must derive from capture');
-    for (const child of value) template(child, result, depth + 1, budget);
-  } else if (record(value)) {
-    const keys = Object.keys(value);
-    if (keys.some(key => key.startsWith('$'))) {
-      if (keys.length !== 1) invalid('template expression');
-      if (keys[0] === '$path' || (!result && keys[0] === '$input')) pointer(value[keys[0]]);
-      else if (keys[0] === '$each' && result && record(value.$each) && Object.keys(value.$each).sort().join(',') === 'path,template') {
-        pointer(value.$each.path); template(value.$each.template, true, depth + 1, budget);
-      } else invalid('unsupported template expression');
-    } else {
-      for (const [key, child] of Object.entries(value)) {
-        if (['__proto__','constructor','prototype'].includes(key)) invalid('unsafe template key');
-        template(child, result, depth + 1, budget);
+    if (sources.length !== 1) throw new Error('select exactly one definition source; remove conflicting sources');
+    const { source, value } = sources[0];
+    const definition = object(value, 'definition');
+    keys(definition, ['schemaVersion', 'name', 'version', 'contractVersions', 'backend', 'bindings', 'operations'], 'definition');
+    if (definition.schemaVersion !== 1) throw new Error('schemaVersion must be 1');
+    text(definition.name, 'name');
+    text(definition.version, 'version');
+    if (!Array.isArray(definition.contractVersions) || !definition.contractVersions.includes(1) ||
+        definition.contractVersions.some((entry) => !Number.isInteger(entry)))
+      throw new Error('contractVersions must support operation contract 1');
+    const backend = object(definition.backend, 'backend');
+    keys(backend, ['name', 'versions', 'errorTypes'], 'backend');
+    text(backend.name, 'backend.name');
+    strings(backend.versions, 'backend.versions');
+    if (backend.errorTypes !== undefined)
+      for (const category of Object.values(object(backend.errorTypes, 'backend.errorTypes')))
+        if (!(ERRORS as readonly unknown[]).includes(category)) throw new Error('backend.errorTypes contains an unknown category');
+    const bindings = object(definition.bindings, 'bindings');
+    if (!Object.keys(bindings).length) throw new Error('bindings must declare a tool');
+    for (const [name, value] of Object.entries(bindings)) {
+      const binding = object(value, `bindings.${name}`);
+      keys(binding, ['kind', 'tool', 'versions'], `bindings.${name}`);
+      if (!['cli', 'mcp'].includes(binding.kind as string)) throw new Error(`bindings.${name}.kind must be cli or mcp`);
+      text(binding.tool, `bindings.${name}.tool`);
+      strings(binding.versions, `bindings.${name}.versions`);
+    }
+    const operations = object(definition.operations, 'operations');
+    for (const [name, value] of Object.entries(operations)) {
+      if (!(OPERATIONS as readonly string[]).includes(name)) throw new Error(`operations.${name} is unknown`);
+      const operation = object(value, `operations.${name}`);
+      keys(operation, ['actions'], `operations.${name}`);
+      for (const [step, value] of Object.entries(object(operation.actions, 'actions'))) {
+        const action = object(value, `actions.${step}`);
+        keys(action, ['bindings'], `actions.${step}`);
+        const translations = object(action.bindings, `actions.${step}.bindings`);
+        if (!Object.keys(translations).length) throw new Error(`actions.${step} must map a binding`);
+        for (const [binding, value] of Object.entries(translations)) {
+          if (!Object.hasOwn(bindings, binding)) throw new Error(`actions.${step} names undeclared binding ${binding}`);
+          const translation = object(value, `actions.${step}.${binding}`);
+          keys(translation, ['arguments', 'projection', 'observations'], `actions.${step}.${binding}`);
+          if (!Object.hasOwn(translation, 'arguments')) throw new Error('tool arguments required');
+          if (Array.isArray(translation.arguments)) {
+            if (translation.arguments.some((entry) => typeof entry !== 'string')) throw new Error('literal tool arguments must be strings');
+          } else validateProjection(translation.arguments);
+          validateProjection(translation.projection);
+          if (translation.observations !== undefined) {
+            const observations = object(translation.observations, 'observations');
+            keys(observations, ['actor', 'repository', 'backlog', 'item'], 'observations');
+            for (const mapping of Object.values(observations)) validateProjection(mapping);
+          }
+        }
       }
     }
-  } else if (result) invalid('result leaves must derive from capture');
-}
-function validateDefinition(definition: Definition) {
-  if (Object.keys(definition).sort().join(',') !== 'backendVersions,contract,facts,name,provider,version') invalid('unsupported definition keys');
-  if (!Array.isArray(definition.backendVersions) || !definition.backendVersions.length || definition.backendVersions.some(value => typeof value !== 'string' || !value)) invalid('backend versions');
-  if (!record(definition.facts) || Object.keys(definition.facts).sort().join(',') !== Object.keys(shipped.facts).sort().join(',')) invalid('fact inventory');
-  for (const [name, fact] of Object.entries(definition.facts)) {
-    if (!record(fact) || Object.keys(fact).sort().join(',') !== 'mode,result,stdin,tool') invalid('fact keys');
-    if (fact.mode !== (writes.has(name) ? 'write' : 'read')) invalid('fact mode');
-    if (fact.tool !== 'github-graphql') invalid('tool selector');
-    template(fact.stdin, false); template(fact.result, true);
-    // Contract v1 exposes these exact bounded GitHub mutation shapes. A data
-    // override cannot add effects or replace the core-owned mutation inputs.
-    if (writes.has(name) && canonical(fact.stdin) !== canonical((shipped.facts as Record<string, Fact>)[name].stdin)) invalid('mutation translation differs from bounded contract');
+    return { source, digest: digest(value), definition: value as ProviderDefinition };
+  } catch (error) {
+    throw new AdapterFailure('invalid_configuration', 'none', `${location}: ${String(error)}; select a compatible inert definition, no fallback`);
   }
-  if (JSON.stringify(definition).length > 262144) invalid('definition bound');
-}
-export function render(value: unknown, source: unknown, input: unknown = source): any {
-  let nodes = 0;
-  function lookup(root: any, path: unknown) {
-    pointer(path);
-    for (const part of path.split('/').slice(1)) {
-      const key = part.replace(/~1/g, '/').replace(/~0/g, '~');
-      if (!root || typeof root !== 'object' || !Object.hasOwn(root, key)) invalid('missing pointer evidence');
-      root = root[key];
-    }
-    if (root === undefined) invalid('missing pointer evidence');
-    return structuredClone(root);
-  }
-  function visit(value: any, current: unknown, depth: number): any {
-    if (++nodes > 10000 || depth > 16) invalid('mapping bound');
-    if (record(value)) {
-      if ('$input' in value) return lookup(input, value.$input);
-      if ('$path' in value) return lookup(current, value.$path);
-      if ('$each' in value) {
-        const items = lookup(current, value.$each.path);
-        if (!Array.isArray(items) || items.length > 1000) invalid('mapping array bound');
-        return items.map((item: unknown) => visit(value.$each.template, item, depth + 1));
-      }
-      return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, visit(child, current, depth + 1)]));
-    }
-    return Array.isArray(value) ? value.map(child => visit(child, current, depth + 1)) : value;
-  }
-  const result = visit(value, source, 0);
-  if (JSON.stringify(result).length > 1048576) invalid('mapping output bound');
-  return result;
 }

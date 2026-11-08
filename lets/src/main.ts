@@ -1,7 +1,6 @@
 // The real entry: the commander program. Builds deps from the real world for
 // a command, and exits with its code. Exits 2 on a usage error, such as an
 // unknown flag or command.
-import { run as backlogCommand } from './backlog/commands.ts';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +22,7 @@ import { createAdapter as cli } from './resolvers/cli/cli.ts';
 import { realIo as realResolverIo } from './resolvers/kit/io.ts';
 import { createAdapter as subagent } from './resolvers/subagent/subagent.ts';
 import { createAdapter as t3 } from './resolvers/t3/t3.ts';
+import { registerBacklog } from './backlog/main.ts';
 import { run as sync } from './sync/main.ts';
 
 // The folder above the one that holds this file: lets/ in the repo, and the
@@ -278,11 +278,6 @@ program
     process.exitCode = await sync({ check: check === true }, realDeps());
   });
 
-const backlog = program.command('backlog').description('Build existing items through bounded actions and independently captured results. Commands read one JSON input from stdin; see docs/backlog-build.md.');
-for (const command of ['act', 'submit', 'reconcile', 'abandon', 'request', 'scope', 'select', 'claim', 'release', 'bind', 'resume', 'packet', 'reference', 'complete', 'glossary-update']) {
-  backlog.command(command).description(`Run backlog ${command} using one JSON input on stdin.`).action(async () => { await backlogCommand(command); });
-}
-
 const delegate = program
   .command('delegate')
   .summary('run a prompt in a fresh session, through a resolver')
@@ -361,6 +356,8 @@ program
   .action(async () => {
     process.exitCode = await questions(realDeps());
   });
+
+registerBacklog(program);
 
 try {
   await program.parseAsync(process.argv);

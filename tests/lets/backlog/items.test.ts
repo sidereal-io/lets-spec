@@ -94,3 +94,172 @@ for (const cardinality of ['one', 'many'] as const) {
     assert.throws(() => readMapped(data, configured), /cardinality/);
   });
 }
+
+import { deriveDefinitionResult } from '../../../lets/src/backlog/projections.ts';
+import { loadDefinition } from '../../../lets/src/backlog/definitions.ts';
+import { githubDefinition } from '../../../lets/src/backlog/config.ts';
+import { readFileSync } from 'node:fs';
+const issueOutput = JSON.parse(readFileSync(new URL('./fixtures/github-issue.json', import.meta.url), 'utf8'));
+function candidatePage(id: string, next: boolean, cursor: string) {
+  const issue = structuredClone(issueOutput.data.node);
+  issue.id = id;
+  issue.blockedBy = { nodes: [], totalCount: 0, pageInfo: { hasNextPage: false, endCursor: null } };
+  return { data: { viewer: { login: 'actor' }, node: { id: 'P1', items: {
+    nodes: [{ id: `PI-${id}`, content: { ...issue, __typename: 'Issue' } }], totalCount: 2,
+    pageInfo: { hasNextPage: next, endCursor: cursor },
+  } } } };
+}
+function candidates(pages: unknown) {
+  return deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'candidate.list', 'read', 'gh', pages, { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' });
+}
+test('shipped candidate enumeration covers all Project pages', () => {
+  const result = candidates([candidatePage('I1', true, 'c1'), candidatePage('I2', false, 'c2')]);
+  assert.deepEqual((result.items as { identity: { id: string } }[]).map((item) => item.identity.id), ['I1', 'I2']);
+  assert.equal(result.complete, true);
+});
+for (const fault of ['missing final page', 'missing middle page', 'repeated cursor', 'missing metadata', 'duplicate node'] as const) {
+  test(`shipped candidate enumeration rejects ${fault}`, () => {
+    const pages = [candidatePage('I1', true, 'c1'), candidatePage('I2', false, 'c2')];
+    if (fault === 'missing final page') pages.pop();
+    if (fault === 'missing middle page') for (const page of pages) page.data.node.items.totalCount = 3;
+    if (fault === 'repeated cursor') pages[1].data.node.items.pageInfo.endCursor = 'c1';
+    if (fault === 'missing metadata') pages[1].data.node.items.nodes[0].content.projectItems.nodes[0].fieldValues.nodes = [];
+    if (fault === 'duplicate node') pages[1] = candidatePage('I1', false, 'c2');
+    assert.throws(() => candidates(pages), /coverage|match/);
+  });
+}
+test('candidate enumeration excludes another repository in the Project', () => {
+  const pages = [candidatePage('I1', true, 'c1'), candidatePage('I2', false, 'c2')];
+  pages[1].data.node.items.nodes[0].content.repository.id = 'OTHER';
+  assert.equal((candidates(pages).items as unknown[]).length, 1);
+});
+test('candidate enumeration rejects a page for another Project', () => {
+  const pages = [candidatePage('I1', true, 'c1'), candidatePage('I2', false, 'c2')];
+  pages[1].data.node.id = 'OTHER';
+  assert.throws(() => candidates(pages), /scope/);
+});
+test('candidate submission rejects a structured error on a later page', () => {
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const mapping = definition.definition.operations['candidate.list'].actions.read.bindings.gh;
+  const action = issueAction({ contractVersion: 1, operation: 'candidate.list', context: {
+    cwd: '/repo', provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor',
+  }, input: {} }, definition, { name: 'local', binding: 'gh', options: {} }, {
+    toolArguments: [], allowedEffects: [], requiredCapabilities: [],
+    timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000,
+  }, 100);
+  const pages = [candidatePage('I1', true, 'c1'), { ...candidatePage('I2', false, 'c2'), errors: [{ type: 'FORBIDDEN' }] }];
+  assert.throws(() => validateSubmission(action, submissionFor(action, pages), mapping.projection, 101), /permission/);
+});
+import { issueAction } from '../../../lets/src/backlog/actions.ts';
+import { validateSubmission } from '../../../lets/src/backlog/submissions.ts';
+import { submissionFor } from './fixtures/submitted.ts';
+function threadPage(id: string, next: boolean, cursor: string) {
+  const output = structuredClone(issueOutput);
+  output.data.node.parent = null;
+  output.data.node.comments = { nodes: [{ id, url: `https://github.com/fixture/repo/issues/1#${id}`,
+    author: { __typename: 'User', login: 'actor' }, authorAssociation: 'OWNER',
+    createdAt: '2026-11-01T00:00:00Z', lastEditedAt: null, body: id === 'C2' ? 'Later unread evidence' : 'First comment' }],
+    totalCount: 2, pageInfo: { hasNextPage: next, endCursor: cursor } };
+  return output;
+}
+test('thread read retains unread evidence from a later page', () => {
+  const result = deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'item.read', 'read-thread', 'gh', [threadPage('C1', true, 'c1'), threadPage('C2', false, 'c2')],
+    { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' });
+  const item = result.item as { comments: { body: string }[]; createdAt: string; lastEditedAt: null; parent: null };
+  assert.equal(item.comments[1].body, 'Later unread evidence');
+  assert.equal(item.lastEditedAt, null);
+  assert.equal(item.parent, null);
+});
+test('parent body read arguments omit comment fetching', () => {
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const mapping = definition.definition.operations['item.read'].actions.read.bindings.gh;
+  const args = projectArguments(mapping.arguments, { item: { id: 'I1' } }) as string[];
+  assert.equal(args.some((arg) => arg.includes('comments(')), false);
+  assert.equal(args.some((arg) => arg.includes('item-list')), false);
+});
+import { projectArguments } from '../../../lets/src/backlog/projections.ts';
+test('thread read rejects a missing final comment page', () => {
+  assert.throws(() => deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'item.read', 'read-thread', 'gh', [threadPage('C1', true, 'c1')],
+    { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' }), /coverage/);
+});
+test('requested thread facts cannot be omitted by a custom mapping', () => {
+  const definition = loadDefinition([{ source: 'custom', value: { ...githubDefinition, operations: {
+    'item.read': { actions: { 'read-thread': { bindings: { gh: { arguments: [], projection: { op: 'path', path: ['data'] } } } } } },
+  } } }]);
+  const action = issueAction({ contractVersion: 1, operation: 'item.read', context: {
+    cwd: '/repo', provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor',
+  }, input: { item: { provider: 'github', backlog: 'P1', id: 'I1' }, includeThread: true } }, definition,
+    { name: 'local', binding: 'gh', options: {} }, { step: 'read-thread', toolArguments: [], allowedEffects: [],
+      requiredCapabilities: [], timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000 }, 100);
+  const item = deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'item.read', 'read', 'gh', issueOutput, action.request.context).item;
+  assert.throws(() => validateSubmission(action, submissionFor(action, { data: { item } }),
+    { op: 'path', path: ['data'] }, 101), /thread/);
+});
+
+import { OperationStore } from '../../../lets/src/backlog/operation-store.ts';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+function rankedCandidate(number: number, priority: string, options: { owned?: boolean; blocked?: boolean; epic?: boolean } = {}) {
+  const content = candidatePage(`I${number}`, false, 'last').data.node.items.nodes[0].content;
+  content.number = number;
+  content.assignees.nodes = options.owned ? [{ id: 'U1', login: 'actor' }] : [];
+  content.assignees.totalCount = content.assignees.nodes.length;
+  for (const node of content.projectItems.nodes[0].fieldValues.nodes) {
+    if (node.field?.name === 'Priority') node.name = priority;
+    if (node.field?.name === 'Status') node.name = 'Todo';
+    if (node.field?.name === 'Kind' && options.epic) node.name = 'Epic';
+  }
+  content.blockedBy = { nodes: options.blocked ? [{ id: 'BLOCKER', state: 'OPEN' }] : [],
+    totalCount: options.blocked ? 1 : 0, pageInfo: { hasNextPage: false, endCursor: null } };
+  return { id: `PI${number}`, content };
+}
+function submitCandidates(nodes: ReturnType<typeof rankedCandidate>[]) {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/rank-candidates-');
+  try {
+    const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+    const action = issueAction({ contractVersion: 1, operation: 'candidate.list', context: {
+      cwd: '/repo', provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor',
+    }, input: {} }, definition, { name: 'local', binding: 'gh', options: {} }, {
+      toolArguments: [], allowedEffects: [], requiredCapabilities: [], timeoutMs: 1000, maxOutputBytes: 262144, acceptanceMs: 5000,
+    }, 100);
+    const output = [{ data: { viewer: { login: 'actor' }, node: { id: 'P1', items: { nodes,
+      totalCount: nodes.length, pageInfo: { hasNextPage: false, endCursor: 'last' } } } } }];
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action);
+    const result = store.submit(issued.continuation, submissionFor(action, output), 200);
+    assert.equal(result.state, 'complete');
+    if (!('result' in result)) throw new Error('ranked result required');
+    return result.result.items as { reference: string }[];
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+}
+test('submitted complete GitHub candidates use shared readiness ranking', () => {
+  const nodes = [rankedCandidate(2, 'Should'), rankedCandidate(11, 'Must', { owned: true }),
+    rankedCandidate(12, 'Must', { blocked: true }), rankedCandidate(13, 'Wont'),
+    rankedCandidate(14, 'Must', { epic: true }), rankedCandidate(7, 'Must'), rankedCandidate(3, 'Must')];
+  assert.deepEqual(submitCandidates(nodes).map((item) => item.reference), ['#3', '#7', '#2']);
+});
+test('closed GitHub issues cannot be selected from Todo Project items', () => {
+  const closed = rankedCandidate(1, 'Must');
+  closed.content.state = 'CLOSED';
+  assert.deepEqual(submitCandidates([closed, rankedCandidate(2, 'Should')]).map((item) => item.reference), ['#2']);
+});
+for (const fault of ['missing blockers', 'incomplete blockers', 'unknown blocker state', 'unknown issue state'] as const) {
+  test(`candidate readiness fails closed for ${fault}`, () => {
+    const candidate = rankedCandidate(1, 'Must', { blocked: true });
+    if (fault === 'missing blockers') delete candidate.content.blockedBy;
+    if (fault === 'incomplete blockers') candidate.content.blockedBy.pageInfo.hasNextPage = true;
+    if (fault === 'unknown blocker state') candidate.content.blockedBy.nodes[0].state = 'UNKNOWN';
+    if (fault === 'unknown issue state') candidate.content.state = 'UNKNOWN';
+    assert.throws(() => submitCandidates([candidate]), /missing|coverage|enum/);
+  });
+}
+test('closed blockers allow candidate selection', () => {
+  const candidate = rankedCandidate(1, 'Must', { blocked: true });
+  candidate.content.blockedBy.nodes[0].state = 'CLOSED';
+  assert.deepEqual(submitCandidates([candidate]).map((item) => item.reference), ['#1']);
+});

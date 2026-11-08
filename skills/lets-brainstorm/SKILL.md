@@ -9,6 +9,21 @@ Reach one shared understanding of a story with the user before anyone plans
 it. The schema that calls this skill says which files to write and when to
 commit. This skill says how to question, what to record and when to split.
 
+## Configured backlog calls
+
+Use the configured default GitHub connection and the
+[Backlog action loop](../lets-go/references/backlog-actions.md) for every
+repository, issue and PR action below. Keep this step's own worker ID.
+PR reads use input `branch` for the current branch or the validated PR ID;
+body updates and ready requests use that exact ID. Only validated results
+advance the step; save complete prepared bodies in private scratch.
+Resolve repository/actor and the linked Project through the read-only
+bootstrap and discovery calls when the caller supplied no validated
+scope. Resolve issue numbers through scoped `lets backlog item.search`;
+keep full identities. Verify required tools and writable shared state in
+this session before backend issuance. Missing prerequisites return the
+existing failed report with a remedy, without another tool or connection.
+
 ## Read and maintain domain language
 
 Read [Domain language](../lets-shape/references/domain-language.md) before
@@ -61,10 +76,7 @@ continue without asking the user to select or confirm a domain.
 
 ### Read the thread
 
-When the change has backlog.json, use `lets backlog packet` with the recorded
-change path to fetch its complete thread and packet. Otherwise use the explicit
-story supplied by lets-build; never infer identity from a title.
-Interpret the issue's thread as [Issue comments](../lets-shape/references/issue-comments.md)
+Fetch the issue's thread as [Issue comments](../lets-shape/references/issue-comments.md)
 says, and show the user the list it describes. A comment labelled `read` needs no
 question. Raise any other comment that bears on the story's scope, behavior
 or acceptance as a question, like any other. Write nothing on the issue: no

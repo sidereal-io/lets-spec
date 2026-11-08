@@ -9,27 +9,42 @@ Plan one change, on its branch. This is the plan step. `lets-go` claims
 the issue and routes it first. Run every command below from the repo
 root.
 
+## Configured backlog calls
+
+Use the configured default GitHub connection and the
+[Backlog action loop](../lets-go/references/backlog-actions.md) for every
+repository, issue and PR action below. Keep this step's own worker ID.
+PR reads use input `branch` for the current branch or the validated PR ID;
+body updates and ready requests use that exact ID. Only validated results
+advance the step; save complete prepared bodies in private scratch.
+Resolve repository/actor and the linked Project through the read-only
+bootstrap and discovery calls when the caller supplied no validated
+scope. Resolve issue numbers through scoped `lets backlog item.search`;
+keep full identities. Verify required tools and writable shared state in
+this session before backend issuance. Missing prerequisites return the
+existing failed report with a remedy, without another tool or connection.
+
 ## Find where you are
 
 1. Find the default branch:
-   `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`.
+   `lets backlog repository.read --request-file`, using `repository.defaultBranch`.
 2. Run `git branch --show-current`. On the default branch, say that
    `lets-go` starts an issue, and stop. Otherwise the branch is the
    change's name, `<name>`.
-3. Read [Backlog commands](../lets-build/references/backlog-commands.md).
-   Take the scoped item and original private continuation file from `lets-go`.
-   When the change has `backlog.json`, run `lets backlog resume` through the
-   action loop and use its verified identity. Never search titles or infer
-   authority from assignees. A legacy change requires explicit identity
-   confirmation and binding with its original handle; missing continuation
-   stops planning.
+3. Take the issue, `<i>`, and the route line from the caller. When the
+   caller gives no issue, search for it:
+
+   ```bash
+   lets backlog item.search --request-file
+   ```
+
+   Keep the one whose title starts with `<branch> — `. If none or
+   several match, say that `lets-plan` needs the issue number, and stop.
 
 ## Plan
 
 Invoke the `openspec-propose` skill for the change `<name>`, for issue
-#<i>. Give it the private continuation file path and scoped item, never the handle
-in artifact text. The brainstorm instruction binds the identity before writing
-its ledger. Give it the route line for the proposal's commit message. When the
+#<i>. Give it the route line for the proposal's commit message. When the
 route is `lets-minimal` and the flow's schema is not, say to use the
 schema `lets-minimal`. The flow's schema is the `schema:` line of
 `openspec/config.yaml`.
@@ -37,16 +52,6 @@ schema `lets-minimal`. The flow's schema is the `schema:` line of
 When `openspec/changes/<name>/` exists, say to continue the change. When
 it does not, and you have no route line, stop: say that `lets-go` routes
 and claims the issue.
-
-After propose creates the draft PR targeting the default branch, run
-`lets backlog reference` through the action loop with its exact URL,
-change path and original private handle. It checks native closing links
-and retains the association. For a stacked PR targeting a feature branch,
-record association as pending: GitHub has no native closing links yet.
-Keep its closing line and original continuation. Merge stacks bottom-up,
-retarget the remaining PR to the default branch, then run `reference`
-before completion. A body line alone cannot authorize Done. Readiness
-leaves the item In Progress. Do not merge.
 
 ## When propose stops
 

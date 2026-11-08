@@ -32,7 +32,6 @@ export function readyWork(items: Candidate[], repository: string): Candidate[] {
     .filter(
       (item) =>
         item.repository === repository &&
-        item.closed !== true &&
         item.metadata.Status === 'Todo' &&
         item.metadata.Kind !== 'Epic' &&
         ['Must', 'Should', 'Could'].includes(item.metadata.Priority) &&
@@ -66,4 +65,22 @@ function compareText(left: string, right: string): number {
   const b = Array.from(right, (character) => character.codePointAt(0)!);
   for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i] - b[i];
   return a.length - b.length;
+}
+
+export type ActionPrerequisites = {
+  toolAvailable: boolean;
+  login?: boolean;
+  timeoutMs?: number;
+  maxOutputBytes?: number;
+};
+/** Backend observations qualify operations, never the read that discovers them. */
+export function checkActionPrerequisites(tool: string, observed: ActionPrerequisites,
+  checkingLogin = false): void {
+  if (observed.toolAvailable !== true)
+    throw new AdapterFailure('unsupported', 'none', `${tool} unavailable; expose the selected tool in this session; no fallback`);
+  for (const field of ['timeoutMs', 'maxOutputBytes'] as const)
+    if (!Number.isSafeInteger(observed[field]) || observed[field]! <= 0 || observed[field]! > 2147483647)
+      throw new AdapterFailure('unsupported', 'none', `${tool} requires a finite positive ${field}; configure host execution/output bounds; no fallback`);
+  if (!checkingLogin && observed.login !== true)
+    throw new AdapterFailure('authentication', 'none', `${tool} login is missing or unconfirmed; authenticate with the selected backend tool, then repeat bounded preflight`);
 }

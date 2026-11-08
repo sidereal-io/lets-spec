@@ -1,125 +1,222 @@
 ## Purpose
 
-Build existing GitHub stories through the shared backlog boundary while preserving safe ownership, portable identity and completion after confirmed merge.
+Carry an existing GitHub story through the shared backlog workflow while
+preserving existing ownership, recovery, PR and finishing behavior.
 
 ## ADDED Requirements
 
-### Requirement: Resolve one configured backlog without fallback
-The build caller SHALL resolve `lets.backlog` from repository OpenSpec configuration under the versioned provider-definition and action contract. Missing selection SHALL use GitHub and discover exactly one open linked Project in either link direction. Explicit selection SHALL require repository version 1, provider/definition identity and version, backlog ID and complete unambiguous mappings. Invalid configuration, unavailable required tools or capture and authentication or permission failures SHALL stop without choosing another provider. GitHub mappings SHALL validate native field types, values and repository membership before mutations.
+### Requirement: Explicit configuration supports both agent environments
+The GitHub backlog workflow SHALL work from both unchanged T3 and standalone
+coding-agent CLIs using explicitly configured compatible integrations. Its
+support SHALL NOT depend on T3 code changes, requests to T3 maintainers or a
+T3-only initial support boundary. Both environments SHALL enforce the same
+core operation and evidence guarantees.
 
-#### Scenario: Existing unconfigured GitHub repository
-- **WHEN** configuration omits backlog selection and exactly one open linked Project exists
-- **THEN** build selects that Project with the existing named shared fields
+#### Scenario: Agent runs in a standalone CLI
+- **WHEN** a standalone coding-agent CLI has the explicitly selected compatible tools and result-submission support
+- **THEN** the full existing-story GitHub workflow is available without T3
 
-#### Scenario: Ambiguous discovery
-- **WHEN** discovery returns zero or multiple distinct open linked Projects
-- **THEN** build reports the selection problem without claiming work
+#### Scenario: Agent runs in unchanged T3
+- **WHEN** an agent in unchanged T3 has the explicitly selected compatible tools and result-submission support
+- **THEN** the same GitHub workflow is available without a T3 patch or upstream request
 
-#### Scenario: Obsolete executable selection
-- **WHEN** explicit configuration still contains an adapter executable setting
-- **THEN** build reports the file/key and a definition migration action without running the executable or selecting the default adapter
+#### Scenario: Configured tools differ by environment
+- **WHEN** T3 and a standalone CLI run lets-go with a compatible configured default connection, changed explicitly in configuration when a different binding is needed
+- **THEN** Lets applies the same operation, policy and evidence validation without switching backlog provider or relaxing guarantees
 
-### Requirement: Enforce bounded action and submission contracts
-Lets SHALL issue versioned bounded actions after validating policy, scope,
-prerequisites and definition compatibility. Each action SHALL bind identity,
-operation, immutable input, provider/definition version, actor/session, finite
-expiry and output limits. The agent SHALL execute only that requested action.
-Lets SHALL validate result identity, structure, sequencing and independently
-retrieved capture before progression. Definitions SHALL remain integration
-data and SHALL NOT authorize policy changes or certify their own trust.
+### Requirement: GitHub selection is explicit and validated
+Lets SHALL select one GitHub backlog for item operations using validated release
+defaults or explicit repository provider/definition and scope settings.
+Lets SHALL reject invalid selection, incompatible versions and ambiguous field
+mappings before requesting writes, without falling back to another provider.
 
-#### Scenario: Expired claim submission
-- **WHEN** a claim action expires after dispatch and a result arrives late
-- **THEN** effects remain unknown until reconciled and the late result does not reactivate the action or authorize work
+#### Scenario: Multiple linked Projects
+- **WHEN** discovery returns two eligible linked Projects and none is selected
+- **THEN** Lets reports the ambiguity and requests no item mutation
 
-#### Scenario: Forged or missing evidence
-- **WHEN** a result includes an agent-written ownership report or unavailable capture reference
-- **THEN** lets pauses progression and automatic retry with the missing facts and reconciliation choices
+#### Scenario: Invalid explicit definition
+- **WHEN** the selected definition is missing or incompatible
+- **THEN** Lets names the selection problem and does not use the default instead
 
-#### Scenario: Action substitution
-- **WHEN** capture describes a different tool, input, scope or attempt from the issued action
-- **THEN** lets rejects it and does not advance the workflow
+### Requirement: Candidate enumeration proves its coverage
+Lets SHALL require complete repository/Project-scoped candidate, metadata,
+ownership and directional blocker evidence before selecting ready work.
 
-#### Scenario: Incomplete enumeration cannot finish
-- **WHEN** captured blocker pages repeat a cursor or omit remaining pages
-- **THEN** readiness fails explicitly rather than treating the item as unblocked
+#### Scenario: A page is missing
+- **WHEN** the submitted output ends before the backend's final candidate page
+- **THEN** Lets reports incomplete enumeration and authorizes no claim
 
-### Requirement: Preserve GitHub packet and readiness policy
-The shared workflow SHALL retain existing packet validation, comment watermark checks, parent decisions, schema routing and glossary preflight. Candidate selection SHALL exclude other repositories, non-Todo items, Epics, Wont items, owned items and items with open blockers. It SHALL rank Must, Should, Could then GitHub numeric issue reference within the selected backlog, with the contract's opaque-ID fallback. Named items SHALL undergo the same ownership and blocker checks before claim.
+#### Scenario: A blocker cannot be read
+- **WHEN** candidate data is present but required blocker coverage is unavailable
+- **THEN** Lets reports the capability or permission gap instead of treating the item as unblocked
 
-#### Scenario: Candidate ranking
-- **WHEN** eligible Must items #10 and #2 coexist with an assigned Must #1 and a blocked Must #3
-- **THEN** selection chooses #2
+### Requirement: Ready work uses shared policy
+Lets SHALL exclude Epics, Wont items, owned items and work with open blockers.
+Lets SHALL rank remaining ready items by Must, Should, Could and the shared
+contract's deterministic tie-break, retaining packet and glossary prerequisites.
 
-#### Scenario: Named item has an owner
-- **WHEN** the requested item is already assigned
-- **THEN** build reports the owner and stops without replacing ownership
+#### Scenario: Mixed candidates
+- **WHEN** complete candidate evidence contains eligible Must and Should stories plus an owned Must and a blocked Must
+- **THEN** Lets selects the eligible Must and does not claim either excluded item
 
-### Requirement: Claims reconcile native actor ownership
-GitHub claims SHALL report actor-level best-effort guarantees and explicitly disclose that remote sessions using the same actor cannot be distinguished. No machine-state Project fields or shared coordinator SHALL be required. Acquire SHALL check unowned state, journal local continuation intent, assign, transition to In Progress and verify current ownership. Before work, including resume and replay, the caller SHALL require matching local continuation and independently captured fresh native sole actor ownership and In Progress. Assignment alone SHALL NOT authorize work. Uncertain or conflicting native state SHALL require reconciliation without clearing another worker's claim.
+### Requirement: Claiming preserves GitHub's actual guarantee
+Lets SHALL treat GitHub claiming as best-effort at the authenticated actor level.
+Fresh validated submitted sole ownership and In Progress status SHALL be
+required before work starts or resumes. Local recovery state SHALL NOT establish
+current remote ownership or distinguish remote sessions using the same actor.
 
-#### Scenario: Same account uses a second session
-- **WHEN** a new session without original local continuation attempts to acquire or release an assigned item
-- **THEN** it receives a conflict and the first session's ownership remains intact
+#### Scenario: Ownership changes during claim
+- **WHEN** assignment is followed by a validated submitted read showing another owner
+- **THEN** Lets reports conflict and does not authorize work
 
-#### Scenario: Resume requires explicit continuation
-- **WHEN** two local callers address the same change, but only one supplies its original continuation handle
-- **THEN** only that caller can resume the recorded session; the other cannot adopt it from shared private storage
+#### Scenario: Assignment succeeds but status fails
+- **WHEN** validated submitted output establishes assignment but not the requested status transition
+- **THEN** Lets exposes the partial claim and requires safe recovery before work
 
-#### Scenario: Status update fails after assignment
-- **WHEN** assignment succeeds but moving to In Progress fails
-- **THEN** acquire reports partial effects and build does not start
+### Requirement: Work identity survives sessions
+Lets SHALL resolve the scoped provider, backlog, repository and item identity
+on each invocation and bind it into every request, including any explicit
+association or completion request. It SHALL NOT add a committed identity file.
+Lets-go SHALL use its existing scoped branch/issue lookup plus fresh native ownership/status
+observations for ordinary resume, without requiring the original
+recovery record or making another claim. Legacy branches SHALL be able to bind a
+uniquely scoped issue through the same fresh read. Private recovery SHALL
+remain separate and SHALL be required for original-operation uncertainty
+reconciliation and claim release; public identity alone SHALL NOT grant those
+authorities.
 
-### Requirement: Release only the current worker's claim
-After branch creation fails, the workflow SHALL release using the original scoped identity, actor, session and token. Release SHALL restore Todo only when current ownership proves that claim still belongs to this worker. Unknown outcomes SHALL reconcile before retry; replaced claims SHALL remain untouched.
+#### Scenario: Resume has a conflicting identity
+- **WHEN** the request's bound Project or item differs from the issue resolved from the branch
+- **THEN** Lets reports disagreement and requests no mutation
+
+#### Scenario: Recovery record is unavailable
+- **WHEN** a caller resolves the issue by its existing branch lookup but lacks the original recovery record
+- **THEN** Lets permits ordinary resume after fresh sole-owner/In Progress verification when no known uncertainty blocks it
+- **AND** it does not adopt the original worker's private claim or authorize its release
+
+#### Scenario: Legacy claim has no journal
+- **WHEN** an in-progress branch predates private journals and uniquely resolves to the selected issue with the authenticated actor as sole owner and In Progress
+- **THEN** lets-go resumes the existing work without a new claim or fabricated recovery record
+
+### Requirement: Release preserves other workers
+Lets SHALL verify current ownership before each release step and SHALL NOT
+clear another worker's ownership or status. Branch-creation failure SHALL
+trigger bounded release or an explicit unresolved recovery result.
 
 #### Scenario: Branch creation fails
-- **WHEN** branch creation fails after a verified claim and ownership still matches
-- **THEN** release removes this worker's assignment and restores Todo
+- **WHEN** a valid claim is acquired but the local branch cannot be created
+- **THEN** Lets requests safe release of that claim and reports any unresolved effects
 
-#### Scenario: Claim was replaced
-- **WHEN** branch failure recovery finds another actor's assignment
-- **THEN** it reports conflict without changing assignment or status
+#### Scenario: Another actor takes ownership before cleanup
+- **WHEN** a fresh validated submitted read shows a competing actor before release
+- **THEN** Lets does not clear that actor or reset their status
 
-### Requirement: Retain immutable identity through the change lifecycle
-The workflow SHALL persist provider/backlog/item identity, repository and display reference with the change. Resume, PR association and archive SHALL use that recorded identity and reject conflicting current configuration. URLs and numeric references SHALL NOT substitute for identity. Legacy changes lacking a record SHALL require explicit identity confirmation before any backlog mutation.
+### Requirement: Uncertain writes retain their original identity
+Lets SHALL retain the original mutation input, scope and identity when a result
+is missing, expired or uncertain. Retry and progression SHALL remain blocked
+until validated reconciliation observations resolve effects under core policy.
 
-#### Scenario: Repository selection changes during a change
-- **WHEN** a resumed change records a different backlog from current configuration
-- **THEN** build stops with the mismatch and does not claim or complete a similarly numbered item elsewhere
+#### Scenario: Claim response is lost
+- **WHEN** a claim may have reached GitHub but its response is unavailable
+- **THEN** Lets requests reconciliation of the original claim instead of issuing another claim
 
-#### Scenario: Archived change completes
-- **WHEN** the change is archived before its PR merges
-- **THEN** the recorded identity remains available for later completion
+#### Scenario: A late response arrives
+- **WHEN** a result arrives after its action expires
+- **THEN** Lets can retain it for reconciliation but does not accept it as permission to progress
 
-### Requirement: Associate PRs and complete only after merge
-The workflow SHALL verify an idempotent native closing-issue association to the exact code-host PR, preserving GitHub closing references. It SHALL leave ready and archived work In Progress. Completion SHALL require the independently retrieved capture to verify that exact associated PR merged and establish its nonempty merge commit. It SHALL reconcile already-Done automation after merge and reject a different PR or unmerged evidence.
+#### Scenario: Uncertain write exists in another local worktree
+- **WHEN** worktree A records an uncertain write for an item and worktree B attempts to continue that item using the same user-configured store
+- **THEN** Lets finds the original operation by scoped item identity and requires reconciliation before more work or writes
+
+#### Scenario: Resume occurs on another machine
+- **WHEN** the issue is uniquely resolved on another machine without the original private recovery store
+- **THEN** Lets uses fresh native reads for ordinary resume and does not claim to know unseen outstanding writes
+- **AND** known unresolved effects or incomplete observations pause the affected work without granting release authority
+
+### Requirement: Completion requires the exact associated merge
+Lets SHALL verify the exact associated PR's native closing relationship and
+merge evidence through validated submitted tool output before authorizing
+completion. The existing merged-PR stop SHALL NOT invoke a completion update;
+this requirement governs explicit completion requests in shared conformance.
+The GitHub definition SHALL NOT choose a new workflow transition. Readiness or
+an unrelated PR merge SHALL NOT authorize Done.
 
 #### Scenario: Ready PR is unmerged
-- **WHEN** a PR is ready for review but remains unmerged
-- **THEN** completion makes no Done transition
+- **WHEN** the associated PR is ready for review but has not merged
+- **THEN** Lets leaves the item In Progress and rejects completion
 
-#### Scenario: Completion response was lost
-- **WHEN** the associated PR has merged and a previous Done update succeeded without returning a response
-- **THEN** recovery observes Done and succeeds without duplicate effects
+#### Scenario: A feature branch merges in a stack
+- **WHEN** a PR merges into a feature branch without the required native closing relationship
+- **THEN** Lets does not infer completion of the associated item
 
-### Requirement: Use one extensible definition path
-Shipped and custom definitions SHALL use the same action/submission and generic
-capture validation path. Loading a definition SHALL execute no provider code or
-install hook. Lets SHALL NOT retain a built-in provider executor or direct
-provider verification reads beside the agent-executed path.
+#### Scenario: GitHub already completed the item
+- **WHEN** exact merge is established and native automation has already produced the required completed state
+- **THEN** Lets accepts completion without repeating the remote update
 
-#### Scenario: Custom GitHub definition
-- **WHEN** a compatible explicit custom definition supplies tool usage and mappings for supported GitHub operations
-- **THEN** it uses the same action and evidence checks as the shipped definition without an adapter executable or lets release
+### Requirement: Required observation support is checked before mutation
+Lets SHALL validate selected tool capabilities and output mappings before
+requesting GitHub writes. Definitions SHALL cover the reads required for claim,
+read-only resume, recovery and any explicit exact associated merge checks. Missing required output SHALL pause
+progression without requiring a capture service or host modification.
 
-### Requirement: Prove the production build flow
-Support claims SHALL require automated action/submission, capture and workflow checks plus a live run of the implemented flow against the designated test repository and Project. Evidence SHALL identify the tested commit, selected item, PR and merge commit, outcomes and cleanup. It SHALL cover blocked/owned work, uncertain mutation outcomes and branch creation failure. Manual fixture setup and simulated provider results SHALL NOT count as proof of the production lifecycle.
+#### Scenario: Ordinary configured tool supplies complete output
+- **WHEN** an agent submits complete scoped GitHub tool output using the selected compatible definition
+- **THEN** Lets applies the contract checks without requiring an independent receipt
 
-#### Scenario: Live test reaches review readiness
-- **WHEN** the new flow selects and builds a test story and opens its PR
-- **THEN** evidence shows retained identity and In Progress until a user-authorized merge permits the completion check
+#### Scenario: Mutation result is missing after dispatch
+- **WHEN** a mutation was issued but its result is unavailable
+- **THEN** Lets retains uncertainty and offers bounded reconciliation reads or stopping without another write
 
-#### Scenario: Merge is unavailable
-- **WHEN** the test PR has not been authorized to merge
-- **THEN** acceptance reports completion as pending rather than claiming a passed lifecycle
+### Requirement: Live support needs fresh scoped acceptance
+The GitHub path SHALL require automated behavior checks and a fresh end-to-end
+acceptance run through its actual configured tools and result contract before support is claimed.
+Offline doubles and historical prototype acceptance SHALL NOT qualify it.
+
+#### Scenario: Offline suite passes without a live run
+- **WHEN** policy and translation-double tests pass but no fresh live workflow has been demonstrated
+- **THEN** the release evidence identifies live support as unqualified
+
+### Requirement: Shipped GitHub translation handles actual structured output
+The shipped definition SHALL use structured GitHub API responses through
+`gh api graphql`, including scoped Project selection, union and null fields,
+required nested connection coverage and structured error types. It SHALL NOT
+infer complete enumeration from a high-level command's item limit or classify
+errors by stderr keywords.
+
+#### Scenario: Project field values include several Projects
+- **WHEN** a response contains field-value arrays for several Projects and a null union member
+- **THEN** translation selects only the configured Project and either maps its required fields or reports the specific gap
+
+#### Scenario: GraphQL returns partial mutation data
+- **WHEN** a mutation response contains partial data and structured errors
+- **THEN** Lets retains the partial or unknown effects instead of inferring none from the error category
+
+### Requirement: Existing branches are checked without repair
+An existing branch SHALL skip Claim. Before unfinished work, Lets SHALL check
+fresh sole assignment to the authenticated actor and In Progress. On a mismatch
+or unavailable facts, it SHALL report the condition and stop without acquiring
+a new claim, reassigning the issue or changing status. Terminal PRs SHALL retain
+the existing merged or rejected stop without updating Project status.
+
+#### Scenario: Existing branch has no owner
+- **WHEN** a branch exists but its issue is unassigned and Todo
+- **THEN** Lets reports the ownership and status mismatch and performs no repair write
+
+#### Scenario: Reopened issue has an old merged PR
+- **WHEN** an issue is reopened and has no surviving change branch but an old PR once closed it
+- **THEN** Lets does not select that historical PR as a completion caller or set Done from it
+
+#### Scenario: Rejected PR branch was deleted
+- **WHEN** a historical PR was closed without merge and its branch no longer exists
+- **THEN** that PR does not impose a new rejected-work stop on the existing new-work path
+
+### Requirement: Live qualification names its actual connection
+The default shipped gh CLI binding SHALL NOT establish live MCP-only support.
+Custom MCP compatibility SHALL remain an offline conformance claim until a
+fresh live run qualifies the specific definition, connection and versions.
+Both required hosts SHALL be qualified through their actual selected tools,
+including an actual delegated step, without implying support for other bindings.
+
+#### Scenario: CLI acceptance passes without an MCP run
+- **WHEN** both required hosts pass fresh CLI acceptance but no MCP-only live run has passed
+- **THEN** release evidence qualifies the tested CLI configurations and lists MCP-only live support as unqualified

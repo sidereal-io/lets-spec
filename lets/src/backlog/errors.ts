@@ -4,15 +4,12 @@ export type ErrorCategory = (typeof ERRORS)[number];
 export class AdapterFailure extends Error {
   category: ErrorCategory;
   effects: 'none' | 'partial' | 'unknown';
-  constructor(category: ErrorCategory, effects: AdapterFailure['effects'], message: string) {
+  knownRemoteIds?: Record<string, string>;
+  constructor(category: ErrorCategory, effects: AdapterFailure['effects'], message: string, knownRemoteIds?: Record<string, string>) {
     super(`${category}: ${message}`);
     this.name = 'AdapterFailure';
     this.category = category;
     this.effects = effects;
+    this.knownRemoteIds = knownRemoteIds;
   }
-}
-
-/** Produced only after validating protected, immutable non-dispatch evidence. */
-export class NonDispatchFailure extends AdapterFailure {
-  constructor() { super('invalid_configuration', 'none', 'trusted runner cancelled or rejected the action before dispatch'); }
 }

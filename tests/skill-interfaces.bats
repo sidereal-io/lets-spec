@@ -509,14 +509,14 @@ fixture_file() {
   skill_says lets-review-build 'Reviewed: <base> <base-sha>..<head-sha>'
   skill_says lets-review-build '**Code review**'
   skill_says lets-review-build '## Code review'
-  skill_says lets-review-build 'gh pr edit --body-file'
+  skill_says lets-review-build 'lets backlog pull-request.update --request-file'
 }
 
 @test "lets-review-build finishes the change after its review" {
   skill_says lets-review-build 'operationGuidance'
   skill_says lets-review-build '`openspec-verify-change` skill'
   skill_says lets-review-build '`openspec-archive-change` skill'
-  skill_says lets-review-build 'gh pr ready'
+  skill_says lets-review-build 'lets backlog pull-request.ready --request-file'
 }
 
 @test "each review skill ranks by the guidance, then other families, then the order given" {
@@ -807,12 +807,12 @@ review_build_start() {
     'Check the prerequisite' 'Check the checkpoint' 'Import the commits' 'Recover from a failed import'; do
     skill_has_section lets-go "$section"
   done
-  skill_says lets-go 'gh issue view <i> --json createdAt'
-  skill_says lets-go 'gh repo view --json defaultBranchRef --jq .defaultBranchRef.name'
+  skill_says lets-go 'lets backlog item.read --request-file'
+  skill_says lets-go 'lets backlog repository.read --request-file'
   skill_says lets-go "Skipped shape: #<i>'s packet is complete, last edited <date>."
-  # The runner claims through core policy and independently captured actions.
-  skill_says lets-go 'lets backlog claim'
-  skill_does_not_say lets-go 'gh project item-edit'
+  # Claim sets the Status, so lets-go sets that field itself.
+  skill_says lets-go 'lets backlog claim.acquire'
+  skill_says lets-go 'lets backlog claim.release'
 }
 
 @test "lets-go names no section of lets-build" {
@@ -822,13 +822,14 @@ review_build_start() {
   done
 }
 
-@test "Read the settings uses the checked backlog scope and stops on ambiguity" {
+@test "Read the settings discovers the Project once and requires selection on ambiguity" {
   local text
-  text="$(part_section 'Read the settings')"
-  grep -qF 'lets backlog scope' <<<"$text" || { echo "Read the settings does not check scope"; false; }
-  grep -qF 'exactly one linked open Project' <<<"$text" || { echo "implicit scope is ambiguous"; false; }
-  grep -qF 'Missing or ambiguous selection stops the run' <<<"$text" || { echo "scope errors do not stop"; false; }
-  skill_does_not_say lets-go 'gh api graphql'
+  text="$(part_section 'Read the settings' | tr -s '[:space:]' ' ')"
+  grep -qF 'lets backlog backlog.list --request-file' <<<"$text" || false
+  grep -qF '**None:** say to run the `lets-setup-backlog` skill, and stop.' <<<"$text" || false
+  grep -qF '**Several without a selection:**' <<<"$text" || false
+  grep -qF 'lets.backlog.id' <<<"$text" || false
+  skill_says_once lets-go 'lets backlog backlog.list'
 }
 
 @test "lets-go with nothing takes the next ready issue" {
@@ -869,7 +870,7 @@ review_build_start() {
   local phrase
   skill_says lets-go 'Questions: <mode>, because #<i> is a <Kind>.'
   skill_says lets-go 'Questions: <mode>, because you asked for it.'
-  skill_says lets-go 'lets backlog packet'
+  skill_says lets-go 'lets backlog relationship.list --request-file'
   skill_says lets-go 'report the unresolved owner or checkpoint it carries, and stop, even on a stacked branch'
   skill_says lets-go 'The question mode is <mode>. At auto, the lets-go session answers each question that has a recommendation'
   skill_says lets-go 'Your rules are the same in both modes.'
@@ -884,7 +885,7 @@ review_build_start() {
 @test "lets-go states the blocker rule before it finds the source of demand" {
   local part read call
   part="$(part_section 'Check the issue')"
-  read="${part%%"lets backlog packet"*}"
+  read="${part%%"lets backlog relationship.list --request-file"*}"
   call="${part%%"[Find the source of demand](#find-the-source-of-demand)"*}"
   [ "$read" != "$part" ] || { echo "Check the issue does not read the blockers"; false; }
   [ "$call" != "$part" ] || { echo "Check the issue does not run Find the source of demand"; false; }
@@ -927,7 +928,7 @@ review_build_start() {
   skill_says lets-go 'Questions: <mode>, because your lets config sets go.questions.'
   skill_says lets-go 'lets go questions'
   first_mode=$(grep -n 'lets go questions' "$skill" | head -1 | cut -d: -f1)
-  first_gh=$(grep -nE '`gh ' "$skill" | head -1 | cut -d: -f1)
+  first_gh=$(grep -nE '`lets backlog repository.read' "$skill" | head -1 | cut -d: -f1)
   [ "$first_mode" -lt "$first_gh" ] ||
     { echo "lets go questions is on line $first_mode, after a GitHub call on line $first_gh"; false; }
 }
@@ -964,7 +965,7 @@ review_build_start() {
   skill_says lets-go 'Picked #<i>: <title>, the first ready story under #<parent>.'
   skill_says lets-go 'docs: the discovery map from #<parent>'
   skill_says lets-go 'Discovery status: in-progress'
-  skill_says lets-go "gh issue list --state open --search '\"Discovery status: in-progress\" in:body' --json number,title,body"
+  skill_says lets-go 'lets backlog item.search --request-file'
   skill_says lets-go '*Resume mode*'
   skill_says lets-go 'Finalize has started on that parent'
   skill_says lets-go 'the edits are that discovery'"'"'s confirmed phases'
@@ -1002,7 +1003,7 @@ review_build_start() {
   skill_says lets-go 'git fetch origin <name>'
   skill_says lets-go 'git merge --ff-only origin/<name>'
   skill_says lets-go 'git switch <name>'
-  skill_says lets-go 'lets backlog resume'
+  grep -qF 'lets backlog item.search' <<<"$(part_section 'Read the request')" || false
   skill_says lets-go 'Records disagree:'
   skill_does_not_say lets-go '#150 adds resuming' || { echo "lets-go still defers resuming to #150"; false; }
 }
@@ -1017,7 +1018,7 @@ review_build_start() {
   skill_says lets-go "git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md"
   skill_says lets-go "git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md"
   skill_says lets-go 'git log -1 --format=%as <sha>'
-  skill_says lets-go 'gh pr view <name> --json number,body'
+  skill_says lets-go 'lets backlog pull-request.read --request-file'
 }
 
 # A placeholder that names two things lets an agent send an issue number
@@ -1958,6 +1959,51 @@ procedure_stops() {
   done
 }
 
+@test "Claim reports uncertain and unavailable acquisition without creating a branch" {
+  local claim enter result
+  claim="$(procedure_text 'Claim')"
+  enter="$(part_section 'Enter the branch')"
+  for result in claim-uncertain claim-unavailable; do
+    grep -qF -- "\`$result\`" <<<"$claim" || { echo "Claim does not return $result"; false; }
+    grep -qF -- "**\`$result\`:**" <<<"$enter" || { echo "Enter the branch does not handle $result"; false; }
+  done
+  grep -qF 'before creating a branch' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" || false
+  grep -qF 'lets backlog claim.acquire' <<<"$claim" || false
+}
+
+@test "branch failure reports the observed release outcome" {
+  local claim enter
+  claim="$(procedure_text 'Claim')"
+  enter="$(part_section 'Enter the branch')"
+  grep -qF 'lets backlog claim.release' <<<"$claim" || false
+  grep -qF 'only when release confirms' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" || false
+  grep -qF 'release outcome' <<<"$enter" || false
+  ! grep -qF '[Claim](#claim) has released the claim' <<<"$enter" || false
+}
+
+@test "existing branch issue lookup uses scoped submitted reads without identity files" {
+  local request
+  request="$(part_section 'Read the request')"
+  grep -qF 'lets backlog item.search' <<<"$request" || false
+  grep -qF 'scoped repository' <<<"$(tr -s '[:space:]' ' ' <<<"$request")" || false
+  grep -qF 'title starts with `<branch> — `' <<<"$request" || false
+  grep -qF 'explicit issue number' <<<"$(tr -s '[:space:]' ' ' <<<"$request")" || false
+  ! grep -qF 'gh issue list' <<<"$request" || false
+  ! grep -qF 'identity.json' "$(lets_go_skill)" || false
+}
+
+@test "runner and delegated steps keep separate backlog worker contexts" {
+  local settings prompt
+  settings="$(part_section 'Read the settings')"
+  prompt="$repo/skills/lets-go/references/step-prompt.md"
+  grep -qF 'context.session' <<<"$settings" || false
+  grep -qF 'workerId' <<<"$settings" || false
+  grep -qF 'own worker ID' "$prompt" || false
+  grep -qF 'runner' "$prompt" || false
+  grep -qF 'release authority' <<<"$(tr -s '[:space:]' ' ' <"$prompt")" || false
+  ! grep -qE '^(workerId|claimToken|workerSession):' "$prompt" || false
+}
+
 # Check the issue looks for the branch, so Claim does not look again.
 @test "Claim looks for no branch, and a late branch fails its creation" {
   local claim
@@ -2264,7 +2310,7 @@ walk_section() {
 @test "lets-go walks the step table and reads each row when it reaches it" {
   local phrase
   for phrase in '[The step table](#the-step-table)' 'openspec instructions apply --change <name> --json' \
-    'gh pr view <name> --json number,body' '*Check an earlier review*' 'not before'; do
+    'lets backlog pull-request.read --request-file' '*Check an earlier review*' 'not before'; do
     grep -qF -- "$phrase" <<<"$(walk_section)" || { echo "the walk does not say: $phrase"; false; }
   done
 }
@@ -2345,7 +2391,7 @@ walk_section() {
 @test "Read the report checks a done report against its record" {
   local part
   part="$(part_section 'Read the report')"
-  grep -qF 'gh pr view <name> --json number,url,state,isDraft,body' <<<"$part" ||
+  grep -qF 'lets backlog pull-request.read --request-file' <<<"$part" ||
     { echo "Read the report does not read the pull request again after done"; false; }
   grep -qF 'git status --porcelain' <<<"$part" || { echo "Read the report does not read the tree again after done"; false; }
   grep -qF 'the step reported done, but' <<<"$part" || { echo "Read the report takes a done report on trust"; false; }
@@ -2360,7 +2406,7 @@ walk_section() {
 @test "a failed step on a branch with no pull request prints no URL" {
   local part
   part="$(part_section 'Read the report')"
-  grep -qF 'gh pr view <name> --json url --jq .url' <<<"$part" || { echo "Read the report does not look for the pull request again"; false; }
+  grep -qF 'lets backlog pull-request.read --request-file' <<<"$part" || { echo "Read the report does not look for the pull request again"; false; }
   grep -qF 'no pull request yet' <<<"$part" || { echo "Read the report does not say the branch has no pull request yet"; false; }
 }
 
@@ -2407,7 +2453,7 @@ step_row() {
 @test "lets-plan runs openspec-propose and reads the change state when it stops" {
   skill_says lets-plan '`openspec-propose` skill'
   skill_says lets-plan 'openspec instructions apply --change <name> --json'
-  skill_says lets-plan 'lets backlog resume'
+  skill_says lets-plan 'lets backlog item.search --request-file'
 }
 
 @test "lets-plan offers no handoff" {
@@ -2715,7 +2761,7 @@ description_short() {
   while IFS=$'\t' read -r case phrase; do
     grep -qF -- "$phrase" <<<"$text" || missing+=("$case: $phrase")
   done <<'EOF'
-the change's branch	**On the change's branch:** it verifies the issue from the recorded identity and original private continuation, prints a dated line for each step already done, and goes on from the first unfinished step.
+the change's branch	**On the change's branch:** it finds the issue from the branch's name, prints a dated line for each step already done, and goes on from the first unfinished step.
 the default branch with the issue number	**On the default branch, with the issue number:** it finds the change's branch, here or on `origin`, switches to it, and goes on the same way. It does not claim the issue again.
 the default branch with nothing	**On the default branch, with nothing:** it does not resume. It picks the next ready issue, and a claimed issue is never ready.
 a failed step	**After a failed step:** the run that failed never runs that step again. A new run starts it afresh, in a new session, with the answers given so far.
@@ -2982,4 +3028,154 @@ pr_reference_says() {
   grep -qF '### Collaborator PR review' "$repo/README.md"
   ! grep -qF 'lets-review-pr' "$repo/skills/lets-go/SKILL.md"
   ! grep -rF 'lets-review-pr' "$repo/schemas"
+}
+
+@test "each unfinished walk row refreshes work ownership" {
+  local walk check
+  walk="$(part_section 'Walk the step table' | tr -s '[:space:]' ' ')"
+  check="$(procedure_text 'Check work ownership' | tr -s '[:space:]' ' ')"
+  [[ "$walk" == *'**Not done:**'*'[Check work ownership](#check-work-ownership)'*'run the step'* ]] || false
+  [[ "$walk" == *'after the previous step returns'* ]] || false
+  [[ "$check" == *'lets backlog claim.read'* ]] || false
+  [[ "$check" == *'sole-actor'* ]] || false
+  [[ "$check" == *'assign only themselves'*'In Progress'* ]] || false
+  ! grep -qE 'lets backlog claim\.(acquire|release)' <<<"$check" || false
+}
+
+@test "walk reconciles pending mutations before checking ownership again" {
+  local walk check verdict
+  walk="$(part_section 'Walk the step table' | tr -s '[:space:]' ' ')"
+  check="$(procedure_text 'Check work ownership' | tr -s '[:space:]' ' ')"
+  [[ "$walk" == *'pending-mutation'*'lets backlog resume --operation-id'*'reservationCleared: true'*'Check work ownership'* ]] || false
+  [[ "$walk" == *'applied or absent'* ]] || false
+  [[ "$walk" == *'unresolved'*'end the walk'* ]] || false
+  for verdict in sole-actor unassigned other multiple status-mismatch unavailable pending-mutation; do
+    grep -qF -- "\`$verdict\`" <<<"$check" || false
+  done
+  ! grep -qE 'lets backlog claim\.(acquire|release)' <<<"$check" || false
+}
+
+@test "Enter the branch reconciles acquisition without repeating Claim" {
+  local enter claim
+  enter="$(part_section 'Enter the branch' | tr -s '[:space:]' ' ')"
+  claim="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
+  [[ "$enter" == *'**`claim-uncertain`:**'*'lets backlog resume --operation-id'*'applied'*'reservationCleared: true'*'Check work ownership'* ]] || false
+  [[ "$enter" == *'Resume branch creation'* ]] || false
+  [[ "$enter" == *'absent'*'stop'* ]] || false
+  [[ "$claim" == *'branch creation continuation'* ]] || false
+}
+
+@test "delegated prompt carries the configured backlog default" {
+  local settings prompt
+  settings="$(part_section 'Read the settings' | tr -s '[:space:]' ' ')"
+  prompt="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-go/references/step-prompt.md")"
+  [[ "$settings" == *'backlog.connection'*'configured default'* ]] || false
+  [[ "$prompt" == *'Backlog connection: <connection>.'* ]] || false
+  [[ "$prompt" == *'verify the selected connection'*'required tools'* ]] || false
+  [[ "$prompt" == *'before backend issuance'*'failed'* ]] || false
+  [[ "$prompt" == *'no fallback'* ]] || false
+}
+
+@test "runner existing-story lifecycle uses the shared bounded boundary" {
+  local text operation
+  text="$(cat "$(lets_go_skill)")"
+  for operation in repository.read backlog.list item.search item.read relationship.list candidate.list pull-request.read; do
+    grep -qF "lets backlog $operation" <<<"$text" || false
+  done
+  ! grep -qE 'gh (repo|api|issue|project|pr)' <<<"$text" || false
+  grep -qF 'references/backlog-actions.md' <<<"$text" || false
+}
+
+@test "existing-story step callers share the configured GitHub boundary" {
+  local skill text schema
+  for skill in lets-plan lets-build lets-brainstorm lets-review-plan lets-review-build; do
+    text="$(cat "$repo/skills/$skill/SKILL.md")"
+    ! grep -qE 'gh (repo|api|issue|project|pr)' <<<"$text" || { echo "$skill bypasses the boundary"; false; }
+    grep -qF 'backlog-actions.md' <<<"$text" || false
+  done
+  text="$(cat "$repo/skills/lets-shape/references/issue-comments.md")"
+  grep -qF 'lets backlog item.read --request-file' <<<"$text" || false
+  grep -qF 'includeThread: true' <<<"$text" || false
+  grep -qF 'lets-shape' <<<"$text" || false
+  for schema in lets-minimal lets-standard; do
+    grep -qF 'lets backlog pull-request.create --request-file' "$repo/schemas/$schema/schema.yaml" || false
+  done
+}
+
+@test "uncertain step reports preserve the original recovery command in reason" {
+  local prompt
+  prompt="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-go/references/step-prompt.md")"
+  [[ "$prompt" == *'uncertain'*'original operation ID'*'lets backlog resume --operation-id'*'reason'* ]] || false
+  ! grep -qE '^(operationId|recoveryCommand):' "$repo/skills/lets-go/references/step-prompt.md" || false
+}
+
+@test "clean tree precedes the branch merged stop before work authority" {
+  local walk tree pr merged ownership
+  walk="$(walk_section)"
+  tree="${walk%%'git status --porcelain'*}"
+  pr="${walk%%'lets backlog pull-request.read'*}"
+  merged="${walk%%'`MERGED`'*}"
+  ownership="${walk%%'[Check work ownership]'*}"
+  [ "$tree" != "$walk" ] && [ "$pr" != "$walk" ] && [ "$merged" != "$walk" ] || false
+  [ "${#tree}" -lt "${#pr}" ] && [ "${#pr}" -lt "${#merged}" ] && [ "${#merged}" -lt "${#ownership}" ] || false
+  ! grep -qE 'completion.write|identity.json' <<<"$walk" || false
+}
+
+@test "missing branch never triggers a historical terminal PR lookup" {
+  local enter
+  enter="$(part_section 'Enter the branch' | tr -s '[:space:]' ' ')"
+  [[ "$enter" == *'Neither has it'*'historical merged or rejected PRs'*'no terminal lookup'* ]] || false
+  [[ "$enter" == *'no Done update'* ]] || false
+}
+
+@test "surviving stacked merged PR stops without completing the issue" {
+  local walk terminal
+  walk="$(walk_section)"
+  terminal="${walk%%'3. **The archive folder.**'*}"
+  [[ "$terminal" == *'`MERGED`'*'the change is merged and the run is finished, and stop'* ]] || false
+  [[ "$terminal" == *'branch still exists'*'stacked pull request merged into the branch below it'*'issue stays open'* ]] || false
+  ! grep -qE 'Check work ownership|claim.acquire|claim.release|completion.write' <<<"$terminal" || false
+}
+
+@test "surviving rejected PR stops before claim or build actions" {
+  local walk terminal
+  walk="$(walk_section)"
+  terminal="${walk%%'3. **The archive folder.**'*}"
+  [[ "$terminal" == *'`CLOSED`'*'the change was rejected and there is nothing to resume, and stop'* ]] || false
+  [[ "$terminal" == *'branch still exists'* ]] || false
+  ! grep -qE 'Check work ownership|claim.acquire|claim.release|completion.write|Run a step' <<<"$terminal" || false
+}
+
+@test "owning procedures preserve literal backlog operation file forms" {
+  local check packet loop review
+  check="$(part_section 'Check the issue')"
+  packet="$(procedure_text 'Confirm the packet')"
+  loop="$(cat "$repo/skills/lets-go/references/backlog-actions.md")"
+  review="$(cat "$repo/skills/lets-review-plan/SKILL.md")"
+  grep -qF 'lets backlog item.read --request-file' <<<"$check" || false
+  grep -qF 'lets backlog relationship.list --request-file' <<<"$check" || false
+  grep -qF 'lets backlog item.read --request-file' <<<"$packet" || false
+  grep -qF 'includeThread: false' <<<"$packet" || false
+  grep -qF 'lets backlog submit --continuation-file' <<<"$loop" || false
+  grep -qF -- '--submission-file' <<<"$loop" || false
+  grep -qF 'lets backlog pull-request.update --request-file' <<<"$review" || false
+  grep -qF 'input.bodyFile' <<<"$review" || false
+}
+
+@test "delegated steps declare their own tool access before backend issuance" {
+  local prompt
+  prompt="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-go/references/step-prompt.md")"
+  [[ "$prompt" == *'own host observations'*'--host-file'* ]] || false
+  [[ "$prompt" == *'before backend issuance'*'failed'*'no fallback'* ]] || false
+  [[ "$prompt" == *'required tools'* ]] || false
+}
+
+@test "steps reconcile blocked PR writes before reading the resource again" {
+  local prompt loop
+  prompt="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-go/references/step-prompt.md")"
+  loop="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-go/references/backlog-actions.md")"
+  [[ "$prompt" == *'blocked PR write'*'read-only resume'* ]] || false
+  [[ "$loop" == *'## Recover a blocked PR write'*'lets backlog resume --operation-id'*'reservationCleared: true'*'pull-request.read'* ]] || false
+  [[ "$loop" == *'never repeat creation'* ]] || false
+  [[ "$loop" == *'unresolved'*'failed'*'reason'* ]] || false
 }

@@ -95,3 +95,47 @@ for (const operation of ['backlog.check', 'item.create'] as const) {
       );
     }));
 }
+
+import { issueAction } from '../../../lets/src/backlog/actions.ts';
+import { loadDefinition } from '../../../lets/src/backlog/definitions.ts';
+test('issued action binds a snapshot of its exact request', () => {
+  const request = { contractVersion: 1 as const, operation: 'claim.read' as const,
+    context: { cwd: '/repo', provider: 'github', repository: 'R1', backlog: 'P1', actor: 'me', session: 'worker' },
+    input: { item: { provider: 'github', backlog: 'P1', id: 'I1' } } };
+  const definition = loadDefinition([{ source: '/repo/github.json', value: {
+    schemaVersion: 1, name: 'github', version: '1.0.0', contractVersions: [1],
+    backend: { name: 'github', versions: ['graphql-v4'] },
+    bindings: { gh: { kind: 'cli', tool: 'gh', versions: ['>=2'] } }, operations: {},
+  } }]);
+  const action = issueAction(request, definition, { name: 'local', binding: 'gh', options: {} }, {
+    toolArguments: ['api', 'graphql'], allowedEffects: [], requiredCapabilities: ['claims'],
+    timeoutMs: 1000, maxOutputBytes: 4096, acceptanceMs: 5000,
+  }, 100);
+  request.input.item.id = 'I2';
+  assert.equal(action.request.input.item.id, 'I1');
+  assert.equal(action.definition.digest, definition.digest);
+  assert.equal(action.issuedAt, 100);
+  assert.equal(action.expiresAt, 5100);
+  assert.deepEqual(action.allowedEffects, []);
+  assert.match(action.actionId, /\S+/);
+  assert.notEqual(action.actionId, action.attemptId);
+});
+
+import { parseActionRequest } from '../../../lets/src/backlog/actions.ts';
+import { submittedRead } from './fixtures/submitted.ts';
+test('new caller receives a worker ID before its first action', () => {
+  const { action: fixture } = submittedRead();
+  const { session, ...context } = fixture.request.context;
+  const request = parseActionRequest(JSON.stringify({ ...fixture.request, context }));
+  const action = issueAction(request, fixture.definition, fixture.connection, {
+    toolArguments: fixture.tool.arguments, allowedEffects: [], requiredCapabilities: [],
+    timeoutMs: 1000, maxOutputBytes: 4096, acceptanceMs: 5000,
+  }, 100);
+  assert.match(action.workerId, /^[a-f0-9-]{36}$/);
+  assert.equal(action.request.context.session, action.workerId);
+});
+test('an explicit null worker is invalid context', () => {
+  const { action } = submittedRead();
+  assert.throws(() => parseActionRequest(JSON.stringify({ ...action.request,
+    context: { ...action.request.context, session: null } })), /session/);
+});

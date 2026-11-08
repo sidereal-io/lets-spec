@@ -1,0 +1,110 @@
+{
+  "data": {
+    "viewer": {
+      "login": "actor"
+    },
+    "node": {
+      "id": "I1",
+      "number": 1,
+      "title": "story \u2014 fixture",
+      "body": "Fixture packet",
+      "url": "https://github.com/fixture/repo/issues/1",
+      "state": "OPEN",
+      "createdAt": "2026-11-03T04:33:18Z",
+      "lastEditedAt": null,
+      "repository": {
+        "id": "R1",
+        "name": "repo",
+        "owner": {
+          "login": "fixture"
+        }
+      },
+      "assignees": {
+        "nodes": [
+          {
+            "id": "U1",
+            "login": "actor"
+          }
+        ],
+        "totalCount": 1,
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": "MQ"
+        }
+      },
+      "projectItems": {
+        "nodes": [
+          {
+            "id": "PI1",
+            "project": {
+              "id": "P1",
+              "number": 1,
+              "title": "Fixture Project"
+            },
+            "fieldValues": {
+              "nodes": [
+                {
+                  "__typename": "ProjectV2ItemFieldUserValue"
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldRepositoryValue"
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldPullRequestValue"
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldTextValue"
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                  "name": "In Progress",
+                  "optionId": "OIn Progress",
+                  "field": {
+                    "id": "FStatus",
+                    "name": "Status"
+                  }
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                  "name": "Story",
+                  "optionId": "OStory",
+                  "field": {
+                    "id": "FKind",
+                    "name": "Kind"
+                  }
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                  "name": "Must",
+                  "optionId": "OMust",
+                  "field": {
+                    "id": "FPriority",
+                    "name": "Priority"
+                  }
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                  "name": "M",
+                  "optionId": "OM",
+                  "field": {
+                    "id": "FSize",
+                    "name": "Size"
+                  }
+                }
+              ],
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": "OA"
+              }
+            }
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": "MQ"
+        }
+      },
+      "parent": null
+    }
+  }
+}

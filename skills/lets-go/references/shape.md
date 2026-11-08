@@ -9,8 +9,12 @@ or commits the discovery map.
    `lets-shape`'s own query:
 
    ```bash
-   gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body
+   lets backlog item.search --request-file
    ```
+
+   Use the configured scoped repository and query
+   `is:open "Discovery status: in-progress" in:body`, with complete
+   results, through the shared action loop.
 
    When a parent's `Input:` line holds the idea word for word, say that
    a discovery of this idea is in progress at `#<parent>`. Skip the

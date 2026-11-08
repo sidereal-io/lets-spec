@@ -11,6 +11,10 @@ export type WorkerContext = {
   session: string;
 };
 export type Claim = {
+  assignees?: string[];
+  assigneesComplete?: boolean;
+  item?: Identity;
+  verdict?: 'sole-actor' | 'unassigned' | 'other' | 'multiple' | 'status-mismatch' | 'unavailable' | 'pending-mutation';
   actor: string | null;
   session: string | null;
   token: string | null;
@@ -19,12 +23,24 @@ export type Claim = {
 };
 export type Merge = { reference: string; merged: boolean; commit: string };
 export type ItemPatch = { title?: string; body?: string; metadata?: Partial<Metadata> };
+export type Repository = { id: string; owner: string; name: string; url: string; defaultBranch: string };
+export type PullRequest = {
+  id: string; repository: string; headRepository: string; number: number; url: string;
+  state: 'OPEN' | 'CLOSED' | 'MERGED'; isDraft: boolean; body: string; createdAt: string;
+  baseRef: string; headRef: string; baseSha: string | null; headSha: string | null;
+  mergeCommit: string | null; mergeRef: string | null;
+};
 export type InputMap = {
-  'backlog.list': { cursor?: string };
+  'repository.read': { owner?: string; name?: string };
+  'pull-request.read': { pullRequest?: string; branch?: string };
+  'pull-request.create': { title: string; bodyFile: string; base: string; head: string; headRepository: string; item?: Identity };
+  'pull-request.update': { pullRequest: string; bodyFile: string; item?: Identity };
+  'pull-request.ready': { pullRequest: string; item?: Identity };
+  'backlog.list': { cursor?: string; selected?: string };
   'backlog.create': { title: string };
   'backlog.check': Record<string, never>;
   'item.search': { query: string; cursor?: string };
-  'item.read': { item: Identity };
+  'item.read': { item: Identity; includeThread?: boolean };
   'item.create': { title: string; body: string; metadata: Metadata };
   'item.update': { item: Identity; patch: ItemPatch };
   'relationship.write': { item: Identity; target: Identity; kind: string; present: boolean };
@@ -51,6 +67,11 @@ export type BacklogRequest = {
 export type Page<T> = { items: T[]; complete: boolean; nextCursor: string | null };
 export type LinkedBacklog = { provider: string; id: string; title?: string; url?: string };
 export type ResultMap = {
+  'repository.read': { repository: Repository; actor?: string };
+  'pull-request.read': { pullRequest: PullRequest | null };
+  'pull-request.create': { pullRequest: PullRequest };
+  'pull-request.update': { pullRequest: PullRequest };
+  'pull-request.ready': { pullRequest: PullRequest };
   'backlog.list': Page<LinkedBacklog>;
   'backlog.create': { backlog: string };
   'backlog.check': { valid: boolean; gaps: unknown[] };
@@ -62,7 +83,7 @@ export type ResultMap = {
   'relationship.list': Page<{ identity: Identity; status: string }>;
   'candidate.list': Page<Item>;
   'claim.acquire': { claim: Claim };
-  'claim.read': { claim: Claim };
+  'claim.read': { claim: Omit<Claim, 'status'> & { status: string | null } };
   'claim.release': { released: boolean };
   'reference.write': { reference: string };
   'completion.write': { status: string };

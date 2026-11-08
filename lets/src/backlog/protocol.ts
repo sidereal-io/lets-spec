@@ -5,6 +5,7 @@ import { isAbsolute } from 'node:path';
 /** Offline contract definitions; not a production dispatcher. */
 export const PROTOCOL = 1;
 export const MUTATIONS: string[] = [
+  'pull-request.create', 'pull-request.update', 'pull-request.ready',
   'backlog.create',
   'item.create',
   'item.update',
@@ -15,6 +16,7 @@ export const MUTATIONS: string[] = [
   'completion.write',
 ];
 export const OPERATIONS = [
+  'repository.read', 'pull-request.read', 'pull-request.create', 'pull-request.update', 'pull-request.ready',
   'backlog.list',
   'backlog.create',
   'backlog.check',
@@ -44,18 +46,26 @@ export function validateRequest(value: unknown): asserts value is BacklogRequest
   if (!(OPERATIONS as readonly unknown[]).includes(request.operation))
     throw new Error('unknown operation');
   const context = request.context as Record<string, unknown> | undefined;
+  const bootstrap = request.operation === 'repository.read' &&
+    ((request.input as Record<string, unknown>)?.owner !== undefined || (request.input as Record<string, unknown>)?.name !== undefined);
+  if (bootstrap && context?.actor !== undefined) throw new Error('bootstrap must not assume an actor');
   const discovery =
     request.operation === 'backlog.list' || request.operation === 'backlog.create';
   for (const field of [
     'cwd',
     'provider',
     'repository',
-    'actor',
+    ...(bootstrap ? [] : ['actor']),
     'session',
-    ...(discovery || request.operation === 'mutation.read' ? [] : ['backlog']),
+    ...(discovery || request.operation === 'repository.read' || String(request.operation).startsWith('pull-request.') || request.operation === 'mutation.read' ? [] : ['backlog']),
   ]) {
     if (!context || typeof context[field] !== 'string' || context[field] === '')
       throw new Error(`context.${field} is required`);
+  }
+  if (bootstrap) {
+    const input = request.input as Record<string, unknown>;
+    if (typeof input.owner !== 'string' || !input.owner || typeof input.name !== 'string' || !input.name ||
+        context?.repository !== `${input.owner}/${input.name}`) throw new Error('bootstrap requires exact repository owner/name');
   }
   if (discovery && context?.backlog !== undefined)
     throw new Error('context.backlog must be omitted for discovery/create');
@@ -76,6 +86,9 @@ export function validateRequest(value: unknown): asserts value is BacklogRequest
     validateIdentity((request.input as Record<string, unknown>)?.item);
   fields(request.input, INPUTS[request.operation as string], 'input');
   const input = request.input as Record<string, unknown>;
+  if (request.operation === 'pull-request.read' &&
+      (Number(input.branch !== undefined) + Number(input.pullRequest !== undefined) !== 1))
+    throw new Error('PR read requires exactly one branch or pullRequest');
   if (request.operation === 'completion.write')
     fields(
       input.merge,
@@ -148,9 +161,9 @@ export function validateResponse(
       if (!(operation in OUTPUTS)) throw new Error('unknown response operation');
       fields(result, OUTPUTS[operation], 'result');
       if (['item.read', 'item.create', 'item.update'].includes(operation))
-        validateItem(result.item, operation === 'item.read');
+        validateItem(result.item);
       if (['item.search', 'candidate.list'].includes(operation))
-        for (const item of result.items as unknown[]) validateItem(item, true);
+        for (const item of result.items as unknown[]) validateItem(item);
       validateNestedResult(operation, result);
       if (
         'complete' in result &&
@@ -178,11 +191,16 @@ export function validateResponse(
 // Required field definitions are executable and shared with the fake harness.
 // Optional fields use a trailing ?. Unknown fields are rejected.
 export const INPUTS: Record<string, Record<string, string>> = {
-  'backlog.list': { 'cursor?': 'text' },
+  'repository.read': { 'owner?': 'text', 'name?': 'text' },
+  'pull-request.read': { 'pullRequest?': 'text', 'branch?': 'text' },
+  'pull-request.create': { title: 'text', bodyFile: 'text', base: 'text', head: 'text', headRepository: 'text', 'item?': 'identity' },
+  'pull-request.update': { pullRequest: 'text', bodyFile: 'text', 'item?': 'identity' },
+  'pull-request.ready': { pullRequest: 'text', 'item?': 'identity' },
+  'backlog.list': { 'cursor?': 'text', 'selected?': 'text' },
   'backlog.create': { title: 'text' },
   'backlog.check': {},
   'item.search': { query: 'text', 'cursor?': 'text' },
-  'item.read': { item: 'identity' },
+  'item.read': { item: 'identity', 'includeThread?': 'boolean' },
   'item.create': { title: 'text', body: 'string', metadata: 'object' },
   'item.update': { item: 'identity', patch: 'object' },
   'relationship.write': {
@@ -225,6 +243,8 @@ function fields(value: unknown, shape: Record<string, string>, path: string): vo
     } else if (type === 'nullableText') {
       if (entry !== null && (typeof entry !== 'string' || !entry))
         throw new Error(`${path}.${key} must be text or null`);
+    } else if (type === 'nullableObject') {
+      if (entry !== null) object(entry, `${path}.${key}`);
     } else if (type === 'object') object(entry, `${path}.${key}`);
     else if (
       type === 'text' ? typeof entry !== 'string' || entry === '' : typeof entry !== type
@@ -235,6 +255,11 @@ function fields(value: unknown, shape: Record<string, string>, path: string): vo
 
 const page = { items: 'array', complete: 'boolean', nextCursor: 'nullableText' };
 export const OUTPUTS: Record<string, Record<string, string>> = {
+  'repository.read': { repository: 'object', 'actor?': 'text' },
+  'pull-request.read': { pullRequest: 'nullableObject' },
+  'pull-request.create': { pullRequest: 'object' },
+  'pull-request.update': { pullRequest: 'object' },
+  'pull-request.ready': { pullRequest: 'object' },
   'backlog.list': page,
   'backlog.create': { backlog: 'text' },
   'backlog.check': { valid: 'boolean', gaps: 'array' },
@@ -258,6 +283,18 @@ function oneOf(value: unknown, allowed: readonly unknown[], path: string): void 
   if (!allowed.includes(value)) throw new Error(`invalid ${path}`);
 }
 function validateNestedResult(operation: string, result: Record<string, unknown>): void {
+  if (operation === 'repository.read')
+    fields(result.repository, { id: 'text', owner: 'text', name: 'text', url: 'text', defaultBranch: 'text' }, 'repository');
+  if (operation.startsWith('pull-request.') && result.pullRequest !== null) {
+    fields(result.pullRequest, { id: 'text', repository: 'text', headRepository: 'text',
+      number: 'number', url: 'text', state: 'text', isDraft: 'boolean', body: 'string', createdAt: 'text',
+      baseRef: 'text', headRef: 'text', baseSha: 'nullableText', headSha: 'nullableText',
+      mergeCommit: 'nullableText', mergeRef: 'nullableText' }, 'pullRequest');
+    const pr = result.pullRequest as Record<string, unknown>;
+    oneOf(pr.state, ['OPEN', 'CLOSED', 'MERGED'], 'pullRequest.state');
+    if (!Number.isSafeInteger(pr.number) || (pr.number as number) <= 0) throw new Error('invalid pullRequest.number');
+    if (!Number.isFinite(Date.parse(pr.createdAt as string))) throw new Error('invalid pullRequest.createdAt');
+  }
   if (operation === 'backlog.list')
     for (const item of result.items as unknown[])
       fields(
@@ -277,13 +314,17 @@ function validateNestedResult(operation: string, result: Record<string, unknown>
         actor: 'nullableText',
         session: 'nullableText',
         token: 'nullableText',
-        status: 'text',
+        status: operation === 'claim.read' ? 'nullableText' : 'text',
         guarantee: 'text',
+        'assignees?': 'array',
+        'assigneesComplete?': 'boolean',
+        'item?': 'identity',
+        'verdict?': 'text',
       },
       'claim',
     );
     const claim = result.claim as Record<string, unknown>;
-    oneOf(claim.status, METADATA.Status, 'claim.status');
+    if (claim.status !== null) oneOf(claim.status, METADATA.Status, 'claim.status');
     oneOf(claim.guarantee, ['atomic', 'best-effort'], 'claim.guarantee');
     if (
       operation === 'claim.acquire' &&

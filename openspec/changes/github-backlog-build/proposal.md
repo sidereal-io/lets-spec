@@ -1,52 +1,77 @@
 ## Why
 
-Main accepted ADR-015 after the executable implementation in #172 was
-reviewed. Shipping that implementation now would activate the execution
-model the decision supersedes. The user chose to port this PR (D1).
+Existing GitHub stories need to pass through the shared backlog boundary while
+preserving the current workflow and its ownership and recovery behavior.
+The existing PR prototype depends on a withdrawn capture-service design, so its
+active plan must be replaced before implementation continues (D1, D5).
 
 ## What Changes
 
-- Replace backlog executable dispatch with versioned bounded action requests
-  and structured result submissions. Lets retains policy and sequencing (D2).
-- Select a shipped or explicit custom provider definition. Validate its
-  version, tool requirements, mappings and repository scope before actions.
-- Require independently retrieved capture records for remote facts. Stop
-  when capture is unavailable; never substitute agent assertions (D4).
-- Preserve native actor-level best-effort ownership, private continuation,
-  uncertainty recovery, immutable identity and exact merged PR completion (D3).
-- Integrate with main's lets-go, lets-plan, lets-build and lets-review-build
-  split without restoring a second workflow runner (D5).
-- Replace executable-specific contract/conformance and release packaging.
-  Retain old evidence as history and qualify support through fresh tests (D7).
+- Deliver the existing-story GitHub journey through Lets policy, bounded
+  agent actions and validated results, following amended ADR-015 (D2, D8, D10).
+- **BREAKING**: replace executable-adapter transport with one request/result
+  contract for shipped and explicitly selected custom provider definitions.
+  Reject obsolete executable settings with a migration remedy.
+- Preserve complete scoped reads, shared readiness/ranking, native best-effort
+  claim/release and private recovery. Keep existing branch and issue lookup,
+  step selection, review, stack and terminal-PR behavior. Do not add runner
+  actions merely because the shared contract defines them.
+- Accept configured adapter submissions of tool output and derive normalized facts;
+  Lets validates correlation, mappings, freshness, coverage and workflow rules.
+  Amend ADR-015 explicitly to remove independent capture. This trusts submitted
+  observations and cannot detect plausible fabricated output (D10).
+- Keep lets-go as the only runner and preserve its existing resume behavior.
+  The adapter supplies backend facts; shared workflow policy decides when to
+  continue. Private recovery is for uncertain operations, not an extra login
+  requirement for ordinary resume (D4, D12).
+- On an existing branch, perform the user-approved read-only ownership and
+  status check before unfinished work. A mismatch stops without reassigning,
+  claiming again or changing status (D14). Keep ADR-015's existing rule.
+- Replace the existing-story journey's remaining repository and PR callouts,
+  including step and review callers, through the same configured GitHub
+  definition as issue and Project actions (D15).
+  This uses the same bounded action engine; it does not execute tools in Lets.
+- Preserve today’s merged and rejected PR stops. Do not add a terminal
+  completion write, historical PR lookup or committed identity file. Keep the
+  shared contract’s merge-gated completion guarantee for any actual completion
+  request; defining that operation does not make lets-go call it.
+- Support the workflow from both unchanged T3 and standalone coding-agent
+  CLIs through explicit integration configuration. Do not make T3 changes,
+  upstream requests or T3-only initial support prerequisites (D9).
+- Replace transport-specific conformance tests without dropping behavioral
+  guarantees. Require fresh scoped live acceptance after implementation (D7).
 
 ## Capabilities
 
 ### New Capabilities
 
-- `github-backlog-build`: Existing GitHub work crosses the request/result
-  boundary with verified evidence and safe recovery.
+- `github-backlog-build`: carry an existing GitHub story through selection,
+  claim, work/resume and release while preserving existing PR and finishing
+  behavior through the same configured GitHub integration.
 
 ### Modified Capabilities
 
-- `backlog-adapter-contract`: Replace transport-specific requirements while
-  retaining operation semantics, typed errors and behavioral guarantees.
-- `lets-go`: Route selection and claims through the common boundary and pass
-  private continuation across the existing steps.
+- `backlog-adapter-contract`: replace the executable transport and settings
+  with bounded actions, inert provider definitions and validated submitted
+  tool observations. Retain operation semantics and conformance obligations.
+- `issue-comments`: keep labels, markers and shaping behavior while routing
+  lets-go and brainstorm thread reads through complete adapter observations.
+- `lets-go`: route existing-story backlog operations through the shared
+  request/result path while preserving sole runner and step ownership.
 
 ## Impact
 
-Touches backlog runtime, definition selection, trusted-capture integration,
-CLI commands, workflow instructions, contract/conformance, packaging and
-regressions. Runtime packages ship consumed core code and definitions, not
-adapter executables or unused conformance sources. Existing backend CLIs
-remain external dependencies. Delegation migration stays separate (D6).
+Affects backlog contracts/runtime, definition loading, machine and repository
+configuration, conformance, workflow instructions and release contents.
+Backend CLI/MCP authentication remains with those tools. No root installation,
+service, socket, protected credential deployment or platform restriction is
+selected by this proposal. Backend and machine tool choices are
+explicit configuration, not implicit selection based on the agent host.
 
-## Delivery prerequisite
-
-Capture design is reopened at the user's request (D8). ADR-022's separate-account
-service proposal is withdrawn. Existing service code and deployment examples
-are unaccepted prototypes, not the selected delivery prerequisite. Investigate
-existing tool-host capture and agree a concrete design before implementation
-continues. ADR-015's independent-evidence requirement remains in force (D4).
-Live support cannot be claimed until the agreed channel proves fresh
-ownership/status and exact associated merge evidence.
+The scope is #136 and existing draft PR #172. No competing PR, new claim or
+Project mutation belongs to this restart. Setup/shaping writes, other backend
+implementations and delegation migration remain outside this GitHub slice.
+Shared contract changes must preserve their operation coverage. See
+[research.md](research.md) for the evidence and [design.md](design.md) for the
+replacement contract and recovery design. This proposal does not claim
+implementation or live support.

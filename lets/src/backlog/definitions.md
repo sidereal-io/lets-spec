@@ -1,0 +1,320 @@
+# Provider definitions
+
+A provider definition is data. Schema version 1 declares `name`, `version`,
+`contractVersions`, `backend`, `bindings` and `operations`. Backend and tool
+versions are explicit lists. Bindings name a CLI or MCP tool; they never load
+code. Only existing operation names are accepted.
+
+Select exactly one source. The loader records its resolved location and content
+digest. Invalid explicit sources fail without falling back to the shipped
+provider. Load hooks and extra definition keys are rejected.
+
+Definition compatibility is an offline check. It does not qualify live support
+for a tool connection or establish that submitted output is authentic.
+
+Repository selection belongs in `openspec/config.yaml` under `lets.backlog`,
+with `version: 1`. It selects `provider` (default `github`), optional Project
+`id`, `definition`, `mappings`, and local `storage`. A custom definition is a
+JSON file; relative paths resolve beside the repository config, with no search.
+
+Machine settings belong under `backlog` in the existing version 3 user config.
+They cannot select another provider, Project, mapping or definition. `stateDir`
+must be an absolute path shared by local worktrees. The default is
+`$XDG_STATE_HOME/lets`, or `~/.local/state/lets`.
+
+Old `executable`, `adapter`, and adapter `path` settings are rejected with their
+file and key. Remove them, select `lets.backlog.definition` when a custom
+provider is needed, and configure backend tools under `backlog.connections`.
+No adapter program is discovered or started.
+
+Operation definitions use `operations.<operation>.actions.<action>.bindings`.
+Each declared binding has inert `arguments` and a `projection`. A field-path
+projection is `{ "op": "path", "path": ["data", "result"] }`. Unknown
+operators fail when the definition loads. Projected results pass the same
+operation validators for custom and shipped definitions. Optional submitted
+normalization must equal the derived result; it cannot replace missing fields.
+
+Submissions may supply `output` inline or `outputFiles` as explicit local JSON
+paths. Lets reads regular files within the issued combined byte limit and
+checks for changes during reading. One file supplies one JSON value; several
+files supply an array of values for a paginated projection. Files are untrusted
+submitted observations, with no independent provenance. Tool redirection into
+operation-specific workspace scratch avoids transcription and display limits.
+
+Before issuing actions, Lets requires a private, user-owned state directory
+(mode 0700), exclusive lock creation, durable writes and atomic replacement.
+A sandbox must grant those operations at the configured shared path. If access
+fails, configure machine `backlog.stateDir` to an accessible shared private
+location or grant access to the existing one. Do not choose a per-worktree
+store or delete recovery records to bypass outstanding mutations.
+
+Machine `backlog.connections` maps names to `{ binding, options }`. Options may
+set the endpoint and finite `timeoutMs`, `maxOutputBytes`, and `acceptanceMs`.
+Bindings must already be declared by the repository-selected definition.
+`backlog.connection` names the default. Without connection settings the shipped
+`gh` binding is implicit; one configured entry becomes the default; several
+require a default name. Invalid selection never falls back. Direct backlog
+callers may select `--connection`; lets-go retains its existing request syntax
+and uses the configured default.
+
+The CLI uses `lets backlog <operation> --request-file <path>` (`-` reads stdin).
+It emits one JSON response with action, complete, needs-reconciliation or failed
+state. It never starts the backend tool. The caller executes only the returned
+action within its declared bounds, saves complete output and submits it with
+`lets backlog submit --continuation-file <path> --submission-file <path>`.
+Continuations are returned and saved separately under
+`.workspace/lets-backlog/<operation-id>/continuation.json`.
+
+Use `lets backlog resume --operation-id <id>` after scratch loss, or
+`--continuation-file <path>` while the original scratch remains. Recovery uses
+the recorded definition and connection, including when the default changes.
+It issues bounded reads; a resumed action never repeats the uncertain write.
+These interfaces do not qualify a live tool configuration. Production GitHub
+translation and mutation sequencing are separate implementation tasks.
+
+The closed projection vocabulary includes `path` (current value), `scope`
+(issued context), `literal`, `object`, `array`, `at` (change the current value),
+`map`, `select` (exactly one equality match), `enum`, tagged `union`, explicit
+`nullable`, `text` (primitive with a fixed prefix), and `connection`. Paths
+contain field names or array indexes; prototype-related names are forbidden.
+A `select` with `optional: true` returns a missing value for zero matches, but
+still rejects several matches. Use an optional path to consume that value.
+Unknown operators, extra fields and excessive nesting fail definition loading.
+Arguments may be a constant string array or a projection of the operation input.
+Lets returns the resulting argument array as data; it performs no shell expansion.
+
+`connection` requires nodes and pageInfo, a false hasNextPage, and an endCursor
+that is null or text. When totalCount is supplied it must equal the observed
+node count. A final page may still have an endCursor. Truncated connections do
+not establish coverage. Tagged unions require an explicit case for every
+observed member; a nullable mapping accepts an explicit null, not missing data.
+
+The shipped GitHub item query addresses the immutable issue ID and selects the
+configured Project within its Project-item connection. Its translation fixture
+is a scrubbed real GraphQL issue response: identifiers, actor, URLs and packet
+text have been replaced. Added cases exercise irrelevant Projects, explicit
+null nodes, unknown union members and incomplete connections. Structured
+GraphQL errors stop progression even alongside usable partial data. Declared
+error types determine the category; unknown types retain unknown effects.
+These fixtures verify translation only and do not qualify live support.
+
+A translation may declare `observations.actor` and `observations.repository`
+as projections of the submitted remote output. Core compares these with the
+issued context before accepting the result. The shipped issue and discovery
+queries both read the authenticated viewer and immutable repository ID.
+Project discovery uses the repository's projectsV2 connection. Selection waits
+for complete discovery, accepts a sole linked Project, or requires an explicit
+`lets.backlog.id` when several are linked. An unlinked explicit ID fails without
+selecting another Project.
+
+`connection` also accepts an ordered array of connection pages. It requires
+hasNextPage on every intermediate page, a final page, distinct nonempty cursors
+and no repeated node IDs. Supplied totalCount must stay stable and equal the
+combined node count. `filter` uses the same path/equality vocabulary as select
+but returns all matches. Candidate translation uses it to keep issues belonging
+to the scoped repository, after explicitly handling the content union.
+
+The shipped candidate query uses bounded `gh api graphql --paginate --slurp`
+output. Each page checks the authenticated viewer and Project identity
+(`observations.backlog`). Nested assignee, Project-membership and field-value
+connections must also be complete; an incomplete nested connection stops the
+operation. Output limits apply to the entire submitted page array, and a
+structured error on any page stops progression. A missing intermediate page
+cannot satisfy totalCount coverage.
+
+Candidate submissions include repository identity, native issue state and
+complete directional blocker facts (`blockers.complete` and scoped
+`blockers.open` identities). The shipped query validates every blockedBy
+connection and accepts only OPEN or CLOSED states. Core selection requires
+complete enumeration and applies shared readiness and ranking to open issues:
+unassigned Todo stories, bugs or chores with Must, Should or Could priority
+and no open blockers. Priority comes first, then the stable scoped issue order.
+Closed issues remain in enumeration observations but cannot be selected.
+Custom definitions must supply the same required facts.
+
+`item.search` accepts the caller's repository-qualified search text and returns
+complete immutable issue identities and item facts. The shipped binding uses
+GraphQL search pages, checks issueCount coverage and filters repository and
+content unions before translating items. It sends the GraphQL document as
+`query` and the search text as the separate `search` variable. Incomplete or
+capped search results cannot authorize branch lookup. Lets-go retains its
+existing open-issue title-prefix and explicit-number matching rules, keeping
+the resolved identity in scratch and memory without a metadata commit.
+
+`claim.acquire` maps separate `preflight`, `assign`, `read-assignment`, `status`
+and `verify` actions. Preflight supplies a complete eligible item plus
+`item.claimContext`: authenticated actor ID, Project item ID, Status field ID,
+Todo/In Progress option IDs and complete linked Project IDs. Core records those
+IDs in the issued action's bound claim state. Assignment uses the authenticated
+actor ID; a fresh sole-owner/Todo read must follow before the status write.
+Mutation acknowledgements prove only scoped responses. They cannot authorize
+work without fresh final verification. A failure after confirmed assignment
+preserves partial effects and the private reservation for recovery.
+
+The final `verify` action is read-only. Core returns a claim only when that
+fresh item has exactly the authenticated actor as owner and In Progress status.
+The returned token names the private operation record; it is not a remote lease.
+Its worker session records this acquisition, not exclusive GitHub ownership.
+Native acquisition recovery uses the recorded definition's verification read,
+never the assignment or status action. Confirmed sole ownership/In Progress
+resolves applied effects; a sole-owner Todo item remains partial. Empty or
+conflicting ownership cannot prove an issued write absent. Once reconciliation
+clears a reservation, the caller must still check fresh work authority.
+
+`claim.release` requires the resolved original acquisition record named by its
+token, matching original worker provenance and the recorded definition and
+connection. It maps `preflight`, `reset-status`, `read-before-unassign`,
+`unassign` and `verify-release`. Before resetting In Progress to Todo, a fresh
+read must show only the original actor. Before removing that actor, another
+fresh read must still show sole ownership and Todo. A conflicting actor or
+status stops cleanup. Final verification requires no assignees and Todo.
+Successful release consumes the original acquisition authority; a new operation
+cannot reuse that old token. Unknown release effects retain their reservation,
+and resume issues only verification reads. A sole original actor with Todo
+remains partial; missing ownership cannot authorize repeated cleanup writes.
+If branch creation fails and release cannot safely finish, report the branch
+error together with the release outcome. A blocked release identifies the
+unreleased acquisition, scoped item/repository and original release operation's
+read-only resume command. Retain this context rather than reporting the claim
+as released or repeating cleanup.
+
+`claim.read` is an ordinary read of current ownership. Its facts include the
+scoped item identity, complete `assignees` array, `assigneesComplete`, current
+Status and actual guarantee. The shipped GitHub mapping validates the native
+assignee connection and returns best-effort ownership. Core derives permission
+from those facts: only the authenticated actor alone with In Progress returns
+`sole-actor`. With complete scoped facts, no assignees returns `unassigned`,
+several returns `multiple`, a different sole assignee returns `other`, and
+sole actor with another status returns `status-mismatch`. Incomplete facts or
+null status return `unavailable`. A pending shared resource reservation takes
+precedence before read issuance and returns `pending-mutation` with the original
+operation's continuation. None of these verdicts acquires or releases a claim. Public reads
+return null worker session and token; they never manufacture original release
+authority or require a historic acquisition record.
+
+Retained explicit-operation conformance reads an item with attributed
+`pullRequestObservation` facts: GitHub source/repository, canonical PR fields
+and a complete `closingIssues` page of scoped identities. Shared
+`reference.write` validation checks the exact supplied PR ID or URL and native
+closing relationship to that item. It returns the validated reference without
+issuing a remote write. This is an offline conformance boundary, not a new
+association step in lets-go or a claim of live support.
+
+Explicit `completion.write` conformance starts with a scoped observation read.
+The attributed PR must match the requested reference and repository, be MERGED,
+carry the exact requested merge commit and include the item's complete native
+closing relationship. Input assertions, an unrelated merge or Done status alone
+cannot establish that proof. Only then may the configured `complete` action
+request a status write; `verify` must freshly confirm the same proof and Done.
+An uncertain completion reserves the item and resumes through reads only.
+This retained contract does not add a terminal-completion caller to lets-go.
+When that exact proof is valid and the fresh item is already Done, return Done
+without issuing `complete`. Repeated explicit requests and duplicate accepted
+submissions preserve that result without another status write. Native Done
+alone still cannot substitute for the associated merge proof.
+
+`item.read` accepts optional `includeThread`, default false. The `read` action
+reads the issue body, metadata, creation/edit times and parent identity without
+requesting comments. `includeThread: true` selects `read-thread`, which returns
+all comment pages under the same combined output and time bounds. Comments keep
+their URL, author type/login, association, body and creation/edit times so the
+existing comment labels and read-marker rules can use the original facts.
+Deleted authors remain explicit nulls. Required thread facts cannot be omitted
+by a custom mapping. Parent bodies use a separate ordinary scoped issue read;
+no Project-wide item scan is needed. Thread-page cases and the absent parent
+are synthetic extensions to the scrubbed issue fixture.
+
+Branch PR selection belongs to core. It qualifies repository, head repository
+and head ref before sorting matching PRs: OPEN first, then newest createdAt.
+Several historic or open matches do not add an ambiguity stop. No matching PR
+returns null; malformed observations remain failures rather than absence.
+
+Repository and exact-PR queries use the same selected GitHub definition. Their
+fixtures were scrubbed from actual repository and draft-PR reads; mutation
+response wrappers are synthetic. Nullable mergeCommit maps to its oid when
+present. GitHub GraphQL exposes no mergeRef field; that normalized observation
+remains explicitly null rather than being invented from the PR number.
+
+PR creation always requests draft:true. An observed PR identity without
+isDraft:true produces partial effects and requires reconciliation, never another
+creation. A `path` may explicitly set `optional: true` to retain a missing value
+for such core classification; this does not waive required result validation.
+Prepared body content comes from the bounded local file read by core, not from
+shell interpolation or an agent's summary.
+
+PR write operations use core sequencing. Before mutation, the definition must
+map preflight, read-existing, the specific write, and verify actions. Preflight
+returns repository facts. Read-existing uses a complete branch lookup for
+creation, or the exact PR for update/ready. An existing qualified branch PR
+prevents another creation. Only a matching accepted submission issues the next
+action, and an identical prior submission returns its recorded acknowledgement.
+
+Core reads bodyFile as a bounded UTF-8 regular file, detects concurrent file
+changes and records the bytes and SHA-256 digest before issuing any action.
+Later file edits cannot replace this prepared body. Each issued write is
+followed by a fresh exact-PR read that confirms the requested body or draft
+state. All actions retain the original operation and worker identity. The
+shared store reserves the resource throughout the sequence; no backend tool is
+executed by Lets.
+
+An uncertain PR creation is found by its repository/head resource key even
+from another worker or checkout. Resume preserves the original definition,
+connection, prepared body and worker provenance, and issues a branch PR read
+only. A matching repository, head, base, body and draft confirms application.
+An absent PR after an issued write is still unresolved: a read does not prove
+that detached work has stopped. A mismatched body or missing draft effect keeps
+the reservation. A journal stage before any write can resolve as absent.
+
+When a PR ID becomes known, core registers its exact-PR alias while retaining
+the repository/head reservation. Registration is serialized with PR operation
+admission without reserving unrelated PRs. Replaying a submission that already
+caused write issuance returns recovery, not another copy of write permission.
+A PR identity learned from a partial write result selects an exact-PR recovery
+read. It survives subsequent resumes; a later branch match cannot replace it.
+Conflicting recorded identities or repository scope fail without another write.
+
+An uncertain body update resumes with an exact-PR read and compares its body
+with the recorded prepared bytes. It needs no original scratch or body file.
+Only an exact match clears the reservation as applied. An absent PR or other
+remote edits remain unresolved; recovery never restores a stale body or removes
+unrelated sections or closing text. Callers must reread after reconciliation
+before preparing any subsequent update.
+
+Ready uses markPullRequestReadyForReview, followed by a fresh exact-PR read
+confirming isDraft:false. A mutation result that still reports draft is partial,
+not completion. Uncertain ready operations resume with exact reads only; a PR
+that remains draft keeps the reservation. Neither the write nor recovery
+requests a merge. Workflow ownership of this transition remains with the review
+build step.
+
+Directional relationships use native Issue connections: blocked_by reads
+blockedBy; child reads subIssues. The read and read-child action mappings retain
+that distinction. Every page binds the issued issue ID, repository and viewer,
+and connection coverage must be complete before shared readiness can treat
+missing blockers as empty. Native OPEN issues remain open prerequisites and
+CLOSED issues normalize as Done. Unknown issue states fail mapping. Unsupported
+relationship kinds have no implicit mapping to blockers or parent links.
+
+`repository.read` accepts an exact owner/name bootstrap input before immutable
+identity is known. Its context repository is that exact owner/name and omits
+actor. The `bootstrap` mapping reads only, binds the returned repository name
+to that request, and returns the authenticated actor plus immutable repository
+ID. Later operations use those validated identities. Bootstrap cannot acquire
+claims or substitute a guessed actor for the identity it discovers.
+
+Linked-Project discovery combines repository-side links with owner Projects
+whose complete repositories connection contains the selected immutable
+repository ID. It excludes closed Projects and deduplicates normalized IDs;
+conflicting duplicate facts fail. Missing pages in either discovery list or
+an inspected repository connection fail coverage before selection. The closed
+projection language supplies `concat`, `unique`, `where` and `contains` for
+these data mappings; none evaluates code or executes a tool.
+
+Callers declare actual session tools and enforceable timeout/output bounds in a
+private `--host-file` JSON object: `tools`, `timeoutMs`, `maxOutputBytes`.
+New operations use the smaller configured/session bounds. Submit and resume
+require capability for the original action bounds and selected recorded tool.
+MCP tool access is trusted submitted host data; the CLI does not inspect a host,
+load a plugin or execute tools. CLI bindings additionally check local tool
+availability. This permits the shipped no-config gh binding once the caller
+declares its real host bounds. Configured tool options remain machine-local.
