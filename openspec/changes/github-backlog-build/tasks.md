@@ -82,7 +82,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 5.9 [medium] Refresh ownership before each later unfinished step and stop after an intervening ownership change. (✓ bats tests/skill-interfaces.bats: 274 behavior tests passed; corrected wrapping verified by focused rerun)
 - [x] 5.10 [medium] Return each named read-only ownership verdict without acquiring or releasing a claim. (✓ node --test tests/lets/backlog/claims.test.ts passed, 24 tests; recovery/protocol combined passed, 140 tests; tsc --noEmit passed)
 
-- [ ] 5.11 [medium] Drive read-only resume from the walk's pending-mutation result and recheck ownership only after resolved effects and reservation clearance. (verify: bats tests/skill-interfaces.bats)
+- [x] 5.11 [medium] Drive read-only resume from the walk's pending-mutation result and recheck ownership only after resolved effects and reservation clearance. (✓ bats tests/skill-interfaces.bats: 275 behavior tests passed; corrected wrapping verified by focused rerun)
 - [ ] 5.12 [medium] Validate complete assignee sets and actor-only resume verdicts, including multiple assignees and changed historic tokens. (verify: node --test tests/lets/backlog/protocol.test.ts)
 - [ ] 5.13 [medium] Drive uncertain claim reconciliation in Enter the branch without repeating acquisition, continuing only for confirmed applied ownership. (verify: bats tests/skill-interfaces.bats)
 

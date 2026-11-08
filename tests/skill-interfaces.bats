@@ -3046,3 +3046,16 @@ pr_reference_says() {
   [[ "$check" == *'assign only themselves'*'In Progress'* ]] || false
   ! grep -qE 'lets backlog claim\.(acquire|release)' <<<"$check" || false
 }
+
+@test "walk reconciles pending mutations before checking ownership again" {
+  local walk check verdict
+  walk="$(part_section 'Walk the step table' | tr -s '[:space:]' ' ')"
+  check="$(procedure_text 'Check work ownership' | tr -s '[:space:]' ' ')"
+  [[ "$walk" == *'pending-mutation'*'lets backlog resume --operation-id'*'reservationCleared: true'*'Check work ownership'* ]] || false
+  [[ "$walk" == *'applied or absent'* ]] || false
+  [[ "$walk" == *'unresolved'*'end the walk'* ]] || false
+  for verdict in sole-actor unassigned other multiple status-mismatch unavailable pending-mutation; do
+    grep -qF -- "\`$verdict\`" <<<"$check" || false
+  done
+  ! grep -qE 'lets backlog claim\.(acquire|release)' <<<"$check" || false
+}

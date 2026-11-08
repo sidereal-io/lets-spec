@@ -567,9 +567,17 @@ Then settle the row:
   [Read the records](references/records.md#read-the-records). Go on to
   the next row.
 - **Not done:** run [Check work ownership](#check-work-ownership).
+  On `pending-mutation`, run `lets backlog resume --operation-id` with
+  the original ID through the shared action loop. Resume issues reads
+  only. Only applied or absent effects with `reservationCleared: true`
+  allow a fresh [Check work ownership](#check-work-ownership). Never
+  repeat the mutation merely because recovery ran. For unresolved
+  effects or a retained reservation, report the original operation ID
+  and recovery command, and end the walk.
   Continue only for `sole-actor`; report any other result and end the
   walk without repair. Then run the step, as [Run a step](#run-a-step)
-  says. Then [read its report](#read-the-report). It checks a `done` report against
+  says. Then [read its report](#read-the-report). It checks a `done`
+  report against
   the records, and says what to print and whether the walk goes on.
 
 Next: [End of the run](#end-of-the-run), when no row is left.
@@ -611,6 +619,12 @@ the [shared action loop](references/backlog-actions.md) for fresh facts.
 Return the core ownership verdict. Continue work only for `sole-actor`:
 the authenticated actor is the sole assignee and Status is In Progress.
 A read grants no original claim token or release authority.
+
+Return `unassigned` for no assignees, `other` for another sole owner,
+`multiple` for several assignees, `status-mismatch` for the sole actor
+with another status, or `unavailable` for missing facts. An outstanding
+shared-store mutation returns `pending-mutation` before a backend read,
+with its original continuation. The walk owns that reconciliation.
 
 For any ownership mismatch, report the observed assignees and status.
 Ask the user to assign only themselves and set Status to In Progress in
