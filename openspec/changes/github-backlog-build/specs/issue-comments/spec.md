@@ -1,5 +1,20 @@
 ## MODIFIED Requirements
 
+### Requirement: One shared reference describes the thread read
+The `lets-shape` skill SHALL ship a reference `references/issue-comments.md`. It SHALL hold lets-shape's thread query, the labels, the list shown to the user, the read marker and the reply's shape. A skill that reads comments SHALL link to that reference rather than restate it.
+The fetch section SHALL direct lets-go and lets-brainstorm to item.read with
+includeThread: true. Those readers SHALL use the reference for labels, the list
+and read markers rather than run its lets-shape query.
+
+#### Scenario: The skill links the reference
+- **WHEN** the skill-interfaces test reads `skills/lets-shape/SKILL.md`
+- **THEN** it finds a link to `references/issue-comments.md`, and the link resolves inside the installed skills in each built flow
+
+#### Scenario: The reference holds its fixed strings
+- **WHEN** the skill-interfaces test reads `skills/lets-shape/references/issue-comments.md`
+- **THEN** it finds the line `lets-shape read this thread.`, the labels `candidate`, `outside` and `read`, the command `gh api graphql` and the command `gh issue comment` with `--body-file`
+
+
 ### Requirement: The thread query returns what the labels need
 The lets-shape thread query SHALL remain one `gh api graphql` command.
 Lets-go and lets-brainstorm SHALL obtain equivalent complete thread facts

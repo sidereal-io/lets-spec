@@ -170,16 +170,16 @@ Each procedure of `lets-go` SHALL end by returning to the part that ran it, with
 
 *Claim* SHALL drive intermediate `action` responses through the shared bounded
 action loop; an outstanding action is not a completed claim. `claim-uncertain`
-SHALL carry known partial effects and the original recovery reference when a
+SHALL carry known partial effects and the continuation when a
 claim cannot be confirmed. `backlog-unavailable` SHALL carry the prerequisite or
 capability failure without a new claim. `branch-failed` SHALL carry the branch
 error plus release status `complete`, `none` or `unresolved`; unresolved release
-SHALL carry its recovery reference. These results SHALL NOT overload glossary
+SHALL carry its continuation. These results SHALL NOT overload glossary
 `unresolved` or be treated as a lost-race `taken` result.
 
 #### Scenario: Claim returns uncertain effects
 - **WHEN** a submitted claim result leaves assignment or status effects unknown
-- **THEN** Claim returns `claim-uncertain` with known effects and the original recovery reference
+- **THEN** Claim returns `claim-uncertain` with known effects and the continuation
 
 ### Requirement: Each part names the action for each result
 A part that runs a procedure SHALL name each result the procedure can return there. For each one, it SHALL say what to do: go on, run another part, or tell the user what the result carries and stop. A part SHALL not hold a catch-all such as `any other stop stands`. The overview's *Stops when* column SHALL name the results a part stops on.
@@ -204,10 +204,16 @@ A part that runs a procedure SHALL name each result the procedure can return the
 - **WHEN** the user runs `lets-go` for `#194`, and *Confirm the packet* returns `epic`
 - **THEN** `lets-go` says that an epic is built through its stories, lists its open sub-issues, claims nothing and stops
 
-*Enter the branch* SHALL report `claim-uncertain` or `backlog-unavailable` and
-end the run without starting a step or selecting another issue. On
+On `claim-uncertain`, *Enter the branch* SHALL drive
+`lets backlog resume --operation-id <id>` through the shared action loop.
+Resume SHALL issue reads only. Applied acquisition SHALL continue only after
+reservation clearance and a fresh ownership check. Confirmed absent effects
+SHALL end the attempt without creating a branch. Partial or unresolved effects
+SHALL be reported with the continuation and end the run. Recovery SHALL NOT
+repeat acquisition or repair status. `backlog-unavailable` SHALL report and end
+without starting a step or selecting another issue. On
 `branch-failed` it SHALL report both the branch error and release outcome;
-unresolved release SHALL remain visible with its recovery reference.
+unresolved release SHALL remain visible with its continuation.
 
 ### Requirement: The resume paragraph says what a run started again does
 The paragraph near the top of `SKILL.md` that tells the user to run `lets-go` again after a run stops SHALL say what the new run does in each of these cases:
@@ -618,7 +624,7 @@ Below, the skill means `SKILL.md` together with its reference files. The skill S
 - **THEN** the fixed-lines check still passes
 
 ### Requirement: A stopped discovery resumes from its parent issue
-A discovery can stop between rounds, or before *Claim*, when no story is ready. For an idea, before the title search of *Start from an idea*, `lets-go` SHALL look for an open parent issue that says `Discovery status: in-progress` and whose `Input:` line holds the idea's words. It SHALL use `lets-shape`'s own query, `lets backlog item.search`. When one exists, `lets-go` SHALL say that a discovery of this idea is in progress at `#<parent>`, skip the title search, and run the shape step for the idea. The step resumes that discovery, as *The shape step asks before it runs discovery* says. For an issue, no check is needed: when *Confirm the packet* returns `needs-shape` for `#<i>`, the shape step runs, and finds the parent whose `Input:` is `#<i>`. The answers file rules of *The shape step shapes an idea or an unshaped issue* SHALL hold: an idea retyped word for word keeps its answers, and a reworded idea starts with none and is a new input. The phases the parent already recorded are not lost either way.
+A discovery can stop between rounds, or before *Claim*, when no story is ready. For an idea, before the title search of *Start from an idea*, `lets-go` SHALL look for an open parent issue that says `Discovery status: in-progress` and whose `Input:` line holds the idea's words. It SHALL use `lets backlog item.search` with the same search semantics as lets-shape's query; lets-shape keeps its own provider callout. When one exists, `lets-go` SHALL say that a discovery of this idea is in progress at `#<parent>`, skip the title search, and run the shape step for the idea. The step resumes that discovery, as *The shape step asks before it runs discovery* says. For an issue, no check is needed: when *Confirm the packet* returns `needs-shape` for `#<i>`, the shape step runs, and finds the parent whose `Input:` is `#<i>`. The answers file rules of *The shape step shapes an idea or an unshaped issue* SHALL hold: an idea retyped word for word keeps its answers, and a reworded idea starts with none and is a new input. The phases the parent already recorded are not lost either way.
 
 #### Scenario: The same idea again
 - **WHEN** a run for `rewrite the backlog around a plugin model` stopped at MoSCoW, the open parent `Epic: plugin backlog` says `Discovery status: in-progress` with `Input: rewrite the backlog around a plugin model`, and the user runs `lets-go rewrite the backlog around a plugin model` again
@@ -717,11 +723,16 @@ and return the core verdict `sole-actor`, `unassigned`, `other`, `multiple`,
 `status-mismatch`, `unavailable` or `pending-mutation`. It SHALL use the provider's
 declared claim guarantee; GitHub remains best-effort at the authenticated actor
 level, and a fresh observation SHALL NOT invent an old worker session or token.
-The owning walk SHALL continue only for `sole-actor`, report every other result
-and end. The overview's *Stops when* column SHALL name those results. Its remedy
-SHALL explain the required sole assignment and In Progress status through the
-existing authorized workflow, without issuing a repair or directing an agent
-to bypass Project-field ownership rules with a direct provider command.
+On `pending-mutation`, the owning walk SHALL drive
+`lets backlog resume --operation-id <id>` through the shared action loop.
+Resume SHALL issue reads only. The walk SHALL repeat its ownership check only
+when effects resolve as applied or absent and the reservation clears. Otherwise
+it SHALL report the remaining uncertainty and end. It SHALL continue work only
+for `sole-actor`; other verdicts SHALL report and end without repair. The
+overview's *Stops when* column SHALL name the ending results. For an ownership
+mismatch, ask the user to assign only themselves and set Status to In Progress
+in GitHub, then run lets-go again. Agents SHALL NOT bypass Project-field
+ownership rules with direct provider commands.
 
 After the existing tree, PR and record checks, lets-go SHALL use fresh validated
 adapter observations before starting any unfinished work step. The authenticated
@@ -778,7 +789,6 @@ the existing step prompt or report contract.
 - **WHEN** the existing branch-scoped PR read reports MERGED or CLOSED, after a clean tree check
 - **THEN** lets-go reports the existing terminal message without an ownership check, a workflow step or a completion write
 
-
 #### Scenario: Ownership procedure uses only reads
 - **WHEN** the skill-interface check reads Check work ownership and its owning walk
 - **THEN** it finds claim.read, the named verdicts and their actions, and no claim.acquire or claim.release in the check
@@ -811,7 +821,8 @@ their existing handoffs and behavior inventory SHALL remain available.
 - **THEN** lets-go checks the existing Git, PR and archive records without writing identity.json or an extra metadata commit
 
 ### Requirement: Steps use explicit compatible connection context
-When lets-go selects a named tool connection for a new operation, its owning
+Lets-go SHALL use the configured backlog.connection default; it SHALL NOT parse
+--connection as a runner request token. Its owning
 step prompt SHALL carry that name as execution context for the step's own
 bounded calls. The step SHALL verify required tools independently. Its worker
 identity SHALL come from its own operation context; it SHALL NOT inherit claim
@@ -820,9 +831,33 @@ write SHALL return the existing failed report with the prerequisite or original
 operation recovery remedy in its reason.
 
 #### Scenario: Delegated step has the selected connection
-- **WHEN** the runner explicitly selects a compatible named connection and delegates a plan or review step
+- **WHEN** the runner resolves its compatible configured default connection and delegates a plan or review step
 - **THEN** the prompt names that connection and the step uses its own bounded calls without host detection
 
 #### Scenario: Delegated step lacks required tool
 - **WHEN** the step cannot access a tool required by its named connection
 - **THEN** it returns failed with the missing prerequisite before affected backend issuance instead of silently selecting another connection
+
+### Requirement: Workflow callers drive read-only reconciliation
+The runner and steps SHALL drive resume through the shared action loop when a
+pending mutation or blocked PR write supplies a continuation. Only resolved
+applied or absent effects with a cleared reservation SHALL permit reevaluation
+of the next action. They SHALL NOT repeat the mutation solely because recovery
+ran. Unresolved effects SHALL end the run or return the existing failed step
+report with original operation ID and resume command in its reason.
+
+#### Scenario: Walk finds an uncertain PR create
+- **WHEN** the ownership check returns pending-mutation for an earlier plan PR creation
+- **THEN** the walk runs resume and its requested reads, rechecks ownership after resolution and continues the unfinished step only when authority is valid
+
+#### Scenario: Enter the branch receives an uncertain claim
+- **WHEN** Claim returns claim-uncertain and reconciliation confirms acquisition applied with its reservation cleared
+- **THEN** Enter the branch checks fresh ownership before continuing branch creation without repeating assignment or status writes
+
+#### Scenario: Step finds a blocked PR write
+- **WHEN** a step's PR write is blocked by a recorded uncertain operation
+- **THEN** the step drives read-only resume, re-reads the resource after resolution and never issues a duplicate creation
+
+#### Scenario: Reconciliation cannot settle effects
+- **WHEN** resume cannot resolve effects or clear the reservation
+- **THEN** the caller reports uncertainty and ends without a new mutation or work step

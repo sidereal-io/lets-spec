@@ -24,13 +24,13 @@ Nothing is implemented or checked off by this planning restart.
 - [ ] 1.13 [medium] Accept timely submissions using Lets receipt time when exact tool timestamps and optional MCP server version are unavailable. (verify: node --test tests/lets/backlog/protocol.test.ts)
 - [ ] 1.14 [medium] Fail before issuance when private state cannot support durable private writes and locking. (verify: node --test tests/lets/backlog/state.test.ts)
 - [ ] 1.15 [medium] Validate the repository and PR operation input/result fields under the same selected GitHub definition. (verify: node --test tests/lets/backlog/protocol.test.ts)
-- [ ] 1.16 [medium] Resolve explicit named connections without changing repository selection or detecting the host. (verify: node --test tests/lets/backlog/config.test.ts)
+- [ ] 1.16 [medium] Resolve implicit gh, sole-entry and named-default connections, rejecting several entries without a default or invalid explicit selection. (verify: node --test tests/lets/backlog/config.test.ts)
 - [ ] 1.17 [medium] Reject a default-connection change as a replacement for an uncertain operation's recorded connection. (verify: node --test tests/lets/backlog/config.test.ts)
 - [ ] 1.18 [medium] Allocate and return a worker ID before action issuance when a new caller supplies none. (verify: node --test tests/lets/backlog/scopes.test.ts)
 
 ## 2. Private recovery [depends-on: 1]
 
-- [ ] 2.1 [complex] Persist issued action state atomically in the shared private item-keyed store before returning control to the agent. (verify: node --test tests/lets/backlog/state.test.ts)
+- [ ] 2.1 [complex] Persist issued action state atomically under ordered per-resource-key locks in the shared private store before returning control to the agent. (verify: node --test tests/lets/backlog/state.test.ts)
 - [ ] 2.2 [medium] Acknowledge duplicate accepted submissions after restart without advancing the operation twice. (verify: node --test tests/lets/backlog/state.test.ts)
 - [ ] 2.3 [complex] Reconcile an uncertain mutation through fresh bounded reads tied to its original identity before permitting another write. (verify: node --test tests/lets/backlog/recovery.test.ts)
 - [ ] 2.4 [medium] Preserve typed error/effect classifications from validated observations instead of exception-message keywords. (verify: node --test tests/lets/backlog/failures.test.ts)
@@ -40,8 +40,8 @@ Nothing is implemented or checked off by this planning restart.
 - [ ] 2.8 [complex] Recover a proven stale local lock without stealing a live or ambiguous holder's lock. (verify: node --test tests/lets/backlog/state.test.ts)
 - [ ] 2.9 [complex] Block work and new writes for an outstanding item mutation across local worktrees using the same configured store, regardless of a new operation or worker ID. (verify: node --test tests/lets/backlog/state.test.ts)
 - [ ] 2.10 [medium] Preserve original operation provenance for uncertain-write reconciliation and release without requiring it for ordinary resume on another machine. (verify: node --test tests/lets/backlog/recovery.test.ts)
-- [ ] 2.11 [medium] Reconstruct the original reconciliation handle in another worktree or after scratch loss without repeating the write. (verify: node --test tests/lets/backlog/recovery.test.ts)
-- [ ] 2.12 [medium] Keep uncertain step-write handles distinct from subsequent runner reads. (verify: node --test tests/lets/backlog/state.test.ts)
+- [ ] 2.11 [medium] Reconstruct the original continuation in another worktree or after scratch loss without repeating the write. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [ ] 2.12 [medium] Keep uncertain step-write continuations distinct from subsequent runner reads. (verify: node --test tests/lets/backlog/state.test.ts)
 - [ ] 2.13 [medium] Reserve PR creation by endpoint, repository and head identity across worktrees and worker IDs. (verify: node --test tests/lets/backlog/state.test.ts)
 - [ ] 2.14 [medium] Block ready or update while an uncertain operation reserves the same PR ID. (verify: node --test tests/lets/backlog/state.test.ts)
 
@@ -51,11 +51,11 @@ Nothing is implemented or checked off by this planning restart.
 - [ ] 3.1 [complex] Translate scrubbed real GitHub GraphQL output through the shipped definition, including Project array selection, unions/nulls, connection coverage and partial structured errors. (verify: node --test tests/lets/backlog/providers.test.ts)
 - [ ] 3.2 [medium] Resolve one repository-linked GitHub Project from bounded submitted discovery reads or report ambiguity. (verify: node --test tests/lets/backlog/providers.test.ts)
 - [ ] 3.3 [medium] Reject candidate enumeration with missing pages, required metadata or inconsistent cursor coverage. (verify: node --test tests/lets/backlog/items.test.ts)
-- [ ] 3.4 [medium] Read packet fields, parent body and complete thread facts, including later-page unread comments and author/edit metadata, without a fixed Project scan limit. (verify: node --test tests/lets/backlog/items.test.ts)
+- [ ] 3.4 [medium] Read complete thread facts only when includeThread is true, including later-page unread comments, while parent-body reads avoid thread fetching and fixed Project scan limits. (verify: node --test tests/lets/backlog/items.test.ts)
 - [ ] 3.5 [medium] Select a branch PR open-first then newest after repository/head qualification, preserving lookup parity with the GitHub CLI. (verify: node --test tests/lets/backlog/protocol.test.ts)
-- [ ] 3.6 [medium] Translate scrubbed actual repository, PR, update and ready output through the same GitHub definition. (verify: node --test tests/lets/backlog/providers.test.ts)
+- [ ] 3.6 [medium] Translate scrubbed repository and PR output through the same GitHub definition, requiring draft creation and classifying missing isDraft confirmation as partial effects. (verify: node --test tests/lets/backlog/providers.test.ts)
 - [ ] 3.7 [complex] Expose repository and PR operation commands with the shared action/submission engine under lets backlog. (verify: pnpm test:backlog)
-- [ ] 3.8 [medium] Return the original recovery handle when a new step requests PR creation for an uncertain repository/head resource. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [ ] 3.8 [medium] Return the continuation when a new step requests PR creation for an uncertain repository/head resource. (verify: node --test tests/lets/backlog/recovery.test.ts)
 - [ ] 3.9 [medium] Reconcile uncertain prepared PR-body updates while preserving unrelated sections and closing text. (verify: node --test tests/lets/backlog/recovery.test.ts)
 - [ ] 3.10 [medium] Confirm the existing ready transition through bounded action results without merging. (verify: node --test tests/lets/backlog/protocol.test.ts)
 
@@ -82,27 +82,35 @@ Nothing is implemented or checked off by this planning restart.
 - [ ] 5.9 [medium] Refresh ownership before each later unfinished step and stop after an intervening ownership change. (verify: bats tests/skill-interfaces.bats)
 - [ ] 5.10 [medium] Return each named read-only ownership verdict without acquiring or releasing a claim. (verify: node --test tests/lets/backlog/claims.test.ts)
 
+- [ ] 5.11 [medium] Drive read-only resume from the walk's pending-mutation result and recheck ownership only after resolved effects and reservation clearance. (verify: bats tests/skill-interfaces.bats)
+- [ ] 5.12 [medium] Validate complete assignee sets and actor-only resume verdicts, including multiple assignees and changed historic tokens. (verify: node --test tests/lets/backlog/protocol.test.ts)
+- [ ] 5.13 [medium] Drive uncertain claim reconciliation in Enter the branch without repeating acquisition, continuing only for confirmed applied ownership. (verify: bats tests/skill-interfaces.bats)
+
 ## 6. Workflow integration [depends-on: 5]
 
-- [ ] 6.1 [medium] Carry an explicitly selected connection into delegated step prompts without changing report fields or resolver selection. (verify: bats tests/skill-interfaces.bats)
+- [ ] 6.1 [medium] Carry the configured default connection into delegated step prompts without adding runner request tokens, report fields or resolver selection. (verify: bats tests/skill-interfaces.bats)
 - [ ] 6.2 [medium] Route lets-go's existing-story backlog lifecycle through the shared boundary while steps retain their own work and reports. (verify: bats tests/skill-interfaces.bats)
-- [ ] 6.3 [medium] Replace existing-story repository and PR callouts in runner, plan, brainstorm, build, review skills and draft-PR schema instructions through the same GitHub definition. (verify: bats tests/skill-interfaces.bats)
+- [ ] 6.3 [medium] Replace existing-story callouts in runner, plan, brainstorm, build, reviews, draft-PR schemas and the shared issue-comments fetch reference through the same GitHub definition, asserting the reference routes runner and brainstorm to item.read. (verify: bats tests/skill-interfaces.bats)
 - [ ] 6.4 [medium] Include original uncertain-operation ID and recovery command in a failed step's existing reason string. (verify: bats tests/skill-interfaces.bats)
 - [ ] 6.5 [medium] Preserve the clean-tree check followed by the existing merged-PR stop without ownership checks or a completion write. (verify: bats tests/skill-interfaces.bats)
 - [ ] 6.6 [medium] Ignore historical merged or rejected PRs when the branch no longer exists instead of adding a terminal lookup or Done update. (verify: bats tests/skill-interfaces.bats)
 - [ ] 6.7 [medium] Preserve the existing stop for a surviving stacked branch's merged PR without claiming the issue is completed. (verify: bats tests/skill-interfaces.bats)
 - [ ] 6.8 [easy] Preserve the surviving branch's rejected-PR stop without claiming, completion or build actions. (verify: bats tests/skill-interfaces.bats)
-- [ ] 6.9 [medium] Retain the four-provider behavioral inventory with attributed code-host fixture facts without production mixed-provider routing in action/submission conformance. (verify: node --test tests/lets/backlog/inventory.test.ts)
+- [ ] 6.9 [medium] Retain the four-provider inventory with attributed code-host fixture facts, marking pull-request.* outside non-GitHub production profiles pending a routing decision. (verify: node --test tests/lets/backlog/inventory.test.ts)
 - [ ] 6.10 [medium] Apply identical policy with explicitly configured compatible tool connections in both required hosts. (verify: node --test tests/lets/backlog/config.test.ts)
 - [ ] 6.11 [medium] Check the literal operation and file-argument forms in the owning procedures and shared action loop. (verify: bats tests/skill-interfaces.bats)
 - [ ] 6.12 [medium] Exercise the existing-story callout inventory with a compatible custom GitHub MCP definition and no gh executable, without claiming live MCP support. (verify: node --test tests/lets/backlog/inventory.test.ts)
 - [ ] 6.13 [medium] Fail a delegated step before backend issuance when its selected connection's required tool is unavailable. (verify: bats tests/skill-interfaces.bats)
 
+- [ ] 6.14 [medium] Drive a step's blocked PR write through read-only resume, re-read after resolution and return failed with recovery context if uncertainty remains. (verify: bats tests/skill-interfaces.bats)
+
 ## 7. Documentation and release [depends-on: 6]
 
-- [ ] 7.1 [medium] Rewrite docs/backlog-adapter-contract.md for the bounded action and submitted-output protocol, including recorded read attempts and retained completion conformance. (verify: node --test tests/lets/backlog/inventory.test.ts)
+- [ ] 7.1 [medium] Rewrite the contract docs for submitted output, recorded reads and retained completion conformance, replacing session/token work gates with actor-only ordinary resume and release-specific provenance checks. (verify: node --test tests/lets/backlog/inventory.test.ts)
 - [ ] 7.2 [medium] Report unqualified live support for configurations without fresh acceptance, keeping offline compatibility separate. (verify: node --test tests/lets/backlog/inventory.test.ts)
-- [ ] 7.3 [medium] Package consumed runtime and definitions while excluding obsolete adapter bundles and unused conformance payloads. (verify: nix flake check)
+- [ ] 7.3 [medium] Document connection defaults and shared-definition binding limits, the private state path and actionable writable-state sandbox remedies. (verify: node --test tests/lets/backlog/inventory.test.ts)
+
+- [ ] 7.4 [medium] Package consumed runtime and definitions while excluding obsolete adapter bundles and unused conformance payloads. (verify: nix flake check)
 
 ## Acceptance gate after implementation
 

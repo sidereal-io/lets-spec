@@ -159,6 +159,37 @@ from the repository.
 - **WHEN** a maintainer builds the migrated release
 - **THEN** it contains the consumed runtime and definitions without obsolete adapter executable bundles or unused conformance payloads
 
+### Requirement: Claims report their actual guarantee
+The contract SHALL permit documented best-effort claims that check ownership, assign and verify, and use stronger claims where supported. It SHALL distinguish the authenticated actor from a claim/session identity, define release ownership and partial-failure recovery, and stop progression on ownership conflicts or unresolved outcomes. It SHALL NOT claim that best-effort verification guarantees exclusive execution.
+
+`claim.read` SHALL return the complete assignee set, current status, declared
+claim guarantee and core verdict: `sole-actor`, `unassigned`, `other`, `multiple`,
+`status-mismatch`, `unavailable` or `pending-mutation`. Ordinary resume SHALL
+compare the authenticated actor only. Release SHALL check original worker
+provenance and any provider-supported session and token; ordinary resume SHALL
+NOT require those historic session or token values. Required incomplete assignee data
+SHALL produce `unavailable`, never a false sole-owner verdict.
+
+#### Scenario: Two assignees include the authenticated actor
+- **WHEN** a complete claim.read returns the authenticated actor and another assignee
+- **THEN** the core returns multiple and authorizes no work or ownership write
+
+#### Scenario: New worker resumes current ownership
+- **WHEN** a fresh read shows the authenticated actor alone and In Progress, with no pending mutation but a different historic session or token
+- **THEN** ordinary resume returns sole-actor without granting historic release authority
+
+#### Scenario: Another worker owns the item
+- **WHEN** a claim finds an existing owner
+- **THEN** it reports a conflict without overwriting that ownership or authorizing a build
+
+#### Scenario: Claim response is lost
+- **WHEN** a claim write times out after the fake provider accepts it
+- **THEN** the scenario reconciles ownership before retrying or progressing
+
+#### Scenario: Claim spans separate updates
+- **WHEN** assignment succeeds but moving the item to In Progress fails
+- **THEN** the result exposes partial progress and the documented recovery preserves ownership belonging to other workers
+
 ## ADDED Requirements
 
 ### Requirement: Required remote facts use validated submitted tool observations
@@ -302,15 +333,15 @@ effects SHALL block another write for that resource until reconciliation.
 
 A new operation without context.session SHALL receive a core-allocated worker
 ID before action issuance and expose it as workerId in the operation response.
-Returned worker identity SHALL be reused within that
-operation. Each delegated step SHALL own its worker context; conflict blocking
+Returned worker identity SHALL be reused within that invocation. Each delegated
+step SHALL own its worker context; conflict blocking
 SHALL NOT depend on inheriting the runner's ID. A failed step SHALL include its
 original uncertain operation ID and recovery command in the existing reason
 string without changing the step-report schema.
 
 #### Scenario: New step retries a lost PR creation
 - **WHEN** one plan session's PR create has unknown effects and a later session requests a create for the same repository and head
-- **THEN** the later call receives the original recovery handle and issues no new create until reconciliation
+- **THEN** the later call receives the continuation and issues no new create until reconciliation
 
 #### Scenario: PR is updated from another worktree
 - **WHEN** one worktree has an uncertain PR update and another requests ready for that same PR
@@ -329,8 +360,29 @@ backlog or mappings. Core SHALL record the chosen connection in the operation.
 Submit and resume SHALL use that recorded connection without default fallback.
 Delegated steps SHALL validate their selected tools independently before actions.
 
+Without `backlog.connections`, the implicit default SHALL be the shipped
+definition's gh CLI binding. A sole configured connection SHALL be selected
+when no default name is set. Several entries without `backlog.connection` SHALL
+fail preflight with a remedy. Invalid explicit selection SHALL NOT fall back.
+Lets-go and its steps SHALL use the configured default, with no new runner
+request syntax. Only direct backlog callers SHALL accept `--connection`.
+Bindings SHALL be declared by the repository-selected definition; a connection
+SHALL NOT add bindings absent from that shared definition.
+
+#### Scenario: Existing user has no connection configuration
+- **WHEN** no backlog.connections or backlog.connection is configured
+- **THEN** preflight selects the implicit shipped gh CLI binding, subject to normal tool and login checks
+
+#### Scenario: Several connections have no default
+- **WHEN** several connections exist but backlog.connection is absent
+- **THEN** preflight requests an explicit default and issues no backend action
+
+#### Scenario: One connection has no default name
+- **WHEN** exactly one valid connection exists and backlog.connection is absent
+- **THEN** it is the configured default without host detection
+
 #### Scenario: Hosts on one machine choose different tools
-- **WHEN** T3 and a standalone CLI explicitly select different compatible named connections
+- **WHEN** direct backlog callers in T3 and a standalone CLI explicitly select different compatible named connections
 - **THEN** they use the same repository provider and policy without implicit host detection or tool fallback
 
 #### Scenario: A delegated step lacks the selected tools
@@ -341,12 +393,12 @@ Delegated steps SHALL validate their selected tools independently before actions
 - **WHEN** the configured default connection changes after a write becomes uncertain
 - **THEN** reconciliation remains bound to its original connection or reports that prerequisite as unavailable instead of using the new default
 
-### Requirement: Recovery handles survive scratch loss
+### Requirement: Continuations survive scratch loss
 A blocked or needs-reconciliation result SHALL include the original durable
 operation ID and a continuation rebuilt from that operation's recovery record.
 Resume SHALL accept the operation ID without a scratch file and validate its
 original scope and provenance before requesting reconciliation reads. Callers
-SHALL isolate scratch handles by operation. Reconstructing a handle SHALL NOT
+SHALL isolate continuations by operation. Reconstructing a continuation SHALL NOT
 transfer claim-release authority or authorize a new mutation.
 
 #### Scenario: Another worktree reconciles the original operation
@@ -355,14 +407,16 @@ transfer claim-release authority or authorize a new mutation.
 
 #### Scenario: Scratch files have been removed
 - **WHEN** all workspace scratch files are lost but the private recovery record survives
-- **THEN** resume by original operation ID reconstructs the handle without deleting state or issuing the write again
+- **THEN** resume by original operation ID reconstructs the continuation without deleting state or issuing the write again
 
 #### Scenario: A runner read follows an uncertain step write
 - **WHEN** a step has an uncertain write and the runner issues a separate claim.read
-- **THEN** their operation-specific handles remain distinct and the write can still be reconciled
+- **THEN** their operation-specific continuations remain distinct and the write can still be reconciled
 
 ### Requirement: Item reads expose complete thread facts
-For packet and brainstorm checks, item.read SHALL provide the issue's lastEditedAt
+item.read SHALL accept includeThread, defaulting to false. Packet and brainstorm
+checks SHALL set includeThread to true; parent-body reads need not fetch comments.
+For those thread checks, item.read SHALL provide the issue's lastEditedAt
 and every comment's URL, author login, author type, author association, createdAt,
 lastEditedAt and body. Deleted authors and never-edited timestamps SHALL be
 explicitly null where applicable. Thread enumeration SHALL prove all required
@@ -373,6 +427,19 @@ Labels and read-marker interpretation SHALL remain shared policy.
 - **WHEN** an unread or edited comment appears after the first thread page
 - **THEN** item.read includes it before the caller computes freshness or fails with incomplete coverage without authorizing a claim
 
+#### Scenario: Parent body does not request comments
+- **WHEN** item.read requests a parent body without includeThread
+- **THEN** it returns required item facts without requesting complete comment pages
+
 #### Scenario: Deleted author and bot have different provenance
 - **WHEN** the thread includes a deleted account and a GitHub App
 - **THEN** the result retains the nullable author facts and bot type needed for the existing ghost and outside labels
+
+### Requirement: PR creation preserves the planning draft
+pull-request.create SHALL always request a draft PR. Confirmed creation SHALL
+require isDraft: true. A result without that confirmation SHALL report partial
+effects and require reconciliation of the existing resource before further writes.
+
+#### Scenario: Creation returns a ready PR
+- **WHEN** a create submission identifies a PR but lacks isDraft: true
+- **THEN** Lets reports partial effects, does not confirm creation and blocks duplicate creation pending reconciliation

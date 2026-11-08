@@ -49,7 +49,6 @@ repository and PR actions for this migration. It uses the same command-shaped
 backlog configuration and introduces no separately configured code-host adapter.
 GitHub still supplies repository and merge facts in its code-host responsibility.
 
-
 ## Decision
 
 Use the execution hybrid project-wide:
@@ -398,6 +397,11 @@ This amendment itself authorizes no runtime changes or acceptance mutations.
   submitted evidence bindings, reject stale results and retain private recovery state.
 - The design adds no credential sandbox or stronger backend locking primitive.
   Available tools may retain credentials and permissions outside lets.
+
+Under D15, the existing-story GitHub walk reads repository and PR facts through
+the same selected backlog definition. Production walks for Jira, Linear or
+Beads require a future routing decision for those facts. Their offline fixtures
+do not qualify a production repository/PR integration.
 
 ## Alternatives considered
 

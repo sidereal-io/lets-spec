@@ -21,7 +21,7 @@ core operation and evidence guarantees.
 - **THEN** the same GitHub workflow is available without a T3 patch or upstream request
 
 #### Scenario: Configured tools differ by environment
-- **WHEN** T3 and a standalone CLI on the same machine explicitly select different compatible named connections with --connection
+- **WHEN** T3 and a standalone CLI run lets-go with a compatible configured default connection, changed explicitly in configuration when a different binding is needed
 - **THEN** Lets applies the same operation, policy and evidence validation without switching backlog provider or relaxing guarantees
 
 ### Requirement: GitHub selection is explicit and validated

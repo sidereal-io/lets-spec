@@ -47,7 +47,7 @@ active plan must be replaced before implementation continues (D1, D5).
 
 - `github-backlog-build`: carry an existing GitHub story through selection,
   claim, work/resume and release while preserving existing PR and finishing
-  behavior through the appropriate configured integration.
+  behavior through the same configured GitHub integration.
 
 ### Modified Capabilities
 
