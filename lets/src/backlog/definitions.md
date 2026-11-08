@@ -40,3 +40,10 @@ checks for changes during reading. One file supplies one JSON value; several
 files supply an array of values for a paginated projection. Files are untrusted
 submitted observations, with no independent provenance. Tool redirection into
 operation-specific workspace scratch avoids transcription and display limits.
+
+Before issuing actions, Lets requires a private, user-owned state directory
+(mode 0700), exclusive lock creation, durable writes and atomic replacement.
+A sandbox must grant those operations at the configured shared path. If access
+fails, configure machine `backlog.stateDir` to an accessible shared private
+location or grant access to the existing one. Do not choose a per-worktree
+store or delete recovery records to bypass outstanding mutations.
