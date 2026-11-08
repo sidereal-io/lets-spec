@@ -1,3 +1,68 @@
+## Behavior parity assessment after D13
+
+The user's latest instruction is to preserve today's functionality across the
+workflow while replacing hard-coded GitHub callouts with the configured adapter.
+This supersedes the plan's added resume and terminal-completion behavior. The
+baseline below is tracked main at `6524fbff`, not the old #172 prototype.
+
+| Existing behavior and source | Migration constraint |
+|---|---|
+| `skills/lets-go/SKILL.md`, *Enter the branch*: an existing local or remote branch skips Claim. | Do not assign an unassigned item, change Todo to In Progress or add a claim requirement on that path. Preserve hand-stacked branches. |
+| *Walk the step table*: Git, the PR and the archive determine the next step. | Keep ADR-017's record-based resume. Do not introduce `identity.json`, an extra runner commit or a required private record for ordinary resume. |
+| *Walk the step table*: merged and closed PRs stop the run when the branch survives and the issue is found. | Preserve the stop and its position after the tree check. Do not search historical PRs on deleted branches or write Done. This removes the proposed reopened-issue regression. |
+| *Claim*: check assignment, acquire assignment and In Progress, then create the branch; failure releases the acquired claim. | Translate the existing acquisition and release through bounded actions. Retain accepted operation recovery guarantees and report any intentional difference explicitly. |
+| *Confirm the packet*: read issue, Project fields, parent and packet prerequisites. | Adapter coverage must include these reads. Do not leave a hard-coded `gh project item-list --limit 500` dependency in the caller or impose `gh` on an MCP-selected configuration. |
+| *Find the source of demand*: idea search, ready-work enumeration and ranking. | Keep the current search, packet checks, selection order and lost-claim limits. Definitions translate observations; shared policy decides. |
+| `references/shape.md` and glossary handoff references: discovery search, issue dates and prerequisite PR facts. | Include these references in the callout inventory; replacing only Claim is insufficient. Keep existing discovery commits and glossary procedures. |
+| Plan, build and review skills: repository facts, PR reads, review text updates and marking ready. | Map code-host operations separately from backlog operations. Keep existing skill ownership and user-owned merge. Do not assume every backlog backend supplies code-host facts. |
+| Setup and shape skills: Project setup, issue and comment writes, relationships and metadata. | Preserve their current behavior and owners in the shared inventory. The current proposal excludes their production migration; that exclusion cannot justify claiming all skills are migrated. Reconcile delivery coverage before declaring the plan complete. |
+
+This audit concerns callout coverage, not literal command equivalence. Complete
+pagination and typed recovery remain accepted contract guarantees; no definition
+may claim that a fixed item limit proves enumeration complete. A CLI definition
+may use `gh`; the skills must not require it when a compatible MCP definition
+is explicitly selected. Both unchanged T3 and standalone hosts remain required.
+
+### Accepted decision requiring explicit reconsideration
+
+Main's architecture ADR-015 says: “Retain scoped mutation identity, fresh
+ownership verification before work, session-safe release and partial-claim
+recovery.” This requirement predates the restart's edits. Main's existing-branch
+path skips Claim and has no fresh ownership gate. Exact behavior parity and a
+blanket new ownership gate cannot both hold.
+
+Proposed amendment, **not yet accepted or applied**:
+
+> Retain scoped mutation identity, fresh ownership verification for claim
+> acquisition and release, session-safe release and partial-claim recovery.
+> Ordinary resume follows the existing shared runner's branch and record rules.
+> It does not acquire a claim or require sole assignment and In Progress merely
+> because the branch already exists. Known unresolved mutations still require
+> reconciliation before retry or progression. This preserves the current
+> existing-branch path and does not assert exclusive ownership for that path.
+
+This deliberately preserves the current limitation: an existing branch is not
+proof of exclusive ownership. It changes neither the submitted-output trust
+choice (D10) nor the sole-runner rule. Do not amend the accepted record until
+the user agrees to this specific consequence.
+
+The plan's added ADR paragraph connecting the merged-PR stop to a completion
+write was an author interpretation, not a behavior on main or a separate user
+approval. Remove that extrapolation during reconciliation. Retain the contract
+rule that an actual completion request requires the exact associated merge;
+that rule does not require a new caller in this parity migration.
+
+### Review disposition
+
+Round two's stale terminal association finding is confirmed. D13 removes the
+new terminal path rather than adding historical-PR heuristics. The hand-stacked
+branch contradiction is confirmed; do not select the reviewer's new automatic
+claim behavior. It awaits the narrow ADR decision above. The `identity.json`
+lifecycle findings are addressed by removing that new metadata design, not by
+adding commits or pushes to the runner. Missing callout coverage and the need
+to distinguish code-host operations remain valid migration work. No third
+review has been launched and neither prior REVISE verdict is an approval.
+
 ## Current disposition — 2026-11-07
 
 The investigation below records the earlier ADR-015 capture requirement and why

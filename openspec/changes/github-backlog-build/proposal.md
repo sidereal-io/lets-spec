@@ -1,7 +1,7 @@
 ## Why
 
 Existing GitHub stories need to pass through the shared backlog boundary while
-preserving native ownership, safe recovery and completion after merge. The
+preserving the current workflow and its existing ownership and recovery behavior. The
 existing PR prototype depends on a withdrawn capture-service design, so its
 active plan must be replaced before implementation continues (D1, D5).
 
@@ -13,8 +13,9 @@ active plan must be replaced before implementation continues (D1, D5).
   contract for shipped and explicitly selected custom provider definitions.
   Reject obsolete executable settings with a migration remedy.
 - Preserve complete scoped reads, shared readiness/ranking, native best-effort
-  claim/release, private recovery, immutable item identity and exact associated
-  PR merge evidence. Missing or uncertain facts stop retry and progression.
+  claim/release and private recovery. Keep existing branch and issue lookup,
+  step selection, review, stack and terminal-PR behavior. Do not add runner
+  actions merely because the shared contract defines them.
 - Accept configured adapter submissions of tool output and derive normalized facts;
   Lets validates correlation, mappings, freshness, coverage and workflow rules.
   Amend ADR-015 explicitly to remove independent capture. This trusts submitted
@@ -23,10 +24,10 @@ active plan must be replaced before implementation continues (D1, D5).
   The adapter supplies backend facts; shared workflow policy decides when to
   continue. Private recovery is for uncertain operations, not an extra login
   requirement for ordinary resume (D4, D12).
-- Connect PR association and exact-merge completion to lets-go. An explicit run
-  after merge verifies completion without rerunning build steps; native Done
-  is accepted without a repeated update. This extends the existing merged-PR
-  stop within the shared workflow.
+- Preserve today’s merged and rejected PR stops. Do not add a terminal
+  completion write, historical PR lookup or committed identity file. Keep the
+  shared contract’s merge-gated completion guarantee for any actual completion
+  request; defining that operation does not make lets-go call it.
 - Support the workflow from both unchanged T3 and standalone coding-agent
   CLIs through explicit integration configuration. Do not make T3 changes,
   upstream requests or T3-only initial support prerequisites (D9).
@@ -38,7 +39,8 @@ active plan must be replaced before implementation continues (D1, D5).
 ### New Capabilities
 
 - `github-backlog-build`: carry an existing GitHub story through selection,
-  claim, work/resume, release, PR association and merge-gated completion.
+  claim, work/resume and release while preserving existing PR and finishing
+  behavior through the appropriate configured integration.
 
 ### Modified Capabilities
 
@@ -64,3 +66,12 @@ Shared contract changes must preserve their operation coverage. See
 [research.md](research.md) for the evidence and [design.md](design.md) for the
 replacement contract and recovery design. This proposal does not claim
 implementation or live support.
+
+## Parity decision pending
+
+D13 requires behavior parity, including existing branches that skip Claim.
+Accepted ADR-015 currently requires fresh ownership verification before work.
+The concrete conflict and proposed narrow amendment are in research.md under
+*Behavior parity assessment after D13*. No new claim or resume gate is selected.
+Design, specs and tasks must be reconciled after this ADR decision; the prior
+reviewed plan is not approved or ready for implementation.

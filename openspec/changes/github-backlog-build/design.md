@@ -1,3 +1,9 @@
+> **Revision pending after D13:** preserve today's workflow through configured
+> adapters. Earlier text below that adds an existing-branch ownership gate,
+> `identity.json`, PR association steps or a terminal completion write is
+> superseded and must not guide implementation. See research.md, *Behavior parity
+> assessment after D13*. The narrow ADR-015 conflict remains unresolved.
+
 ## Context
 
 Main has an offline executable-adapter contract and simulation harness, not the
