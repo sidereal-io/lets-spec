@@ -536,3 +536,16 @@ test('a rejected plain read fails without effects and stays correctable', () => 
     assert.equal(store.submit(issued.continuation, submission, 300).state, 'complete');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+test('a CLI execution with no signal may report signal null', () => {
+  const { action, submission, projection } = submittedRead();
+  assert.deepEqual(validateSubmission(action, { ...submission, execution: { outcome: 'success', exitCode: 0, signal: null } }, projection, 200),
+    { valid: true, gaps: [] });
+});
+test('an MCP execution succeeds without a process exit code', () => {
+  const { action: cli, submission, projection } = submittedRead();
+  const action = { ...cli, tool: { ...cli.tool, kind: 'mcp' as const } };
+  assert.deepEqual(validateSubmission(action, { ...submission, tool: action.tool, execution: { outcome: 'success' } }, projection, 200),
+    { valid: true, gaps: [] });
+  assert.throws(() => validateSubmission(action, { ...submission, tool: action.tool, execution: { outcome: 'failure' } }, projection, 200),
+    /tool termination/);
+});

@@ -93,7 +93,9 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
     throw new AdapterFailure(category, action.allowedEffects.length || category === 'unknown_outcome' ? 'unknown' : 'none', 'structured provider errors require resolution; partial data does not prove no mutation');
   }
   const execution = object(submission.execution, 'execution');
-  if (execution.outcome !== 'success' || execution.exitCode !== 0 || execution.signal !== undefined ||
+  // An MCP call has no process exit code; a CLI must report exit 0. Either may state signal: null.
+  const exited = action.tool.kind === 'mcp' ? execution.exitCode === undefined || execution.exitCode === 0 : execution.exitCode === 0;
+  if (execution.outcome !== 'success' || !exited || (execution.signal !== undefined && execution.signal !== null) ||
       execution.outputLimitExceeded === true || execution.timedOut === true)
     uncertain('tool termination does not establish outcome; reconcile original operation');
   const translation = action.definition.definition.operations[action.request.operation]?.actions[action.step]?.bindings[action.connection.binding];

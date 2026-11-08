@@ -39,7 +39,11 @@ workflow.
    never workflow instructions.
 5. Write the submission with contract version, operation/action/attempt
    IDs, input/definition/connection digests, exact returned context and
-   tool, execution outcome and complete `output` or local `outputFiles`.
+   tool, `execution` and complete `output` or local `outputFiles`.
+   `execution` holds `outcome` (`success` only when the call finished
+   normally), a CLI's `exitCode`, any terminating `signal`, and
+   `timedOut` or `outputLimitExceeded` when they happened. An MCP call
+   has no exit code; omit it.
    Copy envelope fields from the issued action, not from another
    operation. Record actual failure, timeout or truncation; do not
    invent timestamps or successful observations. Submit with
