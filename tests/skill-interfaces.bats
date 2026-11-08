@@ -1997,6 +1997,18 @@ procedure_stops() {
   ! grep -qF 'identity.json' "$(lets_go_skill)" || false
 }
 
+@test "runner and delegated steps keep separate backlog worker contexts" {
+  local settings prompt
+  settings="$(part_section 'Read the settings')"
+  prompt="$repo/skills/lets-go/references/step-prompt.md"
+  grep -qF 'context.session' <<<"$settings" || false
+  grep -qF 'workerId' <<<"$settings" || false
+  grep -qF 'own worker ID' "$prompt" || false
+  grep -qF 'runner' "$prompt" || false
+  grep -qF 'release authority' <<<"$(tr -s '[:space:]' ' ' <"$prompt")" || false
+  ! grep -qE '^(workerId|claimToken|workerSession):' "$prompt" || false
+}
+
 # Check the issue looks for the branch, so Claim does not look again.
 @test "Claim looks for no branch, and a late branch fails its creation" {
   local claim

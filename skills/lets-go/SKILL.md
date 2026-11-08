@@ -132,6 +132,14 @@ default branch with
 `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`,
 and run `git branch --show-current`.
 
+Keep the backlog `workerId` in this lets-go invocation. Omit
+`context.session` on its first bounded request, then reuse the returned
+ID for its own later requests. This worker is not the delegated
+`<session>` label. Each step allocates its own worker; do not pass the
+runner's worker ID, claim token or release authority into its session.
+Worker context stays in memory and private request scratch, never a
+runner metadata commit or an extra report field.
+
 Then find the Project linked to this repository. Run this query once
 per run:
 

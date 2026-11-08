@@ -48,6 +48,15 @@ Issue: #<i>, <issue-url>. Branch: <name>. Schema: <schema>. <route line>
 
 <the sentence above>
 
+## Backlog calls
+
+Use your own worker ID for bounded backlog calls. Omit `context.session`
+on your first request, then reuse its returned `workerId` within this
+step. Do not copy the runner's worker ID, claim token or release
+authority. The delegated session label is not the backend worker ID.
+Keep worker context in private request scratch; add no worker fields
+to the report below.
+
 ## Questions
 
 The question mode is <mode>. At auto, the lets-go session answers each
