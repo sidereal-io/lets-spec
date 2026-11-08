@@ -366,7 +366,9 @@ Next: [Enter the branch](#enter-the-branch).
 1. On the default branch, use what [Check the issue](#check-the-issue)
    found when it looked for the change's branch, here and on `origin`:
    - **Neither has it:** run [Claim](#claim), which creates the
-     branch, and act on its result as below.
+     branch, and act on its result as below. Ignore historical merged or
+     rejected PRs for an absent branch: no terminal lookup and no Done
+     update. The later walk reads only the surviving branch's PR.
    - **Either has it:** the change has started. Do not run
      [Claim](#claim). When `origin` has it, run
      `git fetch origin <name>` first: `git switch` finds a branch on

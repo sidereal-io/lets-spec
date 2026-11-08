@@ -3120,3 +3120,10 @@ pr_reference_says() {
   [ "${#tree}" -lt "${#pr}" ] && [ "${#pr}" -lt "${#merged}" ] && [ "${#merged}" -lt "${#ownership}" ] || false
   ! grep -qE 'completion.write|identity.json' <<<"$walk" || false
 }
+
+@test "missing branch never triggers a historical terminal PR lookup" {
+  local enter
+  enter="$(part_section 'Enter the branch' | tr -s '[:space:]' ' ')"
+  [[ "$enter" == *'Neither has it'*'historical merged or rejected PRs'*'no terminal lookup'* ]] || false
+  [[ "$enter" == *'no Done update'* ]] || false
+}
