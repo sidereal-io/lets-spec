@@ -2490,6 +2490,532 @@
           }
         }
       }
+    },
+    "repository.read": {
+      "actions": {
+        "read": {
+          "bindings": {
+            "gh": {
+              "arguments": {
+                "op": "array",
+                "values": [
+                  {
+                    "op": "literal",
+                    "value": "api"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "graphql"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "query=query($id:ID!){viewer{login}node(id:$id){... on Repository{id name owner{login}url defaultBranchRef{name}}}}"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-F"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "id=",
+                    "source": {
+                      "op": "scope",
+                      "path": [
+                        "repository"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "projection": {
+                "op": "object",
+                "fields": {
+                  "repository": {
+                    "op": "at",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "data",
+                        "node"
+                      ]
+                    },
+                    "value": {
+                      "op": "object",
+                      "fields": {
+                        "id": {
+                          "op": "path",
+                          "path": [
+                            "id"
+                          ]
+                        },
+                        "owner": {
+                          "op": "path",
+                          "path": [
+                            "owner",
+                            "login"
+                          ]
+                        },
+                        "name": {
+                          "op": "path",
+                          "path": [
+                            "name"
+                          ]
+                        },
+                        "url": {
+                          "op": "path",
+                          "path": [
+                            "url"
+                          ]
+                        },
+                        "defaultBranch": {
+                          "op": "path",
+                          "path": [
+                            "defaultBranchRef",
+                            "name"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "observations": {
+                "actor": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "viewer",
+                    "login"
+                  ]
+                },
+                "repository": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "id"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pull-request.read": {
+      "actions": {
+        "read": {
+          "bindings": {
+            "gh": {
+              "arguments": {
+                "op": "array",
+                "values": [
+                  {
+                    "op": "literal",
+                    "value": "api"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "graphql"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "query=query($id:ID!){viewer{login}node(id:$id){... on PullRequest{id number url state isDraft body createdAt repository{id}headRepository{id}baseRefName headRefName baseRefOid headRefOid mergeCommit{oid}}}}"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-F"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "id=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "pullRequest"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "projection": {
+                "op": "object",
+                "fields": {
+                  "pullRequest": {
+                    "op": "nullable",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "data",
+                        "node"
+                      ]
+                    },
+                    "value": {
+                      "op": "object",
+                      "fields": {
+                        "id": {
+                          "op": "path",
+                          "path": [
+                            "id"
+                          ]
+                        },
+                        "number": {
+                          "op": "path",
+                          "path": [
+                            "number"
+                          ]
+                        },
+                        "url": {
+                          "op": "path",
+                          "path": [
+                            "url"
+                          ]
+                        },
+                        "state": {
+                          "op": "path",
+                          "path": [
+                            "state"
+                          ]
+                        },
+                        "isDraft": {
+                          "op": "path",
+                          "path": [
+                            "isDraft"
+                          ]
+                        },
+                        "body": {
+                          "op": "path",
+                          "path": [
+                            "body"
+                          ]
+                        },
+                        "createdAt": {
+                          "op": "path",
+                          "path": [
+                            "createdAt"
+                          ]
+                        },
+                        "repository": {
+                          "op": "path",
+                          "path": [
+                            "repository",
+                            "id"
+                          ]
+                        },
+                        "headRepository": {
+                          "op": "path",
+                          "path": [
+                            "headRepository",
+                            "id"
+                          ]
+                        },
+                        "baseRef": {
+                          "op": "path",
+                          "path": [
+                            "baseRefName"
+                          ]
+                        },
+                        "headRef": {
+                          "op": "path",
+                          "path": [
+                            "headRefName"
+                          ]
+                        },
+                        "baseSha": {
+                          "op": "path",
+                          "path": [
+                            "baseRefOid"
+                          ]
+                        },
+                        "headSha": {
+                          "op": "path",
+                          "path": [
+                            "headRefOid"
+                          ]
+                        },
+                        "mergeCommit": {
+                          "op": "nullable",
+                          "source": {
+                            "op": "path",
+                            "path": [
+                              "mergeCommit"
+                            ]
+                          },
+                          "value": {
+                            "op": "path",
+                            "path": [
+                              "oid"
+                            ]
+                          }
+                        },
+                        "mergeRef": {
+                          "op": "literal",
+                          "value": null
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "observations": {
+                "actor": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "viewer",
+                    "login"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pull-request.create": {
+      "actions": {
+        "create": {
+          "bindings": {
+            "gh": {
+              "arguments": {
+                "op": "array",
+                "values": [
+                  {
+                    "op": "literal",
+                    "value": "api"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "graphql"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "query=mutation($repository:ID!,$title:String!,$body:String!,$base:String!,$head:String!,$headRepository:ID!){createPullRequest(input:{repositoryId:$repository,title:$title,body:$body,baseRefName:$base,headRefName:$head,headRepositoryId:$headRepository,draft:true}){pullRequest{id number url state isDraft body createdAt repository{id}headRepository{id}baseRefName headRefName baseRefOid headRefOid mergeCommit{oid}}}}"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-F"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "repository=",
+                    "source": {
+                      "op": "scope",
+                      "path": [
+                        "repository"
+                      ]
+                    }
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-F"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "title=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "title"
+                      ]
+                    }
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-F"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "body=",
+                    "source": {
+                      "op": "scope",
+                      "path": [
+                        "prepared",
+                        "body"
+                      ]
+                    }
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-F"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "base=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "base"
+                      ]
+                    }
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-F"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "head=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "head"
+                      ]
+                    }
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-F"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "headRepository=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "headRepository"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "projection": {
+                "op": "object",
+                "fields": {
+                  "pullRequest": {
+                    "op": "at",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "data",
+                        "createPullRequest",
+                        "pullRequest"
+                      ]
+                    },
+                    "value": {
+                      "op": "object",
+                      "fields": {
+                        "id": {
+                          "op": "path",
+                          "path": [
+                            "id"
+                          ]
+                        },
+                        "number": {
+                          "op": "path",
+                          "path": [
+                            "number"
+                          ]
+                        },
+                        "url": {
+                          "op": "path",
+                          "path": [
+                            "url"
+                          ]
+                        },
+                        "state": {
+                          "op": "path",
+                          "path": [
+                            "state"
+                          ]
+                        },
+                        "isDraft": {
+                          "op": "path",
+                          "path": [
+                            "isDraft"
+                          ],
+                          "optional": true
+                        },
+                        "body": {
+                          "op": "path",
+                          "path": [
+                            "body"
+                          ]
+                        },
+                        "createdAt": {
+                          "op": "path",
+                          "path": [
+                            "createdAt"
+                          ]
+                        },
+                        "repository": {
+                          "op": "path",
+                          "path": [
+                            "repository",
+                            "id"
+                          ]
+                        },
+                        "headRepository": {
+                          "op": "path",
+                          "path": [
+                            "headRepository",
+                            "id"
+                          ]
+                        },
+                        "baseRef": {
+                          "op": "path",
+                          "path": [
+                            "baseRefName"
+                          ]
+                        },
+                        "headRef": {
+                          "op": "path",
+                          "path": [
+                            "headRefName"
+                          ]
+                        },
+                        "baseSha": {
+                          "op": "path",
+                          "path": [
+                            "baseRefOid"
+                          ]
+                        },
+                        "headSha": {
+                          "op": "path",
+                          "path": [
+                            "headRefOid"
+                          ]
+                        },
+                        "mergeCommit": {
+                          "op": "nullable",
+                          "source": {
+                            "op": "path",
+                            "path": [
+                              "mergeCommit"
+                            ]
+                          },
+                          "value": {
+                            "op": "path",
+                            "path": [
+                              "oid"
+                            ]
+                          }
+                        },
+                        "mergeRef": {
+                          "op": "literal",
+                          "value": null
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

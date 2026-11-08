@@ -1,0 +1,27 @@
+{
+  "data": {
+    "viewer": {
+      "login": "actor"
+    },
+    "node": {
+      "id": "PR1",
+      "number": 1,
+      "url": "https://github.com/fixture/repo/pull/1",
+      "state": "OPEN",
+      "isDraft": true,
+      "body": "Closes #1",
+      "createdAt": "2026-11-04T13:53:25Z",
+      "repository": {
+        "id": "R1"
+      },
+      "headRepository": {
+        "id": "R1"
+      },
+      "baseRefName": "main",
+      "headRefName": "feature",
+      "baseRefOid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "headRefOid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "mergeCommit": null
+    }
+  }
+}

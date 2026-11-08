@@ -5,7 +5,8 @@ import type { LoadedDefinition } from './definitions.ts';
 
 type Path = (string | number)[];
 export type Projection =
-  | { op: 'path' | 'scope'; path: Path }
+  | { op: 'path'; path: Path; optional?: boolean }
+  | { op: 'scope'; path: Path }
   | { op: 'literal'; value: unknown }
   | { op: 'array'; values: Projection[] }
   | { op: 'object'; fields: Record<string, Projection> }
@@ -31,7 +32,7 @@ function gap(message: string): never { throw new AdapterFailure('unknown_outcome
 export function project(projection: Projection, output: unknown, scope: Record<string, unknown> = {}): unknown {
   const read = (child: Projection, source = output) => project(child, source, scope);
   switch (projection.op) {
-    case 'path': return fieldPath(output, projection.path);
+    case 'path': return fieldPath(output, projection.path, projection.optional);
     case 'scope': return fieldPath(scope, projection.path);
     case 'array': return projection.values.map((value) => read(value));
     case 'literal': return structuredClone(projection.value);
@@ -81,6 +82,11 @@ export function deriveResult(operation: string, projection: Projection, output: 
   const result = object(project(projection, output, scope), 'projected result');
   if (normalized !== undefined && !isDeepStrictEqual(normalized, result))
     throw new AdapterFailure('invalid_request', 'unknown', 'normalized result disagrees with submitted tool output');
+  if (operation === 'pull-request.create' && result.pullRequest && typeof result.pullRequest === 'object') {
+    const pr = result.pullRequest as Record<string, unknown>;
+    if (typeof pr.id === 'string' && pr.id && pr.isDraft !== true)
+      throw new AdapterFailure('unknown_outcome', 'partial', `PR ${pr.id} exists without draft confirmation; reconcile this creation without repeating it`);
+  }
   validateResponse({ protocol: 1, ok: true, result }, 0, operation);
   return result;
 }
@@ -99,8 +105,9 @@ export function validateProjection(value: unknown, depth = 0): asserts value is 
     nullable: ['source', 'value'], text: ['source', 'prefix'], connection: ['source'],
   };
   const fields = shapes[String(projection.op)];
-  if (!fields || Object.keys(projection).some((key) => key !== 'op' && !fields.includes(key)) || fields.some((key) => !Object.hasOwn(projection, key)))
+  if (!fields || Object.keys(projection).some((key) => key !== 'op' && !(projection.op === 'path' && key === 'optional') && !fields.includes(key)) || fields.some((key) => !Object.hasOwn(projection, key)))
     throw new Error('projection has unknown operator or fields');
+  if ('optional' in projection && typeof projection.optional !== 'boolean') throw new Error('projection optional flag must be boolean');
   for (const key of ['path', 'tag']) if (key in projection) validatePath(projection[key]);
   if ('prefix' in projection && typeof projection.prefix !== 'string') throw new Error('projection prefix must be text');
   for (const key of ['source', 'equals']) if (key in projection) validateProjection(projection[key], depth + 1);

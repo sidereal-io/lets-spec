@@ -134,3 +134,43 @@ for (const field of ['actor', 'repository'] as const) {
     assert.throws(() => discoveredProjects(output), /scope/);
   });
 }
+const githubRepository = JSON.parse(readFileSync(new URL('./fixtures/github-repository.json', import.meta.url), 'utf8'));
+const githubPr = JSON.parse(readFileSync(new URL('./fixtures/github-pr.json', import.meta.url), 'utf8'));
+const githubScope = { provider: 'github', repository: 'R1', actor: 'actor' };
+test('shipped repository mapping translates actual GraphQL fields', () => {
+  const result = deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'repository.read', 'read', 'gh', githubRepository, githubScope);
+  assert.deepEqual(result.repository, { id: 'R1', owner: 'fixture', name: 'repo',
+    url: 'https://github.com/fixture/repo', defaultBranch: 'main' });
+});
+test('shipped PR mapping translates actual nullable merge fields', () => {
+  const result = deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'pull-request.read', 'read', 'gh', githubPr, githubScope);
+  assert.equal((result.pullRequest as { id: string }).id, 'PR1');
+  assert.equal((result.pullRequest as { mergeCommit: null }).mergeCommit, null);
+  assert.equal((result.pullRequest as { mergeRef: null }).mergeRef, null);
+});
+test('shipped PR creation requests a draft', () => {
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const mapping = definition.definition.operations['pull-request.create']?.actions.create?.bindings.gh;
+  assert.ok(mapping, 'shipped create action is required');
+  const args = projectArguments(mapping.arguments, { title: 'Draft', base: 'main', head: 'feature', headRepository: 'R1' },
+    { ...githubScope, prepared: { body: 'Closes #1' } }) as string[];
+  assert.match(args.find((arg) => arg.startsWith('query='))!, /draft:true/);
+});
+for (const draft of ['missing', false] as const) {
+  test(`shipped creation classifies ${draft} draft confirmation as partial effects`, () => {
+    const pr = structuredClone(githubPr.data.node);
+    if (draft === 'missing') delete pr.isDraft;
+    else pr.isDraft = draft;
+    assert.throws(() => deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+      'pull-request.create', 'create', 'gh', { data: { createPullRequest: { pullRequest: pr } } }, githubScope),
+      (error: unknown) => error instanceof AdapterFailure && error.effects === 'partial');
+  });
+}
+test('shipped draft creation returns its exact PR identity', () => {
+  const result = deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'pull-request.create', 'create', 'gh', { data: { createPullRequest: { pullRequest: githubPr.data.node } } }, githubScope);
+  assert.equal((result.pullRequest as { id: string; isDraft: boolean }).id, 'PR1');
+  assert.equal((result.pullRequest as { isDraft: boolean }).isDraft, true);
+});

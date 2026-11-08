@@ -1,0 +1,18 @@
+{
+  "data": {
+    "viewer": {
+      "login": "actor"
+    },
+    "node": {
+      "id": "R1",
+      "name": "repo",
+      "owner": {
+        "login": "fixture"
+      },
+      "url": "https://github.com/fixture/repo",
+      "defaultBranchRef": {
+        "name": "main"
+      }
+    }
+  }
+}

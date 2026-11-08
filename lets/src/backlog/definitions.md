@@ -135,3 +135,16 @@ Branch PR selection belongs to core. It qualifies repository, head repository
 and head ref before sorting matching PRs: OPEN first, then newest createdAt.
 Several historic or open matches do not add an ambiguity stop. No matching PR
 returns null; malformed observations remain failures rather than absence.
+
+Repository and exact-PR queries use the same selected GitHub definition. Their
+fixtures were scrubbed from actual repository and draft-PR reads; mutation
+response wrappers are synthetic. Nullable mergeCommit maps to its oid when
+present. GitHub GraphQL exposes no mergeRef field; that normalized observation
+remains explicitly null rather than being invented from the PR number.
+
+PR creation always requests draft:true. An observed PR identity without
+isDraft:true produces partial effects and requires reconciliation, never another
+creation. A `path` may explicitly set `optional: true` to retain a missing value
+for such core classification; this does not waive required result validation.
+Prepared body content comes from the bounded local file read by core, not from
+shell interpolation or an agent's summary.
