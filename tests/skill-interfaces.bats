@@ -3136,3 +3136,12 @@ pr_reference_says() {
   [[ "$terminal" == *'branch still exists'*'stacked pull request merged into the branch below it'*'issue stays open'* ]] || false
   ! grep -qE 'Check work ownership|claim.acquire|claim.release|completion.write' <<<"$terminal" || false
 }
+
+@test "surviving rejected PR stops before claim or build actions" {
+  local walk terminal
+  walk="$(walk_section)"
+  terminal="${walk%%'3. **The archive folder.**'*}"
+  [[ "$terminal" == *'`CLOSED`'*'the change was rejected and there is nothing to resume, and stop'* ]] || false
+  [[ "$terminal" == *'branch still exists'* ]] || false
+  ! grep -qE 'Check work ownership|claim.acquire|claim.release|completion.write|Run a step' <<<"$terminal" || false
+}
