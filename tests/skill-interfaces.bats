@@ -2800,14 +2800,22 @@ EOF
 
 load support/release
 
-@test "planning vocabulary inputs resolve inside each published flow" {
+@test "writing reference inputs resolve inside each published flow" {
   local flow schema skill out schemas
   for flow in standard minimal; do
     out="$BATS_TEST_TMPDIR/$flow"
     schemas="$(jq -r --arg flow "$flow" '.flows[$flow].schemas | join(",")' "$repo/flows.json")"
     build "$out" "$schemas" $(flow_skills "$flow")
-    for skill in lets-shape lets-brainstorm lets-write-specs lets-go; do
-      assert_reference_links "$out/overlay/.agents/skills/$skill/SKILL.md" "$out/overlay"
+    local installed text
+    for skill in $(flow_skills "$flow"); do
+      installed="$out/overlay/.agents/skills/$skill"
+      assert_reference_links "$installed/SKILL.md" "$out/overlay"
+      for text in "$installed"/references/*.md "$installed"/templates/*.md; do
+        [ -f "$text" ] || continue
+        if grep -qE '\]\([^)]*references/[^)]*\.md\)' "$text"; then
+          assert_reference_links "$text" "$out/overlay"
+        fi
+      done
     done
     for schema in $(jq -r --arg flow "$flow" '.flows[$flow].schemas[]' "$repo/flows.json"); do
       (
@@ -2816,7 +2824,7 @@ load support/release
         OPENSPEC_TELEMETRY=0 OPENSPEC_NO_UPDATE_CHECK=1 openspec new change "$schema-demo" </dev/null >/dev/null 2>&1
         printf '%s\n' '- [ ] 1.1 Fixture implementation' >"openspec/changes/$schema-demo/tasks.md"
         local artifact
-        for artifact in brainstorm specs apply; do
+        for artifact in $(yq -r '.artifacts[].id' "openspec/schemas/$schema/schema.yaml") apply; do
           OPENSPEC_TELEMETRY=0 OPENSPEC_NO_UPDATE_CHECK=1 openspec instructions "$artifact" --change "$schema-demo" --json </dev/null >"$out/instructions.json" 2>/dev/null
           jq -r .instruction "$out/instructions.json" >"$out/instruction.md"
           # Agents receive CLI text without its schema file location.

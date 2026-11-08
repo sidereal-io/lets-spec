@@ -63,10 +63,13 @@ you write it down. Keep that meaning in code names and reviews.
 
 ### Writing
 
-- **Write prose in plain language** (ISO 24495): READMEs, decision
-  records, issue bodies, `docs/`, pull request descriptions and OpenSpec
-  artifacts. Put the reader first, and make each document easy to find,
-  understand and act on. Code and config follow their own conventions.
+- **Write for people and agents** using plain language (ISO 24495-1).
+  Readers must be able to find what they need, understand it and use it.
+  This applies to skill instructions, questions, delegated prompts, reports
+  and project documents. Read
+  [Plain language](.agents/skills/lets-shape/references/plain-language.md)
+  before writing or reviewing them. Check wording, structure and design
+  against the reader's task. Preserve exact code, commands and formats.
 - **Put scratch files in `.workspace/`** at the repo root, not in `/tmp`
   or a scratch path your tool suggests. Create it if it is missing, and
   keep it out of git. Anything worth keeping belongs in the repo or an

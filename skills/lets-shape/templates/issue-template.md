@@ -1,6 +1,10 @@
 # Issue templates
 
 One shape for each Kind. Every field is required unless marked optional.
+Read [Plain language](../references/plain-language.md) before filling one.
+The next person or agent needs to understand the outcome, scope and next
+work from the issue body alone. Explain necessary terms and keep the field
+names below unchanged.
 
 ## Parent issue (one per discovery run)
 

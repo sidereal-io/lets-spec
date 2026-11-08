@@ -2,8 +2,10 @@
 
 Fill this template in plain language. Start with the AI disclosure and the useful
 result. Explain the concern before the review process. Omit unused placeholders.
-Keep the evidence and limits in the details section; do not publish a transcript
-or an approval verdict.
+Put supporting review records in the details section. Keep each material
+limit beside the concern it qualifies so readers can judge the finding
+without opening the details. Do not publish a transcript or an approval
+verdict.
 
 ```markdown
 AI-generated review using <actual model names>, posted through this GitHub account.
