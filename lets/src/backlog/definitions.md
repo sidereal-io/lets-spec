@@ -186,3 +186,10 @@ Only an exact match clears the reservation as applied. An absent PR or other
 remote edits remain unresolved; recovery never restores a stale body or removes
 unrelated sections or closing text. Callers must reread after reconciliation
 before preparing any subsequent update.
+
+Ready uses markPullRequestReadyForReview, followed by a fresh exact-PR read
+confirming isDraft:false. A mutation result that still reports draft is partial,
+not completion. Uncertain ready operations resume with exact reads only; a PR
+that remains draft keeps the reservation. Neither the write nor recovery
+requests a merge. Workflow ownership of this transition remains with the review
+build step.

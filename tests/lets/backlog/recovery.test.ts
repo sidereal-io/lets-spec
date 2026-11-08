@@ -331,3 +331,37 @@ for (const [name, observed] of [
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 }
+test('uncertain ready operation reconciles through an exact read', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-ready-recovery-');
+  try {
+    const action = submittedPr('pull-request.ready');
+    const store = new OperationStore(join(dir, 'private'));
+    store.issue(action);
+    const resumed = store.resume(action.operationId, 6000);
+    assert.deepEqual(resumed.action.allowedEffects, []);
+    assert.equal(resumed.action.targetPullRequest, 'PR1');
+    const result = store.submit(resumed.continuation, submissionFor(resumed.action, {
+      data: { viewer: { login: 'actor' }, node: { ...rawPr, isDraft: false } },
+    }), 6100);
+    assert.equal(result.state, 'complete');
+    if (!('result' in result)) throw new Error('read-only reconciliation required');
+    assert.equal(result.result.reconciliation, 'applied');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+test('ready reconciliation retains uncertainty while the PR is draft', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-ready-unresolved-');
+  try {
+    const action = submittedPr('pull-request.ready');
+    const store = new OperationStore(join(dir, 'private'));
+    store.issue(action);
+    const resumed = store.resume(action.operationId, 6000);
+    const result = store.submit(resumed.continuation, submissionFor(resumed.action, {
+      data: { viewer: { login: 'actor' }, node: rawPr },
+    }), 6100);
+    assert.equal(result.state, 'needs-reconciliation');
+    assert.equal(store.get(action.operationId).pending, true);
+    assert.deepEqual(store.get(action.operationId).action.allowedEffects, []);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

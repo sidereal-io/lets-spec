@@ -99,6 +99,12 @@ export function deriveResult(operation: string, projection: Projection, output: 
       throw new AdapterFailure('unknown_outcome', 'partial', `PR ${pr.id} exists without draft confirmation; reconcile this creation without repeating it`,
         { pullRequest: pr.id, ...(typeof pr.repository === 'string' ? { repository: pr.repository } : {}) });
   }
+  if (operation === 'pull-request.ready' && result.pullRequest && typeof result.pullRequest === 'object') {
+    const pr = result.pullRequest as Record<string, unknown>;
+    if (typeof pr.id === 'string' && pr.id && pr.isDraft !== false)
+      throw new AdapterFailure('unknown_outcome', 'partial', `PR ${pr.id} lacks ready confirmation; reconcile the original operation`,
+        { pullRequest: pr.id, ...(typeof pr.repository === 'string' ? { repository: pr.repository } : {}) });
+  }
   validateResponse({ protocol: 1, ok: true, result }, 0, operation);
   return result;
 }

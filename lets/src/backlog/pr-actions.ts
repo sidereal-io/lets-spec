@@ -92,3 +92,11 @@ export function reconcilePrUpdate(origin: IssuedAction, result: Record<string, u
   return pr && origin.preparedBody && pr.id === input.pullRequest &&
     pr.repository === origin.request.context.repository && pr.body === origin.preparedBody.body ? 'applied' : 'unresolved';
 }
+
+export function reconcilePrReady(origin: IssuedAction, result: Record<string, unknown>): 'applied' | 'absent' | 'unresolved' {
+  if (['preflight', 'read-existing'].includes(origin.step)) return 'absent';
+  const pr = result.pullRequest as import('./types.ts').PullRequest | null;
+  const input = origin.request.input as { pullRequest: string };
+  return pr && pr.id === input.pullRequest && pr.repository === origin.request.context.repository &&
+    pr.isDraft === false ? 'applied' : 'unresolved';
+}

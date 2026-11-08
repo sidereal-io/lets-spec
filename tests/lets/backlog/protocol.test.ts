@@ -1,3 +1,4 @@
+import { AdapterFailure } from '../../../lets/src/backlog/errors.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateRequest, validateResponse } from '../../../lets/src/backlog/protocol.ts';
@@ -322,7 +323,7 @@ test('submission rejects an unsupported contract without inferring no effects', 
     (error: unknown) => error instanceof Error && 'category' in error && error.category === 'unsupported' && 'effects' in error && error.effects === 'unknown');
 });
 
-import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 test('output file supplies the structured result without transcription', () => {
   mkdirSync('.workspace', { recursive: true });
@@ -461,4 +462,38 @@ test('branch PR lookup reports absent when no qualified PR exists', () => {
 test('branch PR lookup does not turn malformed observations into absence', () => {
   assert.throws(() => selectPullRequest([{ ...prResult, createdAt: 'unknown' }],
     { repository: 'R1', branch: 'feature' }), /createdAt/);
+});
+
+import { submittedPr } from './fixtures/submitted.ts';
+import { submissionFor } from './fixtures/submitted.ts';
+test('ready result cannot confirm a PR that remains draft', () => {
+  const action = submittedPr('pull-request.ready');
+  const mapping = action.definition.definition.operations['pull-request.ready'].actions.ready.bindings.gh;
+  const raw = JSON.parse(readFileSync(new URL('./fixtures/github-pr.json', import.meta.url), 'utf8')).data.node;
+  assert.throws(() => validateSubmission(action, submissionFor(action, {
+    data: { markPullRequestReadyForReview: { pullRequest: raw } },
+  }), mapping.projection, 200), (error: unknown) => error instanceof AdapterFailure && error.effects === 'partial');
+});
+test('ready transition requires a fresh exact-PR confirmation', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-ready-');
+  try {
+    const action = submittedPr('pull-request.ready');
+    const raw = JSON.parse(readFileSync(new URL('./fixtures/github-pr.json', import.meta.url), 'utf8')).data.node;
+    const ready = { ...raw, isDraft: false };
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action);
+    const verify = store.submit(issued.continuation, submissionFor(action, {
+      data: { markPullRequestReadyForReview: { pullRequest: ready } },
+    }), 200);
+    assert.equal(verify.state, 'action');
+    if (verify.state !== 'action') throw new Error('fresh read required');
+    assert.deepEqual(verify.action.allowedEffects, []);
+    assert.equal(verify.action.targetPullRequest, 'PR1');
+    assert.equal((action.tool.arguments as string[]).some((arg) => arg.includes('mergePullRequest')), false);
+    const complete = store.submit(verify.continuation, submissionFor(verify.action, {
+      data: { viewer: { login: 'actor' }, node: ready },
+    }), 300);
+    assert.equal(complete.state, 'complete');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

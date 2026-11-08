@@ -57,7 +57,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 3.7 [complex] Expose repository and PR operation commands with the shared action/submission engine under lets backlog. (✓ pnpm test:backlog passed, 286 tests; tsc --noEmit passed)
 - [x] 3.8 [medium] Return the continuation when a new step requests PR creation for an uncertain repository/head resource. (✓ node --test tests/lets/backlog/recovery.test.ts tests/lets/backlog/state.test.ts tests/lets/backlog/cli.test.ts passed, 44 tests; tsc --noEmit passed)
 - [x] 3.9 [medium] Reconcile uncertain prepared PR-body updates while preserving unrelated sections and closing text. (✓ node --test tests/lets/backlog/recovery.test.ts tests/lets/backlog/cli.test.ts passed, 26 tests; tsc --noEmit passed)
-- [ ] 3.10 [medium] Confirm the existing ready transition through bounded action results without merging. (verify: node --test tests/lets/backlog/protocol.test.ts)
+- [x] 3.10 [medium] Confirm the existing ready transition through bounded action results without merging. (✓ node --test tests/lets/backlog/protocol.test.ts tests/lets/backlog/recovery.test.ts passed, 108 tests; tsc --noEmit passed)
 
 ## 4. GitHub claim lifecycle [depends-on: 3]
 
