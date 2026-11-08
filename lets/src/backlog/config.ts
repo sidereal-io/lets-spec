@@ -45,3 +45,93 @@ export function checkConfiguration(
     ...(typeof selection.id === 'string' ? { backlog: selection.id } : {}),
   };
 }
+
+import { readFileSync } from 'node:fs';
+import { dirname, isAbsolute, join } from 'node:path';
+import { homedir } from 'node:os';
+import { AdapterFailure } from './errors.ts';
+import { keys, loadDefinition, text } from './definitions.ts';
+import type { LoadedDefinition } from './definitions.ts';
+
+export type Configuration = {
+  provider: string;
+  backlog?: string;
+  mappings?: Mappings;
+  storage?: { path: string; tracking: 'tracked' | 'ignored' };
+  stateDir: string;
+  definition: LoadedDefinition;
+};
+export type ConfigurationSources = {
+  repositoryFile: string;
+  userFile: string;
+  readDefinition?: (path: string) => unknown;
+  env?: Record<string, string | undefined>;
+  home?: string;
+};
+// Initial shipped identity. Operation translations are added with the GitHub
+// runtime; this object authorizes no backend calls by itself.
+export const githubDefinition = {
+  schemaVersion: 1, name: 'github', version: '1.0.0', contractVersions: [1],
+  backend: { name: 'github', versions: ['graphql-v4'] },
+  bindings: { gh: { kind: 'cli', tool: 'gh', versions: ['>=2'] } },
+  operations: {},
+};
+/** Repository selection and machine settings never override one another. */
+export function resolveConfiguration(repository: unknown, machine: unknown, sources: ConfigurationSources): Configuration {
+  const fail = (path: string, message: string): never => {
+    throw new AdapterFailure('invalid_configuration', 'none', `${path}: ${message}; fix the selected configuration; no fallback`);
+  };
+  const repoPath = `${sources.repositoryFile}: lets.backlog`;
+  const userPath = `${sources.userFile}: backlog`;
+  let selection: Record<string, unknown>;
+  let settings: Record<string, unknown>;
+  try {
+    const root = object(repository, sources.repositoryFile);
+    const lets = root.lets === undefined ? {} : object(root.lets, 'lets');
+    selection = lets.backlog === undefined ? {} : object(lets.backlog, 'lets.backlog');
+    keys(selection, ['version', 'provider', 'definition', 'id', 'mappings', 'storage'], 'lets.backlog');
+    if (lets.backlog !== undefined && selection.version !== 1) throw new Error('lets.backlog.version must be 1');
+    if (selection.provider !== undefined) text(selection.provider, 'lets.backlog.provider');
+    if (selection.id !== undefined) text(selection.id, 'lets.backlog.id');
+    if (selection.mappings !== undefined) validateMappings(selection.mappings as Mappings);
+  } catch (error) { return fail(repoPath, String(error)); }
+  try {
+    const user = object(machine, sources.userFile);
+    if (user.version !== undefined && user.version !== 3) throw new Error('version must be 3');
+    settings = user.backlog === undefined ? {} : object(user.backlog, 'backlog');
+    keys(settings, ['connections', 'connection', 'stateDir'], 'backlog');
+    if (settings.stateDir !== undefined) {
+      text(settings.stateDir, 'backlog.stateDir');
+      if (!isAbsolute(settings.stateDir)) throw new Error('backlog.stateDir must be absolute and shared across worktrees');
+    }
+  } catch (error) { return fail(userPath, String(error)); }
+  const provider = selection.provider as string | undefined ?? 'github';
+  let loaded: LoadedDefinition;
+  try {
+    if (selection.definition === undefined) {
+      if (provider !== 'github') throw new Error('lets.backlog.definition must explicitly select this provider');
+      loaded = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+    } else {
+      text(selection.definition, 'lets.backlog.definition');
+      const path = resolve(dirname(sources.repositoryFile), selection.definition);
+      const read = sources.readDefinition ?? ((file: string) => JSON.parse(readFileSync(file, 'utf8')));
+      try { loaded = loadDefinition([{ source: path, value: read(path) }]); }
+      catch (error) { return fail(path, String(error)); }
+    }
+    if (loaded.definition.backend.name !== provider) throw new Error('definition backend differs from lets.backlog.provider');
+    if (selection.storage !== undefined) {
+      const storage = object(selection.storage, 'lets.backlog.storage');
+      keys(storage, ['path', 'tracking'], 'lets.backlog.storage');
+      text(storage.path, 'lets.backlog.storage.path');
+      if (!['tracked', 'ignored'].includes(storage.tracking as string)) throw new Error('lets.backlog.storage.tracking must be tracked or ignored');
+    } else if (provider === 'beads') throw new Error('lets.backlog.storage and tracking required for local storage');
+  } catch (error) { return fail(repoPath, String(error)); }
+  const env = sources.env ?? process.env;
+  return {
+    provider, definition: loaded,
+    ...(selection.id === undefined ? {} : { backlog: selection.id as string }),
+    ...(selection.mappings === undefined ? {} : { mappings: selection.mappings as Mappings }),
+    ...(selection.storage === undefined ? {} : { storage: selection.storage as Configuration['storage'] }),
+    stateDir: settings.stateDir as string | undefined ?? join(env.XDG_STATE_HOME || join(sources.home ?? homedir(), '.local/state'), 'lets'),
+  };
+}

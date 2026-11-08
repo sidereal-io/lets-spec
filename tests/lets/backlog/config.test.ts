@@ -99,3 +99,30 @@ test('compatible inert definition has a stable content binding', () => {
   assert.match(loaded.digest, /^[a-f0-9]{64}$/);
   assert.equal(loaded.source, '/repo/provider.json');
 });
+
+import { resolveConfiguration } from '../../../lets/src/backlog/config.ts';
+const repositoryConfig = { lets: { backlog: { version: 1, provider: 'github', id: 'P1', definition: './provider.json' } } };
+const machineConfig = { version: 3, backlog: { stateDir: '/private/lets' } };
+test('repository selection resolves custom source relative to its config file', () => {
+  let read = '';
+  const configured = resolveConfiguration(repositoryConfig, machineConfig, {
+    repositoryFile: '/repo/openspec/config.yaml', userFile: '/user/config.yaml',
+    readDefinition: (path) => { read = path; return definition; },
+  });
+  assert.equal(read, '/repo/openspec/provider.json');
+  assert.equal(configured.provider, 'github');
+  assert.equal(configured.backlog, 'P1');
+  assert.equal(configured.stateDir, '/private/lets');
+});
+test('machine options cannot override repository provider', () => {
+  assert.throws(() => resolveConfiguration(repositoryConfig,
+    { version: 3, backlog: { provider: 'linear' } }, {
+      repositoryFile: '/repo/config.yaml', userFile: '/user/config.yaml', readDefinition: () => definition,
+    }), /user\/config.yaml.*backlog.provider/);
+});
+test('missing explicit definition never selects shipped fallback', () => {
+  assert.throws(() => resolveConfiguration(repositoryConfig, machineConfig, {
+    repositoryFile: '/repo/config.yaml', userFile: '/user/config.yaml',
+    readDefinition: () => { throw new Error('missing file'); },
+  }), /provider.json.*no fallback/);
+});

@@ -11,3 +11,13 @@ provider. Load hooks and extra definition keys are rejected.
 
 Definition compatibility is an offline check. It does not qualify live support
 for a tool connection or establish that submitted output is authentic.
+
+Repository selection belongs in `openspec/config.yaml` under `lets.backlog`,
+with `version: 1`. It selects `provider` (default `github`), optional Project
+`id`, `definition`, `mappings`, and local `storage`. A custom definition is a
+JSON file; relative paths resolve beside the repository config, with no search.
+
+Machine settings belong under `backlog` in the existing version 3 user config.
+They cannot select another provider, Project, mapping or definition. `stateDir`
+must be an absolute path shared by local worktrees. The default is
+`$XDG_STATE_HOME/lets`, or `~/.local/state/lets`.
