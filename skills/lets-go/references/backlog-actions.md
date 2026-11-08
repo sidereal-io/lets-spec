@@ -57,13 +57,14 @@ workflow.
    requires reconciliation.
 6. Return `state: complete` and its validated result to the owning
    procedure. On any other `failed`, return its category, effects,
-   reason and available recovery context. On `needs-reconciliation`, return the
-   original operation ID and `lets backlog resume --operation-id`
-   followed by that ID. Do not reissue the mutation. When the owning
-   procedure drives resume, run its returned bounded reads through this
-   same loop. Only resolved applied or absent effects with
-   `reservationCleared: true` allow that procedure to reevaluate its
-   next action. Missing or partial facts end with recovery context,
+   reason and available recovery context. On `needs-reconciliation`,
+   return the original operation ID and
+   `lets backlog resume --operation-id` followed by that ID. Do not
+   reissue the mutation.
+   When the owning procedure drives resume, run its returned bounded
+   reads through this same loop. Only resolved applied or absent effects
+   with `reservationCleared: true` allow that procedure to reevaluate
+   its next action. Missing or partial facts end with recovery context,
    never an inferred success.
 
 Resume can use the durable operation ID after scratch loss. Keep
