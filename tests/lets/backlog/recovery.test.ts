@@ -492,6 +492,23 @@ test('legacy reconciliation cannot clear reservation from incomplete assignee fa
     assert.equal(store.get(action.operationId).pending, true);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+test('a preflight that fails before any write releases its reservation', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-preflight-failed-');
+  try {
+    const action = prAction(submittedPr(), 'preflight', 100);
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action);
+    for (let attempt = 0; attempt < 3; attempt++)
+      assert.throws(() => store.submit(issued.continuation, '{', 200 + attempt),
+        (error: unknown) => error instanceof AdapterFailure && error.effects === 'none');
+    const record = store.get(action.operationId);
+    assert.equal(record.state, 'failed');
+    assert.equal(record.pending, false);
+    const fresh = new OperationStore(join(dir, 'private')).issue(prAction(submittedPr(), 'preflight', 300));
+    assert.equal(fresh.state, 'action');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
 test('a rejected verification read after a write keeps effects unknown', () => {
   mkdirSync('.workspace', { recursive: true });
   const dir = mkdtempSync('.workspace/pr-verify-rejected-');

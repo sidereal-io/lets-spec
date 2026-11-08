@@ -169,6 +169,7 @@ export class OperationStore {
             error: { category: failure.category, effects: failure.effects, message: failure.message, ...(failure.knownRemoteIds ? { knownRemoteIds: failure.knownRemoteIds } : {}) } });
           if (action.allowedEffects.length) record.state = 'needs-reconciliation';
           if (!action.allowedEffects.length && (attempts >= 2 || now > action.expiresAt)) record.state = 'failed';
+          if (record.state === 'failed' && !wrote) record.pending = false;
           this.write(record);
           throw failure;
         }
