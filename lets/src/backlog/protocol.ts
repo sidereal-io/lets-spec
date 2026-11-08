@@ -306,7 +306,7 @@ function validateNestedResult(operation: string, result: Record<string, unknown>
         actor: 'nullableText',
         session: 'nullableText',
         token: 'nullableText',
-        status: 'text',
+        status: operation === 'claim.read' ? 'nullableText' : 'text',
         guarantee: 'text',
         'assignees?': 'array',
         'assigneesComplete?': 'boolean',
@@ -316,7 +316,7 @@ function validateNestedResult(operation: string, result: Record<string, unknown>
       'claim',
     );
     const claim = result.claim as Record<string, unknown>;
-    oneOf(claim.status, METADATA.Status, 'claim.status');
+    if (claim.status !== null) oneOf(claim.status, METADATA.Status, 'claim.status');
     oneOf(claim.guarantee, ['atomic', 'best-effort'], 'claim.guarantee');
     if (
       operation === 'claim.acquire' &&

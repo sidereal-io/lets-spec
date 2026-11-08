@@ -111,8 +111,11 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
       claim.assignees.every((actor) => typeof actor === 'string' && actor.length > 0) &&
       new Set(claim.assignees).size === claim.assignees.length && claim.item !== undefined;
     const assignees = complete ? claim.assignees as string[] : [];
-    const verdict = complete && assignees.length === 1 && assignees[0] === action.request.context.actor && claim.status === 'In Progress'
-      ? 'sole-actor' : 'unavailable';
+    const verdict = !complete || claim.status === null ? 'unavailable'
+      : assignees.length === 0 ? 'unassigned'
+      : assignees.length > 1 ? 'multiple'
+      : assignees[0] !== action.request.context.actor ? 'other'
+      : claim.status !== 'In Progress' ? 'status-mismatch' : 'sole-actor';
     if (claim.verdict !== undefined && claim.verdict !== verdict)
       throw new AdapterFailure('invalid_request', 'unknown', 'provider ownership verdict disagrees with core policy');
     claim.verdict = verdict;

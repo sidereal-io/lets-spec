@@ -83,7 +83,7 @@ export type ResultMap = {
   'relationship.list': Page<{ identity: Identity; status: string }>;
   'candidate.list': Page<Item>;
   'claim.acquire': { claim: Claim };
-  'claim.read': { claim: Claim };
+  'claim.read': { claim: Omit<Claim, 'status'> & { status: string | null } };
   'claim.release': { released: boolean };
   'reference.write': { reference: string };
   'completion.write': { status: string };

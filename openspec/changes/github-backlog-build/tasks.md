@@ -80,7 +80,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 5.7 [medium] Keep the runner and each step's worker context separate without changing delegated step-report fields. (✓ bats tests/skill-interfaces.bats passed, 273 tests)
 - [x] 5.8 [medium] Stop an existing-branch run for unassigned Todo, another status, multiple assignees or unavailable facts without issuing assignment or status writes. (✓ node --test tests/lets/backlog/recovery.test.ts passed, 32 tests)
 - [x] 5.9 [medium] Refresh ownership before each later unfinished step and stop after an intervening ownership change. (✓ bats tests/skill-interfaces.bats: 274 behavior tests passed; corrected wrapping verified by focused rerun)
-- [ ] 5.10 [medium] Return each named read-only ownership verdict without acquiring or releasing a claim. (verify: node --test tests/lets/backlog/claims.test.ts)
+- [x] 5.10 [medium] Return each named read-only ownership verdict without acquiring or releasing a claim. (✓ node --test tests/lets/backlog/claims.test.ts passed, 24 tests; recovery/protocol combined passed, 140 tests; tsc --noEmit passed)
 
 - [ ] 5.11 [medium] Drive read-only resume from the walk's pending-mutation result and recheck ownership only after resolved effects and reservation clearance. (verify: bats tests/skill-interfaces.bats)
 - [ ] 5.12 [medium] Validate complete assignee sets and actor-only resume verdicts, including multiple assignees and changed historic tokens. (verify: node --test tests/lets/backlog/protocol.test.ts)

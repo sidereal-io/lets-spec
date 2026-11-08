@@ -181,7 +181,12 @@ scoped item identity, complete `assignees` array, `assigneesComplete`, current
 Status and actual guarantee. The shipped GitHub mapping validates the native
 assignee connection and returns best-effort ownership. Core derives permission
 from those facts: only the authenticated actor alone with In Progress returns
-`sole-actor`. Missing complete scoped facts cannot authorize work. Public reads
+`sole-actor`. With complete scoped facts, no assignees returns `unassigned`,
+several returns `multiple`, a different sole assignee returns `other`, and
+sole actor with another status returns `status-mismatch`. Incomplete facts or
+null status return `unavailable`. A pending shared resource reservation takes
+precedence before read issuance and returns `pending-mutation` with the original
+operation's continuation. None of these verdicts acquires or releases a claim. Public reads
 return null worker session and token; they never manufacture original release
 authority or require a historic acquisition record.
 

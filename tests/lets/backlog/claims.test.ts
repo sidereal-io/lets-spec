@@ -263,3 +263,49 @@ test('another session cannot release a partial claim', () =>
       true,
     );
   }));
+
+import { validateSubmission } from '../../../lets/src/backlog/submissions.ts';
+import { submittedClaim } from './fixtures/submitted.ts';
+for (const [label, assignees, status, complete, expected] of [
+  ['no assignee', [], 'Todo', true, 'unassigned'],
+  ['another actor', ['other'], 'In Progress', true, 'other'],
+  ['several actors', ['me', 'other'], 'Todo', true, 'multiple'],
+  ['wrong status', ['me'], 'Todo', true, 'status-mismatch'],
+  ['missing status', ['me'], null, true, 'unavailable'],
+  ['incomplete assignees', ['me'], 'In Progress', false, 'unavailable'],
+  ['sole current actor', ['me'], 'In Progress', true, 'sole-actor'],
+] as const) {
+  test(`read-only ownership verdict identifies ${label}`, () => {
+    const base = submittedClaim().action;
+    const input = base.request.input;
+    const action = issueAction({ ...base.request, operation: 'claim.read' }, base.definition, base.connection, {
+      step: 'read', toolArguments: [], allowedEffects: [], requiredCapabilities: [],
+      timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000,
+    }, 100);
+    const result = validateSubmission(action, submissionFor(action, { data: { claim: {
+      item: (input as { item: unknown }).item, actor: 'me', session: 'historic', token: 'historic',
+      status, guarantee: 'best-effort', assignees, assigneesComplete: complete,
+    } } }), { op: 'path', path: ['data'] }, 101);
+    assert.equal((result.claim as { verdict: string }).verdict, expected);
+    assert.deepEqual(action.allowedEffects, []);
+  });
+}
+test('pending mutation takes precedence over a fresh ownership read', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pending-ownership-');
+  try {
+    const base = submittedClaim().action;
+    const store = new OperationStore(join(dir, 'private'));
+    store.issue(base);
+    const action = issueAction({ ...base.request, operation: 'claim.read' }, base.definition, base.connection, {
+      step: 'read', toolArguments: [], allowedEffects: [], requiredCapabilities: [],
+      timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000,
+    }, 101);
+    const response = store.issue(action);
+    assert.equal(response.state, 'needs-reconciliation');
+    if (response.state !== 'needs-reconciliation') throw new Error('pending verdict required');
+    assert.equal(response.reason, 'pending-mutation');
+    assert.equal(response.operationId, base.operationId);
+    assert.throws(() => store.get(action.operationId), /ENOENT/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
