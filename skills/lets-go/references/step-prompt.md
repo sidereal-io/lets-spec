@@ -68,6 +68,13 @@ authority. The delegated session label is not the backend worker ID.
 Keep worker context in private request scratch; add no worker fields
 to the report below.
 
+If a write remains uncertain, preserve the original operation ID and
+`lets backlog resume --operation-id` followed by that ID in the failed
+report's existing `reason` string. Include known effects and the missing
+observation; add no report fields and never replace the original ID with
+a later ownership read's ID. The runner must be able to recover the
+original operation after scratch loss.
+
 ## Questions
 
 The question mode is <mode>. At auto, the lets-go session answers each

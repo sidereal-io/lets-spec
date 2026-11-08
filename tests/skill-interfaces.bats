@@ -3101,3 +3101,10 @@ pr_reference_says() {
     grep -qF 'lets backlog pull-request.create --request-file' "$repo/schemas/$schema/schema.yaml" || false
   done
 }
+
+@test "uncertain step reports preserve the original recovery command in reason" {
+  local prompt
+  prompt="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-go/references/step-prompt.md")"
+  [[ "$prompt" == *'uncertain'*'original operation ID'*'lets backlog resume --operation-id'*'reason'* ]] || false
+  ! grep -qE '^(operationId|recoveryCommand):' "$repo/skills/lets-go/references/step-prompt.md" || false
+}
