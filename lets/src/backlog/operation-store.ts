@@ -1,5 +1,5 @@
 import { nextPrAction, prAction, reconcilePrCreation, reconcilePrUpdate, reconcilePrReady } from './pr-actions.ts';
-import { nextClaimAction } from './claim-actions.ts';
+import { nextClaimAction, claimAction, reconcileClaimAcquisition } from './claim-actions.ts';
 import { projectArguments } from './projections.ts';
 import { resourceKeys as scopedKeys, coordinationKeys } from './resource-keys.ts';
 import { acquireResourceLock } from './resource-lock.ts';
@@ -87,6 +87,9 @@ export class OperationStore {
         action = prAction(original, target ? 'verify' : 'read-existing', now, target);
       } else if (['pull-request.update', 'pull-request.ready'].includes(original.request.operation)) {
         action = prAction(original, 'verify', now, (original.request.input as { pullRequest: string }).pullRequest);
+      } else if (original.request.operation === 'claim.acquire' &&
+          original.definition.definition.operations['claim.acquire']?.actions.preflight) {
+        action = claimAction(original, 'verify', now);
       } else {
         if (!['claim.acquire', 'claim.release'].includes(original.request.operation))
           throw new AdapterFailure('unsupported', 'unknown', 'original operation needs a supported bounded reconciliation read');
@@ -163,6 +166,8 @@ export class OperationStore {
           if (origin.request.operation === 'pull-request.create') reconciliation = reconcilePrCreation(origin, record.result, action.targetPullRequest);
           else if (origin.request.operation === 'pull-request.update') reconciliation = reconcilePrUpdate(origin, record.result);
           else if (origin.request.operation === 'pull-request.ready') reconciliation = reconcilePrReady(origin, record.result);
+          else if (origin.request.operation === 'claim.acquire' && origin.definition.definition.operations['claim.acquire']?.actions.preflight)
+            reconciliation = reconcileClaimAcquisition(origin, record.result);
           else {
             const claim = record.result.claim as Record<string, unknown>;
             reconciliation = origin.request.operation === 'claim.acquire' && claim.actor === origin.request.context.actor && claim.status === 'In Progress' ? 'applied' : 'unresolved';

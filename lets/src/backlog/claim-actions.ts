@@ -1,7 +1,7 @@
 import { AdapterFailure } from './errors.ts';
 import { issueAction } from './actions.ts';
 import type { IssuedAction, ClaimState } from './actions.ts';
-import { object } from './protocol.ts';
+import { object, validateResponse } from './protocol.ts';
 import { readyWork } from './capabilities.ts';
 import type { Candidate } from './capabilities.ts';
 import { projectArguments } from './projections.ts';
@@ -58,5 +58,27 @@ export function nextClaimAction(action: IssuedAction, result: Record<string, unk
     if (result.valid !== true) throw new AdapterFailure('unknown_outcome', 'partial', 'status response is not confirmed');
     return claimAction(action, 'verify', now);
   }
-  throw new AdapterFailure('unsupported', 'partial', 'claim requires fresh final ownership verification before authorizing work');
+  const item = object(result.item, 'verified claim item');
+  const owners = item.owners as string[];
+  if (!action.claimState?.assigned || owners.length !== 1 || owners[0] !== action.request.context.actor ||
+      object(item.metadata, 'metadata').Status !== 'In Progress')
+    throw new AdapterFailure('unknown_outcome', 'partial', 'fresh read does not confirm sole ownership and In Progress; reconcile original claim');
+  const claim = { actor: action.request.context.actor, session: action.workerId, token: action.operationId,
+    status: 'In Progress', guarantee: 'best-effort' };
+  // This token refers to private local provenance, never a GitHub lease.
+  delete result.item;
+  result.claim = claim;
+  validateResponse({ protocol: 1, ok: true, result }, 0, 'claim.acquire');
+  return null;
+}
+
+export function reconcileClaimAcquisition(origin: IssuedAction, result: Record<string, unknown>): 'applied' | 'absent' | 'partial' | 'unresolved' {
+  if (origin.step === 'preflight') return 'absent';
+  const item = object(result.item, 'claim reconciliation item');
+  const owners = item.owners as string[];
+  const status = object(item.metadata, 'metadata').Status;
+  if (owners.length === 1 && owners[0] === origin.request.context.actor)
+    return status === 'In Progress' ? 'applied' : status === 'Todo' ? 'partial' : 'unresolved';
+  // An issued mutation cannot be proven absent merely by an empty assignee set.
+  return 'unresolved';
 }

@@ -31,6 +31,71 @@ function nativeClaimFixture() {
     } };
   return { action, item };
 }
+function pendingClaimVerification(store: OperationStore) {
+  const { action, item } = nativeClaimFixture();
+  const issued = store.issue(action);
+  let response = store.submit(issued.continuation, submissionFor(action, { data: { item } }), 101);
+  for (const output of [{ valid: true, gaps: [] }, { item: { ...item, owners: ['me'] } }, { valid: true, gaps: [] }]) {
+    if (response.state !== 'action') throw new Error('claim action required');
+    response = store.submit(issued.continuation, submissionFor(response.action, { data: output }), 102);
+  }
+  if (response.state !== 'action') throw new Error('verification action required');
+  return { response, item, operationId: action.operationId };
+}
+test('claim authorizes work only after fresh sole-owner In Progress verification', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/verify-native-claim-');
+  try {
+    const store = new OperationStore(join(dir, 'private'));
+    const { response, item, operationId } = pendingClaimVerification(store);
+    assert.equal(response.action.step, 'verify');
+    assert.deepEqual(response.action.allowedEffects, []);
+    assert.equal(store.get(operationId).pending, true);
+    const completed = store.submit(response.continuation, submissionFor(response.action, { data: {
+      item: { ...item, owners: ['me'], metadata: { ...item.metadata, Status: 'In Progress' } },
+    } }), 103);
+    assert.equal(completed.state, 'complete');
+    if (!('result' in completed)) throw new Error('claim result required');
+    assert.deepEqual(completed.result.claim, { actor: 'me', session: 'worker', token: operationId,
+      status: 'In Progress', guarantee: 'best-effort' });
+    assert.equal(store.get(operationId).pending, false);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+for (const [label, owners, status] of [
+  ['unassigned', [], 'In Progress'], ['another actor', ['other'], 'In Progress'],
+  ['multiple owners', ['me', 'other'], 'In Progress'], ['wrong status', ['me'], 'Todo'],
+] as const) {
+  test(`final claim verification refuses ${label}`, () => {
+    mkdirSync('.workspace', { recursive: true });
+    const dir = mkdtempSync('.workspace/conflicting-native-claim-');
+    try {
+      const store = new OperationStore(join(dir, 'private'));
+      const { response, item, operationId } = pendingClaimVerification(store);
+      assert.throws(() => store.submit(response.continuation, submissionFor(response.action, { data: {
+        item: { ...item, owners, metadata: { ...item.metadata, Status: status } },
+      } }), 103), (error: unknown) => error instanceof AdapterFailure && error.effects === 'partial');
+      assert.equal(store.get(operationId).pending, true);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+}
+test('uncertain native claim resumes with a bounded verification read', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/resume-native-claim-');
+  try {
+    const store = new OperationStore(join(dir, 'private'));
+    const { response, item, operationId } = pendingClaimVerification(store);
+    const resumed = new OperationStore(join(dir, 'private')).resume(operationId, 200);
+    assert.deepEqual(resumed.action.allowedEffects, []);
+    assert.equal(resumed.action.operationId, operationId);
+    const result = store.submit(response.continuation, submissionFor(resumed.action, { data: {
+      item: { ...item, owners: ['me'], metadata: { ...item.metadata, Status: 'In Progress' } },
+    } }), 201);
+    assert.equal(result.state, 'complete');
+    if (!('result' in result)) throw new Error('reconciliation result required');
+    assert.equal(result.result.reconciliation, 'applied');
+    assert.equal(result.result.reservationCleared, true);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
 test('status failure after assignment returns partial claim recovery', () => {
   mkdirSync('.workspace', { recursive: true });
   const dir = mkdtempSync('.workspace/partial-native-claim-');

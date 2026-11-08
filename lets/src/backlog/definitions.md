@@ -140,6 +140,16 @@ Mutation acknowledgements prove only scoped responses. They cannot authorize
 work without fresh final verification. A failure after confirmed assignment
 preserves partial effects and the private reservation for recovery.
 
+The final `verify` action is read-only. Core returns a claim only when that
+fresh item has exactly the authenticated actor as owner and In Progress status.
+The returned token names the private operation record; it is not a remote lease.
+Its worker session records this acquisition, not exclusive GitHub ownership.
+Native acquisition recovery uses the recorded definition's verification read,
+never the assignment or status action. Confirmed sole ownership/In Progress
+resolves applied effects; a sole-owner Todo item remains partial. Empty or
+conflicting ownership cannot prove an issued write absent. Once reconciliation
+clears a reservation, the caller must still check fresh work authority.
+
 `item.read` accepts optional `includeThread`, default false. The `read` action
 reads the issue body, metadata, creation/edit times and parent identity without
 requesting comments. `includeThread: true` selects `read-thread`, which returns
