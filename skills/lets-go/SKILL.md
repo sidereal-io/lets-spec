@@ -67,7 +67,7 @@ procedure ranks it.
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-uncertain`, `claim-unavailable` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table) | Never |
 | [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run) | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL | this session | Nothing: the run is over | Always |
@@ -380,8 +380,14 @@ Next: [Enter the branch](#enter-the-branch).
    - **`unresolved`:** report the owner or the definitions it carries,
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
-   - **`branch-failed`:** [Claim](#claim) has released the claim. Show
-     the error it carries, and stop.
+   - **`claim-uncertain`:** report the original operation ID, known
+     effects and read-only recovery command. Start no work and stop
+     without repeating Claim.
+   - **`claim-unavailable`:** report the missing prerequisite and
+     remedy, and stop.
+   - **`branch-failed`:** show the branch error and release outcome.
+     When release is unreleased or uncertain, include its original
+     operation ID and recovery command. Start no work and stop.
 3. When you ran
    [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint),
    act on its result:
@@ -740,30 +746,40 @@ return to the part that ran it, with the result.
    against the proposed base. When it returns `unresolved` or
    `checkpoint-failed`, return that result now, with what it carries,
    before you assign the issue.
-3. Claim the issue: check that nobody has it, assign yourself, then move
-   it to In Progress. `<issue-url>` is the issue's URL.
+3. Request `lets backlog claim.acquire --request-file` with the scoped
+   issue identity and this invocation's worker context, using the
+   configured default connection. Run the
+   [Backlog action loop](references/backlog-actions.md). Lets checks
+   fresh eligibility, requests assignment and In Progress as separate
+   bounded actions, then verifies sole ownership and status.
+   `<issue-url>` is the issue's URL.
 
-   ```bash
-   gh issue view <i> --json assignees --jq '.assignees | length'
-   gh issue edit <i> --add-assignee @me
-   gh project item-edit <project> --owner <owner> --url <issue-url> --field Status --value "In Progress"
-   ```
-
-   The first command must print `0`. Anything else means another
-   session took it: the result is `taken`, with who has it. Return it
-   now.
+   Only a complete, verified claim proceeds. Keep its token, worker ID
+   and original operation ID for release. A confirmed ownership conflict
+   returns `taken`, with the observed owner. If effects are partial or
+   unknown, or the response is `needs-reconciliation`, return
+   `claim-uncertain` with the original operation ID, known IDs and
+   read-only resume command. Missing tools, login, permissions,
+   configuration or required facts return `claim-unavailable` with the
+   prerequisite and remedy. Return either failure before creating a
+   branch; neither authorizes assignment repair or another acquisition
+   attempt.
 4. Create a branch with the change's name off the default branch. This
    also fails when a local branch with the change's name appeared after
    [Check the issue](#check-the-issue) looked. A branch that appeared
    only on `origin` does not make it fail: the plan step's first push is
    then rejected, and that step fails. If creating the branch fails,
-   release the claim, so another session can pick the issue up. The
-   result is then `branch-failed`, with the error:
-
-   ```bash
-   gh issue edit <i> --remove-assignee @me
-   gh project item-edit <project> --owner <owner> --url <issue-url> --field Status --value Todo
-   ```
+   request `lets backlog claim.release --request-file` with the exact
+   acquired issue identity, original worker context and recorded claim
+   token. Run the [Backlog action loop](references/backlog-actions.md).
+   Release checks ownership before each cleanup write. Preserve another
+   actor's assignment and status. Return `branch-failed` with the branch
+   error and the observed release outcome: say `released` only when
+   release confirms `{ "released": true }` or read-only reconciliation
+   confirms applied release effects. Otherwise report `unreleased` or
+   `uncertain`, its reason, original operation ID and recovery command.
+   Do not claim cleanup succeeded or repeat a write because branch
+   creation failed.
 
 It returns one of these results:
 
@@ -777,8 +793,15 @@ It returns one of these results:
 - `checkpoint-failed`:
   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
   returned it. It carries what the check found.
-- `branch-failed`: creating the branch failed, and the claim is
-  released. It carries the error.
+- `claim-uncertain`: acquisition has partial or unknown effects. It
+  carries the original operation ID, known IDs and read-only recovery
+  command. No branch has been created.
+- `claim-unavailable`: a prerequisite or required observation is
+  unavailable. It carries the missing prerequisite and remedy. No branch
+  has been created.
+- `branch-failed`: creating the branch failed. It carries the branch
+  error and the observed release outcome, with recovery context when
+  release did not finish.
 
 Return to the part that ran it, with the result.
 

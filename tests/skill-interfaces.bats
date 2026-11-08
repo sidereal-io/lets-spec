@@ -811,7 +811,8 @@ review_build_start() {
   skill_says lets-go 'gh repo view --json defaultBranchRef --jq .defaultBranchRef.name'
   skill_says lets-go "Skipped shape: #<i>'s packet is complete, last edited <date>."
   # Claim sets the Status, so lets-go sets that field itself.
-  skill_says lets-go 'gh project item-edit'
+  skill_says lets-go 'lets backlog claim.acquire'
+  skill_says lets-go 'lets backlog claim.release'
 }
 
 @test "lets-go names no section of lets-build" {
@@ -1961,6 +1962,28 @@ procedure_stops() {
   for result in claimed taken unresolved checkpoint-failed branch-failed; do
     grep -qF -- "**\`$result\`:**" <<<"$part" || { echo "Enter the branch does not act on: $result"; false; }
   done
+}
+
+@test "Claim reports uncertain and unavailable acquisition without creating a branch" {
+  local claim enter result
+  claim="$(procedure_text 'Claim')"
+  enter="$(part_section 'Enter the branch')"
+  for result in claim-uncertain claim-unavailable; do
+    grep -qF -- "\`$result\`" <<<"$claim" || { echo "Claim does not return $result"; false; }
+    grep -qF -- "**\`$result\`:**" <<<"$enter" || { echo "Enter the branch does not handle $result"; false; }
+  done
+  grep -qF 'before creating a branch' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" || false
+  grep -qF 'lets backlog claim.acquire' <<<"$claim" || false
+}
+
+@test "branch failure reports the observed release outcome" {
+  local claim enter
+  claim="$(procedure_text 'Claim')"
+  enter="$(part_section 'Enter the branch')"
+  grep -qF 'lets backlog claim.release' <<<"$claim" || false
+  grep -qF 'only when release confirms' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" || false
+  grep -qF 'release outcome' <<<"$enter" || false
+  ! grep -qF '[Claim](#claim) has released the claim' <<<"$enter" || false
 }
 
 # Check the issue looks for the branch, so Claim does not look again.
