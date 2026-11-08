@@ -97,10 +97,7 @@ async function run(operation: string, options: Options): Promise<void> {
         throw new AdapterFailure('invalid_request', 'unknown', 'continuation differs from original operation');
       continuation = original.continuation;
       if (operation === 'resume') emit(store.resume(id, Date.now()));
-      else {
-        const supplied = JSON.parse(readInput(options.continuationFile!)) as Continuation;
-        emit(store.submit(supplied, readInput(options.submissionFile!), Date.now()));
-      }
+      else emit(store.submit(continuation, readInput(options.submissionFile!), Date.now()));
       return;
     }
     const repositoryFile = join(process.cwd(), 'openspec', 'config.yaml');

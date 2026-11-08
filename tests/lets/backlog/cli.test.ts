@@ -240,3 +240,13 @@ test('no connection config uses shipped gh with declared host bounds', () => wit
   assert.deepEqual(result.action.limits, { timeoutMs: 1000, maxOutputBytes: 65536 });
   assert.equal(result.action.step, 'bootstrap');
 }));
+test('submit validates against the continuation it already checked', () => withBacklogCli(async ({ dir, call, request }) => {
+  const issued = await call(['item.read', '--request-file', request('item.read', { item: { provider: 'github', backlog: 'P1', id: 'I1' } })]);
+  assert.equal(issued.state, 'action', issued.reason);
+  const submission = join(dir, 'bad-submission.json');
+  writeFileSync(submission, '{');
+  const rejected = await call(['submit', '--continuation-file', '-', '--submission-file', submission], {},
+    readFileSync(issued.continuationFile, 'utf8'));
+  assert.equal(rejected.operationId, issued.operationId);
+  assert.match(rejected.reason, /malformed submission JSON/);
+}));

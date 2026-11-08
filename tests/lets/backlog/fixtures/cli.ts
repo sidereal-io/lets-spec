@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { realIo } from '../../../../lets/src/io.ts';
 export async function withBacklogCli(run: (fixture: {
-  dir: string; marker: string; call: (args: string[], env?: Record<string, string>) => Promise<Record<string, any>>;
+  dir: string; marker: string; call: (args: string[], env?: Record<string, string>, stdin?: string) => Promise<Record<string, any>>;
   request: (operation: string, input: unknown) => string;
 }) => Promise<void>) {
   mkdirSync('.workspace', { recursive: true });
@@ -21,9 +21,9 @@ export async function withBacklogCli(run: (fixture: {
       backend: { name: 'github', versions: ['fixture'] }, bindings: { fixture: { kind: 'cli', tool: backend, versions: ['unreported'] } }, operations }));
     writeFileSync(join(dir, 'openspec', 'config.yaml'), 'lets:\n  backlog:\n    version: 1\n    definition: ../provider.json\n');
     writeFileSync(join(dir, 'xdg', 'lets', 'config.yaml'), `version: 3\nbacklog:\n  stateDir: ${dir}/private\n  connections:\n    local:\n      binding: fixture\n      options:\n        timeoutMs: 1000\n        maxOutputBytes: 65536\n`);
-    const call = async (args: string[], env: Record<string, string> = {}) => {
+    const call = async (args: string[], env: Record<string, string> = {}, stdin?: string) => {
       const result = await realIo().execFile(process.execPath, [fileURLToPath(new URL('../../../../lets/bin/lets', import.meta.url)), 'backlog', ...args], {
-        cwd: dir, env: { ...process.env, XDG_CONFIG_HOME: join(dir, 'xdg'), ...env }, timeoutMs: 10000,
+        cwd: dir, env: { ...process.env, XDG_CONFIG_HOME: join(dir, 'xdg'), ...env }, timeoutMs: 10000, ...(stdin === undefined ? {} : { input: stdin }),
       });
       if (!result.stdout) throw new Error(result.stderr);
       return JSON.parse(result.stdout);
