@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { AdapterFailure } from './errors.ts';
 import { keys } from './definitions.ts';
 import { object } from './protocol.ts';
-import { deriveResult } from './projections.ts';
+import { deriveResult, validateObservedScope } from './projections.ts';
 import type { Projection } from './projections.ts';
 import type { IssuedAction } from './actions.ts';
 
@@ -91,6 +91,8 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
   if (execution.outcome !== 'success' || execution.exitCode !== 0 || execution.signal !== undefined ||
       execution.outputLimitExceeded === true || execution.timedOut === true)
     uncertain('tool termination does not establish outcome; reconcile original operation');
+  const translation = action.definition.definition.operations[action.request.operation]?.actions[action.step]?.bindings[action.connection.binding];
+  validateObservedScope(translation?.observations, output, action.request.context);
   const result = deriveResult(action.request.operation, projection, output,
     action.request.context, submission.normalized);
   const input = action.request.input as Record<string, unknown>;

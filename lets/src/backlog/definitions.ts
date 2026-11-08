@@ -5,7 +5,7 @@ import { AdapterFailure } from './errors.ts';
 import { object, OPERATIONS, ERRORS } from './protocol.ts';
 
 export type ToolBinding = { kind: 'cli' | 'mcp'; tool: string; versions: string[] };
-export type ActionTranslation = { arguments: Projection | string[]; projection: Projection };
+export type ActionTranslation = { arguments: Projection | string[]; projection: Projection; observations?: Partial<Record<'actor' | 'repository', Projection>> };
 export type OperationDefinition = { actions: Record<string, { bindings: Record<string, ActionTranslation> }> };
 export type ProviderDefinition = {
   schemaVersion: 1;
@@ -74,12 +74,17 @@ export function loadDefinition(sources: readonly { source: string; value: unknow
         for (const [binding, value] of Object.entries(translations)) {
           if (!Object.hasOwn(bindings, binding)) throw new Error(`actions.${step} names undeclared binding ${binding}`);
           const translation = object(value, `actions.${step}.${binding}`);
-          keys(translation, ['arguments', 'projection'], `actions.${step}.${binding}`);
+          keys(translation, ['arguments', 'projection', 'observations'], `actions.${step}.${binding}`);
           if (!Object.hasOwn(translation, 'arguments')) throw new Error('tool arguments required');
           if (Array.isArray(translation.arguments)) {
             if (translation.arguments.some((entry) => typeof entry !== 'string')) throw new Error('literal tool arguments must be strings');
           } else validateProjection(translation.arguments);
           validateProjection(translation.projection);
+          if (translation.observations !== undefined) {
+            const observations = object(translation.observations, 'observations');
+            keys(observations, ['actor', 'repository'], 'observations');
+            for (const mapping of Object.values(observations)) validateProjection(mapping);
+          }
         }
       }
     }

@@ -97,3 +97,39 @@ for (const [type, category, effects] of [
       (error: unknown) => error instanceof AdapterFailure && error.category === category && error.effects === effects);
   });
 }
+
+import { selectBacklog } from '../../../lets/src/backlog/selection.ts';
+const linkedProjects = { data: { viewer: { login: 'actor' }, node: { id: 'R1', projectsV2: {
+  nodes: [{ id: 'P1', title: 'Fixture Project', url: 'https://github.com/users/fixture/projects/1' }],
+  totalCount: 1, pageInfo: { hasNextPage: false, endCursor: 'MQ' },
+} } } };
+function discoveredProjects(output: unknown = linkedProjects) {
+  return deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'backlog.list', 'read', 'gh', output, { provider: 'github', repository: 'R1', actor: 'actor' }) as unknown as
+    import('../../../lets/src/backlog/types.ts').Page<import('../../../lets/src/backlog/types.ts').LinkedBacklog>;
+}
+test('shipped discovery resolves the sole repository-linked Project', () => {
+  assert.equal(selectBacklog(discoveredProjects(), 'github').id, 'P1');
+});
+for (const mode of ['ambiguous', 'unlinked', 'incomplete'] as const) {
+  test(`Project discovery rejects ${mode} selection`, () => {
+    const page = discoveredProjects();
+    if (mode === 'ambiguous') page.items.push({ provider: 'github', id: 'P2' });
+    if (mode === 'incomplete') { page.complete = false; page.nextCursor = 'next'; }
+    assert.throws(() => selectBacklog(page, 'github', mode === 'unlinked' ? 'OTHER' : undefined),
+      /several|not linked|finish/);
+  });
+}
+test('explicit Project selection resolves several linked Projects', () => {
+  const page = discoveredProjects();
+  page.items.push({ provider: 'github', id: 'P2' });
+  assert.equal(selectBacklog(page, 'github', 'P2').id, 'P2');
+});
+for (const field of ['actor', 'repository'] as const) {
+  test(`shipped discovery rejects raw ${field} scope mismatch`, () => {
+    const output = structuredClone(linkedProjects);
+    if (field === 'actor') output.data.viewer.login = 'other';
+    else output.data.node.id = 'OTHER';
+    assert.throws(() => discoveredProjects(output), /scope/);
+  });
+}

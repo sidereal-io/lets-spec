@@ -122,9 +122,18 @@ export function deriveDefinitionResult(definition: LoadedDefinition, operation: 
   action: string, binding: string, output: unknown, scope: Record<string, unknown>, normalized?: unknown): Record<string, unknown> {
   const translation = definition.definition.operations[operation]?.actions[action]?.bindings[binding];
   if (!translation) throw new AdapterFailure('unsupported', 'none', `definition does not map ${operation}/${action}/${binding}`);
+  validateObservedScope(translation.observations, output, scope);
   return deriveResult(operation, translation.projection, output, scope, normalized);
 }
 
 export function projectArguments(arguments_: Projection | string[], input: unknown, scope: Record<string, unknown> = {}): unknown {
   return Array.isArray(arguments_) ? structuredClone(arguments_) : project(arguments_, input, scope);
+}
+
+/** Backend identity mappings are checked against the issued context by core. */
+export function validateObservedScope(observations: import('./definitions.ts').ActionTranslation['observations'],
+  output: unknown, scope: Record<string, unknown>): void {
+  for (const [field, projection] of Object.entries(observations ?? {}))
+    if (!isDeepStrictEqual(project(projection, output, scope), scope[field]))
+      throw new AdapterFailure('invalid_request', 'unknown', `observed ${field} differs from issued scope`);
 }

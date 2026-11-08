@@ -95,3 +95,12 @@ null nodes, unknown union members and incomplete connections. Structured
 GraphQL errors stop progression even alongside usable partial data. Declared
 error types determine the category; unknown types retain unknown effects.
 These fixtures verify translation only and do not qualify live support.
+
+A translation may declare `observations.actor` and `observations.repository`
+as projections of the submitted remote output. Core compares these with the
+issued context before accepting the result. The shipped issue and discovery
+queries both read the authenticated viewer and immutable repository ID.
+Project discovery uses the repository's projectsV2 connection. Selection waits
+for complete discovery, accepts a sole linked Project, or requires an explicit
+`lets.backlog.id` when several are linked. An unlinked explicit ID fails without
+selecting another Project.

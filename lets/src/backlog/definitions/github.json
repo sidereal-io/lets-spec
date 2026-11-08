@@ -691,6 +691,142 @@
                     }
                   }
                 }
+              },
+              "observations": {
+                "actor": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "viewer",
+                    "login"
+                  ]
+                },
+                "repository": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "repository",
+                    "id"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "backlog.list": {
+      "actions": {
+        "read": {
+          "bindings": {
+            "gh": {
+              "arguments": {
+                "op": "array",
+                "values": [
+                  {
+                    "op": "literal",
+                    "value": "api"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "graphql"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "query=query($id:ID!){viewer{login} node(id:$id){... on Repository{id projectsV2(first:100){nodes{id title url}totalCount pageInfo{hasNextPage endCursor}}}}}"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-F"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "id=",
+                    "source": {
+                      "op": "scope",
+                      "path": [
+                        "repository"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "projection": {
+                "op": "object",
+                "fields": {
+                  "items": {
+                    "op": "map",
+                    "source": {
+                      "op": "connection",
+                      "source": {
+                        "op": "path",
+                        "path": [
+                          "data",
+                          "node",
+                          "projectsV2"
+                        ]
+                      }
+                    },
+                    "value": {
+                      "op": "object",
+                      "fields": {
+                        "provider": {
+                          "op": "literal",
+                          "value": "github"
+                        },
+                        "id": {
+                          "op": "path",
+                          "path": [
+                            "id"
+                          ]
+                        },
+                        "title": {
+                          "op": "path",
+                          "path": [
+                            "title"
+                          ]
+                        },
+                        "url": {
+                          "op": "path",
+                          "path": [
+                            "url"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "complete": {
+                    "op": "literal",
+                    "value": true
+                  },
+                  "nextCursor": {
+                    "op": "literal",
+                    "value": null
+                  }
+                }
+              },
+              "observations": {
+                "actor": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "viewer",
+                    "login"
+                  ]
+                },
+                "repository": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "id"
+                  ]
+                }
               }
             }
           }
