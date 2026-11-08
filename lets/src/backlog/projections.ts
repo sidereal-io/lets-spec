@@ -154,7 +154,7 @@ export function validateObservedScope(observations: import('./definitions.ts').A
   output: unknown, scope: Record<string, unknown>): void {
   for (const page of Array.isArray(output) ? output : [output])
     for (const [field, projection] of Object.entries(observations ?? {}))
-    if (!isDeepStrictEqual(project(projection, page, scope), scope[field]))
+    if (!isDeepStrictEqual(project(projection, page, scope), field === 'item' ? object(object(scope.input, 'issued input').item, 'issued item').id : scope[field]))
       throw new AdapterFailure('invalid_request', 'unknown', `observed ${field} differs from issued scope`);
 }
 

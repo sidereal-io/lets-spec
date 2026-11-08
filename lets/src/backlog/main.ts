@@ -89,7 +89,8 @@ async function run(operation: string, options: Options): Promise<void> {
       throw new AdapterFailure('invalid_request', 'none', 'request scope differs from selected repository/backlog');
     const prWrite = ['pull-request.create', 'pull-request.update', 'pull-request.ready'].includes(operation);
     if (MUTATIONS.includes(operation) && !prWrite) throw new AdapterFailure('unsupported', 'none', 'production mutation sequencing is not available yet');
-    const step = prWrite ? 'preflight' : operation === 'pull-request.read' && (request.input as { branch?: string }).branch !== undefined ? 'read-branch' : operation === 'item.read' && (request.input as { includeThread?: boolean }).includeThread === true ? 'read-thread' : 'read';
+    const relationshipKind = (request.input as { kind?: string }).kind;
+    const step = operation === 'relationship.list' && relationshipKind !== 'blocked_by' ? `read-${relationshipKind}` : prWrite ? 'preflight' : operation === 'pull-request.read' && (request.input as { branch?: string }).branch !== undefined ? 'read-branch' : operation === 'item.read' && (request.input as { includeThread?: boolean }).includeThread === true ? 'read-thread' : 'read';
     const mapping = config.definition.definition.operations[operation]?.actions[step]?.bindings[config.connection.binding];
     if (!mapping) throw new AdapterFailure('unsupported', 'none', `selected definition does not map ${operation}/${step}`);
     const binding = config.definition.definition.bindings[config.connection.binding];

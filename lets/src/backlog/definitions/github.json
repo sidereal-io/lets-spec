@@ -4966,6 +4966,310 @@
           }
         }
       }
+    },
+    "relationship.list": {
+      "actions": {
+        "read": {
+          "bindings": {
+            "gh": {
+              "arguments": {
+                "op": "array",
+                "values": [
+                  {
+                    "op": "literal",
+                    "value": "api"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "graphql"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "--paginate"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "--slurp"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "query=query($id:ID!,$endCursor:String){viewer{login}node(id:$id){... on Issue{id repository{id}links:blockedBy(first:100,after:$endCursor){nodes{id number title state repository{id}}totalCount pageInfo{hasNextPage endCursor}}}}}"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "id=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "item",
+                        "id"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "observations": {
+                "actor": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "viewer",
+                    "login"
+                  ]
+                },
+                "repository": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "repository",
+                    "id"
+                  ]
+                },
+                "item": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "id"
+                  ]
+                }
+              },
+              "projection": {
+                "op": "object",
+                "fields": {
+                  "items": {
+                    "op": "map",
+                    "source": {
+                      "op": "connection",
+                      "source": {
+                        "op": "map",
+                        "source": {
+                          "op": "path",
+                          "path": []
+                        },
+                        "value": {
+                          "op": "path",
+                          "path": [
+                            "data",
+                            "node",
+                            "links"
+                          ]
+                        }
+                      }
+                    },
+                    "value": {
+                      "op": "object",
+                      "fields": {
+                        "identity": {
+                          "op": "object",
+                          "fields": {
+                            "provider": {
+                              "op": "literal",
+                              "value": "github"
+                            },
+                            "backlog": {
+                              "op": "scope",
+                              "path": [
+                                "backlog"
+                              ]
+                            },
+                            "id": {
+                              "op": "path",
+                              "path": [
+                                "id"
+                              ]
+                            }
+                          }
+                        },
+                        "status": {
+                          "op": "enum",
+                          "source": {
+                            "op": "path",
+                            "path": [
+                              "state"
+                            ]
+                          },
+                          "values": {
+                            "OPEN": "Todo",
+                            "CLOSED": "Done"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "complete": {
+                    "op": "literal",
+                    "value": true
+                  },
+                  "nextCursor": {
+                    "op": "literal",
+                    "value": null
+                  }
+                }
+              }
+            }
+          }
+        },
+        "read-child": {
+          "bindings": {
+            "gh": {
+              "arguments": {
+                "op": "array",
+                "values": [
+                  {
+                    "op": "literal",
+                    "value": "api"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "graphql"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "--paginate"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "--slurp"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "query=query($id:ID!,$endCursor:String){viewer{login}node(id:$id){... on Issue{id repository{id}links:subIssues(first:100,after:$endCursor){nodes{id number title state repository{id}}totalCount pageInfo{hasNextPage endCursor}}}}}"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "id=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "item",
+                        "id"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "observations": {
+                "actor": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "viewer",
+                    "login"
+                  ]
+                },
+                "repository": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "repository",
+                    "id"
+                  ]
+                },
+                "item": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "node",
+                    "id"
+                  ]
+                }
+              },
+              "projection": {
+                "op": "object",
+                "fields": {
+                  "items": {
+                    "op": "map",
+                    "source": {
+                      "op": "connection",
+                      "source": {
+                        "op": "map",
+                        "source": {
+                          "op": "path",
+                          "path": []
+                        },
+                        "value": {
+                          "op": "path",
+                          "path": [
+                            "data",
+                            "node",
+                            "links"
+                          ]
+                        }
+                      }
+                    },
+                    "value": {
+                      "op": "object",
+                      "fields": {
+                        "identity": {
+                          "op": "object",
+                          "fields": {
+                            "provider": {
+                              "op": "literal",
+                              "value": "github"
+                            },
+                            "backlog": {
+                              "op": "scope",
+                              "path": [
+                                "backlog"
+                              ]
+                            },
+                            "id": {
+                              "op": "path",
+                              "path": [
+                                "id"
+                              ]
+                            }
+                          }
+                        },
+                        "status": {
+                          "op": "enum",
+                          "source": {
+                            "op": "path",
+                            "path": [
+                              "state"
+                            ]
+                          },
+                          "values": {
+                            "OPEN": "Todo",
+                            "CLOSED": "Done"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "complete": {
+                    "op": "literal",
+                    "value": true
+                  },
+                  "nextCursor": {
+                    "op": "literal",
+                    "value": null
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

@@ -193,3 +193,11 @@ not completion. Uncertain ready operations resume with exact reads only; a PR
 that remains draft keeps the reservation. Neither the write nor recovery
 requests a merge. Workflow ownership of this transition remains with the review
 build step.
+
+Directional relationships use native Issue connections: blocked_by reads
+blockedBy; child reads subIssues. The read and read-child action mappings retain
+that distinction. Every page binds the issued issue ID, repository and viewer,
+and connection coverage must be complete before shared readiness can treat
+missing blockers as empty. Native OPEN issues remain open prerequisites and
+CLOSED issues normalize as Done. Unknown issue states fail mapping. Unsupported
+relationship kinds have no implicit mapping to blockers or parent links.

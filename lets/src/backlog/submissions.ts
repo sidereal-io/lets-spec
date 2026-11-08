@@ -93,7 +93,7 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
       execution.outputLimitExceeded === true || execution.timedOut === true)
     uncertain('tool termination does not establish outcome; reconcile original operation');
   const translation = action.definition.definition.operations[action.request.operation]?.actions[action.step]?.bindings[action.connection.binding];
-  validateObservedScope(translation?.observations, output, action.request.context);
+  validateObservedScope(translation?.observations, output, { ...action.request.context, input: action.request.input });
   const operation = action.validationOperation ?? action.request.operation;
   const result = deriveResult(operation, projection, output,
     { ...action.request.context, input: action.request.input }, submission.normalized);

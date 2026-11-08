@@ -61,7 +61,7 @@ Nothing is implemented or checked off by this planning restart.
 
 ## 4. GitHub claim lifecycle [depends-on: 3]
 
-- [ ] 4.1 [medium] Reject readiness when directional blocker observations are incomplete. (verify: node --test tests/lets/backlog/relationships.test.ts)
+- [x] 4.1 [medium] Reject readiness when directional blocker observations are incomplete. (✓ node --test tests/lets/backlog/relationships.test.ts tests/lets/backlog/providers.test.ts passed, 42 tests; tsc --noEmit passed)
 - [ ] 4.2 [medium] Select the first eligible GitHub candidate using shared readiness/ranking from complete submitted observations. (verify: node --test tests/lets/backlog/items.test.ts)
 - [ ] 4.3 [complex] Return a partial-claim recovery result when the assignment action succeeds but the bounded status action does not. (verify: node --test tests/lets/backlog/claims.test.ts)
 - [ ] 4.4 [medium] Authorize work only after a fresh sole-owner/In Progress read for the recorded claim. (verify: node --test tests/lets/backlog/claims.test.ts)

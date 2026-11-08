@@ -5,7 +5,7 @@ import { AdapterFailure } from './errors.ts';
 import { object, OPERATIONS, ERRORS } from './protocol.ts';
 
 export type ToolBinding = { kind: 'cli' | 'mcp'; tool: string; versions: string[] };
-export type ActionTranslation = { arguments: Projection | string[]; projection: Projection; observations?: Partial<Record<'actor' | 'repository' | 'backlog', Projection>> };
+export type ActionTranslation = { arguments: Projection | string[]; projection: Projection; observations?: Partial<Record<'actor' | 'repository' | 'backlog' | 'item', Projection>> };
 export type OperationDefinition = { actions: Record<string, { bindings: Record<string, ActionTranslation> }> };
 export type ProviderDefinition = {
   schemaVersion: 1;
@@ -82,7 +82,7 @@ export function loadDefinition(sources: readonly { source: string; value: unknow
           validateProjection(translation.projection);
           if (translation.observations !== undefined) {
             const observations = object(translation.observations, 'observations');
-            keys(observations, ['actor', 'repository', 'backlog'], 'observations');
+            keys(observations, ['actor', 'repository', 'backlog', 'item'], 'observations');
             for (const mapping of Object.values(observations)) validateProjection(mapping);
           }
         }
