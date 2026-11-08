@@ -1,4 +1,5 @@
 import { prepareBody, prAction } from './pr-actions.ts';
+import { claimAction } from './claim-actions.ts';
 import { projectArguments } from './projections.ts';
 import { accessSync, closeSync, constants, lstatSync, mkdirSync, openSync, readFileSync, readSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -88,9 +89,10 @@ async function run(operation: string, options: Options): Promise<void> {
         (config.backlog !== undefined && request.context.backlog !== config.backlog))
       throw new AdapterFailure('invalid_request', 'none', 'request scope differs from selected repository/backlog');
     const prWrite = ['pull-request.create', 'pull-request.update', 'pull-request.ready'].includes(operation);
-    if (MUTATIONS.includes(operation) && !prWrite) throw new AdapterFailure('unsupported', 'none', 'production mutation sequencing is not available yet');
+    const claimWrite = operation === 'claim.acquire';
+    if (MUTATIONS.includes(operation) && !prWrite && !claimWrite) throw new AdapterFailure('unsupported', 'none', 'production mutation sequencing is not available yet');
     const relationshipKind = (request.input as { kind?: string }).kind;
-    const step = operation === 'relationship.list' && relationshipKind !== 'blocked_by' ? `read-${relationshipKind}` : prWrite ? 'preflight' : operation === 'pull-request.read' && (request.input as { branch?: string }).branch !== undefined ? 'read-branch' : operation === 'item.read' && (request.input as { includeThread?: boolean }).includeThread === true ? 'read-thread' : 'read';
+    const step = operation === 'relationship.list' && relationshipKind !== 'blocked_by' ? `read-${relationshipKind}` : prWrite || claimWrite ? 'preflight' : operation === 'pull-request.read' && (request.input as { branch?: string }).branch !== undefined ? 'read-branch' : operation === 'item.read' && (request.input as { includeThread?: boolean }).includeThread === true ? 'read-thread' : 'read';
     const mapping = config.definition.definition.operations[operation]?.actions[step]?.bindings[config.connection.binding];
     if (!mapping) throw new AdapterFailure('unsupported', 'none', `selected definition does not map ${operation}/${step}`);
     const binding = config.definition.definition.bindings[config.connection.binding];
@@ -101,11 +103,12 @@ async function run(operation: string, options: Options): Promise<void> {
     const bodyFile = (request.input as { bodyFile?: string }).bodyFile;
     const preparedBody = bodyFile === undefined ? undefined : prepareBody(bodyFile, bounds.maxOutputBytes as number);
     let action = issueAction(request, config.definition, config.connection, {
-      step, preparedBody, toolArguments: prWrite ? [] : projectArguments(mapping.arguments, request.input, request.context), allowedEffects: [], requiredCapabilities: [],
+      step, preparedBody, toolArguments: prWrite || claimWrite ? [] : projectArguments(mapping.arguments, request.input, request.context), allowedEffects: [], requiredCapabilities: [],
       timeoutMs: bounds.timeoutMs as number, maxOutputBytes: bounds.maxOutputBytes as number,
       acceptanceMs: bounds.acceptanceMs as number | undefined ?? 60000,
     }, Date.now());
     if (prWrite) action = prAction(action, 'preflight', Date.now());
+    if (claimWrite) action = claimAction(action, 'preflight', Date.now());
     emit(store.issue(action));
   } catch (error) {
     const failure = error instanceof AdapterFailure ? error : new AdapterFailure('invalid_request', 'unknown', String(error));

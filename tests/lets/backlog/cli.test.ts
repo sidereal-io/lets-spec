@@ -68,6 +68,15 @@ test('backlog CLI hands bounded actions to the caller without executing tools', 
 });
 
 import { withBacklogCli } from './fixtures/cli.ts';
+test('claim CLI starts with read-only eligibility preflight', () => withBacklogCli(async ({ call, request, marker }) => {
+  const response = await call(['claim.acquire', '--request-file', request('claim.acquire', {
+    item: { provider: 'github', backlog: 'P1', id: 'I1' },
+  })]);
+  assert.equal(response.state, 'action', response.reason);
+  assert.equal(response.action.step, 'preflight');
+  assert.deepEqual(response.action.allowedEffects, []);
+  assert.equal(existsSync(marker), false);
+}));
 test('PR creation CLI requests repository preflight before any write', () => withBacklogCli(async ({ dir, call, request, marker }) => {
   const bodyFile = join(dir, 'body.md');
   writeFileSync(bodyFile, 'Closes #1');

@@ -130,6 +130,16 @@ and no open blockers. Priority comes first, then the stable scoped issue order.
 Closed issues remain in enumeration observations but cannot be selected.
 Custom definitions must supply the same required facts.
 
+`claim.acquire` maps separate `preflight`, `assign`, `read-assignment`, `status`
+and `verify` actions. Preflight supplies a complete eligible item plus
+`item.claimContext`: authenticated actor ID, Project item ID, Status field ID,
+Todo/In Progress option IDs and complete linked Project IDs. Core records those
+IDs in the issued action's bound claim state. Assignment uses the authenticated
+actor ID; a fresh sole-owner/Todo read must follow before the status write.
+Mutation acknowledgements prove only scoped responses. They cannot authorize
+work without fresh final verification. A failure after confirmed assignment
+preserves partial effects and the private reservation for recovery.
+
 `item.read` accepts optional `includeThread`, default false. The `read` action
 reads the issue body, metadata, creation/edit times and parent identity without
 requesting comments. `includeThread: true` selects `read-thread`, which returns

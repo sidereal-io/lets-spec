@@ -1,4 +1,5 @@
 import { nextPrAction, prAction, reconcilePrCreation, reconcilePrUpdate, reconcilePrReady } from './pr-actions.ts';
+import { nextClaimAction } from './claim-actions.ts';
 import { projectArguments } from './projections.ts';
 import { resourceKeys as scopedKeys, coordinationKeys } from './resource-keys.ts';
 import { acquireResourceLock } from './resource-lock.ts';
@@ -142,7 +143,9 @@ export class OperationStore {
           }
           record.result = validateSubmission(action, value, mapping.projection, now);
         } catch (error) {
-          const failure = error instanceof AdapterFailure ? error : new AdapterFailure('invalid_request', 'unknown', String(error));
+          let failure = error instanceof AdapterFailure ? error : new AdapterFailure('invalid_request', 'unknown', String(error));
+          if (action.request.operation === 'claim.acquire' && action.claimState?.assigned)
+            failure = new AdapterFailure(failure.category, 'partial', `partial claim; reconcile original operation: ${failure.message}`);
           if (failure.knownRemoteIds?.pullRequest)
             record.resourceKeys = [...new Set([...record.resourceKeys, ...scopedKeys({ ...action, targetPullRequest: failure.knownRemoteIds.pullRequest })])].sort();
           record.attempts.push({ actionId: action.actionId, receivedAt: now, submission: structuredClone(submission), accepted: false,
@@ -170,7 +173,7 @@ export class OperationStore {
           record.pending = !resolved;
         } else {
           let next: IssuedAction | null;
-          try { next = nextPrAction(action, record.result, now); }
+          try { next = nextClaimAction(action, record.result, now) ?? nextPrAction(action, record.result, now); }
           catch (error) {
             const failure = error instanceof AdapterFailure ? error : new AdapterFailure('unknown_outcome', 'unknown', String(error));
             record.state = failure.effects === 'none' ? 'failed' : 'needs-reconciliation';
@@ -214,7 +217,7 @@ export class OperationStore {
       const record: OperationRecord = {
         journalVersion: 1, action: structuredClone(action), resourceKeys: [...new Set(resourceKeys)].sort(),
         continuation: { operationId: action.operationId, token: randomUUID() },
-        state: 'issued', pending: action.allowedEffects.length > 0 || ['pull-request.create', 'pull-request.update', 'pull-request.ready'].includes(action.request.operation), attempts: [],
+        state: 'issued', pending: action.allowedEffects.length > 0 || ['claim.acquire', 'pull-request.create', 'pull-request.update', 'pull-request.ready'].includes(action.request.operation), attempts: [],
       };
       this.write(record);
       return { contractVersion: 1, operationId: action.operationId, workerId: action.workerId,
