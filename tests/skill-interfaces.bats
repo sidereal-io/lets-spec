@@ -3169,3 +3169,13 @@ pr_reference_says() {
   [[ "$prompt" == *'before backend issuance'*'failed'*'no fallback'* ]] || false
   [[ "$prompt" == *'required tools'* ]] || false
 }
+
+@test "steps reconcile blocked PR writes before reading the resource again" {
+  local prompt loop
+  prompt="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-go/references/step-prompt.md")"
+  loop="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-go/references/backlog-actions.md")"
+  [[ "$prompt" == *'blocked PR write'*'read-only resume'* ]] || false
+  [[ "$loop" == *'## Recover a blocked PR write'*'lets backlog resume --operation-id'*'reservationCleared: true'*'pull-request.read'* ]] || false
+  [[ "$loop" == *'never repeat creation'* ]] || false
+  [[ "$loop" == *'unresolved'*'failed'*'reason'* ]] || false
+}

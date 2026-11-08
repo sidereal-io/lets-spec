@@ -62,3 +62,24 @@ workflow.
 Resume can use the durable operation ID after scratch loss. Keep
 recovery private; do not commit it or copy an earlier worker's release
 authority.
+
+## Recover a blocked PR write
+
+When a step's create, update or ready request returns a pending
+mutation, keep that original operation ID. Drive read-only
+`lets backlog resume --operation-id` with that ID, the step's own host
+file and this action loop. Execute only the returned bounded reads.
+Only applied or absent effects with `reservationCleared: true` permit
+reevaluation. Then request
+`lets backlog pull-request.read --request-file`
+for the original repository/head or exact PR ID and check fresh facts.
+For creation, reuse a confirmed existing draft; never repeat creation
+merely because resume ran. Proven absent effects still require a fresh
+read showing no PR plus the normal creation preflight. For update or
+ready, inspect whether the prepared effect already holds before deciding
+on any new request. Do not turn recovery into a write retry loop.
+
+For unresolved effects, a retained reservation or unavailable fresh
+facts, return the existing failed step report. Its reason includes the
+original operation ID, known effects and read-only resume command. Do
+not add report fields, switch connection or continue unrelated work.

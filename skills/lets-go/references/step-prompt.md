@@ -71,6 +71,10 @@ authority. The delegated session label is not the backend worker ID.
 Keep worker context in private request scratch; add no worker fields
 to the report below.
 
+For a blocked PR write, drive read-only resume as
+[Recover a blocked PR write](backlog-actions.md#recover-a-blocked-pr-write)
+says, then re-read the resource before deciding whether work can continue.
+
 If a write remains uncertain, preserve the original operation ID and
 `lets backlog resume --operation-id` followed by that ID in the failed
 report's existing `reason` string. Include known effects and the missing
