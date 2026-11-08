@@ -84,7 +84,7 @@ Nothing is implemented or checked off by this planning restart.
 
 - [x] 5.11 [medium] Drive read-only resume from the walk's pending-mutation result and recheck ownership only after resolved effects and reservation clearance. (✓ bats tests/skill-interfaces.bats: 275 behavior tests passed; corrected wrapping verified by focused rerun)
 - [x] 5.12 [medium] Validate complete assignee sets and actor-only resume verdicts, including multiple assignees and changed historic tokens. (✓ pnpm test:backlog passed, 371 tests; protocol/recovery focused passed, 123 tests)
-- [ ] 5.13 [medium] Drive uncertain claim reconciliation in Enter the branch without repeating acquisition, continuing only for confirmed applied ownership. (verify: bats tests/skill-interfaces.bats)
+- [x] 5.13 [medium] Drive uncertain claim reconciliation in Enter the branch without repeating acquisition, continuing only for confirmed applied ownership. (✓ bats tests/skill-interfaces.bats: 276 behavior tests passed; corrected wrapping verified by focused rerun)
 
 ## 6. Workflow integration [depends-on: 5]
 

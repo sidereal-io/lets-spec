@@ -3059,3 +3059,13 @@ pr_reference_says() {
   done
   ! grep -qE 'lets backlog claim\.(acquire|release)' <<<"$check" || false
 }
+
+@test "Enter the branch reconciles acquisition without repeating Claim" {
+  local enter claim
+  enter="$(part_section 'Enter the branch' | tr -s '[:space:]' ' ')"
+  claim="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
+  [[ "$enter" == *'**`claim-uncertain`:**'*'lets backlog resume --operation-id'*'applied'*'reservationCleared: true'*'Check work ownership'* ]] || false
+  [[ "$enter" == *'Resume branch creation'* ]] || false
+  [[ "$enter" == *'absent'*'stop'* ]] || false
+  [[ "$claim" == *'branch creation continuation'* ]] || false
+}

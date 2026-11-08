@@ -393,9 +393,19 @@ Next: [Enter the branch](#enter-the-branch).
    - **`unresolved`:** report the owner or the definitions it carries,
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
-   - **`claim-uncertain`:** report the original operation ID, known
-     effects and read-only recovery command. Start no work and stop
-     without repeating Claim.
+   - **`claim-uncertain`:** drive `lets backlog resume --operation-id`
+     with the original ID through the shared action loop, using reads
+     only. Continue only when acquisition is confirmed applied with
+     `reservationCleared: true`, then run
+     [Check work ownership](#check-work-ownership) for fresh authority.
+     Resume branch creation at Claim's branch creation continuation
+     only for `sole-actor`. Keep the original acquisition ID and worker
+     for release; never acquire again or adopt another worker's token.
+     On absent or unresolved effects, a retained reservation, or any
+     other ownership verdict, report the original ID, known effects and
+     recovery command, and stop. After branch creation succeeds, handle
+     its `claimed` result above, including the glossary import; handle
+     `branch-failed` below when it fails.
    - **`claim-unavailable`:** report the missing prerequisite and
      remedy, and stop.
    - **`branch-failed`:** show the branch error and release outcome.
@@ -806,13 +816,17 @@ return to the part that ran it, with the result.
    and original operation ID for release. A confirmed ownership conflict
    returns `taken`, with the observed owner. If effects are partial or
    unknown, or the response is `needs-reconciliation`, return
-   `claim-uncertain` with the original operation ID, known IDs and
-   read-only resume command. Missing tools, login, permissions,
-   configuration or required facts return `claim-unavailable` with the
+   `claim-uncertain` with the original operation ID, known IDs,
+   original worker context, glossary preflight result and read-only
+   resume command. Missing tools, login, permissions, configuration or
+   required facts return `claim-unavailable` with the
    prerequisite and remedy. Return either failure before creating a
    branch; neither authorizes assignment repair or another acquisition
    attempt.
-4. Create a branch with the change's name off the default branch. This
+4. This is the **branch creation continuation** after verified
+   acquisition or confirmed applied reconciliation and fresh sole-actor
+   authority.
+   Create a branch with the change's name off the default branch. This
    also fails when a local branch with the change's name appeared after
    [Check the issue](#check-the-issue) looked. A branch that appeared
    only on `origin` does not make it fail: the plan step's first push is
