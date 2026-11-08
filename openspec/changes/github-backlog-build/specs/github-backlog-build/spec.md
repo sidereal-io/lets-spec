@@ -1,9 +1,3 @@
-> **Revision pending after D13:** preserve today's workflow through configured
-> adapters. Earlier text below that adds an existing-branch ownership gate,
-> `identity.json`, PR association steps or a terminal completion write is
-> superseded and must not guide implementation. See research.md, *Behavior parity
-> assessment after D13*. The narrow ADR-015 conflict remains unresolved.
-
 ## Purpose
 
 Carry an existing GitHub story through the shared backlog workflow while
@@ -81,11 +75,12 @@ current remote ownership or distinguish remote sessions using the same actor.
 
 ### Requirement: Work identity survives sessions
 Lets SHALL retain immutable provider, backlog, repository and item identity
-through branch creation, planning, resume, PR association and completion.
-Lets-go SHALL use committed item identity plus fresh native ownership/status
-observations for ordinary resume, without requiring the original private
-continuation or making another claim. Legacy branches SHALL be able to bind a
-uniquely scoped issue through the same fresh read. Private continuation SHALL
+through branch creation, planning and resume, and in any explicit association
+or completion request. It SHALL NOT add a committed identity file.
+Lets-go SHALL use its existing scoped branch/issue lookup plus fresh native ownership/status
+observations for ordinary resume, without requiring the original
+recovery record or making another claim. Legacy branches SHALL be able to bind a
+uniquely scoped issue through the same fresh read. Private recovery SHALL
 remain separate and SHALL be required for original-operation uncertainty
 reconciliation and claim release; public identity alone SHALL NOT grant those
 authorities.
@@ -95,7 +90,7 @@ authorities.
 - **THEN** Lets reports disagreement and requests no mutation
 
 #### Scenario: Private continuation is unavailable
-- **WHEN** a caller has committed item identity but lacks the original private continuation
+- **WHEN** a caller resolves the issue by its existing branch lookup but lacks the original recovery record
 - **THEN** Lets permits ordinary resume after fresh sole-owner/In Progress verification when no known uncertainty blocks it
 - **AND** it does not adopt the original worker's private claim or authorize its release
 
@@ -134,17 +129,17 @@ until validated reconciliation observations resolve effects under core policy.
 - **THEN** Lets finds the original operation by scoped item identity and requires reconciliation before more work or writes
 
 #### Scenario: Resume occurs on another machine
-- **WHEN** committed identity is available on another machine without the original private recovery store
+- **WHEN** the issue is uniquely resolved on another machine without the original private recovery store
 - **THEN** Lets uses fresh native reads for ordinary resume and does not claim to know unseen outstanding writes
 - **AND** known unresolved effects or incomplete observations pause the affected work without granting release authority
 
 ### Requirement: Completion requires the exact associated merge
 Lets SHALL verify the exact associated PR's native closing relationship and
 merge evidence through validated submitted tool output before authorizing
-completion. Lets-go SHALL invoke this shared operation on the explicit run
-that finds the associated PR merged; the GitHub definition SHALL NOT choose
-that workflow transition. Readiness or an unrelated PR merge SHALL NOT
-authorize Done.
+completion. The existing merged-PR stop SHALL NOT invoke a completion update;
+this requirement governs explicit completion requests in shared conformance.
+The GitHub definition SHALL NOT choose a new workflow transition. Readiness or
+an unrelated PR merge SHALL NOT authorize Done.
 
 #### Scenario: Ready PR is unmerged
 - **WHEN** the associated PR is ready for review but has not merged
@@ -161,7 +156,7 @@ authorize Done.
 ### Requirement: Required observation support is checked before mutation
 Lets SHALL validate selected tool capabilities and output mappings before
 requesting GitHub writes. Definitions SHALL cover the reads required for claim,
-recovery and exact associated merge checks. Missing required output SHALL pause
+read-only resume, recovery and any explicit exact associated merge checks. Missing required output SHALL pause
 progression without requiring a capture service or host modification.
 
 #### Scenario: Ordinary configured tool supplies complete output
@@ -195,3 +190,22 @@ errors by stderr keywords.
 #### Scenario: GraphQL returns partial mutation data
 - **WHEN** a mutation response contains partial data and structured errors
 - **THEN** Lets retains the partial or unknown effects instead of inferring none from the error category
+
+### Requirement: Existing branches are checked without repair
+An existing branch SHALL skip Claim. Before unfinished work, Lets SHALL check
+fresh sole assignment to the authenticated actor and In Progress. On a mismatch
+or unavailable facts, it SHALL report the condition and stop without acquiring
+a new claim, reassigning the issue or changing status. Terminal PRs SHALL retain
+the existing merged or rejected stop without updating Project status.
+
+#### Scenario: Existing branch has no owner
+- **WHEN** a branch exists but its issue is unassigned and Todo
+- **THEN** Lets reports the ownership and status mismatch and performs no repair write
+
+#### Scenario: Reopened issue has an old merged PR
+- **WHEN** an issue is reopened and has no surviving change branch but an old PR once closed it
+- **THEN** Lets does not select that historical PR as a completion caller or set Done from it
+
+#### Scenario: Rejected PR branch was deleted
+- **WHEN** a historical PR was closed without merge and its branch no longer exists
+- **THEN** that PR does not impose a new rejected-work stop on the existing new-work path

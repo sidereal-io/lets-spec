@@ -1,9 +1,3 @@
-> **Revision pending after D13:** preserve today's workflow through configured
-> adapters. Earlier text below that adds an existing-branch ownership gate,
-> `identity.json`, PR association steps or a terminal completion write is
-> superseded and must not guide implementation. See research.md, *Behavior parity
-> assessment after D13*. The narrow ADR-015 conflict remains unresolved.
-
 ## Context
 
 Main has an offline executable-adapter contract and simulation harness, not the
@@ -26,7 +20,8 @@ best-effort GitHub ownership; exact associated merge before completion.
 
 **Non-Goals:** a capture runner or service, independent output authentication,
 T3 changes, another runner, a plugin loader, backend calls executed directly by
-Lets, stronger GitHub locking, automatic merges, or new backend implementations.
+Lets, stronger GitHub locking, automatic merges, new backend implementations,
+committed runner metadata or automatic completion on a terminal-PR stop.
 
 ## Test Seams
 
@@ -62,7 +57,8 @@ file. This includes `backlog.list`, `backlog.check`, `capability.read`,
 `candidate.list`, `item.search`, `item.read`, `relationship.list`, `claim.acquire`, `claim.read`,
 `claim.release`, `reference.write`, `completion.write` and `mutation.read`.
 The shared inventory retains setup operations for offline conformance, without
-exposing their production journey in this slice. Proposed invocation forms are:
+exposing their production journey in this slice. The related repository/PR
+interface and its migrated callers are specified in section 6. Proposed invocation forms are:
 
 ```bash
 lets backlog candidate.list --request-file .workspace/backlog-request.json
@@ -99,8 +95,8 @@ Separate action identity, stable mutation identity and attempt identity. Bind
 the request to exact input, operation, definition version/content digest,
 provider, repository/backlog/item IDs, actor/session, allowed effects, required
 capabilities, issue/expiry times and execution/output limits. Subsequent steps
-of a partial mutation retain the original mutation identity. A private
-continuation identifies this recorded operation; it is not a remote lock.
+of a partial mutation retain the original mutation identity. A continuation file is a scratch handle for the private **recovery record**
+that identifies this recorded operation; it is not a remote lock.
 
 A single request/result path follows amended ADR-015. A direct executor fallback
 would duplicate provider behavior. A generic capture MCP host would add another
@@ -271,116 +267,133 @@ prove that detached work stopped.
 
 ### 5. Preserve the GitHub lifecycle
 
-| Transition | Required submitted observations and core decision |
+| Transition | Required observations and shared decision |
 |---|---|
-| Discover/select | Repository and linked Project identities, field IDs/options and permissions. Resolve one Project and validate mappings before writes. |
-| Enumerate | All candidate pages, required metadata, assignees and complete directional blocker reads. Reject gaps, repeated/inconsistent cursors and missing fields. Apply shared readiness/ranking; do not delegate policy to the definition. |
-| Claim | Fresh current assignees/status, bounded assignment write, bounded In Progress write, then fresh sole-owner/status read. Each write has its own action; partial acquisition remains visible. |
-| Work/resume | Lets-go uses immutable item identity and a fresh ownership/status read, after checking shared local outstanding operations. Ordinary resume does not require the original private continuation or a new claim. Uncertain effects require original-operation reconciliation. |
-| Release | Recorded session provenance and a fresh read before each cleanup write. Remove only this claim's owned state; competing ownership stops cleanup. Branch-creation failure uses the same bounded release path. |
-| Associate PR | Exact repository/PR identity tied to the immutable issue. Validate native closing linkage when available; retain intended reference and report pending for a feature-branch stack. A textual mention never qualifies final completion. |
-| Complete | Fresh exact associated PR merge facts, merged reference/commit and required native closing relationship. An unmerged or unrelated PR cannot authorize Done. If native automation already completed the item, return success without another write. Otherwise request only the needed status update and validate its result. |
+| Discover and select | Repository and linked Project identities, field options and permissions. Resolve one selected Project before writes. |
+| Enumerate | Complete candidates, metadata, assignees and directional blockers. Apply shared ranking, packet and glossary policy. |
+| Claim a new branch | Fresh assignees and status; bounded assignment and In Progress actions; fresh sole-owner verification. Preserve partial acquisition and the current branch-failure release caller. |
+| Resume an existing branch | Skip Claim. Resolve the issue by the existing title/branch rule, check shared pending mutations, and freshly read assignees and status. Continue unfinished work only for the authenticated sole assignee with In Progress. Stop on a mismatch or missing facts without changing assignment or status. |
+| Release | Original recovery record and a fresh ownership read before each cleanup write. Never remove another actor's assignment or reset their status. |
+| Read merged or rejected PR | Preserve the existing branch-scoped terminal stop. Report merged or rejected and run no step or completion write. Do not infer current work from historical closing PRs. |
+| Actual completion request | Retain the shared contract's exact associated merge gate and idempotent recovery in conformance. This does not introduce a production caller at the terminal stop. |
 
-GitHub ownership is best-effort at the authenticated actor level. Assignment and
-status updates are not atomic. A fresh sole-assignee read can still race with
-another worker. GitHub cannot distinguish two sessions using the same actor;
-private session provenance prevents accidental local adoption but cannot invent
-that remote distinction. No release clears a competing actor or claims stronger
-locking. Completion never issues a merge. Archive/readiness leave work In
-Progress pending the required merge observations.
+The user explicitly approved the read-only resume check in D14. It implements
+ADR-015's accepted ownership rule without a new claim strategy. In particular,
+a hand-stacked branch with an unassigned Todo issue pauses and explains that the
+issue must be assigned to the authenticated actor alone and be In Progress.
+The runner does not repair this mismatch. An existing branch with an open
+blocker still follows the current hand-stack path through packet and glossary
+checks; before unfinished work, the same read-only ownership check applies.
 
-Lets-go's resume remains the shared workflow. It reads completed steps from
-Git and the PR, as ADR-017 requires, and uses fresh backend facts through the
-adapter before starting further work. The adapter neither selects steps nor
-introduces a second resume strategy.
+Keep the runner's existing order: branch lookup, packet and glossary checks,
+route, enter or update the branch, and walk. At the start of the walk, check
+the tree, then the branch's PR, then the archive. Preserve the existing merged
+and rejected stops there. Perform the ownership check only before the first
+unfinished step that would continue work, after those stops and the ordinary
+record checks. A terminal or entirely finished run does not require assignment
+or In Progress and never writes Done. Refresh the ownership check when a later
+step would start after a preceding step returns, so an intervening ownership
+change stops work. Known unresolved mutation effects still block progression.
 
-Committed identity lives in `openspec/changes/<name>/identity.json`, moving with
-the change on archive. Schema version 1 contains provider, backend endpoint,
-repository ID, backlog ID and item ID, plus optional display references and PR
-reference. It contains no credential, private continuation or step-completion
-marker. Once the plan step creates the OpenSpec change, lets-go records the
-core's validated generic identity in this file and commits it on the change
-branch before the next step. Step skills do not gain provider commands or a
-second runner. Until that file exists, scoped branch/issue lookup supplies
-identity. A legacy in-progress branch with no identity file or
-journal may bind its uniquely resolved issue within the selected repository
-and Project after a fresh sole-assignee/In Progress read. Ambiguity or conflicting
-identity is a disagreement, never permission to claim another issue.
+Resolve immutable backend IDs on each invocation using scoped `item.read` or
+`item.search`. Retain the existing branch title matching and explicit-issue
+validation. Carry validated scope in memory and request scratch files, not a
+new committed `identity.json`. ADR-017's Git and PR records still determine the
+next step. Do not add runner commits, pushes, metadata backfills or a workflow
+log. A legacy branch needs no original recovery record for ordinary resume.
+It still requires the same fresh read, and public item identity never grants
+authority to release a historic claim.
 
-A **worker session** retains the contract's existing meaning: a worker identity,
-distinct from its authenticated account. The wire field `context.session`
-carries it. Lets-go creates a worker ID for its invocation and passes that ID
-through backend calls made by its step sessions. A step's T3/CLI session or its
-`<session>` label is not that worker ID. A new lets-go invocation has a new worker
-ID; ordinary resume does not pretend it owns the old worker's claim record.
+A **worker session** is the contract's worker identity in `context.session`.
+Lets-go creates it for its own invocation and uses it for that invocation's
+backend operations. It is not a step label or harness session ID. Do not pass
+it through delegated step sessions: each step keeps its established report
+contract and owns its own bounded calls when needed. Keep original worker
+provenance in recovery records rather than adopting it during resume.
 
-A new worker can continue work when a fresh scoped read shows the authenticated
-actor as sole owner and In Progress and no known unresolved effects block it.
-No original private continuation is required merely to find the next unfinished
-step. Preserve original continuations for issued operations: uncertain writes
-must reconcile their original input/identity, and claim release still requires
-original claim provenance plus fresh ownership checks. Finding an item's public
-identity alone grants no release or repair authority. Local shared lookup can
-locate a pending original operation for reconciliation; it cannot silently
-convert it into a new worker's cleanup authority.
+The shared store is private to one configured user on one machine. Local
+worktrees see pending item mutations through that store. Another machine
+cannot see them; fresh native reads guard ordinary resume there, and any known
+uncertainty or conflicting observations stop affected progression. A fresh
+read cannot prove that an unseen worker with the same actor has stopped.
+GitHub assignment remains best-effort and supplies no exclusive remote lock.
 
-The private store is per configured user on one machine. Another machine or OS
-account cannot see its outstanding writes. Fresh native reads guard ordinary
-resume there; a known unresolved operation, contradictory or incomplete state,
-or unclear effects must pause the affected workflow until original-operation
-reconciliation is possible. A fresh read cannot prove that an unseen same-actor
-worker on another machine has stopped. Same-actor and cross-machine concurrency
-remain best-effort; no distributed lock or recovery service is introduced.
+### 6. Replace callouts without adding workflow policy
 
-### 6. Put association and completion in the shared runner
+Keep the eleven runner parts and five step skills. Backlog calls use the
+selected backlog definition. Repository and PR calls use a selected code-host
+definition and the same core bounded-action, submission and recovery engine.
+The code-host definition supplies merge facts for any shared completion checks;
+it need not be the backlog provider. Offline Jira, Linear and Beads profiles
+can therefore pair with GitHub code-host fixtures. Neither definition becomes
+a runner, an executable adapter or a plugin loader.
 
-Keep the existing eleven lets-go parts and five step skills. Within *Walk the
-step table*, after the plan step creates a PR, the runner requests
-`reference.write` through the shared action loop using the exact item and PR
-identity. On resumed runs, it validates the existing association before the
-first unfinished step. It refreshes the association after any step that changes
-the PR. An already correct association needs no repeated write.
+Repository selection under `lets.backlog` may name a `codeHost` object with
+`provider`, `definition` and repository scope. GitHub is the validated default
+for this GitHub journey. Machine-local connection options for that role live
+under `backlog.codeHost` in the existing user config, separately from backlog
+tool selection. Validate consumed keys, versions and scopes before actions;
+invalid explicit selection never falls back. The code-host definition uses
+the same inert definition schema. Authentication stays with its CLI/MCP tool.
 
-A feature-branch stack may not expose a native closing relationship until
-retargeted. Keep the exact intended PR reference in committed identity and report
-association pending; continue the existing stack workflow without claiming a
-verified closing relationship. Recheck after retargeting or on the next run.
-Never infer final completion from a textual mention or a feature-branch merge.
+The target commands are `lets codehost repository.read`,
+`lets codehost pull-request.read`, `lets codehost pull-request.create`,
+`lets codehost pull-request.update` and `lets codehost pull-request.ready`.
+Each takes `--request-file .workspace/codehost-request.json`. They return the
+same action/result states as backlog commands. Submission and recovery use
+`lets backlog submit` and `lets backlog resume`, whose continuation binds the
+role and definition; these names do not route code-host facts to a backlog
+provider. No command merges a PR. No tool is invoked directly by the core.
 
-In *Check the issue*, a scoped terminal-PR read runs before packet freshness,
-blocker, branch creation, claim and ownership-for-work checks. On a merged PR,
-lets-go requests `completion.write`; the core validates fresh merge and native
-closing facts through bounded reads before any status write. This path does not
-require the completed issue to remain In Progress or assigned. Native automation
-may already have changed both; exact merged association is the completion gate.
-It does not need a private record of a completed historic claim. It does check
-shared outstanding item mutations first and reconcile any uncertain completion
-using the original operation rather than start another write.
+Code-host requests carry `contractVersion`, `operation`, `context` and `input`.
+Context binds the exact repository, authenticated actor, worker ID and selected
+code-host role. A PR read takes either an exact PR ID or a branch name within
+that repository, never both; zero branch matches returns absent and multiple
+matches returns ambiguity. Create takes title, body-file reference, base and
+head refs; update takes exact PR identity and prepared body-file reference;
+ready takes exact PR identity. Validate file bounds and bind the content digest
+before issuing a write. Every PR result binds its repository and immutable PR
+ID. Structured failures distinguish absent PRs, authentication and unavailable
+facts; a failed read is never treated as absent. The common action envelope
+adds the operation/action/attempt correlation and limits described above.
 
-If a named closed issue's branch was deleted, resolve its exact PR from committed
-active/archived identity or a unique native closing relationship in the selected
-repository and Project. Read the candidate PR's immutable head/ref and issue
-facts; ambiguous associations pause without mutation. No checkout or branch
-recreation is needed for terminal verification. On a surviving change branch,
-committed identity can resolve an auto-closed issue even when the old open-issue
-title search returns no match. Default-branch invocation without an issue still
-means `next`; it never scans old work for completion.
+| Current callout | Replacement and required result |
+|---|---|
+| Default repository and branch | `repository.read`: exact repository ID, owner/name, URL and default branch. Local branch operations remain Git. |
+| Branch issue search, idea and discovery search | `item.search`: scoped state/title/body filters, complete matching items and their IDs. Preserve the existing exact prefix and discovery Input matching in shared policy. |
+| Packet, Project fields, issue date and parent body | `item.read`: scoped identity, body, timestamps, Kind/Priority/Size/Status, assignees and parent. Parent body is a separate scoped item read. No fixed 500-item Project scan remains in Confirm the packet. |
+| Thread freshness and glossary handoff | `item.read` and `relationship.list`: bounded comment/edit observations and complete parent/child/blocker data; code-host `pull-request.read` supplies prerequisite PR facts. Preserve ADR-012's evidence-only comments. |
+| PR state, URL, body, base, head and merge facts | `pull-request.read`: exact repository/PR identity or unambiguous branch lookup, state, draft flag, body, URL, base/head refs and SHAs, merge ref/commit when applicable. No historical closing-PR scan is added. |
+| Draft PR created during planning | `pull-request.create`: existing title/body/base/head inputs and returned exact identity/URL; preserve `Closes #<n>` and user-owned merge. Reconcile uncertain creation before retry. |
+| Plan/build review body sections | `pull-request.update`: exact PR and prepared body-file input. Preserve other sections and closing text using the existing fresh-read-and-replace procedure. Reconcile uncertain writes. |
+| Ready for review | `pull-request.ready`: exact PR identity, bounded ready action and fresh draft-state confirmation, owned by lets-review-build. |
 
-Completion returns either already completed, a validated completed update, or a
-recovery/missing-fact result. Lets-go reports that result, prints the PR URL and
-ends without a step. A merge lacking the required closing relationship reports
-pending completion, leaves backlog state alone and runs no build step. A PR
-closed without merge retains the existing rejected stop; it never sets Done.
-These paths precede the open-PR record-disagreement rules. For an open PR, those
-rules and the ordinary step walk still apply. Finishing review build still
-archives and marks the PR ready, then the runner stops with work In Progress.
-No run waits for, watches or performs a merge.
+The `pull-request.read` projection reports unavailable fields explicitly.
+Merge fields are required only for an operation that needs merge proof, not for
+the existing MERGED terminal message. A PR missing its expected closing text is
+reported by the existing planning/review rules; do not introduce a new runner
+stop or association operation before the next step. GitHub `reference.write`
+in shared conformance validates the supplied association and performs no remote
+write. The step that creates or edits the PR still owns its closing text.
+A feature-branch merge does not prove issue completion; the existing merged
+message is not a claim that Project status is Done. Users retain the existing
+native closing and Project automation behavior.
 
-Association and completion are core workflow policy. The GitHub definition only
-translates their bounded backend actions and observations, using the same path
-as a compatible custom definition. Both host environments use the same caller.
-Each step returns its established report; only lets-go decides what follows.
-Setup/shaping writes remain with their existing owners.
+Inventory every callout reachable from the existing-story path: lets-go and its
+references, lets-plan, lets-build, lets-review-plan, lets-review-build and the
+schema instructions that open the draft PR. Replace the relevant read/write
+instructions and exact-string tests together. The owning step may perform its
+existing code-host action; it never gains claim or workflow sequencing policy.
+No hard-coded `gh` dependency remains in this journey, including packet and
+parent reads. A selected CLI definition may use `gh`; a compatible MCP-only
+configuration must not require it. Both required agent hosts use this interface.
+
+Setup and shape production mutations, independent collaborator-PR review and
+delegation resolver migration remain outside this existing-story slice. Keep
+their behavior in the shared inventory and do not claim those callers have
+migrated. Idea/needs-shape routes keep their current handoff to shaping rather
+than disappearing or gaining a new stop. Future caller migration must preserve
+the same shared contract and current owner; no competing PR is created here.
 
 ### 7. Migrate behavioral conformance without importing the prototype
 
@@ -443,7 +456,10 @@ runtime. No automatic downgrade or backend rollback is promised.
 Later live acceptance uses fresh items only in `mstelz/test-repo-pls-ignore` and
 https://github.com/users/mstelz/projects/7. Exercise both required environments
 through their actual configured tools, with recorded versions/configurations,
-including interrupted claim/recovery and merge-gated completion. Verify each
+including interrupted claim recovery, read-only existing-branch resume,
+review/PR writes and the existing terminal stops. Exact-merge completion
+remains covered by the shared offline contract; this plan adds no live
+completion caller to lets-go. Verify each
 host's command timeout/output limits and writable shared private-state location;
 record an actionable preflight failure if either is unavailable. A merge remains
 an explicit user action. Historical fixtures/PRs cannot be replayed or mutated.
@@ -451,7 +467,8 @@ The old prototype's passing checks do not qualify this replacement.
 
 ## Review corrections
 
-Round one's C1 and C2 are addressed by the shared resume and terminal-PR caller
-above. D12 records the user's clarification of ownership. These corrections
-require a new independent plan review; they are not an approval verdict or
-permission to implement, publish or mutate the live scope.
+D13 removes the added terminal-completion path and committed identity file.
+D14 resolves the hand-stack ownership conflict with a read-only check, not an
+automatic claim. Round-two findings and their disposition are in research.md.
+The plan still requires independent review; prior REVISE verdicts are not
+approval or permission to implement or publish.

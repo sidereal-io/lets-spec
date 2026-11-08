@@ -1,20 +1,12 @@
-> **Revision pending after D13:** preserve today's workflow through configured
-> adapters. Earlier text below that adds an existing-branch ownership gate,
-> `identity.json`, PR association steps or a terminal completion write is
-> superseded and must not guide implementation. See research.md, *Behavior parity
-> assessment after D13*. The narrow ADR-015 conflict remains unresolved.
-
 ## MODIFIED Requirements
 
 ### Requirement: Start finds, confirms, routes and claims the issue
-`lets-go` SHALL hold *Find the source of demand*, *Confirm the packet*, *Route*, *Glossary preflight*, *Claim* and *Import the glossary checkpoint* as sections of its own. They SHALL sit under no `## Start` heading: the parts that *lets-go opens with an overview of its parts* lists call them. It SHALL name no section of `lets-build`. It SHALL run *Find the source of demand*, *Confirm the packet* and *Route* in its own session on every work run. A run that resolves a terminal PR SHALL instead take the shared completion or rejected path before packet, blocker, claim or work-ownership checks, as *A closed pull request ends the run* says. It SHALL run *Claim* only when no branch with the change's name exists, locally or on `origin`. *Check the issue* SHALL be the only part that looks for the branch: *Claim* SHALL not look again, and SHALL have no `branch-exists` result. When a local branch with the change's name appears after *Check the issue* looked, creating it fails, and *Claim* SHALL release the claim and return `branch-failed`. A branch that appears only on `origin` does not make it fail: the plan step's first push is rejected, and that step fails. *Claim* SHALL request the shared backlog claim operation and accept only its validated result before proceeding; Status writes SHALL follow the selected provider definition's bounded actions. When the change's branch exists and `lets-go` is on the default branch, it SHALL run `git switch <name>`, and go on as on a change's branch. On a change's branch that `origin` has, it SHALL run `git fetch origin <name>` before it reads any record. A local branch behind `origin/<name>` SHALL be fast-forwarded with `git merge --ff-only origin/<name>`. A local branch that has diverged from `origin/<name>` is a disagreement. `lets-go` SHALL read the issue's blockers, and decide on an open one, before it runs *Find the source of demand* for that issue. The skill SHALL state this rule before that call, so that an agent that follows it in reading order decides on an open blocker before it reaches the section. The blocker read SHALL use the shared backlog read operation with complete submitted title and directional blocker facts, so the change's name is known as *Claim* names it, before *Confirm the packet* reads the title. `lets-go` SHALL look for the change's branch as *lets-go looks for the change's branch before the packet check* says. When a blocker is open and the branch exists, locally or on `origin`, it SHALL name the open blockers and go on: the user has stacked the branch by hand. *Find the source of demand* SHALL still run *Check the prerequisite* for the issue. When it returns `unresolved`, `lets-go` SHALL report the unresolved owner or checkpoint, and stop, even on a stacked branch. When a blocker is open and no such branch exists, `lets-go` SHALL say which open issues block it, and stop. The first case of *Find the source of demand*, for an issue the run already has, SHALL make no blocker decision of its own, because the blocker read has decided. That case SHALL cover an issue the user named, and an issue the run picked or shaped. Its heading SHALL not say the user named it: whether the user named it matters only to the shape step. Each procedure returns a result, and the part that ran it decides what comes next, as *Each lets-go procedure returns a result* says. *Check the issue* holds the blocker read. For an idea, `lets-go` SHALL run that section's second case, described work with no issue: the search for an existing issue. It SHALL show the user the matches and ask, in either mode, whether one is the same work. A yes SHALL make that issue `<i>`. On a no, or when the case returns `no-match`, `lets-go` SHALL run the shape step for the idea. With no number and no idea, `lets-go` SHALL run that section's third case, `next`, as *lets-go takes one issue number or an idea* says. After a shape report that names a parent and stories, `lets-go` SHALL run that third case again. The candidates SHALL be the report's stories, as *lets-go picks the first ready story* says. When *Claim* returns `taken`, `lets-go` SHALL go on as *A lost claim drops the issue, and three lost claims stop the run* says. When *Confirm the packet* returns `needs-shape`, `lets-go` SHALL go on as *Only an idea or a named issue goes to the shape step* says. When it returns `epic`, `lets-go` SHALL say that an epic is built through its stories, list its open sub-issues, and stop. Beside the commands those sections hold, the parts before *Walk the step table* SHALL run only:
+`lets-go` SHALL hold *Find the source of demand*, *Confirm the packet*, *Route*, *Glossary preflight*, *Claim* and *Import the glossary checkpoint* as sections of its own. They SHALL sit under no `## Start` heading: the parts that *lets-go opens with an overview of its parts* lists call them. It SHALL name no section of `lets-build`. It SHALL run *Find the source of demand*, *Confirm the packet* and *Route* in its own session on every run. It SHALL run *Claim* only when no branch with the change's name exists, locally or on `origin`. *Check the issue* SHALL be the only part that looks for the branch: *Claim* SHALL not look again, and SHALL have no `branch-exists` result. When a local branch with the change's name appears after *Check the issue* looked, creating it fails, and *Claim* SHALL release the claim and return `branch-failed`. A branch that appears only on `origin` does not make it fail: the plan step's first push is rejected, and that step fails. *Claim* SHALL request the shared backlog claim operation and accept only its validated result before proceeding; Status writes SHALL follow the selected provider definition's bounded actions. When the change's branch exists and `lets-go` is on the default branch, it SHALL run `git switch <name>`, and go on as on a change's branch. On a change's branch that `origin` has, it SHALL run `git fetch origin <name>` before it reads any record. A local branch behind `origin/<name>` SHALL be fast-forwarded with `git merge --ff-only origin/<name>`. A local branch that has diverged from `origin/<name>` is a disagreement. `lets-go` SHALL read the issue's blockers, and decide on an open one, before it runs *Find the source of demand* for that issue. The skill SHALL state this rule before that call, so that an agent that follows it in reading order decides on an open blocker before it reaches the section. The blocker read SHALL use the shared backlog read operation with complete submitted title and directional blocker facts, so the change's name is known as *Claim* names it, before *Confirm the packet* reads the title. `lets-go` SHALL look for the change's branch as *lets-go looks for the change's branch before the packet check* says. When a blocker is open and the branch exists, locally or on `origin`, it SHALL name the open blockers and go on: the user has stacked the branch by hand. *Find the source of demand* SHALL still run *Check the prerequisite* for the issue. When it returns `unresolved`, `lets-go` SHALL report the unresolved owner or checkpoint, and stop, even on a stacked branch. When a blocker is open and no such branch exists, `lets-go` SHALL say which open issues block it, and stop. The first case of *Find the source of demand*, for an issue the run already has, SHALL make no blocker decision of its own, because the blocker read has decided. That case SHALL cover an issue the user named, and an issue the run picked or shaped. Its heading SHALL not say the user named it: whether the user named it matters only to the shape step. Each procedure returns a result, and the part that ran it decides what comes next, as *Each lets-go procedure returns a result* says. *Check the issue* holds the blocker read. For an idea, `lets-go` SHALL run that section's second case, described work with no issue: the search for an existing issue. It SHALL show the user the matches and ask, in either mode, whether one is the same work. A yes SHALL make that issue `<i>`. On a no, or when the case returns `no-match`, `lets-go` SHALL run the shape step for the idea. With no number and no idea, `lets-go` SHALL run that section's third case, `next`, as *lets-go takes one issue number or an idea* says. After a shape report that names a parent and stories, `lets-go` SHALL run that third case again. The candidates SHALL be the report's stories, as *lets-go picks the first ready story* says. When *Claim* returns `taken`, `lets-go` SHALL go on as *A lost claim drops the issue, and three lost claims stop the run* says. When *Confirm the packet* returns `needs-shape`, `lets-go` SHALL go on as *Only an idea or a named issue goes to the shape step* says. When it returns `epic`, `lets-go` SHALL say that an epic is built through its stories, list its open sub-issues, and stop. Beside the commands those sections hold, the parts before *Walk the step table* SHALL run only:
 
 - `lets go questions`, run once when it reads the request, as *lets-go picks the question mode and says why* says;
-- `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` and `git branch --show-current`, run once after it, to find the default branch and the current one;
+- `lets codehost repository.read` and `git branch --show-current`, run once after it, to find the default branch and the current one;
 - the Project query, run once in *Read the settings*, as *The Project query runs once per run* says;
 - the shared blocker read with title and directional blocker facts above;
-- the scoped terminal-PR lookup and `lets backlog completion.write --request-file .workspace/backlog-request.json` for the merged path;
-- `lets backlog reference.write --request-file .workspace/backlog-request.json` for PR association in the shared runner;
 - `lets backlog claim.read` for fresh ownership and status checks;
 - `lets backlog submit --continuation-file .workspace/backlog-continuation.json --submission-file .workspace/backlog-submission.json` and `lets backlog resume --continuation-file .workspace/backlog-continuation.json` in the shared bounded action loop;
 - the scoped shared operations using `--request-file .workspace/backlog-request.json`;
@@ -25,8 +17,7 @@
 - the in-progress parent query of *A stopped discovery resumes from its parent issue*, run only for an idea;
 - the `git status --porcelain` before the shape step, and the commit of `openspec/discovery.md`, that *lets-go commits the discovery map on the story's branch* says.
 
-The terminal lookup SHALL use the same scoped read boundary; association and
-completion SHALL be shared runner calls, not new workflow steps. The action
+The action
 loop SHALL use the definition selected for the repository and SHALL not contain
 GitHub commands or provider-specific sequencing of its own.
 
@@ -34,15 +25,15 @@ No part SHALL be a step: the parts before the walk SHALL run no `lets delegate s
 
 #### Scenario: The skill names the sections
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
-- **THEN** it finds *Find the source of demand*, *Confirm the packet*, *Route*, *Glossary preflight*, *Claim* and *Import the glossary checkpoint* as headings of `lets-go`. It finds shared backlog reads and bounded claim actions, plus `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`, and no section named as `lets-build`'s
+- **THEN** it finds *Find the source of demand*, *Confirm the packet*, *Route*, *Glossary preflight*, *Claim* and *Import the glossary checkpoint* as headings of `lets-go`. It finds shared backlog reads and bounded claim actions, plus `lets codehost repository.read`, and no section named as `lets-build`'s
 
 #### Scenario: A lost race on next
 - **WHEN** `lets-go` ran alone, `next` picked #149, and *Claim* finds that #149 has an assignee
 - **THEN** `lets-go` leaves #149 out, runs the shared candidate enumeration again, prints a new `Picked` line, and runs the blocker read, *Confirm the packet* and *Route* for the new issue
 
 #### Scenario: The branch exists
-- **WHEN** `lets-go` runs for #149 on the default branch, and `origin` has a branch `lets-go-chore`
-- **THEN** `lets-go` does not run *Claim*, switches to `lets-go-chore`, fetches it, and walks the step table there
+- **WHEN** `lets-go` runs for #149 on the default branch, and `origin` has a branch `lets-go-chore`, and a fresh adapter read shows the authenticated actor as sole assignee with In Progress
+- **THEN** `lets-go` does not run *Claim*, switches to `lets-go-chore`, fetches it, and walks the step table there after the read-only ownership check permits unfinished work
 
 #### Scenario: A stale local branch
 - **WHEN** the local branch `lets-go-chore` is two commits behind `origin/lets-go-chore`, and has no commit of its own
@@ -53,8 +44,8 @@ No part SHALL be a step: the parts before the walk SHALL run no `lets delegate s
 - **THEN** `lets-go` says who has it and stops, and runs no step
 
 #### Scenario: A blocked story on its own branch
-- **WHEN** `lets-go` runs for #152, which #149 blocks and #149 is open, and the branch `lets-go-story` exists on `origin`
-- **THEN** `lets-go` names #149 as an open blocker, switches to `lets-go-story`, and walks the step table there
+- **WHEN** `lets-go` runs for #152, which #149 blocks and #149 is open, and the branch `lets-go-story` exists on `origin`, with the authenticated actor as sole assignee and In Progress
+- **THEN** `lets-go` names #149 as an open blocker, switches to `lets-go-story`, and walks the step table there after the read-only ownership check permits unfinished work
 
 #### Scenario: A blocked story with no branch
 - **WHEN** `lets-go` runs for #152 on the default branch, #149 is open, and no branch `lets-go-story` exists locally or on `origin`
@@ -220,62 +211,33 @@ unresolved release SHALL remain visible with its recovery reference.
 ### Requirement: The resume paragraph says what a run started again does
 The paragraph near the top of `SKILL.md` that tells the user to run `lets-go` again after a run stops SHALL say what the new run does in each of these cases:
 
-- **On the change's branch:** it finds the issue from the branch's name, prints a dated line for each step already done, and goes on from the first unfinished step.
+- **On the change's branch:** it finds the issue from the branch's name, prints a dated line for each step already done, and, after the fresh adapter ownership check passes, goes on from the first unfinished step.
 - **On the default branch, with the issue number:** it finds the change's branch, here or on `origin`, switches to it, and goes on the same way. It does not claim the issue again.
 - **On the default branch, with nothing:** it does not resume. It picks the next ready issue, and a claimed issue is never ready. To resume, give the issue number, or run it on the change's branch.
 - **After a failed step:** the run that failed never runs that step again. A new run starts it afresh, in a new session, with the answers given so far. A failed shape step has no branch: the run says to run `lets-shape` on the idea or the issue.
-- **After the pull request is merged:** it verifies the exact associated merge and reconciles completion, then stops without a step. It accepts native Done without a repeated update. Missing merge/closing facts or uncertain effects produce a recovery result, not another build.
-- **After the pull request is closed without merge:** there is nothing to resume, and the run stops without completion writes.
-
-Ordinary resume SHALL use immutable issue identity plus a fresh sole-owner and
-In Progress read. It SHALL NOT require the original private continuation merely
-to continue the step walk. It SHALL check shared local outstanding mutations
-and require original-operation reconciliation when effects are uncertain.
+- **After the pull request is merged or closed:** there is nothing to resume, and the run stops.
 
 #### Scenario: Each case is named
 - **WHEN** the skill-interfaces test reads `SKILL.md` up to the overview table
 - **THEN** it names the change's branch, the default branch with the issue number, the default branch with nothing, a failed step and a merged or closed pull request, each with what the new run does
 
 ### Requirement: A closed pull request ends the run
-When a run resolves the exact associated PR as `MERGED`, lets-go SHALL run
-shared `completion.write` through its bounded action loop before ending.
-Completion SHALL require fresh exact merge, commit and native closing facts;
-absence or uncertainty SHALL return a visible pending/recovery result without
-setting Done. The terminal path SHALL NOT require current In Progress ownership,
-because native automation can already have completed and unassigned the issue.
-It SHALL check shared outstanding item mutations before a completion write.
-
-When state is `CLOSED` without merge, lets-go SHALL retain the rejected stop and
-request no completion write. Neither terminal path SHALL run a workflow step,
-claim, create a branch or be treated as an open-PR record disagreement. They
-SHALL run within *Check the issue* before packet, blocker, branch-creation and
-ownership-for-work checks. If the branch was deleted, an explicit issue number
-SHALL resolve through active/archived committed identity or a unique native
-closing PR relationship in the selected repository and backlog. Ambiguous or
-missing identity SHALL pause without guessing. On a surviving change branch,
-committed identity SHALL permit resolving an issue auto-closed by the merge.
-Default-branch invocation with no issue SHALL remain `next`, not terminal work
-scanning. A feature-branch merge without the required closing relationship
-SHALL report pending completion and leave the item unchanged.
+When the pull request's `state` is `MERGED`, `lets-go` SHALL say the change is merged and the run is finished, and stop. When its `state` is `CLOSED`, `lets-go` SHALL say the change was rejected and there is nothing to resume, and stop. Neither SHALL count as a disagreement, and neither SHALL run a step. The skill SHALL say when these stops run. They run only when the change's branch still exists and the run can find its issue. That happens in three cases: a stacked pull request merged into the branch below it; a pull request closed without merging; or a closed issue the user names on the default branch, whose branch is still there. In the first two cases the issue stays open.
 
 #### Scenario: A merged pull request
-- **WHEN** `gh pr view lets-go-chore` says `state` is `MERGED`
-- **THEN** `lets-go` verifies exact merge and closing facts, reconciles completion or reports missing facts, and runs no step
+- **WHEN** `lets codehost pull-request.read` says `state` is `MERGED`
+- **THEN** `lets-go` says the change is merged, and runs no step
 
 #### Scenario: A rejected pull request
-- **WHEN** `gh pr view lets-go-chore` says `state` is `CLOSED`
+- **WHEN** `lets codehost pull-request.read` says `state` is `CLOSED`
 - **THEN** `lets-go` says the change was rejected, and runs no step
 
 #### Scenario: A stacked pull request merged into its base
 - **WHEN** pull request #214 for `lets-go-one-rule-once` merged into `lets-go-procedures-return`, its issue #202 is still open, and the user runs `lets-go` on the branch `lets-go-one-rule-once`
-- **THEN** `lets-go` finds #202 by the branch name, reads `MERGED`, reports pending completion without a Done write when the required closing relationship is absent, and runs no step
-
-#### Scenario: Merged issue has no surviving branch
-- **WHEN** the user names an auto-closed issue on the default branch after its branch was deleted and the unique native closing PR is merged
-- **THEN** lets-go verifies that exact merge, reconciles completion and ends without creating or checking out a branch
+- **THEN** `lets-go` finds #202 by the branch name, reads `MERGED`, says the change is merged, and runs no step
 
 ### Requirement: lets-go walks the step table
-For a nonterminal work run, after *Set the question mode*, on the change's branch, `lets-go` SHALL read the records Git and GitHub keep, in this order. First, `git status --porcelain`: a line for a path outside `.workspace/` is a disagreement. Second, the pull request for the branch, with `gh pr view <name> --json number,url,state,isDraft,body`. A missing pull request is noted, not a stop. Third, the archive folder, whose whole name is `<YYYY-MM-DD>-<name>` in `openspec/changes/archive/`. When it exists, every step is done. Then `lets-go` SHALL walk the step table from the top: plan, review plan, build, review build. The step table SHALL have no row for shape: shape runs before the walk, in *Run the shape step*, and *Check the issue* prints its `Skipped shape` or `Done shape` line. When the walk reaches a row, it SHALL read whether that step is done. Each row's done test SHALL be written once, in the walk, as an ordered list: the first item that matches decides. The step table SHALL not restate it. The plan row and the build row each read the change state when the walk reaches them: `openspec instructions apply --change <name> --json`, run when `openspec/changes/<name>/` exists and there is no archive folder. Plan is done when the `state` is `ready` or `all_done`, or the archive folder exists. Build is done when the `state` is `all_done`, or the archive folder exists. The build row SHALL read the state again, even when the plan row read it, because a review plan round can add a task. Any `state` other than `blocked`, `ready` or `all_done` SHALL show the CLI's `instruction` and stop. Review plan is done as *Review plan runs as a step, or is not in the route* says. Review build is done when the archive folder exists. A done step SHALL print its line, as *A skipped step's line carries its evidence and date* says. An unfinished step SHALL run, as *Each step runs through lets delegate step* says. Its report SHALL be read as *A run ends on done, failed, or a repeated question* says. After a `done` report, the walk SHALL check it as *A done report is checked against its record* says, and go on to the next row only when the check passes. `lets-go` SHALL read a row's record when it reaches the row, not before, because a step run in this round changes the records the next row reads.
+After *Set the question mode*, on the change's branch, `lets-go` SHALL read the records Git and GitHub keep, in this order. First, `git status --porcelain`: a line for a path outside `.workspace/` is a disagreement. Second, the pull request for the branch, with `lets codehost pull-request.read`. A missing pull request is noted, not a stop. Third, the archive folder, whose whole name is `<YYYY-MM-DD>-<name>` in `openspec/changes/archive/`. When it exists, every step is done. Then `lets-go` SHALL walk the step table from the top: plan, review plan, build, review build. The step table SHALL have no row for shape: shape runs before the walk, in *Run the shape step*, and *Check the issue* prints its `Skipped shape` or `Done shape` line. When the walk reaches a row, it SHALL read whether that step is done. Each row's done test SHALL be written once, in the walk, as an ordered list: the first item that matches decides. The step table SHALL not restate it. The plan row and the build row each read the change state when the walk reaches them: `openspec instructions apply --change <name> --json`, run when `openspec/changes/<name>/` exists and there is no archive folder. Plan is done when the `state` is `ready` or `all_done`, or the archive folder exists. Build is done when the `state` is `all_done`, or the archive folder exists. The build row SHALL read the state again, even when the plan row read it, because a review plan round can add a task. Any `state` other than `blocked`, `ready` or `all_done` SHALL show the CLI's `instruction` and stop. Review plan is done as *Review plan runs as a step, or is not in the route* says. Review build is done when the archive folder exists. A done step SHALL print its line, as *A skipped step's line carries its evidence and date* says. Before an unfinished step starts, the fresh adapter ownership check SHALL pass as *Resume validates current authority* says. An unfinished step SHALL run, as *Each step runs through lets delegate step* says. Its report SHALL be read as *A run ends on done, failed, or a repeated question* says. After a `done` report, the walk SHALL check it as *A done report is checked against its record* says, and go on to the next row only when the check passes. `lets-go` SHALL read a row's record when it reaches the row, not before, because a step run in this round changes the records the next row reads.
 
 #### Scenario: A branch with no change
 - **WHEN** the branch `lets-go-chore` has no `openspec/changes/lets-go-chore/` folder and no archive folder
@@ -313,16 +275,8 @@ For a nonterminal work run, after *Set the question mode*, on the change's branc
 - **WHEN** the skill-interfaces test reads the step table of `lets-go`
 - **THEN** its header has no *Done when* column
 
-The walk SHALL validate the existing PR association before starting the first
-unfinished step, or request association immediately after the plan step first
-creates a PR. After any step changes the PR, it SHALL refresh association through
-the shared boundary. Pending native closing linkage for a feature-branch stack
-SHALL be reported without blocking ordinary work or granting completion. A
-terminal PR SHALL have taken *Check the issue*'s completion/rejected path before
-this walk; it SHALL run no step-table row.
-
 ### Requirement: Review build ends the run
-The review build step SHALL run the `lets-review-build` skill. On `lets-standard` that skill reviews the code first. On every flow it then follows the project's finishing rules, verifies, archives, and marks the pull request ready. When it reports `done` and the check that *A done report is checked against its record* sets passes, or when the walk of *lets-go walks the step table* found every step done, the walk SHALL have printed one line per step, in order. A skipped step prints its skip line from *A skipped step's line carries its evidence and date*. A done step prints `Done`, the step's spoken name, a colon, the report's `date` and its evidence: `Done build: <date>. <evidence>`. Review plan prints the line *Review plan runs as a step, or is not in the route* sets. A failed step prints `Failed`, the spoken name, a colon and the reason: `Failed review build: <reason>`. The spoken name has a space, never a hyphen. `lets-go` SHALL then print the pull request's URL and stop. It SHALL keep no workflow step log of its own outside `.workspace/`, and SHALL need none to locate the next unfinished step: without its files in `.workspace/lets-go/`, a run reaches the same step. Private backlog recovery state records uncertain operations, not completed steps. Before ending an open-PR run, the runner SHALL refresh any changed PR association. It SHALL leave the item In Progress until a later explicit run verifies the exact merge and completion; the ready-PR run SHALL not wait for or perform a merge.
+The review build step SHALL run the `lets-review-build` skill. On `lets-standard` that skill reviews the code first. On every flow it then follows the project's finishing rules, verifies, archives, and marks the pull request ready. When it reports `done` and the check that *A done report is checked against its record* sets passes, or when the walk of *lets-go walks the step table* found every step done, the walk SHALL have printed one line per step, in order. A skipped step prints its skip line from *A skipped step's line carries its evidence and date*. A done step prints `Done`, the step's spoken name, a colon, the report's `date` and its evidence: `Done build: <date>. <evidence>`. Review plan prints the line *Review plan runs as a step, or is not in the route* sets. A failed step prints `Failed`, the spoken name, a colon and the reason: `Failed review build: <reason>`. The spoken name has a space, never a hyphen. `lets-go` SHALL then print the pull request's URL and stop. It SHALL keep no workflow step-completion state of its own outside `.workspace/`, and SHALL need none: without its files in `.workspace/lets-go/`, a run reaches the same step.
 
 #### Scenario: A finished run
 - **WHEN** review build reports `done` with evidence `archive commit 9a1b2c3` and `pull request #167 ready`
@@ -337,7 +291,7 @@ The review build step SHALL run the `lets-review-build` skill. On `lets-standard
 - **THEN** `lets-go` runs no step, prints five `Skipped` lines, then the pull request's URL
 
 ### Requirement: Records that disagree stop the run
-For nonterminal work runs, when the records disagree, `lets-go` SHALL print `Records disagree:` and what it found, say what to fix by hand, and stop before any step. It SHALL repair nothing. These are disagreements:
+When the records disagree, `lets-go` SHALL print `Records disagree:` and what it found, say what to fix by hand, and stop before any step. It SHALL repair nothing. These are disagreements:
 
 - `git status --porcelain` lists a path outside `.workspace/`;
 - the local branch and `origin/<name>` have diverged;
@@ -358,11 +312,11 @@ A built change that is not archived, and whose pull request has no **Plan review
 - **THEN** `lets-go` prints `Records disagree:`, says the branch and `origin` have diverged, and runs no step
 
 #### Scenario: Archived, but the pull request is a draft
-- **WHEN** the archive folder exists and `gh pr view` says `isDraft` is `true`
+- **WHEN** the archive folder exists and `lets codehost pull-request.read` says `isDraft` is `true`
 - **THEN** `lets-go` prints `Records disagree:`, says the change is archived but the pull request is a draft, and runs no step
 
 #### Scenario: A committed brainstorm with no pull request
-- **WHEN** `openspec/changes/lets-go-chore/brainstorm.md` is committed, the state is `blocked`, and `gh pr view lets-go-chore` finds no pull request
+- **WHEN** `openspec/changes/lets-go-chore/brainstorm.md` is committed, the state is `blocked`, and `lets codehost pull-request.read` finds no pull request
 - **THEN** `lets-go` prints `Records disagree:`, says the brainstorm is committed but the branch has no pull request, and runs no step
 
 #### Scenario: A read that finds no commit
@@ -389,13 +343,8 @@ A built change that is not archived, and whose pull request has no **Plan review
 - **WHEN** `openspec/config.yaml` says `schema: lets-standard`, the archive folder exists, and the pull request is ready for review with no `Code review` section
 - **THEN** `lets-go` prints `Records disagree:`, says the pull request has no Code review section, and runs no step
 
-Merged or rejected PRs SHALL take the shared terminal path before these
-open-PR disagreement rules. A terminal completion with missing identity, merge
-facts or uncertain effects SHALL report that specific recovery/missing-fact
-result and SHALL NOT attempt a workflow step to repair it.
-
 ### Requirement: lets-go looks for the change's branch before the packet check
-For nonterminal work, *Check the issue* SHALL look for the change's branch once for each issue it checks. It SHALL look right after the blocker read, and before it runs *Find the source of demand* and *Confirm the packet*, whether a blocker is open or not. On the default branch, it SHALL run `git branch --list <name>` and `git ls-remote --heads origin refs/heads/<name>`. On a change's branch, the branch exists. *Enter the branch* SHALL use what *Check the issue* found, and SHALL not look again. After a shape step, *Check the issue* SHALL look again for the shaped issue, whose title gives the name. Sometimes the branch exists and *Confirm the packet* returns `needs-shape`. Then `lets-go` SHALL say that the change has started on `<name>`, and why the packet needs shaping. It SHALL say to run `lets-shape` on `#<i>`, and stop. It SHALL do the same on the default branch and on the change's branch.
+*Check the issue* SHALL look for the change's branch once for each issue it checks. It SHALL look right after the blocker read, and before it runs *Find the source of demand* and *Confirm the packet*, whether a blocker is open or not. On the default branch, it SHALL run `git branch --list <name>` and `git ls-remote --heads origin refs/heads/<name>`. On a change's branch, the branch exists. *Enter the branch* SHALL use what *Check the issue* found, and SHALL not look again. After a shape step, *Check the issue* SHALL look again for the shaped issue, whose title gives the name. Sometimes the branch exists and *Confirm the packet* returns `needs-shape`. Then `lets-go` SHALL say that the change has started on `<name>`, and why the packet needs shaping. It SHALL say to run `lets-shape` on `#<i>`, and stop. It SHALL do the same on the default branch and on the change's branch.
 
 #### Scenario: The lookup comes before the packet check
 - **WHEN** the skill-interfaces test reads *Check the issue*
@@ -409,12 +358,8 @@ For nonterminal work, *Check the issue* SHALL look for the change's branch once 
 - **WHEN** the user runs `lets-go` on the branch `lets-go-chore`, whose issue #123 has the same comment
 - **THEN** `lets-go` says the same, and stops
 
-A terminal PR SHALL instead take the completion/rejected path before branch
-creation, packet or glossary checks. Terminal completion SHALL not require a
-surviving branch and SHALL never recreate one.
-
 ### Requirement: lets-go takes one issue number or an idea
-`lets-go` SHALL take one issue number, or an idea in words, or nothing. A request names an issue when it holds `#<i>` or is a bare number. A leading or trailing `ask` or `auto` SHALL name the question mode when the rest of the request is a number or nothing. When the rest is words on the default branch, `lets-go` SHALL ask the user whether that word names the question mode or is part of the idea, and show both readings. It SHALL ask in either mode, before *Start from an idea* runs. Only when the user says the word names the question mode SHALL `lets-go` take it off, as the question mode. Otherwise the word SHALL stay in the idea, and *Set the question mode* SHALL take the question mode from its next source. On the default branch, every other request with words SHALL be the idea, kept word for word. When the idea holds no letter or digit, in any script, `lets-go` SHALL say that an idea needs at least one letter or digit, and stop. It SHALL stop before the discovery query and the title search, claiming nothing and running no step. On the default branch, when the request holds neither a number nor words, `lets-go` SHALL take `next`: the third case of *Find the source of demand*, over the whole backlog. That case keeps its rank, and its *Check the prerequisite* and *Confirm the packet* on each candidate, as *Only an idea or a named issue goes to the shape step* says. `lets-go` SHALL print `Picked #<i>: <title>, the next ready issue.` and go on from the blocker read with that issue as `<i>`. When the case returns `nothing-ready`, `lets-go` SHALL say the backlog has nothing ready, suggest the `lets-shape` skill, and stop, claiming nothing. On a change's branch, committed item identity SHALL be checked first for a uniquely scoped existing issue, including one auto-closed by a merge. When no committed identity exists and it is given no number, it SHALL find the open issue by the branch name. When no committed identity resolves the issue, it SHALL use the scoped `item.search` operation to find open issues by branch title and keep only those whose title starts with `<branch> — `. Exactly one match SHALL be the issue. Otherwise it SHALL say that it needs the issue number, and stop. When it is given a number on a change's branch, it SHALL match committed issue identity when present; otherwise that issue's title SHALL start with `<branch> — `. If it does not, `lets-go` SHALL say the issue and the branch do not match, and stop. When it is given words on a change's branch, it SHALL say that an idea needs the default branch, and stop. It SHALL take an issue number as *Find the source of demand* takes a named issue. It SHALL take an idea as that section takes described work.
+`lets-go` SHALL take one issue number, or an idea in words, or nothing. A request names an issue when it holds `#<i>` or is a bare number. A leading or trailing `ask` or `auto` SHALL name the question mode when the rest of the request is a number or nothing. When the rest is words on the default branch, `lets-go` SHALL ask the user whether that word names the question mode or is part of the idea, and show both readings. It SHALL ask in either mode, before *Start from an idea* runs. Only when the user says the word names the question mode SHALL `lets-go` take it off, as the question mode. Otherwise the word SHALL stay in the idea, and *Set the question mode* SHALL take the question mode from its next source. On the default branch, every other request with words SHALL be the idea, kept word for word. When the idea holds no letter or digit, in any script, `lets-go` SHALL say that an idea needs at least one letter or digit, and stop. It SHALL stop before the discovery query and the title search, claiming nothing and running no step. On the default branch, when the request holds neither a number nor words, `lets-go` SHALL take `next`: the third case of *Find the source of demand*, over the whole backlog. That case keeps its rank, and its *Check the prerequisite* and *Confirm the packet* on each candidate, as *Only an idea or a named issue goes to the shape step* says. `lets-go` SHALL print `Picked #<i>: <title>, the next ready issue.` and go on from the blocker read with that issue as `<i>`. When the case returns `nothing-ready`, `lets-go` SHALL say the backlog has nothing ready, suggest the `lets-shape` skill, and stop, claiming nothing. On a change's branch, when it is given no number, it SHALL find the issue by the branch name. It SHALL run `lets backlog item.search` and keep the issues whose title starts with `<branch> — `. Exactly one match SHALL be the issue. Otherwise it SHALL say that it needs the issue number, and stop. When it is given a number on a change's branch, that issue's title SHALL start with `<branch> — `. If it does not, `lets-go` SHALL say the issue and the branch do not match, and stop. When it is given words on a change's branch, it SHALL say that an idea needs the default branch, and stop. It SHALL take an issue number as *Find the source of demand* takes a named issue. It SHALL take an idea as that section takes described work.
 
 #### Scenario: Neither a number nor words
 - **WHEN** the user runs `lets-go` alone on the default branch, and `next` finds `#149 lets-go-chore — ...` as the first ready issue
@@ -472,7 +417,7 @@ surviving branch and SHALL never recreate one.
 *Read the request* SHALL hold a table that decides where the run goes, from the branch the run started on and the request. Its rows SHALL be the default branch and another branch. Its columns SHALL be a number, an idea and nothing. Each of the six cells SHALL name the part the run goes to next, or the stop:
 
 - On the default branch, a number goes to *Check the issue*. An idea goes to *Start from an idea*. Nothing runs `next`: a pick prints `Picked #<i>: <title>, the next ready issue.` and goes to *Check the issue*, and an empty backlog stops.
-- On another branch, a number goes to *Check the issue* when it is the issue named by matching committed identity, or one of the open issues whose title starts with the branch's name and ` — `, and stops otherwise. An idea stops: an idea needs the default branch. Nothing goes to *Check the issue* when matching committed identity resolves the scoped issue, or exactly one open issue's title starts that way, and stops when none or several do.
+- On another branch, a number goes to *Check the issue* when it is one of the open issues whose title starts with the branch's name and ` — `, and stops otherwise. An idea stops: an idea needs the default branch. Nothing goes to *Check the issue* when exactly one open issue's title starts that way, and stops when none or several do.
 
 The table SHALL replace the bullets *Start* step 2 held, with the same results. A leading or trailing `ask` or `auto` SHALL be read before the table decides, as *lets-go takes one issue number or an idea* says. On another branch, words stop the run, so `lets-go` SHALL ask no question about the word there.
 
@@ -493,7 +438,7 @@ The table SHALL replace the bullets *Start* step 2 held, with the same results. 
 - **THEN** it finds a table with a row for the default branch and a row for another branch, and a column each for a number, an idea and nothing
 
 ### Requirement: lets-go runs for a Chore, a Bug or a Story
-`lets-go` SHALL run on the repository's default branch, or on a change's branch. A change's branch is a branch named after the change, whose issue `lets-go` resolves from committed item identity or branch name as *lets-go takes one issue number or an idea* says. On any other branch it SHALL say that `lets-go` runs on the default branch or on a change's branch, and stop. It SHALL run for an issue whose Kind is Chore, Bug or Story. It SHALL run for an issue of any other Kind but Epic as for a Story. It SHALL also run for an idea or an unshaped issue, which the shape step turns into one. It SHALL add no Kind check of its own: an Epic stops where *Confirm the packet* says an epic is built through its stories. For a Story with a parent, it SHALL read the parent's **Shared decisions** as *Confirm the packet* says, because *Route* needs them. When a procedure returns a result that ends the run, such as `unresolved` for a glossary prerequisite, `lets-go` SHALL stop as the part that ran it says.
+`lets-go` SHALL run on the repository's default branch, or on a change's branch. A change's branch is a branch named after the change, whose issue `lets-go` finds as *lets-go takes one issue number or an idea* says. On any other branch it SHALL say that `lets-go` runs on the default branch or on a change's branch, and stop. It SHALL run for an issue whose Kind is Chore, Bug or Story. It SHALL run for an issue of any other Kind but Epic as for a Story. It SHALL also run for an idea or an unshaped issue, which the shape step turns into one. It SHALL add no Kind check of its own: an Epic stops where *Confirm the packet* says an epic is built through its stories. For a Story with a parent, it SHALL read the parent's **Shared decisions** as *Confirm the packet* says, because *Route* needs them. When a procedure returns a result that ends the run, such as `unresolved` for a glossary prerequisite, `lets-go` SHALL stop as the part that ran it says.
 
 #### Scenario: A change's branch
 - **WHEN** the current branch is `lets-go-chore`, and issue #149's title starts with `lets-go-chore — `
@@ -512,7 +457,7 @@ The table SHALL replace the bullets *Start* step 2 held, with the same results. 
 - **THEN** `lets-go` stops as *Confirm the packet* says, lists the epic's open sub-issues, and claims nothing
 
 #### Scenario: A branch with no issue
-- **WHEN** the current branch is `fix-typo`, and no committed identity resolves an issue and no open issue's title starts with `fix-typo — `
+- **WHEN** the current branch is `fix-typo`, and no open issue's title starts with `fix-typo — `
 - **THEN** `lets-go` says it runs on the default branch or on a change's branch, and stops
 
 #### Scenario: A glossary prerequisite still stops
@@ -523,89 +468,324 @@ The table SHALL replace the bullets *Start* step 2 held, with the same results. 
 - **WHEN** the issue's Kind is Spike, and its packet has every Story line
 - **THEN** `lets-go` goes on to *Route*, as for a Story
 
+### Requirement: A complete packet means shape is skipped, and the skip line says when
+When *Confirm the packet* returns `complete`, and no shape step ran in this run, `lets-go` SHALL print `Skipped shape: #<i>'s packet is complete, last edited <date>.`, once for that issue. `<date>` SHALL be the day of the issue's `lastEditedAt`, which the thread query in *Confirm the packet* returns, as `YYYY-MM-DD`. When `lastEditedAt` is null, `<date>` SHALL be the day of the issue's `createdAt`, read with `lets backlog item.read`. When *Confirm the packet* returns `complete` after a shape step reported `done` in this run, `lets-go` SHALL print `Done shape: <date>. <evidence>` instead, with the report's `date` and its `evidence` joined with `; `. It SHALL print the `Done shape` line once per run: after a lost claim, *Check the issue* SHALL not print it again for the story picked next. When *Confirm the packet* returns `needs-shape`, `lets-go` SHALL go on as *Only an idea or a named issue goes to the shape step* says, and print no skip line.
+
+#### Scenario: An edited packet
+- **WHEN** issue `#149`'s body was last edited on 2026-11-04
+- **THEN** `lets-go` prints `Skipped shape: #149's packet is complete, last edited 2026-11-04.`
+
+#### Scenario: A packet never edited
+- **WHEN** the issue's `lastEditedAt` is null and `lets backlog item.read` says it was created on 2026-11-03
+- **THEN** the skip line's date is `2026-11-03`
+
+#### Scenario: A packet with a missing line
+- **WHEN** the packet lacks its one-line outcome
+- **THEN** `lets-go` prints no skip line, and runs the shape step for the issue
+
+#### Scenario: A packet the shape step wrote
+- **WHEN** the shape step reported `done` in this run with the date `2026-11-05T09:30:00Z`, and *Confirm the packet* passes for the issue it named
+- **THEN** `lets-go` prints `Done shape: 2026-11-05T09:30:00Z.` followed by the report's evidence, and no `Skipped shape` line
+
+#### Scenario: Done shape after a lost claim
+- **WHEN** discovery filed #191 and #192, *Check the issue* printed `Done shape:` for #191, *Claim* returned `taken` for #191, and *Pick the first ready story* then picked #192
+- **THEN** `lets-go` prints the `Picked` line for #192, and no second `Done shape:` line
+
+### Requirement: Review plan runs as a step, or is not in the route
+When the schema is `lets-minimal`, review plan never runs. `lets-go` SHALL print `Skipped review plan: not in the lets-minimal route.` after the plan step is done, and before the build step. That line SHALL carry no date. When the schema is not `lets-minimal`, review plan SHALL be a step of its own. It SHALL run as *Each step runs through lets delegate step* says, with `--for review-plan` and `--name <name>-review-plan`. Its prompt SHALL say to invoke the `lets-review-plan` skill for the change, as *The step prompt says what to run, the question mode, and how to report* says. That skill reviews the plan, or lets its *Check an earlier review* decide, runs its own rounds, and records the review in the pull request description under **Plan review**. When the walk reaches review plan, the first of these that matches SHALL decide whether it is done. First, on `lets-minimal`, review plan is done. Second, when the archive folder exists, review plan is done, and the records disagree when the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line. Third, otherwise, review plan SHALL count as done when that section covers the plan: `lets-review-plan`'s *Check an earlier review* finds no reason to run the skill again, and says the review is finished. When the walk reaches review plan and no section covers the plan, review plan SHALL run, whatever the change's `state`. So a `ready` change with no covering review goes to review plan, not build. `lets-go` SHALL read the pull request's body when it reaches the row, with `lets codehost pull-request.read`, because a step in this run can have opened or changed it. When review plan was done before this run, `lets-go` SHALL print `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.` `<pr>` SHALL be the pull request's number. `<sha>` and `<verdict>` SHALL come from the **Plan review** section of the pull request's body. `lets-go` SHALL find the `## Plan review` heading first, and read the section up to the next `## ` heading or the end of the body. Inside it, `<sha>` SHALL come from the line that starts `Reviewed: `, and `<verdict>` from the line that starts `- **Verdict:** `. `<date>` SHALL be `<sha>`'s author date, as `YYYY-MM-DD`, from `git log -1 --format=%as <sha>`. When the review plan step reports `done` in this run, `lets-go` SHALL print `Done review plan: <date>. <evidence>`, with the report's `date` and its `evidence` joined with `; `, as for any other step. The schema SHALL be the `schema:` line of the first of these files that exists: the change's `openspec/changes/<name>/.openspec.yaml`, then the archived change's `openspec/changes/archive/<YYYY-MM-DD>-<name>/.openspec.yaml`. When neither exists, it SHALL be the route's schema. So an archived change keeps the schema it was built with, even when the route would now pick another.
+
+#### Scenario: A chore's route
+- **WHEN** the schema is `lets-minimal` and the plan step reports `done`
+- **THEN** `lets-go` prints `Skipped review plan: not in the lets-minimal route.` and goes on to build
+
+#### Scenario: A review that ran in this run
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, the walk reached review plan with no **Plan review** section in pull request #167, and the review plan step reported `done` with the date `2026-11-05T10:00:00Z` and the evidence `Plan review: APPROVE for 7d16565` and `pull request #167`
+- **THEN** `lets-go` prints `Done review plan: 2026-11-05T10:00:00Z. Plan review: APPROVE for 7d16565; pull request #167` before it runs build
+
+#### Scenario: A schema with a review
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, pull request #167's **Plan review** section says `Reviewed: 7d16565` and `- **Verdict:** APPROVE` and covers the plan, and `git log -1 --format=%as 7d16565` prints `2026-11-03`
+- **THEN** `lets-go` prints `Skipped review plan: the Plan review in pull request #167 says APPROVE for 7d16565, committed 2026-11-03.` and runs no review plan step
+
+#### Scenario: A ready change with no review
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, the state is `ready`, and the pull request's body has no **Plan review** section
+- **THEN** the next step to run is review plan, with `--for review-plan`, and build runs only after it reports `done`
+
+#### Scenario: A stale review
+- **WHEN** the **Plan review** section says `Reviewed: 7d16565` and `- **Verdict:** APPROVE`, and a later commit changed `design.md` that no rebuttal names
+- **THEN** `lets-go` runs the review plan step, whose `lets-review-plan` runs a new round
+
+#### Scenario: The body is read when the row is reached
+- **WHEN** the plan step reported `done` in this run, and its brainstorm opened the pull request
+- **THEN** `lets-go` reads the body with `lets codehost pull-request.read` when it reaches review plan, not from the read before the plan step
+
+#### Scenario: An archived change on lets-minimal
+- **WHEN** `openspec/changes/archive/2026-11-04-lets-go-chore/.openspec.yaml` says `schema: lets-minimal`, the issue's Size has since changed to M so that the route would pick `lets-standard`, and pull request #167's body has no **Plan review** section
+- **THEN** `lets-go` prints `Skipped review plan: not in the lets-minimal route.`, and prints no `Records disagree:` line for the missing section
+
+### Requirement: A run ends on done, failed, or a repeated question
+`lets-go` SHALL run a step's rounds until its report is `done` or `failed`. At `auto`, from a step's sixth `needs-input` report in a run, the user answers every question of that step, as *lets-go relays a needs-input report in auto mode* says. When a `needs-input` report holds a question that is already in the answers file, `lets-go` SHALL stop, say the step asked a settled question again, and show the report. *Read the report* SHALL handle a failed shape step before any other failed step. For a failed shape step there is no branch: `lets-go` SHALL print `Failed shape: <reason>`, say to run `lets-shape` on the idea or the issue, name no branch and print no pull request URL. On a `failed` report from any other step it SHALL show the reason, name the step and the branch, and stop. It SHALL say that running `lets-go` again on the branch carries on from the first unfinished step. It SHALL print the pull request's URL only when the branch has a pull request. When it has none, it SHALL print no URL, and SHALL say that the branch has no pull request yet. It SHALL not run a failed step again in the same run.
+
+#### Scenario: A failed apply
+- **WHEN** the build step reports `failed` with reason `tests fail on main`
+- **THEN** `lets-go` shows `tests fail on main`, names `build` and the branch, says to run `lets-go` again on the branch, and runs no review build
+
+#### Scenario: A repeated question
+- **WHEN** the resumed plan step asks `Which schema?` again, and that question is in the answers file
+- **THEN** `lets-go` stops and says the step asked a settled question again
+
+#### Scenario: A failed shape
+- **WHEN** the shape step reports `failed`
+- **THEN** `lets-go` prints `Failed shape:` with the reason, says to run `lets-shape`, names no branch, prints no pull request URL, and runs no plan
+
+#### Scenario: A failed plan with no pull request
+- **WHEN** the plan step reports `failed` on the branch `lets-go-chore` before its brainstorm opened a pull request, and `lets codehost pull-request.read` finds none
+- **THEN** `lets-go` names `plan` and `lets-go-chore`, says the branch has no pull request yet, and prints no URL
+
+#### Scenario: The shape case comes first
+- **WHEN** the skill-interfaces test reads *Read the report* in `skills/lets-go/SKILL.md`
+- **THEN** the case for a failed shape step comes before the case for any other failed step
+
+### Requirement: The prose holds the fixed lines the tests check
+`skills/lets-go/SKILL.md`, or a file in `skills/lets-go/references/`, SHALL hold each of these strings, so the skill-interfaces test can check them. A string may wrap across lines. `## Placeholders` SHALL be in `SKILL.md` itself, as *Each placeholder in lets-go names one thing* says:
+
+- `Skipped shape: #<i>'s packet is complete, last edited <date>.`
+- `Done shape: <date>. <evidence>`
+- `Done plan: <date>. <evidence>`
+- `Done review plan: <date>. <evidence>`
+- `Done build: <date>. <evidence>`
+- `Done review build: <date>. <evidence>`
+- `Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).`
+- `Skipped review plan: not in the lets-minimal route.`
+- `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.`
+- `Skipped build: every task is ticked, last task commit <date> (<sha>).`
+- `Skipped review build: archived <date> (<sha>); pull request #<pr> is ready for review.`
+- `Records disagree:`
+- `Questions: <mode>, because #<i> is a <Kind>.`
+- `Questions: <mode>, because you asked for it.`
+- `Questions: ask, because shape has not run yet.`
+- `Questions: <mode>, because your lets config sets go.questions.`
+- `lets go questions`
+- `issue #<i>: <title>`
+- `epic #<parent>: <title>`
+- `story #<story>: <title>`
+- `Plan review: <verdict> for <sha>`
+- `Run discovery on it?`
+- `Picked #<i>: <title>, the first ready story under #<parent>.`
+- `Picked #<i>: <title>, the next ready issue.`
+- `docs: the discovery map from #<parent>`
+- `Discovery status: in-progress`
+- `lets backlog item.search`
+- `*Resume mode*`
+- `issue-<i>`
+- `idea-<slug>`
+- `--for review-plan`
+- `openspec instructions apply --change <name> --json`
+- `git log -1 --diff-filter=A --format='%h %as' -- openspec/changes/<name>/tasks.md`
+- `git log -1 --diff-filter=M --format='%h %as' -- openspec/changes/<name>/tasks.md`
+- `git log -1 --format=%as <sha>`
+- `lets codehost pull-request.read`
+- `git status --porcelain`
+- `git fetch origin <name>`
+- `git merge --ff-only origin/<name>`
+- `git switch <name>`
+- `.workspace/lets-go/<session>-prompt.md`
+- `.workspace/lets-go/<session>-answers.yaml`
+- `--answers-file`
+- `.workspace/lets-delegate/<session>.prompt.md`
+- `step-report`
+- `asked a settled question again`
+- `**3**: no fresh session can run here`
+- `## Placeholders`
+- `<shape-name>`
+- `<session>`
+
+Below, the skill means `SKILL.md` together with its reference files. The skill SHALL not hold `review.md`, `VERDICT:`, `#152 adds`, `#153 adds` or `#154 adds`. The skill SHALL not say that `lets-go` takes chores only, or that `lets-go` needs an issue number on the default branch. The skill SHALL not say that review plan runs inside plan or inside build, or that `lets-go` reuses the `lets-build` skill. The skill SHALL not hold `Done review plan: the Plan review` or `with a Code review section`. The skill SHALL not say that a too-large idea ends the shape step with a `failed` report. The README's `lets-go` section SHALL not say that an idea too large for one issue stops the run, or that review plan runs inside build.
+
+#### Scenario: The fixed lines
+- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
+- **THEN** it finds every string this requirement lists, and does not find `review.md`, `VERDICT:`, `#152 adds`, `#153 adds`, `#154 adds`, `reuses the \`lets-build\` skill`, `runs inside build`, `Done review plan: the Plan review` or `with a Code review section`
+
+#### Scenario: The too-large idea
+- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`, the files in `skills/lets-go/references/` and `README.md`
+- **THEN** the skill does not say `end with a failed report that says so and names`, and the README does not say `An idea too large for one issue stops the run`
+
+#### Scenario: The step table header changes
+- **WHEN** the step table's header no longer reads `| Step | Skill | Done when | Record | Skip line |`
+- **THEN** the fixed-lines check still passes
+
+### Requirement: A stopped discovery resumes from its parent issue
+A discovery can stop between rounds, or before *Claim*, when no story is ready. For an idea, before the title search of *Start from an idea*, `lets-go` SHALL look for an open parent issue that says `Discovery status: in-progress` and whose `Input:` line holds the idea's words. It SHALL use `lets-shape`'s own query, `lets backlog item.search`. When one exists, `lets-go` SHALL say that a discovery of this idea is in progress at `#<parent>`, skip the title search, and run the shape step for the idea. The step resumes that discovery, as *The shape step asks before it runs discovery* says. For an issue, no check is needed: when *Confirm the packet* returns `needs-shape` for `#<i>`, the shape step runs, and finds the parent whose `Input:` is `#<i>`. The answers file rules of *The shape step shapes an idea or an unshaped issue* SHALL hold: an idea retyped word for word keeps its answers, and a reworded idea starts with none and is a new input. The phases the parent already recorded are not lost either way.
+
+#### Scenario: The same idea again
+- **WHEN** a run for `rewrite the backlog around a plugin model` stopped at MoSCoW, the open parent `Epic: plugin backlog` says `Discovery status: in-progress` with `Input: rewrite the backlog around a plugin model`, and the user runs `lets-go rewrite the backlog around a plugin model` again
+- **THEN** `lets-go` says a discovery of this idea is in progress at that parent, runs no title search, and runs the shape step, whose round resumes the parent at MoSCoW
+
+#### Scenario: A reworded idea
+- **WHEN** the user runs `lets-go rewrite the backlog around a plugin system` instead, and no parent's `Input:` line holds those words
+- **THEN** `lets-go` runs the title search as usual, and on a yes for `Epic: plugin backlog`, *Confirm the packet* returns `epic`, and `lets-go` stops as `lets-build` does
+
+#### Scenario: An issue's discovery again
+- **WHEN** the user runs `lets-go` for `#180` again, #180 still has no Kind, and an open parent says `Discovery status: in-progress` with `Input: #180`
+- **THEN** *Confirm the packet* returns `needs-shape` for #180, and the shape step's round resumes that parent
+
+### Requirement: Each placeholder in lets-go names one thing
+`skills/lets-go/SKILL.md` SHALL hold a `## Placeholders` section after the overview of its parts and before the first part. It SHALL hold a table with one row for each placeholder the skill uses, in `SKILL.md` or in a file in `skills/lets-go/references/`: the placeholder, the one thing it stands for, and where the run sets it. Each placeholder SHALL have one row, and SHALL name one thing everywhere in the skill. One thing SHALL have one placeholder. The names SHALL be these:
+
+- `<project>` is the number of the Project linked to the repository. `<owner>` is its owner, and `<repo>` the repository, as `owner/name`.
+- `<i>` is the run's issue: the number the user named, the issue `next` or *Pick the first ready story* picked, or the issue a shape step shaped. `<issue-url>` is its URL.
+- `<parent>` is a parent issue: an epic that discovery filed, or a discovery in progress.
+- `<story>` is one story that a shape step's report names.
+- `<pr>` is the change's pull request.
+- `<name>` is the change's name, the part of `<i>`'s title before ` — `. On a change's branch it is `<branch>`. *Check the issue* sets it from the blocker read's title, so after a shape step it is set again from the shaped issue's title.
+- `<shape-name>` is the shape step's name: `issue-<i>` or `idea-<slug>`.
+- `<session>` is a step's session label: `<name>-<step>` for plan, review plan, build and review build, and `<shape-name>-shape` for shape.
+- `<idea>` is the idea in the user's words.
+
+Neither `SKILL.md` nor any reference file SHALL hold `<n>`, `<p>`, `<url>`, `<issue URL>` or `<words>`. The table's *Where the run sets it* column SHALL name the part or section that sets each placeholder, never a step number.
+
+#### Scenario: Every placeholder has a row
+- **WHEN** the skill-interfaces test lists each distinct text in angle brackets that starts with a letter in `skills/lets-go/SKILL.md` and in each file in `skills/lets-go/references/`
+- **THEN** each one is the first cell of exactly one row of the table under `## Placeholders` in `SKILL.md`
+
+#### Scenario: A placeholder with no row
+- **WHEN** an edit adds `<base>` to the skill and adds no row for it
+- **THEN** the test fails and names `<base>`
+
+#### Scenario: A placeholder with no row, in a reference file
+- **WHEN** an edit adds `<base>` to `skills/lets-go/references/glossary-preflight.md` and adds no row for it
+- **THEN** the test fails and names `<base>`
+
+#### Scenario: The old names are gone
+- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and each file in `skills/lets-go/references/`
+- **THEN** it finds none of `<n>`, `<p>`, `<url>`, `<issue URL>` and `<words>`
+
+#### Scenario: The Project and the issue
+- **WHEN** `lets-go` claims #197 on Project 6
+- **THEN** it requests `lets backlog claim.acquire` scoped to Project 6 and issue 197, and never substitutes the issue number for the Project
+
+#### Scenario: The change's name after shape
+- **WHEN** the shape step ran as `issue-180-shape` and reported `done` with `issue #181: lets-sync-quiet — lets sync takes a --quiet flag`
+- **THEN** `<name>` is `lets-sync-quiet`, and *Claim* creates the branch `lets-sync-quiet`, not `issue-180`
+
+### Requirement: A done report is checked against its record
+After a `done` report from plan, review plan, build or review build, the walk SHALL check the report before it prints the step's line. It SHALL read the three records again, as at the start of the walk: `git status --porcelain`, `lets codehost pull-request.read`, and the archive folder. It SHALL apply their disagreement rules, then run the row's done test. When the records disagree, `lets-go` SHALL stop as *Records that disagree stop the run* says. When the test says the step is done, the walk SHALL print the step's `Done` line and go on. When the test says the step is not done, the step has failed. `lets-go` SHALL print its `Failed` line, whose reason starts `the step reported done, but` and names the record and what it holds. It SHALL end the walk as for a `failed` report, and SHALL not run the step again. A shape step's `done` report SHALL need no check of its own: *Check the issue* runs *Confirm the packet* after it, and a second `needs-shape` stops the run.
+
+#### Scenario: Plan reports done on a blocked change
+- **WHEN** the plan step reports `done`, and `openspec instructions apply --change lets-go-chore --json` then says `blocked`
+- **THEN** `lets-go` prints a line that starts `Failed plan: the step reported done, but` and names the state `blocked`, prints no `Done plan:` line, and runs no review plan
+
+#### Scenario: Review plan reports done with no section
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, the review plan step reports `done`, and pull request #167's body still has no **Plan review** section
+- **THEN** `lets-go` prints a line that starts `Failed review plan: the step reported done, but` and names the missing **Plan review** section, and runs no build
+
+#### Scenario: Review build reports done on a draft
+- **WHEN** the review build step reports `done`, the archive folder exists, and pull request #167 is still a draft
+- **THEN** `lets-go` prints `Records disagree:`, names the draft, and prints no `Done review build:` line
+
+#### Scenario: Plan leaves a file uncommitted
+- **WHEN** the plan step reports `done`, and `git status --porcelain` then lists `openspec/changes/lets-go-chore/tasks.md`
+- **THEN** `lets-go` prints `Records disagree:`, names the path, prints no `Done plan:` line, and runs no review plan
+
+#### Scenario: A report the records agree with
+- **WHEN** the build step reports `done`, and the state is then `all_done`
+- **THEN** `lets-go` prints `Done build:` with the report's date and evidence, and goes on to review build
+
 ## ADDED Requirements
 
 ### Requirement: Backlog actions preserve sole runner ownership
-Lets-go SHALL use the shared request/result boundary for the existing-story
-GitHub lifecycle. Lets SHALL decide readiness, ranking, claim/release permission,
-reconciliation and progression. The agent SHALL execute only the bounded action
-requested through the selected provider definition. The step skills SHALL NOT
-become alternative runners or gain provider-specific workflow recipes.
+Lets-go SHALL use the shared bounded-action and submitted-result boundary for
+its existing-story backlog operations. Lets SHALL own readiness, ranking,
+claim and release permission, reconciliation and progression. The agent SHALL
+execute only the requested bounded actions from the selected inert definition.
+Step skills SHALL retain their own steps and reports rather than becoming runners.
 
 #### Scenario: A claim is uncertain
-- **WHEN** a requested claim lacks validated observations of effects or final ownership/status
-- **THEN** lets-go reports the recovery state and starts no planning or build step
+- **WHEN** a claim lacks validated observations of its effects or final ownership and status
+- **THEN** lets-go reports recovery and starts no planning or build step
 
 #### Scenario: Build finishes
 - **WHEN** lets-build finishes implementation tasks
-- **THEN** it returns its step report and lets-go retains responsibility for the next workflow step
+- **THEN** it returns its step report and lets-go decides the next workflow step
 
 ### Requirement: Resume validates current authority
-Lets-go SHALL carry immutable item identity through step invocations and keep
-private operation continuation separate. Before authorizing resumed work it
-SHALL require fresh validated sole-owner/In Progress observations and check
-outstanding item mutations in the shared local store. Ordinary resume SHALL NOT
-require the original private continuation or a new claim. Original-operation
-continuation SHALL remain required for uncertain writes and claim release.
-Historical claim success SHALL NOT replace fresh verification. A worker session
-SHALL be the backend worker identity in `context.session`, distinct from the
-step's harness session or label; step sessions SHALL carry their caller's worker
-identity for backend actions.
+After the existing tree, PR and record checks, lets-go SHALL use fresh validated
+adapter observations before starting any unfinished work step. The authenticated
+actor SHALL be the sole assignee and Status SHALL be In Progress. It SHALL
+check the selected item's outstanding mutations in the shared local store.
+Missing facts, conflicting ownership, another status or known unresolved effects
+SHALL stop progression with the observed mismatch and a remedy. On an existing
+branch, this check SHALL NOT acquire a claim, reassign the issue or change its
+status. A later unfinished step SHALL receive a fresh check after the previous
+step returns. Terminal and entirely finished runs SHALL keep their existing
+stops without an ownership-for-work check or remote write.
+
+Ordinary resume SHALL use the existing scoped issue and branch lookup and SHALL
+NOT require a committed identity file or an original recovery record. A recovery
+record SHALL remain required for original-operation uncertainty and claim
+release; current public identity SHALL NOT grant historic release authority.
+The backend worker ID in `context.session` SHALL belong to the lets-go
+invocation, not a delegated step label or harness session. It SHALL NOT alter
+the existing step prompt or report contract.
 
 #### Scenario: Branch exists but ownership changed
-- **WHEN** the branch exists and a fresh validated submitted read shows another owner
-- **THEN** lets-go reports conflict and starts no implementation work
+- **WHEN** an existing branch has unfinished work and a fresh adapter read shows another assignee
+- **THEN** lets-go reports the mismatch, starts no work step and changes no assignment or status
 
 #### Scenario: Current ownership observations are unavailable
-- **WHEN** a branch and old claim record exist but current required evidence is unavailable
-- **THEN** lets-go pauses and explains the missing evidence without reclaiming or adopting the session
+- **WHEN** the branch resolves to an issue but the fresh ownership or status read is incomplete or unavailable
+- **THEN** lets-go pauses with the missing facts and starts no work step or repair write
 
 #### Scenario: New session continues the same work
-- **WHEN** a new lets-go session resolves the committed item identity and fresh reads show the authenticated actor as sole assignee and In Progress with no known unresolved effects
-- **THEN** it resumes from the first unfinished step without the original private continuation or another claim
+- **WHEN** a new session resolves the issue through the existing branch lookup and fresh reads show the authenticated actor as sole assignee and In Progress without known unresolved effects
+- **THEN** it resumes the first unfinished step without acquiring a new claim or requiring the original recovery record
 
-#### Scenario: Legacy branch predates private continuation
-- **WHEN** an existing in-progress branch has no journal and uniquely resolves to the selected issue with valid fresh ownership/status
-- **THEN** lets-go continues its existing resume path and does not invent original release authority
+#### Scenario: Legacy branch predates recovery record
+- **WHEN** a legacy branch has no recovery record and uniquely resolves to the issue with valid fresh sole ownership and In Progress
+- **THEN** lets-go continues without a new claim, metadata commit or invented release authority
 
-### Requirement: Shared runner associates the PR and verifies completion
-Within *Walk the step table*, after the plan step creates the OpenSpec change,
-lets-go SHALL persist and commit the core's validated generic identity as
-`openspec/changes/<name>/identity.json` before the next step. This metadata
-SHALL contain no workflow step log, private continuation or credential.
-Lets-go SHALL request `reference.write` after a plan step creates the PR,
-before the next step. It SHALL validate existing
-association on resume and refresh it after a step changes the PR. An already
-correct association SHALL cause no repeated write. A stacked PR without an
-available native closing relationship SHALL be reported as pending association;
-its intended exact PR reference SHALL survive until retargeting permits a fresh
-check. Pending association SHALL NOT imply completion.
+#### Scenario: Hand-stacked branch is unassigned and Todo
+- **WHEN** a manually created branch has unfinished work but its issue is unassigned and Todo
+- **THEN** lets-go explains that sole assignment to the authenticated actor and In Progress are required, stops and performs no assignment or status write
 
-The runner SHALL use `lets backlog reference.write` and
-`lets backlog completion.write` with the same request/submission loop as other
-operations. The provider definition SHALL translate backend actions and facts;
-it SHALL NOT choose the next workflow part or run a separate completion loop.
-After merge, completion SHALL run on the next explicit lets-go invocation for
-that issue or its identifiable change branch. No run SHALL merge, watch or wait
-for the PR as part of this behavior.
+#### Scenario: Same actor has a different status
+- **WHEN** the issue is assigned only to the authenticated actor but its status is Todo or Done
+- **THEN** lets-go reports the status mismatch and starts no unfinished step or status update
 
-#### Scenario: Plan opens its draft PR
-- **WHEN** the plan step returns its new PR and the exact native closing relationship is available
-- **THEN** lets-go validates the PR association through reference.write before running the next step
+#### Scenario: Several assignees include the authenticated actor
+- **WHEN** a fresh read shows the authenticated actor and another assignee
+- **THEN** lets-go reports conflicting ownership and changes no assignee or status
 
-#### Scenario: Stacked PR has no native closing relationship yet
-- **WHEN** the intended PR targets a feature branch and native closing linkage is not exposed
-- **THEN** lets-go preserves its exact intended reference and reports association pending without authorizing Done
-- **AND** ordinary stack work can continue through the shared runner
+#### Scenario: Ownership changes while a step runs
+- **WHEN** a step returns and the fresh check before the next unfinished step shows a different owner
+- **THEN** lets-go stops before the next step and performs no repair
 
-#### Scenario: A later run finds native completion
-- **WHEN** the user runs lets-go for the issue after merging its exact associated PR and GitHub has already set Done
-- **THEN** lets-go validates the merge and completed state, writes no repeated update, runs no step and prints the PR URL
+#### Scenario: Terminal PR keeps its current stop
+- **WHEN** the existing branch-scoped PR read reports MERGED or CLOSED, after a clean tree check
+- **THEN** lets-go reports the existing terminal message without an ownership check, a workflow step or a completion write
 
-#### Scenario: A later run needs a completion update
-- **WHEN** the exact associated merge qualifies but the selected backlog item remains In Progress
-- **THEN** lets-go requests only the required completion operation, validates its effects and ends without a build step or merge
+### Requirement: Existing-story callouts use configured integration boundaries
+All backlog, repository and PR callouts reachable in the existing-story journey
+SHALL use configured definitions through the shared action engine. This includes
+packet fields, parent body, comment freshness, glossary prerequisites, repository
+facts and the existing planning/review PR writes. Backlog operations SHALL use
+the backlog definition; repository and PR operations SHALL use the code-host
+definition. No owning skill SHALL hard-code a provider CLI or silently select
+another tool. Compatible MCP configurations SHALL NOT require gh. Setup and
+shaping production writes SHALL remain outside this existing-story migration;
+their existing handoffs and behavior inventory SHALL remain available.
 
-#### Scenario: Completion response is lost
-- **WHEN** a completion write may have reached the backend but its result is unavailable
-- **THEN** the next run reconciles that original completion before authorizing another update
+#### Scenario: Packet belongs to an item after the old scan limit
+- **WHEN** an existing issue belongs to the configured Project whose other items exceed 500
+- **THEN** Confirm the packet reads that issue's required fields through scoped item.read instead of treating a missing scan entry as needs-shape
+
+#### Scenario: Existing-story workflow uses MCP without gh
+- **WHEN** compatible configured backlog and code-host MCP definitions cover the existing-story journey and gh is absent
+- **THEN** runner, plan, build and review callers perform their existing actions through those definitions without a gh prerequisite
+
+#### Scenario: Review updates the PR body
+- **WHEN** a review step prepares its body update
+- **THEN** it uses the code-host action boundary, preserves other sections and closing text, and keeps workflow sequencing with lets-go
+
+#### Scenario: Done report is checked before the next step
+- **WHEN** a step reports done
+- **THEN** lets-go checks the existing Git, PR and archive records without writing identity.json or an extra metadata commit

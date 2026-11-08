@@ -24,6 +24,12 @@ active plan must be replaced before implementation continues (D1, D5).
   The adapter supplies backend facts; shared workflow policy decides when to
   continue. Private recovery is for uncertain operations, not an extra login
   requirement for ordinary resume (D4, D12).
+- On an existing branch, perform the user-approved read-only ownership and
+  status check before unfinished work. A mismatch stops without reassigning,
+  claiming again or changing status (D14). Keep ADR-015's existing rule.
+- Replace the existing-story journey's remaining repository and PR callouts,
+  including step and review callers, through the configured code-host boundary.
+  This uses the same bounded action engine; it does not execute tools in Lets.
 - Preserve today’s merged and rejected PR stops. Do not add a terminal
   completion write, historical PR lookup or committed identity file. Keep the
   shared contract’s merge-gated completion guarantee for any actual completion
@@ -66,12 +72,3 @@ Shared contract changes must preserve their operation coverage. See
 [research.md](research.md) for the evidence and [design.md](design.md) for the
 replacement contract and recovery design. This proposal does not claim
 implementation or live support.
-
-## Parity decision pending
-
-D13 requires behavior parity, including existing branches that skip Claim.
-Accepted ADR-015 currently requires fresh ownership verification before work.
-The concrete conflict and proposed narrow amendment are in research.md under
-*Behavior parity assessment after D13*. No new claim or resume gate is selected.
-Design, specs and tasks must be reconciled after this ADR decision; the prior
-reviewed plan is not approved or ready for implementation.

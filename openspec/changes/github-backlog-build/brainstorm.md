@@ -19,7 +19,8 @@ This is a fresh planning restart for existing draft [PR #172](https://github.com
 | D10 | Must Lets independently retrieve original tool capture? | No. The configured adapter translates tool output into a submitted contract; Lets validates that contract and workflow rules. Explicitly revise ADR-015’s evidence clause, retaining policy/recovery ownership. This trusts submitted observations and cannot detect convincingly fabricated output. | User, 2026-11-07, explicit “yes” to the stated trust-model amendment |
 | D11 | How should implementation tasks be sized? | Keep #136 / draft #172 together and allow more than twelve small tasks so the full lifecycle and shared contract migration remain in one plan. | User, explicit answer to task-count question |
 | D12 | Is resume adapter-specific workflow? | No. Lets-go already owns resume. Preserve that shared behavior; the adapter supplies backend observations. Remove the plan's accidental requirement for an original private continuation for ordinary resume. Completion policy also belongs to shared Lets/lets-go, not the GitHub definition. | User, “doesnt lets go already do that? why is it specific to this adapter?” followed by “Right” to the shared-ownership clarification |
-| D13 | Does this migration change existing workflow behavior? | No. Preserve today’s functionality across the workflow, replacing hard-coded GitHub tool callouts with the configured adapter. Do not add automatic claiming on an existing branch, a resume ownership gate, committed identity files or a completion update to the merged-PR stop as incidental migration work. Any conflict with an accepted ADR must be explained before amending it. | User, latest clarification: “exact same functionality we have today across the board” |
+| D13 | Does this migration change existing workflow behavior? | No. Preserve today’s functionality across the workflow, replacing hard-coded GitHub tool callouts with the configured adapter. Do not add automatic claiming on an existing branch, an unapproved resume ownership gate, committed identity files or a completion update to the merged-PR stop as incidental migration work. Any conflict with an accepted ADR must be explained before amending it. | User, latest clarification: “exact same functionality we have today across the board” |
+| D14 | How does an existing branch satisfy ADR-015? | Before resuming unfinished work, read ownership and status through the adapter. Continue only when the authenticated actor is sole assignee and the item is In Progress; otherwise explain the mismatch or missing facts and stop. Never claim again, reassign or change status on that path. Keep the accepted ADR rather than narrowing it. | User, “Ah so just check”, followed by “Cool do it” after the read-only rule was stated |
 
 ## Changes from the story
 
@@ -34,11 +35,11 @@ it does not perform an explicit completion update. Adding those operations
 changes behavior even when the shared runner owns them. D12 did not approve
 those additions. Remove them from the replacement plan.
 
-The parity assessment in research.md identifies one accepted-ADR conflict:
-ADR-015 requires fresh ownership verification before work, but the current
-existing-branch path does not perform it. The proposed narrow amendment is
-pending explicit agreement. Until resolved, dependent design, spec and task
-sections remain drafts and do not authorize implementation.
+D14 resolves the ownership discrepancy without amending the accepted rule.
+Existing branches still skip Claim. A fresh read checks sole assignment and
+In Progress before unfinished work starts; a mismatch stops without a write.
+This is the explicit exception to D13's behavior parity. Terminal PRs retain
+the existing stops and do not pass through an ownership-for-work gate.
 
 No new vocabulary definitions or scope split have been agreed. The shared
 glossary remains unchanged.

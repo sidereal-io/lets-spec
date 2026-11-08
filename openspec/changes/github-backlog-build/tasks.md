@@ -1,9 +1,3 @@
-> **Revision pending after D13:** preserve today's workflow through configured
-> adapters. Earlier text below that adds an existing-branch ownership gate,
-> `identity.json`, PR association steps or a terminal completion write is
-> superseded and must not guide implementation. See research.md, *Behavior parity
-> assessment after D13*. The narrow ADR-015 conflict remains unresolved.
-
 # Implementation tasks
 
 This checklist retains #136 / draft #172 as the existing delivery owner. It uses
@@ -60,32 +54,44 @@ Nothing is implemented or checked off by this planning restart.
 
 - [ ] 3.9 [medium] Return named uncertain/unavailable claim results and report the release outcome with branch failure. (verify: bats tests/skill-interfaces.bats)
 
-## 4. Continuation and completion [depends-on: 3]
+## 4. Resume and retained completion contract [depends-on: 3]
 
-- [ ] 4.1 [medium] Persist and commit the validated generic identity once the change exists, separately from private continuation passed through step context. (verify: node --test tests/lets/backlog/scopes.test.ts)
-- [ ] 4.2 [medium] Continue ordinary resume from immutable identity and fresh sole-owner/In Progress observations while refusing conflicting or incomplete observations. (verify: node --test tests/lets/backlog/recovery.test.ts)
-- [ ] 4.3 [medium] Bind the exact associated PR to the scoped issue using validated native closing relationship data. (verify: node --test tests/lets/backlog/completion.test.ts)
-- [ ] 4.4 [medium] Reject completion until fresh observations identify that exact PR's merge reference/commit and required closing relationship. (verify: node --test tests/lets/backlog/completion.test.ts)
-- [ ] 4.5 [medium] Return completed without a repeated status write when native automation already completed the item after the qualifying merge. (verify: node --test tests/lets/backlog/completion.test.ts)
-
-- [ ] 4.6 [medium] Resume a uniquely resolved legacy in-progress branch without a journal or invented original claim-release authority. (verify: node --test tests/lets/backlog/recovery.test.ts)
-- [ ] 4.7 [medium] Carry the caller's backend worker identity through step sessions without confusing it with a harness session or step label. (verify: node --test tests/lets/backlog/scopes.test.ts)
+- [ ] 4.1 [medium] Resolve the existing branch's scoped issue through title or explicit issue lookup without an identity file or runner metadata commit. (verify: bats tests/skill-interfaces.bats)
+- [ ] 4.2 [medium] Continue ordinary resume only after a fresh read shows the authenticated actor as sole assignee and In Progress. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [ ] 4.3 [medium] Validate the exact PR association without a GitHub remote write in reference.write conformance. (verify: node --test tests/lets/backlog/completion.test.ts)
+- [ ] 4.4 [medium] Reject explicit contract completion requests until the selected code-host observations prove the exact associated merge and closing relationship. (verify: node --test tests/lets/backlog/completion.test.ts)
+- [ ] 4.5 [medium] Return completed without a repeated explicit contract status write when native automation already completed the item. (verify: node --test tests/lets/backlog/completion.test.ts)
+- [ ] 4.6 [medium] Resume a uniquely resolved legacy branch without a recovery record or invented original release authority. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [ ] 4.7 [medium] Keep the backend worker ID within the lets-go invocation without changing delegated step prompts or reports. (verify: bats tests/skill-interfaces.bats)
+- [ ] 4.8 [medium] Stop an existing-branch run for unassigned Todo, another status, multiple assignees or unavailable facts without issuing assignment or status writes. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [ ] 4.9 [medium] Refresh ownership before each later unfinished step and stop after an intervening ownership change. (verify: bats tests/skill-interfaces.bats)
 
 ## 5. Workflow and release integration [depends-on: 4]
 
-- [ ] 5.1 [complex] Expose operation/submit/resume responses through the backlog CLI without directly executing provider tools. (verify: pnpm test:backlog)
-- [ ] 5.2 [medium] Route lets-go's existing-story lifecycle through the shared boundary while step skills retain only their own step/report. (verify: bats tests/skill-interfaces.bats)
-- [ ] 5.3 [medium] Retain the four-provider behavioral inventory through action/submission conformance without claiming offline fixtures establish live support. (verify: node --test tests/lets/backlog/inventory.test.ts)
-- [ ] 5.4 [medium] Package consumed backlog runtime/definitions while excluding obsolete adapter bundles and unused conformance payloads. (verify: nix flake check)
+- [ ] 5.1 [complex] Expose operation, submit and resume responses through the backlog CLI without directly executing provider tools. (verify: pnpm test:backlog)
+- [ ] 5.2 [medium] Route lets-go's existing-story backlog lifecycle through the shared boundary while steps retain their own work and reports. (verify: bats tests/skill-interfaces.bats)
+- [ ] 5.3 [medium] Retain the four-provider behavioral inventory with distinct code-host facts in action/submission conformance. (verify: node --test tests/lets/backlog/inventory.test.ts)
+- [ ] 5.4 [medium] Package consumed runtime and definitions while excluding obsolete adapter bundles and unused conformance payloads. (verify: nix flake check)
+- [ ] 5.5 [medium] Apply identical policy with explicitly configured compatible tool connections in both required hosts. (verify: node --test tests/lets/backlog/config.test.ts)
+- [ ] 5.6 [medium] Check the literal operation and file-argument forms in the owning procedures and shared action loop. (verify: bats tests/skill-interfaces.bats)
+- [ ] 5.7 [medium] Read packet fields, parent body and thread freshness through scoped complete observations without a fixed Project scan limit. (verify: node --test tests/lets/backlog/items.test.ts)
+- [ ] 5.8 [medium] Preserve the clean-tree check followed by the existing merged-PR stop without ownership checks or a completion write. (verify: bats tests/skill-interfaces.bats)
+- [ ] 5.9 [medium] Ignore historical merged or rejected PRs when the branch no longer exists instead of adding a terminal lookup or Done update. (verify: bats tests/skill-interfaces.bats)
+- [ ] 5.10 [medium] Preserve the existing stop for a surviving stacked branch's merged PR without claiming the issue is completed. (verify: bats tests/skill-interfaces.bats)
+- [ ] 5.11 [easy] Preserve the surviving branch's rejected-PR stop without claiming, completion or build actions. (verify: bats tests/skill-interfaces.bats)
+- [ ] 5.12 [medium] Rewrite docs/backlog-adapter-contract.md for the bounded action and submitted-output protocol, including recorded read attempts and retained completion conformance. (verify: node --test tests/lets/backlog/inventory.test.ts)
 
-- [ ] 5.5 [medium] Apply identical policy and result validation with different explicitly configured compatible tool connections across the two host environments. (verify: node --test tests/lets/backlog/config.test.ts)
-- [ ] 5.6 [medium] Check the literal backlog operation and file-argument forms in the owning lets-go procedures and shared action loop. (verify: bats tests/skill-interfaces.bats)
+## 6. Existing-story code-host callouts [depends-on: 5]
 
-- [ ] 5.7 [medium] Invoke PR association from lets-go after plan creates the PR and refresh it after later steps change the PR. (verify: bats tests/skill-interfaces.bats)
-- [ ] 5.8 [medium] Route a merged PR through shared completion before work-ownership or step checks, accepting native Done without another write. (verify: bats tests/skill-interfaces.bats)
-- [ ] 5.9 [medium] Resolve terminal work from exact committed or native closing identity when the issue is closed or its branch was deleted. (verify: node --test tests/lets/backlog/completion.test.ts)
-- [ ] 5.10 [medium] Report a feature-branch merge without the required native closing relationship as pending completion without a Done write or build step. (verify: node --test tests/lets/backlog/completion.test.ts)
-- [ ] 5.11 [easy] Preserve the rejected-PR stop without claim, completion or build actions when a PR closes without merge. (verify: bats tests/skill-interfaces.bats)
+- [ ] 6.1 [medium] Resolve the separately selected code-host definition and machine connection without implicit fallback or requiring the backlog provider to host PRs. (verify: node --test tests/lets/backlog/config.test.ts)
+- [ ] 6.2 [medium] Validate bounded repository.read and pull-request.read requests and normalized result fields through the same action engine. (verify: node --test tests/lets/backlog/protocol.test.ts)
+- [ ] 6.3 [medium] Expose the specified lets codehost command forms without introducing another executor or a merge operation. (verify: pnpm test:backlog)
+- [ ] 6.4 [medium] Reconcile uncertain PR creation before another create action in the same scoped operation. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [ ] 6.5 [medium] Reconcile uncertain prepared PR-body updates while preserving the owning review section and unrelated text. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [ ] 6.6 [medium] Confirm the existing ready-for-review transition through bounded action results without merging. (verify: node --test tests/lets/backlog/protocol.test.ts)
+- [ ] 6.7 [medium] Replace existing-story repository and PR callouts in runner, plan, build, review skills and draft-PR schema instructions with the configured interfaces. (verify: bats tests/skill-interfaces.bats)
+- [ ] 6.8 [medium] Exercise the existing-story callout inventory with compatible MCP definitions and no gh executable. (verify: node --test tests/lets/backlog/inventory.test.ts)
+- [ ] 6.9 [medium] Translate scrubbed actual code-host repository, PR, update and ready results through the shipped inert definition. (verify: node --test tests/lets/backlog/providers.test.ts)
 
 ## Acceptance gate after implementation
 
@@ -93,7 +99,9 @@ Update contract/definition-authoring/setup docs alongside their owning tasks.
 Before any later push, pnpm test and nix flake check must pass. Then perform fresh
 acceptance through actual tools in unchanged T3 and a standalone coding-agent
 CLI, only in the designated live scope. Record configuration/version evidence,
-interrupted claim recovery and merge-gated completion. In both environments,
+interrupted claim recovery, read-only existing-branch resume, PR/review writes
+and existing terminal stops. Exact-merge completion remains a shared offline
+contract check; no new terminal completion caller is implied. In both environments,
 verify command timeout and output limits plus writable shared private-state
 storage. Failure must name the missing prerequisite before backend issuance. A user-directed merge is
 required for the merged-path acceptance; no task authorizes an automatic merge.
@@ -110,8 +118,7 @@ No support claim or PR readiness change follows from offline checks alone.
   unavailable prerequisites, output files, shipped GraphQL translation and
   cross-host configuration. Task count remains within the user's D11 exception.
 
-- 2026-11-07, shared workflow correction (D12): ordinary resume keeps lets-go's
-  existing ownership. Private operation state no longer gates finding the next
-  step. Association and terminal completion now have named shared-runner callers,
-  including closed issues, deleted branches and native automation. Add explicit
-  cross-worktree, legacy, worker-context and terminal-path tasks.
+- 2026-11-08, D13 and D14: remove committed identity and terminal-completion
+  caller tasks. Preserve the current workflow through adapters, with the
+  explicitly approved read-only resume check. Include related code-host callers
+  so an MCP-selected existing-story journey has no hidden gh dependency.

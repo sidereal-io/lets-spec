@@ -281,8 +281,9 @@ best-effort; assignment followed by status writes is not atomic and supplies no
 new lock. Never release or repair another session's ownership.
 
 Private recovery records must not become an extra gate on the runner's ordinary
-resume. Committed scoped identity and fresh native ownership/status establish
-whether work may continue; original operation records remain necessary for
+resume. Scoped item identity resolved from the existing branch/issue records
+and fresh native ownership/status establish whether work may continue.
+Original operation records remain necessary for
 uncertain mutation reconciliation and session-safe release. Share pending item
 mutations across local worktrees using the same user-configured store. This
 supplies no distributed lock or visibility into another machine's private state.
@@ -294,9 +295,9 @@ substitute for those merge facts. Completion remains idempotent; archive/readine
 In Progress until confirmed merge. This decision does not reopen the settled
 native-state/private-local-journal design. The shared runner chooses when to
 associate a PR and request completion; a provider definition only translates
-the bounded backend actions and observations. The GitHub plan connects the
-merged-PR stop to completion on the next explicit lets-go run, without merging
-or rerunning build steps.
+the bounded backend actions and observations. Defining a completion operation
+does not require the runner to call it on a merged-PR stop. The GitHub migration
+preserves the existing terminal stops; any actual completion request still requires the merge facts above.
 
 ## Packaging, release evidence and migration
 

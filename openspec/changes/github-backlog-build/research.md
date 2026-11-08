@@ -2,12 +2,13 @@
 
 The user's latest instruction is to preserve today's functionality across the
 workflow while replacing hard-coded GitHub callouts with the configured adapter.
-This supersedes the plan's added resume and terminal-completion behavior. The
+D14 subsequently approves the read-only resume check. The added terminal
+completion behavior remains rejected. The
 baseline below is tracked main at `6524fbff`, not the old #172 prototype.
 
-| Existing behavior and source | Migration constraint |
+| Existing behavior and source | Migration constraint after D14 |
 |---|---|
-| `skills/lets-go/SKILL.md`, *Enter the branch*: an existing local or remote branch skips Claim. | Do not assign an unassigned item, change Todo to In Progress or add a claim requirement on that path. Preserve hand-stacked branches. |
+| `skills/lets-go/SKILL.md`, *Enter the branch*: an existing local or remote branch skips Claim. | Do not assign an unassigned item, change Todo to In Progress or acquire a new claim. D14 adds only a fresh ownership and status check; mismatch pauses hand-stacked work without repair. |
 | *Walk the step table*: Git, the PR and the archive determine the next step. | Keep ADR-017's record-based resume. Do not introduce `identity.json`, an extra runner commit or a required private record for ordinary resume. |
 | *Walk the step table*: merged and closed PRs stop the run when the branch survives and the issue is found. | Preserve the stop and its position after the tree check. Do not search historical PRs on deleted branches or write Done. This removes the proposed reopened-issue regression. |
 | *Claim*: check assignment, acquire assignment and In Progress, then create the branch; failure releases the acquired claim. | Translate the existing acquisition and release through bounded actions. Retain accepted operation recovery guarantees and report any intentional difference explicitly. |
@@ -23,45 +24,63 @@ may claim that a fixed item limit proves enumeration complete. A CLI definition
 may use `gh`; the skills must not require it when a compatible MCP definition
 is explicitly selected. Both unchanged T3 and standalone hosts remain required.
 
-### Accepted decision requiring explicit reconsideration
+### Ownership discrepancy resolved by D14
 
-Main's architecture ADR-015 says: “Retain scoped mutation identity, fresh
-ownership verification before work, session-safe release and partial-claim
-recovery.” This requirement predates the restart's edits. Main's existing-branch
-path skips Claim and has no fresh ownership gate. Exact behavior parity and a
-blanket new ownership gate cannot both hold.
+Main's architecture ADR-015 requires fresh ownership verification before work.
+Main's existing-branch path skips Claim and previously had no such check. The
+user rejected revising the accepted ADR, then approved the read-only check:
+“Ah so just check”, followed by “Cool do it” after the exact rule was stated.
 
-Proposed amendment, **not yet accepted or applied**:
+The plan therefore retains the accepted rule. Before unfinished work, check
+through the adapter that the authenticated actor is the sole assignee and the
+item is In Progress. Otherwise report the mismatch or missing facts and stop.
+Do not reassign, change status or acquire a new claim. This is the explicit
+exception to D13's behavior parity; the earlier proposed ADR narrowing is not
+selected. Resume still uses existing Git, issue and PR records without a new
+identity file or original recovery record.
 
-> Retain scoped mutation identity, fresh ownership verification for claim
-> acquisition and release, session-safe release and partial-claim recovery.
-> Ordinary resume follows the existing shared runner's branch and record rules.
-> It does not acquire a claim or require sole assignment and In Progress merely
-> because the branch already exists. Known unresolved mutations still require
-> reconciliation before retry or progression. This preserves the current
-> existing-branch path and does not assert exclusive ownership for that path.
+The plan's added paragraph connecting the merged-PR stop to a completion write
+was an author interpretation. Remove it. Retain the shared contract's exact
+associated merge gate for actual completion requests without adding a caller
+in this migration. Native GitHub/Project automation retains its current role.
 
-This deliberately preserves the current limitation: an existing branch is not
-proof of exclusive ownership. It changes neither the submitted-output trust
-choice (D10) nor the sole-runner rule. Do not amend the accepted record until
-the user agrees to this specific consequence.
+### Round-two review disposition after D13 and D14
 
-The plan's added ADR paragraph connecting the merged-PR stop to a completion
-write was an author interpretation, not a behavior on main or a separate user
-approval. Remove that extrapolation during reconciliation. Retain the contract
-rule that an actual completion request requires the exact associated merge;
-that rule does not require a new caller in this parity migration.
+- **C1, stale terminal association — confirmed:** remove the added historical
+  lookup and terminal completion caller. Reopened issues and deleted rejected
+  branches cannot trigger those added actions. Tasks 5.8–5.11 preserve main's
+  branch-scoped stops instead of inventing historical-PR heuristics.
+- **M1, hand-stacked ownership — confirmed and resolved by D14:** use a fresh
+  check and stop on mismatch. Do not select the recommended automatic claim.
+  The success scenario now explicitly has sole assignment and In Progress;
+  the unassigned Todo failure is separate. Tasks 4.2, 4.8 and 4.9 cover it.
+- **M2, identity lifecycle — confirmed:** remove the identity file and its new
+  commits/pushes. Keep existing branch lookup and ADR-017 unchanged. Task 4.1
+  verifies the skill boundary rather than an unrelated scope validator.
+- **M3, remaining gh reads — confirmed:** migrate packet and parent reads and
+  related code-host callouts, with explicit commands and fields in design
+  section 6. Do not impose gh on compatible MCP configurations. Tasks 5.7 and
+  6.1–6.9 cover the existing-story path; setup/shaping caller migration is not
+  claimed by this slice.
+- **M4, unnamed terminal lookup and code-host facts — confirmed:** remove the
+  new terminal lookup. Name the existing repository and branch-PR read commands
+  and code-host definition. Define GitHub reference.write as validation-only in
+  conformance. A new association stop is unnecessary because that caller is
+  removed; existing PR authoring and review rules keep their current ownership.
+- **S1, worker ID in step prompts — accepted:** keep it in the lets-go invocation
+  and recovery records. Task 4.7 preserves the existing step/report contract.
+- **S2, contract doc ownership — accepted:** task 5.12 owns the rewrite and its
+  inventory verification.
+- **S3, stack completion pending forever — resolved by caller removal:** retain
+  the existing stacked merged-PR stop and native closing automation. Do not
+  claim the issue completed when a PR merged into a feature branch.
+- **S4, terminology — accepted:** use *recovery record* for private persisted
+  operation facts and *continuation file* only for its scratch CLI handle.
+  Historical research below retains its original terminology as provenance.
 
-### Review disposition
-
-Round two's stale terminal association finding is confirmed. D13 removes the
-new terminal path rather than adding historical-PR heuristics. The hand-stacked
-branch contradiction is confirmed; do not select the reviewer's new automatic
-claim behavior. It awaits the narrow ADR decision above. The `identity.json`
-lifecycle findings are addressed by removing that new metadata design, not by
-adding commits or pushes to the runner. Missing callout coverage and the need
-to distinguish code-host operations remain valid migration work. No third
-review has been launched and neither prior REVISE verdict is an approval.
+Both previous rounds remain REVISE. After the required user pause, D13 and D14
+provide the direction for this revision. This adjudication is not an independent
+approval. No implementation, backend mutation or publication follows from it.
 
 ## Current disposition — 2026-11-07
 

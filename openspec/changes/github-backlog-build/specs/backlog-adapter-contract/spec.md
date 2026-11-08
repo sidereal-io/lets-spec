@@ -267,3 +267,25 @@ The store SHALL NOT claim cross-machine or cross-account visibility.
 - **WHEN** two local worker sessions use the same authenticated backend account and configured store
 - **THEN** both see the item's pending mutation while retaining their distinct provenance
 - **AND** the backend guarantee remains actor-level best-effort ownership
+
+### Requirement: Code-host observations stay separate from backlog translation
+The shared action engine SHALL support the existing-story repository and PR
+operations through a separately selected inert code-host definition. Its
+repository.read, pull-request.read, pull-request.create, pull-request.update
+and pull-request.ready operations SHALL bind exact repository and PR scope,
+inputs, effects and recovery just as backlog actions do. This role SHALL NOT
+require the backlog provider to implement a code-host service. Branch operations
+SHALL remain Git and merging SHALL remain user-owned. Both roles SHALL use the
+same validators, loader and submission path without a second executor.
+
+#### Scenario: Backlog and code host differ
+- **WHEN** a Linear backlog fixture refers to a GitHub PR
+- **THEN** merge facts come from the selected code-host definition and any Done request goes to the backlog definition only after qualifying merge evidence
+
+#### Scenario: GitHub reference is already in the PR
+- **WHEN** reference.write receives an existing GitHub PR association
+- **THEN** it validates the supplied relationship without editing GitHub or introducing a runner association step
+
+#### Scenario: Code-host write loses its result
+- **WHEN** a bounded PR create, update or ready action has an uncertain result
+- **THEN** the original scoped operation requires reconciliation before retry without changing the workflow's owning step

@@ -1,13 +1,7 @@
-> **Revision pending after D13:** preserve today's workflow through configured
-> adapters. Earlier text below that adds an existing-branch ownership gate,
-> `identity.json`, PR association steps or a terminal completion write is
-> superseded and must not guide implementation. See research.md, *Behavior parity
-> assessment after D13*. The narrow ADR-015 conflict remains unresolved.
-
 # ADR Review Manifest
 
 - Status: completed
-- Review date: 2026-11-07
+- Review date: 2026-11-08
 
 ## Review Summary
 
@@ -18,16 +12,23 @@ requirement is removed. Submitted-output trust, code-owned policy/recovery,
 explicit configuration and sole runner ownership now agree across this plan.
 Update ADR-010's reconciliation note to match; preserve its historical body.
 
-ADR-017 governs workflow step completion read from Git/GitHub. The private
-backlog operation journal records mutation recovery, not step completion; it
-is not a replacement run log. Ordinary resume uses immutable identity plus fresh
-native ownership, without an original private continuation. The store shares
-outstanding item mutations across local worktrees; it supplies no distributed
-lock or cross-machine recovery. Association and completion are invoked by
-lets-go, not by a provider-specific runner. ADR-012's packet/comment instruction
-boundary and
-ADR-014/015's step reports remain unchanged. Delegation runtime migration is
-outside this slice and is not claimed by the backlog design.
+ADR-017 governs step completion from Git and PR records. The private operation
+recovery record is not a step log. No committed identity file or extra runner
+commit is introduced. D14 keeps ADR-015's fresh ownership rule: existing
+branches receive a read-only sole-assignee and In Progress check before
+unfinished work. They skip Claim and stop on mismatch without repair. This
+resolves the conflict noted after D13 without narrowing the accepted ADR.
+
+The store shares pending mutations across local worktrees and supplies no
+cross-machine lock. Terminal PRs retain the existing merged/rejected stops
+without a completion write. Exact merge proof remains necessary for any actual
+completion request in the shared contract. Removing the prior terminal-caller
+paragraph corrects an author extrapolation; it is not a new user-approved
+completion strategy. Repository/PR facts use the separate code-host role and
+the same bounded action engine, as the existing responsibility boundary requires.
+No provider definition becomes a runner or executor. ADR-012's comment boundary
+and the step-report ADRs remain in force. Delegation runtime migration is outside
+this slice.
 
 Duplicate record numbers already exist. Full filenames below distinguish the
 architecture and step-report records; this change does not renumber them.
