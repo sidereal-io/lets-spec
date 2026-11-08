@@ -321,3 +321,35 @@ test('submission rejects an unsupported contract without inferring no effects', 
   assert.throws(() => validateSubmission(action, { ...submission, contractVersion: 99 }, projection, 200),
     (error: unknown) => error instanceof Error && 'category' in error && error.category === 'unsupported' && 'effects' in error && error.effects === 'unknown');
 });
+
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+test('output file supplies the structured result without transcription', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/submitted-');
+  try {
+    const { action, submission, projection } = submittedRead();
+    const path = join(dir, 'output.json');
+    writeFileSync(path, JSON.stringify(submission.output));
+    const { output, ...envelope } = submission;
+    assert.deepEqual(validateSubmission(action, { ...envelope, outputFiles: [path] }, projection, 200), { valid: true, gaps: [] });
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+for (const [name, path, contents] of [
+  ['oversized', 'large.json', 'x'.repeat(5000)],
+  ['missing', 'missing.json', null],
+  ['malformed', 'bad.json', '{'],
+] as const) {
+  test(`submitted output file rejects ${name} bytes`, () => {
+    mkdirSync('.workspace', { recursive: true });
+    const dir = mkdtempSync('.workspace/submitted-');
+    try {
+      const { action, submission, projection } = submittedRead();
+      const file = join(dir, path);
+      if (contents !== null) writeFileSync(file, contents);
+      const { output, ...envelope } = submission;
+      assert.throws(() => validateSubmission(action, { ...envelope, outputFiles: [file] }, projection, 200),
+        (error: unknown) => error instanceof Error && 'effects' in error && error.effects === 'unknown');
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+}

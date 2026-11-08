@@ -33,3 +33,10 @@ projection is `{ "op": "path", "path": ["data", "result"] }`. Unknown
 operators fail when the definition loads. Projected results pass the same
 operation validators for custom and shipped definitions. Optional submitted
 normalization must equal the derived result; it cannot replace missing fields.
+
+Submissions may supply `output` inline or `outputFiles` as explicit local JSON
+paths. Lets reads regular files within the issued combined byte limit and
+checks for changes during reading. One file supplies one JSON value; several
+files supply an array of values for a paginated projection. Files are untrusted
+submitted observations, with no independent provenance. Tool redirection into
+operation-specific workspace scratch avoids transcription and display limits.
