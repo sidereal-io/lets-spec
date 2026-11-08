@@ -9,6 +9,10 @@ Build one planned change, on its branch. This is the build step.
 `lets-go` claims the issue and plans it first, and `lets-review-build`
 finishes the change after. Run every command below from the repo root.
 
+Read [Plain language](../lets-shape/references/plain-language.md) before writing.
+Use it for progress and stop messages: name the state, what is unfinished
+and the next action.
+
 ## Find where you are
 
 1. Find the default branch:

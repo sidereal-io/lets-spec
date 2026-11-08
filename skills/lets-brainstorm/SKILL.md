@@ -9,6 +9,10 @@ Reach one shared understanding of a story with the user before anyone plans
 it. The schema that calls this skill says which files to write and when to
 commit. This skill says how to question, what to record and when to split.
 
+Read [Plain language](../lets-shape/references/plain-language.md) before writing.
+Use it for questions and the decision ledger: make the decision and the
+context needed to answer clear.
+
 ## Read and maintain domain language
 
 Read [Domain language](../lets-shape/references/domain-language.md) before

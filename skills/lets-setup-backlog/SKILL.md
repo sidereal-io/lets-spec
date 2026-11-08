@@ -9,6 +9,10 @@ The backlog is the one open GitHub Project linked to this repository. `lets-shap
 
 `gh project` commands need the `project` scope. If one fails and asks for it, run `gh auth refresh -s project` and try again.
 
+Read [Plain language](../lets-shape/references/plain-language.md) before writing.
+Use it when reporting setup gaps: name the field, the expected value and the
+action the user needs to take.
+
 ## Find the Project
 
 ```bash

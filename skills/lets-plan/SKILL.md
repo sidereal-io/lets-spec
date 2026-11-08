@@ -9,6 +9,10 @@ Plan one change, on its branch. This is the plan step. `lets-go` claims
 the issue and routes it first. Run every command below from the repo
 root.
 
+Read [Plain language](../lets-shape/references/plain-language.md) before writing.
+Use it for planning status: say which change is ready or what decision or
+artifact is still needed.
+
 ## Find where you are
 
 1. Find the default branch:

@@ -1,6 +1,6 @@
 ## 1. Shared guidance
 
-- [ ] 1.1 [medium] Give every shipped skill and schema writing step a working reference to the same reader-focused plain-language method (verify: pnpm exec bats tests/skill-interfaces.bats)
+- [x] 1.1 [medium] Give every shipped skill and schema writing step a working reference to the same reader-focused plain-language method (verify: pnpm exec bats tests/skill-interfaces.bats) (✓ 268 checks passed; the wrapping check passed after its fix)
 
 ## 2. Instructions and outputs [depends-on: 1]
 

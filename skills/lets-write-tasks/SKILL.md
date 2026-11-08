@@ -9,6 +9,10 @@ A task list is the contract between planning and building. An agent with
 none of the planning conversation picks up one task at a time. So each
 task stands alone: what to build, and how to know it is done.
 
+Read [Plain language](../lets-shape/references/plain-language.md) before writing.
+Use it for each task: give the next agent and human reviewer enough context
+to locate the work and verify completion.
+
 ## Size
 
 - **Five to twelve tasks.** Fewer, and the tasks hide too much. More, and the story was too big: say so, and name the slice to move to a new story, but do not split the story here. That decision belongs to the user and the brainstorm.

@@ -7,6 +7,10 @@ description: Use for explicit plan-only review, including a plan in a PR. Full c
 
 Have a different model family attack a plan before anyone builds on it. A reviewer from the author's family shares the author's blind spots. This skill writes the prompt, runs it read-only in a fresh session with a fixed method, and checks what comes back.
 
+Read [Plain language](../lets-shape/references/plain-language.md) before writing.
+Use it for findings and the review report, and include its criteria in the
+delegated prompt as described below.
+
 ## When to apply
 
 - **Before build.** `lets-go`'s review plan step runs this skill before the build step builds an OpenSpec change on `lets-standard`. The plan is finished, brainstorm.md through tasks.md. [Start](#start) says where to begin, and [For an OpenSpec change](#for-an-openspec-change) says what to review.

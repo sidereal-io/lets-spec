@@ -18,6 +18,10 @@ Changes are created later, one at a time, by `lets-go`.
 
 **This is a stance with a light structure.** The phases below give the conversation a shape. They are not a script. Revisit an earlier phase when new information arrives, and confirm with the user before you move to the next.
 
+Read [Plain language](references/plain-language.md) before writing.
+Use it for questions, the discovery map and issue packets. Each must give
+its next reader enough context to decide or act.
+
 ## The Project
 
 Kind, Priority, Size and Status are fields on the GitHub Project linked to this repository. Set them only with the `gh project item-edit` commands below. Kind is Epic, Story, Bug or Chore. Priority is Must, Should, Could or Wont. Size is XS, S, M, L or XL.

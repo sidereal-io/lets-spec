@@ -9,6 +9,10 @@ An architecture decision record (ADR) keeps the why of a decision that is
 costly to reverse, so that no one reverses it by accident. Most decisions do
 not need one.
 
+Read [Plain language](../lets-shape/references/plain-language.md) before writing.
+Use it for the decision record: help a future maintainer find the decision,
+understand its reasons and apply its consequences.
+
 ## What qualifies
 
 Write an ADR for a real fork: a choice among viable approaches where

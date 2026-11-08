@@ -8,6 +8,10 @@ description: Use when writing or changing an OpenSpec spec. Says what belongs in
 A spec is a behavior contract, not an implementation plan. It says what the
 system does as seen from outside. The design says how.
 
+Read [Plain language](../lets-shape/references/plain-language.md) before writing.
+Use it for requirements and scenarios. Keep the required headings and SHALL
+or MUST; make the actor, condition and outcome clear.
+
 ## Read and maintain domain language
 
 Read [Domain language](../lets-shape/references/domain-language.md) before

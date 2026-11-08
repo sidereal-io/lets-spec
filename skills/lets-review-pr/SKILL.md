@@ -7,6 +7,10 @@ description: Use for an explicit full collaborator PR review of an existing pull
 
 Run only on explicit invocation. Identify one repository and PR URL before delegating; ask for missing identity. You are the mediator. Do not create or advance an OpenSpec change, edit contributor code, require a target review document or issue an approval or changes-required verdict. The only public write is one consolidated PR comment.
 
+Read [Plain language](../lets-shape/references/plain-language.md) before writing.
+Use it for the review comment and include its criteria in each role prompt.
+Keep material limits beside the findings they qualify.
+
 ## Capture the revision
 
 Create a unique run directory under `.workspace/` in the invoking project. Preserve `git status --porcelain` before and after the review. Record the capture start time in UTC.

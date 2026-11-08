@@ -12,6 +12,10 @@ behavior; never use joiners such as "and", "or", or "etc." to combine
 independent outcomes. Use several assertions only when together they
 establish that one behavior.
 
+Read [Plain language](../lets-shape/references/plain-language.md) before writing.
+Use it for test names and failure reports: name the observable behavior and
+explain what failed.
+
 ## Red
 
 - Select one observable behavior from the requirement.

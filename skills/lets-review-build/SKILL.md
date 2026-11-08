@@ -7,6 +7,10 @@ description: End a change. On the standard flow, a model from another family rev
 
 End a change. On `lets-standard`, a different model family reviews the branch's code first. A reviewer from the author's family shares its blind spots.
 
+Read [Plain language](../lets-shape/references/plain-language.md) before writing.
+Use it for findings and the review report, and include its criteria in the
+delegated prompt as described below.
+
 ## When to apply
 
 - **Every task is done.** `lets-go`'s review build step runs this skill.

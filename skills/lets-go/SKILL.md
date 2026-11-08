@@ -39,6 +39,11 @@ depends on where you run it, and on why the last run stopped:
 - **After the pull request is merged or closed:** there is nothing to
   resume, and the run stops.
 
+Read [Plain language](../lets-shape/references/plain-language.md)
+before writing.
+Use it for questions and progress reports. Keep the fixed report formats
+below; explain their evidence and reasons in plain words.
+
 ## The run at a glance
 
 A run goes through these parts, in this order.
