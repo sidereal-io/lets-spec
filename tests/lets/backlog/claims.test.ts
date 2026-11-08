@@ -83,6 +83,15 @@ test('shipped release targets the recorded actor and Todo option', () => {
   assert.ok(unassign.includes('actor=U1'));
   assert.ok(unassign.some((argument) => argument.includes('removeAssigneesFromAssignable')));
 });
+test('native claim preflight requests a complete executable GraphQL query', () => {
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const mapping = definition.definition.operations['claim.acquire'].actions.preflight.bindings.gh;
+  const args = projectArguments(mapping.arguments, { item: { provider: 'github', backlog: 'P1', id: 'I1' } }, { backlog: 'P1' }) as string[];
+  const query = args.find((argument) => argument.startsWith('query='))!;
+  assert.ok(query.startsWith('query=query('), 'preflight must issue a GraphQL query operation');
+  for (const fragment of ['viewer{id login}', 'node(id:$id)', 'blockedBy(first:100)', 'assignees(first:100)', 'project:node(id:$project)'])
+    assert.ok(query.includes(fragment), `required native preflight field: ${fragment}`);
+});
 test('uncertain release reconciles through reads without repeating cleanup', () => {
   mkdirSync('.workspace', { recursive: true });
   const dir = mkdtempSync('.workspace/resume-native-release-');
