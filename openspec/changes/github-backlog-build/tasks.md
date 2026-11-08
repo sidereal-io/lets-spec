@@ -112,7 +112,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 7.2 [medium] Report unqualified live support for configurations without fresh acceptance, keeping offline compatibility separate. (✓ focused node inventory support-status check passed)
 - [x] 7.3 [medium] Document connection defaults and shared-definition binding limits, the private state path and actionable writable-state sandbox remedies. (✓ focused inventory configuration-doc check passed; node config suite passed, 30 tests)
 
-- [ ] 7.4 [medium] Package consumed runtime and definitions while excluding obsolete adapter bundles and unused conformance payloads. (verify: nix flake check)
+- [x] 7.4 [medium] Package consumed runtime and definitions while excluding obsolete adapter bundles and unused conformance payloads. (✓ bats tests/release-build.bats passed, 17 tests; nix flake check passed, including flow, commands, distribution, module and Node checks)
 
 ## Acceptance gate after implementation
 

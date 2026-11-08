@@ -152,3 +152,25 @@ build_bundles() {
     [ ! -e "$out/$flow/overlay/openspec/glossary.md" ]
   done
 }
+
+@test "standalone bundle includes backlog engine and shipped definition without simulations" {
+  local bin="$BATS_TEST_TMPDIR/build/lets" project="$BATS_TEST_TMPDIR/project"
+  build_bundles
+  mkdir -p "$project/openspec" "$project/tools" "$project/config"
+  printf '#!/bin/sh\nexit 99\n' >"$project/tools/gh"
+  chmod +x "$project/tools/gh"
+  printf '{}\n' >"$project/openspec/config.yaml"
+  printf '{"tools":["gh"],"timeoutMs":1000,"maxOutputBytes":65536}\n' >"$project/host.json"
+  jq -n --arg cwd "$project" '{contractVersion:1,operation:"repository.read",context:{cwd:$cwd,provider:"github",repository:"fixture/repo"},input:{owner:"fixture",name:"repo"}}' >"$project/request.json"
+  cd "$project"
+  export XDG_CONFIG_HOME="$project/config" XDG_STATE_HOME="$project/state"
+  export PATH="$project/tools:$PATH"
+  run node "$bin" backlog repository.read --request-file request.json --host-file host.json
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+  [ "$(jq -r .state <<<"$output")" = action ]
+  [ "$(jq -r .action.connection.name <<<"$output")" = gh ]
+  [ "$(jq -r .action.step <<<"$output")" = bootstrap ]
+  jq -e '.action.tool.arguments | any(contains("repository(owner:$owner,name:$name)"))' <<<"$output"
+  ! grep -qE 'src/backlog/(fake|profiles|process|conformance)\.ts|Representative simulation only' "$bin" || false
+  [ ! -e "$BATS_TEST_TMPDIR/build/node_modules" ]
+}

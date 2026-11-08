@@ -294,6 +294,13 @@
             export LETS_SPEC_FLOW=minimal
             # The build sandbox has no /usr/bin/env, so node runs the script.
             [ "$(node ${dist}/bin/lets --version)" = ${version} ]
+            node ${dist}/bin/lets backlog --help >backlog-help
+            grep -qF 'claim.acquire' backlog-help
+            grep -qF 'pull-request.create' backlog-help
+            if grep -qE 'src/backlog/(fake|profiles|process|conformance)\.ts|Representative simulation only' ${dist}/bin/lets; then
+              echo 'unused backlog simulation payload in runtime bundle' >&2
+              exit 1
+            fi
             node ${dist}/bin/lets sync >/dev/null 2>stderr
             if grep -qi 'openspec' stderr; then cat stderr >&2; exit 1; fi
             grep -q 'schema: lets-minimal' openspec/config.yaml
