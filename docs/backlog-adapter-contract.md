@@ -228,3 +228,28 @@ GitHub code-host fixture facts alongside the work item's own backend identity.
 They test shared validation, not a live Jira, Linear or Beads integration, and
 do not turn those profiles into PR adapters. Native closing-issue acceptance is
 qualified only for a separately accepted real configuration.
+
+## Live qualification status
+
+| Host and binding | Offline evidence | Fresh live support |
+|---|---|---|
+| unchanged T3 with shipped gh CLI | Native output fixtures, bounded engine and CLI scenarios | unqualified until its actual configuration passes fresh acceptance |
+| standalone CLI with shipped gh CLI | Same policy and configuration tests | unqualified until its actual configuration passes fresh acceptance |
+| Any compatible MCP-only binding | Custom-definition read/write inventory without gh | unqualified until that exact binding passes its own fresh acceptance |
+| Jira, Linear and Beads | Representative simulation and attributed code-host conformance | unqualified; non-GitHub production PR routing remains pending |
+
+CLI acceptance does not qualify MCP support. No configuration key or prototype
+check establishes live support. Record actual tool/provider/definition versions,
+connection selection and enforced timeout/output limits for each accepted host.
+An actual delegated step must independently verify its tools and writable shared
+state; runner-only access is insufficient. Do not patch a host or install a
+capture service to make the test pass.
+
+Fresh acceptance uses only new items in a disposable scope explicitly designated
+by the user. Never mutate or replay historical fixture issues or PRs. Exercise
+interrupted claim recovery, read-only existing-branch authority, partial PR
+creation, prepared review updates and existing terminal stops. Retain operation
+IDs for unresolved writes and stop before any blind retry. A user-directed merge
+is required for merged-path acceptance; offline merge fixtures cannot substitute
+for it. Do not mark a delivery PR ready or archive a change merely because
+its offline checks pass.

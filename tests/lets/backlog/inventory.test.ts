@@ -230,3 +230,12 @@ test('contract documents submitted observations and actor-only ordinary resume',
   assert.match(document, /original.*worker.*release authority/);
   assert.doesNotMatch(document, /Run the configured executable directly|require matching actor, session, token and In Progress/);
 });
+
+test('support status separates offline compatibility from fresh live qualification', () => {
+  const document = readFileSync(new URL('../../../docs/backlog-adapter-contract.md', import.meta.url), 'utf8').replace(/\s+/g, ' ');
+  assert.match(document, /unchanged T3.*unqualified/);
+  assert.match(document, /standalone CLI.*unqualified/);
+  assert.match(document, /CLI acceptance does not qualify MCP/);
+  assert.match(document, /actual delegated step.*writable/);
+  assert.match(document, /user-directed merge/);
+});
