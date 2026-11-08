@@ -55,8 +55,7 @@ alone is enough.
 - **One Project:** go to [Check](#check).
 - **None:** go to [Create](#create).
 - **Two or more:** list each one's title and URL. The skills need exactly
-  one, so ask the user which to keep and to unlink the others with `gh
-  project unlink <n> --owner <owner> --repo <repo>`. Stop. Never pick one
+  one, so ask the user which to keep and to unlink the others with `gh project unlink <n> --owner <owner> --repo <repo>`. Stop. Never pick one
   yourself.
 
 ## Create
@@ -90,8 +89,7 @@ A new Project already has the Status field with Todo, In Progress and Done.
 It also has two workflows on: item closed sets Done, and pull request merged
 sets Done. Nothing else needs setting.
 
-Print the Project's URL with `gh project view <n> --owner <owner> --format
-json --jq .url`, then go to [Check](#check).
+Print the Project's URL with `gh project view <n> --owner <owner> --format json --jq .url`, then go to [Check](#check).
 
 ## Check
 
@@ -119,10 +117,7 @@ consequence of the fix before asking. Run a fix only when the user says so.
 - **A missing field:** run its `field-create` command from
   [Create](#create).
 - **A field that lacks an option:** `gh` cannot add an option to a field.
-  Delete the field and create it again. Get its id with `gh project
-  field-list <n> --owner <owner> --format json --jq '.fields[] |
-  select(.name == "<field>") | .id'`, then run `gh project field-delete --id
-  <field id>` and the field's `field-create` command. Warn the user first:
+  Delete the field and create it again. Get its id with `gh project field-list <n> --owner <owner> --format json --jq '.fields[] | select(.name == "<field>") | .id'`, then run `gh project field-delete --id <field id>` and the field's `field-create` command. Warn the user first:
   the delete clears that field on every item, so they set the values again
   by hand.
 - **A missing Status option:** `gh` cannot change Status. Give the user the

@@ -38,6 +38,11 @@ You run one step of a lets-go run: shape, for an idea.
 Issue: none yet. The idea is: <idea>. Branch: <default>.
 ```
 
+Resolve the installed
+[Plain language](../../lets-shape/references/plain-language.md)
+reference. Use its absolute path as `<plain-language-path>` in the
+frame. The step has none of this session's conversation.
+
 The rest of the frame is the same for every step.
 
 ````text
@@ -47,6 +52,14 @@ Issue: #<i>, <issue-url>. Branch: <name>. Schema: <schema>. <route line>
 ## What to run
 
 <the sentence above>
+
+## Writing
+
+Plain-language method: <plain-language-path>.
+Write for the people and agents who need this result. Give them enough
+context to find the relevant information, understand it and take the
+next action. Preserve exact report keys, markers and allowed values.
+Make evidence, reasons and questions clear without changing permissions.
 
 ## Questions
 

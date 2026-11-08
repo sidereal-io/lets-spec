@@ -90,8 +90,7 @@ alone is enough.
 - **Two or more:** list each one's title and URL, ask the user to unlink the
   extras, and stop. Never pick one yourself.
 
-Every issue joins the Project when you create it with `--project "<project
-title>"`. `gh issue create` prints the issue's URL, `<url>`; for an existing
+Every issue joins the Project when you create it with `--project "<project title>"`. `gh issue create` prints the issue's URL, `<url>`; for an existing
 issue, get it with `gh issue view <i> --json url --jq .url`. Set the fields
 one at a time:
 
@@ -135,8 +134,7 @@ Every run keeps these rules:
   want. Neither names code, milestones, or epics. Edit a persona only when
   facts about the person change.
 - **Personas sit in audience groups.** Under `## Personas`, one `###`
-  heading per audience — typically `People who use <product>` and `People
-  who build <product>` — and one `####` entry per persona. Omit a group that
+  heading per audience — typically `People who use <product>` and `People who build <product>` — and one `####` entry per persona. Omit a group that
   has no personas. `## Journey Map` uses the same groups.
 - **One journey per distinct path.** Personas who walk the same stages share
   one journey, named for all of them, with an *Implication* note saying what
@@ -169,8 +167,7 @@ Every run keeps these rules:
 At the start:
 
 1. Run `openspec list --json` and take the OpenSpec root from `root.path`.
-   It must be this repository's root, or a directory inside it: `openspec
-   list` answers with the nearest root, which can be a parent of the
+   It must be this repository's root, or a directory inside it: `openspec list` answers with the nearest root, which can be a parent of the
    repository. If it is outside, stop and say the project has no OpenSpec
    root. Use the resolved root everywhere below, never a bare `./openspec/`.
 2. Read `<root.path>/openspec/config.yaml` (or `config.yml`) if it exists.
@@ -186,9 +183,7 @@ At the start:
      shape on its own**: [Shape one issue](#shape-one-issue). An issue that
      holds a large idea is the input to a discovery run instead. If you
      cannot tell which the user means, ask.
-   - **An open parent issue says `Discovery status: in-progress`** (`gh
-     issue list --state open --search '"Discovery status: in-progress"
-     in:body' --json number,title,body`): [Resume mode](#resume-mode). If
+   - **An open parent issue says `Discovery status: in-progress`** (`gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`): [Resume mode](#resume-mode). If
      more than one does, list them and ask the user which to resume, or
      whether to start a new run. Never pick one yourself.
    - **`<root.path>/openspec/discovery.md` does not exist**: run every
@@ -308,8 +303,7 @@ text, or just conversation. Then:
 it from the parent template in
 [templates/issue-template.md](templates/issue-template.md): the status line,
 the input reference, the confirmed scope and any open questions so far.
-Title it `Epic: <capability>`, create it with `gh issue create --title
-"Epic: <capability>" --body-file <file> --project "<project title>"`, then
+Title it `Epic: <capability>`, create it with `gh issue create --title "Epic: <capability>" --body-file <file> --project "<project title>"`, then
 set its Kind to `Epic` with `item-edit`. Phase 5 may turn it into a single
 story.
 
@@ -393,8 +387,7 @@ Cut the Must (then Should) work into stories:
   through the whole journey.
 - **Order by dependency first, then value.**
 - **Size each story XS, S, M, L or XL.** L and XL are too big: split them.
-- **Read the backlog before you cut:** `gh issue list --state all --limit
-  500 --json number,title,state,body,assignees`. Work that fits an open,
+- **Read the backlog before you cut:** `gh issue list --state all --limit 500 --json number,title,state,body,assignees`. Work that fits an open,
   unassigned story updates that issue instead of duplicating it.
 
 Each story gets a **story packet**: the story template in
@@ -437,8 +430,7 @@ For each issue:
 4. Set Size to the story's size.
 5. Set Status `Todo`.
 6. Stop at the first error, including a failed field update.
-7. Before you retry, search for the title with `gh issue list --state all
-   --search "<title> in:title"`, so you never create a duplicate. If the
+7. Before you retry, search for the title with `gh issue list --state all --search "<title> in:title"`, so you never create a duplicate. If the
    issue exists but a field is unset, set it on that issue. Do not create
    the issue again.
 
@@ -466,15 +458,12 @@ here too, such as `lets-brainstorm` when it splits a story; it gives you the
 issue's parent and what blocks it.
 
 1. **Find or create the issue.** When the user names no issue, search for
-   one first: `gh issue list --state open --search "<words> in:title" --json
-   number,title`. If one matches, ask whether it is the same work. If none
-   does, you create it in step 7. Read a named or confirmed issue with `gh
-   issue view <i> --json title,body,url,parent`. Read its thread as [Issue
+   one first: `gh issue list --state open --search "<words> in:title" --json number,title`. If one matches, ask whether it is the same work. If none
+   does, you create it in step 7. Read a named or confirmed issue with `gh issue view <i> --json title,body,url,parent`. Read its thread as [Issue
    comments](references/issue-comments.md) says, and show the user the list.
    If the issue has a **Glossary handoff**, recover its recorded checkpoint
    before continuing or deciding whether this run has glossary edits. An
-   existing issue that is not on the Project yet joins it with `gh project
-   item-add <n> --owner <owner> --url <url>`.
+   existing issue that is not on the Project yet joins it with `gh project item-add <n> --owner <owner> --url <url>`.
 2. **Pick the Kind, and confirm it.** A Bug is something that should work
    and does not. A Chore is work no persona sees, such as a dependency bump,
    a CI fix or a tidy-up. A Story is something a persona can do once it
@@ -501,10 +490,7 @@ issue's parent and what blocks it.
    existing packet stands unchanged, write nothing and leave its Project
    fields as they are. Otherwise write the packet, retaining any existing
    **Glossary handoff** recovery record when replacing the body. For an
-   existing issue, use `gh issue edit <i> --title "<title>" --body-file
-   <file>`. For a new one, use `gh issue create --title "<title>"
-   --body-file <file> --project "<project title>" [--parent <p>]
-   [--blocked-by <i>,<i>]`. Then set Kind, Priority, Size and Status `Todo`,
+   existing issue, use `gh issue edit <i> --title "<title>" --body-file <file>`. For a new one, use `gh issue create --title "<title>" --body-file <file> --project "<project title>" [--parent <p>] [--blocked-by <i>,<i>]`. Then set Kind, Priority, Size and Status `Todo`,
    in that order, with `item-edit`. A Chore and a Bug get a Priority and a
    Size too.
 8. **Fetch the thread again**, even when the first fetch found nothing to
@@ -539,8 +525,7 @@ picked one of several):
 When `discovery.md` exists and no run is in progress:
 
 1. **Read it**, then reconcile the map against reality:
-   - `gh issue list --state all --limit 500 --json
-     number,title,state,stateReason,parent` lists shipped and open stories
+   - `gh issue list --state all --limit 500 --json number,title,state,stateReason,parent` lists shipped and open stories
    - Find the map's links to closed issues. This prints the number of each
      closed issue the map still links:
 
@@ -567,8 +552,7 @@ When `discovery.md` exists and no run is in progress:
         updating the map, naming the stage. When the packet already holds
         it, or it changes neither, recommend dismiss, and say why.
      3. Write what the answers call for. For a fold, show the folded body,
-        get a yes, and write it once with `gh issue edit <i> --body-file
-        <file>`. Write the body only. The story may be In Progress, so leave
+        get a yes, and write it once with `gh issue edit <i> --body-file <file>`. Write the body only. The story may be In Progress, so leave
         its title and Project fields as they are. For a map change, edit
         `discovery.md` now, with one of the three outcomes above.
      4. If you asked anything, fetch the thread again after the write, or
@@ -589,9 +573,7 @@ When `discovery.md` exists and no run is in progress:
    MoSCoW line, with its reason, and set its Priority with `item-edit` in
    the same step.
 4. **Never silently delete a story.** Close a superseded story as not
-   planned with a one-line reason, so the plan's history stays legible: `gh
-   issue close <n> --reason "not planned" --comment "Superseded by #<m>:
-   <reason>"`.
+   planned with a one-line reason, so the plan's history stays legible: `gh issue close <n> --reason "not planned" --comment "Superseded by #<m>: <reason>"`.
 
 ## Glossary handoff
 

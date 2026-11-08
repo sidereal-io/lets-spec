@@ -6,7 +6,7 @@
 
 - [x] 2.1 [medium] Make skill selection, shaping and planning instructions clear about their inputs, decisions and outputs (verify: pnpm exec bats tests/skill-interfaces.bats) (✓ 42 relevant interface checks passed; git diff --check passed)
 - [x] 2.2 [medium] Make writing and test-first guidance usable without the earlier conversation while preserving required formats (verify: pnpm exec bats tests/skill-interfaces.bats) (✓ 13 relevant interface and release checks passed; git diff --check passed)
-- [ ] 2.3 [medium] Give delegated reviewers reader-task criteria and make the review procedures and reports easy to follow (verify: pnpm exec bats tests/skill-interfaces.bats)
+- [x] 2.3 [medium] Give delegated reviewers reader-task criteria and make the review procedures and reports easy to follow (verify: pnpm exec bats tests/skill-interfaces.bats) (✓ installed reference check and 6 focused format checks passed; full repository checks follow)
 
 ## 3. Verification [depends-on: 2]
 

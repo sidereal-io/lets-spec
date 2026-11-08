@@ -117,6 +117,7 @@ sets it.
 | `<first>` | The first model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
 | `<second>` | The second model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
 | `<skill>` | The skill in the step's row of the step table | [Write the prompt](references/step-prompt.md#write-the-prompt) |
+| `<plain-language-path>` | The absolute path to the installed plain-language reference | [Write the prompt](references/step-prompt.md#write-the-prompt) |
 | `<the sentence above>` | The sentence for `## What to run`, or for shape the text of [What shape runs](references/shape.md#what-shape-runs) | [Write the prompt](references/step-prompt.md#write-the-prompt) |
 | `<kebab-name>` | The part of an issue title before ` — `, in `lets-shape`'s template | The issue's title |
 | `<one-line outcome>` | The part of an issue title after ` — `, in `lets-shape`'s template | The issue's title |

@@ -2806,8 +2806,16 @@ load support/release
     out="$BATS_TEST_TMPDIR/$flow"
     schemas="$(jq -r --arg flow "$flow" '.flows[$flow].schemas | join(",")' "$repo/flows.json")"
     build "$out" "$schemas" $(flow_skills "$flow")
+    local installed text
     for skill in $(flow_skills "$flow"); do
-      assert_reference_links "$out/overlay/.agents/skills/$skill/SKILL.md" "$out/overlay"
+      installed="$out/overlay/.agents/skills/$skill"
+      assert_reference_links "$installed/SKILL.md" "$out/overlay"
+      for text in "$installed"/references/*.md "$installed"/templates/*.md; do
+        [ -f "$text" ] || continue
+        if grep -qE '\]\([^)]*references/[^)]*\.md\)' "$text"; then
+          assert_reference_links "$text" "$out/overlay"
+        fi
+      done
     done
     for schema in $(jq -r --arg flow "$flow" '.flows[$flow].schemas[]' "$repo/flows.json"); do
       (
