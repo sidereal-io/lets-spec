@@ -269,9 +269,9 @@ export class OperationStore {
 
 import type { WorkerContext } from './types.ts';
 /** Public native ownership cannot confer the original operation's release right. */
-export function requireOriginalWorker(record: OperationRecord, context: WorkerContext): void {
+export function requireOriginalWorker(record: OperationRecord, context: Omit<WorkerContext, 'actor'> & { actor?: string }): void {
   const original = (record.originalAction ?? record.action).request.context;
-  if (context.session !== original.session || context.actor !== original.actor ||
+  if (!context.actor || context.session !== original.session || context.actor !== original.actor ||
       context.provider !== original.provider || context.repository !== original.repository ||
       context.backlog !== original.backlog)
     throw new AdapterFailure('conflict', 'none', 'release requires the original operation worker and scoped actor provenance; reconciliation does not transfer it');

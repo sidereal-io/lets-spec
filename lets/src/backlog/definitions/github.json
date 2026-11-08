@@ -2704,6 +2704,131 @@
               }
             }
           }
+        },
+        "bootstrap": {
+          "bindings": {
+            "gh": {
+              "arguments": {
+                "op": "array",
+                "values": [
+                  {
+                    "op": "literal",
+                    "value": "api"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "graphql"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "query=query($owner:String!,$name:String!){viewer{login}repository(owner:$owner,name:$name){id name nameWithOwner owner{login}url defaultBranchRef{name}}}"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "owner=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "owner"
+                      ]
+                    }
+                  },
+                  {
+                    "op": "literal",
+                    "value": "-f"
+                  },
+                  {
+                    "op": "text",
+                    "prefix": "name=",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "name"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "projection": {
+                "op": "object",
+                "fields": {
+                  "repository": {
+                    "op": "at",
+                    "source": {
+                      "op": "path",
+                      "path": [
+                        "data",
+                        "repository"
+                      ]
+                    },
+                    "value": {
+                      "op": "object",
+                      "fields": {
+                        "id": {
+                          "op": "path",
+                          "path": [
+                            "id"
+                          ]
+                        },
+                        "owner": {
+                          "op": "path",
+                          "path": [
+                            "owner",
+                            "login"
+                          ]
+                        },
+                        "name": {
+                          "op": "path",
+                          "path": [
+                            "name"
+                          ]
+                        },
+                        "url": {
+                          "op": "path",
+                          "path": [
+                            "url"
+                          ]
+                        },
+                        "defaultBranch": {
+                          "op": "path",
+                          "path": [
+                            "defaultBranchRef",
+                            "name"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "actor": {
+                    "op": "path",
+                    "path": [
+                      "data",
+                      "viewer",
+                      "login"
+                    ]
+                  }
+                }
+              },
+              "observations": {
+                "repository": {
+                  "op": "path",
+                  "path": [
+                    "data",
+                    "repository",
+                    "nameWithOwner"
+                  ]
+                }
+              }
+            }
+          }
         }
       }
     },

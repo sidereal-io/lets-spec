@@ -145,9 +145,14 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
     if (input.includeThread === true && ['comments', 'createdAt', 'lastEditedAt', 'parent'].some((field) => !Object.hasOwn(item, field)))
       throw new AdapterFailure('unknown_outcome', 'unknown', 'requested thread facts are incomplete');
   }
-  if (operation === 'repository.read' &&
-      object(result.repository, 'repository').id !== action.request.context.repository)
-    throw new AdapterFailure('invalid_request', 'unknown', 'repository result differs from issued scope');
+  if (operation === 'repository.read') {
+    const repository = object(result.repository, 'repository');
+    if (action.step === 'bootstrap') {
+      if (repository.owner !== input.owner || repository.name !== input.name || typeof result.actor !== 'string' || !result.actor)
+        throw new AdapterFailure('invalid_request', 'unknown', 'bootstrap result lacks exact repository or authenticated actor');
+    } else if (repository.id !== action.request.context.repository)
+      throw new AdapterFailure('invalid_request', 'unknown', 'repository result differs from issued scope');
+  }
   if (operation.startsWith('pull-request.') && result.pullRequest !== null) {
     const pr = object(result.pullRequest, 'pullRequest');
     if (pr.repository !== action.request.context.repository ||

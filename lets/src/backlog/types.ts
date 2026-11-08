@@ -31,7 +31,7 @@ export type PullRequest = {
   mergeCommit: string | null; mergeRef: string | null;
 };
 export type InputMap = {
-  'repository.read': Record<string, never>;
+  'repository.read': { owner?: string; name?: string };
   'pull-request.read': { pullRequest?: string; branch?: string };
   'pull-request.create': { title: string; bodyFile: string; base: string; head: string; headRepository: string; item?: Identity };
   'pull-request.update': { pullRequest: string; bodyFile: string; item?: Identity };
@@ -67,7 +67,7 @@ export type BacklogRequest = {
 export type Page<T> = { items: T[]; complete: boolean; nextCursor: string | null };
 export type LinkedBacklog = { provider: string; id: string; title?: string; url?: string };
 export type ResultMap = {
-  'repository.read': { repository: Repository };
+  'repository.read': { repository: Repository; actor?: string };
   'pull-request.read': { pullRequest: PullRequest | null };
   'pull-request.create': { pullRequest: PullRequest };
   'pull-request.update': { pullRequest: PullRequest };

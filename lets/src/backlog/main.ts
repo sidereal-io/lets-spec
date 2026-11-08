@@ -92,7 +92,7 @@ async function run(operation: string, options: Options): Promise<void> {
     const claimWrite = ['claim.acquire', 'claim.release'].includes(operation);
     if (MUTATIONS.includes(operation) && !prWrite && !claimWrite) throw new AdapterFailure('unsupported', 'none', 'production mutation sequencing is not available yet');
     const relationshipKind = (request.input as { kind?: string }).kind;
-    const step = operation === 'relationship.list' && relationshipKind !== 'blocked_by' ? `read-${relationshipKind}` : prWrite || claimWrite ? 'preflight' : operation === 'pull-request.read' && (request.input as { branch?: string }).branch !== undefined ? 'read-branch' : operation === 'item.read' && (request.input as { includeThread?: boolean }).includeThread === true ? 'read-thread' : 'read';
+    const step = operation === 'repository.read' && (request.input as { owner?: string }).owner !== undefined ? 'bootstrap' : operation === 'relationship.list' && relationshipKind !== 'blocked_by' ? `read-${relationshipKind}` : prWrite || claimWrite ? 'preflight' : operation === 'pull-request.read' && (request.input as { branch?: string }).branch !== undefined ? 'read-branch' : operation === 'item.read' && (request.input as { includeThread?: boolean }).includeThread === true ? 'read-thread' : 'read';
     const mapping = config.definition.definition.operations[operation]?.actions[step]?.bindings[config.connection.binding];
     if (!mapping) throw new AdapterFailure('unsupported', 'none', `selected definition does not map ${operation}/${step}`);
     const binding = config.definition.definition.bindings[config.connection.binding];

@@ -190,3 +190,16 @@ test('PR body update CLI confirms the exact prepared body', () => withBacklogCli
   assert.equal(response.result.pullRequest.body, body);
   assert.equal(existsSync(marker), false);
 }));
+
+test('repository bootstrap discovers actor without assuming one', () => withBacklogCli(async ({ dir, call, request }) => {
+  const path = request('repository.read', { owner: 'fixture', name: 'repo' });
+  const body = JSON.parse(readFileSync(path, 'utf8'));
+  body.context.repository = 'fixture/repo';
+  delete body.context.actor;
+  writeFileSync(path, JSON.stringify(body));
+  const response = await call(['repository.read', '--request-file', path]);
+  assert.equal(response.state, 'action', response.reason);
+  assert.equal(response.action.request.context.actor, undefined);
+  assert.equal(response.action.step, 'bootstrap');
+  assert.deepEqual(response.action.allowedEffects, []);
+}));

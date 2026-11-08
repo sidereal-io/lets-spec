@@ -3,7 +3,7 @@ import { digest } from './definitions.ts';
 import type { LoadedDefinition } from './definitions.ts';
 import type { BacklogRequest, WorkerContext } from './types.ts';
 
-export type ActionRequest = Omit<BacklogRequest, 'protocol' | 'context'> & { contractVersion: 1; context: Omit<WorkerContext, 'session'> & { session?: string } };
+export type ActionRequest = Omit<BacklogRequest, 'protocol' | 'context'> & { contractVersion: 1; context: Omit<WorkerContext, 'session' | 'actor'> & { session?: string; actor?: string } };
 export type Connection = { name: string; binding: string; options: Record<string, unknown> };
 export type PreparedBody = { path: string; body: string; digest: string };
 export type ClaimState = {
@@ -35,7 +35,7 @@ export type IssuedAction<R extends ActionRequest = ActionRequest> = {
   actionId: string;
   attemptId: string;
   mutationId?: string;
-  request: R & { context: WorkerContext };
+  request: R & { context: Omit<WorkerContext, 'actor'> & { actor?: string } };
   inputDigest: string;
   definition: LoadedDefinition;
   connection: Connection & { digest: string };

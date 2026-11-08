@@ -292,3 +292,10 @@ and connection coverage must be complete before shared readiness can treat
 missing blockers as empty. Native OPEN issues remain open prerequisites and
 CLOSED issues normalize as Done. Unknown issue states fail mapping. Unsupported
 relationship kinds have no implicit mapping to blockers or parent links.
+
+`repository.read` accepts an exact owner/name bootstrap input before immutable
+identity is known. Its context repository is that exact owner/name and omits
+actor. The `bootstrap` mapping reads only, binds the returned repository name
+to that request, and returns the authenticated actor plus immutable repository
+ID. Later operations use those validated identities. Bootstrap cannot acquire
+claims or substitute a guessed actor for the identity it discovers.

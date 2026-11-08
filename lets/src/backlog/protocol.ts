@@ -46,18 +46,26 @@ export function validateRequest(value: unknown): asserts value is BacklogRequest
   if (!(OPERATIONS as readonly unknown[]).includes(request.operation))
     throw new Error('unknown operation');
   const context = request.context as Record<string, unknown> | undefined;
+  const bootstrap = request.operation === 'repository.read' &&
+    ((request.input as Record<string, unknown>)?.owner !== undefined || (request.input as Record<string, unknown>)?.name !== undefined);
+  if (bootstrap && context?.actor !== undefined) throw new Error('bootstrap must not assume an actor');
   const discovery =
     request.operation === 'backlog.list' || request.operation === 'backlog.create';
   for (const field of [
     'cwd',
     'provider',
     'repository',
-    'actor',
+    ...(bootstrap ? [] : ['actor']),
     'session',
     ...(discovery || request.operation === 'repository.read' || String(request.operation).startsWith('pull-request.') || request.operation === 'mutation.read' ? [] : ['backlog']),
   ]) {
     if (!context || typeof context[field] !== 'string' || context[field] === '')
       throw new Error(`context.${field} is required`);
+  }
+  if (bootstrap) {
+    const input = request.input as Record<string, unknown>;
+    if (typeof input.owner !== 'string' || !input.owner || typeof input.name !== 'string' || !input.name ||
+        context?.repository !== `${input.owner}/${input.name}`) throw new Error('bootstrap requires exact repository owner/name');
   }
   if (discovery && context?.backlog !== undefined)
     throw new Error('context.backlog must be omitted for discovery/create');
@@ -183,7 +191,7 @@ export function validateResponse(
 // Required field definitions are executable and shared with the fake harness.
 // Optional fields use a trailing ?. Unknown fields are rejected.
 export const INPUTS: Record<string, Record<string, string>> = {
-  'repository.read': {},
+  'repository.read': { 'owner?': 'text', 'name?': 'text' },
   'pull-request.read': { 'pullRequest?': 'text', 'branch?': 'text' },
   'pull-request.create': { title: 'text', bodyFile: 'text', base: 'text', head: 'text', headRepository: 'text', 'item?': 'identity' },
   'pull-request.update': { pullRequest: 'text', bodyFile: 'text', 'item?': 'identity' },
@@ -247,7 +255,7 @@ function fields(value: unknown, shape: Record<string, string>, path: string): vo
 
 const page = { items: 'array', complete: 'boolean', nextCursor: 'nullableText' };
 export const OUTPUTS: Record<string, Record<string, string>> = {
-  'repository.read': { repository: 'object' },
+  'repository.read': { repository: 'object', 'actor?': 'text' },
   'pull-request.read': { pullRequest: 'nullableObject' },
   'pull-request.create': { pullRequest: 'object' },
   'pull-request.update': { pullRequest: 'object' },

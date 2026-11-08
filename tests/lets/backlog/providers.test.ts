@@ -113,7 +113,7 @@ test('shipped query arguments bind the immutable input ID without shell interpol
   assert.equal((args as string[]).at(-1), 'id=I1');
 });
 
-import { issueAction } from '../../../lets/src/backlog/actions.ts';
+import { parseActionRequest, issueAction } from '../../../lets/src/backlog/actions.ts';
 import { validateSubmission } from '../../../lets/src/backlog/submissions.ts';
 import { submissionFor } from './fixtures/submitted.ts';
 import { AdapterFailure } from '../../../lets/src/backlog/errors.ts';
@@ -228,4 +228,23 @@ test('partial draft confirmation retains the known PR ID', () => {
       assert.deepEqual((error as AdapterFailure & { knownRemoteIds?: unknown }).knownRemoteIds, { pullRequest: 'PR1', repository: 'R1' });
       return true;
     });
+});
+
+test('shipped bootstrap binds the exact repository before discovering actor', () => {
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const request = parseActionRequest(JSON.stringify({ contractVersion: 1, operation: 'repository.read',
+    context: { cwd: '/repo', provider: 'github', repository: 'fixture/repo' }, input: { owner: 'fixture', name: 'repo' } }));
+  const action = issueAction(request, definition, { name: 'local', binding: 'gh', options: {} }, {
+    step: 'bootstrap', toolArguments: [], allowedEffects: [], requiredCapabilities: [],
+    timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000,
+  }, 100);
+  const output = { data: { viewer: { login: 'actor' }, repository: {
+    ...githubRepository.data.node, nameWithOwner: 'fixture/repo',
+  } } };
+  const projection = definition.definition.operations['repository.read'].actions.bootstrap.bindings.gh.projection;
+  assert.deepEqual(validateSubmission(action, submissionFor(action, output), projection, 101), {
+    repository: { id: 'R1', owner: 'fixture', name: 'repo', url: 'https://github.com/fixture/repo', defaultBranch: 'main' }, actor: 'actor',
+  });
+  output.data.repository.nameWithOwner = 'other/repo';
+  assert.throws(() => validateSubmission(action, submissionFor(action, output), projection, 101), /scope/);
 });
