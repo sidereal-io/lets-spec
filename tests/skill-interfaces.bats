@@ -1008,7 +1008,7 @@ review_build_start() {
   skill_says lets-go 'git fetch origin <name>'
   skill_says lets-go 'git merge --ff-only origin/<name>'
   skill_says lets-go 'git switch <name>'
-  skill_says lets-go 'gh issue list --state open --search "<branch> in:title" --json number,title'
+  grep -qF 'lets backlog item.search' <<<"$(part_section 'Read the request')" || false
   skill_says lets-go 'Records disagree:'
   skill_does_not_say lets-go '#150 adds resuming' || { echo "lets-go still defers resuming to #150"; false; }
 }
@@ -1984,6 +1984,17 @@ procedure_stops() {
   grep -qF 'only when release confirms' <<<"$(tr -s '[:space:]' ' ' <<<"$claim")" || false
   grep -qF 'release outcome' <<<"$enter" || false
   ! grep -qF '[Claim](#claim) has released the claim' <<<"$enter" || false
+}
+
+@test "existing branch issue lookup uses scoped submitted reads without identity files" {
+  local request
+  request="$(part_section 'Read the request')"
+  grep -qF 'lets backlog item.search' <<<"$request" || false
+  grep -qF 'scoped repository' <<<"$(tr -s '[:space:]' ' ' <<<"$request")" || false
+  grep -qF 'title starts with `<branch> — `' <<<"$request" || false
+  grep -qF 'explicit issue number' <<<"$(tr -s '[:space:]' ' ' <<<"$request")" || false
+  ! grep -qF 'gh issue list' <<<"$request" || false
+  ! grep -qF 'identity.json' "$(lets_go_skill)" || false
 }
 
 # Check the issue looks for the branch, so Claim does not look again.

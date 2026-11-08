@@ -40,6 +40,42 @@ import { loadDefinition } from '../../../lets/src/backlog/definitions.ts';
 import { deriveDefinitionResult } from '../../../lets/src/backlog/projections.ts';
 import { githubDefinition } from '../../../lets/src/backlog/config.ts';
 const githubIssue = JSON.parse(readFileSync(new URL('./fixtures/github-issue.json', import.meta.url), 'utf8'));
+test('shipped issue search resolves immutable identity from complete scoped matches', () => {
+  const issue = { ...structuredClone(githubIssue.data.node), __typename: 'Issue' };
+  const output = [{ data: { viewer: { login: 'actor' }, node: { id: 'R1' }, search: {
+    nodes: [issue], issueCount: 1, pageInfo: { hasNextPage: false, endCursor: 'last' },
+  } } }];
+  const result = deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'item.search', 'read', 'gh', output, { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' });
+  assert.deepEqual((result.items as { identity: unknown }[]).map((item) => item.identity), [{ provider: 'github', backlog: 'P1', id: 'I1' }]);
+  assert.equal(result.complete, true);
+});
+test('shipped issue search refuses truncated search coverage', () => {
+  const output = [{ data: { viewer: { login: 'actor' }, node: { id: 'R1' }, search: {
+    nodes: [{ ...githubIssue.data.node, __typename: 'Issue' }], issueCount: 2,
+    pageInfo: { hasNextPage: false, endCursor: 'last' },
+  } } }];
+  assert.throws(() => deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'item.search', 'read', 'gh', output, { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' }), /coverage/);
+});
+test('shipped issue search excludes another repository', () => {
+  const issue = { ...structuredClone(githubIssue.data.node), __typename: 'Issue' };
+  issue.repository.id = 'OTHER';
+  const output = [{ data: { viewer: { login: 'actor' }, node: { id: 'R1' }, search: {
+    nodes: [issue, { __typename: 'PullRequest', id: 'PR1' }], issueCount: 2,
+    pageInfo: { hasNextPage: false, endCursor: 'last' },
+  } } }];
+  const result = deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'item.search', 'read', 'gh', output, { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' });
+  assert.deepEqual(result.items, []);
+});
+test('issue search arguments keep the GraphQL document separate from search text', () => {
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const mapping = definition.definition.operations['item.search'].actions.read.bindings.gh;
+  const args = projectArguments(mapping.arguments, { query: 'repo:fixture/repo is:issue is:open feature in:title' }, { repository: 'R1' }) as string[];
+  assert.equal(args.filter((argument) => argument.startsWith('query=')).length, 1);
+  assert.ok(args.includes('search=repo:fixture/repo is:issue is:open feature in:title'));
+});
 test('shipped GitHub projection selects scoped Project field unions', () => {
   const output = structuredClone(githubIssue);
   const correct = output.data.node.projectItems.nodes[0];

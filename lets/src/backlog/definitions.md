@@ -130,6 +130,15 @@ and no open blockers. Priority comes first, then the stable scoped issue order.
 Closed issues remain in enumeration observations but cannot be selected.
 Custom definitions must supply the same required facts.
 
+`item.search` accepts the caller's repository-qualified search text and returns
+complete immutable issue identities and item facts. The shipped binding uses
+GraphQL search pages, checks issueCount coverage and filters repository and
+content unions before translating items. It sends the GraphQL document as
+`query` and the search text as the separate `search` variable. Incomplete or
+capped search results cannot authorize branch lookup. Lets-go retains its
+existing open-issue title-prefix and explicit-number matching rules, keeping
+the resolved identity in scratch and memory without a metadata commit.
+
 `claim.acquire` maps separate `preflight`, `assign`, `read-assignment`, `status`
 and `verify` actions. Preflight supplies a complete eligible item plus
 `item.claimContext`: authenticated actor ID, Project item ID, Status field ID,

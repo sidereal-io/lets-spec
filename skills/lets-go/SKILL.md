@@ -220,12 +220,14 @@ whole backlog. On its result:
   `lets-shape` skill to shape more, and stop, claiming nothing.
 
 On another branch, `<branch>`, when the request is words, say that an
-idea needs the default branch, and stop. Otherwise search for the
-change's issue, once:
-
-```bash
-gh issue list --state open --search "<branch> in:title" --json number,title
-```
+idea needs the default branch, and stop. Otherwise request
+`lets backlog item.search --request-file` for open issues in the scoped
+repository whose title matches the branch words. Include the repository
+qualifier, open issue filter and `in:title` in the search query. Run the
+[Backlog action loop](references/backlog-actions.md) and require
+complete submitted observations. Incomplete or unavailable lookup facts
+stop the run without a write. An explicit issue number must belong to
+these scoped repository matches.
 
 Keep the issues whose title starts with `<branch> — `: these are the
 matches. When the user gave a number, it must be one of them. If it is
@@ -233,7 +235,10 @@ not, say that the issue and the branch do not match, and stop. When
 they gave none, exactly one match is the issue. If none matches, say
 that `lets-go` runs on the default branch or on a change's branch, and
 needs the issue number on a change's branch. Stop. If several match,
-say that `lets-go` needs the issue number, and stop.
+say that `lets-go` needs the issue number, and stop. Retain the uniquely
+resolved immutable issue identity in memory and request scratch for
+later reads. This lookup needs no original recovery record, committed
+identity file or runner metadata commit.
 
 Next: [Check the issue](#check-the-issue) when the entry table found
 `<i>`; [Start from an idea](#start-from-an-idea) for an idea on the
