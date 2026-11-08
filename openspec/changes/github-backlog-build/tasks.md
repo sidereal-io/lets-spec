@@ -19,7 +19,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 1.8 [medium] Reject submissions bound to another call, scope or input without authorizing progression. (✓ node --test tests/lets/backlog/protocol.test.ts passed, 55 tests)
 - [x] 1.9 [easy] Reject unsupported contract versions and malformed or unknown operation inputs with their defined typed errors. (✓ node --test tests/lets/backlog/protocol.test.ts passed, 60 tests)
 - [x] 1.10 [medium] Fail preflight on unavailable tools, missing login or missing execution/output bounds without fallback. (✓ node --test tests/lets/backlog/capabilities.test.ts passed, 14 tests)
-- [ ] 1.11 [medium] Apply the same operation validators to an explicitly selected custom definition. (verify: node --test tests/lets/backlog/config.test.ts)
+- [x] 1.11 [medium] Apply the same operation validators to an explicitly selected custom definition. (✓ node --test tests/lets/backlog/config.test.ts passed, 16 tests)
 - [ ] 1.12 [medium] Derive normalized facts from bounded inline or file-referenced output without agent transcription. (verify: node --test tests/lets/backlog/protocol.test.ts)
 - [ ] 1.13 [medium] Accept timely submissions using Lets receipt time when exact tool timestamps and optional MCP server version are unavailable. (verify: node --test tests/lets/backlog/protocol.test.ts)
 - [ ] 1.14 [medium] Fail before issuance when private state cannot support durable private writes and locking. (verify: node --test tests/lets/backlog/state.test.ts)

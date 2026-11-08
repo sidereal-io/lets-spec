@@ -1,8 +1,12 @@
+import { validateProjection } from './projections.ts';
+import type { Projection } from './projections.ts';
 import { createHash } from 'node:crypto';
 import { AdapterFailure } from './errors.ts';
 import { object, OPERATIONS } from './protocol.ts';
 
 export type ToolBinding = { kind: 'cli' | 'mcp'; tool: string; versions: string[] };
+export type ActionTranslation = { arguments: unknown; projection: Projection };
+export type OperationDefinition = { actions: Record<string, { bindings: Record<string, ActionTranslation> }> };
 export type ProviderDefinition = {
   schemaVersion: 1;
   name: string;
@@ -10,7 +14,7 @@ export type ProviderDefinition = {
   contractVersions: number[];
   backend: { name: string; versions: string[] };
   bindings: Record<string, ToolBinding>;
-  operations: Record<string, unknown>;
+  operations: Record<string, OperationDefinition>;
 };
 export type LoadedDefinition = { source: string; digest: string; definition: ProviderDefinition };
 export function digest(value: unknown): string {
@@ -55,8 +59,24 @@ export function loadDefinition(sources: readonly { source: string; value: unknow
       strings(binding.versions, `bindings.${name}.versions`);
     }
     const operations = object(definition.operations, 'operations');
-    for (const name of Object.keys(operations))
+    for (const [name, value] of Object.entries(operations)) {
       if (!(OPERATIONS as readonly string[]).includes(name)) throw new Error(`operations.${name} is unknown`);
+      const operation = object(value, `operations.${name}`);
+      keys(operation, ['actions'], `operations.${name}`);
+      for (const [step, value] of Object.entries(object(operation.actions, 'actions'))) {
+        const action = object(value, `actions.${step}`);
+        keys(action, ['bindings'], `actions.${step}`);
+        const translations = object(action.bindings, `actions.${step}.bindings`);
+        if (!Object.keys(translations).length) throw new Error(`actions.${step} must map a binding`);
+        for (const [binding, value] of Object.entries(translations)) {
+          if (!Object.hasOwn(bindings, binding)) throw new Error(`actions.${step} names undeclared binding ${binding}`);
+          const translation = object(value, `actions.${step}.${binding}`);
+          keys(translation, ['arguments', 'projection'], `actions.${step}.${binding}`);
+          if (!Object.hasOwn(translation, 'arguments')) throw new Error('tool arguments required');
+          validateProjection(translation.projection);
+        }
+      }
+    }
     return { source, digest: digest(value), definition: value as ProviderDefinition };
   } catch (error) {
     throw new AdapterFailure('invalid_configuration', 'none', `${location}: ${String(error)}; select a compatible inert definition, no fallback`);

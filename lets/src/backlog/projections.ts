@@ -24,3 +24,20 @@ export function deriveResult(operation: string, projection: Projection, output: 
   validateResponse({ protocol: 1, ok: true, result }, 0, operation);
   return result;
 }
+
+import type { LoadedDefinition } from './definitions.ts';
+export function validateProjection(value: unknown): asserts value is Projection {
+  const projection = object(value, 'projection');
+  if (projection.op !== 'path') throw new Error('projection has unknown operator');
+  if (Object.keys(projection).some((key) => !['op', 'path'].includes(key)) ||
+      !Array.isArray(projection.path) || projection.path.some((part) =>
+        (typeof part !== 'string' && !Number.isSafeInteger(part)) ||
+        ['__proto__', 'constructor', 'prototype'].includes(part as string)))
+    throw new Error('projection path must contain safe field names or array indexes');
+}
+export function deriveDefinitionResult(definition: LoadedDefinition, operation: string,
+  action: string, binding: string, output: unknown, scope: Record<string, unknown>, normalized?: unknown): Record<string, unknown> {
+  const translation = definition.definition.operations[operation]?.actions[action]?.bindings[binding];
+  if (!translation) throw new AdapterFailure('unsupported', 'none', `definition does not map ${operation}/${action}/${binding}`);
+  return deriveResult(operation, translation.projection, output, scope, normalized);
+}

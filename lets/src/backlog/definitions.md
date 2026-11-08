@@ -26,3 +26,10 @@ Old `executable`, `adapter`, and adapter `path` settings are rejected with their
 file and key. Remove them, select `lets.backlog.definition` when a custom
 provider is needed, and configure backend tools under `backlog.connections`.
 No adapter program is discovered or started.
+
+Operation definitions use `operations.<operation>.actions.<action>.bindings`.
+Each declared binding has inert `arguments` and a `projection`. A field-path
+projection is `{ "op": "path", "path": ["data", "result"] }`. Unknown
+operators fail when the definition loads. Projected results pass the same
+operation validators for custom and shipped definitions. Optional submitted
+normalization must equal the derived result; it cannot replace missing fields.

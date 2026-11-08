@@ -81,3 +81,24 @@ test('local definition selection retains required tracking policy', () => {
     readDefinition: () => ({ ...definition, name: 'beads', backend: { name: 'beads', versions: ['1'] } }),
   }), /storage.tracking/);
 });
+
+import { deriveDefinitionResult } from '../../../lets/src/backlog/projections.ts';
+const customDefinition = {
+  ...definition,
+  operations: { 'claim.read': { actions: { read: { bindings: {
+    gh: { arguments: ['api', 'graphql'], projection: { op: 'path', path: ['data', 'ownership'] } },
+  } } } } },
+};
+test('custom definition cannot bypass the claim operation validator', () => {
+  const selected = resolveConfiguration(repositoryConfig, machineConfig, {
+    repositoryFile: '/repo/config.yaml', userFile: '/user/config.yaml', readDefinition: () => customDefinition,
+  });
+  assert.throws(() => deriveDefinitionResult(selected.definition, 'claim.read', 'read', 'gh', {
+    data: { ownership: { claim: { actor: 'me', session: null, token: null, status: 'wrong', guarantee: 'exclusive' } } },
+  }, {}), /claim.status/);
+});
+test('custom definition rejects an unknown projection operator at load', () => {
+  const invalid = structuredClone(customDefinition);
+  invalid.operations['claim.read'].actions.read.bindings.gh.projection.op = 'eval';
+  assert.throws(() => loadDefinition([{ source: '/repo/custom.json', value: invalid }]), /projection.*operator/);
+});
