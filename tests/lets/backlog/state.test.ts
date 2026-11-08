@@ -98,3 +98,29 @@ test('unsupported journal version remains untouched', () => {
     assert.equal(JSON.parse(readFileSync(path, 'utf8')).journalVersion, 99);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+import { digest } from '../../../lets/src/backlog/definitions.ts';
+import { hostname } from 'node:os';
+for (const [name, owner, succeeds] of [
+  ['proven dead holder', { pid: 2147483647, processStart: '1' }, true],
+  ['reused PID', { pid: process.pid, processStart: 'old-process-start' }, true],
+  ['live holder', { pid: process.pid, processStart: process.platform === 'linux' ? readFileSync(`/proc/${process.pid}/stat`, 'utf8').split(') ').at(-1)!.split(' ')[19] : '' }, false],
+  ['ambiguous holder', { pid: process.pid }, false],
+] as const) {
+  test(`resource lock handles ${name} conservatively`, { skip: process.platform !== 'linux' }, () => {
+    mkdirSync('.workspace', { recursive: true });
+    const dir = mkdtempSync('.workspace/lock-');
+    try {
+      const { action } = submittedRead();
+      const store = new OperationStore(join(dir, 'private'));
+      const lockPath = join(dir, 'private', 'locks', `${digest('item:R1:P1:I1')}.lock`);
+      writeFileSync(lockPath, JSON.stringify({ nonce: 'original', host: hostname(),
+        bootId: readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim(), ...owner }), { mode: 0o600 });
+      if (succeeds) assert.equal(store.issue(action, ['item:R1:P1:I1']).state, 'action');
+      else {
+        assert.throws(() => store.issue(action, ['item:R1:P1:I1']), /lock busy/);
+        assert.equal(JSON.parse(readFileSync(lockPath, 'utf8')).nonce, 'original');
+      }
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+}

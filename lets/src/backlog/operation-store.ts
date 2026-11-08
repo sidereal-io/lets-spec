@@ -1,3 +1,4 @@
+import { acquireResourceLock } from './resource-lock.ts';
 import { object } from './protocol.ts';
 import { issueAction } from './actions.ts';
 import { isDeepStrictEqual } from 'node:util';
@@ -61,29 +62,12 @@ export class OperationStore {
     } finally { try { unlinkSync(temporary); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; } }
   }
   private locked<T>(keys: string[], run: () => T): T {
-    const held: { path: string; nonce: string }[] = [];
+    const release: (() => void)[] = [];
     try {
-      for (const key of [...new Set(keys)].sort()) {
-        const path = join(this.path, 'locks', `${digest(key)}.lock`);
-        const nonce = randomUUID();
-        let fd: number;
-        try { fd = openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, 0o600); }
-        catch (error) {
-          if ((error as NodeJS.ErrnoException).code === 'EEXIST')
-            throw new AdapterFailure('conflict', 'none', `local lock busy for ${key}; retry after the current holder finishes`);
-          throw error;
-        }
-        held.push({ path, nonce });
-        try { writeFileSync(fd, JSON.stringify({ nonce, pid: process.pid })); fsyncSync(fd); }
-        finally { closeSync(fd); }
-      }
+      for (const key of [...new Set(keys)].sort())
+        release.push(acquireResourceLock(join(this.path, 'locks', `${digest(key)}.lock`), key));
       return run();
-    } finally {
-      for (const lock of held.reverse()) {
-        const owner = JSON.parse(readFileSync(lock.path, 'utf8'));
-        if (owner.nonce === lock.nonce) unlinkSync(lock.path);
-      }
-    }
+    } finally { for (const unlock of release.reverse()) unlock(); }
   }
   resume(id: string, now: number): ActionResponse {
     const initial = this.get(id);
