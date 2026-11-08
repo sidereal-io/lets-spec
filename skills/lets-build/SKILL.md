@@ -7,9 +7,11 @@ description: Build one planned change in an OpenSpec project, on the change's br
 
 Build one planned change, on its branch. This is the build step.
 `lets-go` claims the issue and plans it first, and `lets-review-build`
-finishes the change after. Run every command below from the repo root.
+reviews and finishes the change afterward. Run every command below from the
+repo root.
 
-Read [Plain language](../lets-shape/references/plain-language.md) before writing.
+Read [Plain language](../lets-shape/references/plain-language.md) before
+writing.
 Use it for progress and stop messages: name the state, what is unfinished
 and the next action.
 
@@ -20,7 +22,8 @@ and the next action.
 2. Run `git branch --show-current`.
 3. If the branch has a folder `openspec/changes/<branch>/`, read its state:
    `openspec instructions apply --change <branch> --json`.
-4. Take the first row that matches:
+4. Use the table from top to bottom. Follow the first matching row;
+   later rows do not override it:
 
 | The current branch | `state` | Do |
 |---|---|---|

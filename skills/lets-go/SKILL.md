@@ -46,6 +46,8 @@ below; explain their evidence and reasons in plain words.
 
 ## The run at a glance
 
+Start at [Read the settings](#read-the-settings). The table below shows
+the route through the run; each linked part gives its detailed actions.
 A run goes through these parts, in this order.
 [Start from an idea](#start-from-an-idea),
 [Run the shape step](#run-the-shape-step) and
@@ -211,7 +213,7 @@ running no step. This comes before the discovery query and the title
 search, which an idea like `???` gives nothing to work with. A letter
 in any script counts: `ログを直す` is an idea.
 
-With nothing on the default branch, run the third case, `next`, of
+With nothing on the default branch, run the `next` case of
 [Find the source of demand](#find-the-source-of-demand), over the
 whole backlog. On its result:
 - **`picked`:** print:
