@@ -41,3 +41,32 @@ test('private store preflight proves durable private replacement', () => {
     assert.deepEqual(readdirSync(path), []);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+import { OperationStore } from '../../../lets/src/backlog/operation-store.ts';
+import { submittedRead } from './fixtures/submitted.ts';
+test('issued action survives reopening its private store', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/issued-');
+  try {
+    const { action } = submittedRead();
+    const store = new OperationStore(join(dir, 'private'));
+    const response = store.issue(action, ['item:R1:P1:I1']);
+    assert.equal(response.state, 'action');
+    const reopened = new OperationStore(join(dir, 'private'));
+    const record = reopened.get(action.operationId);
+    assert.equal(record.action.actionId, action.actionId);
+    assert.equal(record.state, 'issued');
+    assert.equal(statSync(join(dir, 'private', 'operations', `${action.operationId}.json`)).mode & 0o777, 0o600);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+test('an issued operation cannot be overwritten by another issuance', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/issued-');
+  try {
+    const { action } = submittedRead();
+    const store = new OperationStore(join(dir, 'private'));
+    store.issue(action, ['item:R1:P1:I1']);
+    assert.throws(() => store.issue(action, ['other']), /already issued/);
+    assert.deepEqual(store.get(action.operationId).resourceKeys, ['item:R1:P1:I1']);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

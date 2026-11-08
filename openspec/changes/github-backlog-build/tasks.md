@@ -30,7 +30,7 @@ Nothing is implemented or checked off by this planning restart.
 
 ## 2. Private recovery [depends-on: 1]
 
-- [ ] 2.1 [complex] Persist issued action state atomically under ordered per-resource-key locks in the shared private store before returning control to the agent. (verify: node --test tests/lets/backlog/state.test.ts)
+- [x] 2.1 [complex] Persist issued action state atomically under ordered per-resource-key locks in the shared private store before returning control to the agent. (✓ node --test tests/lets/backlog/state.test.ts passed, 11 tests)
 - [ ] 2.2 [medium] Acknowledge duplicate accepted submissions after restart without advancing the operation twice. (verify: node --test tests/lets/backlog/state.test.ts)
 - [ ] 2.3 [complex] Reconcile an uncertain mutation through fresh bounded reads tied to its original identity before permitting another write. (verify: node --test tests/lets/backlog/recovery.test.ts)
 - [ ] 2.4 [medium] Preserve typed error/effect classifications from validated observations instead of exception-message keywords. (verify: node --test tests/lets/backlog/failures.test.ts)
