@@ -161,6 +161,13 @@ This section is for you once it is set up, and you want to know what to run.
 
 ### The backlog
 
+Existing-story reads, claims and PR actions use one configured GitHub
+integration through `lets backlog`. With no connection settings, it selects
+the shipped gh binding; callers still declare real session tool access and
+bounds. Compatible custom MCP definitions have offline coverage and require
+their own live qualification. See [connection and private-state setup](docs/backlog-adapter-contract.md#configuration-and-writable-state).
+
+
 The backlog is the GitHub Project linked to your repository. Every piece
 of work is an issue on it, with its Kind, Priority, Size and Status as
 Project fields. An issue's **packet** is its body, filled in from its

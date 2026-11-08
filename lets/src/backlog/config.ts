@@ -123,6 +123,9 @@ function selectConnection(settings: Record<string, unknown>, definition: LoadedD
     if (typeof name !== 'string' || !Object.hasOwn(connections, name))
       throw new Error('backlog.connection must select a configured name; set a default for several connections');
     const selected = object(connections[name], `backlog.connections.${name}`);
+    const endpoint = (selected.options as Record<string, unknown> | undefined)?.endpoint;
+    if (definition.source === 'shipped:github' && endpoint !== undefined && endpoint !== 'https://api.github.com')
+      throw new Error(`backlog.connections.${name}.options.endpoint requires a compatible custom definition for this endpoint`);
     return { name, binding: selected.binding as string, options: structuredClone(selected.options ?? {}) as Record<string, unknown> };
   } catch (error) {
     throw new AdapterFailure('invalid_configuration', 'none', `${file}: backlog.connection: ${String(error)}; select a compatible named connection; no fallback`);

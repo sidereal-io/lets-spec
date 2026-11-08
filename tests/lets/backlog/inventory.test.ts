@@ -239,3 +239,13 @@ test('support status separates offline compatibility from fresh live qualificati
   assert.match(document, /actual delegated step.*writable/);
   assert.match(document, /user-directed merge/);
 });
+
+test('configuration docs explain defaults shared state and sandbox remedies', () => {
+  const document = readFileSync(new URL('../../../docs/backlog-adapter-contract.md', import.meta.url), 'utf8').replace(/\s+/g, ' ');
+  for (const term of ['backlog.connection', 'backlog.connections', 'lets.backlog.definition', 'XDG_STATE_HOME', 'backlog.stateDir', '0700', '--host-file'])
+    assert.ok(document.includes(term), term);
+  assert.match(document, /sole configured connection.*default/);
+  assert.match(document, /several.*without.*default.*fail/i);
+  assert.match(document, /--connection.*direct.*backlog callers/);
+  assert.match(document, /sandbox.*write and lock access/);
+});

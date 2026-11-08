@@ -162,3 +162,9 @@ for (const host of ['unchanged T3', 'standalone CLI']) {
     assert.equal(configured.backlog, 'P1');
   });
 }
+
+test('shipped public GitHub binding rejects an unimplemented endpoint override', () => {
+  assert.throws(() => resolveConfiguration({}, { version: 3, backlog: { connections: {
+    enterprise: { binding: 'gh', options: { endpoint: 'https://github.example/api/graphql' } },
+  } } }, sourceFiles), /endpoint.*custom definition.*no fallback/);
+});

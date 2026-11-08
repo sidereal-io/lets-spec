@@ -108,7 +108,7 @@ Nothing is implemented or checked off by this planning restart.
 
 - [x] 7.1 [medium] Rewrite the contract docs for submitted output, recorded reads and retained completion conformance, replacing session/token work gates with actor-only ordinary resume and release-specific provenance checks. (✓ node --test tests/lets/backlog/inventory.test.ts passed, 15 tests)
 - [x] 7.2 [medium] Report unqualified live support for configurations without fresh acceptance, keeping offline compatibility separate. (✓ focused node inventory support-status check passed)
-- [ ] 7.3 [medium] Document connection defaults and shared-definition binding limits, the private state path and actionable writable-state sandbox remedies. (verify: node --test tests/lets/backlog/inventory.test.ts)
+- [x] 7.3 [medium] Document connection defaults and shared-definition binding limits, the private state path and actionable writable-state sandbox remedies. (✓ focused inventory configuration-doc check passed; node config suite passed, 30 tests)
 
 - [ ] 7.4 [medium] Package consumed runtime and definitions while excluding obsolete adapter bundles and unused conformance payloads. (verify: nix flake check)
 

@@ -253,3 +253,77 @@ IDs for unresolved writes and stop before any blind retry. A user-directed merge
 is required for merged-path acceptance; offline merge fixtures cannot substitute
 for it. Do not mark a delivery PR ready or archive a change merely because
 its offline checks pass.
+
+## Configuration and writable state
+
+Repository selection belongs in openspec/config.yaml under lets.backlog. Version
+1 accepts provider, definition, id, mappings and optional local storage policy.
+Without selection, GitHub and its shipped gh binding apply. A custom
+lets.backlog.definition path resolves relative to that config file, not PATH.
+It selects inert schema-1 data, never a module or executable. The definition must
+cover the required operations, binding, native fields and submitted output shape.
+No production non-GitHub routing is implied by an offline profile.
+
+```yaml
+lets:
+  backlog:
+    version: 1
+    provider: github
+    id: PVT_example
+    # Optional, relative to openspec/config.yaml:
+    # definition: ../integrations/github.json
+```
+
+Machine settings live in $XDG_CONFIG_HOME/lets/config.yaml, or
+~/.config/lets/config.yaml. Configure connections under backlog.connections and
+the default under backlog.connection. A sole configured connection is the
+default when no name is set. Several connections without a valid default fail;
+an invalid explicit selection never falls back. A connection's binding must
+belong to the repository-selected definition. A custom MCP tool needs its own
+compatible declared binding and complete operation mappings; a name alone does
+not translate gh arguments or qualify live support. The shipped binding targets
+public api.github.com; another endpoint requires a compatible custom definition
+that actually targets it. A connection endpoint key alone does not rewrite the
+shipped arguments.
+
+```yaml
+version: 3
+backlog:
+  connection: github
+  connections:
+    github:
+      binding: gh
+      options:
+        timeoutMs: 30000
+        maxOutputBytes: 1048576
+```
+
+No connection settings are required to select shipped gh. The caller must still
+supply actual available tools and enforceable bounds in a private --host-file,
+including when delegated; the runtime checks CLI availability too. MCP tool
+availability is a trusted session declaration. Configured bounds and session
+bounds limit issuance together. Credentials stay with the selected backend tool,
+never in repository config, definitions or submitted diagnostics.
+
+`--connection <name>` is for direct lets backlog callers only. Lets-go's syntax
+stays unchanged and uses the configured default; steps receive that name as
+execution context and verify it independently. Recovery retains its original
+connection and definition even after the default changes. Preserve original
+options until outstanding effects reconcile; never reinterpret a pending record.
+Obsolete adapter/executable/path configuration fails with its file/key and the
+inert-definition migration remedy.
+
+Private recovery defaults to $XDG_STATE_HOME/lets, or ~/.local/state/lets.
+An absolute machine backlog.stateDir may select another directory shared across
+worktrees. It must be user-owned with mode 0700 and allow durable create, locking,
+atomic replacement and directory sync; records use private file permissions.
+The default path is not assumed writable in an agent sandbox. Grant that session
+write and lock access to the selected shared directory, or explicitly configure
+a suitable absolute backlog.stateDir. Apply the same remedy to every actual
+delegated session. Do not silently relocate the store, weaken its permissions,
+delete pending records or replace shared recovery with per-worktree scratch.
+
+Per-operation request/output files live in .workspace/lets-backlog. They are
+private scratch, not release or Git content. Losing them does not lose the
+original operation ID or justify repeating a write. Keep state available until
+all recorded uncertain effects are resolved.
