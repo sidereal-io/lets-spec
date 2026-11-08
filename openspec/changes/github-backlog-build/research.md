@@ -446,13 +446,13 @@ option reinstates capture infrastructure or implements backend calls in Lets.
 These were the alternatives at the round-three pause. The user subsequently
 selected option A in D15. Option B is rejected; it is not an active plan.
 
-## Current review disposition after D15
+## Round-three disposition after D15 (historical)
 
 D15 explicitly selects one configured GitHub integration for issue, Project,
 repository and PR actions. The prior separate-role draft is withdrawn. No new
 code-host adapter, command group or configuration section is selected. The
 existing Adapter glossary meaning applies without a new term or a new ADR.
-The next fresh review must assess this revision, not the withdrawn role.
+Round four subsequently assessed this revision, not the withdrawn role.
 
 | Round-three finding | Disposition and current evidence |
 |---|---|
@@ -470,6 +470,77 @@ The next fresh review must assess this revision, not the withdrawn role.
 | S4: ADR history | Accepted; ADR-015 records D12/D14 and D15 provenance. GitHub caller details stay in this plan rather than a durable architecture rule. |
 | S5: plain language | Accepted; active changed paragraphs are split and wrapped. Full MODIFIED spec blocks retain main's detailed baseline requirements and all original scenario names. |
 
-The current plan remains planning-only and requires a fresh independent verdict.
-No prior REVISE becomes an approval because these edits validate structurally.
+At that point the plan required a fresh independent verdict. Round four below
+supersedes that pending gate. Structural validation alone did not approve it.
 Publication, implementation, live mutation and merge remain outside this restart.
+
+
+## Plan review
+
+Reviewed: da4fccdb
+
+- **Reviewer:** claude/claude-opus-5-5, fresh context, other family, independent: yes.
+- **Round:** 4. Prior round: REVISE.
+- **Vocabulary inputs:** `openspec/glossary.md` and
+  `skills/lets-shape/references/domain-language.md`; no affected capability has
+  an additional glossary. The reviewer checked D10, D14 and D15 against the plan.
+- **Verdict:** APPROVE_WITH_CHANGES.
+- **Required changes:** C1 and M1–M5 below, before implementation.
+
+The reviewer returned this verdict against da4fccdb. Fix commit `7c7d5d5a`
+changes only this OpenSpec change and its architecture ADR. The report below
+records how every finding was addressed; it does not claim a new reviewer
+verdict against that fix commit. The review skill requires no further round
+when these listed edits are applied and committed.
+
+### Findings and rebuttals
+
+| Finding | Check and disposition | Fix evidence in 7c7d5d5a |
+|---|---|---|
+| **C1 Critical: pending mutations have no workflow recovery caller** | CONFIRMED. Claim uncertainty, walk ownership checks and failed PR writes previously only reported recovery. | Design sections 5–6 and the lets-go delta name each caller of read-only resume. Continue only after effects resolve and the reservation clears; repeat fresh ownership checks before work. Tasks 5.11, 5.13 and 6.14 cover runner and step recovery. |
+| **M1 Moderate: shared comments reference still instructs gh use** | CONFIRMED. Readers followed a reference whose fetch section supplied shaping's command. | Add the full shared-reference requirement delta. Design section 6 and task 6.3 require the reference to direct runner and brainstorm to item.read, with a skill-interface assertion. Shaping retains its query. |
+| **M2 Moderate: no-config users have no connection default** | CONFIRMED. The named-connection design omitted upgrade behavior. | Design section 3 and contract scenarios define implicit shipped gh, sole-entry selection and actionable failure for several entries without a default. Task 1.16 owns coverage. Invalid explicit config never falls back. |
+| **M3 Moderate: lets-go cannot receive --connection** | CONFIRMED. The runner grammar has no such token. | Lets-go and steps use the configured default; only direct backlog callers accept the flag. Update host scenarios, step context and task 6.1. State that bindings must belong to the repository-selected definition. No new runner syntax or environment variable is introduced. |
+| **M4 Moderate: claim.read lacks complete ownership and wrongly gates resume on session/token** | CONFIRMED. The single-actor contract cannot represent several assignees; historic session matching blocks new sessions. | Full modified claim-guarantee requirement adds complete assignees and core verdicts. Ordinary resume checks actor; release retains original provenance and supported session/token checks. Tasks 5.10 and 5.12 cover claim and protocol seams; task 7.1 rewrites the stale contract-doc gate. |
+| **M5 Moderate: PR creation does not require draft state** | CONFIRMED. The inputs omitted an invariant required by schema planning instructions. | Design section 6 and a contract requirement mandate draft creation. Missing isDraft:true is partial effects requiring reconciliation, never confirmed creation or permission to duplicate it. Task 3.6 covers translation and draft confirmation. |
+
+### Suggestions
+
+All ten suggestions are accepted and fixed in `7c7d5d5a`:
+
+1. Correct stale D15 wording in the research parity table, proposal and discovery
+   search delta. Shaping keeps its query; the runner preserves its semantics.
+2. Record non-GitHub production PR routing as future work in ADR-015's
+   Consequences and task 6.9; offline profiles do not qualify production routing.
+3. Use invocation as the scope for worker ID reuse. Each operation still binds
+   immutable context and each delegated step owns its own worker.
+4. Use recovery record for private persisted facts, continuation for the returned
+   value and continuation file for scratch serialization in active artifacts.
+   Historical review tables retain the wording of their revision.
+5. Name the ownership remedy: the user assigns only themselves and sets
+   In Progress in GitHub, then reruns lets-go. Agents perform no repair writes.
+6. Use per-resource-key locks, acquire alias keys in stable order and retain
+   proven-stale recovery. Live or ambiguous holders still produce bounded failure.
+7. Name owner prerequisite lookup: owner issue title prefix, branch, then
+   pull-request.read. Keep the existing prerequisite policy.
+8. Add includeThread, default false. Packet and brainstorm set it true and
+   require complete pages; parent-body reads avoid the thread. Task 3.4 covers both.
+9. Add task 7.3 for connection defaults, shared-definition binding limits, state
+   location and sandbox remedies. Packaging remains last as task 7.4.
+10. Split and wrap the changed design paragraphs and remove extra blank lines.
+    Preserve the complete modified requirements and all baseline scenario names.
+
+### Validation and handoff
+
+`openspec validate github-backlog-build --strict` passes. The scenario-preservation
+check confirms all original scenario names remain in seven modified backlog
+contract requirements, 22 lets-go requirements and five issue-comments
+requirements. `git diff --check` passes. These checks validate planning artifacts;
+no implementation or live acceptance was performed.
+
+All required round-four edits are committed, satisfying the local plan-review
+gate under APPROVE_WITH_CHANGES. This planning record belongs to #136 and draft
+#172. Keep publication deferred until the replacement-plan handoff is agreed;
+then transfer this review with the replacement plan to that existing PR. It does
+not approve the old capture-service prototype on #172. No competing PR, readiness
+change, archive, Project mutation or merge is authorized by this record.
