@@ -320,3 +320,19 @@ test('shipped Epic read rejects ambiguous optional metadata', () => {
     'item.read', 'read', 'gh', output, { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' }),
   /exactly one match/);
 });
+
+for (const [operation, connection] of [['item.search', 'search'], ['candidate.list', 'items']] as const) {
+  test(`shipped ${operation} stays within GitHub nested node budget`, () => {
+    const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+    const mapping = definition.definition.operations[operation].actions.read.bindings.gh;
+    const args = projectArguments(mapping.arguments, { query: 'repo:fixture/repo is:issue' },
+      { repository: 'R1', backlog: 'P1' }) as string[];
+    const query = args.find((argument) => argument.startsWith('query='))!;
+    const first = (field: string) => Number(query.match(new RegExp(`\\b${field}\\([^)]*\\bfirst:(\\d+)`))?.[1]);
+    // GitHub counts possible nodes before applying runtime data filters. Leave
+    // room beyond this dominant nested path for assignees and other siblings.
+    const nestedFieldNodes = first(connection) * first('projectItems') * first('fieldValues');
+    assert.ok(Number.isFinite(nestedFieldNodes) && nestedFieldNodes > 0);
+    assert.ok(nestedFieldNodes < 500_000, `${operation} reserves ${nestedFieldNodes} nested field nodes before siblings`);
+  });
+}

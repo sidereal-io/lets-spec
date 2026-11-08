@@ -61,6 +61,8 @@ Nothing is implemented or checked off by this planning restart.
 
 - [x] 3.11 [medium] Read a parent Epic whose Project metadata contains only Kind while retaining strict story metadata and ambiguity checks. (✓ focused item/provider suite passed, 75 tests; nix flake check passed with the additional missing-story-field and ambiguous-Epic regressions)
 
+- [x] 3.12 [medium] Keep shipped search and candidate query fanout below GitHub’s node limit without reducing coverage. (✓ node --test tests/lets/backlog/providers.test.ts passed, 49 tests; both budget regressions failed at 1,000,000 possible nodes before the outer-page fix)
+
 ## 4. GitHub claim lifecycle [depends-on: 3]
 
 - [x] 4.1 [medium] Reject readiness when directional blocker observations are incomplete. (✓ node --test tests/lets/backlog/relationships.test.ts tests/lets/backlog/providers.test.ts passed, 42 tests; tsc --noEmit passed)
@@ -157,3 +159,5 @@ required real configurations have passed acceptance.
   completion conformance; documentation and release packaging finish the list.
 
 - 2026-11-08, implementation: add task 3.11 after the parent-body regression exposed a requirement for story ranking fields on an Epic. Permit absent non-Kind Epic fields without weakening story validation or accepting ambiguous fields.
+
+- 2026-11-08, live qualification: actual branch lookup returned MAX_NODE_LIMIT_EXCEEDED. Add task 3.12 and reduce only outer search/candidate page sizes; retain pagination, total-count checks and complete nested connections. No remote workflow policy changes.
