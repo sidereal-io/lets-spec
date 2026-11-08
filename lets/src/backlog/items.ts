@@ -16,6 +16,11 @@ export type Item = {
   body: string;
   metadata: Metadata;
   owners: string[];
+  createdAt?: string;
+  lastEditedAt?: string | null;
+  parent?: Identity | null;
+  comments?: { id: string; url: string; author: { __typename: string; login: string } | null;
+    authorAssociation: string; createdAt: string; lastEditedAt: string | null; body: string }[];
 };
 export function validateItem(value: unknown): asserts value is Item {
   const item = object(value, 'item');
@@ -30,6 +35,27 @@ export function validateItem(value: unknown): asserts value is Item {
     item.owners.some((owner) => typeof owner !== 'string' || !owner)
   )
     throw new Error('invalid owners');
+  for (const field of ['createdAt', 'lastEditedAt'])
+    if (item[field] !== undefined && !(field === 'lastEditedAt' && item[field] === null) &&
+        (typeof item[field] !== 'string' || !Number.isFinite(Date.parse(item[field] as string))))
+      throw new Error(`invalid item.${field}`);
+  if (item.parent !== undefined && item.parent !== null) validateIdentity(item.parent);
+  if (item.comments !== undefined) {
+    if (!Array.isArray(item.comments)) throw new Error('invalid item.comments');
+    for (const value of item.comments) {
+      const comment = object(value, 'comment');
+      for (const field of ['id', 'url', 'authorAssociation', 'createdAt', 'body'])
+        if (typeof comment[field] !== 'string' || (field !== 'body' && !comment[field])) throw new Error(`invalid comment.${field}`);
+      if (!URL.canParse(comment.url as string) || !Number.isFinite(Date.parse(comment.createdAt as string)) ||
+          (comment.lastEditedAt !== null && (typeof comment.lastEditedAt !== 'string' || !Number.isFinite(Date.parse(comment.lastEditedAt)))))
+        throw new Error('invalid comment URL or timestamps');
+      if (comment.author !== null) {
+        const author = object(comment.author, 'comment.author');
+        if (typeof author.login !== 'string' || !author.login || typeof author.__typename !== 'string' || !author.__typename)
+          throw new Error('invalid comment.author');
+      }
+    }
+  }
   const metadata = object(item.metadata, 'metadata');
   for (const [field, values] of Object.entries(METADATA))
     if (!(values as readonly unknown[]).includes(metadata[field]))

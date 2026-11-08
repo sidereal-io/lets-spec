@@ -36,7 +36,7 @@ export type InputMap = {
   'backlog.create': { title: string };
   'backlog.check': Record<string, never>;
   'item.search': { query: string; cursor?: string };
-  'item.read': { item: Identity };
+  'item.read': { item: Identity; includeThread?: boolean };
   'item.create': { title: string; body: string; metadata: Metadata };
   'item.update': { item: Identity; patch: ItemPatch };
   'relationship.write': { item: Identity; target: Identity; kind: string; present: boolean };

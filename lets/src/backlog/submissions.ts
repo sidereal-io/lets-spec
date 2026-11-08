@@ -97,6 +97,13 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
   const result = deriveResult(action.request.operation, projection, output,
     action.request.context, submission.normalized);
   const input = action.request.input as Record<string, unknown>;
+  if (action.request.operation === 'item.read') {
+    const item = object(result.item, 'item');
+    if (!isDeepStrictEqual(item.identity, input.item))
+      throw new AdapterFailure('invalid_request', 'unknown', 'item result differs from issued identity');
+    if (input.includeThread === true && ['comments', 'createdAt', 'lastEditedAt', 'parent'].some((field) => !Object.hasOwn(item, field)))
+      throw new AdapterFailure('unknown_outcome', 'unknown', 'requested thread facts are incomplete');
+  }
   if (action.request.operation === 'repository.read' &&
       object(result.repository, 'repository').id !== action.request.context.repository)
     throw new AdapterFailure('invalid_request', 'unknown', 'repository result differs from issued scope');

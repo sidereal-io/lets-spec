@@ -153,3 +153,48 @@ test('candidate submission rejects a structured error on a later page', () => {
 import { issueAction } from '../../../lets/src/backlog/actions.ts';
 import { validateSubmission } from '../../../lets/src/backlog/submissions.ts';
 import { submissionFor } from './fixtures/submitted.ts';
+function threadPage(id: string, next: boolean, cursor: string) {
+  const output = structuredClone(issueOutput);
+  output.data.node.parent = null;
+  output.data.node.comments = { nodes: [{ id, url: `https://github.com/fixture/repo/issues/1#${id}`,
+    author: { __typename: 'User', login: 'actor' }, authorAssociation: 'OWNER',
+    createdAt: '2026-11-01T00:00:00Z', lastEditedAt: null, body: id === 'C2' ? 'Later unread evidence' : 'First comment' }],
+    totalCount: 2, pageInfo: { hasNextPage: next, endCursor: cursor } };
+  return output;
+}
+test('thread read retains unread evidence from a later page', () => {
+  const result = deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'item.read', 'read-thread', 'gh', [threadPage('C1', true, 'c1'), threadPage('C2', false, 'c2')],
+    { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' });
+  const item = result.item as { comments: { body: string }[]; createdAt: string; lastEditedAt: null; parent: null };
+  assert.equal(item.comments[1].body, 'Later unread evidence');
+  assert.equal(item.lastEditedAt, null);
+  assert.equal(item.parent, null);
+});
+test('parent body read arguments omit comment fetching', () => {
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const mapping = definition.definition.operations['item.read'].actions.read.bindings.gh;
+  const args = projectArguments(mapping.arguments, { item: { id: 'I1' } }) as string[];
+  assert.equal(args.some((arg) => arg.includes('comments(')), false);
+  assert.equal(args.some((arg) => arg.includes('item-list')), false);
+});
+import { projectArguments } from '../../../lets/src/backlog/projections.ts';
+test('thread read rejects a missing final comment page', () => {
+  assert.throws(() => deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'item.read', 'read-thread', 'gh', [threadPage('C1', true, 'c1')],
+    { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' }), /coverage/);
+});
+test('requested thread facts cannot be omitted by a custom mapping', () => {
+  const definition = loadDefinition([{ source: 'custom', value: { ...githubDefinition, operations: {
+    'item.read': { actions: { 'read-thread': { bindings: { gh: { arguments: [], projection: { op: 'path', path: ['data'] } } } } } },
+  } } }]);
+  const action = issueAction({ contractVersion: 1, operation: 'item.read', context: {
+    cwd: '/repo', provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor',
+  }, input: { item: { provider: 'github', backlog: 'P1', id: 'I1' }, includeThread: true } }, definition,
+    { name: 'local', binding: 'gh', options: {} }, { step: 'read-thread', toolArguments: [], allowedEffects: [],
+      requiredCapabilities: [], timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000 }, 100);
+  const item = deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'item.read', 'read', 'gh', issueOutput, action.request.context).item;
+  assert.throws(() => validateSubmission(action, submissionFor(action, { data: { item } }),
+    { op: 'path', path: ['data'] }, 101), /thread/);
+});

@@ -54,7 +54,7 @@ test('shipped GitHub projection selects scoped Project field unions', () => {
     { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' });
   assert.deepEqual(result, { item: { identity: { provider: 'github', backlog: 'P1', id: 'I1' },
     reference: '#1', url: 'https://github.com/fixture/repo/issues/1', title: 'story — fixture', body: 'Fixture packet',
-    metadata: { Kind: 'Story', Priority: 'Must', Size: 'M', Status: 'In Progress' }, owners: ['actor'] } });
+    metadata: { Kind: 'Story', Priority: 'Must', Size: 'M', Status: 'In Progress' }, owners: ['actor'], createdAt: '2026-11-03T04:33:18Z', lastEditedAt: null, parent: null } });
 });
 for (const name of ['missing page', 'unknown union', 'count mismatch']) {
   test(`shipped GitHub mapping rejects ${name}`, () => {

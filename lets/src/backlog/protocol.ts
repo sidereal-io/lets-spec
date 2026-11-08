@@ -192,7 +192,7 @@ export const INPUTS: Record<string, Record<string, string>> = {
   'backlog.create': { title: 'text' },
   'backlog.check': {},
   'item.search': { query: 'text', 'cursor?': 'text' },
-  'item.read': { item: 'identity' },
+  'item.read': { item: 'identity', 'includeThread?': 'boolean' },
   'item.create': { title: 'text', body: 'string', metadata: 'object' },
   'item.update': { item: 'identity', patch: 'object' },
   'relationship.write': {

@@ -87,15 +87,16 @@ async function run(operation: string, options: Options): Promise<void> {
         (config.backlog !== undefined && request.context.backlog !== config.backlog))
       throw new AdapterFailure('invalid_request', 'none', 'request scope differs from selected repository/backlog');
     if (MUTATIONS.includes(operation)) throw new AdapterFailure('unsupported', 'none', 'production mutation sequencing is not available yet');
-    const mapping = config.definition.definition.operations[operation]?.actions.read?.bindings[config.connection.binding];
-    if (!mapping) throw new AdapterFailure('unsupported', 'none', `selected definition does not map ${operation}/read`);
+    const step = operation === 'item.read' && (request.input as { includeThread?: boolean }).includeThread === true ? 'read-thread' : 'read';
+    const mapping = config.definition.definition.operations[operation]?.actions[step]?.bindings[config.connection.binding];
+    if (!mapping) throw new AdapterFailure('unsupported', 'none', `selected definition does not map ${operation}/${step}`);
     const binding = config.definition.definition.bindings[config.connection.binding];
     const bounds = config.connection.options;
     checkActionPrerequisites(binding.tool, { toolAvailable: binding.kind === 'cli' && available(binding.tool),
       timeoutMs: bounds.timeoutMs as number | undefined, maxOutputBytes: bounds.maxOutputBytes as number | undefined }, true);
     store = new OperationStore(config.stateDir);
     const action = issueAction(request, config.definition, config.connection, {
-      step: 'read', toolArguments: projectArguments(mapping.arguments, request.input, request.context), allowedEffects: [], requiredCapabilities: [],
+      step, toolArguments: projectArguments(mapping.arguments, request.input, request.context), allowedEffects: [], requiredCapabilities: [],
       timeoutMs: bounds.timeoutMs as number, maxOutputBytes: bounds.maxOutputBytes as number,
       acceptanceMs: bounds.acceptanceMs as number | undefined ?? 60000,
     }, Date.now());

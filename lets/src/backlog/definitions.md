@@ -119,3 +119,14 @@ connections must also be complete; an incomplete nested connection stops the
 operation. Output limits apply to the entire submitted page array, and a
 structured error on any page stops progression. A missing intermediate page
 cannot satisfy totalCount coverage.
+
+`item.read` accepts optional `includeThread`, default false. The `read` action
+reads the issue body, metadata, creation/edit times and parent identity without
+requesting comments. `includeThread: true` selects `read-thread`, which returns
+all comment pages under the same combined output and time bounds. Comments keep
+their URL, author type/login, association, body and creation/edit times so the
+existing comment labels and read-marker rules can use the original facts.
+Deleted authors remain explicit nulls. Required thread facts cannot be omitted
+by a custom mapping. Parent bodies use a separate ordinary scoped issue read;
+no Project-wide item scan is needed. Thread-page cases and the absent parent
+are synthetic extensions to the scrubbed issue fixture.
