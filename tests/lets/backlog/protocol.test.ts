@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateRequest } from '../../../lets/src/backlog/protocol.ts';
+import { validateRequest, validateResponse } from '../../../lets/src/backlog/protocol.ts';
 const context = {
   cwd: '/repo',
   provider: 'github',
@@ -364,3 +364,43 @@ test('optional tool time cannot rescue a late receipt', () => {
   assert.throws(() => validateSubmission(action, { ...submission, observed: { finishedAt: 200 } }, projection, 6000),
     /acceptance window/);
 });
+
+const repositoryContext = { cwd: '/repo', provider: 'github', repository: 'R1', actor: 'me', session: 'worker' };
+test('repository request needs no Project selection', () => {
+  assert.equal(parseActionRequest(JSON.stringify({ contractVersion: 1, operation: 'repository.read', context: repositoryContext, input: {} })).operation,
+    'repository.read');
+});
+test('branch PR read is a repository-scoped operation', () => {
+  assert.equal(parseActionRequest(JSON.stringify({ contractVersion: 1, operation: 'pull-request.read', context: repositoryContext, input: { branch: 'feature' } })).operation,
+    'pull-request.read');
+});
+test('PR read cannot select both branch and immutable PR', () => {
+  assert.throws(() => parseActionRequest(JSON.stringify({ contractVersion: 1, operation: 'pull-request.read', context: repositoryContext,
+    input: { branch: 'feature', pullRequest: 'PR1' } })), /exactly one/);
+});
+test('PR create validates the prepared body input', () => {
+  assert.equal(parseActionRequest(JSON.stringify({ contractVersion: 1, operation: 'pull-request.create', context: repositoryContext,
+    input: { title: 'Draft', bodyFile: '/repo/.workspace/body.md', base: 'main', head: 'feature', headRepository: 'R1' } })).operation,
+    'pull-request.create');
+});
+test('repository result requires immutable identity', () => {
+  assert.throws(() => validateResponse({ protocol: 1, ok: true, result: { repository: { name: 'repo' } } }, 0, 'repository.read'), /repository.id/);
+});
+
+const prResult = { id: 'PR1', repository: 'R1', headRepository: 'R1', number: 1,
+  url: 'https://github.com/fixture/repo/pull/1', state: 'OPEN', isDraft: true, body: 'Closes #1',
+  createdAt: '2026-11-08T12:00:00Z', baseRef: 'main', headRef: 'feature', baseSha: null,
+  headSha: null, mergeCommit: null, mergeRef: null };
+for (const [name, input, observed] of [
+  ['repository', { branch: 'feature' }, { ...prResult, repository: 'OTHER' }],
+  ['immutable PR', { pullRequest: 'PR1' }, { ...prResult, id: 'PR2' }],
+  ['head branch', { branch: 'feature' }, { ...prResult, headRef: 'other' }],
+] as const) {
+  test(`PR submission cannot replace scoped ${name}`, () => {
+    const { action, submission, projection } = submittedRead();
+    const prAction = { ...action, request: { contractVersion: 1 as const, operation: 'pull-request.read' as const,
+      context: repositoryContext, input } };
+    assert.throws(() => validateSubmission(prAction,
+      { ...submission, context: repositoryContext, output: { data: { pullRequest: observed } } }, projection, 200), /scope/);
+  });
+}

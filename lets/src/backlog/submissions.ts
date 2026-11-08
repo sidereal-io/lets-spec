@@ -83,6 +83,20 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
   if (execution.outcome !== 'success' || execution.exitCode !== 0 || execution.signal !== undefined ||
       execution.outputLimitExceeded === true || execution.timedOut === true)
     uncertain('tool termination does not establish outcome; reconcile original operation');
-  return deriveResult(action.request.operation, projection, output,
+  const result = deriveResult(action.request.operation, projection, output,
     action.request.context, submission.normalized);
+  const input = action.request.input as Record<string, unknown>;
+  if (action.request.operation === 'repository.read' &&
+      object(result.repository, 'repository').id !== action.request.context.repository)
+    throw new AdapterFailure('invalid_request', 'unknown', 'repository result differs from issued scope');
+  if (action.request.operation.startsWith('pull-request.') && result.pullRequest !== null) {
+    const pr = object(result.pullRequest, 'pullRequest');
+    if (pr.repository !== action.request.context.repository ||
+        (input.pullRequest !== undefined && pr.id !== input.pullRequest) ||
+        (input.branch !== undefined && pr.headRef !== input.branch) ||
+        (input.head !== undefined && pr.headRef !== input.head) ||
+        (input.headRepository !== undefined && pr.headRepository !== input.headRepository))
+      throw new AdapterFailure('invalid_request', 'unknown', 'pull request result differs from issued scope');
+  }
+  return result;
 }
