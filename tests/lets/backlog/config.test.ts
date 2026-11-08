@@ -149,3 +149,16 @@ for (const [name, connections] of [
       /original.*connection.*reconcil|connection.*no fallback/);
   });
 }
+
+for (const host of ['unchanged T3', 'standalone CLI']) {
+  test(`${host} resolves the same explicit compatible MCP connection policy`, () => {
+    const custom = { ...definition, bindings: { githubMcp: { kind: 'mcp', tool: 'github.read', versions: ['unreported'] } } };
+    const configured = resolveConfiguration(repositoryConfig, { version: 3, backlog: {
+      connection: 'team', connections: { team: { binding: 'githubMcp', options: { timeoutMs: 1000, maxOutputBytes: 65536 } } },
+    } }, { repositoryFile: '/repo/openspec/config.yaml', userFile: '/user/config.yaml', readDefinition: () => custom });
+    assert.equal(configured.provider, 'github');
+    assert.equal(configured.definition.definition.bindings.githubMcp.kind, 'mcp');
+    assert.deepEqual(configured.connection, { name: 'team', binding: 'githubMcp', options: { timeoutMs: 1000, maxOutputBytes: 65536 } });
+    assert.equal(configured.backlog, 'P1');
+  });
+}
