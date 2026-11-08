@@ -71,3 +71,31 @@ test('local selection requires tracking policy', () => {
 test('validated selection retains backlog scope', () => {
   assert.equal(checkConfiguration(local, '/repo', (name) => name).backlog, 'local');
 });
+
+import { loadDefinition } from '../../../lets/src/backlog/definitions.ts';
+const definition = {
+  schemaVersion: 1,
+  name: 'github',
+  version: '1.0.0',
+  contractVersions: [1],
+  backend: { name: 'github', versions: ['graphql-v4'] },
+  bindings: { gh: { kind: 'cli', tool: 'gh', versions: ['>=2'] } },
+  operations: {},
+};
+for (const [name, sources] of [
+  ['incompatible schema', [{ ...definition, schemaVersion: 2 }]],
+  ['incompatible contract', [{ ...definition, contractVersions: [2] }]],
+  ['conflicting sources', [definition, definition]],
+  ['executable load hook', [{ ...definition, load: './hook.js' }]],
+] as const) {
+  test(`definition rejects ${name} before tool issuance`, () => {
+    assert.throws(() => loadDefinition(sources.map((value) => ({ source: '/repo/provider.json', value }))),
+      /invalid_configuration.*provider.json/);
+  });
+}
+test('compatible inert definition has a stable content binding', () => {
+  const loaded = loadDefinition([{ source: '/repo/provider.json', value: definition }]);
+  assert.equal(loaded.definition.name, 'github');
+  assert.match(loaded.digest, /^[a-f0-9]{64}$/);
+  assert.equal(loaded.source, '/repo/provider.json');
+});

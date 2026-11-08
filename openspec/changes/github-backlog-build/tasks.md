@@ -9,7 +9,7 @@ Nothing is implemented or checked off by this planning restart.
 
 ## 1. Shared configuration and result contract
 
-- [ ] 1.1 [medium] Reject incompatible or conflicting inert definition sources before issuing an action. (verify: node --test tests/lets/backlog/config.test.ts)
+- [x] 1.1 [medium] Reject incompatible or conflicting inert definition sources before issuing an action. (✓ node --test --test-isolation=none tests/lets/backlog/config.test.ts passed, 14 tests)
 - [ ] 1.2 [medium] Resolve repository selection separately from machine tool settings without explicit-selection fallback. (verify: node --test tests/lets/backlog/config.test.ts)
 - [ ] 1.3 [easy] Reject obsolete executable configuration with its file/key and supported migration remedy. (verify: node --test tests/lets/backlog/config.test.ts)
 - [ ] 1.4 [medium] Reject optional supplied normalized operation fields that disagree with the definition's projections from submitted structured tool output. (verify: node --test tests/lets/backlog/protocol.test.ts)
