@@ -3108,3 +3108,15 @@ pr_reference_says() {
   [[ "$prompt" == *'uncertain'*'original operation ID'*'lets backlog resume --operation-id'*'reason'* ]] || false
   ! grep -qE '^(operationId|recoveryCommand):' "$repo/skills/lets-go/references/step-prompt.md" || false
 }
+
+@test "clean tree precedes the branch merged stop before work authority" {
+  local walk tree pr merged ownership
+  walk="$(walk_section)"
+  tree="${walk%%'git status --porcelain'*}"
+  pr="${walk%%'lets backlog pull-request.read'*}"
+  merged="${walk%%'`MERGED`'*}"
+  ownership="${walk%%'[Check work ownership]'*}"
+  [ "$tree" != "$walk" ] && [ "$pr" != "$walk" ] && [ "$merged" != "$walk" ] || false
+  [ "${#tree}" -lt "${#pr}" ] && [ "${#pr}" -lt "${#merged}" ] && [ "${#merged}" -lt "${#ownership}" ] || false
+  ! grep -qE 'completion.write|identity.json' <<<"$walk" || false
+}
