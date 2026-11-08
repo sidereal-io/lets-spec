@@ -163,3 +163,19 @@ followed by a fresh exact-PR read that confirms the requested body or draft
 state. All actions retain the original operation and worker identity. The
 shared store reserves the resource throughout the sequence; no backend tool is
 executed by Lets.
+
+An uncertain PR creation is found by its repository/head resource key even
+from another worker or checkout. Resume preserves the original definition,
+connection, prepared body and worker provenance, and issues a branch PR read
+only. A matching repository, head, base, body and draft confirms application.
+An absent PR after an issued write is still unresolved: a read does not prove
+that detached work has stopped. A mismatched body or missing draft effect keeps
+the reservation. A journal stage before any write can resolve as absent.
+
+When a PR ID becomes known, core registers its exact-PR alias while retaining
+the repository/head reservation. Registration is serialized with PR operation
+admission without reserving unrelated PRs. Replaying a submission that already
+caused write issuance returns recovery, not another copy of write permission.
+A PR identity learned from a partial write result selects an exact-PR recovery
+read. It survives subsequent resumes; a later branch match cannot replace it.
+Conflicting recorded identities or repository scope fail without another write.

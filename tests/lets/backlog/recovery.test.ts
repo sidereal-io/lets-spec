@@ -114,7 +114,7 @@ test('uncertain claim resumes through a fresh read of original scope', () => {
       actor: 'me', session: null, token: null, status: 'In Progress', guarantee: 'best-effort',
     } } }), 6100);
     assert.notEqual(confirmed.state, 'action');
-    if (confirmed.state === 'action') throw new Error('reconciliation must finish');
+    if (!('result' in confirmed)) throw new Error('reconciliation must finish');
     assert.equal(confirmed.result.reconciliation, 'applied');
     assert.equal(store.get(action.operationId).pending, false);
   } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -174,5 +174,119 @@ test('operation ID recovers its original continuation after scratch loss', () =>
     assert.deepEqual(resumed.continuation, original.continuation);
     assert.deepEqual(resumed.action.allowedEffects, []);
     assert.equal(resumed.action.request.context.repository, 'R1');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+import { submittedPr } from './fixtures/submitted.ts';
+import { readFileSync } from 'node:fs';
+const rawPr = JSON.parse(readFileSync(new URL('./fixtures/github-pr.json', import.meta.url), 'utf8')).data.node;
+function branchPrOutput(pr: unknown = rawPr) {
+  return [{ data: { viewer: { login: 'actor' }, node: { id: 'R1', pullRequests: {
+    nodes: pr === null ? [] : [pr], totalCount: pr === null ? 0 : 1, pageInfo: { hasNextPage: false, endCursor: pr === null ? null : 'last' },
+  } } } }];
+}
+test('new step recovers uncertain PR creation through the original read-only continuation', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-recovery-');
+  try {
+    const first = submittedPr();
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(first);
+    const second = submittedPr();
+    second.request.context.session = 'new-step';
+    second.request.context.cwd = '/another-worktree';
+    const blocked = new OperationStore(join(dir, 'private')).issue(second);
+    assert.equal(blocked.state, 'needs-reconciliation');
+    assert.deepEqual(blocked.continuation, issued.continuation);
+    const resumed = store.resume(blocked.operationId, 6000);
+    assert.deepEqual(resumed.action.allowedEffects, []);
+    assert.equal(resumed.action.step, 'read-existing');
+    const result = store.submit(resumed.continuation, submissionFor(resumed.action, branchPrOutput()), 6100);
+    assert.notEqual(result.state, 'action');
+    if (!('result' in result)) throw new Error('reconciliation cannot request a write');
+    assert.equal(result.result.reconciliation, 'applied');
+    assert.equal(result.result.reservationCleared, true);
+    assert.equal(store.get(first.operationId).pending, false);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+test('known created PR ID stays reserved until fresh confirmation', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-known-id-');
+  try {
+    const action = submittedPr();
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action);
+    const verifying = store.submit(issued.continuation, submissionFor(action, {
+      data: { createPullRequest: { pullRequest: rawPr } },
+    }), 200);
+    assert.equal(verifying.state, 'action');
+    const blocked = new OperationStore(join(dir, 'private')).issue(submittedPr('pull-request.ready'));
+    assert.equal(blocked.state, 'needs-reconciliation');
+    assert.equal(blocked.operationId, action.operationId);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+import { prAction } from '../../../lets/src/backlog/pr-actions.ts';
+test('duplicate pre-write submission does not reissue the pending write', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-duplicate-');
+  try {
+    const action = prAction(submittedPr(), 'preflight', 100);
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action);
+    const repository = JSON.parse(readFileSync(new URL('./fixtures/github-repository.json', import.meta.url), 'utf8'));
+    const read = store.submit(issued.continuation, submissionFor(action, repository), 200);
+    assert.equal(read.state, 'action');
+    if (read.state !== 'action') throw new Error('branch read required');
+    const observation = submissionFor(read.action, branchPrOutput(null));
+    const write = store.submit(read.continuation, observation, 300);
+    assert.equal(write.state, 'action');
+    const repeated = store.submit(read.continuation, observation, 400);
+    assert.equal(repeated.state, 'needs-reconciliation');
+    assert.equal(repeated.operationId, action.operationId);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+for (const [name, pr, verdict] of [
+  ['absent PR', null, 'unresolved'],
+  ['different prepared body', { ...rawPr, body: 'Unrelated body' }, 'unresolved'],
+  ['missing draft effect', { ...rawPr, isDraft: false }, 'partial'],
+] as const) {
+  test(`uncertain creation retains reservation for ${name}`, () => {
+    mkdirSync('.workspace', { recursive: true });
+    const dir = mkdtempSync('.workspace/pr-unresolved-');
+    try {
+      const action = submittedPr();
+      const store = new OperationStore(join(dir, 'private'));
+      store.issue(action);
+      const resumed = store.resume(action.operationId, 6000);
+      const result = store.submit(resumed.continuation, submissionFor(resumed.action, branchPrOutput(pr)), 6100);
+      assert.equal(result.state, 'needs-reconciliation');
+      if (!('result' in result)) throw new Error('read observation required');
+      assert.equal(result.result.reconciliation, verdict);
+      assert.equal(store.get(action.operationId).pending, true);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+}
+test('creation reconciliation reads the known PR after partial confirmation', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-partial-id-');
+  try {
+    const action = submittedPr();
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action);
+    assert.throws(() => store.submit(issued.continuation, submissionFor(action, {
+      data: { createPullRequest: { pullRequest: { ...rawPr, isDraft: false } } },
+    }), 200), /draft confirmation/);
+    const resumed = store.resume(action.operationId, 6000);
+    assert.equal(resumed.action.targetPullRequest, 'PR1');
+    assert.equal(resumed.action.step, 'verify');
+    assert.deepEqual(resumed.action.allowedEffects, []);
+    const refreshed = new OperationStore(join(dir, 'private')).resume(action.operationId, 7000);
+    assert.equal(refreshed.action.targetPullRequest, 'PR1');
+    const result = store.submit(refreshed.continuation, submissionFor(refreshed.action, {
+      data: { viewer: { login: 'actor' }, node: rawPr },
+    }), 7100);
+    assert.equal(result.state, 'complete');
+    if (!('result' in result)) throw new Error('reconciliation must return observations');
+    assert.equal(result.result.reconciliation, 'applied');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

@@ -1,6 +1,6 @@
-import { nextPrAction } from './pr-actions.ts';
+import { nextPrAction, prAction, reconcilePrCreation } from './pr-actions.ts';
 import { projectArguments } from './projections.ts';
-import { resourceKeys as scopedKeys } from './resource-keys.ts';
+import { resourceKeys as scopedKeys, coordinationKeys } from './resource-keys.ts';
 import { acquireResourceLock } from './resource-lock.ts';
 import { object } from './protocol.ts';
 import { issueAction } from './actions.ts';
@@ -76,19 +76,25 @@ export class OperationStore {
   }
   resume(id: string, now: number): ActionResponse {
     const initial = this.get(id);
-    return this.locked([`operation:${id}`, ...initial.resourceKeys], () => {
+    return this.locked([`operation:${id}`, ...initial.resourceKeys, ...coordinationKeys(initial.action)], () => {
       const record = this.get(id);
       const original = record.originalAction ?? record.action;
       if (record.state === 'complete') throw new AdapterFailure('conflict', 'none', 'operation already resolved');
-      if (!['claim.acquire', 'claim.release'].includes(original.request.operation))
-        throw new AdapterFailure('unsupported', 'unknown', 'original operation needs a supported bounded reconciliation read');
+      let action: IssuedAction;
+      if (original.request.operation === 'pull-request.create') {
+        const target = knownPrIdentity(record, original);
+        action = prAction(original, target ? 'verify' : 'read-existing', now, target);
+      } else {
+        if (!['claim.acquire', 'claim.release'].includes(original.request.operation))
+          throw new AdapterFailure('unsupported', 'unknown', 'original operation needs a supported bounded reconciliation read');
       const mapping = original.definition.definition.operations['claim.read']?.actions.read?.bindings[original.connection.binding];
       if (!mapping) throw new AdapterFailure('unsupported', 'unknown', 'original definition must provide claim.read for reconciliation');
-      const action = issueAction({ ...original.request, operation: 'claim.read', input: { item: (original.request.input as { item: import('./protocol.ts').Identity }).item } },
+      action = issueAction({ ...original.request, operation: 'claim.read', input: { item: (original.request.input as { item: import('./protocol.ts').Identity }).item } },
         original.definition, original.connection, { step: 'read', toolArguments: projectArguments(mapping.arguments, original.request.input, original.request.context),
           allowedEffects: [], requiredCapabilities: original.requiredCapabilities,
           ...original.limits, acceptanceMs: original.expiresAt - original.issuedAt }, now,
         { operationId: original.operationId });
+      }
       if (original.mutationId) action.mutationId = original.mutationId;
       record.originalAction = original;
       record.reconciling = true;
@@ -99,14 +105,21 @@ export class OperationStore {
         continuation: record.continuation };
     });
   }
-  submit(continuation: Continuation, submission: unknown, now: number): CompleteResponse | ActionResponse {
+  submit(continuation: Continuation, submission: unknown, now: number): CompleteResponse | ActionResponse | BlockedResponse {
     const initial = this.get(continuation.operationId);
-    return this.locked([`operation:${continuation.operationId}`, ...initial.resourceKeys], () => {
+    return this.locked([`operation:${continuation.operationId}`, ...initial.resourceKeys, ...coordinationKeys(initial.action)], () => {
       const record = this.get(continuation.operationId);
       if (!isDeepStrictEqual(record.continuation, continuation))
         throw new AdapterFailure('invalid_request', 'unknown', 'continuation does not match original operation');
       const acknowledged = record.acknowledgements?.find((entry) => isDeepStrictEqual(entry.submission, submission));
-      if (acknowledged) return structuredClone(acknowledged.response);
+      if (acknowledged) {
+        if (record.state === 'complete') return { contractVersion: 1, operationId: record.action.operationId,
+          workerId: record.action.workerId, state: 'complete', result: record.result!, continuation: record.continuation };
+        if (acknowledged.response.state === 'action' && acknowledged.response.action.allowedEffects.length)
+          return { contractVersion: 1, operationId: record.action.operationId, workerId: record.action.workerId,
+            state: 'needs-reconciliation', reason: 'pending-mutation', effects: 'unknown', continuation: record.continuation };
+        return structuredClone(acknowledged.response);
+      }
       if (record.state === 'complete') {
         if (!isDeepStrictEqual(record.acceptedSubmission, submission))
           throw new AdapterFailure('conflict', 'unknown', 'conflicting reuse of accepted submission');
@@ -128,6 +141,8 @@ export class OperationStore {
           record.result = validateSubmission(action, value, mapping.projection, now);
         } catch (error) {
           const failure = error instanceof AdapterFailure ? error : new AdapterFailure('invalid_request', 'unknown', String(error));
+          if (failure.knownRemoteIds?.pullRequest)
+            record.resourceKeys = [...new Set([...record.resourceKeys, ...scopedKeys({ ...action, targetPullRequest: failure.knownRemoteIds.pullRequest })])].sort();
           record.attempts.push({ actionId: action.actionId, receivedAt: now, submission: structuredClone(submission), accepted: false,
             error: { category: failure.category, effects: failure.effects, message: failure.message, ...(failure.knownRemoteIds ? { knownRemoteIds: failure.knownRemoteIds } : {}) } });
           if (action.allowedEffects.length) record.state = 'needs-reconciliation';
@@ -139,11 +154,16 @@ export class OperationStore {
         record.acceptedSubmission = structuredClone(submission);
         if (record.reconciling) {
           const origin = record.originalAction!;
-          const claim = record.result.claim as Record<string, unknown>;
-          const applied = origin.request.operation === 'claim.acquire' && claim.actor === origin.request.context.actor && claim.status === 'In Progress';
-          record.result = { observation: record.result, reconciliation: applied ? 'applied' : 'unresolved', reservationCleared: applied };
-          record.state = applied ? 'complete' : 'needs-reconciliation';
-          record.pending = !applied;
+          let reconciliation: string;
+          if (origin.request.operation === 'pull-request.create') reconciliation = reconcilePrCreation(origin, record.result, action.targetPullRequest);
+          else {
+            const claim = record.result.claim as Record<string, unknown>;
+            reconciliation = origin.request.operation === 'claim.acquire' && claim.actor === origin.request.context.actor && claim.status === 'In Progress' ? 'applied' : 'unresolved';
+          }
+          const resolved = ['applied', 'absent'].includes(reconciliation);
+          record.result = { observation: record.result, reconciliation, reservationCleared: resolved };
+          record.state = resolved ? 'complete' : 'needs-reconciliation';
+          record.pending = !resolved;
         } else {
           let next: IssuedAction | null;
           try { next = nextPrAction(action, record.result, now); }
@@ -156,6 +176,7 @@ export class OperationStore {
           }
           if (next) {
             record.action = next;
+            record.resourceKeys = [...new Set([...record.resourceKeys, ...scopedKeys(next)])].sort();
             record.state = 'issued';
             record.pending = true;
             const response: ActionResponse = { contractVersion: 1, operationId: next.operationId, workerId: next.workerId,
@@ -175,7 +196,7 @@ export class OperationStore {
   }
   issue(action: IssuedAction, aliases: string[] = []): ActionResponse | BlockedResponse {
     const resourceKeys = [...new Set([...scopedKeys(action), ...aliases])].sort();
-    return this.locked([`operation:${action.operationId}`, ...resourceKeys], () => {
+    return this.locked([`operation:${action.operationId}`, ...resourceKeys, ...coordinationKeys(action)], () => {
       try {
         lstatSync(this.file(action.operationId));
         throw new AdapterFailure('conflict', 'none', 'operation already issued; use its continuation');
@@ -206,4 +227,18 @@ export function requireOriginalWorker(record: OperationRecord, context: WorkerCo
       context.provider !== original.provider || context.repository !== original.repository ||
       context.backlog !== original.backlog)
     throw new AdapterFailure('conflict', 'none', 'release requires the original operation worker and scoped actor provenance; reconciliation does not transfer it');
+}
+
+/** A partial write's learned identity cannot be replaced by a later branch match. */
+function knownPrIdentity(record: OperationRecord, original: IssuedAction): string | undefined {
+  const ids = new Set<string>(original.targetPullRequest ? [original.targetPullRequest] : []);
+  for (const attempt of record.attempts) {
+    const known = (attempt as { error?: { knownRemoteIds?: Record<string, string> } }).error?.knownRemoteIds;
+    if (!known?.pullRequest) continue;
+    if (known.repository !== original.request.context.repository)
+      throw new AdapterFailure('invalid_request', 'unknown', 'recorded PR identity differs from original repository; retain operation for reconciliation');
+    ids.add(known.pullRequest);
+  }
+  if (ids.size > 1) throw new AdapterFailure('conflict', 'unknown', 'recorded PR identities disagree; retain operation for reconciliation');
+  return [...ids][0];
 }

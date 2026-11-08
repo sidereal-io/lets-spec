@@ -55,7 +55,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 3.5 [medium] Select a branch PR open-first then newest after repository/head qualification, preserving lookup parity with the GitHub CLI. (✓ node --test tests/lets/backlog/protocol.test.ts passed, 83 tests; tsc --noEmit passed)
 - [x] 3.6 [medium] Translate scrubbed repository and PR output through the same GitHub definition, requiring draft creation and classifying missing isDraft confirmation as partial effects. (✓ node --test tests/lets/backlog/providers.test.ts passed, 30 tests; tsc --noEmit passed)
 - [x] 3.7 [complex] Expose repository and PR operation commands with the shared action/submission engine under lets backlog. (✓ pnpm test:backlog passed, 286 tests; tsc --noEmit passed)
-- [ ] 3.8 [medium] Return the continuation when a new step requests PR creation for an uncertain repository/head resource. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [x] 3.8 [medium] Return the continuation when a new step requests PR creation for an uncertain repository/head resource. (✓ node --test tests/lets/backlog/recovery.test.ts tests/lets/backlog/state.test.ts tests/lets/backlog/cli.test.ts passed, 44 tests; tsc --noEmit passed)
 - [ ] 3.9 [medium] Reconcile uncertain prepared PR-body updates while preserving unrelated sections and closing text. (verify: node --test tests/lets/backlog/recovery.test.ts)
 - [ ] 3.10 [medium] Confirm the existing ready transition through bounded action results without merging. (verify: node --test tests/lets/backlog/protocol.test.ts)
 

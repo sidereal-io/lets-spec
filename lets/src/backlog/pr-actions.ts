@@ -73,3 +73,14 @@ export function nextPrAction(action: IssuedAction, result: Record<string, unknow
   }
   return null;
 }
+
+export function reconcilePrCreation(origin: IssuedAction, result: Record<string, unknown>, expectedPullRequest = origin.targetPullRequest): 'applied' | 'absent' | 'partial' | 'unresolved' {
+  // These journal stages cannot have issued a remote write.
+  if (['preflight', 'read-existing'].includes(origin.step)) return 'absent';
+  const pr = result.pullRequest as import('./types.ts').PullRequest | null;
+  const input = origin.request.input as { base: string; head: string; headRepository: string };
+  if (!pr || !origin.preparedBody || pr.repository !== origin.request.context.repository ||
+      pr.headRef !== input.head || pr.baseRef !== input.base || pr.headRepository !== input.headRepository ||
+      pr.body !== origin.preparedBody.body || (expectedPullRequest && pr.id !== expectedPullRequest)) return 'unresolved';
+  return pr.isDraft === true ? 'applied' : 'partial';
+}

@@ -16,7 +16,16 @@ export function resourceKeys(action: IssuedAction): string[] {
   }
   if (action.request.operation === 'pull-request.create')
     keys.push(JSON.stringify(['pr-create', ...prefix, input.headRepository, input.head]));
-  if (action.request.operation.startsWith('pull-request.') && typeof input.pullRequest === 'string')
-    keys.push(JSON.stringify(['pr', ...prefix, input.pullRequest]));
+  if (action.request.operation.startsWith('pull-request.'))
+    for (const id of [input.pullRequest, action.targetPullRequest])
+      if (typeof id === 'string') keys.push(JSON.stringify(['pr', ...prefix, id]));
   return keys;
+}
+
+/** Serialize registration of newly learned PR aliases without reserving other PRs. */
+export function coordinationKeys(action: IssuedAction): string[] {
+  return action.request.operation.startsWith('pull-request.') ? [JSON.stringify([
+    'pr-registry', action.connection.options.endpoint ?? 'https://api.github.com',
+    action.request.context.provider, action.request.context.repository,
+  ])] : [];
 }
