@@ -5,7 +5,9 @@ small tasks rather than compressing the migration into the task-writing
 skill's usual twelve-task maximum, explicitly approved by the user in brainstorm
 D11. No prerequisite story or competing PR is created. Each task adds its
 observable behavior case before implementation.
-Nothing is implemented or checked off by this planning restart.
+The planning restart checked off no implementation. The completed tasks and
+their implementation verification are recorded below; live qualification and
+delivery limits are recorded in [acceptance.md](acceptance.md).
 
 ## 1. Shared configuration and result contract
 
