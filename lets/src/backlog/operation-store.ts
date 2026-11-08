@@ -123,8 +123,25 @@ export class OperationStore {
         const action = record.action;
         const mapping = action.definition.definition.operations[action.request.operation]?.actions[action.step]?.bindings[action.connection.binding];
         if (!mapping) throw new AdapterFailure('unsupported', 'unknown', 'recorded definition mapping unavailable');
-        record.result = validateSubmission(action, submission, mapping.projection, now);
-        record.attempts.push({ receivedAt: now, submission: structuredClone(submission), accepted: true });
+        const attempts = record.attempts.filter((entry) => (entry as { actionId: string }).actionId === action.actionId).length;
+        try {
+          if (action.allowedEffects.length === 0 && attempts >= 3)
+            throw new AdapterFailure('invalid_request', 'unknown', 'read correction budget exhausted; issue a new read action');
+          let value = submission;
+          if (typeof submission === 'string') {
+            try { value = JSON.parse(submission); }
+            catch { throw new AdapterFailure('invalid_request', 'unknown', 'malformed submission JSON'); }
+          }
+          record.result = validateSubmission(action, value, mapping.projection, now);
+        } catch (error) {
+          const failure = error instanceof AdapterFailure ? error : new AdapterFailure('invalid_request', 'unknown', String(error));
+          record.attempts.push({ actionId: action.actionId, receivedAt: now, submission: structuredClone(submission), accepted: false,
+            error: { category: failure.category, effects: failure.effects, message: failure.message } });
+          if (!action.allowedEffects.length && (attempts >= 2 || now > action.expiresAt)) record.state = 'failed';
+          this.write(record);
+          throw failure;
+        }
+        record.attempts.push({ actionId: action.actionId, receivedAt: now, submission: structuredClone(submission), accepted: true });
         record.acceptedSubmission = structuredClone(submission);
         if (record.reconciling) {
           const origin = record.originalAction!;

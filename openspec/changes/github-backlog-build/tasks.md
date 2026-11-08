@@ -35,7 +35,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 2.3 [complex] Reconcile an uncertain mutation through fresh bounded reads tied to its original identity before permitting another write. (✓ node --test tests/lets/backlog/recovery.test.ts passed, 8 tests; tsc --noEmit passed)
 - [x] 2.4 [medium] Preserve typed error/effect classifications from validated observations instead of exception-message keywords. (✓ node --test tests/lets/backlog/failures.test.ts passed, 22 tests)
 - [x] 2.5 [medium] Stop on incompatible private journal versions without overwriting or replaying their operations. (✓ node --test tests/lets/backlog/state.test.ts passed, 13 tests)
-- [ ] 2.6 [medium] Allow at most two corrections to a rejected read submission within the original deadline while recording every attempt. (verify: node --test tests/lets/backlog/protocol.test.ts)
+- [x] 2.6 [medium] Allow at most two corrections to a rejected read submission within the original deadline while recording every attempt. (✓ node --test tests/lets/backlog/protocol.test.ts passed, 76 tests)
 - [ ] 2.7 [medium] Reconcile unknown effects after rejection of a write submission without reactivating write permission. (verify: node --test tests/lets/backlog/recovery.test.ts)
 - [ ] 2.8 [complex] Recover a proven stale local lock without stealing a live or ambiguous holder's lock. (verify: node --test tests/lets/backlog/state.test.ts)
 - [ ] 2.9 [complex] Block work and new writes for an outstanding item mutation across local worktrees using the same configured store, regardless of a new operation or worker ID. (verify: node --test tests/lets/backlog/state.test.ts)

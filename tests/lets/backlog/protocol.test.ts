@@ -404,3 +404,30 @@ for (const [name, input, observed] of [
       { ...submission, context: repositoryContext, output: { data: { pullRequest: observed } } }, projection, 200), /scope/);
   });
 }
+
+import { OperationStore } from '../../../lets/src/backlog/operation-store.ts';
+test('malformed read submission can be corrected within its original window', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/correction-');
+  try {
+    const { action, submission } = submittedRead();
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action, []);
+    assert.throws(() => store.submit(issued.continuation, '{', 200), /invalid_request/);
+    const result = store.submit(issued.continuation, submission, 300);
+    assert.equal(result.state, 'complete');
+    assert.equal(store.get(action.operationId).attempts.length, 2);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+test('read submission has at most two corrections', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/correction-');
+  try {
+    const { action, submission } = submittedRead();
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action, []);
+    for (let attempt = 0; attempt < 3; attempt++) assert.throws(() => store.submit(issued.continuation, '{', 200 + attempt));
+    assert.throws(() => store.submit(issued.continuation, submission, 300), /correction.*exhausted/);
+    assert.equal(store.get(action.operationId).attempts.length, 4);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
