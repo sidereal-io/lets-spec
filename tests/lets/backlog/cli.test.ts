@@ -250,3 +250,16 @@ test('submit validates against the continuation it already checked', () => withB
   assert.equal(rejected.operationId, issued.operationId);
   assert.match(rejected.reason, /malformed submission JSON/);
 }));
+for (const [name, args] of [
+  ['missing request file', ['item.read', '--request-file', 'missing.json']],
+  ['unknown operation ID', ['resume', '--operation-id', '00000000-0000-4000-8000-000000000000']],
+  ['truncated continuation file', ['resume', '--continuation-file', 'truncated.json']],
+] as const) {
+  test(`local ${name} fails without remote effects`, () => withBacklogCli(async ({ dir, call }) => {
+    writeFileSync(join(dir, 'truncated.json'), '{"operationId":');
+    const response = await call([...args]);
+    assert.equal(response.state, 'failed', JSON.stringify(response));
+    assert.equal(response.effects, 'none');
+    assert.equal(response.operationId, null);
+  }));
+}

@@ -135,7 +135,10 @@ async function run(operation: string, options: Options): Promise<void> {
     if (claimWrite) action = claimAction(action, 'preflight', Date.now());
     emit(store.issue(action));
   } catch (error) {
-    const failure = error instanceof AdapterFailure ? error : new AdapterFailure('invalid_request', 'unknown', String(error));
+    // Lets runs no tools itself: an unexpected local error has unknown remote
+    // effects only when it concerns an identified operation's submission.
+    const failure = error instanceof AdapterFailure ? error
+      : new AdapterFailure('invalid_request', continuation ? 'unknown' : 'none', String(error));
     const response = { contractVersion: 1, operationId: continuation?.operationId ?? null, workerId: null,
       state: failure.effects === 'none' ? 'failed' : 'needs-reconciliation', category: failure.category,
       effects: failure.effects, reason: failure.message, ...(failure.knownRemoteIds ? { knownRemoteIds: failure.knownRemoteIds } : {}), ...(continuation ? { continuation } : {}) };
