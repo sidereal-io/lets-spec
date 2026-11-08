@@ -338,3 +338,17 @@ idempotently after merge. Broken duplicate-create and ignored-blocker fixtures
 must fail those checks. Production support additionally requires automated
 adapter tests plus an end-to-end run against the actual configured provider,
 including fault injection and cleanup. Offline fake results cannot replace it.
+
+## Retained provider inventory
+
+GitHub, Jira, Linear and Beads retain their representative offline profiles.
+`pull-request.*` is outside the non-GitHub production profiles; the separate
+code-host routing decision remains pending. One selected GitHub definition
+handles the existing-story production journey's issue, Project, repository and
+PR actions. No second code-host connection is selected.
+
+Retained cross-provider reference/completion examples use explicitly attributed
+GitHub code-host fixture facts alongside the work item's own backend identity.
+They test shared validation, not a live Jira, Linear or Beads integration, and
+do not turn those profiles into PR adapters. Native closing-issue acceptance is
+qualified only for a separately accepted real configuration.

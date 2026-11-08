@@ -96,7 +96,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 6.6 [medium] Ignore historical merged or rejected PRs when the branch no longer exists instead of adding a terminal lookup or Done update. (✓ focused bats absent-branch and prose checks passed)
 - [x] 6.7 [medium] Preserve the existing stop for a surviving stacked branch's merged PR without claiming the issue is completed. (✓ focused bats surviving stacked merged-PR check passed)
 - [x] 6.8 [easy] Preserve the surviving branch's rejected-PR stop without claiming, completion or build actions. (✓ focused bats surviving rejected-PR stop check passed)
-- [ ] 6.9 [medium] Retain the four-provider inventory with attributed code-host fixture facts, marking pull-request.* outside non-GitHub production profiles pending a routing decision. (verify: node --test tests/lets/backlog/inventory.test.ts)
+- [x] 6.9 [medium] Retain the four-provider inventory with attributed code-host fixture facts, marking pull-request.* outside non-GitHub production profiles pending a routing decision. (✓ node --test tests/lets/backlog/inventory.test.ts passed, 10 tests; tsc --noEmit passed)
 - [ ] 6.10 [medium] Apply identical policy with explicitly configured compatible tool connections in both required hosts. (verify: node --test tests/lets/backlog/config.test.ts)
 - [ ] 6.11 [medium] Check the literal operation and file-argument forms in the owning procedures and shared action loop. (verify: bats tests/skill-interfaces.bats)
 - [ ] 6.12 [medium] Exercise the existing-story callout inventory with a compatible custom GitHub MCP definition and no gh executable, without claiming live MCP support. (verify: node --test tests/lets/backlog/inventory.test.ts)
