@@ -44,7 +44,15 @@ function available(tool: string): boolean {
   }
   return false;
 }
+/** The caller needs the definition's identity, not its body; the private record keeps the body. */
+function forCaller(action: unknown): unknown {
+  const issued = action as { definition?: { source: string; digest: string; definition?: { name: string; version: string } } } | undefined;
+  if (!issued?.definition?.definition) return action;
+  const { source, digest, definition } = issued.definition;
+  return { ...issued, definition: { source, digest, name: definition.name, version: definition.version } };
+}
 function emit(response: Record<string, unknown>): void {
+  if (response.action) response = { ...response, action: forCaller(response.action) };
   if (response.continuation && typeof response.operationId === 'string') {
     const path = join(process.cwd(), '.workspace', 'lets-backlog', response.operationId);
     mkdirSync(path, { recursive: true, mode: 0o700 });

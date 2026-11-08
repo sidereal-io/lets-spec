@@ -80,7 +80,8 @@ operation identity from the continuation file and emits bounded reconciliation
 reads or a typed result; it never silently repeats a write. Structured stdout
 contains `contractVersion`, `operationId`, `workerId` and `state`. The state
 values are `action`, `complete`, `needs-reconciliation` or `failed`. An `action` response carries the
-scoped action and its definition; `complete` carries the validated operation
+scoped action and its definition's source, name, version and digest; the private
+record keeps the definition itself. `complete` carries the validated operation
 result; the other states carry typed reasons, effects and known remote IDs.
 Diagnostics go to stderr. No response itself executes a provider tool.
 

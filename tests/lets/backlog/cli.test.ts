@@ -263,3 +263,13 @@ for (const [name, args] of [
     assert.equal(response.operationId, null);
   }));
 }
+test('an issued action names its definition by digest instead of embedding it', () => withBacklogCli(async ({ dir, call, request }) => {
+  const issued = await call(['item.read', '--request-file', request('item.read', { item: { provider: 'github', backlog: 'P1', id: 'I1' } })]);
+  assert.equal(issued.state, 'action', issued.reason);
+  assert.equal(issued.action.definition.definition, undefined);
+  assert.match(issued.action.definition.digest, /^[a-f0-9]{64}$/);
+  const submission = join(dir, 'submission.json');
+  writeFileSync(submission, JSON.stringify(submissionFor(issued.action, { data: { item: null } })));
+  const answered = await call(['submit', '--continuation-file', issued.continuationFile, '--submission-file', submission]);
+  assert.notEqual(answered.reason ?? '', 'invalid_request: submission binding differs: definitionDigest');
+}));
