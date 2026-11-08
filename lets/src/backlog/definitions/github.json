@@ -1633,7 +1633,7 @@
                   },
                   {
                     "op": "literal",
-                    "value": "query=query($id:ID!){viewer{login} node(id:$id){... on Repository{id projectsV2(first:100){nodes{id title url}totalCount pageInfo{hasNextPage endCursor}}}}}"
+                    "value": "query=query($id:ID!){viewer{login} node(id:$id){... on Repository{id projectsV2(first:100){nodes{id title url closed}totalCount pageInfo{hasNextPage endCursor}}owner{... on User{projectsV2(first:100){nodes{id title url closed repositories(first:100){nodes{id}totalCount pageInfo{hasNextPage endCursor}}}totalCount pageInfo{hasNextPage endCursor}}}... on Organization{projectsV2(first:100){nodes{id title url closed repositories(first:100){nodes{id}totalCount pageInfo{hasNextPage endCursor}}}totalCount pageInfo{hasNextPage endCursor}}}}}}}"
                   },
                   {
                     "op": "literal",
@@ -1655,44 +1655,147 @@
                 "op": "object",
                 "fields": {
                   "items": {
-                    "op": "map",
+                    "op": "unique",
+                    "path": [
+                      "id"
+                    ],
                     "source": {
-                      "op": "connection",
-                      "source": {
-                        "op": "path",
-                        "path": [
-                          "data",
-                          "node",
-                          "projectsV2"
-                        ]
-                      }
-                    },
-                    "value": {
-                      "op": "object",
-                      "fields": {
-                        "provider": {
-                          "op": "literal",
-                          "value": "github"
+                      "op": "concat",
+                      "values": [
+                        {
+                          "op": "map",
+                          "source": {
+                            "op": "filter",
+                            "source": {
+                              "op": "connection",
+                              "source": {
+                                "op": "path",
+                                "path": [
+                                  "data",
+                                  "node",
+                                  "projectsV2"
+                                ]
+                              }
+                            },
+                            "path": [
+                              "closed"
+                            ],
+                            "equals": {
+                              "op": "literal",
+                              "value": false
+                            }
+                          },
+                          "value": {
+                            "op": "object",
+                            "fields": {
+                              "provider": {
+                                "op": "literal",
+                                "value": "github"
+                              },
+                              "id": {
+                                "op": "path",
+                                "path": [
+                                  "id"
+                                ]
+                              },
+                              "title": {
+                                "op": "path",
+                                "path": [
+                                  "title"
+                                ]
+                              },
+                              "url": {
+                                "op": "path",
+                                "path": [
+                                  "url"
+                                ]
+                              }
+                            }
+                          }
                         },
-                        "id": {
-                          "op": "path",
-                          "path": [
-                            "id"
-                          ]
-                        },
-                        "title": {
-                          "op": "path",
-                          "path": [
-                            "title"
-                          ]
-                        },
-                        "url": {
-                          "op": "path",
-                          "path": [
-                            "url"
-                          ]
+                        {
+                          "op": "map",
+                          "source": {
+                            "op": "where",
+                            "source": {
+                              "op": "filter",
+                              "source": {
+                                "op": "connection",
+                                "source": {
+                                  "op": "path",
+                                  "path": [
+                                    "data",
+                                    "node",
+                                    "owner",
+                                    "projectsV2"
+                                  ]
+                                }
+                              },
+                              "path": [
+                                "closed"
+                              ],
+                              "equals": {
+                                "op": "literal",
+                                "value": false
+                              }
+                            },
+                            "value": {
+                              "op": "contains",
+                              "source": {
+                                "op": "map",
+                                "source": {
+                                  "op": "connection",
+                                  "source": {
+                                    "op": "path",
+                                    "path": [
+                                      "repositories"
+                                    ]
+                                  }
+                                },
+                                "value": {
+                                  "op": "path",
+                                  "path": [
+                                    "id"
+                                  ]
+                                }
+                              },
+                              "value": {
+                                "op": "scope",
+                                "path": [
+                                  "repository"
+                                ]
+                              }
+                            }
+                          },
+                          "value": {
+                            "op": "object",
+                            "fields": {
+                              "provider": {
+                                "op": "literal",
+                                "value": "github"
+                              },
+                              "id": {
+                                "op": "path",
+                                "path": [
+                                  "id"
+                                ]
+                              },
+                              "title": {
+                                "op": "path",
+                                "path": [
+                                  "title"
+                                ]
+                              },
+                              "url": {
+                                "op": "path",
+                                "path": [
+                                  "url"
+                                ]
+                              }
+                            }
+                          }
                         }
-                      }
+                      ]
                     }
                   },
                   "complete": {

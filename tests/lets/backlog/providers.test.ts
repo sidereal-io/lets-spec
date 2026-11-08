@@ -137,9 +137,9 @@ for (const [type, category, effects] of [
 
 import { selectBacklog } from '../../../lets/src/backlog/selection.ts';
 const linkedProjects = { data: { viewer: { login: 'actor' }, node: { id: 'R1', projectsV2: {
-  nodes: [{ id: 'P1', title: 'Fixture Project', url: 'https://github.com/users/fixture/projects/1' }],
+  nodes: [{ id: 'P1', title: 'Fixture Project', closed: false, url: 'https://github.com/users/fixture/projects/1' }],
   totalCount: 1, pageInfo: { hasNextPage: false, endCursor: 'MQ' },
-} } } };
+}, owner: { projectsV2: { nodes: [], totalCount: 0, pageInfo: { hasNextPage: false, endCursor: null } } } } } };
 function discoveredProjects(output: unknown = linkedProjects) {
   return deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
     'backlog.list', 'read', 'gh', output, { provider: 'github', repository: 'R1', actor: 'actor' }) as unknown as
@@ -261,3 +261,24 @@ test('submitted Project discovery applies configured selection in core', () => {
   const result = validateSubmission(action, submissionFor(action, linkedProjects), projection, 101);
   assert.equal((result.selectedBacklog as { id: string }).id, 'P1');
 });
+
+test('shipped discovery includes reverse-linked user Projects', () => {
+  const output = structuredClone(linkedProjects) as any;
+  output.data.node.owner = { projectsV2: { nodes: [{ id: 'P2', title: 'Reverse', closed: false,
+    url: 'https://github.com/users/fixture/projects/2', repositories: { nodes: [{ id: 'R1' }],
+      totalCount: 1, pageInfo: { hasNextPage: false, endCursor: null } } }],
+    totalCount: 1, pageInfo: { hasNextPage: false, endCursor: null } } };
+  assert.deepEqual(discoveredProjects(output).items.map((item) => item.id), ['P1', 'P2']);
+});
+for (const mode of ['closed', 'unlinked', 'incomplete'] as const) {
+  test(`reverse Project discovery handles ${mode} observations`, () => {
+    const output = structuredClone(linkedProjects) as any;
+    const project = { id: 'P2', title: 'Reverse', closed: mode === 'closed', url: 'https://github.com/users/fixture/projects/2',
+      repositories: { nodes: [{ id: mode === 'unlinked' ? 'OTHER' : 'R1' }], totalCount: 1,
+        pageInfo: { hasNextPage: mode === 'incomplete', endCursor: 'more' } } };
+    output.data.node.owner.projectsV2.nodes = [project];
+    output.data.node.owner.projectsV2.totalCount = 1;
+    if (mode === 'incomplete') assert.throws(() => discoveredProjects(output), /coverage/);
+    else assert.deepEqual(discoveredProjects(output).items.map((item) => item.id), ['P1']);
+  });
+}

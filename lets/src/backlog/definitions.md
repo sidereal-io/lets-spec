@@ -299,3 +299,11 @@ actor. The `bootstrap` mapping reads only, binds the returned repository name
 to that request, and returns the authenticated actor plus immutable repository
 ID. Later operations use those validated identities. Bootstrap cannot acquire
 claims or substitute a guessed actor for the identity it discovers.
+
+Linked-Project discovery combines repository-side links with owner Projects
+whose complete repositories connection contains the selected immutable
+repository ID. It excludes closed Projects and deduplicates normalized IDs;
+conflicting duplicate facts fail. Missing pages in either discovery list or
+an inspected repository connection fail coverage before selection. The closed
+projection language supplies `concat`, `unique`, `where` and `contains` for
+these data mappings; none evaluates code or executes a tool.

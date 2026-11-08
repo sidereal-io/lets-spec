@@ -9,7 +9,9 @@ export type Projection =
   | { op: 'path'; path: Path; optional?: boolean }
   | { op: 'scope'; path: Path }
   | { op: 'literal'; value: unknown }
-  | { op: 'array'; values: Projection[] }
+  | { op: 'array' | 'concat'; values: Projection[] }
+  | { op: 'unique'; source: Projection; path: Path }
+  | { op: 'where' | 'contains'; source: Projection; value: Projection }
   | { op: 'object'; fields: Record<string, Projection> }
   | { op: 'at' | 'map'; source: Projection; value: Projection }
   | { op: 'select' | 'filter'; source: Projection; path: Path; equals: Projection }
@@ -36,6 +38,37 @@ export function project(projection: Projection, output: unknown, scope: Record<s
     case 'path': return fieldPath(output, projection.path, projection.optional);
     case 'scope': return fieldPath(scope, projection.path);
     case 'array': return projection.values.map((value) => read(value));
+    case 'concat': {
+      const arrays = projection.values.map((value) => read(value));
+      if (arrays.some((value) => !Array.isArray(value))) return gap('concat requires arrays');
+      return arrays.flat();
+    }
+    case 'unique': {
+      const array = read(projection.source);
+      if (!Array.isArray(array)) return gap('unique requires an array');
+      const seen = new Map<string, unknown>();
+      for (const entry of array) {
+        const key = JSON.stringify(fieldPath(entry, projection.path));
+        if (seen.has(key) && !isDeepStrictEqual(seen.get(key), entry)) return gap('conflicting duplicate projection identity');
+        seen.set(key, entry);
+      }
+      return [...seen.values()];
+    }
+    case 'where': {
+      const array = read(projection.source);
+      if (!Array.isArray(array)) return gap('where requires an array');
+      return array.filter((entry) => {
+        const value = read(projection.value, entry);
+        if (typeof value !== 'boolean') return gap('where requires a boolean predicate');
+        return value;
+      });
+    }
+    case 'contains': {
+      const array = read(projection.source);
+      if (!Array.isArray(array)) return gap('contains requires an array');
+      const expected = read(projection.value);
+      return array.some((entry) => isDeepStrictEqual(entry, expected));
+    }
     case 'literal': return structuredClone(projection.value);
     case 'object': return Object.fromEntries(Object.entries(projection.fields).map(([key, value]) => [key, read(value)]));
     case 'at': return read(projection.value, read(projection.source));
@@ -118,6 +151,7 @@ export function validateProjection(value: unknown, depth = 0): asserts value is 
   if (depth > 64) throw new Error('projection exceeds nesting bound');
   const projection = object(value, 'projection');
   const shapes: Record<string, string[]> = {
+    concat: ['values'], unique: ['source', 'path'], where: ['source', 'value'], contains: ['source', 'value'],
     array: ['values'], path: ['path'], scope: ['path'], literal: ['value'], object: ['fields'], at: ['source', 'value'], map: ['source', 'value'],
     select: ['source', 'path', 'equals'], filter: ['source', 'path', 'equals'], enum: ['source', 'values'], union: ['source', 'tag', 'cases'],
     nullable: ['source', 'value'], text: ['source', 'prefix'], connection: ['source'],
@@ -132,7 +166,7 @@ export function validateProjection(value: unknown, depth = 0): asserts value is 
   if ('value' in projection && projection.op !== 'literal') validateProjection(projection.value, depth + 1);
   for (const key of ['fields', 'cases']) if (key in projection)
     for (const child of Object.values(object(projection[key], `projection.${key}`))) validateProjection(child, depth + 1);
-  if (projection.op === 'array') {
+  if (projection.op === 'array' || projection.op === 'concat') {
     if (!Array.isArray(projection.values)) throw new Error('projection array requires values');
     for (const child of projection.values) validateProjection(child, depth + 1);
   } else if ('values' in projection) object(projection.values, 'projection.values');
