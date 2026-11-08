@@ -120,3 +120,22 @@ test('issued action binds a snapshot of its exact request', () => {
   assert.match(action.actionId, /\S+/);
   assert.notEqual(action.actionId, action.attemptId);
 });
+
+import { parseActionRequest } from '../../../lets/src/backlog/actions.ts';
+import { submittedRead } from './fixtures/submitted.ts';
+test('new caller receives a worker ID before its first action', () => {
+  const { action: fixture } = submittedRead();
+  const { session, ...context } = fixture.request.context;
+  const request = parseActionRequest(JSON.stringify({ ...fixture.request, context }));
+  const action = issueAction(request, fixture.definition, fixture.connection, {
+    toolArguments: fixture.tool.arguments, allowedEffects: [], requiredCapabilities: [],
+    timeoutMs: 1000, maxOutputBytes: 4096, acceptanceMs: 5000,
+  }, 100);
+  assert.match(action.workerId, /^[a-f0-9-]{36}$/);
+  assert.equal(action.request.context.session, action.workerId);
+});
+test('an explicit null worker is invalid context', () => {
+  const { action } = submittedRead();
+  assert.throws(() => parseActionRequest(JSON.stringify({ ...action.request,
+    context: { ...action.request.context, session: null } })), /session/);
+});
