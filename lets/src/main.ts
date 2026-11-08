@@ -22,6 +22,7 @@ import { createAdapter as cli } from './resolvers/cli/cli.ts';
 import { realIo as realResolverIo } from './resolvers/kit/io.ts';
 import { createAdapter as subagent } from './resolvers/subagent/subagent.ts';
 import { createAdapter as t3 } from './resolvers/t3/t3.ts';
+import { registerBacklog } from './backlog/main.ts';
 import { run as sync } from './sync/main.ts';
 
 // The folder above the one that holds this file: lets/ in the repo, and the
@@ -355,6 +356,8 @@ program
   .action(async () => {
     process.exitCode = await questions(realDeps());
   });
+
+registerBacklog(program);
 
 try {
   await program.parseAsync(process.argv);

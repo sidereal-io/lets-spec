@@ -47,7 +47,7 @@ Nothing is implemented or checked off by this planning restart.
 
 ## 3. GitHub observations and PR actions [depends-on: 2]
 
-- [ ] 3.0 [complex] Expose operation, submit and resume responses through the backlog CLI without directly executing provider tools. (verify: pnpm test:backlog)
+- [x] 3.0 [complex] Expose operation, submit and resume responses through the backlog CLI without directly executing provider tools. (✓ pnpm test:backlog passed, 240 tests; tsc --noEmit passed)
 - [ ] 3.1 [complex] Translate scrubbed real GitHub GraphQL output through the shipped definition, including Project array selection, unions/nulls, connection coverage and partial structured errors. (verify: node --test tests/lets/backlog/providers.test.ts)
 - [ ] 3.2 [medium] Resolve one repository-linked GitHub Project from bounded submitted discovery reads or report ambiguity. (verify: node --test tests/lets/backlog/providers.test.ts)
 - [ ] 3.3 [medium] Reject candidate enumeration with missing pages, required metadata or inconsistent cursor coverage. (verify: node --test tests/lets/backlog/items.test.ts)

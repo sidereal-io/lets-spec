@@ -56,3 +56,18 @@ Bindings must already be declared by the repository-selected definition.
 require a default name. Invalid selection never falls back. Direct backlog
 callers may select `--connection`; lets-go retains its existing request syntax
 and uses the configured default.
+
+The CLI uses `lets backlog <operation> --request-file <path>` (`-` reads stdin).
+It emits one JSON response with action, complete, needs-reconciliation or failed
+state. It never starts the backend tool. The caller executes only the returned
+action within its declared bounds, saves complete output and submits it with
+`lets backlog submit --continuation-file <path> --submission-file <path>`.
+Continuations are returned and saved separately under
+`.workspace/lets-backlog/<operation-id>/continuation.json`.
+
+Use `lets backlog resume --operation-id <id>` after scratch loss, or
+`--continuation-file <path>` while the original scratch remains. Recovery uses
+the recorded definition and connection, including when the default changes.
+It issues bounded reads; a resumed action never repeats the uncertain write.
+These interfaces do not qualify a live tool configuration. Production GitHub
+translation and mutation sequencing are separate implementation tasks.

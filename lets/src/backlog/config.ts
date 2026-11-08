@@ -148,3 +148,17 @@ export function resolveRecordedConnection(action: IssuedAction, machine: unknown
     throw new AdapterFailure('invalid_configuration', 'none', `${userFile}: original operation connection changed; restore original connection options for reconciliation; no fallback`);
   return connection;
 }
+
+/** Submit/resume locate private state without reloading the current definition. */
+export function recoveryStateDirectory(machine: unknown, userFile: string,
+  env: Record<string, string | undefined> = process.env, home = homedir()): string {
+  const root = object(machine, userFile);
+  if (root.version !== undefined && root.version !== 3)
+    throw new AdapterFailure('invalid_configuration', 'none', `${userFile}: version must be 3`);
+  const settings = root.backlog === undefined ? {} : object(root.backlog, 'backlog');
+  rejectExecutable(settings, 'backlog');
+  keys(settings, ['connections', 'connection', 'stateDir'], 'backlog');
+  if (settings.stateDir !== undefined && (typeof settings.stateDir !== 'string' || !isAbsolute(settings.stateDir)))
+    throw new AdapterFailure('invalid_configuration', 'none', `${userFile}: backlog.stateDir must be absolute and shared across worktrees`);
+  return settings.stateDir as string | undefined ?? join(env.XDG_STATE_HOME || join(home, '.local/state'), 'lets');
+}
