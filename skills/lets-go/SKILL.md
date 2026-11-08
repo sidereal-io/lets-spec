@@ -265,9 +265,8 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
 1. Resolve `<i>` with `lets backlog item.search --request-file`,
    restricted to the scoped repository and exact issue number. Retain
    its full provider/backlog/item identity; a missing or nonunique match
-   ends the run. Read its title with `lets backlog item.read
-   --request-file`
-   and its directional blockers with
+   ends the run. Read its title with
+   `lets backlog item.read --request-file` and directional blockers with
    `lets backlog relationship.list --request-file`, kind `blocked_by`.
    Require complete coverage. A blocker whose normalized status is not
    Done is open. `<name>` is the change's name, which

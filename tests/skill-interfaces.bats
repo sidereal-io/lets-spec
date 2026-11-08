@@ -3145,3 +3145,19 @@ pr_reference_says() {
   [[ "$terminal" == *'branch still exists'* ]] || false
   ! grep -qE 'Check work ownership|claim.acquire|claim.release|completion.write|Run a step' <<<"$terminal" || false
 }
+
+@test "owning procedures preserve literal backlog operation file forms" {
+  local check packet loop review
+  check="$(part_section 'Check the issue')"
+  packet="$(procedure_text 'Confirm the packet')"
+  loop="$(cat "$repo/skills/lets-go/references/backlog-actions.md")"
+  review="$(cat "$repo/skills/lets-review-plan/SKILL.md")"
+  grep -qF 'lets backlog item.read --request-file' <<<"$check" || false
+  grep -qF 'lets backlog relationship.list --request-file' <<<"$check" || false
+  grep -qF 'lets backlog item.read --request-file' <<<"$packet" || false
+  grep -qF 'includeThread: false' <<<"$packet" || false
+  grep -qF 'lets backlog submit --continuation-file' <<<"$loop" || false
+  grep -qF -- '--submission-file' <<<"$loop" || false
+  grep -qF 'lets backlog pull-request.update --request-file' <<<"$review" || false
+  grep -qF 'input.bodyFile' <<<"$review" || false
+}

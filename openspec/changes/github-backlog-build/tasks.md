@@ -98,7 +98,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 6.8 [easy] Preserve the surviving branch's rejected-PR stop without claiming, completion or build actions. (✓ focused bats surviving rejected-PR stop check passed)
 - [x] 6.9 [medium] Retain the four-provider inventory with attributed code-host fixture facts, marking pull-request.* outside non-GitHub production profiles pending a routing decision. (✓ node --test tests/lets/backlog/inventory.test.ts passed, 10 tests; tsc --noEmit passed)
 - [x] 6.10 [medium] Apply identical policy with explicitly configured compatible tool connections in both required hosts. (✓ node --test tests/lets/backlog/config.test.ts passed, 29 tests; offline host-independent configuration policy only)
-- [ ] 6.11 [medium] Check the literal operation and file-argument forms in the owning procedures and shared action loop. (verify: bats tests/skill-interfaces.bats)
+- [x] 6.11 [medium] Check the literal operation and file-argument forms in the owning procedures and shared action loop. (✓ focused bats literal-operation and prose checks passed)
 - [ ] 6.12 [medium] Exercise the existing-story callout inventory with a compatible custom GitHub MCP definition and no gh executable, without claiming live MCP support. (verify: node --test tests/lets/backlog/inventory.test.ts)
 - [ ] 6.13 [medium] Fail a delegated step before backend issuance when its selected connection's required tool is unavailable. (verify: bats tests/skill-interfaces.bats)
 
