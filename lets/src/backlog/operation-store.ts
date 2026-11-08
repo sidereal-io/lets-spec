@@ -1,6 +1,6 @@
 import { nextPrAction, prAction, reconcilePrCreation, reconcilePrUpdate, reconcilePrReady } from './pr-actions.ts';
 import { nextClaimAction, claimAction, reconcileClaimAcquisition, reconcileClaimRelease } from './claim-actions.ts';
-import { nextCompletionAction } from './completion-actions.ts';
+import { nextCompletionAction, requireCompletionDefinition, completionAction, reconcileCompletion } from './completion-actions.ts';
 import { projectArguments } from './projections.ts';
 import { resourceKeys as scopedKeys, coordinationKeys } from './resource-keys.ts';
 import { acquireResourceLock } from './resource-lock.ts';
@@ -93,6 +93,8 @@ export class OperationStore {
         action = claimAction(original, 'verify', now);
       } else if (original.request.operation === 'claim.release' && original.claimState) {
         action = claimAction(original, 'verify-release', now);
+      } else if (original.request.operation === 'completion.write') {
+        action = completionAction(original, 'verify', now);
       } else {
         if (!['claim.acquire', 'claim.release'].includes(original.request.operation))
           throw new AdapterFailure('unsupported', 'unknown', 'original operation needs a supported bounded reconciliation read');
@@ -173,6 +175,7 @@ export class OperationStore {
             reconciliation = reconcileClaimAcquisition(origin, record.result);
           else if (origin.request.operation === 'claim.release' && origin.claimState)
             reconciliation = reconcileClaimRelease(origin, record.result);
+          else if (origin.request.operation === 'completion.write') reconciliation = reconcileCompletion(origin, record.result);
           else {
             const claim = record.result.claim as Record<string, unknown>;
             reconciliation = origin.request.operation === 'claim.acquire' && claim.actor === origin.request.context.actor && claim.status === 'In Progress' ? 'applied' : 'unresolved';
@@ -183,7 +186,7 @@ export class OperationStore {
           record.pending = !resolved;
         } else {
           let next: IssuedAction | null;
-          try { next = nextCompletionAction(action, record.result) ?? nextClaimAction(action, record.result, now) ?? nextPrAction(action, record.result, now); }
+          try { next = nextCompletionAction(action, record.result, now) ?? nextClaimAction(action, record.result, now) ?? nextPrAction(action, record.result, now); }
           catch (error) {
             let failure = error instanceof AdapterFailure ? error : new AdapterFailure('unknown_outcome', 'unknown', String(error));
             if (action.request.operation === 'claim.release') {
@@ -220,6 +223,11 @@ export class OperationStore {
   issue(action: IssuedAction, aliases: string[] = []): ActionResponse | BlockedResponse {
     if (action.request.operation === 'reference.write' && action.allowedEffects.length)
       throw new AdapterFailure('unsupported', 'none', 'GitHub reference conformance validates an existing association without a remote write');
+    if (action.request.operation === 'completion.write') {
+      if (action.step !== 'read' || action.allowedEffects.length || action.validationOperation !== 'item.read')
+        throw new AdapterFailure('invalid_request', 'none', 'explicit completion must begin with a fresh scoped observation read');
+      requireCompletionDefinition(action);
+    }
     const resourceKeys = [...new Set([...scopedKeys(action), ...aliases])].sort();
     return this.locked([`operation:${action.operationId}`, ...resourceKeys, ...coordinationKeys(action)], () => {
       if (action.request.operation === 'claim.release') {
@@ -250,7 +258,7 @@ export class OperationStore {
       const record: OperationRecord = {
         journalVersion: 1, action: structuredClone(action), resourceKeys: [...new Set(resourceKeys)].sort(),
         continuation: { operationId: action.operationId, token: randomUUID() },
-        state: 'issued', pending: action.allowedEffects.length > 0 || ['claim.acquire', 'claim.release', 'pull-request.create', 'pull-request.update', 'pull-request.ready'].includes(action.request.operation), attempts: [],
+        state: 'issued', pending: action.allowedEffects.length > 0 || ['completion.write', 'claim.acquire', 'claim.release', 'pull-request.create', 'pull-request.update', 'pull-request.ready'].includes(action.request.operation), attempts: [],
       };
       this.write(record);
       return { contractVersion: 1, operationId: action.operationId, workerId: action.workerId,

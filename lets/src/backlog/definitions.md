@@ -193,6 +193,15 @@ closing relationship to that item. It returns the validated reference without
 issuing a remote write. This is an offline conformance boundary, not a new
 association step in lets-go or a claim of live support.
 
+Explicit `completion.write` conformance starts with a scoped observation read.
+The attributed PR must match the requested reference and repository, be MERGED,
+carry the exact requested merge commit and include the item's complete native
+closing relationship. Input assertions, an unrelated merge or Done status alone
+cannot establish that proof. Only then may the configured `complete` action
+request a status write; `verify` must freshly confirm the same proof and Done.
+An uncertain completion reserves the item and resumes through reads only.
+This retained contract does not add a terminal-completion caller to lets-go.
+
 `item.read` accepts optional `includeThread`, default false. The `read` action
 reads the issue body, metadata, creation/edit times and parent identity without
 requesting comments. `includeThread: true` selects `read-thread`, which returns

@@ -124,6 +124,21 @@ export function submittedReference() {
   return { action, item };
 }
 
+export function submittedCompletion() {
+  const { action: base, item } = submittedReference();
+  const definition = loadDefinition([{ source: 'fixture:submitted-completion', value: {
+    ...base.definition.definition, operations: { 'completion.write': { actions: Object.fromEntries(['read', 'complete', 'verify'].map((step) => [step, {
+      bindings: { gh: { arguments: [step], projection: { op: 'path', path: ['data'] } } },
+    }])) } },
+  } }]);
+  const action = issueAction({ contractVersion: 1, operation: 'completion.write', context: base.request.context,
+    input: { item: item.identity, merge: { reference: 'PR1', merged: true, commit: 'merge-sha' } } }, definition, base.connection, {
+    step: 'read', validationOperation: 'item.read', toolArguments: ['read'], allowedEffects: [], requiredCapabilities: [],
+    timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000,
+  }, 100);
+  return { action, item };
+}
+
 export function pendingClaimVerification(store: OperationStore) {
   const { action, item } = nativeClaimFixture();
   const issued = store.issue(action);
