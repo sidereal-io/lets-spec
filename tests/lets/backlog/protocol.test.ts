@@ -523,3 +523,16 @@ for (const [label, facts, expected] of [
     assert.equal(claim.token, null);
   });
 }
+test('a rejected plain read fails without effects and stays correctable', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/correction-');
+  try {
+    const { action, submission } = submittedRead();
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action, []);
+    assert.throws(() => store.submit(issued.continuation, { ...submission, inputDigest: 'wrong' }, 200),
+      (error: unknown) => error instanceof AdapterFailure && error.effects === 'none' && /correct/.test(error.message));
+    assert.equal(store.get(action.operationId).state, 'issued');
+    assert.equal(store.submit(issued.continuation, submission, 300).state, 'complete');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

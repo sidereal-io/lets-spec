@@ -154,6 +154,15 @@ export class OperationStore {
           let failure = error instanceof AdapterFailure ? error : new AdapterFailure('invalid_request', 'unknown', String(error));
           if (action.request.operation === 'claim.acquire' && action.claimState?.assigned)
             failure = new AdapterFailure(failure.category, 'partial', `partial claim; reconcile original operation: ${failure.message}`);
+          // A read issued before any write in this operation cannot have remote effects.
+          const wrote = record.reconciling === true || record.acknowledgements?.some((entry) =>
+            entry.response.state === 'action' && entry.response.action.allowedEffects.length > 0) === true;
+          if (!action.allowedEffects.length && !wrote && failure.effects === 'unknown') {
+            const correctable = attempts < 2 && now <= action.expiresAt;
+            failure = new AdapterFailure(failure.category, 'none', `${failure.message}; ${correctable
+              ? 'correct the submission for this same action and submit it again'
+              : 'no correction remains; request a new read'}`, failure.knownRemoteIds);
+          }
           if (failure.knownRemoteIds?.pullRequest)
             record.resourceKeys = [...new Set([...record.resourceKeys, ...scopedKeys({ ...action, targetPullRequest: failure.knownRemoteIds.pullRequest })])].sort();
           record.attempts.push({ actionId: action.actionId, receivedAt: now, submission: structuredClone(submission), accepted: false,

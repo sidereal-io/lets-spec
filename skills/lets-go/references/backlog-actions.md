@@ -45,12 +45,15 @@ workflow.
    invent timestamps or successful observations. Submit with
    `lets backlog submit --continuation-file` and `--submission-file`
    using those operation-specific file paths. Follow the next returned
-   action through this loop. Lets permits at most two corrections of
-   rejected reads within the original deadline; rejected writes require
-   reconciliation.
+   action through this loop. A rejected read returns `failed` with
+   effects `none`, and its reason says whether a correction remains.
+   If one does, correct the submission for that same action and submit
+   it again. Lets permits at most two corrections within the original
+   deadline. A rejected write, or a rejected read after a write,
+   requires reconciliation.
 6. Return `state: complete` and its validated result to the owning
-   procedure. On `failed`, return its category, effects, reason and
-   available recovery context. On `needs-reconciliation`, return the
+   procedure. On any other `failed`, return its category, effects,
+   reason and available recovery context. On `needs-reconciliation`, return the
    original operation ID and `lets backlog resume --operation-id`
    followed by that ID. Do not reissue the mutation. When the owning
    procedure drives resume, run its returned bounded reads through this

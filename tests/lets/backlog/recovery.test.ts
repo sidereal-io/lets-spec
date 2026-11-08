@@ -492,3 +492,23 @@ test('legacy reconciliation cannot clear reservation from incomplete assignee fa
     assert.equal(store.get(action.operationId).pending, true);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+test('a rejected verification read after a write keeps effects unknown', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-verify-rejected-');
+  try {
+    const action = prAction(submittedPr(), 'preflight', 100);
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action);
+    const repository = JSON.parse(readFileSync(new URL('./fixtures/github-repository.json', import.meta.url), 'utf8'));
+    const read = store.submit(issued.continuation, submissionFor(action, repository), 200);
+    if (read.state !== 'action') throw new Error('branch read required');
+    const write = store.submit(read.continuation, submissionFor(read.action, branchPrOutput(null)), 300);
+    if (write.state !== 'action') throw new Error('create required');
+    const verify = store.submit(write.continuation, submissionFor(write.action, { data: { createPullRequest: { pullRequest: rawPr } } }), 400);
+    if (verify.state !== 'action') throw new Error('verification required');
+    for (let attempt = 0; attempt < 3; attempt++)
+      assert.throws(() => store.submit(verify.continuation, '{', 500 + attempt),
+        (error: unknown) => error instanceof AdapterFailure && error.effects === 'unknown');
+    assert.equal(store.get(action.operationId).pending, true);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
