@@ -353,3 +353,14 @@ for (const [name, path, contents] of [
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 }
+
+test('timely receipt accepts an unreported optional server version', () => {
+  const { action, submission, projection } = submittedRead();
+  assert.deepEqual(validateSubmission(action, { ...submission, observed: { serverVersion: 'unreported' } }, projection, 200),
+    { valid: true, gaps: [] });
+});
+test('optional tool time cannot rescue a late receipt', () => {
+  const { action, submission, projection } = submittedRead();
+  assert.throws(() => validateSubmission(action, { ...submission, observed: { finishedAt: 200 } }, projection, 6000),
+    /acceptance window/);
+});

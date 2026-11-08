@@ -16,8 +16,20 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
   try {
     keys(submission, ['contractVersion', 'operationId', 'actionId', 'attemptId', 'inputDigest',
       'definitionDigest', 'connectionDigest', 'context', 'tool', 'execution', 'output', 'normalized',
-      'diagnostics', 'outputFiles'], 'submission');
+      'diagnostics', 'outputFiles', 'observed'], 'submission');
   } catch (error) { throw new AdapterFailure('invalid_request', 'unknown', String(error)); }
+  if (submission.observed !== undefined) {
+    try {
+      const observed = object(submission.observed, 'observed');
+      keys(observed, ['startedAt', 'finishedAt', 'toolVersion', 'serverVersion'], 'observed');
+      for (const field of ['startedAt', 'finishedAt'])
+        if (observed[field] !== undefined && (typeof observed[field] !== 'number' || !Number.isFinite(observed[field])))
+          throw new Error(`observed.${field} must be a finite timestamp when supplied`);
+      for (const field of ['toolVersion', 'serverVersion'])
+        if (observed[field] !== undefined && (typeof observed[field] !== 'string' || !observed[field]))
+          throw new Error(`observed.${field} must be text when supplied`);
+    } catch (error) { throw new AdapterFailure('invalid_request', 'unknown', String(error)); }
+  }
   const bindings = {
     operationId: action.operationId, actionId: action.actionId, attemptId: action.attemptId,
     inputDigest: action.inputDigest, definitionDigest: action.definition.digest,
