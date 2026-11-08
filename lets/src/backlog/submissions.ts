@@ -79,9 +79,10 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
   } else outputBytes = Buffer.byteLength(JSON.stringify(output) ?? '');
   if (outputBytes + diagnosticsBytes > action.limits.maxOutputBytes)
     uncertain('submitted output exceeds issued bound');
-  if (output && typeof output === 'object' && !Array.isArray(output) &&
-      Array.isArray((output as Record<string, unknown>).errors) && ((output as Record<string, unknown>).errors as unknown[]).length) {
-    const errors = (output as { errors: unknown[] }).errors;
+  const errors = (Array.isArray(output) ? output : [output]).flatMap((page) =>
+    page && typeof page === 'object' && Array.isArray((page as Record<string, unknown>).errors)
+      ? (page as { errors: unknown[] }).errors : []);
+  if (errors.length) {
     const categories = errors.map((error) => error && typeof error === 'object' && typeof (error as Record<string, unknown>).type === 'string'
       ? action.definition.definition.backend.errorTypes?.[(error as { type: string }).type] : undefined);
     const category = categories.every((entry) => entry !== undefined && entry === categories[0]) ? categories[0]! : 'unknown_outcome';

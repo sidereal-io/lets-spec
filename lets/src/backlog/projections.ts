@@ -10,7 +10,7 @@ export type Projection =
   | { op: 'array'; values: Projection[] }
   | { op: 'object'; fields: Record<string, Projection> }
   | { op: 'at' | 'map'; source: Projection; value: Projection }
-  | { op: 'select'; source: Projection; path: Path; equals: Projection }
+  | { op: 'select' | 'filter'; source: Projection; path: Path; equals: Projection }
   | { op: 'enum'; source: Projection; values: Record<string, unknown> }
   | { op: 'union'; source: Projection; tag: Path; cases: Record<string, Projection> }
   | { op: 'nullable'; source: Projection; value: Projection }
@@ -42,11 +42,13 @@ export function project(projection: Projection, output: unknown, scope: Record<s
       if (!Array.isArray(array)) return gap('projection map requires an array');
       return array.map((value) => read(projection.value, value));
     }
+    case 'filter':
     case 'select': {
       const array = read(projection.source);
       if (!Array.isArray(array)) return gap('projection select requires an array');
       const expected = read(projection.equals);
       const selected = array.filter((entry) => isDeepStrictEqual(fieldPath(entry, projection.path, true), expected));
+      if (projection.op === 'filter') return selected;
       if (selected.length !== 1) return gap(`projection select requires exactly one match for ${projection.path.join('.')}`);
       return selected[0];
     }
@@ -70,15 +72,7 @@ export function project(projection: Projection, output: unknown, scope: Record<s
       if (typeof value !== 'string' && typeof value !== 'number') return gap('text projection requires a string or number');
       return projection.prefix + String(value);
     }
-    case 'connection': {
-      const source = object(read(projection.source), 'connection');
-      const page = object(source.pageInfo, 'connection.pageInfo');
-      if (!Array.isArray(source.nodes) || page.hasNextPage !== false ||
-          (page.endCursor !== null && typeof page.endCursor !== 'string')) return gap('incomplete connection coverage');
-      if (source.totalCount !== undefined && (!Number.isSafeInteger(source.totalCount) || source.totalCount !== source.nodes.length))
-        return gap('connection totalCount contradicts observed coverage');
-      return source.nodes;
-    }
+    case 'connection': return connectionNodes(read(projection.source));
     default: throw new AdapterFailure('invalid_configuration', 'none', 'unknown projection operator');
   }
 }
@@ -101,7 +95,7 @@ export function validateProjection(value: unknown, depth = 0): asserts value is 
   const projection = object(value, 'projection');
   const shapes: Record<string, string[]> = {
     array: ['values'], path: ['path'], scope: ['path'], literal: ['value'], object: ['fields'], at: ['source', 'value'], map: ['source', 'value'],
-    select: ['source', 'path', 'equals'], enum: ['source', 'values'], union: ['source', 'tag', 'cases'],
+    select: ['source', 'path', 'equals'], filter: ['source', 'path', 'equals'], enum: ['source', 'values'], union: ['source', 'tag', 'cases'],
     nullable: ['source', 'value'], text: ['source', 'prefix'], connection: ['source'],
   };
   const fields = shapes[String(projection.op)];
@@ -133,7 +127,45 @@ export function projectArguments(arguments_: Projection | string[], input: unkno
 /** Backend identity mappings are checked against the issued context by core. */
 export function validateObservedScope(observations: import('./definitions.ts').ActionTranslation['observations'],
   output: unknown, scope: Record<string, unknown>): void {
-  for (const [field, projection] of Object.entries(observations ?? {}))
-    if (!isDeepStrictEqual(project(projection, output, scope), scope[field]))
+  for (const page of Array.isArray(output) ? output : [output])
+    for (const [field, projection] of Object.entries(observations ?? {}))
+    if (!isDeepStrictEqual(project(projection, page, scope), scope[field]))
       throw new AdapterFailure('invalid_request', 'unknown', `observed ${field} differs from issued scope`);
+}
+
+function connectionNodes(value: unknown): unknown[] {
+  const pages = Array.isArray(value) ? value : [value];
+  if (!pages.length) return gap('connection coverage requires an observed page');
+  const nodes: unknown[] = [];
+  const cursors = new Set<string>();
+  const ids = new Set<string>();
+  let total: number | undefined;
+  for (const [index, value] of pages.entries()) {
+    const source = object(value, 'connection');
+    const page = object(source.pageInfo, 'connection.pageInfo');
+    const next = index < pages.length - 1;
+    if (!Array.isArray(source.nodes) || page.hasNextPage !== next ||
+        (page.endCursor !== null && (typeof page.endCursor !== 'string' || !page.endCursor)) ||
+        (next && (page.endCursor === null || !source.nodes.length)) ||
+        (page.hasPreviousPage !== undefined && page.hasPreviousPage !== (index > 0)))
+      return gap('incomplete connection coverage');
+    if (typeof page.endCursor === 'string') {
+      if (cursors.has(page.endCursor)) return gap('repeated connection cursor coverage');
+      cursors.add(page.endCursor);
+    }
+    if (source.totalCount !== undefined) {
+      if (!Number.isSafeInteger(source.totalCount) || (source.totalCount as number) < 0 ||
+          (total !== undefined && total !== source.totalCount)) return gap('connection totalCount changed across pages');
+      total = source.totalCount as number;
+    } else if (total !== undefined) return gap('connection totalCount missing from a later page');
+    for (const node of source.nodes) {
+      if (node && typeof node === 'object' && typeof node.id === 'string') {
+        if (ids.has(node.id)) return gap('duplicate connection node coverage');
+        ids.add(node.id);
+      }
+      nodes.push(node);
+    }
+  }
+  if (total !== undefined && total !== nodes.length) return gap('connection totalCount contradicts observed coverage');
+  return nodes;
 }

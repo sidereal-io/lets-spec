@@ -94,3 +94,62 @@ for (const cardinality of ['one', 'many'] as const) {
     assert.throws(() => readMapped(data, configured), /cardinality/);
   });
 }
+
+import { deriveDefinitionResult } from '../../../lets/src/backlog/projections.ts';
+import { loadDefinition } from '../../../lets/src/backlog/definitions.ts';
+import { githubDefinition } from '../../../lets/src/backlog/config.ts';
+import { readFileSync } from 'node:fs';
+const issueOutput = JSON.parse(readFileSync(new URL('./fixtures/github-issue.json', import.meta.url), 'utf8'));
+function candidatePage(id: string, next: boolean, cursor: string) {
+  const issue = structuredClone(issueOutput.data.node);
+  issue.id = id;
+  return { data: { viewer: { login: 'actor' }, node: { id: 'P1', items: {
+    nodes: [{ id: `PI-${id}`, content: { ...issue, __typename: 'Issue' } }], totalCount: 2,
+    pageInfo: { hasNextPage: next, endCursor: cursor },
+  } } } };
+}
+function candidates(pages: unknown) {
+  return deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'candidate.list', 'read', 'gh', pages, { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' });
+}
+test('shipped candidate enumeration covers all Project pages', () => {
+  const result = candidates([candidatePage('I1', true, 'c1'), candidatePage('I2', false, 'c2')]);
+  assert.deepEqual((result.items as { identity: { id: string } }[]).map((item) => item.identity.id), ['I1', 'I2']);
+  assert.equal(result.complete, true);
+});
+for (const fault of ['missing final page', 'missing middle page', 'repeated cursor', 'missing metadata', 'duplicate node'] as const) {
+  test(`shipped candidate enumeration rejects ${fault}`, () => {
+    const pages = [candidatePage('I1', true, 'c1'), candidatePage('I2', false, 'c2')];
+    if (fault === 'missing final page') pages.pop();
+    if (fault === 'missing middle page') for (const page of pages) page.data.node.items.totalCount = 3;
+    if (fault === 'repeated cursor') pages[1].data.node.items.pageInfo.endCursor = 'c1';
+    if (fault === 'missing metadata') pages[1].data.node.items.nodes[0].content.projectItems.nodes[0].fieldValues.nodes = [];
+    if (fault === 'duplicate node') pages[1] = candidatePage('I1', false, 'c2');
+    assert.throws(() => candidates(pages), /coverage|match/);
+  });
+}
+test('candidate enumeration excludes another repository in the Project', () => {
+  const pages = [candidatePage('I1', true, 'c1'), candidatePage('I2', false, 'c2')];
+  pages[1].data.node.items.nodes[0].content.repository.id = 'OTHER';
+  assert.equal((candidates(pages).items as unknown[]).length, 1);
+});
+test('candidate enumeration rejects a page for another Project', () => {
+  const pages = [candidatePage('I1', true, 'c1'), candidatePage('I2', false, 'c2')];
+  pages[1].data.node.id = 'OTHER';
+  assert.throws(() => candidates(pages), /scope/);
+});
+test('candidate submission rejects a structured error on a later page', () => {
+  const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+  const mapping = definition.definition.operations['candidate.list'].actions.read.bindings.gh;
+  const action = issueAction({ contractVersion: 1, operation: 'candidate.list', context: {
+    cwd: '/repo', provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor',
+  }, input: {} }, definition, { name: 'local', binding: 'gh', options: {} }, {
+    toolArguments: [], allowedEffects: [], requiredCapabilities: [],
+    timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000,
+  }, 100);
+  const pages = [candidatePage('I1', true, 'c1'), { ...candidatePage('I2', false, 'c2'), errors: [{ type: 'FORBIDDEN' }] }];
+  assert.throws(() => validateSubmission(action, submissionFor(action, pages), mapping.projection, 101), /permission/);
+});
+import { issueAction } from '../../../lets/src/backlog/actions.ts';
+import { validateSubmission } from '../../../lets/src/backlog/submissions.ts';
+import { submissionFor } from './fixtures/submitted.ts';

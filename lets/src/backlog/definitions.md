@@ -104,3 +104,18 @@ Project discovery uses the repository's projectsV2 connection. Selection waits
 for complete discovery, accepts a sole linked Project, or requires an explicit
 `lets.backlog.id` when several are linked. An unlinked explicit ID fails without
 selecting another Project.
+
+`connection` also accepts an ordered array of connection pages. It requires
+hasNextPage on every intermediate page, a final page, distinct nonempty cursors
+and no repeated node IDs. Supplied totalCount must stay stable and equal the
+combined node count. `filter` uses the same path/equality vocabulary as select
+but returns all matches. Candidate translation uses it to keep issues belonging
+to the scoped repository, after explicitly handling the content union.
+
+The shipped candidate query uses bounded `gh api graphql --paginate --slurp`
+output. Each page checks the authenticated viewer and Project identity
+(`observations.backlog`). Nested assignee, Project-membership and field-value
+connections must also be complete; an incomplete nested connection stops the
+operation. Output limits apply to the entire submitted page array, and a
+structured error on any page stops progression. A missing intermediate page
+cannot satisfy totalCount coverage.

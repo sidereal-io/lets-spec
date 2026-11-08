@@ -44,6 +44,7 @@ test('shipped GitHub projection selects scoped Project field unions', () => {
   const output = structuredClone(githubIssue);
   const correct = output.data.node.projectItems.nodes[0];
   const other = structuredClone(correct);
+  other.id = 'PI-OTHER';
   other.project.id = 'OTHER';
   other.fieldValues.nodes.find((node: { name: string }) => node.name === 'Must').name = 'Could';
   output.data.node.projectItems.nodes.unshift(other);
