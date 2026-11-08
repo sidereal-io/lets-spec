@@ -99,6 +99,35 @@ import { OperationStore } from '../../../lets/src/backlog/operation-store.ts';
 import { submittedClaim, submissionFor } from './fixtures/submitted.ts';
 import { acquiredClaim } from './fixtures/submitted.ts';
 import { AdapterFailure } from '../../../lets/src/backlog/errors.ts';
+import { issueAction } from '../../../lets/src/backlog/actions.ts';
+import { loadDefinition } from '../../../lets/src/backlog/definitions.ts';
+import { githubDefinition } from '../../../lets/src/backlog/config.ts';
+test('ordinary resume uses current actor ownership without historic claim provenance', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/ordinary-native-resume-');
+  try {
+    const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+    const action = issueAction({ contractVersion: 1, operation: 'claim.read', context: {
+      cwd: '/repo', provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor', session: 'new-worker',
+    }, input: { item: { provider: 'github', backlog: 'P1', id: 'I1' } } }, definition,
+    { name: 'local', binding: 'gh', options: {} }, { step: 'read', toolArguments: [], allowedEffects: [], requiredCapabilities: [],
+      timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000 }, 100);
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action);
+    const output = JSON.parse(readFileSync(new URL('./fixtures/github-issue.json', import.meta.url), 'utf8'));
+    output.data.node.assignees = { nodes: [{ id: 'U1', login: 'actor' }], totalCount: 1,
+      pageInfo: { hasNextPage: false, endCursor: null } };
+    const result = store.submit(issued.continuation, submissionFor(action, output), 101);
+    assert.equal(result.state, 'complete');
+    if (!('result' in result)) throw new Error('ownership result required');
+    const claim = result.result.claim as { verdict: string; assignees: string[]; session: null; token: null };
+    assert.equal(claim.verdict, 'sole-actor');
+    assert.deepEqual(claim.assignees, ['actor']);
+    assert.equal(claim.session, null);
+    assert.equal(claim.token, null);
+    assert.deepEqual(action.allowedEffects, []);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
 test('branch failure retains explicit recovery when claim release is blocked', () => {
   mkdirSync('.workspace', { recursive: true });
   const dir = mkdtempSync('.workspace/branch-release-recovery-');

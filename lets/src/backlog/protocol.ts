@@ -308,6 +308,10 @@ function validateNestedResult(operation: string, result: Record<string, unknown>
         token: 'nullableText',
         status: 'text',
         guarantee: 'text',
+        'assignees?': 'array',
+        'assigneesComplete?': 'boolean',
+        'item?': 'identity',
+        'verdict?': 'text',
       },
       'claim',
     );

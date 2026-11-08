@@ -101,6 +101,25 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
   const result = deriveResult(operation, projection, output,
     { ...action.request.context, input: action.request.input }, submission.normalized);
   const input = action.request.input as Record<string, unknown>;
+  if (operation === 'claim.read') {
+    const claim = object(result.claim, 'ownership observation');
+    if (claim.item !== undefined && !isDeepStrictEqual(claim.item, input.item))
+      throw new AdapterFailure('invalid_request', 'unknown', 'ownership result differs from issued item');
+    if (action.request.context.provider === 'github' && claim.guarantee !== 'best-effort')
+      throw new AdapterFailure('invalid_request', 'unknown', 'GitHub ownership reads cannot promise an atomic claim');
+    const complete = claim.assigneesComplete === true && Array.isArray(claim.assignees) &&
+      claim.assignees.every((actor) => typeof actor === 'string' && actor.length > 0) &&
+      new Set(claim.assignees).size === claim.assignees.length && claim.item !== undefined;
+    const assignees = complete ? claim.assignees as string[] : [];
+    const verdict = complete && assignees.length === 1 && assignees[0] === action.request.context.actor && claim.status === 'In Progress'
+      ? 'sole-actor' : 'unavailable';
+    if (claim.verdict !== undefined && claim.verdict !== verdict)
+      throw new AdapterFailure('invalid_request', 'unknown', 'provider ownership verdict disagrees with core policy');
+    claim.verdict = verdict;
+    if (complete) claim.actor = assignees.length === 1 ? assignees[0] : null;
+    claim.session = null;
+    claim.token = null;
+  }
   if (operation === 'candidate.list') {
     if (result.complete !== true)
       throw new AdapterFailure('unknown_outcome', 'unknown', 'candidate selection requires complete enumeration');

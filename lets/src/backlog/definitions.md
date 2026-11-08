@@ -176,6 +176,15 @@ unreleased acquisition, scoped item/repository and original release operation's
 read-only resume command. Retain this context rather than reporting the claim
 as released or repeating cleanup.
 
+`claim.read` is an ordinary read of current ownership. Its facts include the
+scoped item identity, complete `assignees` array, `assigneesComplete`, current
+Status and actual guarantee. The shipped GitHub mapping validates the native
+assignee connection and returns best-effort ownership. Core derives permission
+from those facts: only the authenticated actor alone with In Progress returns
+`sole-actor`. Missing complete scoped facts cannot authorize work. Public reads
+return null worker session and token; they never manufacture original release
+authority or require a historic acquisition record.
+
 `item.read` accepts optional `includeThread`, default false. The `read` action
 reads the issue body, metadata, creation/edit times and parent identity without
 requesting comments. `includeThread: true` selects `read-thread`, which returns

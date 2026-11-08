@@ -72,7 +72,7 @@ Nothing is implemented or checked off by this planning restart.
 ## 5. Resume and retained completion contract [depends-on: 4]
 
 - [x] 5.1 [medium] Resolve the existing branch's scoped issue through title or explicit issue lookup without an identity file or runner metadata commit. (✓ bats tests/skill-interfaces.bats passed, 272 tests; node --test tests/lets/backlog/providers.test.ts passed, 36 tests; tsc --noEmit passed)
-- [ ] 5.2 [medium] Continue ordinary resume only after a fresh read shows the authenticated actor as sole assignee and In Progress. (verify: node --test tests/lets/backlog/recovery.test.ts)
+- [x] 5.2 [medium] Continue ordinary resume only after a fresh read shows the authenticated actor as sole assignee and In Progress. (✓ node --test tests/lets/backlog/recovery.test.ts tests/lets/backlog/claims.test.ts tests/lets/backlog/protocol.test.ts passed, 126 tests; tsc --noEmit passed)
 - [ ] 5.3 [medium] Validate the exact PR association without a GitHub remote write in reference.write conformance. (verify: node --test tests/lets/backlog/completion.test.ts)
 - [ ] 5.4 [medium] Reject explicit contract completion requests until the GitHub code-host observations prove the exact associated merge and closing relationship. (verify: node --test tests/lets/backlog/completion.test.ts)
 - [ ] 5.5 [medium] Return completed without a repeated explicit contract status write when native automation already completed the item. (verify: node --test tests/lets/backlog/completion.test.ts)

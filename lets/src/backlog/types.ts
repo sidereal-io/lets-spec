@@ -11,6 +11,10 @@ export type WorkerContext = {
   session: string;
 };
 export type Claim = {
+  assignees?: string[];
+  assigneesComplete?: boolean;
+  item?: Identity;
+  verdict?: 'sole-actor' | 'unassigned' | 'other' | 'multiple' | 'status-mismatch' | 'unavailable' | 'pending-mutation';
   actor: string | null;
   session: string | null;
   token: string | null;
