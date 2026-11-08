@@ -16,7 +16,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 1.5 [medium] Issue a versioned action binding the exact operation/input/scope to its attempt and required effects. (✓ node --test tests/lets/backlog/scopes.test.ts passed, 9 tests)
 - [x] 1.6 [medium] Accept complete matching submitted tool observations without an independent capture receipt. (✓ node --test tests/lets/backlog/protocol.test.ts passed, 47 tests)
 - [x] 1.7 [medium] Reject expired, oversized or uncertain-termination submissions as authority to progress without inferring no remote effects. (✓ node --test tests/lets/backlog/process.test.ts passed, 24 tests)
-- [ ] 1.8 [medium] Reject submissions bound to another call, scope or input without authorizing progression. (verify: node --test tests/lets/backlog/protocol.test.ts)
+- [x] 1.8 [medium] Reject submissions bound to another call, scope or input without authorizing progression. (✓ node --test tests/lets/backlog/protocol.test.ts passed, 55 tests)
 - [ ] 1.9 [easy] Reject unsupported contract versions and malformed or unknown operation inputs with their defined typed errors. (verify: node --test tests/lets/backlog/protocol.test.ts)
 - [ ] 1.10 [medium] Fail preflight on unavailable tools, missing login or missing execution/output bounds without fallback. (verify: node --test tests/lets/backlog/capabilities.test.ts)
 - [ ] 1.11 [medium] Apply the same operation validators to an explicitly selected custom definition. (verify: node --test tests/lets/backlog/config.test.ts)

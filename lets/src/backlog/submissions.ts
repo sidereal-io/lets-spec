@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { AdapterFailure } from './errors.ts';
 import { object } from './protocol.ts';
 import { deriveResult } from './projections.ts';
@@ -8,6 +9,14 @@ import type { IssuedAction } from './actions.ts';
 export function validateSubmission(action: IssuedAction, value: unknown, projection: Projection,
   receivedAt: number): Record<string, unknown> {
   const submission = object(value, 'submission');
+  const bindings = {
+    operationId: action.operationId, actionId: action.actionId, attemptId: action.attemptId,
+    inputDigest: action.inputDigest, definitionDigest: action.definition.digest,
+    connectionDigest: action.connection.digest, context: action.request.context, tool: action.tool,
+  };
+  for (const [key, expected] of Object.entries(bindings))
+    if (!isDeepStrictEqual(submission[key], expected))
+      throw new AdapterFailure('invalid_request', 'unknown', `submission binding differs: ${key}`);
   const uncertain = (reason: string): never => { throw new AdapterFailure('unknown_outcome', 'unknown', reason); };
   if (!Number.isFinite(receivedAt) || receivedAt < action.issuedAt || receivedAt > action.expiresAt)
     uncertain('submission outside its acceptance window; reconcile original operation');

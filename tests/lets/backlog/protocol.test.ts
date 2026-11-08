@@ -290,3 +290,16 @@ test('matching tool output qualifies without a capture receipt', () => {
   const { action, submission, projection } = submittedRead();
   assert.deepEqual(validateSubmission(action, submission, projection, 200), { valid: true, gaps: [] });
 });
+
+for (const [field, replacement] of [
+  ['operationId', 'another-operation'], ['actionId', 'another-action'], ['attemptId', 'another-attempt'],
+  ['inputDigest', 'another-input'], ['definitionDigest', 'another-definition'], ['connectionDigest', 'another-connection'],
+  ['context', { cwd: '/repo', provider: 'github', repository: 'OTHER', backlog: 'P1', actor: 'me', session: 'worker' }],
+  ['tool', { kind: 'cli', name: 'gh', arguments: ['api', 'other'] }],
+] as const) {
+  test(`submission cannot replace issued ${field}`, () => {
+    const { action, submission, projection } = submittedRead();
+    assert.throws(() => validateSubmission(action, { ...submission, [field]: replacement }, projection, 200),
+      /invalid_request.*binding/);
+  });
+}
