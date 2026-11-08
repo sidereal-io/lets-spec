@@ -102,6 +102,32 @@ import { AdapterFailure } from '../../../lets/src/backlog/errors.ts';
 import { issueAction } from '../../../lets/src/backlog/actions.ts';
 import { loadDefinition } from '../../../lets/src/backlog/definitions.ts';
 import { githubDefinition } from '../../../lets/src/backlog/config.ts';
+import { withBacklogCli } from './fixtures/cli.ts';
+import { existsSync, readdirSync } from 'node:fs';
+test('legacy scoped issue resumes through CLI without an acquisition record', () => withBacklogCli(async ({ dir, call, request, marker }) => {
+  const item = { provider: 'github', backlog: 'P1', id: 'I1' };
+  const issued = await call(['claim.read', '--request-file', request('claim.read', { item })]);
+  assert.equal(issued.state, 'action', issued.reason);
+  assert.deepEqual(issued.action.allowedEffects, []);
+  const path = join(dir, 'observation.json');
+  writeFileSync(path, JSON.stringify(submissionFor(issued.action, { data: { claim: {
+    item, actor: 'actor', session: 'historic-worker', token: 'historic-token', status: 'In Progress',
+    guarantee: 'best-effort', assignees: ['actor'], assigneesComplete: true,
+  } } })));
+  const response = await call(['submit', '--continuation-file', issued.continuationFile, '--submission-file', path]);
+  assert.equal(response.state, 'complete', response.reason);
+  assert.equal(response.result.claim.verdict, 'sole-actor');
+  assert.equal(response.result.claim.session, null);
+  assert.equal(response.result.claim.token, null);
+  const records = readdirSync(join(dir, 'private', 'operations'));
+  assert.equal(records.length, 1);
+  const record = JSON.parse(readFileSync(join(dir, 'private', 'operations', records[0]), 'utf8'));
+  assert.equal(record.action.request.operation, 'claim.read');
+  assert.equal(record.originalAction, undefined);
+  assert.equal(record.action.mutationId, undefined);
+  assert.equal(existsSync(marker), false);
+  assert.equal(existsSync(join(dir, 'identity.json')), false);
+}));
 test('ordinary resume uses current actor ownership without historic claim provenance', () => {
   mkdirSync('.workspace', { recursive: true });
   const dir = mkdtempSync('.workspace/ordinary-native-resume-');

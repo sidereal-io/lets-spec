@@ -16,7 +16,7 @@ export async function withBacklogCli(run: (fixture: {
     writeFileSync(backend, `#!/bin/sh\ntouch '${marker}'\n`, { mode: 0o700 });
     const binding = (step: string) => ({ bindings: { fixture: { arguments: [step], projection: { op: 'path', path: ['data'] } } } });
     const steps = Object.fromEntries(['preflight', 'read-existing', 'create', 'update', 'ready', 'verify', 'read', 'read-branch', 'assign', 'read-assignment', 'status', 'reset-status', 'read-before-unassign', 'unassign', 'verify-release'].map((step) => [step, binding(step)]));
-    const operations = Object.fromEntries(['claim.acquire', 'claim.release', 'repository.read', 'pull-request.read', 'pull-request.create', 'pull-request.update', 'pull-request.ready'].map((operation) => [operation, { actions: steps }]));
+    const operations = Object.fromEntries(['claim.acquire', 'claim.release', 'claim.read', 'repository.read', 'pull-request.read', 'pull-request.create', 'pull-request.update', 'pull-request.ready'].map((operation) => [operation, { actions: steps }]));
     writeFileSync(join(dir, 'provider.json'), JSON.stringify({ schemaVersion: 1, name: 'github', version: '1', contractVersions: [1],
       backend: { name: 'github', versions: ['fixture'] }, bindings: { fixture: { kind: 'cli', tool: backend, versions: ['unreported'] } }, operations }));
     writeFileSync(join(dir, 'openspec', 'config.yaml'), 'lets:\n  backlog:\n    version: 1\n    definition: ../provider.json\n');
