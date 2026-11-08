@@ -12,6 +12,8 @@ import { resolveConfiguration, recoveryStateDirectory, resolveRecordedConnection
 import { issueAction, parseActionRequest } from './actions.ts';
 import { OPERATIONS, MUTATIONS } from './protocol.ts';
 import { checkActionPrerequisites } from './capabilities.ts';
+import { object } from './protocol.ts';
+import { keys } from './definitions.ts';
 import { OperationStore } from './operation-store.ts';
 import type { Continuation } from './operation-store.ts';
 
@@ -52,11 +54,29 @@ function emit(response: Record<string, unknown>): void {
   }
   process.stdout.write(`${JSON.stringify(response)}\n`);
 }
-type Options = { requestFile?: string; submissionFile?: string; continuationFile?: string; operationId?: string; connection?: string };
+type HostObservations = { tools: string[]; timeoutMs: number; maxOutputBytes: number };
+function hostObservations(path?: string): HostObservations | undefined {
+  if (!path) return undefined;
+  const host = object(JSON.parse(readInput(path)), 'host observations');
+  keys(host, ['tools', 'timeoutMs', 'maxOutputBytes'], 'host observations');
+  if (!Array.isArray(host.tools) || host.tools.some((tool) => typeof tool !== 'string' || !tool))
+    throw new AdapterFailure('invalid_request', 'none', 'host.tools must list this session’s available tool names');
+  for (const field of ['timeoutMs', 'maxOutputBytes'])
+    if (!Number.isSafeInteger(host[field]) || (host[field] as number) <= 0 || (host[field] as number) > 2147483647)
+      throw new AdapterFailure('unsupported', 'none', `host.${field} must declare a finite positive execution bound`);
+  return host as HostObservations;
+}
+function toolAvailable(binding: { kind: string; tool: string }, host?: HostObservations): boolean {
+  return binding.kind === 'cli' ? available(binding.tool) && (!host || host.tools.includes(binding.tool))
+    : host?.tools.includes(binding.tool) === true;
+}
+
+type Options = { hostFile?: string; requestFile?: string; submissionFile?: string; continuationFile?: string; operationId?: string; connection?: string };
 async function run(operation: string, options: Options): Promise<void> {
   let store: OperationStore | undefined;
   let continuation: Continuation | undefined;
   try {
+    const host = hostObservations(options.hostFile);
     const userFile = join(configDir(process.env, homedir()), 'config.yaml');
     const machine = yamlFile(userFile);
     if (operation === 'submit' || operation === 'resume') {
@@ -70,7 +90,9 @@ async function run(operation: string, options: Options): Promise<void> {
       const recorded = original.originalAction ?? original.action;
       resolveRecordedConnection(recorded, machine, userFile);
       const binding = recorded.definition.definition.bindings[recorded.connection.binding];
-      checkActionPrerequisites(binding.tool, { toolAvailable: binding.kind === 'cli' && available(binding.tool), ...recorded.limits }, true);
+      checkActionPrerequisites(binding.tool, { toolAvailable: toolAvailable(binding, host), ...recorded.limits }, true);
+      if (host && (host.timeoutMs < recorded.limits.timeoutMs || host.maxOutputBytes < recorded.limits.maxOutputBytes))
+        throw new AdapterFailure('unsupported', 'none', 'this session cannot enforce the original action bounds; expose compatible execution/output limits before resume or submit');
       if (continuation && JSON.stringify(continuation) !== JSON.stringify(original.continuation))
         throw new AdapterFailure('invalid_request', 'unknown', 'continuation differs from original operation');
       continuation = original.continuation;
@@ -98,8 +120,11 @@ async function run(operation: string, options: Options): Promise<void> {
     const mapping = config.definition.definition.operations[operation]?.actions[step]?.bindings[config.connection.binding];
     if (!mapping) throw new AdapterFailure('unsupported', 'none', `selected definition does not map ${operation}/${step}`);
     const binding = config.definition.definition.bindings[config.connection.binding];
-    const bounds = config.connection.options;
-    checkActionPrerequisites(binding.tool, { toolAvailable: binding.kind === 'cli' && available(binding.tool),
+    const bounds: Record<string, unknown> = { ...config.connection.options,
+      timeoutMs: host ? Math.min(host.timeoutMs, config.connection.options.timeoutMs as number ?? host.timeoutMs) : config.connection.options.timeoutMs,
+      maxOutputBytes: host ? Math.min(host.maxOutputBytes, config.connection.options.maxOutputBytes as number ?? host.maxOutputBytes) : config.connection.options.maxOutputBytes,
+    };
+    checkActionPrerequisites(binding.tool, { toolAvailable: toolAvailable(binding, host),
       timeoutMs: bounds.timeoutMs as number | undefined, maxOutputBytes: bounds.maxOutputBytes as number | undefined }, true);
     store = new OperationStore(config.stateDir);
     const bodyFile = (request.input as { bodyFile?: string }).bodyFile;
@@ -125,12 +150,13 @@ export function registerBacklog(program: Command): void {
   const backlog = program.command('backlog').description('Request bounded backend actions, validate submissions, and reconcile private recovery. Executes no provider tools.');
   for (const operation of OPERATIONS)
     backlog.command(operation).requiredOption('--request-file <path>', 'JSON request file, or - for stdin')
+      .option('--host-file <path>', 'session tool availability and enforceable bounds as JSON')
       .option('--connection <name>', 'explicit configured connection for this operation')
       .action((options: Options) => run(operation, options));
-  backlog.command('submit').requiredOption('--continuation-file <path>', 'original operation continuation')
+  backlog.command('submit').option('--host-file <path>', 'session tool availability and enforceable bounds as JSON').requiredOption('--continuation-file <path>', 'original operation continuation')
     .requiredOption('--submission-file <path>', 'submitted tool JSON, or - for stdin')
     .action((options: Options) => run('submit', options));
-  backlog.command('resume').option('--continuation-file <path>', 'original operation continuation')
+  backlog.command('resume').option('--host-file <path>', 'session tool availability and enforceable bounds as JSON').option('--continuation-file <path>', 'original operation continuation')
     .option('--operation-id <id>', 'original durable operation ID, after scratch loss')
     .action((options: Options) => run('resume', options));
 }

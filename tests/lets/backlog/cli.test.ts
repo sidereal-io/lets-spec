@@ -222,3 +222,21 @@ test('configured Project is selected after discovery without preexisting backlog
   assert.equal(result.state, 'complete', result.reason);
   assert.equal(result.result.selectedBacklog.id, 'P1');
 }));
+
+test('no connection config uses shipped gh with declared host bounds', () => withBacklogCli(async ({ dir, call, request }) => {
+  writeFileSync(join(dir, 'openspec', 'config.yaml'), '{}\n');
+  writeFileSync(join(dir, 'xdg', 'lets', 'config.yaml'), `version: 3\nbacklog:\n  stateDir: ${dir}/private\n`);
+  writeFileSync(join(dir, 'gh'), '#!/bin/sh\nexit 99\n', { mode: 0o700 });
+  const host = join(dir, 'host.json');
+  writeFileSync(host, JSON.stringify({ tools: ['gh'], timeoutMs: 1000, maxOutputBytes: 65536 }));
+  const path = request('repository.read', { owner: 'fixture', name: 'repo' });
+  const body = JSON.parse(readFileSync(path, 'utf8'));
+  body.context.repository = 'fixture/repo'; delete body.context.actor;
+  writeFileSync(path, JSON.stringify(body));
+  const result = await call(['repository.read', '--request-file', path, '--host-file', host], { PATH: dir });
+  assert.equal(result.state, 'action', result.reason);
+  assert.equal(result.action.connection.name, 'gh');
+  assert.equal(result.action.tool.name, 'gh');
+  assert.deepEqual(result.action.limits, { timeoutMs: 1000, maxOutputBytes: 65536 });
+  assert.equal(result.action.step, 'bootstrap');
+}));

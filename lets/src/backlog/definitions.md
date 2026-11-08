@@ -307,3 +307,12 @@ conflicting duplicate facts fail. Missing pages in either discovery list or
 an inspected repository connection fail coverage before selection. The closed
 projection language supplies `concat`, `unique`, `where` and `contains` for
 these data mappings; none evaluates code or executes a tool.
+
+Callers declare actual session tools and enforceable timeout/output bounds in a
+private `--host-file` JSON object: `tools`, `timeoutMs`, `maxOutputBytes`.
+New operations use the smaller configured/session bounds. Submit and resume
+require capability for the original action bounds and selected recorded tool.
+MCP tool access is trusted submitted host data; the CLI does not inspect a host,
+load a plugin or execute tools. CLI bindings additionally check local tool
+availability. This permits the shipped no-config gh binding once the caller
+declares its real host bounds. Configured tool options remain machine-local.
