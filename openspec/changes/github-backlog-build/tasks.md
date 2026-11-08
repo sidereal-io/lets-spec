@@ -106,7 +106,7 @@ Nothing is implemented or checked off by this planning restart.
 
 ## 7. Documentation and release [depends-on: 6]
 
-- [ ] 7.1 [medium] Rewrite the contract docs for submitted output, recorded reads and retained completion conformance, replacing session/token work gates with actor-only ordinary resume and release-specific provenance checks. (verify: node --test tests/lets/backlog/inventory.test.ts)
+- [x] 7.1 [medium] Rewrite the contract docs for submitted output, recorded reads and retained completion conformance, replacing session/token work gates with actor-only ordinary resume and release-specific provenance checks. (✓ node --test tests/lets/backlog/inventory.test.ts passed, 15 tests)
 - [ ] 7.2 [medium] Report unqualified live support for configurations without fresh acceptance, keeping offline compatibility separate. (verify: node --test tests/lets/backlog/inventory.test.ts)
 - [ ] 7.3 [medium] Document connection defaults and shared-definition binding limits, the private state path and actionable writable-state sandbox remedies. (verify: node --test tests/lets/backlog/inventory.test.ts)
 

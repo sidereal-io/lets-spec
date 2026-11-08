@@ -220,3 +220,13 @@ test('MCP prerequisite failure precedes backend issuance in a delegated session'
   assert.equal(existsSync(join(dir, 'private', 'operations')), false);
   assert.equal(existsSync(marker), false);
 }));
+
+test('contract documents submitted observations and actor-only ordinary resume', () => {
+  const document = readFileSync(new URL('../../../docs/backlog-adapter-contract.md', import.meta.url), 'utf8').replace(/\s+/g, ' ');
+  assert.match(document, /Lets owns policy, sequencing, validation and private recovery/);
+  assert.match(document, /trusts submitted tool observations/);
+  assert.match(document, /Read operations are recorded/);
+  assert.match(document, /ordinary resume.*sole assignee.*In Progress/);
+  assert.match(document, /original.*worker.*release authority/);
+  assert.doesNotMatch(document, /Run the configured executable directly|require matching actor, session, token and In Progress/);
+});

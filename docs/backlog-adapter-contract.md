@@ -1,26 +1,31 @@
 # Backlog adapter contract
 
-This contract defines the future `lets backlog` executable boundary. It does
-not install a dispatcher or change the current GitHub workflow. The kit tests
-representative simulations; passing them does not establish provider support.
+Lets owns policy, sequencing, validation and private recovery. Agents execute
+bounded CLI or MCP actions described by one selected inert GitHub definition.
+The same definition covers issues, Projects, repository facts and PR actions.
+Lets-go remains the sole runner; steps retain their skills and report fields.
+Setup and shaping writes keep their existing owners outside this migration.
 
-Shared Backlog, Work item and Packet meanings are in the
-[project glossary](../openspec/glossary.md).
+Lets trusts submitted tool observations under the user-approved amendment to
+[ADR-015](decisions/ADR-015-lets-requests-actions-and-validates-results.md).
+It validates scope, mappings, complete observations and workflow permission;
+it cannot independently detect convincingly fabricated output. There is no
+capture service, provider executable, plugin loader or backend executor in Lets.
+The contract needs no host modification or separate code-host connection.
+
+Shared Backlog, Adapter, Work item and Packet meanings are in the
+[project glossary](../openspec/glossary.md). Definition authors should also read
+[the runtime definition reference](../lets/src/backlog/definitions.md).
 
 ## Workflow inventory
 
-The inventory table test checks structure and required mapping names; it does
-not prove preservation of every instruction. Review compares the documented
-responsibilities with the source skills.
-
-The baseline is `skills/lets-setup-backlog/SKILL.md`,
-`skills/lets-shape/SKILL.md`, `skills/lets-go/SKILL.md` and
-`overlays/AGENTS.md`. Shared policy owns decisions; adapters translate provider
-data and operations; the code host owns branches and pull requests.
+The inventory maps responsibilities; its table check alone does not prove
+workflow preservation. Source skill tests also check owning procedures,
+terminal ordering, delegated context and recovery continuations.
 
 | Behavior | Owner | Preserved outcome |
 |---|---|---|
-| Project discovery | adapter | Enumerate open candidate backlogs linked in either direction; deduplicate scoped identities. Shared policy requires exactly one. |
+| Project discovery | adapter | Enumerate open candidate backlogs linked in either direction; deduplicate scoped identities. Shared policy validates an explicit selection or requires exactly one. |
 | Project creation | adapter | Create and link a backlog for the repository owner; report permission failures. |
 | Field validation | adapter | Read and validate Kind, Priority, Size and Status mappings with exact shared meanings; preserve extra fields/options. Shared policy requires approval before destructive repair. |
 | Item search | adapter | Search and read complete issue bodies, owners, metadata, parents and shared decisions within the selected repository/backlog. |
@@ -30,282 +35,166 @@ data and operations; the code host owns branches and pull requests.
 | Directional blockers | adapter | Write and enumerate blocked-by relationships with item state; related links do not block. Incomplete enumeration cannot establish readiness. |
 | Packet validation | shared policy | Require the outcome and Kind-specific packet fields; reject placeholders and route incomplete packets back to shaping. |
 | Schema routing | shared policy | Route Chores and qualifying small changes to the minimal schema; retain new-code and shared-decision exceptions. |
-| Ready-work ranking | shared policy | Exclude other repositories, non-Todo, Epic, Wont, assigned and blocked items. Rank Must, Should, Could then lowest GitHub issue number today; the portable tie-break will be defined in the protocol. |
+| Ready-work ranking | shared policy | Exclude other repositories, non-Todo, Epic, Wont, assigned and blocked items. Rank Must, Should, Could then lowest GitHub issue number today; other identities use stable scoped code-point ordering. |
 | Claim | adapter | Check unassigned ownership, assign the actor and move to In Progress; expose races and partial progress. Shared policy requires verification before work. |
 | Release | adapter | Undo this worker's claim and restore Todo after branch creation fails; preserve another worker's ownership. |
 | Pull request references | code host | Create one branch and PR per change, stack dependent work, include the issue-closing reference and retain user-owned merge. Adapter identity supplies the reference without requiring a numeric ID. |
-| Completion | shared policy | Ready for review remains In Progress. Confirm merge through the code host, then reconcile provider automation or request an idempotent Done update through the adapter. |
+| Completion | shared policy | Ready for review remains In Progress. Retained explicit-operation conformance requires exact attributed merge proof. Existing terminal workflow stops add no completion write. |
 | Glossary handoff | shared policy | Check definition owner and merge prerequisites, verify checkpoint ancestry and owned paths, rehearse transfer, preserve user edits and import only verified glossary commits. Git operations belong to the code host; issue handoff text updates belong to the adapter. |
 
-Shaping retains persona, journey, priority and scope decisions, confirmation
-checkpoints, issue splitting and glossary ownership decisions. The adapter stores
-the resulting packets and metadata. `lets-go` retains candidate selection, packet
-checks, schema choice and OpenSpec orchestration. Setup retains the decision to
-create a missing backlog or repair an existing one. Authentication scope errors
-must remain explicit. No operation may select another provider as recovery.
 
-Archive, review, checks, commits, branch creation, PR readiness, rejection and
-archive reverts remain workflow/code-host responsibilities. Closing automation
-is evidence to reconcile after merge, rather than permission to complete early.
+Shaping retains persona, journey, priority, confirmation, splitting and glossary
+ownership decisions. Lets-go retains readiness, packet checks, schema choice and
+OpenSpec orchestration. Repository and PR facts remain attributed code-host
+observations even though their actions share the selected GitHub definition.
+Authentication or scope failure never selects another connection or provider.
 
-## Protocol 1
+## Bounded action contract
 
-Run the configured executable directly, with no shell and no appended arguments.
-Write one UTF-8 JSON object to stdin and close stdin. Read one JSON object from
-stdout; diagnostics go to stderr and must exclude credentials. Each invocation
-is a separate process. The caller supplies an absolute repository `cwd` and
-sets the process working directory to it. No adapter may infer another backlog.
+Use `lets backlog <operation> --request-file <path>` for a new request. The JSON
+contains `contractVersion: 1`, `operation`, `context` and `input`. Context carries
+the absolute repository root as cwd, provider, immutable repository identity,
+authenticated actor and selected backlog for item operations. Item identities
+are full `{provider, backlog, id}` tuples. URLs and display references are not
+identities. The first request may omit context.session; Lets allocates workerId
+and returns it before action issuance. Each caller retains its own ID.
 
-Requests contain `protocol: 1`, `operation`, `context`, `input`, and, for a
-mutation, a nonempty `mutationId` reused across retries. Read operations reject that
-envelope field and never journal or replay their results. Context requires `cwd`,
-`provider`, `repository`, `actor` and `session`. Item operations additionally
-require `backlog`; backlog.list and backlog.create must omit it. mutation.read
-also omits it when reconciling a preselection creation; otherwise it uses the
-original selected backlog. Actor identifies the
-authenticated account. A **Worker session** is one worker identity, distinct from
-that account; the wire field `session` carries it, even when workers share an
-account. Backlog and item IDs are opaque, provider-scoped strings.
-An item identity is `{provider, backlog, id}`. A **Display reference** is a
-human-readable item label, distinct from that scoped identity and optional URL.
-The wire field `item.reference` carries the display reference on returned items;
-a browser URL is optional.
+Repository identity bootstrap is read-only: `repository.read` accepts exact
+owner/name input, that owner/name as context.repository, and no assumed actor.
+Validated output supplies the immutable repository and authenticated actor for
+later calls. `backlog.list` requires complete linkage observations and applies
+the configured selection; ambiguity without a selected linked ID stops.
 
-`lets/src/backlog/protocol.ts` publishes executable required/optional
-field definitions in `INPUTS` and `OUTPUTS`; a trailing `?` marks an optional
-field. Unknown operation input and result fields are rejected. Those definitions
-are the machine-checkable protocol surface. The validators are dependency-free
-and usable by adapter authors. Nested item, capability and claim meanings are
-specified in the following sections and checked by the scenario suite.
+The caller supplies `--host-file` with actual session observations: available
+tool names in tools, timeoutMs and maxOutputBytes. Missing tools, bounds, login,
+permissions or writable state fail with an actionable prerequisite. Every
+issued action records its selected definition and connection digests, immutable
+request/input binding, operation/action/attempt IDs, permitted effects, expiry
+and required tool/arguments. Lets durably records it before returning control.
 
-At the adapter's stdin boundary, malformed JSON and unknown operations return
-`invalid_request` with effects `none`. Unsupported request protocol versions
-return `unsupported` with effects `none`. Local caller validation rejects invalid
-requests or invocation limits as `invalid_request`/`none` before execution.
-Transport start failures, signal termination, deadlines, output overflow and
-invalid responses expose `unknown_outcome`/`unknown`. The caller attempts only
-the supplied executable. The kit uses SIGKILL for deadline and output limits;
-this stops the launched process, not detached descendants or accepted provider
-writes. Combined stdout/stderr limits count raw bytes before UTF-8 decoding.
-Unexpected simulation implementation errors also report `unknown_outcome` with
-unknown effects; category words in their messages never determine classification.
+For state action, execute exactly the named tool and structured arguments within
+its timeout and output bounds. Save complete structured output, including page
+arrays, union/null fields and structured errors. Submit using
+`lets backlog submit --continuation-file <path> --submission-file <path>` and
+the session host file. Copy the issued envelope fields exactly. Output may be
+inline or reference bounded regular local output files; never transcribe facts
+into substitute success data. Optional normalized fields must match projections
+from that output. Receipt time controls acceptance when tool timestamps are
+unavailable. An MCP version may be unreported when its declared shape is valid.
 
-Success is `{protocol:1, ok:true, result:{...}}` with exit 0. Failure is
-`{protocol:1, ok:false, error:{category,message,effects}}` with nonzero exit.
-Success cannot contain error and failure cannot contain result. Categories are
-invalid_request, invalid_configuration, authentication, permission, not_found,
-unsupported, conflict, transient and unknown_outcome. Effects are none, partial
-or unknown; unknown_outcome must never promise none. Partial results must be
-reconciled using the mutation key and ownership state before proceeding.
+Read operations are recorded as private operation facts. Their records support
+duplicate acknowledgement and correction bounds; they do not reserve remote
+resources or create a workflow step log. At most two read corrections fit within
+the original deadline. Rejected writes, timeout, truncation, termination or
+partial structured failures preserve uncertainty rather than proving no effects.
 
-Enumerations return `items`, `complete` and `nextCursor`. Complete enumeration
-has a null cursor; incomplete enumeration requires a nonempty next cursor.
-The caller follows cursors and detects repeated cursors. A provider that cannot
-finish a required enumeration reports unsupported; it cannot return an empty
-complete result to hide a gap. Readiness requires complete blocker evidence.
+## Operations and policy
 
-The harness imposes a caller-selected positive timeout (default 5 seconds),
-a 1 MiB output limit and process termination on timeout/overflow. Invalid JSON,
-wrong protocol, signal termination and inconsistent exit/result are contract
-failures. A timeout on a mutation is an unknown outcome, even if the process
-was killed. Killing the client cannot roll back a provider write.
+| Operation | Existing-story behavior |
+|---|---|
+| repository.read | Read immutable repository/default branch and actor; read-only owner/name bootstrap discovers identity. |
+| backlog.list | Enumerate linked open Projects with complete coverage; core selects a configured linked ID or the sole result. |
+| item.search | Resolve scoped issue identities through complete search observations; preserve title-prefix and explicit-number semantics. |
+| item.read | Read packet/Project fields and parent identity; includeThread true requires the complete thread, false avoids fetching it. |
+| relationship.list | Read child or blocked_by relations with complete directional coverage; related links never establish blockers. |
+| candidate.list | Core excludes closed, assigned, blocked, non-Todo, Epic and Wont work; ranks Must, Should, Could then stable identity. |
+| claim.acquire | Fresh eligibility, assignment, fresh ownership, Status update and final sole-owner/In Progress verification. |
+| claim.read | Read-only current ownership verdict; never acquires, repairs Status or grants release authority. |
+| claim.release | Original-record-only cleanup, with fresh authority before each write and a final read. |
+| pull-request.read | Read an exact ID or repository/head-qualified branch PR; open first, otherwise newest. |
+| pull-request.create | Require a draft, complete preflight, absence check and fresh verification; missing isDraft confirmation is partial effects. |
+| pull-request.update | Apply a prepared complete body file while preserving other sections and closing text; verify the exact PR. |
+| pull-request.ready | Preserve the existing ready transition, confirm through a fresh read, and never merge. |
+| reference.write | Retained read-only shared conformance validates an exact attributed association; no production workflow caller. |
+| completion.write | Retained shared conformance gates explicit Done on the exact native merge and closing relation; no terminal caller. |
 
-Example read request:
+The remaining setup/shaping operations and four-provider examples remain in the
+offline contract inventory; they are not production mutations exposed by this
+GitHub migration. INPUTS and OUTPUTS in protocol.ts define required/optional
+operation fields. Unknown fields, incompatible versions and scope mismatches
+fail explicitly. The internal protocol-1 simulation envelope is a test harness,
+not a separately installed adapter transport.
 
-```json
-{"protocol":1,"operation":"item.read","context":{"cwd":"/repo","provider":"beads","backlog":"local","repository":"repo","actor":"me","session":"worker-1"},"input":{"item":{"provider":"beads","backlog":"local","id":"bd-a"}}}
-```
+Items retain scoped identity, reference, body, metadata and complete owners.
+Shared metadata meanings are Kind, Priority, Size and Status from METADATA;
+unknown values or incomplete required facts cannot establish readiness. Generic
+Status repair is not an existing-branch resume action. GitHub numeric references
+sort numerically within the selected scope; other identities use deterministic
+code-point ordering, never locale or provider search order.
 
-Example enumeration response:
+## Private recovery
 
-```json
-{"protocol":1,"ok":true,"result":{"items":[],"complete":true,"nextCursor":null}}
-```
+Pending writes reserve native item or PR resources in a shared private store
+across local worktrees, irrespective of a new worker or operation ID. PR creation
+reserves endpoint/repository/head identity, then retains learned exact PR aliases.
+Ordered resource locks, durable atomic records and conservative stale-lock
+recovery coordinate local callers. This is not a cross-machine lock or remote
+lease. Per-operation request/output scratch cannot overwrite another continuation.
 
-[ADR-014](decisions/ADR-014-backlog-adapters-use-an-executable-boundary.md)
-records why backlog adapters use an executable boundary while delegation
-resolvers remain built into `lets`. Independent authors can choose their
-language and release schedule without loading provider dependencies into `lets`.
-This extension goal carries the cost of a versioned protocol, separate
-installation and conformance checks.
+Use `lets backlog resume --operation-id <id>` with the current session host file
+to recover after restart, another worktree or scratch loss. Resume uses the
+original definition, connection, input and scope, and returns bounded reads only.
+A changed default cannot replace the recorded connection. Applied or absent
+effects with reservationCleared true permit reevaluation; unresolved effects or
+a retained reservation stop with the original ID, known effects and remedy.
+Never blindly repeat a mutation merely because reconciliation ran.
 
-Process isolation is not a sandbox. An adapter can access inherited credentials
-and local resources; separating runtime dependencies does not confine that
-access. Installing its executable is a repository trust decision.
+Duplicate accepted submissions acknowledge their recorded result without
+advancing twice. Unsupported journal versions stop without overwrite or replay.
+Failures preserve typed categories and effects: none, partial or unknown. Message
+keywords never decide outcome classification. A timeout stops waiting; it cannot
+roll back a remote mutation or establish its absence.
 
-## Operation semantics
+## Current ownership and release
 
-Every operation is confined to context.repository and context.provider. Backlog
-discovery lists linked candidate identities in that scope; creation returns a new identity.
-The caller selects exactly one and supplies context.backlog on subsequent item
-operations. Those operations, including enumeration, are confined to that backlog. Reads
-have no effects. Mutations require a key scoped to provider, backlog, repository, actor and session, bound to the
-operation and exact input. Discovery creation keys have no backlog component;
-reconcile and replay with the original preselection context, never a guessed or
-newly selected backlog;
-reusing a key with different input is invalid_request.
+For ordinary resume, require fresh complete scoped observations showing the
+authenticated actor as sole assignee and Status In Progress before unfinished
+work. No historic acquisition record, worker session or token is required.
+Claim.read clears public session/token fields rather than manufacturing history.
+The core verdicts are sole-actor, unassigned, other, multiple, status-mismatch,
+unavailable and pending-mutation. Incomplete assignee coverage is unavailable.
+A known local pending write takes precedence before backend read issuance.
 
-| Operation | Preconditions and input | Successful result and effects | Recovery |
-|---|---|---|---|
-| backlog.list | Authenticated repository context; optional cursor | Complete or paged linked backlogs; no writes | Retry reads |
-| backlog.create | Permission to create/link; title | Selected backlog ID; creates and links once | Reconcile key before recreate |
-| backlog.check | Selected backlog exists | valid and actionable mapping gaps; no writes | Fix configuration explicitly |
-| item.search | Query and optional cursor | Scoped items with packet bodies | Retry reads |
-| item.read | Existing scoped identity | Full normalized item | not_found stays explicit |
-| item.create | Title, body and shared metadata | New normalized item in selected backlog | Reconcile key to avoid duplicates |
-| item.update | Identity and targeted patch | Updated item; unrelated fields preserved | Read after uncertainty, reapply desired patch only |
-| relationship.write | Two existing identities, kind and desired present boolean | Desired relationship state | Reconcile edge, then set desired state |
-| relationship.list | Identity, kind and optional cursor | Directional edges with target state | Require complete evidence |
-| candidate.list | Selected repository context | Normalized candidate items | Shared caller filters and ranks |
-| claim.acquire | Unowned item | Verified ownership and In Progress state with declared guarantee | Reconcile ownership and status |
-| claim.read | Identity | Ownership, session, token, guarantee and status | Read before retry/progression |
-| claim.release | Identity and this session's token | released boolean; restores Todo only for own claim | Read ownership before retry |
-| reference.write | Identity and code-host reference | Stored reference without duplicate association | Read/reconcile before retry |
-| completion.write | Identity and code-host merge evidence | Done after confirmed merge | Read status; already Done succeeds |
-| mutation.read | Original mutationId in same scope | state applied, absent or unknown; original result when applied | Unknown blocks retries and progression |
-| capability.read | Selected context | Declared support and limits | Unknown capability is a gap |
+Existing branches skip Claim. After tree, branch PR, archive and record checks,
+the walk checks current ownership before every unfinished step, again after the
+previous step returns. Only sole-actor continues. Other verdicts report the
+mismatch without repair; the user assigns only themselves and sets In Progress
+in GitHub before rerunning. Pending mutations drive read-only resume, followed
+by a fresh ownership check only after effects resolve and reservations clear.
+Merged/rejected branch-scoped PRs and entirely finished runs retain their stops
+without a work-ownership check, extra metadata commit or completion write.
+An absent branch receives no historical terminal PR lookup.
 
-Authentication and permission failures require intervention; they never cause
-fallback. Invalid requests/configuration must be fixed. Conflicts preserve the
-current owner's data. Transient reads may retry with bounded backoff. A mutation
-with confirmed effects none may retry its original key; partial/unknown effects
-require reconciliation. If the provider cannot prove absence or deduplicate a
-creation, stop for manual reconciliation rather than issue another create.
+Acquisition uses best-effort GitHub assignment and Status writes; only a fresh
+sole-owner/In Progress verification authorizes work. Partial acquisition blocks
+work and another acquire. Confirmed applied recovery may resume branch creation
+only after fresh ownership. Absent/unresolved recovery stops without reacquiring.
 
-## Items and shared metadata
+Original operation records bind the worker's release authority. Release requires
+the original resolved acquisition, actor, worker, item, definition, connection and
+token; another session cannot adopt it from current public ownership. It checks
+sole actor/In Progress before resetting Todo, then sole actor/Todo before
+unassigning, then verifies unassigned/Todo. A mismatch preserves the other
+owner's state and reports explicit unreleased/uncertain recovery. Release consumes
+the old authority. A branch failure never implies cleanup succeeded.
 
-Returned items contain identity, reference, title, body, metadata and owners;
-url is optional. Identity comparisons use the full provider/backlog/id tuple,
-encoded without delimiter ambiguity. Neither a URL nor a display reference is
-an identity. Shared metadata is exactly Kind, Priority, Size and Status, using
-the values in `METADATA` in the kit. There is no generic provider-field input.
+GitHub's best-effort guarantee is a fresh snapshot, not exclusive execution.
+Assignment and Status are separate writes and another worker can race later.
+No finite test of those writes establishes atomic claim acquisition.
 
-Mappings associate each shared value with an adapter-local field/value pair.
-Each pair must have one meaning. Each mapping declares cardinality one (scalar)
-or many (label array). A scalar field cannot hold two shared meanings; a shared
-array uses disjoint value sets and initializes as an array even when absent. Reads reject missing or ambiguous values.
-The reference mapping simulator accepts scalar fields and label arrays. Updates
-remove only the old values owned by the changed mapping; other labels and fields
-remain. Production adapters must validate provider field types and permitted
-values themselves, including workflow transition constraints.
+## Retained completion conformance
 
-## Repository configuration
+Explicit reference/Done contract checks consume attributed PR facts: code-host
+provider/repository, canonical PR identity and complete native closing-issue
+relations to the exact work item. A supplied merge assertion alone, another PR,
+an unrelated commit, missing closing relationship or Done without proof fails.
+The associated PR must be MERGED with the requested nonempty merge commit.
+Already Done plus valid exact proof succeeds without another status write.
+Uncertain completion reconciles by reads rather than repeating the write.
 
-The proposed location is `lets.backlog` under `openspec/config.yaml`, one
-object rather than a list. Missing selection means GitHub and executable
-`lets-backlog-github`; setup still requires exactly one linked backlog. An
-explicit selection requires provider, executable, id and all metadata mappings.
-A bare executable name resolves through PATH; a path resolves relative to the
-repository root. Resolve once, verify executable permission, and report a
-configuration error if unavailable. Do not interpret shell syntax.
-
-Example local selection (value mappings abbreviated here; the executable
-examples in config.test.ts contain all values):
-
-```yaml
-lets:
-  backlog:
-    provider: beads
-    executable: ./bin/lets-backlog-beads
-    id: local
-    storage:
-      path: .beads
-      tracking: ignored
-    mappings: # complete Kind/Priority/Size/Status mappings required
-```
-
-The adapter validates native provider field IDs, allowed values and transitions
-before mutations. The kit checks normalized example configuration and mapping
-ambiguity; it does not parse YAML or consume production configuration. The
-current sync parser reads `schema:` only. Production parsing, dispatch and
-migration of skills are later work.
-
-Credentials come from provider login tools or environment variables. Do not
-commit tokens, passwords or API keys in selection or mappings. Missing login
-returns authentication; insufficient scope returns permission. Neither selects
-another backlog. Provider tenant/team/project context belongs to the opaque
-backlog selection or adapter-specific local configuration, not shared item
-fields. The actor in a request must match the authenticated identity.
-
-For local Beads, choose the storage location and tracked/ignored policy
-explicitly. The adapter must check that policy before writing, including any
-files generated by the selected Beads version. No implicit Git add/commit is
-permitted. A tracked choice is not permission to publish secrets.
-
-## Capabilities and selection
-
-Capabilities are named hierarchy, blockers, claims, metadata, references and
-completion. Each declares support native, emulated or unsupported and limits.
-Emulation requires a nonempty explanation of storage, visibility, permissions,
-consistency and any outcome it cannot achieve. Unknown declarations fail closed.
-A workflow step checks every required capability before its first mutation.
-Native names do not establish support; adapter acceptance must prove outcomes.
-
-Relationships use child/parent, blocked_by and related kinds. blocked_by points
-from the blocked item to its prerequisite. Hierarchy is readable both ways;
-related links never enter blocker enumeration. Deleting an edge is a desired
-state operation. Listing blockers includes their open/closed state and must be
-complete before selection proceeds.
-
-The shared caller filters repository, Todo, non-Epic, Must/Should/Could,
-unassigned and no open blockers. It ranks Must, Should, Could, then compares
-scoped identity tuples lexically by code point. The GitHub profile preserves its
-existing same-backlog numeric issue-reference tie-break. Within each GitHub
-provider/backlog group, numeric references sort before nonnumeric references;
-equal numbers and nonnumeric references fall back to the raw opaque ID. Compare
-raw tuple components by Unicode code point, never their JSON encoding.
-No locale-dependent collation or provider search ordering determines selection.
-
-Generic item creation starts at Todo. Generic item updates cannot write Status;
-claim acquire/release and merge-gated completion own status transitions.
-
-## Claim guarantees
-
-A **Claim** is a worker's recorded ownership of an item, with the backlog
-adapter's stated concurrency guarantee.
-
-A claim reports actor, session, token, status and guarantee (atomic or
-best-effort). Existing ownership is a conflict, including another session using
-the same account. Acquire checks ownership, assigns, moves to In Progress and
-verifies the result. Only matching ownership and In Progress permit build.
-Lost responses require mutation reconciliation before another acquire. A journal
-result proves a write happened, not that ownership is still current. Always run
-a fresh claim.read before starting work, including after a successful acquire,
-a replay or mutation.read; require matching actor, session, token and In Progress.
-Acquire replay and claim mutation reconciliation report conflict when the
-original claim has been released, replaced or completed. Assignment without the status transition is partial progress and
-cannot authorize a build. Repair or release only after proving current ownership.
-
-Release requires the original actor, session and token and restores Todo. A
-provider without durable session provenance cannot safely distinguish workers
-sharing an account: declare that limitation and stop uncertain release or claim
-recovery for manual reconciliation. Never remove another worker's ownership.
-
-Best-effort verification is a snapshot, not exclusive execution: another worker
-may race after verification. Do not advertise atomic guarantees for a sequence
-of assignment and status writes. The executable fake tests best-effort
-outcomes; a production atomic profile requires evidence of a provider primitive
-that enforces the declared ownership condition under concurrent attempts.
-
-## Completion evidence
-
-A **Pull request reference** is the code-host link associated with an item. It
-is distinct from the item's display reference; `reference.write` and merge
-evidence use the pull request reference.
-
-**Completion** means moving work to Done after the code host confirms merge.
-
-The caller confirms merge through its code-host integration for the associated
-PR reference, then passes that evidence to completion.write. The executable scenarios substitute
-this external boundary with caller-supplied fake merge evidence. Evidence includes the exact
-reference, merged=true and a nonempty merge commit. A provider issue body or
-PR-ready notification is not evidence. Adapters accept this evidence only from
-the trusted caller; the protocol is not an authentication mechanism.
-
-Check merge even when provider automation already set Done. After confirmation,
-already Done is success without another effect. A lost completion response is
-recovered by reading status and retrying the same desired state. Review readiness
-and archive leave In Progress; only confirmed merge permits completion.
+These checks do not add a runner completion caller. Existing native GitHub
+closing automation remains responsible for its normal behavior. Archive and
+ready transitions retain their existing workflow meaning; the user owns merge.
 
 ## Evidence matrix for representative profiles
 
@@ -325,19 +214,6 @@ completion tests cover negative and uncertain outcomes.
 | Linear GraphQL | [Issue properties](https://linear.app/docs/issue-properties-home) include status, priority, labels, estimates and directional relations. [Parent/sub-issues](https://linear.app/docs/parent-and-sub-issues) represent hierarchy. [Developer API](https://linear.app/developers/graphql) provides authenticated GraphQL access. | Identity N (workspace/team scope plus opaque ID); hierarchy/blockers N; four shared fields E via configured fields/labels; claims E best-effort; references/completion E. Atomic claim U. Wont and Size meanings must be explicit mappings rather than guessed numeric priority or estimates. | Verify workspace/team membership, cursor traversal, relation direction, all mapped values, unrelated label preservation, account/session ownership, rate limits, create deduplication and GitHub automation behavior. |
 | Local Beads | [Upstream CLI reference](https://raw.githubusercontent.com/gastownhall/beads/main/docs/CLI_REFERENCE.md), redirected upstream to gastownhall/beads, documents local IDs, child listing, dependency commands, assignment, updates, labels and close operations. | Identity N without browser URL; hierarchy/blockers N for selected CLI version; metadata E through labels/fields; claims E best-effort conservatively; references/completion E. Stronger claims U until version-specific primitives are verified. Storage/tracking policy is explicit. | Pin bd version and storage engine; verify JSON outputs, dependency orientation and related-link distinction, native claim behavior, session provenance, concurrent writers, interrupted writes, close retries and every generated file's tracking policy. |
 
-All profiles assume a selected disposable backlog, sufficient permissions and
-complete relationship reads. If those assumptions fail, capability validation
-must stop before mutation. The kit's journal models durable reconciliation but
-does not provide it for a real provider. No documentation cited here establishes
-atomic assignment-plus-status, exactly-once create or session-safe release.
-
-The shared executable lifecycle creates and retries an item, maps metadata,
-round-trips hierarchy and blockers, distinguishes related links, verifies claims,
-associates a code-host reference, rejects an unmerged completion and completes
-idempotently after merge. Broken duplicate-create and ignored-blocker fixtures
-must fail those checks. Production support additionally requires automated
-adapter tests plus an end-to-end run against the actual configured provider,
-including fault injection and cleanup. Offline fake results cannot replace it.
 
 ## Retained provider inventory
 
