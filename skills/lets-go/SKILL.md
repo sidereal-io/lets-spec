@@ -69,7 +69,7 @@ procedure ranks it.
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
 | [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-uncertain`, `claim-unavailable` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table) | Never |
-| [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run) | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
+| [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run) | The records disagree, the pull request is merged or closed, an ownership check does not return `sole-actor`, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL | this session | Nothing: the run is over | Always |
 
 ## Placeholders
@@ -557,13 +557,19 @@ matches decides. The state is the `state` that
 Read a row's record when you reach the row, not before. A step that runs
 in this walk changes the records the next row reads.
 
+Refresh ownership for each unfinished row, after the previous step
+returns. Do not reuse an earlier ownership result. Done rows and the
+terminal stops above need no ownership-for-work check.
+
 Then settle the row:
 
 - **Done:** print its Skip line from the table, filled from
   [Read the records](references/records.md#read-the-records). Go on to
   the next row.
-- **Not done:** run the step, as [Run a step](#run-a-step) says. Then
-  [read its report](#read-the-report). It checks a `done` report against
+- **Not done:** run [Check work ownership](#check-work-ownership).
+  Continue only for `sole-actor`; report any other result and end the
+  walk without repair. Then run the step, as [Run a step](#run-a-step)
+  says. Then [read its report](#read-the-report). It checks a `done` report against
   the records, and says what to print and whether the walk goes on.
 
 Next: [End of the run](#end-of-the-run), when no row is left.
@@ -596,6 +602,21 @@ A part or another procedure runs each procedure below, as
 [Claim](#claim) runs
 [Glossary preflight](references/glossary-handoff.md#glossary-preflight).
 Each one returns its result to what ran it.
+
+### Check work ownership
+
+Request `lets backlog claim.read --request-file` with a private JSON
+request for the scoped issue and this invocation's worker context. Use
+the [shared action loop](references/backlog-actions.md) for fresh facts.
+Return the core ownership verdict. Continue work only for `sole-actor`:
+the authenticated actor is the sole assignee and Status is In Progress.
+A read grants no original claim token or release authority.
+
+For any ownership mismatch, report the observed assignees and status.
+Ask the user to assign only themselves and set Status to In Progress in
+GitHub, then run lets-go again. Missing facts require a fresh complete
+read before work can continue. Make no assignment or status changes.
+This procedure returns its result to the walk; it does not end the run.
 
 ### Find the source of demand
 

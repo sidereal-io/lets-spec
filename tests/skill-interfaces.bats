@@ -3034,3 +3034,15 @@ pr_reference_says() {
   ! grep -qF 'lets-review-pr' "$repo/skills/lets-go/SKILL.md"
   ! grep -rF 'lets-review-pr' "$repo/schemas"
 }
+
+@test "each unfinished walk row refreshes work ownership" {
+  local walk check
+  walk="$(part_section 'Walk the step table' | tr -s '[:space:]' ' ')"
+  check="$(procedure_text 'Check work ownership' | tr -s '[:space:]' ' ')"
+  [[ "$walk" == *'**Not done:**'*'[Check work ownership](#check-work-ownership)'*'run the step'* ]] || false
+  [[ "$walk" == *'after the previous step returns'* ]] || false
+  [[ "$check" == *'lets backlog claim.read'* ]] || false
+  [[ "$check" == *'sole-actor'* ]] || false
+  [[ "$check" == *'assign only themselves'*'In Progress'* ]] || false
+  ! grep -qE 'lets backlog claim\.(acquire|release)' <<<"$check" || false
+}
