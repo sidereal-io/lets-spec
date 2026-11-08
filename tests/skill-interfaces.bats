@@ -3161,3 +3161,11 @@ pr_reference_says() {
   grep -qF 'lets backlog pull-request.update --request-file' <<<"$review" || false
   grep -qF 'input.bodyFile' <<<"$review" || false
 }
+
+@test "delegated steps declare their own tool access before backend issuance" {
+  local prompt
+  prompt="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-go/references/step-prompt.md")"
+  [[ "$prompt" == *'own host observations'*'--host-file'* ]] || false
+  [[ "$prompt" == *'before backend issuance'*'failed'*'no fallback'* ]] || false
+  [[ "$prompt" == *'required tools'* ]] || false
+}

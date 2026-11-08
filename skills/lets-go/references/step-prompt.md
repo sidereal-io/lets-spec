@@ -55,6 +55,9 @@ Issue: #<i>, <issue-url>. Branch: <name>. Schema: <schema>. <route line>
 ## Backlog calls
 
 Backlog connection: <connection>.
+Record your own host observations of available tools and enforceable
+bounds in private JSON; pass `--host-file` on each bounded command.
+Never copy the runner's tool-availability declaration into this step.
 Independently verify the selected connection and its required tools,
 bounds and writable shared private state before backend issuance.
 If a prerequisite is missing, return failed with the prerequisite and

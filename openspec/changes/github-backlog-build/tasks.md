@@ -100,7 +100,7 @@ Nothing is implemented or checked off by this planning restart.
 - [x] 6.10 [medium] Apply identical policy with explicitly configured compatible tool connections in both required hosts. (✓ node --test tests/lets/backlog/config.test.ts passed, 29 tests; offline host-independent configuration policy only)
 - [x] 6.11 [medium] Check the literal operation and file-argument forms in the owning procedures and shared action loop. (✓ focused bats literal-operation and prose checks passed)
 - [x] 6.12 [medium] Exercise the existing-story callout inventory with a compatible custom GitHub MCP definition and no gh executable, without claiming live MCP support. (✓ pnpm test:backlog passed, 395 tests; tsc --noEmit passed; compatible MCP coverage is offline only)
-- [ ] 6.13 [medium] Fail a delegated step before backend issuance when its selected connection's required tool is unavailable. (verify: bats tests/skill-interfaces.bats)
+- [x] 6.13 [medium] Fail a delegated step before backend issuance when its selected connection's required tool is unavailable. (✓ focused bats delegated-prerequisite and prose checks passed; missing-tool pre-issuance rejection covered by inventory suite)
 
 - [ ] 6.14 [medium] Drive a step's blocked PR write through read-only resume, re-read after resolution and return failed with recovery context if uncertainty remains. (verify: bats tests/skill-interfaces.bats)
 
