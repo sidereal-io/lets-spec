@@ -117,3 +117,21 @@ test('uncertain claim resumes through a fresh read of original scope', () => {
     assert.equal(store.get(action.operationId).pending, false);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+test('rejected write cannot regain authority through corrected output', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/rejected-write-');
+  try {
+    const { action } = submittedClaim();
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action, ['item:R1:P1:I1']);
+    assert.throws(() => store.submit(issued.continuation, '{', 200));
+    assert.equal(store.get(action.operationId).state, 'needs-reconciliation');
+    assert.equal(store.get(action.operationId).pending, true);
+    assert.throws(() => store.submit(issued.continuation, submissionFor(action, { data: { claim: {
+      actor: 'me', session: 'worker', token: 'original', status: 'In Progress', guarantee: 'best-effort',
+    } } }), 300), /reconciliation.*required/);
+    assert.equal(store.get(action.operationId).attempts.length, 2);
+    const resumed = store.resume(action.operationId, 400);
+    assert.deepEqual(resumed.action.allowedEffects, []);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

@@ -28,7 +28,7 @@ export function submittedClaim() {
   const { action: read } = submittedRead();
   const definition = loadDefinition([{ source: 'fixture:github', value: {
     ...read.definition.definition,
-    operations: { 'claim.read': { actions: { read: { bindings: {
+    operations: { 'claim.acquire': { actions: { assign: { bindings: { gh: { arguments: ['api', 'graphql', 'assign'], projection: { op: 'path', path: ['data'] } } } } } }, 'claim.read': { actions: { read: { bindings: {
       gh: { arguments: ['api', 'graphql', 'read-ownership'], projection: { op: 'path', path: ['data'] } },
     } } } } },
   } }]);

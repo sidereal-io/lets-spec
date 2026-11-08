@@ -125,6 +125,8 @@ export class OperationStore {
         if (!mapping) throw new AdapterFailure('unsupported', 'unknown', 'recorded definition mapping unavailable');
         const attempts = record.attempts.filter((entry) => (entry as { actionId: string }).actionId === action.actionId).length;
         try {
+          if (action.allowedEffects.length && record.state === 'needs-reconciliation')
+            throw new AdapterFailure('unknown_outcome', 'unknown', 'original operation reconciliation is required; corrected output cannot reactivate a write');
           if (action.allowedEffects.length === 0 && attempts >= 3)
             throw new AdapterFailure('invalid_request', 'unknown', 'read correction budget exhausted; issue a new read action');
           let value = submission;
@@ -137,6 +139,7 @@ export class OperationStore {
           const failure = error instanceof AdapterFailure ? error : new AdapterFailure('invalid_request', 'unknown', String(error));
           record.attempts.push({ actionId: action.actionId, receivedAt: now, submission: structuredClone(submission), accepted: false,
             error: { category: failure.category, effects: failure.effects, message: failure.message } });
+          if (action.allowedEffects.length) record.state = 'needs-reconciliation';
           if (!action.allowedEffects.length && (attempts >= 2 || now > action.expiresAt)) record.state = 'failed';
           this.write(record);
           throw failure;
