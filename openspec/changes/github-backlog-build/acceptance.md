@@ -117,10 +117,24 @@ terminal path requires a user-directed merge of a fresh fixture; none was
 requested or performed. Readiness, archive and production support claims do not
 follow from automated checks or the partial live evidence above.
 
-The implementation branch has not been published to PR #172. Its existing
-prototype head remains `b2ebe6a9f5d594d3d9ad645f0a416721fcec8be6` at the last
-read. Transfer must preserve that existing PR's ownership and reconcile its
-active contents with this replacement. No competing delivery PR was created.
-The test PRs above are disposable acceptance resources, not replacements for
-PR #172. Code review and finishing remain with `lets-review-build`; this build
-does not archive the change or mark PR #172 ready.
+The replacement was published to draft PR #172 by a normal fast-forward of
+its existing branch, preserving the PR's ownership and history. No competing
+delivery PR was created. The test PRs above are disposable acceptance resources, not replacements for
+PR #172.
+
+## Code review
+
+An independent Claude Opus 5.5 review of `main..1ea34426` reported ten
+findings. Six were confirmed and fixed in their own commits, with tests:
+local CLI errors and correctable rejected reads no longer ask for
+reconciliation; a preflight that fails before any write releases its
+reservation; submit uses the continuation it checked; MCP and `signal: null`
+execution reports are accepted; and caller responses name the definition by
+digest. Four were refuted against the specs and design. PR #172's Code review
+section lists each verdict.
+
+After those fixes, `pnpm test` passed all 950 Node tests, type checking and
+all 387 shell tests, `nix flake check` passed the x86_64-linux checks, and
+`openspec validate github-backlog-build --strict` passed. These offline
+results do not change the live qualification limits above. The change is not
+archived and PR #172 stays draft.
