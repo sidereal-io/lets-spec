@@ -148,3 +148,18 @@ creation. A `path` may explicitly set `optional: true` to retain a missing value
 for such core classification; this does not waive required result validation.
 Prepared body content comes from the bounded local file read by core, not from
 shell interpolation or an agent's summary.
+
+PR write operations use core sequencing. Before mutation, the definition must
+map preflight, read-existing, the specific write, and verify actions. Preflight
+returns repository facts. Read-existing uses a complete branch lookup for
+creation, or the exact PR for update/ready. An existing qualified branch PR
+prevents another creation. Only a matching accepted submission issues the next
+action, and an identical prior submission returns its recorded acknowledgement.
+
+Core reads bodyFile as a bounded UTF-8 regular file, detects concurrent file
+changes and records the bytes and SHA-256 digest before issuing any action.
+Later file edits cannot replace this prepared body. Each issued write is
+followed by a fresh exact-PR read that confirms the requested body or draft
+state. All actions retain the original operation and worker identity. The
+shared store reserves the resource throughout the sequence; no backend tool is
+executed by Lets.

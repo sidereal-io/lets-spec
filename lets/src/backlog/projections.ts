@@ -1,3 +1,4 @@
+import { selectPullRequest } from './pull-requests.ts';
 import { isDeepStrictEqual } from 'node:util';
 import { AdapterFailure } from './errors.ts';
 import { object, validateResponse } from './protocol.ts';
@@ -79,13 +80,24 @@ export function project(projection: Projection, output: unknown, scope: Record<s
 }
 export function deriveResult(operation: string, projection: Projection, output: unknown,
   scope: Record<string, unknown>, normalized?: unknown): Record<string, unknown> {
-  const result = object(project(projection, output, scope), 'projected result');
+  let result = object(project(projection, output, scope), 'projected result');
+  if (operation === 'pull-request.read' && 'pullRequests' in result) {
+    if (Object.keys(result).length !== 1 || !Array.isArray(result.pullRequests))
+      throw new AdapterFailure('invalid_request', 'unknown', 'PR candidate result must contain only the complete pullRequests array');
+    const input = object(scope.input, 'PR selection input');
+    const branch = input.branch ?? input.head;
+    if (typeof branch !== 'string' || typeof scope.repository !== 'string')
+      throw new AdapterFailure('invalid_request', 'unknown', 'branch selection requires the issued repository and head');
+    result = { pullRequest: selectPullRequest(result.pullRequests, { repository: scope.repository, branch,
+      ...(typeof input.headRepository === 'string' ? { headRepository: input.headRepository } : {}) }) };
+  }
   if (normalized !== undefined && !isDeepStrictEqual(normalized, result))
     throw new AdapterFailure('invalid_request', 'unknown', 'normalized result disagrees with submitted tool output');
   if (operation === 'pull-request.create' && result.pullRequest && typeof result.pullRequest === 'object') {
     const pr = result.pullRequest as Record<string, unknown>;
     if (typeof pr.id === 'string' && pr.id && pr.isDraft !== true)
-      throw new AdapterFailure('unknown_outcome', 'partial', `PR ${pr.id} exists without draft confirmation; reconcile this creation without repeating it`);
+      throw new AdapterFailure('unknown_outcome', 'partial', `PR ${pr.id} exists without draft confirmation; reconcile this creation without repeating it`,
+        { pullRequest: pr.id, ...(typeof pr.repository === 'string' ? { repository: pr.repository } : {}) });
   }
   validateResponse({ protocol: 1, ok: true, result }, 0, operation);
   return result;

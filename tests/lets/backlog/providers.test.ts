@@ -174,3 +174,22 @@ test('shipped draft creation returns its exact PR identity', () => {
   assert.equal((result.pullRequest as { id: string; isDraft: boolean }).id, 'PR1');
   assert.equal((result.pullRequest as { isDraft: boolean }).isDraft, true);
 });
+test('shipped branch PR read applies core open-first selection', () => {
+  const output = [{ data: { viewer: { login: 'actor' }, node: { id: 'R1', pullRequests: {
+    nodes: [{ ...githubPr.data.node, id: 'CLOSED', state: 'CLOSED', createdAt: '2026-11-09T00:00:00Z' }, githubPr.data.node],
+    totalCount: 2, pageInfo: { hasNextPage: false, endCursor: 'last' },
+  } } } }];
+  const result = deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'pull-request.read', 'read-branch', 'gh', output, { ...githubScope, input: { branch: 'feature' } });
+  assert.equal((result.pullRequest as { id: string }).id, 'PR1');
+});
+test('partial draft confirmation retains the known PR ID', () => {
+  const pr = { ...githubPr.data.node, isDraft: false };
+  assert.throws(() => deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'pull-request.create', 'create', 'gh', { data: { createPullRequest: { pullRequest: pr } } }, githubScope),
+    (error: unknown) => {
+      assert.ok(error instanceof AdapterFailure);
+      assert.deepEqual((error as AdapterFailure & { knownRemoteIds?: unknown }).knownRemoteIds, { pullRequest: 'PR1', repository: 'R1' });
+      return true;
+    });
+});

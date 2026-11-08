@@ -1,3 +1,4 @@
+import { nextPrAction } from './pr-actions.ts';
 import { projectArguments } from './projections.ts';
 import { resourceKeys as scopedKeys } from './resource-keys.ts';
 import { acquireResourceLock } from './resource-lock.ts';
@@ -27,6 +28,7 @@ export type OperationRecord = {
   attempts: unknown[];
   result?: Record<string, unknown>;
   acceptedSubmission?: unknown;
+  acknowledgements?: { submission: unknown; response: ActionResponse | CompleteResponse }[];
 };
 export type ActionResponse = {
   contractVersion: 1; operationId: string; workerId: string;
@@ -97,12 +99,14 @@ export class OperationStore {
         continuation: record.continuation };
     });
   }
-  submit(continuation: Continuation, submission: unknown, now: number): CompleteResponse {
+  submit(continuation: Continuation, submission: unknown, now: number): CompleteResponse | ActionResponse {
     const initial = this.get(continuation.operationId);
     return this.locked([`operation:${continuation.operationId}`, ...initial.resourceKeys], () => {
       const record = this.get(continuation.operationId);
       if (!isDeepStrictEqual(record.continuation, continuation))
         throw new AdapterFailure('invalid_request', 'unknown', 'continuation does not match original operation');
+      const acknowledged = record.acknowledgements?.find((entry) => isDeepStrictEqual(entry.submission, submission));
+      if (acknowledged) return structuredClone(acknowledged.response);
       if (record.state === 'complete') {
         if (!isDeepStrictEqual(record.acceptedSubmission, submission))
           throw new AdapterFailure('conflict', 'unknown', 'conflicting reuse of accepted submission');
@@ -125,7 +129,7 @@ export class OperationStore {
         } catch (error) {
           const failure = error instanceof AdapterFailure ? error : new AdapterFailure('invalid_request', 'unknown', String(error));
           record.attempts.push({ actionId: action.actionId, receivedAt: now, submission: structuredClone(submission), accepted: false,
-            error: { category: failure.category, effects: failure.effects, message: failure.message } });
+            error: { category: failure.category, effects: failure.effects, message: failure.message, ...(failure.knownRemoteIds ? { knownRemoteIds: failure.knownRemoteIds } : {}) } });
           if (action.allowedEffects.length) record.state = 'needs-reconciliation';
           if (!action.allowedEffects.length && (attempts >= 2 || now > action.expiresAt)) record.state = 'failed';
           this.write(record);
@@ -141,6 +145,25 @@ export class OperationStore {
           record.state = applied ? 'complete' : 'needs-reconciliation';
           record.pending = !applied;
         } else {
+          let next: IssuedAction | null;
+          try { next = nextPrAction(action, record.result, now); }
+          catch (error) {
+            const failure = error instanceof AdapterFailure ? error : new AdapterFailure('unknown_outcome', 'unknown', String(error));
+            record.state = failure.effects === 'none' ? 'failed' : 'needs-reconciliation';
+            record.pending = failure.effects !== 'none';
+            this.write(record);
+            throw failure;
+          }
+          if (next) {
+            record.action = next;
+            record.state = 'issued';
+            record.pending = true;
+            const response: ActionResponse = { contractVersion: 1, operationId: next.operationId, workerId: next.workerId,
+              state: 'action', action: next, continuation: record.continuation };
+            record.acknowledgements = [...(record.acknowledgements ?? []), { submission: structuredClone(submission), response: structuredClone(response) }];
+            this.write(record);
+            return response;
+          }
           record.state = 'complete';
           record.pending = false;
         }
@@ -166,7 +189,7 @@ export class OperationStore {
       const record: OperationRecord = {
         journalVersion: 1, action: structuredClone(action), resourceKeys: [...new Set(resourceKeys)].sort(),
         continuation: { operationId: action.operationId, token: randomUUID() },
-        state: 'issued', pending: action.allowedEffects.length > 0, attempts: [],
+        state: 'issued', pending: action.allowedEffects.length > 0 || ['pull-request.create', 'pull-request.update', 'pull-request.ready'].includes(action.request.operation), attempts: [],
       };
       this.write(record);
       return { contractVersion: 1, operationId: action.operationId, workerId: action.workerId,

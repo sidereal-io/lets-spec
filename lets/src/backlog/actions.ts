@@ -5,7 +5,11 @@ import type { BacklogRequest, WorkerContext } from './types.ts';
 
 export type ActionRequest = Omit<BacklogRequest, 'protocol' | 'context'> & { contractVersion: 1; context: Omit<WorkerContext, 'session'> & { session?: string } };
 export type Connection = { name: string; binding: string; options: Record<string, unknown> };
+export type PreparedBody = { path: string; body: string; digest: string };
 export type ActionParameters = {
+  validationOperation?: string;
+  preparedBody?: PreparedBody;
+  targetPullRequest?: string;
   step?: string;
   toolArguments: unknown;
   allowedEffects: string[];
@@ -19,6 +23,9 @@ export type IssuedAction<R extends ActionRequest = ActionRequest> = {
   operationId: string;
   workerId: string;
   step: string;
+  validationOperation?: string;
+  preparedBody?: PreparedBody;
+  targetPullRequest?: string;
   actionId: string;
   attemptId: string;
   mutationId?: string;
@@ -42,11 +49,15 @@ export function issueAction<R extends ActionRequest>(request: R, definition: Loa
   const workerId = request.context.session ?? randomUUID();
   return structuredClone({
     contractVersion: 1, operationId: identity.operationId ?? randomUUID(),
-    workerId, step: parameters.step ?? 'read', actionId: randomUUID(), attemptId: randomUUID(),
+    workerId, step: parameters.step ?? 'read',
+    ...(parameters.validationOperation ? { validationOperation: parameters.validationOperation } : {}),
+    ...(parameters.preparedBody ? { preparedBody: parameters.preparedBody } : {}),
+    ...(parameters.targetPullRequest ? { targetPullRequest: parameters.targetPullRequest } : {}), actionId: randomUUID(), attemptId: randomUUID(),
     ...(parameters.allowedEffects.length ? { mutationId: identity.mutationId ?? randomUUID() } : {}),
     request: { ...request, context: { ...request.context, session: workerId } },
-    inputDigest: digest({ ...request, context: { ...request.context, session: workerId } }), definition,
-    connection: { ...connection, digest: digest(connection) },
+    inputDigest: digest({ ...request, context: { ...request.context, session: workerId }, ...(parameters.preparedBody ? { preparedBody: parameters.preparedBody } : {}) }), definition,
+    connection: { name: connection.name, binding: connection.binding, options: connection.options,
+      digest: digest({ name: connection.name, binding: connection.binding, options: connection.options }) },
     tool: { kind: binding.kind, name: binding.tool, arguments: parameters.toolArguments },
     allowedEffects: parameters.allowedEffects, requiredCapabilities: parameters.requiredCapabilities,
     issuedAt: now, expiresAt: now + parameters.acceptanceMs,

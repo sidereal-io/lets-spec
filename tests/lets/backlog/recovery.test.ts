@@ -113,6 +113,8 @@ test('uncertain claim resumes through a fresh read of original scope', () => {
     const confirmed = store.submit(resumed.continuation, submissionFor(resumed.action, { data: { claim: {
       actor: 'me', session: null, token: null, status: 'In Progress', guarantee: 'best-effort',
     } } }), 6100);
+    assert.notEqual(confirmed.state, 'action');
+    if (confirmed.state === 'action') throw new Error('reconciliation must finish');
     assert.equal(confirmed.result.reconciliation, 'applied');
     assert.equal(store.get(action.operationId).pending, false);
   } finally { rmSync(dir, { recursive: true, force: true }); }

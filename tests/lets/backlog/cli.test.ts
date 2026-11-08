@@ -66,3 +66,88 @@ test('backlog CLI hands bounded actions to the caller without executing tools', 
     assert.equal(existsSync(marker), false);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+import { withBacklogCli } from './fixtures/cli.ts';
+test('PR creation CLI requests repository preflight before any write', () => withBacklogCli(async ({ dir, call, request, marker }) => {
+  const bodyFile = join(dir, 'body.md');
+  writeFileSync(bodyFile, 'Closes #1');
+  const result = await call(['pull-request.create', '--request-file', request('pull-request.create', {
+    title: 'Draft', bodyFile, base: 'main', head: 'feature', headRepository: 'R1',
+  })]);
+  assert.equal(result.state, 'action', result.reason ?? JSON.stringify(result));
+  assert.equal(result.action.step, 'preflight');
+  assert.deepEqual(result.action.allowedEffects, []);
+  assert.equal(existsSync(marker), false);
+}));
+const cliPr = { id: 'PR1', repository: 'R1', headRepository: 'R1', number: 1,
+  url: 'https://github.com/fixture/repo/pull/1', state: 'OPEN', isDraft: true, body: 'Closes #1',
+  createdAt: '2026-11-08T12:00:00Z', baseRef: 'main', headRef: 'feature', baseSha: null,
+  headSha: null, mergeCommit: null, mergeRef: null };
+test('PR creation CLI advances only through submitted bounded observations', () => withBacklogCli(async ({ dir, call, request, marker }) => {
+  const bodyFile = join(dir, 'body.md');
+  writeFileSync(bodyFile, 'Closes #1');
+  let response = await call(['pull-request.create', '--request-file', request('pull-request.create', {
+    title: 'Draft', bodyFile, base: 'main', head: 'feature', headRepository: 'R1',
+  })]);
+  const operationId = response.operationId;
+  const submit = async (output: unknown) => {
+    const path = join(dir, 'submission.json');
+    writeFileSync(path, JSON.stringify(submissionFor(response.action, { data: output })));
+    return call(['submit', '--continuation-file', response.continuationFile, '--submission-file', path]);
+  };
+  response = await submit({ repository: { id: 'R1', owner: 'fixture', name: 'repo', url: 'https://github.com/fixture/repo', defaultBranch: 'main' } });
+  assert.equal(response.state, 'action', response.reason ?? JSON.stringify(response));
+  assert.equal(response.action.step, 'read-existing');
+  const repeated = await call(['submit', '--continuation-file', response.continuationFile, '--submission-file', join(dir, 'submission.json')]);
+  assert.equal(repeated.action.actionId, response.action.actionId);
+  response = await submit({ pullRequest: null });
+  assert.equal(response.action.step, 'create');
+  assert.deepEqual(response.action.allowedEffects, ['pull-request.create']);
+  assert.equal(response.action.preparedBody.body, 'Closes #1');
+  writeFileSync(bodyFile, 'changed after issuance');
+  response = await submit({ pullRequest: cliPr });
+  assert.equal(response.action.step, 'verify');
+  assert.deepEqual(response.action.allowedEffects, []);
+  response = await submit({ pullRequest: cliPr });
+  assert.equal(response.state, 'complete', response.reason ?? JSON.stringify(response));
+  assert.equal(response.operationId, operationId);
+  assert.equal(existsSync(marker), false);
+}));
+test('PR creation CLI stops when a branch PR already exists', () => withBacklogCli(async ({ dir, call, request }) => {
+  const bodyFile = join(dir, 'body.md');
+  writeFileSync(bodyFile, 'Closes #1');
+  let response = await call(['pull-request.create', '--request-file', request('pull-request.create', {
+    title: 'Draft', bodyFile, base: 'main', head: 'feature', headRepository: 'R1',
+  })]);
+  for (const output of [
+    { repository: { id: 'R1', owner: 'fixture', name: 'repo', url: 'https://github.com/fixture/repo', defaultBranch: 'main' } },
+    { pullRequest: cliPr },
+  ]) {
+    const path = join(dir, 'submission.json');
+    writeFileSync(path, JSON.stringify(submissionFor(response.action, { data: output })));
+    response = await call(['submit', '--continuation-file', response.continuationFile, '--submission-file', path]);
+  }
+  assert.equal(response.state, 'failed');
+  assert.equal(response.category, 'conflict');
+  assert.equal(response.effects, 'none');
+}));
+test('PR body update CLI confirms the exact prepared body', () => withBacklogCli(async ({ dir, call, request, marker }) => {
+  const bodyFile = join(dir, 'body.md');
+  const body = 'Closes #1\n\nExisting section\n\nNew review evidence';
+  writeFileSync(bodyFile, body);
+  let response = await call(['pull-request.update', '--request-file', request('pull-request.update', { pullRequest: 'PR1', bodyFile })]);
+  for (const output of [
+    { repository: { id: 'R1', owner: 'fixture', name: 'repo', url: 'https://github.com/fixture/repo', defaultBranch: 'main' } },
+    { pullRequest: cliPr },
+    { pullRequest: { ...cliPr, body } },
+    { pullRequest: { ...cliPr, body } },
+  ]) {
+    assert.equal(response.state, 'action', JSON.stringify(response));
+    const path = join(dir, 'submission.json');
+    writeFileSync(path, JSON.stringify(submissionFor(response.action, { data: output })));
+    response = await call(['submit', '--continuation-file', response.continuationFile, '--submission-file', path]);
+  }
+  assert.equal(response.state, 'complete', JSON.stringify(response));
+  assert.equal(response.result.pullRequest.body, body);
+  assert.equal(existsSync(marker), false);
+}));

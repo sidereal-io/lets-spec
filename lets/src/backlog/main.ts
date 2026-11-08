@@ -1,3 +1,4 @@
+import { prepareBody, prAction } from './pr-actions.ts';
 import { projectArguments } from './projections.ts';
 import { accessSync, closeSync, constants, lstatSync, mkdirSync, openSync, readFileSync, readSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -86,8 +87,9 @@ async function run(operation: string, options: Options): Promise<void> {
     if (request.context.cwd !== process.cwd() || request.context.provider !== config.provider ||
         (config.backlog !== undefined && request.context.backlog !== config.backlog))
       throw new AdapterFailure('invalid_request', 'none', 'request scope differs from selected repository/backlog');
-    if (MUTATIONS.includes(operation)) throw new AdapterFailure('unsupported', 'none', 'production mutation sequencing is not available yet');
-    const step = operation === 'item.read' && (request.input as { includeThread?: boolean }).includeThread === true ? 'read-thread' : 'read';
+    const prWrite = ['pull-request.create', 'pull-request.update', 'pull-request.ready'].includes(operation);
+    if (MUTATIONS.includes(operation) && !prWrite) throw new AdapterFailure('unsupported', 'none', 'production mutation sequencing is not available yet');
+    const step = prWrite ? 'preflight' : operation === 'pull-request.read' && (request.input as { branch?: string }).branch !== undefined ? 'read-branch' : operation === 'item.read' && (request.input as { includeThread?: boolean }).includeThread === true ? 'read-thread' : 'read';
     const mapping = config.definition.definition.operations[operation]?.actions[step]?.bindings[config.connection.binding];
     if (!mapping) throw new AdapterFailure('unsupported', 'none', `selected definition does not map ${operation}/${step}`);
     const binding = config.definition.definition.bindings[config.connection.binding];
@@ -95,17 +97,20 @@ async function run(operation: string, options: Options): Promise<void> {
     checkActionPrerequisites(binding.tool, { toolAvailable: binding.kind === 'cli' && available(binding.tool),
       timeoutMs: bounds.timeoutMs as number | undefined, maxOutputBytes: bounds.maxOutputBytes as number | undefined }, true);
     store = new OperationStore(config.stateDir);
-    const action = issueAction(request, config.definition, config.connection, {
-      step, toolArguments: projectArguments(mapping.arguments, request.input, request.context), allowedEffects: [], requiredCapabilities: [],
+    const bodyFile = (request.input as { bodyFile?: string }).bodyFile;
+    const preparedBody = bodyFile === undefined ? undefined : prepareBody(bodyFile, bounds.maxOutputBytes as number);
+    let action = issueAction(request, config.definition, config.connection, {
+      step, preparedBody, toolArguments: prWrite ? [] : projectArguments(mapping.arguments, request.input, request.context), allowedEffects: [], requiredCapabilities: [],
       timeoutMs: bounds.timeoutMs as number, maxOutputBytes: bounds.maxOutputBytes as number,
       acceptanceMs: bounds.acceptanceMs as number | undefined ?? 60000,
     }, Date.now());
+    if (prWrite) action = prAction(action, 'preflight', Date.now());
     emit(store.issue(action));
   } catch (error) {
     const failure = error instanceof AdapterFailure ? error : new AdapterFailure('invalid_request', 'unknown', String(error));
     const response = { contractVersion: 1, operationId: continuation?.operationId ?? null, workerId: null,
       state: failure.effects === 'none' ? 'failed' : 'needs-reconciliation', category: failure.category,
-      effects: failure.effects, reason: failure.message, ...(continuation ? { continuation } : {}) };
+      effects: failure.effects, reason: failure.message, ...(failure.knownRemoteIds ? { knownRemoteIds: failure.knownRemoteIds } : {}), ...(continuation ? { continuation } : {}) };
     emit(response);
     process.exitCode = 1;
   }

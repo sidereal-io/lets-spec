@@ -94,20 +94,21 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
     uncertain('tool termination does not establish outcome; reconcile original operation');
   const translation = action.definition.definition.operations[action.request.operation]?.actions[action.step]?.bindings[action.connection.binding];
   validateObservedScope(translation?.observations, output, action.request.context);
-  const result = deriveResult(action.request.operation, projection, output,
-    action.request.context, submission.normalized);
+  const operation = action.validationOperation ?? action.request.operation;
+  const result = deriveResult(operation, projection, output,
+    { ...action.request.context, input: action.request.input }, submission.normalized);
   const input = action.request.input as Record<string, unknown>;
-  if (action.request.operation === 'item.read') {
+  if (operation === 'item.read') {
     const item = object(result.item, 'item');
     if (!isDeepStrictEqual(item.identity, input.item))
       throw new AdapterFailure('invalid_request', 'unknown', 'item result differs from issued identity');
     if (input.includeThread === true && ['comments', 'createdAt', 'lastEditedAt', 'parent'].some((field) => !Object.hasOwn(item, field)))
       throw new AdapterFailure('unknown_outcome', 'unknown', 'requested thread facts are incomplete');
   }
-  if (action.request.operation === 'repository.read' &&
+  if (operation === 'repository.read' &&
       object(result.repository, 'repository').id !== action.request.context.repository)
     throw new AdapterFailure('invalid_request', 'unknown', 'repository result differs from issued scope');
-  if (action.request.operation.startsWith('pull-request.') && result.pullRequest !== null) {
+  if (operation.startsWith('pull-request.') && result.pullRequest !== null) {
     const pr = object(result.pullRequest, 'pullRequest');
     if (pr.repository !== action.request.context.repository ||
         (input.pullRequest !== undefined && pr.id !== input.pullRequest) ||
