@@ -5,8 +5,8 @@ description: Use when writing or changing an OpenSpec spec. Says what belongs in
 
 # Writing specs
 
-A spec is a behavior contract, not an implementation plan. It says what the
-system does as seen from outside. The design says how.
+A spec states the behavior that users and other systems can rely on. It
+says what happens as seen from outside. The design explains how to build it.
 
 Read [Plain language](../lets-shape/references/plain-language.md) before writing.
 Use it for requirements and scenarios. Keep the required headings and SHALL
@@ -72,6 +72,11 @@ code. "THEN the system handles it correctly" asserts nothing.
 
 Cover the failure path as well as the success path when the requirement has
 one: the missing input, the denied request, the timeout.
+
+Before finishing, read each scenario as a person or agent who will implement
+or review it. They need to identify the actor, the starting condition and
+an observable outcome. Replace vague results such as "works correctly"
+with the value, message or state that demonstrates success.
 
 ## Changing an existing requirement
 

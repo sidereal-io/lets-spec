@@ -53,4 +53,6 @@ decision still stands.
 - **Link at most one other ADR:** the one this supersedes or builds on.
 - **Name the alternatives,** and say specifically why each lost. "Too complex" is not a reason; "needs a running server, and the app must work offline" is.
 - **Consequences both ways.** What becomes easier, and what becomes harder.
-- **Plain language.** Short sentences, active voice, the everyday word.
+- **Reader check.** A future maintainer can find the decision, explain why
+  it was chosen, and tell which constraints and consequences still apply.
+  Use concrete reasons and explain necessary technical terms.
