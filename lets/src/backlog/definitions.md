@@ -185,6 +185,14 @@ from those facts: only the authenticated actor alone with In Progress returns
 return null worker session and token; they never manufacture original release
 authority or require a historic acquisition record.
 
+Retained explicit-operation conformance reads an item with attributed
+`pullRequestObservation` facts: GitHub source/repository, canonical PR fields
+and a complete `closingIssues` page of scoped identities. Shared
+`reference.write` validation checks the exact supplied PR ID or URL and native
+closing relationship to that item. It returns the validated reference without
+issuing a remote write. This is an offline conformance boundary, not a new
+association step in lets-go or a claim of live support.
+
 `item.read` accepts optional `includeThread`, default false. The `read` action
 reads the issue body, metadata, creation/edit times and parent identity without
 requesting comments. `includeThread: true` selects `read-thread`, which returns

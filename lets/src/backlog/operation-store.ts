@@ -1,5 +1,6 @@
 import { nextPrAction, prAction, reconcilePrCreation, reconcilePrUpdate, reconcilePrReady } from './pr-actions.ts';
 import { nextClaimAction, claimAction, reconcileClaimAcquisition, reconcileClaimRelease } from './claim-actions.ts';
+import { nextCompletionAction } from './completion-actions.ts';
 import { projectArguments } from './projections.ts';
 import { resourceKeys as scopedKeys, coordinationKeys } from './resource-keys.ts';
 import { acquireResourceLock } from './resource-lock.ts';
@@ -182,7 +183,7 @@ export class OperationStore {
           record.pending = !resolved;
         } else {
           let next: IssuedAction | null;
-          try { next = nextClaimAction(action, record.result, now) ?? nextPrAction(action, record.result, now); }
+          try { next = nextCompletionAction(action, record.result) ?? nextClaimAction(action, record.result, now) ?? nextPrAction(action, record.result, now); }
           catch (error) {
             let failure = error instanceof AdapterFailure ? error : new AdapterFailure('unknown_outcome', 'unknown', String(error));
             if (action.request.operation === 'claim.release') {
@@ -217,6 +218,8 @@ export class OperationStore {
     });
   }
   issue(action: IssuedAction, aliases: string[] = []): ActionResponse | BlockedResponse {
+    if (action.request.operation === 'reference.write' && action.allowedEffects.length)
+      throw new AdapterFailure('unsupported', 'none', 'GitHub reference conformance validates an existing association without a remote write');
     const resourceKeys = [...new Set([...scopedKeys(action), ...aliases])].sort();
     return this.locked([`operation:${action.operationId}`, ...resourceKeys, ...coordinationKeys(action)], () => {
       if (action.request.operation === 'claim.release') {

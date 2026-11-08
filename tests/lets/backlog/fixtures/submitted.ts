@@ -100,6 +100,30 @@ export function acquiredClaim(store: OperationStore) {
   return { item, release, operationId };
 }
 
+export function submittedReference() {
+  const base = submittedRead().action;
+  const definition = loadDefinition([{ source: 'fixture:submitted-reference', value: {
+    ...base.definition.definition, operations: { 'reference.write': { actions: { read: { bindings: { gh: {
+      arguments: ['read-association'], projection: { op: 'path', path: ['data'] },
+    } } } } } },
+  } }]);
+  const action = issueAction({ contractVersion: 1, operation: 'reference.write', context: base.request.context,
+    input: { item: { provider: 'github', backlog: 'P1', id: 'I1' }, reference: 'PR1' } }, definition, base.connection, {
+    step: 'read', validationOperation: 'item.read', toolArguments: ['read-association'], allowedEffects: [], requiredCapabilities: [],
+    timeoutMs: 1000, maxOutputBytes: 65536, acceptanceMs: 5000,
+  }, 100);
+  const item = { identity: { provider: 'github', backlog: 'P1', id: 'I1' }, reference: '#1', title: 'Story', body: '', owners: [],
+    metadata: { Kind: 'Story', Priority: 'Must', Size: 'S', Status: 'In Progress' }, pullRequestObservation: {
+      source: { provider: 'github', repository: 'R1' },
+      pullRequest: { id: 'PR1', repository: 'R1', headRepository: 'R1', number: 1,
+        url: 'https://github.com/fixture/repo/pull/1', state: 'OPEN', isDraft: true, body: 'Closes #1',
+        createdAt: '2026-11-08T00:00:00Z', baseRef: 'main', headRef: 'feature', baseSha: null, headSha: null,
+        mergeCommit: null, mergeRef: null },
+      closingIssues: { items: [{ provider: 'github', backlog: 'P1', id: 'I1' }], complete: true, nextCursor: null },
+    } };
+  return { action, item };
+}
+
 export function pendingClaimVerification(store: OperationStore) {
   const { action, item } = nativeClaimFixture();
   const issued = store.issue(action);
