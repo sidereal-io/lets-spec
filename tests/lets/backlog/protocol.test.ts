@@ -283,3 +283,10 @@ test('optional normalized fields cannot contradict structured output', () => {
     {}, { claim: { actor: 'me', session: null, token: null, status: 'In Progress', guarantee: 'best-effort' } }),
   /normalized.*disagrees/);
 });
+
+import { validateSubmission } from '../../../lets/src/backlog/submissions.ts';
+import { submittedRead } from './fixtures/submitted.ts';
+test('matching tool output qualifies without a capture receipt', () => {
+  const { action, submission, projection } = submittedRead();
+  assert.deepEqual(validateSubmission(action, submission, projection, 200), { valid: true, gaps: [] });
+});
