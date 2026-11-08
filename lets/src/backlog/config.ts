@@ -2,50 +2,6 @@ import { resolve } from 'node:path';
 import { object } from './protocol.ts';
 import { validateMappings } from './items.ts';
 import type { Mappings } from './items.ts';
-/** Checks already-parsed examples, not a YAML parser or production consumer. */
-export function checkConfiguration(
-  document: unknown,
-  cwd: string,
-  findExecutable: (name: string) => string | undefined,
-): { provider: string; executable: string; backlog?: string } {
-  const root = object(document, 'config');
-  const lets = root.lets === undefined ? {} : object(root.lets, 'lets');
-  const selection =
-    lets.backlog === undefined
-      ? { provider: 'github', executable: 'lets-backlog-github' }
-      : object(lets.backlog, 'config lets.backlog');
-  for (const key of Object.keys(selection))
-    if (!['provider', 'executable', 'id', 'mappings', 'storage'].includes(key))
-      throw new Error(`invalid_configuration: unsupported backlog setting ${key}`);
-  for (const field of ['provider', 'executable'])
-    if (typeof selection[field] !== 'string' || !selection[field])
-      throw new Error(`invalid_configuration: ${field} required`);
-  if (lets.backlog !== undefined) {
-    if (typeof selection.id !== 'string' || !selection.id)
-      throw new Error('invalid_configuration: one backlog id required');
-    validateMappings(selection.mappings as Mappings);
-  }
-  if (selection.provider === 'beads') {
-    const storage = object(selection.storage, 'invalid_configuration: storage');
-    if (typeof storage.path !== 'string' || !storage.path)
-      throw new Error('invalid_configuration: storage.path required');
-    if (!['tracked', 'ignored'].includes(storage.tracking as string))
-      throw new Error('invalid_configuration: storage.tracking must be tracked or ignored');
-  }
-  const executable = findExecutable(
-    (selection.executable as string).includes('/')
-      ? resolve(cwd, selection.executable as string)
-      : (selection.executable as string),
-  );
-  if (!executable)
-    throw new Error('invalid_configuration: executable unavailable; no fallback');
-  return {
-    provider: selection.provider as string,
-    executable,
-    ...(typeof selection.id === 'string' ? { backlog: selection.id } : {}),
-  };
-}
-
 import { readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join } from 'node:path';
 import { homedir } from 'node:os';
@@ -89,6 +45,7 @@ export function resolveConfiguration(repository: unknown, machine: unknown, sour
     const root = object(repository, sources.repositoryFile);
     const lets = root.lets === undefined ? {} : object(root.lets, 'lets');
     selection = lets.backlog === undefined ? {} : object(lets.backlog, 'lets.backlog');
+    rejectExecutable(selection, 'lets.backlog');
     keys(selection, ['version', 'provider', 'definition', 'id', 'mappings', 'storage'], 'lets.backlog');
     if (lets.backlog !== undefined && selection.version !== 1) throw new Error('lets.backlog.version must be 1');
     if (selection.provider !== undefined) text(selection.provider, 'lets.backlog.provider');
@@ -99,6 +56,7 @@ export function resolveConfiguration(repository: unknown, machine: unknown, sour
     const user = object(machine, sources.userFile);
     if (user.version !== undefined && user.version !== 3) throw new Error('version must be 3');
     settings = user.backlog === undefined ? {} : object(user.backlog, 'backlog');
+    rejectExecutable(settings, 'backlog');
     keys(settings, ['connections', 'connection', 'stateDir'], 'backlog');
     if (settings.stateDir !== undefined) {
       text(settings.stateDir, 'backlog.stateDir');
@@ -134,4 +92,9 @@ export function resolveConfiguration(repository: unknown, machine: unknown, sour
     ...(selection.storage === undefined ? {} : { storage: selection.storage as Configuration['storage'] }),
     stateDir: settings.stateDir as string | undefined ?? join(env.XDG_STATE_HOME || join(sources.home ?? homedir(), '.local/state'), 'lets'),
   };
+}
+
+function rejectExecutable(settings: Record<string, unknown>, path: string): void {
+  for (const key of ['executable', 'adapter', 'path'])
+    if (key in settings) throw new Error(`${path}.${key} is obsolete; select an inert definition in lets.backlog.definition and configure tools under backlog.connections`);
 }

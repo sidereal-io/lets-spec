@@ -21,3 +21,8 @@ Machine settings belong under `backlog` in the existing version 3 user config.
 They cannot select another provider, Project, mapping or definition. `stateDir`
 must be an absolute path shared by local worktrees. The default is
 `$XDG_STATE_HOME/lets`, or `~/.local/state/lets`.
+
+Old `executable`, `adapter`, and adapter `path` settings are rejected with their
+file and key. Remove them, select `lets.backlog.definition` when a custom
+provider is needed, and configure backend tools under `backlog.connections`.
+No adapter program is discovered or started.
