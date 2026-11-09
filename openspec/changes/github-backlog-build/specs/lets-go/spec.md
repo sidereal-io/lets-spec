@@ -729,9 +729,12 @@ Resume SHALL issue reads only. The walk SHALL repeat its ownership check only
 when effects resolve as applied or absent and the reservation clears. Otherwise
 it SHALL report the remaining uncertainty and end. It SHALL continue work only
 for `sole-actor`; other verdicts SHALL report and end without repair. The
-overview's *Stops when* column SHALL name the ending results. For an ownership
-mismatch, ask the user to assign only themselves and set Status to In Progress
-in GitHub, then run lets-go again. Agents SHALL NOT bypass Project-field
+overview's *Stops when* column SHALL name the ending results. For `unassigned`
+or `status-mismatch`, ask the user to assign only themselves and set Status to
+In Progress in GitHub, then run lets-go again. For `other` or `multiple`, name
+the assignees and ask the user to agree ownership with them before anyone
+changes the assignment; never suggest removing another person's assignment.
+Agents SHALL NOT bypass Project-field
 ownership rules with direct provider commands.
 
 After the existing tree, PR and record checks, lets-go SHALL use fresh validated
