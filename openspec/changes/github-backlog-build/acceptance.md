@@ -131,7 +131,11 @@ Three requests that the runner built wrongly failed in Lets before any action,
 with effects `none`. A delegated plan step also ran in its own session and
 asked for confirmation, as lets-brainstorm requires. Lets-go was not taken
 through build and review build: this check covers the GitHub operations, not
-the workflow skills. PR #20 is open and ready, and is not merged.
+the workflow skills.
+
+The repository owner then merged PR #20. A fresh `pull-request.read` of its
+branch returned it as `MERGED` with merge commit `2b7203a`, the observation
+lets-go's merged-PR stop acts on. GitHub closed #19 through `Closes #19`.
 
 The shipped definition maps no GitHub action for `item.create`, `item.update`,
 `relationship.write`, `backlog.create`, `backlog.check` or `completion.write`.
@@ -139,11 +143,11 @@ They keep their offline conformance only.
 
 ## Remaining qualification and delivery boundaries
 
-Full live workflow support remains unqualified. These checks do not establish
-a complete planning/build/review journey or MCP-only live support. The merged
-terminal path requires a user-directed merge of a fresh fixture; none was
-requested or performed. Readiness, archive and production support claims do not
-follow from automated checks or the partial live evidence above.
+The user accepted the live check of every mapped GitHub operation, with the
+merged-PR read above, as the qualification for this change. Two things remain
+unqualified live: a complete planning, build and review journey through
+lets-go, and an MCP-only host. Neither follows from automated checks or from
+the evidence above.
 
 The replacement was published to draft PR #172 by a normal fast-forward of
 its existing branch, preserving the PR's ownership and history. No competing
@@ -161,8 +165,22 @@ execution reports are accepted; and caller responses name the definition by
 digest. Four were refuted against the specs and design. PR #172's Code review
 section lists each verdict.
 
-After those fixes, `pnpm test` passed all 950 Node tests, type checking and
+Merging main's plain-language pass (#225) then changed five skills, so the
+branch was reviewed again, as `main..021aaaf8`. The resolver fell back from
+Gemini to GPT 6.1 Sol, which is independent of the Claude-authored fixes and
+merge but not of the GPT-authored original work. It reported six findings. All
+six were confirmed and fixed in their own commits, with tests:
+
+- a submission to a failed operation is refused, so it cannot write past a
+  newer reservation;
+- any read failure after a write keeps effects unknown;
+- PR creation and verification check the requested base;
+- a repository-only PR request may omit the configured Project;
+- configured `mappings` are rejected while no definition applies them;
+- `item.read` reports an issue with no Kind, or not on the Project, as
+  unshaped instead of failing, so lets-go can route it to shaping.
+
+After those fixes, `pnpm test` passed all 959 Node tests, type checking and
 all 387 shell tests, `nix flake check` passed the x86_64-linux checks, and
-`openspec validate github-backlog-build --strict` passed. These offline
-results do not change the live qualification limits above. The change is not
-archived and PR #172 stays draft.
+`openspec validate github-backlog-build --strict` passed. PR #172's Code
+review section lists each verdict.
