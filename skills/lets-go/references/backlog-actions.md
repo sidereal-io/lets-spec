@@ -43,7 +43,12 @@ workflow.
    `execution` holds `outcome` (`success` only when the call finished
    normally), a CLI's `exitCode`, any terminating `signal`, and
    `timedOut` or `outputLimitExceeded` when they happened. An MCP call
-   has no exit code; omit it.
+   has no exit code; omit it. For the `preflight` action of a write,
+   also add `observed.toolVersion`: the tool's own version output, such
+   as `gh --version`. Lets refuses the write when the tool does not meet
+   the version the definition requires. Never invent a version; an MCP
+   server that reports none needs a definition that accepts
+   `unreported`.
    Copy envelope fields from the issued action, not from another
    operation. Record actual failure, timeout or truncation; do not
    invent timestamps or successful observations. Submit with

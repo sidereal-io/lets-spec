@@ -11,6 +11,38 @@ import { readyWork } from './capabilities.ts';
 import type { Candidate } from './capabilities.ts';
 import { validateIdentity } from './protocol.ts';
 
+const WRITE_OPERATIONS = ['claim.acquire', 'claim.release', 'pull-request.create', 'pull-request.update', 'pull-request.ready', 'completion.write'];
+
+function versionParts(text: string): number[] | null {
+  const match = /(\d+)(?:\.(\d+))?(?:\.(\d+))?/.exec(text);
+  return match ? match.slice(1).map((part) => Number(part ?? 0)) : null;
+}
+
+/** Reads `>=2`, `>=2.40` or an exact `2.102.0`; any other form fails closed. */
+export function versionSatisfies(reported: string, required: string): boolean {
+  const spec = /^(>=)?(\d+(?:\.\d+){0,2})$/.exec(required);
+  const have = versionParts(reported);
+  if (!spec || !have) return false;
+  const want = spec[2].split('.').map(Number);
+  if (!spec[1]) return want.every((part, index) => have[index] === part);
+  for (let index = 0; index < 3; index++) {
+    const need = want[index] ?? 0;
+    if (have[index] !== need) return have[index] > need;
+  }
+  return true;
+}
+
+/** A write's preflight must prove the selected tool meets the binding's declared versions. */
+function requireToolVersion(action: IssuedAction, observed: { toolVersion?: string } | undefined): void {
+  if (action.step !== 'preflight' || !WRITE_OPERATIONS.includes(action.request.operation)) return;
+  const required = action.definition.definition.bindings[action.connection.binding]?.versions ?? [];
+  if (!required.length || required.includes('unreported')) return;
+  const reported = observed?.toolVersion;
+  if (reported && required.some((spec) => versionSatisfies(reported, spec))) return;
+  throw new AdapterFailure('unsupported', 'none', `${action.tool.name} must meet ${required.join(' or ')} before this write, but ${reported
+    ? `reported ${reported}` : 'no observed.toolVersion was reported'}; submit this preflight again with observed.toolVersion from the tool's version command`);
+}
+
 /** Submitted bytes are trusted observations, never independently authenticated. */
 export function validateSubmission(action: IssuedAction, value: unknown, projection: Projection,
   receivedAt: number): Record<string, unknown> {
@@ -34,6 +66,7 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
           throw new Error(`observed.${field} must be text when supplied`);
     } catch (error) { throw new AdapterFailure('invalid_request', 'unknown', String(error)); }
   }
+  requireToolVersion(action, submission.observed as { toolVersion?: string } | undefined);
   const bindings = {
     operationId: action.operationId, actionId: action.actionId, attemptId: action.attemptId,
     inputDigest: action.inputDigest, definitionDigest: action.definition.digest,

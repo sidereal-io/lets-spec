@@ -43,7 +43,7 @@ export function submissionFor(action: ReturnType<typeof issueAction>, output: un
   return { contractVersion: 1, operationId: action.operationId, actionId: action.actionId,
     attemptId: action.attemptId, inputDigest: action.inputDigest, definitionDigest: action.definition.digest,
     connectionDigest: action.connection.digest, context: action.request.context, tool: action.tool,
-    execution: { outcome: 'success', exitCode: 0 }, output };
+    execution: { outcome: 'success', exitCode: 0 }, observed: { toolVersion: 'gh version 2.102.0 (2026-09-30)' }, output };
 }
 
 import { githubDefinition } from '../../../../lets/src/backlog/config.ts';

@@ -514,6 +514,37 @@ test('a preflight that fails before any write releases its reservation', () => {
     assert.equal(fresh.state, 'action');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+import { versionSatisfies } from '../../../lets/src/backlog/submissions.ts';
+test('declared tool versions read ranges and exact versions, and fail closed', () => {
+  assert.equal(versionSatisfies('gh version 2.102.0 (2026-09-30)', '>=2'), true);
+  assert.equal(versionSatisfies('gh version 1.14.0', '>=2'), false);
+  assert.equal(versionSatisfies('2.40.1', '>=2.41'), false);
+  assert.equal(versionSatisfies('2.41.0', '>=2.41'), true);
+  assert.equal(versionSatisfies('2.102.0', '2.102.0'), true);
+  assert.equal(versionSatisfies('2.102.1', '2.102.0'), false);
+  assert.equal(versionSatisfies('unknown', '>=2'), false);
+  assert.equal(versionSatisfies('2.0.0', 'graphql-v4'), false);
+});
+for (const [name, observed] of [['no reported version', undefined], ['an older gh', { toolVersion: 'gh version 1.14.0' }]] as const) {
+  test(`a write preflight with ${name} is refused before any write`, () => {
+    mkdirSync('.workspace', { recursive: true });
+    const dir = mkdtempSync('.workspace/tool-version-');
+    try {
+      const action = prAction(submittedPr(), 'preflight', 100);
+      const store = new OperationStore(join(dir, 'private'));
+      const issued = store.issue(action);
+      const repository = JSON.parse(readFileSync(new URL('./fixtures/github-repository.json', import.meta.url), 'utf8'));
+      const submission: Record<string, unknown> = { ...submissionFor(action, repository) };
+      if (observed) submission.observed = observed; else delete submission.observed;
+      assert.throws(() => store.submit(issued.continuation, submission, 200),
+        (error: unknown) => error instanceof AdapterFailure && error.category === 'unsupported' && error.effects === 'none' && /must meet >=2/.test(error.message));
+      // The agent can correct the same preflight with the version it observed.
+      const corrected = store.submit(issued.continuation, submissionFor(action, repository), 210);
+      assert.equal(corrected.state, 'action');
+      if (corrected.state === 'action') assert.equal(corrected.action.step, 'read-existing');
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+}
 test('a failed operation accepts no later submission, so it cannot write past a newer reservation', () => {
   mkdirSync('.workspace', { recursive: true });
   const dir = mkdtempSync('.workspace/pr-failed-resubmit-');
