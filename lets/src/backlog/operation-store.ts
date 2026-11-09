@@ -167,12 +167,15 @@ export class OperationStore {
               ? 'correct the submission for this same action and submit it again'
               : 'no correction remains; request a new read'}`, failure.knownRemoteIds);
           }
+          // After a write, no read failure proves the absence of effects.
+          if (wrote && failure.effects === 'none')
+            failure = new AdapterFailure(failure.category, 'unknown', `${failure.message}; an earlier write in this operation may have applied; reconcile the original operation`, failure.knownRemoteIds);
           if (failure.knownRemoteIds?.pullRequest)
             record.resourceKeys = [...new Set([...record.resourceKeys, ...scopedKeys({ ...action, targetPullRequest: failure.knownRemoteIds.pullRequest })])].sort();
           record.attempts.push({ actionId: action.actionId, receivedAt: now, submission: structuredClone(submission), accepted: false,
             error: { category: failure.category, effects: failure.effects, message: failure.message, ...(failure.knownRemoteIds ? { knownRemoteIds: failure.knownRemoteIds } : {}) } });
           if (action.allowedEffects.length) record.state = 'needs-reconciliation';
-          if (!action.allowedEffects.length && (attempts >= 2 || now > action.expiresAt)) record.state = 'failed';
+          if (!action.allowedEffects.length && (attempts >= 2 || now > action.expiresAt)) record.state = wrote ? 'needs-reconciliation' : 'failed';
           if (record.state === 'failed' && !wrote) record.pending = false;
           this.write(record);
           throw failure;
@@ -209,6 +212,10 @@ export class OperationStore {
                 `claim remains unreleased for acquisition ${input.token}; ${failure.message}; inspect current ownership and reconcile with lets backlog resume --operation-id ${action.operationId}; do not repeat cleanup blindly`,
                 { item: input.item.id, repository: action.request.context.repository });
             }
+            const wroteBefore = action.allowedEffects.length > 0 || record.acknowledgements?.some((entry) =>
+              entry.response.state === 'action' && entry.response.action.allowedEffects.length > 0) === true;
+            if (wroteBefore && failure.effects === 'none')
+              failure = new AdapterFailure(failure.category, 'unknown', `${failure.message}; an earlier write in this operation may have applied; reconcile the original operation`, failure.knownRemoteIds);
             record.state = failure.effects === 'none' ? 'failed' : 'needs-reconciliation';
             record.pending = failure.effects !== 'none';
             this.write(record);
