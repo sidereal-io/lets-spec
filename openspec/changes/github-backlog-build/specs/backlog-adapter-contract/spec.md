@@ -114,6 +114,14 @@ agent assertion of no dispatch SHALL NOT establish effects none.
 - **WHEN** a simulated backend creates an item but its response is lost
 - **THEN** reconciliation establishes the existing item's identity before another creation can be authorized
 
+One complete validated reconciliation read SHALL end the block, whatever it
+shows. Applied or absent effects resolve the operation. A partial or unresolved
+result SHALL be reported with its observation and SHALL also release the
+reservation, so no operation stays blocked for good. A later request then
+starts a new operation whose own preflight reads current state; it SHALL NOT
+repeat the original write blindly. A reconciliation read with missing facts
+settles nothing and SHALL keep the block.
+
 #### Scenario: Permission failure
 - **WHEN** validated submitted tool output establishes a denied update
 - **THEN** Lets identifies the permission failure without switching provider
@@ -346,6 +354,11 @@ string without changing the step-report schema.
 #### Scenario: PR is updated from another worktree
 - **WHEN** one worktree has an uncertain PR update and another requests ready for that same PR
 - **THEN** the second call finds the pending resource record and requests no ready write
+
+#### Scenario: Reconciliation cannot settle a lost create
+- **WHEN** a complete reconciliation read finds no PR for an uncertain create
+- **THEN** Lets reports the result as unresolved with that observation and releases the reservation
+- **AND** a later create starts a new operation with a fresh preflight read, not a write
 
 #### Scenario: Failed step reports an uncertain write
 - **WHEN** the step cannot establish a PR write's outcome

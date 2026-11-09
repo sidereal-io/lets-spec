@@ -844,7 +844,9 @@ pending mutation or blocked PR write supplies a continuation. Only resolved
 applied or absent effects with a cleared reservation SHALL permit reevaluation
 of the next action. They SHALL NOT repeat the mutation solely because recovery
 ran. Unresolved effects SHALL end the run or return the existing failed step
-report with original operation ID and resume command in its reason.
+report with original operation ID and resume command in its reason. That
+reconciliation has released the reservation, so the next run starts again
+with fresh reads.
 
 #### Scenario: Walk finds an uncertain PR create
 - **WHEN** the ownership check returns pending-mutation for an earlier plan PR creation
@@ -861,3 +863,4 @@ report with original operation ID and resume command in its reason.
 #### Scenario: Reconciliation cannot settle effects
 - **WHEN** resume cannot resolve effects or clear the reservation
 - **THEN** the caller reports uncertainty and ends without a new mutation or work step
+- **AND** the next run of lets-go is not blocked by that operation and starts with fresh reads

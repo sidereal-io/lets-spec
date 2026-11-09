@@ -114,7 +114,8 @@ trigger bounded release or an explicit unresolved recovery result.
 ### Requirement: Uncertain writes retain their original identity
 Lets SHALL retain the original mutation input, scope and identity when a result
 is missing, expired or uncertain. Retry and progression SHALL remain blocked
-until validated reconciliation observations resolve effects under core policy.
+until a complete validated reconciliation read. That read ends the block
+whatever it shows; an unresolved result is reported, not retained.
 
 #### Scenario: Claim response is lost
 - **WHEN** a claim may have reached GitHub but its response is unavailable

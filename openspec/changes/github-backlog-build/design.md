@@ -310,8 +310,15 @@ supports that classification. For an issued `gh` mutation, treat an unstructured
 failure as unknown. Only validated structured facts proving no mutation occurred
 may establish none; an error category or stderr alone cannot. Do not infer
 categories from error-message words.
-If observations cannot resolve the original write, stop with known IDs/effects
-and bounded reconciliation choices; do not recreate or retry blindly.
+If observations cannot resolve the original write, stop with known IDs/effects;
+do not recreate or retry blindly. One complete reconciliation read still ends
+the block: a partial or unresolved result is reported with its observation and
+releases the reservation. Keeping it would block the resource on that machine
+for good, with no way out. The next request starts a new operation, and its own
+preflight reads current state. On GitHub that is safe: a create first looks for
+the branch's PR and GitHub refuses a duplicate open PR, body updates and ready
+are idempotent, and a claim rereads assignees and status. A reconciliation read
+with missing facts settles nothing and keeps the block.
 
 Finite core expiry controls acceptance, not the lifetime of remote work. Each
 definition must declare tool timeout/cancellation and output limits sufficient
@@ -376,7 +383,8 @@ unfinished step that would continue work, after those stops and the ordinary
 record checks. A terminal or entirely finished run does not require assignment
 or In Progress and never writes Done. Refresh the ownership check when a later
 step would start after a preceding step returns, so an intervening ownership
-change stops work. Known unresolved mutation effects still block progression.
+change stops work. Known unresolved mutation effects end that run; the next
+run starts with fresh reads.
 
 Resolve immutable backend IDs on each invocation using scoped `item.read` or
 `item.search`. Retain the existing branch title matching and explicit-issue
