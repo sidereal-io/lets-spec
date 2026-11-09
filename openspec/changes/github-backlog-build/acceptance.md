@@ -111,35 +111,52 @@ implementation changes.
 
 ## Live check of every GitHub operation
 
-On 2026-11-09, a fresh story ran every operation that the shipped `github`
-definition maps:
-[#19](https://github.com/mstelz/test-repo-pls-ignore/issues/19) in the
-same repository and Project. It used the build of this branch, with the code
-review fixes, and the implicit `gh` connection. An agent ran each issued action
-once and submitted its output, as before.
+On 2026-11-08 and 2026-11-09, fresh resources in the same repository and
+Project ran every operation that the shipped `github` definition maps. Each
+used the implicit `gh` connection, and an agent ran each issued action once and
+submitted its output, as before. Two builds of this branch were used:
 
-| Operation | What happened |
-|---|---|
-| `repository.read`, `backlog.list`, `item.search`, `item.read`, `relationship.list`, `claim.read`, `pull-request.read` | Completed with real reads of #19, its thread, its blockers and its branch. |
-| `claim.acquire` | Assigned #19 and set it In Progress. |
-| `claim.release` | The first run failed to create a branch, because the issue title had no change name. Claim released the issue, and #19 went back to no assignee and Todo. |
-| `candidate.list` | Listed only the unclaimed Todo stories, and left out the claimed #19. |
-| `pull-request.create` | Created draft [PR #20](https://github.com/mstelz/test-repo-pls-ignore/pull/20) with `Closes #19`, and a fresh read confirmed it. |
-| `pull-request.ready` | Marked PR #20 ready, and a fresh read confirmed it. A second request on the ready PR sent the same mutation again, which GitHub treats as a no-op, and also completed. |
+- **The #19 run** used a build of `26a824e0`, which holds the first code
+  review's fixes but not the second's. A standalone Codex CLI session
+  (gpt-6.1-sol) ran the lets-go runner. A Claude Code session ran the later
+  operations directly through `lets backlog`.
+- **The final run** used a build of `625244e9`, which holds every fix. The
+  Claude Code session ran it directly through `lets backlog`.
 
-Three requests that the runner built wrongly failed in Lets before any action,
-with effects `none`. A delegated plan step also ran in its own session and
-asked for confirmation, as lets-brainstorm requires. Lets-go was not taken
-through build and review build: this check covers the GitHub operations, not
-the workflow skills.
+| Operation | Build and host | What happened |
+|---|---|---|
+| `repository.read`, `backlog.list`, `item.search`, `relationship.list`, `claim.read` | #19 run, standalone CLI | Completed with real reads of [#19](https://github.com/mstelz/test-repo-pls-ignore/issues/19), its thread, its blockers and its branch. |
+| `item.read` | #19 run, standalone CLI; final run, direct | Read #19 with its thread. On the final build it read #19's Kind and its Done status. |
+| `claim.acquire` | #19 run, standalone CLI | Assigned #19 and set it In Progress. |
+| `claim.release` | #19 run, standalone CLI | The first run failed to create a branch, because the issue title had no change name. Claim released the issue, and #19 went back to no assignee and Todo. |
+| `candidate.list` | #19 run, direct | Listed only the unclaimed Todo stories, and left out the claimed #19. |
+| `pull-request.create` | #19 run and final run, direct | Created draft [PR #20](https://github.com/mstelz/test-repo-pls-ignore/pull/20) with `Closes #19`, then draft [PR #21](https://github.com/mstelz/test-repo-pls-ignore/pull/21) on the final build, which also checked the requested base. Fresh reads confirmed both. |
+| `pull-request.read` | Both runs | Read the branch PRs, and read PR #20 as `MERGED` after the owner merged it. |
+| `pull-request.update` | Final run, direct | Updated PR #21's body, and a fresh read confirmed the exact text. Earlier, PRs #17 and #18 checked it from T3 and the standalone CLI on an older build. |
+| `pull-request.ready` | #19 run and final run, direct | Marked PRs #20 and #21 ready, and fresh reads confirmed them. A second request on the ready PR #20 sent the same mutation again, which GitHub treats as a no-op. |
 
-The repository owner then merged PR #20. A fresh `pull-request.read` of its
-branch returned it as `MERGED` with merge commit `2b7203a`, the observation
-lets-go's merged-PR stop acts on. GitHub closed #19 through `Closes #19`.
+The final run's PR requests carried no Project. The test repository selects no
+Project in its configuration, though, so the fix for a configured Project is
+checked offline only. These second-review fixes are also checked offline only:
+refusing a submission to a failed operation, keeping effects unknown after a
+write, rejecting configured mappings, reporting an unshaped issue, and ending a
+reservation after one complete reconciliation read.
+
+In the #19 run, three requests that the runner built wrongly failed in Lets
+before any action, with effects `none`. A delegated plan step also ran in its
+own session and asked for confirmation, as lets-brainstorm requires. Lets-go was
+not taken through build and review build: this check covers the GitHub
+operations, not the workflow skills.
+
+The repository owner merged PR #20. A fresh `pull-request.read` of its branch
+returned it as `MERGED` with merge commit `2b7203a`, the observation lets-go's
+merged-PR stop acts on. GitHub closed #19 through `Closes #19`. PR #21 was
+closed without merging after the final run.
 
 The shipped definition maps no GitHub action for `item.create`, `item.update`,
-`relationship.write`, `backlog.create`, `backlog.check` or `completion.write`.
-They keep their offline conformance only.
+`relationship.write`, `backlog.create`, `backlog.check`, `completion.write`,
+`capability.read`, `mutation.read` or `reference.write`. They keep their
+offline conformance only.
 
 ## Remaining qualification and delivery boundaries
 
