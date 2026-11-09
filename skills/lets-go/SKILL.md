@@ -507,7 +507,9 @@ After [Set the question mode](#set-the-question-mode), on the branch
    ```
 
    When it finds none, note that the branch has no pull request, and go
-   on. A new branch has none yet. When its `state` is `MERGED`, say that
+   on. A new branch has none yet, unless an old pull request used the
+   same branch name: the read then finds that one, and the run stops
+   below as it did before. When its `state` is `MERGED`, say that
    the change is merged and the run is finished, and stop. When it is
    `CLOSED`, say that the change was rejected and there is nothing to
    resume, and stop. These two stops run only when the branch still
