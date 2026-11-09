@@ -112,8 +112,11 @@ async function run(operation: string, options: Options): Promise<void> {
     const config = resolveConfiguration(yamlFile(repositoryFile), machine, { repositoryFile, userFile, connection: options.connection });
     const request = parseActionRequest(readInput(options.requestFile!));
     if (request.operation !== operation) throw new AdapterFailure('invalid_request', 'none', 'request operation differs from command');
+    // A PR request with no item carries repository scope only, so it may omit the backlog.
+    const repositoryOnly = operation === 'repository.read' ||
+      (operation.startsWith('pull-request.') && (request.input as { item?: unknown }).item === undefined && request.context.backlog === undefined);
     if (request.context.cwd !== process.cwd() || request.context.provider !== config.provider ||
-        (config.backlog !== undefined && !['backlog.list', 'repository.read'].includes(operation) && request.context.backlog !== config.backlog))
+        (config.backlog !== undefined && operation !== 'backlog.list' && !repositoryOnly && request.context.backlog !== config.backlog))
       throw new AdapterFailure('invalid_request', 'none', 'request scope differs from selected repository/backlog');
     if (operation === 'backlog.list' && config.backlog !== undefined)
       (request.input as { selected?: string }).selected = config.backlog;

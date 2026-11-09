@@ -223,6 +223,20 @@ test('configured Project is selected after discovery without preexisting backlog
   assert.equal(result.result.selectedBacklog.id, 'P1');
 }));
 
+test('a configured Project does not block a repository-only PR request', () => withBacklogCli(async ({ dir, call, request }) => {
+  const config = join(dir, 'openspec', 'config.yaml');
+  writeFileSync(config, readFileSync(config, 'utf8') + '    id: P1\n');
+  const issued = await call(['pull-request.read', '--request-file', request('pull-request.read', { pullRequest: 'PR1' })]);
+  assert.equal(issued.state, 'action', issued.reason);
+  const other = join(dir, 'other.json');
+  writeFileSync(other, JSON.stringify({ contractVersion: 1, operation: 'pull-request.read',
+    context: { cwd: dir, provider: 'github', repository: 'R1', actor: 'actor', backlog: 'P2' }, input: { pullRequest: 'PR1' } }));
+  const mismatched = await call(['pull-request.read', '--request-file', other]);
+  assert.equal(mismatched.state, 'failed');
+  assert.equal(mismatched.effects, 'none');
+  assert.match(mismatched.reason, /scope differs/);
+}));
+
 test('no connection config uses shipped gh with declared host bounds', () => withBacklogCli(async ({ dir, call, request }) => {
   writeFileSync(join(dir, 'openspec', 'config.yaml'), '{}\n');
   writeFileSync(join(dir, 'xdg', 'lets', 'config.yaml'), `version: 3\nbacklog:\n  stateDir: ${dir}/private\n`);
