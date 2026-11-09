@@ -651,9 +651,13 @@ shared-store mutation returns `pending-mutation` before a backend read,
 with its original continuation. The walk owns that reconciliation.
 
 For any ownership mismatch, report the observed assignees and status.
-Ask the user to assign only themselves and set Status to In Progress in
-GitHub, then run lets-go again. Missing facts require a fresh complete
-read before work can continue. Make no assignment or status changes.
+For `unassigned` or `status-mismatch`, ask the user to assign only
+themselves and set Status to In Progress in GitHub, then run lets-go
+again. For `other` or `multiple`, name the assignees and ask the user
+to agree ownership with them before anyone changes the assignment.
+Never suggest removing another person's assignment. Missing facts
+require a fresh complete read before work can continue. Make no
+assignment or status changes.
 This procedure returns its result to the walk; it does not end the run.
 
 ### Find the source of demand

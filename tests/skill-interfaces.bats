@@ -3046,7 +3046,9 @@ pr_reference_says() {
   [[ "$walk" == *'after the previous step returns'* ]] || false
   [[ "$check" == *'lets backlog claim.read'* ]] || false
   [[ "$check" == *'sole-actor'* ]] || false
-  [[ "$check" == *'assign only themselves'*'In Progress'* ]] || false
+  [[ "$check" == *'`unassigned` or `status-mismatch`'*'assign only themselves'*'In Progress'* ]] || false
+  [[ "$check" == *'`other` or `multiple`'*'agree ownership with them'* ]] || false
+  [[ "$check" == *"Never suggest removing another person's assignment"* ]] || false
   ! grep -qE 'lets backlog claim\.(acquire|release)' <<<"$check" || false
 }
 
