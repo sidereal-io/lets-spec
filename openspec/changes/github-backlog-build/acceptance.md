@@ -109,6 +109,34 @@ observations after all prerequisites passed.
 `openspec validate github-backlog-build --strict` also passed after the final
 implementation changes.
 
+## Live check of every GitHub operation
+
+On 2026-11-09, a fresh story ran every operation that the shipped `github`
+definition maps:
+[#19](https://github.com/mstelz/test-repo-pls-ignore/issues/19) in the
+same repository and Project. It used the build of this branch, with the code
+review fixes, and the implicit `gh` connection. An agent ran each issued action
+once and submitted its output, as before.
+
+| Operation | What happened |
+|---|---|
+| `repository.read`, `backlog.list`, `item.search`, `item.read`, `relationship.list`, `claim.read`, `pull-request.read` | Completed with real reads of #19, its thread, its blockers and its branch. |
+| `claim.acquire` | Assigned #19 and set it In Progress. |
+| `claim.release` | The first run failed to create a branch, because the issue title had no change name. Claim released the issue, and #19 went back to no assignee and Todo. |
+| `candidate.list` | Listed only the unclaimed Todo stories, and left out the claimed #19. |
+| `pull-request.create` | Created draft [PR #20](https://github.com/mstelz/test-repo-pls-ignore/pull/20) with `Closes #19`, and a fresh read confirmed it. |
+| `pull-request.ready` | Marked PR #20 ready, and a fresh read confirmed it. A second request on the ready PR sent the same mutation again, which GitHub treats as a no-op, and also completed. |
+
+Three requests that the runner built wrongly failed in Lets before any action,
+with effects `none`. A delegated plan step also ran in its own session and
+asked for confirmation, as lets-brainstorm requires. Lets-go was not taken
+through build and review build: this check covers the GitHub operations, not
+the workflow skills. PR #20 is open and ready, and is not merged.
+
+The shipped definition maps no GitHub action for `item.create`, `item.update`,
+`relationship.write`, `backlog.create`, `backlog.check` or `completion.write`.
+They keep their offline conformance only.
+
 ## Remaining qualification and delivery boundaries
 
 Full live workflow support remains unqualified. These checks do not establish
