@@ -22,7 +22,7 @@ export type Item = {
   comments?: { id: string; url: string; author: { __typename: string; login: string } | null;
     authorAssociation: string; createdAt: string; lastEditedAt: string | null; body: string }[];
 };
-/** `unshaped` admits an item read with no Kind, which lets-go must see to route the issue to shaping. */
+/** `unshaped` admits an item read or found with no Kind, which lets-go must see to route the issue to shaping. */
 export function validateItem(value: unknown, options: { unshaped?: boolean } = {}): asserts value is Item {
   const item = object(value, 'item');
   validateIdentity(item.identity);

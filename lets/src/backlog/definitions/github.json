@@ -11183,7 +11183,8 @@
                                   "path": [
                                     "backlog"
                                   ]
-                                }
+                                },
+                                "optional": true
                               },
                               "value": {
                                 "op": "at",
@@ -11284,15 +11285,18 @@
                                   "equals": {
                                     "op": "literal",
                                     "value": "Kind"
-                                  }
+                                  },
+                                  "optional": true
                                 },
                                 "value": {
                                   "op": "path",
                                   "path": [
                                     "value"
-                                  ]
+                                  ],
+                                  "optional": true
                                 }
-                              }
+                              },
+                              "optional": true
                             },
                             "Priority": {
                               "op": "at",
@@ -11316,7 +11320,8 @@
                                   "path": [
                                     "backlog"
                                   ]
-                                }
+                                },
+                                "optional": true
                               },
                               "value": {
                                 "op": "at",
@@ -11427,7 +11432,8 @@
                                   ],
                                   "optional": true
                                 }
-                              }
+                              },
+                              "optional": true
                             },
                             "Size": {
                               "op": "at",
@@ -11451,7 +11457,8 @@
                                   "path": [
                                     "backlog"
                                   ]
-                                }
+                                },
+                                "optional": true
                               },
                               "value": {
                                 "op": "at",
@@ -11562,7 +11569,8 @@
                                   ],
                                   "optional": true
                                 }
-                              }
+                              },
+                              "optional": true
                             },
                             "Status": {
                               "op": "at",
@@ -11586,7 +11594,8 @@
                                   "path": [
                                     "backlog"
                                   ]
-                                }
+                                },
+                                "optional": true
                               },
                               "value": {
                                 "op": "at",
@@ -11697,7 +11706,8 @@
                                   ],
                                   "optional": true
                                 }
-                              }
+                              },
+                              "optional": true
                             }
                           }
                         },

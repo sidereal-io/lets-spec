@@ -127,14 +127,26 @@ for (const [name, unshape, expected] of [
     }
   });
 }
-test('shipped issue search still requires a Kind', () => {
+test('shipped issue search resolves an issue outside the Project, so lets-go can route it to shaping', () => {
   const issue = { ...structuredClone(githubIssue.data.node), __typename: 'Issue' };
   issue.projectItems.nodes = [];
   const output = [{ data: { viewer: { login: 'actor' }, node: { id: 'R1' }, search: {
     nodes: [issue], issueCount: 1, pageInfo: { hasNextPage: false, endCursor: 'last' },
   } } }];
+  const result = deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'item.search', 'read', 'gh', output, readScope);
+  const [found] = result.items as { identity: { id: string }; metadata: unknown }[];
+  assert.equal(found.identity.id, 'I1');
+  assert.deepEqual(JSON.parse(JSON.stringify(found.metadata)), {});
+});
+test('shipped issue search still rejects an incomplete Project page', () => {
+  const issue = { ...structuredClone(githubIssue.data.node), __typename: 'Issue' };
+  issue.projectItems.pageInfo.hasNextPage = true;
+  const output = [{ data: { viewer: { login: 'actor' }, node: { id: 'R1' }, search: {
+    nodes: [issue], issueCount: 1, pageInfo: { hasNextPage: false, endCursor: 'last' },
+  } } }];
   assert.throws(() => deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
-    'item.search', 'read', 'gh', output, readScope));
+    'item.search', 'read', 'gh', output, readScope), /coverage/);
 });
 
 import { projectArguments } from '../../../lets/src/backlog/projections.ts';

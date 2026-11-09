@@ -163,7 +163,7 @@ export function validateResponse(
       if (['item.read', 'item.create', 'item.update'].includes(operation))
         validateItem(result.item, { unshaped: operation === 'item.read' });
       if (['item.search', 'candidate.list'].includes(operation))
-        for (const item of result.items as unknown[]) validateItem(item);
+        for (const item of result.items as unknown[]) validateItem(item, { unshaped: operation === 'item.search' });
       validateNestedResult(operation, result);
       if (
         'complete' in result &&
