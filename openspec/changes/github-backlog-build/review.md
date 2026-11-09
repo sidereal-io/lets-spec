@@ -60,3 +60,4 @@ CHANGES_APPLIED: yes
 8. S2: declined. D13 keeps completion in shared conformance only, and the shipped definition rejects an unmapped write as unsupported before any action.
 9. S3: declined for this change; a follow-up can document the acceptance window.
 10. S4: declined. design.md defines "worker session", and the spec uses it in that sense.
+11. Found by verification after this round, not by the reviewer: the lets-go delta spec named a Claim result `backlog-unavailable`, while the skill and its tests use `claim-unavailable`. Fixed in the commit that adds this line, which renames the result in the spec only.

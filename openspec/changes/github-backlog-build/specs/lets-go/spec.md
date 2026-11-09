@@ -151,7 +151,7 @@ Each procedure of `lets-go` SHALL end by returning to the part that ran it, with
 | *Check the prerequisite* | `resolved`, `unresolved` |
 | *Check the checkpoint* | `verified`, `checkpoint-failed`, `unresolved` |
 | *Glossary preflight* | `no-owned-edits`, `verified`, `unresolved`, `checkpoint-failed` |
-| *Claim* | `claimed`, `taken`, `unresolved`, `checkpoint-failed`, `branch-failed`, `claim-uncertain`, `backlog-unavailable` |
+| *Claim* | `claimed`, `taken`, `unresolved`, `checkpoint-failed`, `branch-failed`, `claim-uncertain`, `claim-unavailable` |
 | *Import the glossary checkpoint* | `imported`, `import-failed` |
 
 *Glossary preflight* returns `no-owned-edits` when the story owns no glossary edits, and otherwise passes on what *Check the checkpoint* returns. `verified` carries the checkpoint commits to import. *Claim*'s `claimed` carries what *Glossary preflight* returned, so *Enter the branch* runs *Import the glossary checkpoint* only after `verified`. *Commit the discovery map* ends one way only, so it names no result.
@@ -171,7 +171,7 @@ Each procedure of `lets-go` SHALL end by returning to the part that ran it, with
 *Claim* SHALL drive intermediate `action` responses through the shared bounded
 action loop; an outstanding action is not a completed claim. `claim-uncertain`
 SHALL carry known partial effects and the continuation when a
-claim cannot be confirmed. `backlog-unavailable` SHALL carry the prerequisite or
+claim cannot be confirmed. `claim-unavailable` SHALL carry the prerequisite or
 capability failure without a new claim. `branch-failed` SHALL carry the branch
 error plus release status `complete`, `none` or `unresolved`; unresolved release
 SHALL carry its continuation. These results SHALL NOT overload glossary
@@ -190,7 +190,7 @@ A part that runs a procedure SHALL name each result the procedure can return the
 
 #### Scenario: Enter the branch acts on the claim's results
 - **WHEN** the skill-interfaces test reads *Enter the branch*
-- **THEN** it finds `claimed`, `taken`, `unresolved`, `checkpoint-failed`, `branch-failed`, `claim-uncertain` and `backlog-unavailable`, each with its action, and no `branch-exists`
+- **THEN** it finds `claimed`, `taken`, `unresolved`, `checkpoint-failed`, `branch-failed`, `claim-uncertain` and `claim-unavailable`, each with its action, and no `branch-exists`
 
 #### Scenario: A claim with owned glossary edits
 - **WHEN** *Glossary preflight* returns `verified` with two checkpoint commits, and *Claim* then returns `claimed`
@@ -210,7 +210,7 @@ Resume SHALL issue reads only. Applied acquisition SHALL continue only after
 reservation clearance and a fresh ownership check. Confirmed absent effects
 SHALL end the attempt without creating a branch. Partial or unresolved effects
 SHALL be reported with the continuation and end the run. Recovery SHALL NOT
-repeat acquisition or repair status. `backlog-unavailable` SHALL report and end
+repeat acquisition or repair status. `claim-unavailable` SHALL report and end
 without starting a step or selecting another issue. On
 `branch-failed` it SHALL report both the branch error and release outcome;
 unresolved release SHALL remain visible with its continuation.
