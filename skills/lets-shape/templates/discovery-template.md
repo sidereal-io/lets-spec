@@ -1,3 +1,7 @@
+<!-- Write for the people and agents who use the backlog. Explain each journey
+in the numbered text as well as the diagram. Use the agreed persona and stage
+names, and keep status and issue links beside the stage they describe. -->
+
 # Discovery: <product name>
 
 > The living map behind the backlog: who the product serves and the journeys it supports.

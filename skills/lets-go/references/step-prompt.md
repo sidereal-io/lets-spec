@@ -42,6 +42,12 @@ Fill `<connection>` from the configured default confirmed in
 [Read the settings](../SKILL.md#read-the-settings). It is execution
 context for the step's own calls, not a request token or resolver
 choice.
+
+Resolve the installed
+[Plain language](../../lets-shape/references/plain-language.md)
+reference. Use its absolute path as `<plain-language-path>` in the
+frame. The step has none of this session's conversation.
+
 The rest of the frame is the same for every step.
 
 ````text
@@ -81,6 +87,14 @@ report's existing `reason` string. Include known effects and the missing
 observation; add no report fields and never replace the original ID with
 a later ownership read's ID. The runner must be able to recover the
 original operation after scratch loss.
+
+## Writing
+
+Plain-language method: <plain-language-path>.
+Write for the people and agents who need this result. Give them enough
+context to find the relevant information, understand it and take the
+next action. Preserve exact report keys, markers and allowed values.
+Make evidence, reasons and questions clear without changing permissions.
 
 ## Questions
 

@@ -24,6 +24,11 @@ keep full identities. Verify required tools and writable shared state in
 this session before backend issuance. Missing prerequisites return the
 existing failed report with a remedy, without another tool or connection.
 
+Read [Plain language](../lets-shape/references/plain-language.md) before
+writing.
+Use it for planning status: say which change is ready or what decision or
+artifact is still needed.
+
 ## Find where you are
 
 1. Find the default branch:
@@ -31,7 +36,10 @@ existing failed report with a remedy, without another tool or connection.
 2. Run `git branch --show-current`. On the default branch, say that
    `lets-go` starts an issue, and stop. Otherwise the branch is the
    change's name, `<name>`.
-3. Take the issue, `<i>`, and the route line from the caller. When the
+3. The current branch is `<branch>` and the change name is `<name>`.
+   Take the issue number, `<i>`, and the route line from the caller.
+   The route line names the selected schema and explains the choice. When
+   the
    caller gives no issue, search for it:
 
    ```bash
@@ -44,7 +52,7 @@ existing failed report with a remedy, without another tool or connection.
 ## Plan
 
 Invoke the `openspec-propose` skill for the change `<name>`, for issue
-#<i>. Give it the route line for the proposal's commit message. When the
+`#<i>`. Give it the route line for the proposal's commit message. When the
 route is `lets-minimal` and the flow's schema is not, say to use the
 schema `lets-minimal`. The flow's schema is the `schema:` line of
 `openspec/config.yaml`.

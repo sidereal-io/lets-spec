@@ -39,8 +39,15 @@ depends on where you run it, and on why the last run stopped:
 - **After the pull request is merged or closed:** there is nothing to
   resume, and the run stops.
 
+Read [Plain language](../lets-shape/references/plain-language.md)
+before writing.
+Use it for questions and progress reports. Keep the fixed report formats
+below; explain their evidence and reasons in plain words.
+
 ## The run at a glance
 
+Start at [Read the settings](#read-the-settings). The table below shows
+the route through the run; each linked part gives its detailed actions.
 A run goes through these parts, in this order.
 [Start from an idea](#start-from-an-idea),
 [Run the shape step](#run-the-shape-step) and
@@ -111,6 +118,7 @@ sets it.
 | `<first>` | The first model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
 | `<second>` | The second model of the ranked options | [Run a step](#run-a-step), when it ranks the options |
 | `<skill>` | The skill in the step's row of the step table | [Write the prompt](references/step-prompt.md#write-the-prompt) |
+| `<plain-language-path>` | The absolute path to the installed plain-language reference | [Write the prompt](references/step-prompt.md#write-the-prompt) |
 | `<the sentence above>` | The sentence for `## What to run`, or for shape the text of [What shape runs](references/shape.md#what-shape-runs) | [Write the prompt](references/step-prompt.md#write-the-prompt) |
 | `<kebab-name>` | The part of an issue title before ` — `, in `lets-shape`'s template | The issue's title |
 | `<one-line outcome>` | The part of an issue title after ` — `, in `lets-shape`'s template | The issue's title |
@@ -214,7 +222,7 @@ running no step. This comes before the discovery query and the title
 search, which an idea like `???` gives nothing to work with. A letter
 in any script counts: `ログを直す` is an idea.
 
-With nothing on the default branch, run the third case, `next`, of
+With nothing on the default branch, run the `next` case of
 [Find the source of demand](#find-the-source-of-demand), over the
 whole backlog. On its result:
 - **`picked`:** print:
