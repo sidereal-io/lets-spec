@@ -238,8 +238,8 @@ qualified only for a separately accepted real configuration.
 
 | Host and binding | Offline evidence | Fresh live support |
 |---|---|---|
-| unchanged T3 with shipped gh CLI | Native output fixtures, bounded engine and CLI scenarios | unqualified until its actual configuration passes fresh acceptance |
-| standalone CLI with shipped gh CLI | Same policy and configuration tests | unqualified until its actual configuration passes fresh acceptance |
+| unchanged T3 with shipped gh CLI | Native output fixtures, bounded engine and CLI scenarios | Reads, claim acquisition, draft creation, body update and interrupted-write recovery passed fresh checks (github 1.0.0, gh 2.100.0, 2026-11-08). The full lets-go plan, build and review journey is unqualified. |
+| standalone CLI with shipped gh CLI | Same policy and configuration tests | Reads, claim acquisition and release, draft creation, body update and interrupted-write recovery passed fresh checks (github 1.0.0, gh 2.100.0 and 2.102.0, 2026-11-08 and 2026-11-09). Candidate listing and ready passed from an agent session calling `lets backlog` directly. The full lets-go plan, build and review journey is unqualified. |
 | Any compatible MCP-only binding | Custom-definition read/write inventory without gh | unqualified until that exact binding passes its own fresh acceptance |
 | Jira, Linear and Beads | Representative simulation and attributed code-host conformance | unqualified; non-GitHub production PR routing remains pending |
 
