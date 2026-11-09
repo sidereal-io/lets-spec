@@ -96,7 +96,7 @@ Backend tools retain their own login configuration.
 | Scope | Authoritative home | Contents |
 |---|---|---|
 | User and machine | `$XDG_CONFIG_HOME/lets/config.yaml`, otherwise `~/.config/lets/config.yaml` | Explicit delegation resolver chain and command-shaped settings; machine-local tool availability, endpoint/connection options and private paths for delegation and backlog tools. |
-| Repository | `lets.backlog` in `openspec/config.yaml` | One backlog provider/definition selection, repository/backlog context, field/status mappings and explicit local storage/tracking policy. |
+| Repository | `lets.backlog` in `openspec/config.yaml` | One backlog provider/definition selection, repository/backlog context and explicit local storage/tracking policy. Configured field/status mappings are reserved here, and rejected until a definition applies them. |
 | Provider definition | Shipped catalog or explicitly configured custom definition source | Supported-operation tool usage, input/result mappings, prerequisite/tool versions, capability declarations, limits and evidence requirements compatible with core policy. |
 
 Machine-local backlog options belong in the existing user file under its backlog

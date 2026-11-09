@@ -12,6 +12,9 @@ active plan must be replaced before implementation continues (D1, D5).
 - **BREAKING**: replace executable-adapter transport with one request/result
   contract for shipped and explicitly selected custom provider definitions.
   Reject obsolete executable settings with a migration remedy.
+- **BREAKING**: reject configured field/status mappings (`lets.backlog.mappings`)
+  with a remedy until a definition applies them. Main accepted the key; no
+  definition used it.
 - Preserve complete scoped reads, shared readiness/ranking, native best-effort
   claim/release and private recovery. Keep existing branch and issue lookup,
   step selection, review, stack and terminal-PR behavior. Do not add runner

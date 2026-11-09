@@ -68,12 +68,16 @@ bodies specify the replacement action contract, not adapter process supervision.
 
 ### Requirement: Configuration separates shared settings from authentication
 The contract SHALL place repository provider/definition selection, backlog
-scope, mappings and local storage/tracking policy under `lets.backlog` in
+scope and local storage/tracking policy under `lets.backlog` in
 `openspec/config.yaml`, with repository version 1 for this contract. Machine
 connection/tool options and private paths SHALL live under the backlog command
 group of Lets' existing user configuration, without overriding repository
 selection. Credentials SHALL remain with backend login tools, private credential
 stores or environment variables and SHALL NOT enter committed definitions.
+
+`lets.backlog` SHALL reserve the `mappings` key for configured field/status
+mappings. Until a definition applies them, Lets SHALL reject a configured
+`mappings` value, naming the key, rather than accept and ignore it.
 
 Shipped and explicitly selected custom inert definitions SHALL share one
 validation path with definition schema version 1, supported operation-contract
@@ -86,7 +90,7 @@ before mutation without fallback. Unrelated future user settings SHALL retain
 their existing tolerance.
 
 #### Scenario: Explicit configuration is invalid
-- **WHEN** the selected definition or required mapping is invalid
+- **WHEN** the selected definition is invalid or `lets.backlog.mappings` is set
 - **THEN** validation identifies the file/key or selected source and requests no mutation or fallback
 
 #### Scenario: Provider authentication is missing
@@ -110,10 +114,6 @@ partial mutation outcomes SHALL block retry and progression until reconciliation
 of the original mutation identity, input and scope. A missing result or an
 agent assertion of no dispatch SHALL NOT establish effects none.
 
-#### Scenario: Create response is lost
-- **WHEN** a simulated backend creates an item but its response is lost
-- **THEN** reconciliation establishes the existing item's identity before another creation can be authorized
-
 One complete validated reconciliation read SHALL end the block, whatever it
 shows. Applied or absent effects resolve the operation. A partial or unresolved
 result SHALL be reported with its observation and SHALL also release the
@@ -121,6 +121,10 @@ reservation, so no operation stays blocked for good. A later request then
 starts a new operation whose own preflight reads current state; it SHALL NOT
 repeat the original write blindly. A reconciliation read with missing facts
 settles nothing and SHALL keep the block.
+
+#### Scenario: Create response is lost
+- **WHEN** a simulated backend creates an item but its response is lost
+- **THEN** reconciliation establishes the existing item's identity before another creation can be authorized
 
 #### Scenario: Permission failure
 - **WHEN** validated submitted tool output establishes a denied update
@@ -351,14 +355,14 @@ string without changing the step-report schema.
 - **WHEN** one plan session's PR create has unknown effects and a later session requests a create for the same repository and head
 - **THEN** the later call receives the continuation and issues no new create until reconciliation
 
-#### Scenario: PR is updated from another worktree
-- **WHEN** one worktree has an uncertain PR update and another requests ready for that same PR
-- **THEN** the second call finds the pending resource record and requests no ready write
-
 #### Scenario: Reconciliation cannot settle a lost create
 - **WHEN** a complete reconciliation read finds no PR for an uncertain create
 - **THEN** Lets reports the result as unresolved with that observation and releases the reservation
 - **AND** a later create starts a new operation with a fresh preflight read, not a write
+
+#### Scenario: PR is updated from another worktree
+- **WHEN** one worktree has an uncertain PR update and another requests ready for that same PR
+- **THEN** the second call finds the pending resource record and requests no ready write
 
 #### Scenario: Failed step reports an uncertain write
 - **WHEN** the step cannot establish a PR write's outcome

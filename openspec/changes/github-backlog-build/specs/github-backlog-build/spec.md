@@ -27,8 +27,9 @@ core operation and evidence guarantees.
 ### Requirement: GitHub selection is explicit and validated
 Lets SHALL select one GitHub backlog for item operations using validated release
 defaults or explicit repository provider/definition and scope settings.
-Lets SHALL reject invalid selection, incompatible versions and ambiguous field
-mappings before requesting writes, without falling back to another provider.
+Lets SHALL reject invalid selection, incompatible versions, ambiguous projected
+fields and configured field/status mappings before requesting writes, without
+falling back to another provider.
 
 #### Scenario: Multiple linked Projects
 - **WHEN** discovery returns two eligible linked Projects and none is selected

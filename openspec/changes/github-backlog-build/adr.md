@@ -56,6 +56,10 @@ This manifest is an ADR assessment, not the separate plan-review verdict.
 - [ADR-019: Reviews record in the pull request, and the schema holds only the plan](../../../docs/decisions/ADR-019-reviews-record-in-the-pull-request.md) — accepted.
 - [ADR-020: lets-go is the only runner, and lets-build is the build step](../../../docs/decisions/ADR-020-lets-go-is-the-only-runner.md) — accepted.
 
+ADR-015's repository-configuration row now reserves configured field/status
+mappings and records that Lets rejects them until a definition applies them.
+This narrows what the row allowed; it adds no strategy.
+
 ## Historical Records Reviewed
 
 - [ADR-003: One resolver program per harness, and each answers only inside its own](../../../docs/decisions/ADR-003-one-resolver-per-harness.md) — superseded by ADR-010.
