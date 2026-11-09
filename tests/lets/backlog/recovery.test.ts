@@ -573,3 +573,14 @@ test('a typed provider error on the verification read after a write keeps effect
     assert.equal(record.state, 'needs-reconciliation');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+test('a created PR on another base does not verify', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-verify-base-');
+  try {
+    const { store, operationId, verify } = createdPrVerify(dir);
+    const other = { data: { viewer: { login: 'actor' }, node: { ...rawPr, baseRefName: 'release' } } };
+    assert.throws(() => store.submit(verify.continuation, submissionFor(verify.action, other), 500),
+      (error: unknown) => error instanceof AdapterFailure && error.effects === 'unknown');
+    assert.equal(store.get(operationId).pending, true);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

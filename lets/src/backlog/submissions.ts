@@ -166,6 +166,7 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
         (input.pullRequest !== undefined && pr.id !== input.pullRequest) ||
         (input.branch !== undefined && pr.headRef !== input.branch) ||
         (input.head !== undefined && pr.headRef !== input.head) ||
+        (input.base !== undefined && ['create', 'verify'].includes(action.step) && pr.baseRef !== input.base) ||
         (input.headRepository !== undefined && pr.headRepository !== input.headRepository))
       throw new AdapterFailure('invalid_request', 'unknown', 'pull request result differs from issued scope');
   }
