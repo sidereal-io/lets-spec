@@ -13,7 +13,8 @@ export type Projection =
   | { op: 'unique'; source: Projection; path: Path }
   | { op: 'where' | 'contains'; source: Projection; value: Projection }
   | { op: 'object'; fields: Record<string, Projection> }
-  | { op: 'at' | 'map'; source: Projection; value: Projection }
+  | { op: 'at'; source: Projection; value: Projection; optional?: boolean }
+  | { op: 'map'; source: Projection; value: Projection }
   | { op: 'select' | 'filter'; source: Projection; path: Path; equals: Projection; optional?: boolean }
   | { op: 'enum'; source: Projection; values: Record<string, unknown> }
   | { op: 'union'; source: Projection; tag: Path; cases: Record<string, Projection> }
@@ -71,7 +72,11 @@ export function project(projection: Projection, output: unknown, scope: Record<s
     }
     case 'literal': return structuredClone(projection.value);
     case 'object': return Object.fromEntries(Object.entries(projection.fields).map(([key, value]) => [key, read(value)]));
-    case 'at': return read(projection.value, read(projection.source));
+    case 'at': {
+      // An optional source that is confirmed absent stays absent instead of failing the read below it.
+      const source = read(projection.source);
+      return source === undefined && projection.optional ? undefined : read(projection.value, source);
+    }
     case 'map': {
       const array = read(projection.source);
       if (!Array.isArray(array)) return gap('projection map requires an array');
@@ -158,7 +163,7 @@ export function validateProjection(value: unknown, depth = 0): asserts value is 
     nullable: ['source', 'value'], text: ['source', 'prefix'], connection: ['source'],
   };
   const fields = shapes[String(projection.op)];
-  if (!fields || Object.keys(projection).some((key) => key !== 'op' && !(['path', 'select'].includes(String(projection.op)) && key === 'optional') && !fields.includes(key)) || fields.some((key) => !Object.hasOwn(projection, key)))
+  if (!fields || Object.keys(projection).some((key) => key !== 'op' && !(['path', 'select', 'at'].includes(String(projection.op)) && key === 'optional') && !fields.includes(key)) || fields.some((key) => !Object.hasOwn(projection, key)))
     throw new Error('projection has unknown operator or fields');
   if ('optional' in projection && typeof projection.optional !== 'boolean') throw new Error('projection optional flag must be boolean');
   for (const key of ['path', 'tag']) if (key in projection) validatePath(projection[key]);

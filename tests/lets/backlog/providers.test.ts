@@ -105,6 +105,38 @@ for (const name of ['missing page', 'unknown union', 'count mismatch']) {
   });
 }
 
+const readScope = { provider: 'github', repository: 'R1', backlog: 'P1', actor: 'actor' };
+for (const [name, unshape, expected] of [
+  ['an issue outside the Project', (issue: any) => { issue.projectItems.nodes = []; }, {}],
+  ['an issue with no Kind', (issue: any) => {
+    issue.projectItems.nodes[0].fieldValues.nodes = issue.projectItems.nodes[0].fieldValues.nodes
+      .filter((node: { field?: { name: string } }) => node.field?.name !== 'Kind');
+  }, { Priority: 'Must', Size: 'M', Status: 'In Progress' }],
+] as const) {
+  test(`shipped item read reports ${name} as unshaped, not as a failed read`, () => {
+    const output = structuredClone(githubIssue);
+    unshape(output.data.node);
+    const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);
+    const thread = structuredClone(output);
+    thread.data.node.parent = null;
+    thread.data.node.comments = { nodes: [], totalCount: 0, pageInfo: { hasNextPage: false, endCursor: null } };
+    for (const [step, observed] of [['read', output], ['read-thread', [thread]]] as const) {
+      const result = deriveDefinitionResult(definition, 'item.read', step, 'gh', observed, readScope);
+      // Callers receive JSON, where an absent field is simply missing.
+      assert.deepEqual(JSON.parse(JSON.stringify((result.item as { metadata: unknown }).metadata)), expected);
+    }
+  });
+}
+test('shipped issue search still requires a Kind', () => {
+  const issue = { ...structuredClone(githubIssue.data.node), __typename: 'Issue' };
+  issue.projectItems.nodes = [];
+  const output = [{ data: { viewer: { login: 'actor' }, node: { id: 'R1' }, search: {
+    nodes: [issue], issueCount: 1, pageInfo: { hasNextPage: false, endCursor: 'last' },
+  } } }];
+  assert.throws(() => deriveDefinitionResult(loadDefinition([{ source: 'shipped:github', value: githubDefinition }]),
+    'item.search', 'read', 'gh', output, readScope));
+});
+
 import { projectArguments } from '../../../lets/src/backlog/projections.ts';
 test('shipped query arguments bind the immutable input ID without shell interpolation', () => {
   const definition = loadDefinition([{ source: 'shipped:github', value: githubDefinition }]);

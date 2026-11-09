@@ -22,7 +22,8 @@ export type Item = {
   comments?: { id: string; url: string; author: { __typename: string; login: string } | null;
     authorAssociation: string; createdAt: string; lastEditedAt: string | null; body: string }[];
 };
-export function validateItem(value: unknown): asserts value is Item {
+/** `unshaped` admits an item read with no Kind, which lets-go must see to route the issue to shaping. */
+export function validateItem(value: unknown, options: { unshaped?: boolean } = {}): asserts value is Item {
   const item = object(value, 'item');
   validateIdentity(item.identity);
   for (const field of ['reference', 'title', 'body'])
@@ -57,8 +58,9 @@ export function validateItem(value: unknown): asserts value is Item {
     }
   }
   const metadata = object(item.metadata, 'metadata');
+  const unshaped = options.unshaped === true && metadata.Kind === undefined;
   for (const [field, values] of Object.entries(METADATA))
-    if (!(metadata.Kind === 'Epic' && field !== 'Kind' && metadata[field] === undefined) &&
+    if (!((metadata.Kind === 'Epic' || unshaped) && (field !== 'Kind' || unshaped) && metadata[field] === undefined) &&
         !(values as readonly unknown[]).includes(metadata[field]))
       throw new Error(`invalid metadata.${field}`);
   for (const key of Object.keys(metadata))

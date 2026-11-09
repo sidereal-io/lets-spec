@@ -104,6 +104,10 @@ export function validateSubmission(action: IssuedAction, value: unknown, project
   const result = deriveResult(operation, projection, output,
     { ...action.request.context, input: action.request.input }, submission.normalized);
   const input = action.request.input as Record<string, unknown>;
+  // Only a direct item read may report an unshaped item; claim steps that validate as item.read need a Kind.
+  if (operation === 'item.read' && action.request.operation !== 'item.read' &&
+      (result.item as { metadata?: { Kind?: unknown } } | undefined)?.metadata?.Kind === undefined)
+    throw new AdapterFailure('invalid_request', 'unknown', 'claim observation lacks the selected Project Kind');
   if (operation === 'claim.read') {
     const claim = object(result.claim, 'ownership observation');
     if (claim.item !== undefined && !isDeepStrictEqual(claim.item, input.item))

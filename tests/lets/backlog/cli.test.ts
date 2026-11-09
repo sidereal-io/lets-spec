@@ -107,6 +107,20 @@ test('claim release CLI uses the acquired private provenance', () => withBacklog
   assert.deepEqual(response.result, { released: true });
   assert.equal(existsSync(marker), false);
 }));
+test('a claim preflight refuses an item with no Kind before any write', () => withBacklogCli(async ({ dir, call, request, marker }) => {
+  const item = { identity: { provider: 'github', backlog: 'P1', id: 'I1' }, reference: '#1', title: 'Story', body: '', owners: [],
+    metadata: {}, repository: 'R1', state: 'OPEN', blockers: { complete: true, open: [] },
+    claimContext: { actorId: 'U1', projectItemId: 'PI1', statusFieldId: 'F1', todoOptionId: 'TODO', inProgressOptionId: 'PROGRESS', linkedBacklogs: ['P1'] } };
+  const response = await call(['claim.acquire', '--request-file', request('claim.acquire', { item: item.identity })]);
+  assert.equal(response.state, 'action', response.reason);
+  const path = join(dir, 'submission.json');
+  writeFileSync(path, JSON.stringify(submissionFor(response.action, { data: { item } })));
+  const result = await call(['submit', '--continuation-file', response.continuationFile, '--submission-file', path]);
+  assert.equal(result.state, 'failed');
+  assert.equal(result.effects, 'none');
+  assert.match(result.reason, /lacks the selected Project Kind/);
+  assert.equal(existsSync(marker), false);
+}));
 test('PR creation CLI requests repository preflight before any write', () => withBacklogCli(async ({ dir, call, request, marker }) => {
   const bodyFile = join(dir, 'body.md');
   writeFileSync(bodyFile, 'Closes #1');
