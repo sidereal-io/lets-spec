@@ -509,6 +509,24 @@ test('a preflight that fails before any write releases its reservation', () => {
     assert.equal(fresh.state, 'action');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+test('a failed operation accepts no later submission, so it cannot write past a newer reservation', () => {
+  mkdirSync('.workspace', { recursive: true });
+  const dir = mkdtempSync('.workspace/pr-failed-resubmit-');
+  try {
+    const action = prAction(submittedPr(), 'preflight', 100);
+    const store = new OperationStore(join(dir, 'private'));
+    const issued = store.issue(action);
+    for (let attempt = 0; attempt < 3; attempt++)
+      assert.throws(() => store.submit(issued.continuation, '{', 200 + attempt));
+    const repository = JSON.parse(readFileSync(new URL('./fixtures/github-repository.json', import.meta.url), 'utf8'));
+    assert.throws(() => store.submit(issued.continuation, submissionFor(action, repository), 210),
+      (error: unknown) => error instanceof AdapterFailure && error.effects === 'none' && /already failed/.test(error.message));
+    const record = store.get(action.operationId);
+    assert.equal(record.state, 'failed');
+    assert.equal(record.action.step, 'preflight');
+    assert.equal(record.pending, false);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
 test('a rejected verification read after a write keeps effects unknown', () => {
   mkdirSync('.workspace', { recursive: true });
   const dir = mkdtempSync('.workspace/pr-verify-rejected-');

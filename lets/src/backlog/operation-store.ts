@@ -140,6 +140,10 @@ export class OperationStore {
         if (!mapping) throw new AdapterFailure('unsupported', 'unknown', 'recorded definition mapping unavailable');
         const attempts = record.attempts.filter((entry) => (entry as { actionId: string }).actionId === action.actionId).length;
         try {
+          // A failed operation holds no reservation, so it must never issue another action.
+          if (record.state === 'failed')
+            throw new AdapterFailure('invalid_request', 'none', `${!action.allowedEffects.length && attempts >= 3
+              ? 'read correction budget exhausted; ' : ''}this operation already failed; request a new operation`);
           if (action.allowedEffects.length && record.state === 'needs-reconciliation')
             throw new AdapterFailure('unknown_outcome', 'unknown', 'original operation reconciliation is required; corrected output cannot reactivate a write');
           if (action.allowedEffects.length === 0 && attempts >= 3)
