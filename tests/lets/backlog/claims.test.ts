@@ -191,7 +191,8 @@ test('status failure after assignment returns partial claim recovery', () => {
     assert.equal(record.pending, true);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
-test('shipped GitHub claim preflight binds native assignment identity', () => {
+for (const link of ['repository', 'project', 'neither'] as const) {
+test(`shipped GitHub claim preflight binds native assignment identity for a Project linked from the ${link} side`, () => {
   mkdirSync('.workspace', { recursive: true });
   const dir = mkdtempSync('.workspace/shipped-native-claim-');
   try {
@@ -206,14 +207,24 @@ test('shipped GitHub claim preflight binds native assignment identity', () => {
     const issue = output.data.node;
     issue.assignees = { nodes: [], totalCount: 0, pageInfo: { hasNextPage: false, endCursor: null } };
     issue.blockedBy = { nodes: [], totalCount: 0, pageInfo: { hasNextPage: false, endCursor: null } };
-    issue.repository.projectsV2 = { nodes: [{ id: 'P1' }], totalCount: 1, pageInfo: { hasNextPage: false, endCursor: null } };
+    issue.repository.projectsV2 = link === 'repository'
+      ? { nodes: [{ id: 'P1' }], totalCount: 1, pageInfo: { hasNextPage: false, endCursor: null } }
+      : { nodes: [], totalCount: 0, pageInfo: { hasNextPage: false, endCursor: null } };
     for (const field of issue.projectItems.nodes[0].fieldValues.nodes)
       if (field.field?.name === 'Status') field.name = 'Todo';
-    output.data.project = { id: 'P1', fields: { nodes: [{ __typename: 'ProjectV2SingleSelectField', id: 'F1', name: 'Status',
+    const repositories = link === 'project'
+      ? { nodes: [{ id: 'R1' }], totalCount: 1, pageInfo: { hasNextPage: false, endCursor: null } }
+      : { nodes: [], totalCount: 0, pageInfo: { hasNextPage: false, endCursor: null } };
+    output.data.project = { id: 'P1', repositories, fields: { nodes: [{ __typename: 'ProjectV2SingleSelectField', id: 'F1', name: 'Status',
       options: [{ id: 'TODO', name: 'Todo' }, { id: 'PROGRESS', name: 'In Progress' }] }],
       pageInfo: { hasNextPage: false, endCursor: null } } };
     const store = new OperationStore(join(dir, 'private'));
     const issued = store.issue(action);
+    if (link === 'neither') {
+      assert.throws(() => store.submit(issued.continuation, submissionFor(action, output), 101),
+        (error: unknown) => error instanceof AdapterFailure && error.effects === 'none' && /not linked to this repository/.test(error.message));
+      return;
+    }
     const response = store.submit(issued.continuation, submissionFor(action, output), 101);
     assert.equal(response.state, 'action');
     if (response.state !== 'action') throw new Error('native assignment required');
@@ -222,6 +233,7 @@ test('shipped GitHub claim preflight binds native assignment identity', () => {
     assert.deepEqual(response.action.allowedEffects, ['assignment']);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+}
 test('lost acquire is reconciled against current ownership', () =>
   withAdapter(async ({ call }) => {
     const item = (await call('item.create', story, 'create')).item.identity;

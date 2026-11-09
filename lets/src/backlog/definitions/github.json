@@ -5660,7 +5660,7 @@
                   },
                   {
                     "op": "literal",
-                    "value": "query=query($id:ID!,$project:ID!){viewer{id login} node(id:$id){... on Issue{id number title body url state createdAt lastEditedAt parent{id} repository{id name owner{login}projectsV2(first:100){nodes{id}totalCount pageInfo{hasNextPage endCursor}}} blockedBy(first:100){nodes{id state}totalCount pageInfo{hasNextPage endCursor}}assignees(first:100){nodes{id login}totalCount pageInfo{hasNextPage endCursor}}projectItems(first:100){nodes{id project{id number title}fieldValues(first:100){nodes{__typename ... on ProjectV2ItemFieldSingleSelectValue{name optionId field{... on ProjectV2SingleSelectField{id name}}}}pageInfo{hasNextPage endCursor}}}pageInfo{hasNextPage endCursor}}}}project:node(id:$project){... on ProjectV2{id fields(first:100){nodes{__typename ... on ProjectV2SingleSelectField{id name options{id name}}}pageInfo{hasNextPage endCursor}}}}}"
+                    "value": "query=query($id:ID!,$project:ID!){viewer{id login} node(id:$id){... on Issue{id number title body url state createdAt lastEditedAt parent{id} repository{id name owner{login}projectsV2(first:100){nodes{id}totalCount pageInfo{hasNextPage endCursor}}} blockedBy(first:100){nodes{id state}totalCount pageInfo{hasNextPage endCursor}}assignees(first:100){nodes{id login}totalCount pageInfo{hasNextPage endCursor}}projectItems(first:100){nodes{id project{id number title}fieldValues(first:100){nodes{__typename ... on ProjectV2ItemFieldSingleSelectValue{name optionId field{... on ProjectV2SingleSelectField{id name}}}}pageInfo{hasNextPage endCursor}}}pageInfo{hasNextPage endCursor}}}}project:node(id:$project){... on ProjectV2{id repositories(first:100){nodes{id}totalCount pageInfo{hasNextPage endCursor}} fields(first:100){nodes{__typename ... on ProjectV2SingleSelectField{id name options{id name}}}pageInfo{hasNextPage endCursor}}}}}"
                   },
                   {
                     "op": "literal",
@@ -6773,6 +6773,26 @@
                                   "node",
                                   "repository",
                                   "projectsV2"
+                                ]
+                              }
+                            },
+                            "value": {
+                              "op": "path",
+                              "path": [
+                                "id"
+                              ]
+                            }
+                          },
+                          "projectRepositories": {
+                            "op": "map",
+                            "source": {
+                              "op": "connection",
+                              "source": {
+                                "op": "path",
+                                "path": [
+                                  "data",
+                                  "project",
+                                  "repositories"
                                 ]
                               }
                             },

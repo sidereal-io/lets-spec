@@ -36,7 +36,10 @@ export function nextClaimAction(action: IssuedAction, result: Record<string, unk
     for (const field of ['actorId', 'projectItemId', 'statusFieldId', 'todoOptionId', 'inProgressOptionId'])
       if (typeof context[field] !== 'string' || !context[field])
         throw new AdapterFailure('unsupported', 'none', `claim requires ${field}`);
-    if (!Array.isArray(context.linkedBacklogs) || !context.linkedBacklogs.includes(action.request.context.backlog))
+    // Discovery accepts a link from either side: the repository's Projects, or the Project's repositories.
+    const linked = (Array.isArray(context.linkedBacklogs) && context.linkedBacklogs.includes(action.request.context.backlog)) ||
+      (Array.isArray(context.projectRepositories) && context.projectRepositories.includes(action.request.context.repository));
+    if (!linked)
       throw new AdapterFailure('invalid_configuration', 'none', 'selected Project is not linked to this repository');
     if (item.state !== 'OPEN' || item.repository !== action.request.context.repository ||
         !item.blockers || object(item.blockers, 'claim blockers').complete !== true ||
