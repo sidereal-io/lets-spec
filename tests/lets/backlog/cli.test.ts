@@ -107,6 +107,36 @@ test('claim release CLI uses the acquired private provenance', () => withBacklog
   assert.deepEqual(response.result, { released: true });
   assert.equal(existsSync(marker), false);
 }));
+test('a later acquisition supersedes an older release token for the same item', () => withBacklogCli(async ({ dir, call, request, marker }) => {
+  const item = { identity: { provider: 'github', backlog: 'P1', id: 'I1' }, reference: '#1', title: 'Story', body: '', owners: [],
+    metadata: { Kind: 'Story', Priority: 'Must', Size: 'S', Status: 'Todo' }, repository: 'R1', state: 'OPEN',
+    blockers: { complete: true, open: [] }, claimContext: { actorId: 'U1', projectItemId: 'PI1', statusFieldId: 'F1',
+      todoOptionId: 'TODO', inProgressOptionId: 'PROGRESS', linkedBacklogs: ['P1'] } };
+  const owned = { ...item, owners: ['actor'] };
+  const active = { ...owned, metadata: { ...item.metadata, Status: 'In Progress' } };
+  const acquire = async () => {
+    let response = await call(['claim.acquire', '--request-file', request('claim.acquire', { item: item.identity })]);
+    for (const output of [{ item }, { valid: true, gaps: [] }, { item: owned }, { valid: true, gaps: [] }, { item: active }]) {
+      const path = join(dir, 'submission.json');
+      writeFileSync(path, JSON.stringify(submissionFor(response.action, { data: output })));
+      response = await call(['submit', '--continuation-file', response.continuationFile, '--submission-file', path]);
+    }
+    assert.equal(response.state, 'complete', response.reason);
+    return response.result.claim;
+  };
+  const first = await acquire();
+  const second = await acquire();
+  assert.notEqual(first.token, second.token);
+  const releaseFile = request('claim.release', { item: item.identity, token: first.token });
+  const releaseRequest = JSON.parse(readFileSync(releaseFile, 'utf8'));
+  releaseRequest.context.session = first.session;
+  writeFileSync(releaseFile, JSON.stringify(releaseRequest));
+  const refused = await call(['claim.release', '--request-file', releaseFile]);
+  assert.equal(refused.state, 'failed');
+  assert.equal(refused.effects, 'none');
+  assert.match(refused.reason, /superseded this release authority/);
+  assert.equal(existsSync(marker), false);
+}));
 test('a claim preflight refuses an item with no Kind before any write', () => withBacklogCli(async ({ dir, call, request, marker }) => {
   const item = { identity: { provider: 'github', backlog: 'P1', id: 'I1' }, reference: '#1', title: 'Story', body: '', owners: [],
     metadata: {}, repository: 'R1', state: 'OPEN', blockers: { complete: true, open: [] },

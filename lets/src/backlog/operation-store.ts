@@ -279,6 +279,16 @@ export class OperationStore {
             (pending.action.request.input as { token: string }).token === (action.request.input as { token: string }).token &&
             pending.state === 'complete' && (pending.result?.released === true || pending.result?.reconciliation === 'applied'))
           throw new AdapterFailure('conflict', 'none', 'original acquisition was already released; old release authority cannot be reused');
+        // A later completed acquisition of the same item owns the claim now, even under the same GitHub account.
+        if (action.request.operation === 'claim.release' && file.slice(0, -5) !== (action.request.input as { token: string }).token) {
+          const later = pending.originalAction ?? pending.action;
+          const token = this.get((action.request.input as { token: string }).token);
+          const acquired = token.originalAction ?? token.action;
+          if (later.request.operation === 'claim.acquire' && pending.state === 'complete' &&
+              isDeepStrictEqual((later.request.input as { item: unknown }).item, (action.request.input as { item: unknown }).item) &&
+              later.issuedAt > acquired.issuedAt)
+            throw new AdapterFailure('conflict', 'none', 'a later acquisition of this item superseded this release authority; read current ownership instead of releasing');
+        }
         if (pending.pending && pending.resourceKeys.some((key) => resourceKeys.includes(key)))
           return { contractVersion: 1, operationId: pending.action.operationId, workerId: pending.action.workerId,
             state: 'needs-reconciliation', reason: 'pending-mutation', effects: 'unknown', continuation: pending.continuation };
