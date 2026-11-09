@@ -47,7 +47,11 @@ export function resolveConfiguration(repository: unknown, machine: unknown, sour
     if (lets.backlog !== undefined && selection.version !== 1) throw new Error('lets.backlog.version must be 1');
     if (selection.provider !== undefined) text(selection.provider, 'lets.backlog.provider');
     if (selection.id !== undefined) text(selection.id, 'lets.backlog.id');
-    if (selection.mappings !== undefined) validateMappings(selection.mappings as Mappings);
+    if (selection.mappings !== undefined) {
+      validateMappings(selection.mappings as Mappings);
+      // No definition reads configured mappings yet, so accepting them would change nothing.
+      throw new Error('lets.backlog.mappings is not supported yet: the selected definition reads Kind, Priority, Size and Status by their shared names and values; remove the key');
+    }
   } catch (error) { return fail(repoPath, String(error)); }
   try {
     const user = object(machine, sources.userFile);
@@ -86,7 +90,6 @@ export function resolveConfiguration(repository: unknown, machine: unknown, sour
     provider, definition: loaded,
     connection: selectConnection(settings, loaded, sources.userFile, sources.connection),
     ...(selection.id === undefined ? {} : { backlog: selection.id as string }),
-    ...(selection.mappings === undefined ? {} : { mappings: selection.mappings as Mappings }),
     ...(selection.storage === undefined ? {} : { storage: selection.storage as Configuration['storage'] }),
     stateDir: settings.stateDir as string | undefined ?? join(env.XDG_STATE_HOME || join(sources.home ?? homedir(), '.local/state'), 'lets'),
   };

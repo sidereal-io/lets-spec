@@ -29,6 +29,7 @@ test('compatible inert definition has a stable content binding', () => {
 });
 
 import { resolveConfiguration } from '../../../lets/src/backlog/config.ts';
+import { METADATA } from '../../../lets/src/backlog/items.ts';
 const repositoryConfig = { lets: { backlog: { version: 1, provider: 'github', id: 'P1', definition: './provider.json' } } };
 const machineConfig = { version: 3, backlog: { stateDir: '/private/lets' } };
 test('repository selection resolves custom source relative to its config file', () => {
@@ -41,6 +42,14 @@ test('repository selection resolves custom source relative to its config file', 
   assert.equal(configured.provider, 'github');
   assert.equal(configured.backlog, 'P1');
   assert.equal(configured.stateDir, '/private/lets');
+});
+test('configured mappings are rejected while no definition applies them', () => {
+  const mappings = Object.fromEntries(Object.entries(METADATA).map(([field, values]) => [field, {
+    field: field === 'Status' ? 'Workflow' : field, cardinality: 'one',
+    values: Object.fromEntries(values.map((value) => [value, value === 'In Progress' ? 'Active' : value])) }]));
+  assert.throws(() => resolveConfiguration({ lets: { backlog: { ...repositoryConfig.lets.backlog, mappings } } }, machineConfig, {
+    repositoryFile: '/repo/openspec/config.yaml', userFile: '/user/config.yaml', readDefinition: () => definition,
+  }), /mappings is not supported yet/);
 });
 test('machine options cannot override repository provider', () => {
   assert.throws(() => resolveConfiguration(repositoryConfig,

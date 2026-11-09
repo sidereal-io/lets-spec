@@ -183,8 +183,10 @@ independent-capture design disguised as adapter translation.
 ### 3. Configure the integration, independent of agent host
 
 Repository `openspec/config.yaml` owns `lets.backlog.version: 1`, provider and
-definition selection, one backlog scope, field/status mappings and any local
-storage/tracking policy. Default selection is the shipped GitHub definition;
+definition selection, one backlog scope and any local storage/tracking policy.
+It reserves field/status mappings: no definition applies them yet, so Lets
+rejects a configured `mappings` key rather than accept and ignore it. Default
+selection is the shipped GitHub definition;
 multiple linked Projects still require explicit selection. A selected Project
 is checked against the repository before item operations. Identity preflight
 reads may start with the exact configured endpoint and repository owner/name;

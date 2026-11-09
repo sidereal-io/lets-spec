@@ -260,7 +260,9 @@ its offline checks pass.
 ## Configuration and writable state
 
 Repository selection belongs in openspec/config.yaml under lets.backlog. Version
-1 accepts provider, definition, id, mappings and optional local storage policy.
+1 accepts provider, definition, id and optional local storage policy. It
+reserves mappings: no definition applies field or status mappings yet, so Lets
+rejects the key instead of ignoring it.
 Without selection, GitHub and its shipped gh binding apply. A custom
 lets.backlog.definition path resolves relative to that config file, not PATH.
 It selects inert schema-1 data, never a module or executable. The definition must
