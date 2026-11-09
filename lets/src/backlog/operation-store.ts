@@ -185,6 +185,7 @@ export class OperationStore {
         if (record.reconciling) {
           const origin = record.originalAction!;
           let reconciliation: string;
+          let complete = true;
           if (origin.request.operation === 'pull-request.create') reconciliation = reconcilePrCreation(origin, record.result, action.targetPullRequest);
           else if (origin.request.operation === 'pull-request.update') reconciliation = reconcilePrUpdate(origin, record.result);
           else if (origin.request.operation === 'pull-request.ready') reconciliation = reconcilePrReady(origin, record.result);
@@ -196,11 +197,17 @@ export class OperationStore {
           else {
             const claim = record.result.claim as Record<string, unknown>;
             reconciliation = origin.request.operation === 'claim.acquire' && claim.verdict === 'sole-actor' ? 'applied' : 'unresolved';
+            complete = claim.verdict !== 'unavailable';
           }
           const resolved = ['applied', 'absent'].includes(reconciliation);
-          record.result = { observation: record.result, reconciliation, reservationCleared: resolved };
+          // One complete fresh read ends the reservation, whatever it shows. An unresolved or partial
+          // result is reported, not kept as a block: the next request starts a new operation whose own
+          // preflight reads GitHub again, so nothing stays stuck and no write is repeated blindly.
+          // A read with missing facts settles nothing, so the reservation waits for another resume.
+          const released = resolved || complete;
+          record.result = { observation: record.result, reconciliation, reservationCleared: released };
           record.state = resolved ? 'complete' : 'needs-reconciliation';
-          record.pending = !resolved;
+          record.pending = !released;
         } else {
           let next: IssuedAction | null;
           try { next = nextCompletionAction(action, record.result, now) ?? nextClaimAction(action, record.result, now) ?? nextPrAction(action, record.result, now); }

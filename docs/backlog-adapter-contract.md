@@ -140,6 +140,8 @@ original definition, connection, input and scope, and returns bounded reads only
 A changed default cannot replace the recorded connection. Applied or absent
 effects with reservationCleared true permit reevaluation; unresolved effects or
 a retained reservation stop with the original ID, known effects and remedy.
+One complete reconciliation read releases the reservation whatever it shows, so
+the next run starts a new operation with fresh preflight reads.
 Never blindly repeat a mutation merely because reconciliation ran.
 
 Duplicate accepted submissions acknowledge their recorded result without

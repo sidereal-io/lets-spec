@@ -91,3 +91,6 @@ For unresolved effects, a retained reservation or unavailable fresh
 facts, return the existing failed step report. Its reason includes the
 original operation ID, known effects and read-only resume command. Do
 not add report fields, switch connection or continue unrelated work.
+A complete reconciliation read releases the reservation even when it
+leaves effects unresolved, so the next run starts again with fresh
+reads.

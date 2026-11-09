@@ -330,7 +330,7 @@ for (const [name, pr, verdict] of [
   ['different prepared body', { ...rawPr, body: 'Unrelated body' }, 'unresolved'],
   ['missing draft effect', { ...rawPr, isDraft: false }, 'partial'],
 ] as const) {
-  test(`uncertain creation retains reservation for ${name}`, () => {
+  test(`uncertain creation reports ${name} and releases its reservation after one complete read`, () => {
     mkdirSync('.workspace', { recursive: true });
     const dir = mkdtempSync('.workspace/pr-unresolved-');
     try {
@@ -342,7 +342,12 @@ for (const [name, pr, verdict] of [
       assert.equal(result.state, 'needs-reconciliation');
       if (!('result' in result)) throw new Error('read observation required');
       assert.equal(result.result.reconciliation, verdict);
-      assert.equal(store.get(action.operationId).pending, true);
+      assert.equal(result.result.reservationCleared, true);
+      assert.equal(store.get(action.operationId).pending, false);
+      // The next create is a new operation: it starts with its own preflight read, not a write.
+      const retry = store.issue(prAction(submittedPr(), 'preflight', 6200));
+      assert.equal(retry.state, 'action');
+      if (retry.state === 'action') assert.deepEqual(retry.action.allowedEffects, []);
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 }
@@ -394,7 +399,7 @@ for (const [name, observed] of [
   ['missing PR', null],
   ['unrelated remote edits', { ...rawPr, body: 'Closes #1\n\nUnrelated new text\n\n## Plan review\nNew evidence' }],
 ] as const) {
-  test(`uncertain body update preserves ${name} without a repair write`, () => {
+  test(`uncertain body update reports ${name} without a repair write and releases its reservation`, () => {
     mkdirSync('.workspace', { recursive: true });
     const dir = mkdtempSync('.workspace/pr-body-conflict-');
     try {
@@ -408,7 +413,7 @@ for (const [name, observed] of [
       assert.equal(result.state, 'needs-reconciliation');
       if (!('result' in result)) throw new Error('read-only observation required');
       assert.equal(result.result.reconciliation, 'unresolved');
-      assert.equal(store.get(action.operationId).pending, true);
+      assert.equal(store.get(action.operationId).pending, false);
       assert.deepEqual(store.get(action.operationId).action.allowedEffects, []);
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
@@ -431,7 +436,7 @@ test('uncertain ready operation reconciles through an exact read', () => {
     assert.equal(result.result.reconciliation, 'applied');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
-test('ready reconciliation retains uncertainty while the PR is draft', () => {
+test('ready reconciliation reports a still-draft PR as unresolved and releases its reservation', () => {
   mkdirSync('.workspace', { recursive: true });
   const dir = mkdtempSync('.workspace/pr-ready-unresolved-');
   try {
@@ -443,7 +448,7 @@ test('ready reconciliation retains uncertainty while the PR is draft', () => {
       data: { viewer: { login: 'actor' }, node: rawPr },
     }), 6100);
     assert.equal(result.state, 'needs-reconciliation');
-    assert.equal(store.get(action.operationId).pending, true);
+    assert.equal(store.get(action.operationId).pending, false);
     assert.deepEqual(store.get(action.operationId).action.allowedEffects, []);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

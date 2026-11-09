@@ -595,7 +595,9 @@ Then settle the row:
   allow a fresh [Check work ownership](#check-work-ownership). Never
   repeat the mutation merely because recovery ran. For unresolved
   effects or a retained reservation, report the original operation ID
-  and recovery command, and end the walk.
+  and recovery command, and end the walk. A complete reconciliation
+  read releases the reservation even then, so the next run starts again
+  with fresh reads.
   Continue only for `sole-actor`; report any other result and end the
   walk without repair. Then run the step, as [Run a step](#run-a-step)
   says. Then [read its report](#read-the-report). It checks a `done`
