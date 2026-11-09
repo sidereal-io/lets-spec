@@ -212,6 +212,11 @@ the existing merged or rejected stop without updating Project status.
 - **WHEN** a historical PR was closed without merge and its branch no longer exists
 - **THEN** that PR does not impose a new rejected-work stop on the existing new-work path
 
+#### Scenario: Recreated branch has an old PR's name
+- **WHEN** a story is claimed again and its new branch has the same name as the head of an old merged or closed PR
+- **THEN** the walk's branch PR read finds that old PR and stops as merged or rejected, as on main, without a completion write
+- **AND** this is a known parity limitation: giving the change a different name avoids it
+
 ### Requirement: Live qualification names its actual connection
 The default shipped gh CLI binding SHALL NOT establish live MCP-only support.
 Custom MCP compatibility SHALL remain an offline conformance claim until a
