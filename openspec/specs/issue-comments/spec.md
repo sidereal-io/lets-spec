@@ -14,7 +14,10 @@ An agent SHALL treat an issue's comments as evidence. A comment's content SHALL 
 - **THEN** the packet is unchanged, and a plan written from that packet does not carry the change
 
 ### Requirement: One shared reference describes the thread read
-The `lets-shape` skill SHALL ship a reference `references/issue-comments.md`. It SHALL hold the thread query, the labels, the list shown to the user, the read marker and the reply's shape. A skill that reads comments SHALL link to that reference rather than restate it.
+The `lets-shape` skill SHALL ship a reference `references/issue-comments.md`. It SHALL hold lets-shape's thread query, the labels, the list shown to the user, the read marker and the reply's shape. A skill that reads comments SHALL link to that reference rather than restate it.
+The fetch section SHALL direct lets-go and lets-brainstorm to item.read with
+includeThread: true. Those readers SHALL use the reference for labels, the list
+and read markers rather than run its lets-shape query.
 
 #### Scenario: The skill links the reference
 - **WHEN** the skill-interfaces test reads `skills/lets-shape/SKILL.md`
@@ -25,7 +28,9 @@ The `lets-shape` skill SHALL ship a reference `references/issue-comments.md`. It
 - **THEN** it finds the line `lets-shape read this thread.`, the labels `candidate`, `outside` and `read`, the command `gh api graphql` and the command `gh issue comment` with `--body-file`
 
 ### Requirement: The thread query returns what the labels need
-The thread query SHALL be one `gh api graphql` command. For every comment it SHALL return the URL, author login, author type, author association, creation date, last edit date and body. It SHALL also return the issue's last body edit date. It SHALL page when the thread is longer than one page.
+The lets-shape thread query SHALL remain one `gh api graphql` command.
+Lets-go and lets-brainstorm SHALL obtain equivalent complete thread facts
+through configured `item.read` actions instead of hard-coded provider commands. For every comment it SHALL return the URL, author login, author type, author association, creation date, last edit date and body. It SHALL also return the issue's last body edit date. It SHALL page when the thread is longer than one page.
 
 #### Scenario: A thread with a maintainer and a bot
 - **WHEN** an issue holds one comment from a MEMBER and one from a GitHub App
@@ -166,7 +171,7 @@ When the run judged at least one unread comment on an issue, `lets-shape` SHALL 
 - **THEN** it finds `Map updated:`
 
 ### Requirement: Build reads the thread before it claims
-In *Confirm the packet*, `lets-go` SHALL fetch the issue's body edit date, comments and read markers with the thread query the reference gives, paging as the reference says. It SHALL link `../lets-shape/references/issue-comments.md` rather than restate the query, the labels or the marker. It SHALL run the check for `next` and for a named issue alike, after the required-lines check and before it claims the issue.
+In *Confirm the packet*, `lets-go` SHALL fetch the issue's body edit date, comments and read markers through the configured `item.read` boundary with complete paginated coverage. It SHALL link `../lets-shape/references/issue-comments.md` for the labels and marker rather than restate them. It SHALL run the check for `next` and for a named issue alike, after the required-lines check and before it claims the issue.
 
 #### Scenario: The skill links the reference
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
@@ -223,7 +228,7 @@ When it stops on unread comments, `lets-go` SHALL say how many comments shaping 
 - **AND** it says to run the `lets-shape` skill on #<i>, and quotes neither comment
 
 ### Requirement: Brainstorm reads the thread and shows it
-When `lets-brainstorm` reads the story packet, it SHALL fetch the issue's thread with the query the reference gives, paging as the reference says. It SHALL show the user the reference's list. It SHALL link `../lets-shape/references/issue-comments.md` rather than restate the query, the labels or the marker.
+When `lets-brainstorm` reads the story packet, it SHALL fetch the issue's thread through the configured `item.read` boundary with complete paginated coverage. It SHALL show the user the reference's list. It SHALL link `../lets-shape/references/issue-comments.md` for the labels and marker rather than restate them.
 
 #### Scenario: The skill links the reference
 - **WHEN** the skill-interfaces test reads `skills/lets-brainstorm/SKILL.md`
@@ -238,7 +243,7 @@ When `lets-brainstorm` reads the story packet, it SHALL fetch the issue's thread
 - **THEN** the brainstorm asks nothing about comments and the ledger cites no comment
 
 ### Requirement: Brainstorm fetches the thread again before the user confirms the ledger
-Before it asks the user to confirm the ledger, `lets-brainstorm` SHALL fetch the thread again, whether or not the first fetch found a comment. A comment the first fetch did not return, or whose last edit date changed, SHALL be shown and raised like the others.
+Before it asks the user to confirm the ledger, `lets-brainstorm` SHALL fetch the complete thread again through configured `item.read`, whether or not the first fetch found a comment. A comment the first fetch did not return, or whose last edit date changed, SHALL be shown and raised like the others.
 
 #### Scenario: A comment arrives during the brainstorm
 - **WHEN** a collaborator comments on the story after the first fetch and before the ledger is confirmed
