@@ -1,4 +1,4 @@
-// The backlog rules every provider shares: what is ready, how it ranks, and
+// The backlog rules every backend shares: what is ready, how it ranks, and
 // the claim and release sequences. Written once, here, outside the adapter.
 import type { Adapter, Candidate, Item, Related } from './adapter.ts';
 import { WriteFailed } from './adapter.ts';

@@ -29,9 +29,9 @@ A call to an outside tool runs in lets code or in the skill. Which one depends o
 |---|---|
 | The task joins several calls, or decides something: it ranks, filters, or checks before it writes | It is one call, and the skill uses the output as it is |
 | It writes shared state, where a write that stops halfway matters | It only reads, or one failed write is easy to see and to retry |
-| It must work with more than one provider, such as GitHub now and Jira or Linear later | It is tied to one tool on purpose, with no plan to swap it |
+| It must work with more than one backend, such as GitHub now and Jira or Linear later | It is tied to one tool on purpose, with no plan to swap it |
 
-A call moves into lets code as soon as any condition on the left holds for it. Shared rules, such as what is ready, how work ranks and how a claim checks for another owner, are written once in lets, outside every adapter. An adapter holds only what differs between providers.
+A call moves into lets code as soon as any condition on the left holds for it. Shared rules, such as what is ready, how work ranks and how a claim checks for another owner, are written once in lets, outside every adapter. An adapter holds only what differs between backends.
 
 When lets runs a command, no agent stands between them. lets runs it, reads its exit code and output, and returns the result. Agent-run provider definitions are not used for backlogs or for delegation. Delegation resolvers stay code inside lets.
 
@@ -45,8 +45,8 @@ Each adapter is built into lets. Loading an adapter from outside lets, such as a
 - Easier: a task in lets code makes the same calls for the same input, so tests can fake the tool and check every branch, failed writes included.
 - Easier: lets sees each write's own response. A failed write is reported as it happened, with no journal or proof step. A write that times out can still have landed, and lets says so.
 - Easier: a direct call in a skill costs no code until it needs to. The skills keep simple reads simple.
-- Harder: a call can change places. When a single read grows into a check-then-write, or a second provider arrives, it moves from the skill into lets, and the skill's prose and checks change with it.
-- Harder: a new provider or harness needs a change to lets and a release. Nobody can add one from outside yet.
+- Harder: a call can change places. When a single read grows into a check-then-write, or a second backend arrives, it moves from the skill into lets, and the skill's prose and checks change with it.
+- Harder: a new backend or harness needs a change to lets and a release. Nobody can add one from outside yet.
 - Harder: lets must keep each adapter working as its tool changes, and needs that tool installed and signed in.
 
 ## Alternatives Considered

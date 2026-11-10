@@ -125,8 +125,12 @@ sets it.
 
 ## Backlog errors
 
-The run reads and claims the backlog only through `lets backlog`. Each
-`lets backlog` command prints one JSON object. When the object holds
+The run reads and claims the backlog through `lets backlog`. Three
+reads stay as `gh` commands for now: the comment thread read of
+[Confirm the packet](#confirm-the-packet),
+`gh issue view <i> --json createdAt`, and the in-progress parent query
+of [Start from an idea](#start-from-an-idea). Each `lets backlog`
+command prints one JSON object. When the object holds
 `error`, the backlog cannot answer. Stop: claim nothing more, and run no
 step. Say what the error is:
 

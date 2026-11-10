@@ -1,4 +1,4 @@
-// The backlog adapter: the primitives another provider would do differently,
+// The backlog adapter: the primitives another backend would do differently,
 // and no more. An adapter returns data or throws. It never decides what is
 // ready, how work ranks, or whether a claim may go ahead: policy.ts does.
 
@@ -68,5 +68,5 @@ export class BacklogError extends Error {
 }
 
 // A write failed, or timed out and may have happened. The message is the
-// provider's own error.
+// backend's own error.
 export class WriteFailed extends Error {}
