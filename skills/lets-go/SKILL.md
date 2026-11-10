@@ -269,11 +269,11 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
    blocker whose `state` is `OPEN` is open. When one is:
    - **The branch exists**, here or on `origin`: the user has stacked it
      by hand. Name the open blockers by number, and go on.
-
-   Name a blocker in another repository by its `url`, not its number:
-   a bare number means an issue of this repository.
    - **It does not exist:** say which open issues block `#<i>`, and
      stop. The user stacks it on the blocker's branch by hand.
+
+   Either way, name a blocker in another repository by its `url`, not
+   its number: a bare number means an issue of this repository.
 4. Run [Find the source of demand](#find-the-source-of-demand) for
    `<i>`. Its first case runs
    [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite)
