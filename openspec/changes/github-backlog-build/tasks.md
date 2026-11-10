@@ -1,6 +1,6 @@
 ## 1. The command and the adapter boundary
 
-- [ ] 1.1 [easy] Remove #135's executable kit: `lets/src/backlog/*`, `tests/lets/backlog/*`, `docs/backlog-adapter-contract.md`, the flake's dist check for that doc, and the README's mentions of the executable contract; the type check still passes (verify: `test ! -e docs/backlog-adapter-contract.md && deli -- pnpm exec tsc --noEmit`)
+- [x] 1.1 [easy] Remove #135's executable kit: `lets/src/backlog/*`, `tests/lets/backlog/*`, `docs/backlog-adapter-contract.md`, the flake's dist check for that doc, and the README's mentions of the executable contract; the type check still passes (verify: `test ! -e docs/backlog-adapter-contract.md && deli -- pnpm exec tsc --noEmit`) (✓ `test ! -e docs/backlog-adapter-contract.md && deli -- pnpm exec tsc --noEmit` passed)
 - [ ] 1.2 [medium] `lets backlog <command>` prints one JSON object and exits 0 on a result, exits 1 with `no-backlog`, `several-backlogs` (titles and URLs) or `gh-failed` from today's Project query, and exits 2 on a usage error; tests use a fake `Io` whose `execFile` answers `gh` calls from a table (verify: `node --test tests/lets/backlog/commands.test.ts`)
 
 ## 2. The backlog commands [depends-on: 1]
@@ -23,3 +23,6 @@
 - [ ] 4.2 [medium] Live run in a clone of `mstelz/test-repo-pls-ignore` with this branch's `lets`: `ready`, `item`, `find`, `claim` (`claimed`, then `taken` from a second account or a pre-assigned issue) and `release` behave as specified against its real Project, and one `lets-go` run claims a story and creates its branch; the results are recorded in the pull request (verify: `lets backlog item <claimed-issue>` in the clone shows `"status": "In Progress"` and the user in `assignees`)
 
 ## Deviations Ledger
+
+- 1.1: ADR-014 still links to `docs/backlog-adapter-contract.md`. It is superseded and kept as written, so the link now points at a removed file; the file stays in Git history.
+- 1.1: the README's `lets/src/backlog/` row is removed here and comes back with the new code in 1.2.
