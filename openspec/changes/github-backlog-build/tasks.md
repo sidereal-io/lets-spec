@@ -9,7 +9,7 @@
 - [x] 2.2 [medium] `item <i>` returns title, body, URL, state, Project fields (null when unset or off the Project), assignees, blockers with state, parent with body, and open sub-issues, and returns `not-found` for a missing issue (verify: `node --test tests/lets/backlog/item.test.ts`) (✓ `node --test tests/lets/backlog/item.test.ts` passed, 8 tests; 1 fails when closed sub-issues are kept)
 - [x] 2.3 [easy] `find <words>` returns the open issues whose titles match, unfiltered, and an empty list for no match (verify: `node --test tests/lets/backlog/find.test.ts`) (✓ `node --test tests/lets/backlog/find.test.ts` passed, 3 tests; the words test failed first, on a word that starts with --)
 - [x] 2.4 [medium] `claim <i>` returns `taken` with the logins and writes nothing when anyone is assigned, otherwise assigns `@me` then sets Status In Progress and returns `claimed`, and returns `failed` with `write` and `gh`'s error, with no undo, when either write fails or times out (verify: `node --test tests/lets/backlog/claim.test.ts`) (✓ `node --test tests/lets/backlog/claim.test.ts` passed, 7 tests; the taken test fails with the assignee check removed)
-- [ ] 2.5 [easy] `release <i>` removes only `@me` and sets Status Todo, returning `released`, or `failed` with `write` set to `unassign` or `status` (verify: `node --test tests/lets/backlog/release.test.ts`)
+- [x] 2.5 [easy] `release <i>` removes only `@me` and sets Status Todo, returning `released`, or `failed` with `write` set to `unassign` or `status` (verify: `node --test tests/lets/backlog/release.test.ts`) (✓ `node --test tests/lets/backlog/release.test.ts` passed, 4 tests; 1 fails when release writes In Progress)
 
 ## 3. The skills call lets backlog [depends-on: 2]
 
