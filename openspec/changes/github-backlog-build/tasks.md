@@ -14,7 +14,7 @@
 ## 3. The skills call lets backlog [depends-on: 2]
 
 - [x] 3.1 [complex] `lets-go` reads the backlog only through `lets backlog ready`, `item` and `find`: no Project query in *Read the settings*, no `<project>`, `<owner>` or `<repo>`, the parent and an epic's sub-issues taken from `item`, and a *Backlog errors* section that every call links to; the `lets-go` spec's bats checks are updated to match (verify: `deli -- bats tests/skill-interfaces.bats --filter 'lets-go'`) (✓ `deli -- bats tests/skill-interfaces.bats --filter 'lets-go'` passed, 89 tests; the whole file passed, 270 tests)
-- [ ] 3.2 [medium] `lets-go`'s *Claim* claims with `lets backlog claim <i>` and releases with `lets backlog release <i>`, returns `claim-failed` with the write and message, and `branch-failed` with both errors when the release fails too; *Enter the branch* says what to do with each (verify: `deli -- bats tests/skill-interfaces.bats --filter 'Claim'`)
+- [x] 3.2 [medium] `lets-go`'s *Claim* claims with `lets backlog claim <i>` and releases with `lets backlog release <i>`, returns `claim-failed` with the write and message, and `branch-failed` with both errors when the release fails too; *Enter the branch* says what to do with each (verify: `deli -- bats tests/skill-interfaces.bats --filter 'Claim'`) (✓ `deli -- bats tests/skill-interfaces.bats --filter 'Claim'` passed; the whole file passed, 271 tests)
 - [ ] 3.3 [easy] `lets-plan` finds the change's issue with `lets backlog find <branch>`, keeping its `<branch> — ` title-prefix rule (verify: `deli -- bats tests/skill-interfaces.bats --filter 'lets-plan'`)
 
 ## 4. Acceptance [depends-on: 3]
@@ -28,3 +28,4 @@
 - 1.1: the README's `lets/src/backlog/` row is removed here and comes back with the new code in 1.2.
 - 2.1–2.5: the adapter and the shared rules were written whole in 1.2, as one object. Each command's tests in section 2 came after that code, so each was checked to fail against a deliberately broken rule before it was ticked.
 - 3.1: *Claim* still ran `gh project item-edit` with `<project>` and `<owner>` until 3.2, so those two rows stay in the Placeholders table, marked as Claim's, until 3.2 removes them with the calls.
+- 3.2: the `<issue-url>` row stays, because the step prompt still names the issue URL; it is now set from the `url` that `lets backlog item <i>` prints.

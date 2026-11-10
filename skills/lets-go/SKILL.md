@@ -74,7 +74,7 @@ procedure ranks it.
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table) | Never |
 | [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run) | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL | this session | Nothing: the run is over | Always |
@@ -90,10 +90,8 @@ sets it.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
-| `<project>` | The number of the Project linked to the repository, until [Claim](#claim) runs `lets backlog` | [Claim](#claim) |
-| `<owner>` | The Project's owner, until [Claim](#claim) runs `lets backlog` | [Claim](#claim) |
 | `<i>` | The run's issue: the number the user named, the issue `next` or [Pick the first ready story](#pick-the-first-ready-story) picked, or the issue a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
-| `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the issue's `url` |
+| `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the `url` that `lets backlog item <i>` prints |
 | `<parent>` | A parent issue: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in [Start from an idea](#start-from-an-idea) |
 | `<story>` | One story that a shape step's report names | Each `story` line of the shape report |
 | `<pr>` | The number of the change's pull request | [Read the records](references/records.md#read-the-records), from the pull request's `number` |
@@ -378,8 +376,15 @@ Next: [Enter the branch](#enter-the-branch).
    - **`unresolved`:** report the owner or the definitions it carries,
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
+   - **`claim-failed`:** say which write failed, and show its message.
+     Say what the issue may be left holding: after a failed `status`
+     write, your assignment, with its Status unchanged; after a failed
+     `assign`, nothing, unless the message says the write may have
+     happened. Do not release the claim. Stop, and run no step.
    - **`branch-failed`:** [Claim](#claim) has released the claim. Show
-     the error it carries, and stop.
+     the branch's error it carries. When it carries a release error
+     too, show it, and say the issue may still hold your assignment or
+     its In Progress Status. Then stop.
 3. When you ran
    [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint),
    act on its result:
@@ -736,30 +741,37 @@ return to the part that ran it, with the result.
    against the proposed base. When it returns `unresolved` or
    `checkpoint-failed`, return that result now, with what it carries,
    before you assign the issue.
-3. Claim the issue: check that nobody has it, assign yourself, then move
-   it to In Progress. `<issue-url>` is the issue's URL.
+3. Claim the issue. On an error, act as
+   [Backlog errors](#backlog-errors) says.
 
    ```bash
-   gh issue view <i> --json assignees --jq '.assignees | length'
-   gh issue edit <i> --add-assignee @me
-   gh project item-edit <project> --owner <owner> --url <issue-url> --field Status --value "In Progress"
+   lets backlog claim <i>
    ```
 
-   The first command must print `0`. Anything else means another
-   session took it: the result is `taken`, with who has it. Return it
-   now.
+   It checks that nobody has the issue, assigns you, then moves it to
+   In Progress. On its `result`:
+   - **`claimed`:** go on, below.
+   - **`taken`:** another session has the issue. The result is `taken`,
+     with the `assignees` it names. Return it now.
+   - **`failed`:** a write failed. The result is `claim-failed`, with
+     the `write` that failed and its `message`. Return it now, before
+     you create a branch, and undo nothing.
 4. Create a branch with the change's name off the default branch. This
    also fails when a local branch with the change's name appeared after
    [Check the issue](#check-the-issue) looked. A branch that appeared
    only on `origin` does not make it fail: the plan step's first push is
    then rejected, and that step fails. If creating the branch fails,
-   release the claim, so another session can pick the issue up. The
-   result is then `branch-failed`, with the error:
+   release the claim, so another session can pick the issue up. It
+   removes only your assignment, then sets the Status back to Todo:
 
    ```bash
-   gh issue edit <i> --remove-assignee @me
-   gh project item-edit <project> --owner <owner> --url <issue-url> --field Status --value Todo
+   lets backlog release <i>
    ```
+
+   The result is then `branch-failed`, with the branch's error. When the
+   release prints `"result": "failed"`, `branch-failed` also carries
+   the release's `write` and `message`. On an error, act as
+   [Backlog errors](#backlog-errors) says.
 
 It returns one of these results:
 
@@ -767,6 +779,9 @@ It returns one of these results:
   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
   returned: `no-owned-edits`, or `verified` with the checkpoint commits.
 - `taken`: another session has the issue. It carries who has it.
+- `claim-failed`: a write of `lets backlog claim` failed, and no branch
+  exists. It carries the `write`, `assign` or `status`, and its
+  `message`.
 - `unresolved`:
   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
   returned `unresolved`. It carries what is unresolved.
@@ -774,7 +789,8 @@ It returns one of these results:
   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
   returned it. It carries what the check found.
 - `branch-failed`: creating the branch failed, and the claim is
-  released. It carries the error.
+  released. It carries the error, and the release's error when the
+  release failed too.
 
 Return to the part that ran it, with the result.
 

@@ -810,8 +810,10 @@ review_build_start() {
   skill_says lets-go 'gh issue view <i> --json createdAt'
   skill_says lets-go 'gh repo view --json defaultBranchRef --jq .defaultBranchRef.name'
   skill_says lets-go "Skipped shape: #<i>'s packet is complete, last edited <date>."
-  # Claim sets the Status, so lets-go sets that field itself.
-  skill_says lets-go 'gh project item-edit'
+  # Claim claims through lets backlog, which sets the Status.
+  skill_says lets-go 'lets backlog claim <i>'
+  skill_does_not_say lets-go 'gh project'
+  skill_does_not_say lets-go 'gh api graphql'
 }
 
 @test "lets-go names no section of lets-build" {
@@ -1984,8 +1986,34 @@ procedure_stops() {
 @test "Enter the branch acts on each result of the claim" {
   local part result
   part="$(part_section 'Enter the branch')"
-  for result in claimed taken unresolved checkpoint-failed branch-failed; do
+  for result in claimed taken claim-failed unresolved checkpoint-failed branch-failed; do
     grep -qF -- "**\`$result\`:**" <<<"$part" || { echo "Enter the branch does not act on: $result"; false; }
+  done
+}
+
+@test "Claim claims and releases only through lets backlog" {
+  local claim result enter
+  claim="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
+  grep -qF 'lets backlog claim <i>' <<<"$claim" || { echo "Claim does not run lets backlog claim"; false; }
+  grep -qF 'lets backlog release <i>' <<<"$claim" || { echo "Claim does not run lets backlog release"; false; }
+  grep -qF '](#backlog-errors)' <<<"$claim" || { echo "Claim does not link Backlog errors"; false; }
+  for result in claimed taken claim-failed unresolved checkpoint-failed branch-failed; do
+    grep -qF -- "- \`$result\`:" <<<"$(procedure_text 'Claim')" || { echo "Claim does not list the result: $result"; false; }
+  done
+  grep -qF 'before you create a branch, and undo nothing' <<<"$claim" ||
+    { echo "Claim does not return claim-failed before the branch"; false; }
+  grep -qF "the release's \`write\` and \`message\`" <<<"$claim" ||
+    { echo "branch-failed does not carry the release's error"; false; }
+  enter="$(part_section 'Enter the branch')"
+  grep -qF 'Do not release the claim. Stop, and run no step.' <<<"$enter" ||
+    { echo "Enter the branch does not stop on claim-failed without releasing"; false; }
+  grep -qF 'When it carries a release error too, show it' <<<"$enter" ||
+    { echo "Enter the branch does not show a failed release"; false; }
+  grep -qF '`claim-failed`' <<<"$(overview_row 'Enter the branch')" || { echo "Enter the branch's row does not name claim-failed"; false; }
+  grep -qF 'lets backlog release <i>' <<<"$(skill_section lets-go 'Recover from a failed import')" ||
+    { echo "Recover from a failed import does not release through lets backlog"; false; }
+  for gone in '--add-assignee' '--remove-assignee' '<project>' '<owner>' 'gh issue view <i> --json assignees'; do
+    skill_does_not_say lets-go "$gone" || return 1
   done
 }
 
