@@ -143,7 +143,14 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
       if (typeof parentRef?.number === 'number') {
         // A parent can sit in another repository, so read it by its URL.
         const which = typeof parentRef.url === 'string' ? parentRef.url : String(parentRef.number);
-        const found = await read(gh, ['issue', 'view', which, '--json', 'number,title,body']) as { number: number; title: string; body: string };
+        let found: { number: number; title: string; body: string };
+        try {
+          found = await read(gh, ['issue', 'view', which, '--json', 'number,title,body']) as typeof found;
+        } catch (error) {
+          // The issue exists; only its parent could not be read.
+          if (!(error instanceof BacklogError)) throw error;
+          throw new BacklogError('gh-failed', `could not read the parent ${which} of #${issue}: ${error.message}`);
+        }
         parent = { number: found.number, title: found.title, body: found.body };
       }
       urls.set(issue, raw.url as string);

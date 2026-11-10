@@ -132,3 +132,15 @@ test('a blocker or sub-issue in another repository keeps its URL', async () => {
   assert.deepEqual(t.json().blockedBy, [{ number: 7, title: 'lib fix', state: 'OPEN', url: other(7) }]);
   assert.deepEqual(t.json().subIssues, [{ number: 8, title: 'lib story', url: other(8) }]);
 });
+
+test('a parent that cannot be read is gh-failed naming the parent, not not-found', async () => {
+  const parentUrl = 'https://github.com/acme/private/issues/52';
+  const t = backlogDeps(rows([
+    ['issue view 136 ', json(issue(136, { parent: { number: 52, title: 'hidden', url: parentUrl, state: 'OPEN' } }))],
+    [`issue view ${parentUrl} `, fail('GraphQL: Could not resolve to an issue or pull request with the number of 52. (repository.issue)')],
+  ], [projectItem(136, { kind: 'Story' })]));
+  assert.equal(await run(['item', '136'], t.deps), 1);
+  const out = t.json();
+  assert.equal(out.error, 'gh-failed');
+  assert.ok(out.message.includes(parentUrl), out.message);
+});
