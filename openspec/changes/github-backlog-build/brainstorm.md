@@ -18,6 +18,7 @@ https://github.com/sidereal-io/lets-spec/issues/136
 | D9 | What proves it works? | Node tests of each `lets backlog` command against a fake `gh`, and one live `lets-go` run in a throwaway test repository and Project. | User |
 | D10 | Do pull request calls move too? | No. Pull request reads and edits are code host, not backlog, and stay as `gh` in the skills. | User |
 | D11 | Does lets write completion? | No. GitHub closes the issue on merge, and the Project's automation sets Done, as today. | Evidence: `skills/lets-go/SKILL.md`, schemas' `Closes #<n>` |
+| D12 | Do the comment-thread read and the discovery query move? | No. They stay as `gh` until #137, which shares them with `lets-shape`, with the `createdAt` fallback beside the thread read. | User |
 
 ## Changes from the story
 
