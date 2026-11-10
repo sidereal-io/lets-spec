@@ -164,7 +164,8 @@ If the import fails:
    creation in [Claim](../SKILL.md#claim) does: it removes your
    assignment, and sets Status back to Todo. Do this even if the Git
    cleanup failed. When it prints `"result": "failed"`, keep its `write`
-   and `message` for the result.
+   and `message` for the result. When it prints an `error`, nothing was
+   released: keep the error's `message` for the result.
 5. The result is `import-failed`. It carries every cleanup failure, and
    anything kept: the branch, commits or claim, with how to recover.
 

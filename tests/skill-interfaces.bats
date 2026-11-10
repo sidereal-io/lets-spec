@@ -2004,6 +2004,8 @@ procedure_stops() {
     { echo "Claim does not return claim-failed before the branch"; false; }
   grep -qF "the release's \`write\` and \`message\`" <<<"$claim" ||
     { echo "branch-failed does not carry the release's error"; false; }
+  grep -qF "When it prints an \`error\` instead, nothing was released" <<<"$claim" ||
+    { echo "branch-failed does not carry a release that returned an error"; false; }
   enter="$(part_section 'Enter the branch')"
   grep -qF 'Do not release the claim. Stop, and run no step.' <<<"$enter" ||
     { echo "Enter the branch does not stop on claim-failed without releasing"; false; }

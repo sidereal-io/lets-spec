@@ -774,8 +774,9 @@ return to the part that ran it, with the result.
 
    The result is then `branch-failed`, with the branch's error. When the
    release prints `"result": "failed"`, `branch-failed` also carries
-   the release's `write` and `message`. On an error, act as
-   [Backlog errors](#backlog-errors) says.
+   the release's `write` and `message`. When it prints an `error`
+   instead, nothing was released: `branch-failed` also carries that
+   error's `message`.
 
 It returns one of these results:
 
