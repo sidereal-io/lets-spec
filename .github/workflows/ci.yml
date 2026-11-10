@@ -24,6 +24,21 @@ jobs:
       - name: Flake check
         run: nix flake check
 
+  # Runs the mise check task, with the tools pinned in mise.toml, such as
+  # the OpenSpec CLI this repository's own planning runs on.
+  mise-check:
+    name: mise check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install the tools with mise
+        uses: jdx/mise-action@v2
+
+      - name: Check
+        run: mise run check
+
   # Checks the folder that the release tarball is made from. It installs the
   # tools with mise, as a project would, and runs lets sync from PATH.
   mise-smoke:
