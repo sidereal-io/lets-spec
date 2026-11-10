@@ -67,7 +67,7 @@ procedure ranks it.
 
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
-| [Read the settings](#read-the-settings) | Reads the default question mode, the default branch, the current branch and the Project | this session | [Read the request](#read-the-request) | `lets go questions` fails, or the Project query finds no Project, or several |
+| [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch | this session | [Read the request](#read-the-request) | `lets go questions` fails |
 | [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; otherwise [Route](#route) | An open blocker with no branch; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic`, or `needs-shape` when shape cannot run |
@@ -79,6 +79,9 @@ procedure ranks it.
 | [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run) | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL | this session | Nothing: the run is over | Always |
 
+Any part also stops when a `lets backlog` command returns an error, as
+[Backlog errors](#backlog-errors) says.
+
 ## Placeholders
 
 A name in angle brackets is a placeholder. Each one stands for one
@@ -87,9 +90,8 @@ sets it.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
-| `<project>` | The number of the Project linked to the repository | [Read the settings](#read-the-settings), from the Project query |
-| `<owner>` | The Project's owner | [Read the settings](#read-the-settings), from the Project query |
-| `<repo>` | The repository, as `owner/name` | [Read the settings](#read-the-settings), from the Project query's `repo` |
+| `<project>` | The number of the Project linked to the repository, until [Claim](#claim) runs `lets backlog` | [Claim](#claim) |
+| `<owner>` | The Project's owner, until [Claim](#claim) runs `lets backlog` | [Claim](#claim) |
 | `<i>` | The run's issue: the number the user named, the issue `next` or [Pick the first ready story](#pick-the-first-ready-story) picked, or the issue a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
 | `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the issue's `url` |
 | `<parent>` | A parent issue: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in [Start from an idea](#start-from-an-idea) |
@@ -123,6 +125,23 @@ sets it.
 | `<one-line outcome>` | The part of an issue title after ` — `, in `lets-shape`'s template | The issue's title |
 | `<L or XL>` | The Size the shape step gave the work, `L` or `XL` | The shape step |
 
+## Backlog errors
+
+The run reads and claims the backlog only through `lets backlog`. Each
+`lets backlog` command prints one JSON object. When the object holds
+`error`, the backlog cannot answer. Stop: claim nothing more, and run no
+step. Say what the error is:
+
+- **`no-backlog`:** no Project is linked to the repository. Say to run
+  the `lets-setup-backlog` skill.
+- **`several-backlogs`:** list each Project's `title` and `url` from its
+  `projects`, and ask the user to unlink the extras. Never pick one
+  yourself.
+- **Any other error:** show the user its `message`.
+
+Each part and procedure that runs a `lets backlog` command links here
+for its errors.
+
 ## Read the settings
 
 Read the user's default question mode. Run this once, before anything
@@ -139,38 +158,6 @@ stderr and stop: claim nothing, and run no step. Then find the
 default branch with
 `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`,
 and run `git branch --show-current`.
-
-Then find the Project linked to this repository. Run this query once
-per run:
-
-```bash
-gh api graphql -F owner='{owner}' -F name='{repo}' -f query='
-query($owner: String!, $name: String!) {
-  repository(owner: $owner, name: $name) {
-    nameWithOwner
-    projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } } }
-  }
-  repositoryOwner(login: $owner) {
-    ... on ProjectV2Owner {
-      projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } repositories(first: 100) { nodes { nameWithOwner } } } }
-    }
-  }
-}' --jq '.data.repository.nameWithOwner as $repo
-  | {repo: $repo, projects: ([.data.repository.projectsV2.nodes[], (.data.repositoryOwner.projectsV2.nodes[] | select(any(.repositories.nodes[]; .nameWithOwner == $repo)))]
-      | map(select(.closed | not) | {number, title, url, owner: .owner.login}) | unique_by(.owner, .number))}'
-```
-
-The query lists the Projects linked to the repository, and the
-owner's Projects that link back to it. A user-owned Project can be
-missing from the repository's own listing for a while after it is
-linked, so neither list alone is enough.
-
-- **One Project:** use its `number` as `<project>` and its `owner` as
-  `<owner>` in every `gh project` command of this run. The query's
-  `repo` is the repository, `<repo>`, as `owner/name`.
-- **None:** say to run the `lets-setup-backlog` skill, and stop.
-- **Two or more:** list each one's title and URL, ask the user to unlink
-  the extras, and stop. Never pick one yourself.
 
 Next: [Read the request](#read-the-request).
 
@@ -229,13 +216,14 @@ whole backlog. On its result:
 
 On another branch, `<branch>`, when the request is words, say that an
 idea needs the default branch, and stop. Otherwise search for the
-change's issue, once:
+change's issue, once. On an error, act as
+[Backlog errors](#backlog-errors) says.
 
 ```bash
-gh issue list --state open --search "<branch> in:title" --json number,title
+lets backlog find <branch>
 ```
 
-Keep the issues whose title starts with `<branch> — `: these are the
+Keep the `issues` whose title starts with `<branch> — `: these are the
 matches. When the user gave a number, it must be one of them. If it is
 not, say that the issue and the branch do not match, and stop. When
 they gave none, exactly one match is the issue. If none matches, say
@@ -257,15 +245,17 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
 
 ## Check the issue
 
-1. Read the blockers of `<i>`:
+1. Read the blockers of `<i>`. On an error, act as
+   [Backlog errors](#backlog-errors) says.
 
    ```bash
-   gh issue view <i> --json title,blockedBy
+   lets backlog item <i>
    ```
 
-   It gives the title too. `<name>` is the change's name, which
-   [Claim](#claim) takes from the title. On a change's branch, it is
-   `<branch>`.
+   Its `blockedBy` lists each blocker with its `state`, and it gives the
+   `title` too. Keep the whole result: the packet check below reads it.
+   `<name>` is the change's name, which [Claim](#claim) takes from the
+   title. On a change's branch, it is `<branch>`.
 2. Look for the change's branch, here and on `origin`, every time:
 
    ```bash
@@ -591,8 +581,8 @@ Each one returns its result to what ran it.
 Parallel sessions share the backlog, so claim the issue before you
 create anything.
 
-It uses the `<project>`, `<owner>` and `<repo>` that
-[Read the settings](#read-the-settings) set.
+Each `lets backlog` command it runs acts on an error as
+[Backlog errors](#backlog-errors) says.
 
 A **Glossary handoff** is the section `lets-shape` writes in a story's
 issue body when shaping added glossary terms. It records which issue
@@ -611,36 +601,33 @@ Take the first case that applies:
    [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite)
    for it. The result is `found` when that returns `resolved`, and
    `unresolved` when it returns `unresolved`.
-2. **The run has described work, but no issue.** Search for it:
+2. **The run has described work, but no issue.** Search open issue
+   titles for it, with the idea as one quoted argument:
 
    ```bash
-   gh issue list --state open --search "<idea> in:title" --json number,title
+   lets backlog find "<idea>"
    ```
 
-   The result is `matches`, with the issues the search found, or
+   The result is `matches`, with the `issues` the search found, or
    `no-match` when it found none.
-3. **Otherwise, take `next`.** List the Project's Todo candidates with a
-   priority of Must, Should or Could. Any Kind but Epic counts, and
-   items from other repositories are left out:
+3. **Otherwise, take `next`.** List the ready issues, best first:
 
    ```bash
-   gh project item-list <project> --owner <owner> --format json --limit 500 \
-     --jq '.items[] | select(.content.repository == "<repo>" and .status == "Todo" and .kind != "Epic" and (.priority | IN("Must", "Should", "Could")))
-           | "\(.priority)\t\(.kind)\t\(.size // "-")\t#\(.content.number)\t\(.content.title)\t\(.content.url)"'
+   lets backlog ready
    ```
 
-   Then list the open issues that nobody is assigned to and nothing
-   blocks:
-
-   ```bash
-   gh issue list --search "is:open no:assignee -is:blocked" --limit 500 --json number --jq '.[].number'
-   ```
-
-   `next` comes from the candidates whose number is in the second list.
-   Rank them Must, then Should, then Could, then the lowest issue
-   number. A Wont is never a candidate. After a lost claim, leave out
-   every issue lost in this run: each one for which [Claim](#claim)
-   returned `taken`.
+   A ready issue is one of this repository's issues on the Project. Its
+   Status is Todo, its Kind is not Epic, and its priority is Must,
+   Should or Could. Nobody is assigned to it, and no open issue blocks
+   it. A Wont is never a candidate. The `issues` it prints are the
+   candidates, ranked Must, then Should, then Could, then the lowest
+   issue number. When the run picks among a shape report's stories,
+   pass their numbers with `--only`, such as
+   `lets backlog ready --only 191,192,193`. After a lost claim, leave
+   out every issue lost in this run: each one for which [Claim](#claim)
+   returned `taken`. Pass their numbers with `--exclude`, such as
+   `lets backlog ready --exclude 149`, with the same `--only` as the
+   first pick.
 
    Check each candidate in rank order, with its number as `<i>` while
    you check it. Run
@@ -674,18 +661,19 @@ Return to the part that ran it, with the result.
 
 ### Confirm the packet
 
-Read the issue, and its fields on the Project:
+Read the issue, with its fields on the Project. When
+[Check the issue](#check-the-issue) has read `<i>` in this run, use
+that result, and run nothing. On an error, act as
+[Backlog errors](#backlog-errors) says.
 
 ```bash
-gh issue view <i> --json number,title,body,url,parent
-gh project item-list <project> --owner <owner> --format json --limit 500 \
-  --jq '.items[] | select(.content.repository == "<repo>" and .content.number == <i>) | {kind, priority, size, status}'
+lets backlog item <i>
 ```
 
-- If the second command prints nothing, or no `kind`, the issue is not
-  shaped. The result is `needs-shape`: return it now.
-- If its Kind is Epic, the result is `epic`: return it now, with the
-  epic's open sub-issues.
+- If its `kind` is `null`, the issue is not on the Project, or has no
+  Kind: it is not shaped. The result is `needs-shape`: return it now.
+- If its `kind` is `Epic`, the result is `epic`: return it now, with the
+  open sub-issues in its `subIssues`.
 
 Read the whole body. Check that every required line for its Kind is
 there and filled in. These are the lines of the `lets-shape` skill's
@@ -717,8 +705,8 @@ author as the reference shows it, and the date that put it past the
 watermark: its edit date, else its creation date. It carries nothing of
 what a comment says.
 
-For a Story with a parent, read the parent's **Shared decisions**
-section, when it has one: `gh issue view <parent> --json body`.
+For a Story with a parent, read the **Shared decisions** section of the
+`body` in its `parent`, when it has one. Run no other command for it.
 [Route](#route) needs it.
 
 It returns one of these results:
