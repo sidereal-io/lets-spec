@@ -8,6 +8,11 @@ description: One execution hybrid for delegation and backlogs, with open provide
 
 # ADR-015: lets requests actions and validates agent-submitted results
 
+> For backlogs, superseded by
+> [ADR-021](ADR-021-lets-runs-the-backlog-commands.md): a backlog adapter is
+> code in lets that runs the backend's commands itself. The delegation part of
+> this record stands.
+
 ## Context and correction history
 
 Delegation currently executes built-in adapters. The backlog contract describes
