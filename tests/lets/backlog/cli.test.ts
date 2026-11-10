@@ -47,3 +47,14 @@ test('a usage error through the real entry exits 2 with nothing on stdout', asyn
   assert.equal(code, 2);
   assert.equal(stdout, '');
 });
+
+test('--version and -V inside a lets backlog command are words, not the version flag', async () => {
+  const gh = withFakeGh();
+  const found = await lets(gh.dir, 'backlog', 'find', 'fix', '--version', 'bump');
+  assert.equal(found.code, 0);
+  assert.deepEqual(JSON.parse(found.stdout), { issues: [] });
+  assert.ok(gh.calls().includes('issue list --state open --search fix --version bump in:title --json number,title'), gh.calls().join('\n'));
+  const item = await lets(gh.dir, 'backlog', 'item', '5', '-V');
+  assert.equal(item.code, 2);
+  assert.equal(item.stdout, '');
+});

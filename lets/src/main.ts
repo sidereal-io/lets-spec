@@ -358,7 +358,9 @@ program
   });
 
 // lets backlog parses its own arguments, so its help and usage errors come
-// from the same place its tests drive.
+// from the same place its tests drive. The entry below hands it every word
+// after backlog before the root parser runs, so a word such as --version or
+// -- is a search word; this registration only lists it in lets --help.
 program
   .command('backlog')
   .summary('read and claim work on the repository\'s backlog')
@@ -370,17 +372,18 @@ program
   .argument('[args...]')
   .addHelpText('after', BACKLOG_HELP)
   .action(async () => {
-    // The raw words after backlog: commander drops a --, which the inner
-    // parser needs to read a word such as --help as a search word.
-    const argv = process.argv.slice(2);
-    process.exitCode = await backlog(argv.slice(argv.indexOf('backlog') + 1), realDeps());
+    process.exitCode = await backlog(process.argv.slice(3), realDeps());
   });
 
-try {
-  await program.parseAsync(process.argv);
-} catch (error) {
-  if (!(error instanceof CommanderError)) throw error;
-  process.exitCode = error.exitCode === 0 ? 0 : 2;
+if (process.argv[2] === 'backlog') {
+  process.exitCode = await backlog(process.argv.slice(3), realDeps());
+} else {
+  try {
+    await program.parseAsync(process.argv);
+  } catch (error) {
+    if (!(error instanceof CommanderError)) throw error;
+    process.exitCode = error.exitCode === 0 ? 0 : 2;
+  }
 }
 
 // The command has answered, so exit once its output is written. A WebSocket
