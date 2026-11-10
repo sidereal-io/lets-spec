@@ -29,7 +29,7 @@ test('item reads a shaped story with its Project fields, parent and blockers', a
       parent: { id: 'I_52', number: 52, title: 'epic', url: url(52), state: 'OPEN' },
       blockedBy: { nodes: [{ id: 'I_135', number: 135, title: 'contract', url: url(135), state: 'CLOSED', repository: { nameWithOwner: REPO } }], totalCount: 1 },
     }))],
-    ['issue view 52 ', json({ number: 52, title: 'backlog-providers — epic', body: '## Shared decisions\n- D1' })],
+    [`issue view ${url(52)} `, json({ number: 52, title: 'backlog-providers — epic', body: '## Shared decisions\n- D1' })],
   ], [
     projectItem(136, { kind: 'Story', priority: 'Must', size: 'M', status: 'In Progress' }),
     projectItem(136, { kind: 'Chore', priority: 'Could', status: 'Todo' }, 'acme/other'),
@@ -44,7 +44,7 @@ test('item reads a shaped story with its Project fields, parent and blockers', a
     subIssues: [],
   });
   assert.deepEqual(t.calls()[1], ['issue', 'view', '136', '--json', 'number,title,body,url,state,assignees,parent,blockedBy,subIssues']);
-  assert.deepEqual(t.calls().at(-1), ['issue', 'view', '52', '--json', 'number,title,body']);
+  assert.deepEqual(t.calls().at(-1), ['issue', 'view', url(52), '--json', 'number,title,body']);
 });
 
 test('item returns each assignee\'s login', async () => {
@@ -107,4 +107,15 @@ test('item writes nothing', async () => {
   await run(['item', '9'], t.deps);
   assert.ok(!t.ran('issue edit'));
   assert.ok(!t.ran('project item-edit'));
+});
+
+test('a parent in another repository is read by its URL', async () => {
+  const parentUrl = 'https://github.com/acme/other/issues/52';
+  const t = backlogDeps(rows([
+    ['issue view 136 ', json(issue(136, { parent: { number: 52, title: 'other epic', url: parentUrl, state: 'OPEN', repository: { nameWithOwner: 'acme/other' } } }))],
+    [`issue view ${parentUrl} `, json({ number: 52, title: 'other epic', body: 'their decisions' })],
+  ], [projectItem(136, { kind: 'Story' })]));
+  assert.equal(await run(['item', '136'], t.deps), 0);
+  assert.deepEqual(t.json().parent, { number: 52, title: 'other epic', body: 'their decisions' });
+  assert.ok(!t.ran('issue view 52 '));
 });

@@ -138,10 +138,12 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
       const raw = await read(gh, ['issue', 'view', String(issue), '--json', 'number,title,body,url,state,assignees,parent,blockedBy,subIssues']) as Record<string, unknown>;
       const items = await projectItems();
       const onProject = items.find((item) => (item.content as { number?: number }).number === issue);
-      const parentRef = raw.parent as { number?: number } | null | undefined;
+      const parentRef = raw.parent as { number?: number; url?: string } | null | undefined;
       let parent: Item['parent'] = null;
       if (typeof parentRef?.number === 'number') {
-        const found = await read(gh, ['issue', 'view', String(parentRef.number), '--json', 'number,title,body']) as { number: number; title: string; body: string };
+        // A parent can sit in another repository, so read it by its URL.
+        const which = typeof parentRef.url === 'string' ? parentRef.url : String(parentRef.number);
+        const found = await read(gh, ['issue', 'view', which, '--json', 'number,title,body']) as { number: number; title: string; body: string };
         parent = { number: found.number, title: found.title, body: found.body };
       }
       urls.set(issue, raw.url as string);
