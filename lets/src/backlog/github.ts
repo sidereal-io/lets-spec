@@ -155,9 +155,9 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
         state: raw.state as string,
         ...fields(onProject),
         assignees: nodes(raw.assignees).map((user) => user.login as string),
-        blockedBy: nodes(raw.blockedBy).map((b) => ({ number: b.number as number, title: b.title as string, state: b.state as string })),
+        blockedBy: nodes(raw.blockedBy).map((b) => ({ number: b.number as number, title: b.title as string, state: b.state as string, url: b.url as string })),
         parent,
-        subIssues: nodes(raw.subIssues).filter((s) => s.state === 'OPEN').map((s) => ({ number: s.number as number, title: s.title as string })),
+        subIssues: nodes(raw.subIssues).filter((s) => s.state === 'OPEN').map((s) => ({ number: s.number as number, title: s.title as string, url: s.url as string })),
       };
     },
 

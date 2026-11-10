@@ -16,6 +16,8 @@ export type Candidate = {
 };
 
 export type Ref = { number: number; title: string };
+// A related issue, which can sit in another repository: its URL names it.
+export type Related = Ref & { url: string };
 
 // One issue, as lets backlog item returns it. A field the backlog does not
 // set, or every field of an issue that is not on the backlog, is null.
@@ -30,9 +32,9 @@ export type Item = {
   size: string | null;
   status: string | null;
   assignees: string[];
-  blockedBy: (Ref & { state: string })[];
+  blockedBy: (Related & { state: string })[];
   parent: (Ref & { body: string }) | null;
-  subIssues: Ref[];
+  subIssues: Related[];
 };
 
 // The Status values the claim writes.

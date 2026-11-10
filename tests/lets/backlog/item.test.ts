@@ -39,7 +39,7 @@ test('item reads a shaped story with its Project fields, parent and blockers', a
     number: 136, title: 'story-136 — outcome', body: 'body of 136', url: url(136), state: 'OPEN',
     kind: 'Story', priority: 'Must', size: 'M', status: 'In Progress',
     assignees: [],
-    blockedBy: [{ number: 135, title: 'contract', state: 'CLOSED' }],
+    blockedBy: [{ number: 135, title: 'contract', state: 'CLOSED', url: url(135) }],
     parent: { number: 52, title: 'backlog-providers — epic', body: '## Shared decisions\n- D1' },
     subIssues: [],
   });
@@ -118,4 +118,17 @@ test('a parent in another repository is read by its URL', async () => {
   assert.equal(await run(['item', '136'], t.deps), 0);
   assert.deepEqual(t.json().parent, { number: 52, title: 'other epic', body: 'their decisions' });
   assert.ok(!t.ran('issue view 52 '));
+});
+
+test('a blocker or sub-issue in another repository keeps its URL', async () => {
+  const other = (n: number) => `https://github.com/acme/lib/issues/${n}`;
+  const t = backlogDeps(rows([
+    ['issue view 52 ', json(issue(52, {
+      blockedBy: { nodes: [{ number: 7, title: 'lib fix', state: 'OPEN', url: other(7) }], totalCount: 1 },
+      subIssues: { nodes: [{ number: 8, title: 'lib story', state: 'OPEN', url: other(8) }], totalCount: 1 },
+    }))],
+  ], [projectItem(52, { kind: 'Epic' })]));
+  await run(['item', '52'], t.deps);
+  assert.deepEqual(t.json().blockedBy, [{ number: 7, title: 'lib fix', state: 'OPEN', url: other(7) }]);
+  assert.deepEqual(t.json().subIssues, [{ number: 8, title: 'lib story', url: other(8) }]);
 });

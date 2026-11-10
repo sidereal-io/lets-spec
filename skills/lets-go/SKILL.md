@@ -269,6 +269,9 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
    blocker whose `state` is `OPEN` is open. When one is:
    - **The branch exists**, here or on `origin`: the user has stacked it
      by hand. Name the open blockers by number, and go on.
+
+   Name a blocker in another repository by its `url`, not its number:
+   a bare number means an issue of this repository.
    - **It does not exist:** say which open issues block `#<i>`, and
      stop. The user stacks it on the blocker's branch by hand.
 4. Run [Find the source of demand](#find-the-source-of-demand) for
@@ -296,7 +299,8 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
      result carries it, and show nothing of what a comment says. Say to
      run the `lets-shape` skill on `#<i>`, and stop.
    - **`epic`:** say that an epic is built through its stories, list the
-     open sub-issues the result carries, and stop.
+     open sub-issues the result carries, and stop. List a sub-issue in
+     another repository by its `url`.
 6. When [Confirm the packet](#confirm-the-packet) returns `complete`,
    shape is done. Print shape's line, as
    [The step lines](#the-step-lines) says.
