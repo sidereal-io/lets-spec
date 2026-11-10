@@ -539,6 +539,7 @@ you Node 26, pnpm, bats, `jq`, `yq` and the OpenSpec CLI. Then run
 | `build/` | The release builder, the OpenSpec skill generator and the list of OpenSpec workflows |
 | `openspec-*` skills | Not committed. The flake generates them from the OpenSpec CLI in its nixpkgs, for the workflows in `build/openspec.json`, so moving nixpkgs can change their text. Each release records the CLI version in its `release.json`. |
 | `lets/` | The `lets` command, in TypeScript. `src/sync/` is `lets sync`, and `src/delegate/` is `lets delegate`. `src/resolvers/t3/`, `cli/` and `subagent/` are the three resolvers, each an adapter that `lets delegate` calls in process. `src/resolvers/kit/` is the code they share with `lets delegate`: the adapter type, the model families, the errors and exit codes. `build.mjs` bundles `lets` into one file with esbuild. |
+| `lets/src/backlog/` | `lets backlog`, the commands the skills run on the backlog. `adapter.ts` is the adapter interface, `github.ts` the GitHub adapter, which calls `gh`, `policy.ts` the shared ready, rank, claim and release rules, and `commands.ts` the command line and its JSON. |
 | `docs/` | The pages the README links to, and the decision records in `docs/decisions/` |
 | `package.json`, `pnpm-workspace.yaml`, `tsconfig.json`, `mise.toml` | The pnpm workspace, its scripts, the type check's settings, and the tools for working without Nix |
 | `skills/` | The authored skills, one `lets-*` folder each: the entry points, and the flow skills the schemas call |

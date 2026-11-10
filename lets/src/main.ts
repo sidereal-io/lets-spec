@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command, CommanderError, InvalidArgumentError, Option } from 'commander';
+import { BACKLOG_HELP, run as backlog } from './backlog/commands.ts';
 import { run as handoff } from './delegate/handoff.ts';
 import type { HandoffOptions } from './delegate/handoff.ts';
 import { run as instructions } from './delegate/instructions.ts';
@@ -354,6 +355,22 @@ program
   .addHelpText('after', GO_QUESTIONS_HELP)
   .action(async () => {
     process.exitCode = await questions(realDeps());
+  });
+
+// lets backlog parses its own arguments, so its help and usage errors come
+// from the same place its tests drive.
+program
+  .command('backlog')
+  .summary('read and claim work on the repository\'s backlog')
+  .description('Read and claim work on the repository\'s backlog: ready, item, find, claim and release. Each prints one JSON object.')
+  .usage('<ready|item|find|claim|release> [args]')
+  .helpOption(false)
+  .allowUnknownOption()
+  .allowExcessArguments()
+  .argument('[args...]')
+  .addHelpText('after', BACKLOG_HELP)
+  .action(async (args: string[]) => {
+    process.exitCode = await backlog(args, realDeps());
   });
 
 try {

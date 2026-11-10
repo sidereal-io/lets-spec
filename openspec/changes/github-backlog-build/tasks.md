@@ -1,7 +1,7 @@
 ## 1. The command and the adapter boundary
 
 - [x] 1.1 [easy] Remove #135's executable kit: `lets/src/backlog/*`, `tests/lets/backlog/*`, `docs/backlog-adapter-contract.md`, the flake's dist check for that doc, and the README's mentions of the executable contract; the type check still passes (verify: `test ! -e docs/backlog-adapter-contract.md && deli -- pnpm exec tsc --noEmit`) (✓ `test ! -e docs/backlog-adapter-contract.md && deli -- pnpm exec tsc --noEmit` passed)
-- [ ] 1.2 [medium] `lets backlog <command>` prints one JSON object and exits 0 on a result, exits 1 with `no-backlog`, `several-backlogs` (titles and URLs) or `gh-failed` from today's Project query, and exits 2 on a usage error; tests use a fake `Io` whose `execFile` answers `gh` calls from a table (verify: `node --test tests/lets/backlog/commands.test.ts`)
+- [x] 1.2 [medium] `lets backlog <command>` prints one JSON object and exits 0 on a result, exits 1 with `no-backlog`, `several-backlogs` (titles and URLs) or `gh-failed` from today's Project query, and exits 2 on a usage error; tests use a fake `Io` whose `execFile` answers `gh` calls from a table (verify: `node --test tests/lets/backlog/commands.test.ts`) (✓ `node --test tests/lets/backlog/commands.test.ts` passed, 9 tests)
 
 ## 2. The backlog commands [depends-on: 1]
 
