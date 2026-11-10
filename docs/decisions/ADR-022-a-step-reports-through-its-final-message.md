@@ -1,12 +1,12 @@
 ---
-id: adr-014
+id: adr-022
 date: 2026-11-04
 status: accepted
-title: 'ADR-014: A step reports through its final message, and exit 0 means a report'
+title: 'ADR-022: A step reports through its final message, and exit 0 means a report'
 description: Architecture decision record (ADR) for how a step session returns its step report to lets delegate, and what the command's exit codes mean
 ---
 
-# ADR-014: A step reports through its final message, and exit 0 means a report
+# ADR-022: A step reports through its final message, and exit 0 means a report
 
 > Builds on [ADR-007](ADR-007-delegations-by-strategy-and-intent.md): `step` is a third strategy, with its own options, output and exit codes.
 

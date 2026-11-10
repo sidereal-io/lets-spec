@@ -1,14 +1,14 @@
 ---
-id: adr-015
+id: adr-023
 date: 2026-11-04
 status: accepted
-title: 'ADR-015: A step asks the user through its report, never in its session'
+title: 'ADR-023: A step asks the user through its report, never in its session'
 description: Architecture decision record (ADR) for where a step's questions reach the user, and who answers a question that has a recommendation
 ---
 
-# ADR-015: A step asks the user through its report, never in its session
+# ADR-023: A step asks the user through its report, never in its session
 
-> Builds on [ADR-014](ADR-014-a-step-reports-through-its-final-message.md): the report is the step's one channel back, and this record puts the step's questions on it.
+> Builds on [ADR-022](ADR-022-a-step-reports-through-its-final-message.md): the report is the step's one channel back, and this record puts the step's questions on it.
 
 ## Context
 

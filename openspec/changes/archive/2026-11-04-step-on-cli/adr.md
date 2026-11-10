@@ -18,8 +18,8 @@ ADR review completed for this change. Every record in `docs/decisions/` was read
 - [ADR-010](../../../docs/decisions/ADR-010-the-resolvers-are-built-into-lets.md): the resolvers are adapters inside `lets`. Supersedes ADR-003, ADR-004 and ADR-009.
 - [ADR-011](../../../docs/decisions/ADR-011-one-config-file-shaped-like-the-commands.md): one config file. Unchanged.
 - [ADR-012](../../../docs/decisions/ADR-012-issue-comments-are-evidence.md) and [ADR-013](../../../docs/decisions/ADR-013-the-reply-is-the-read-marker.md): issue comments. Not touched by this change.
-- [ADR-014](../../../docs/decisions/ADR-014-a-step-reports-through-its-final-message.md): the report travels in the final message, and exit 0 means a report. Design D-3 follows it: an empty message becomes a `failed` report, not an exit code.
-- [ADR-015](../../../docs/decisions/ADR-015-a-step-asks-through-its-report.md): a step never asks in its session. This is why the write mode must never prompt (design D-2).
+- [ADR-022](../../../docs/decisions/ADR-022-a-step-reports-through-its-final-message.md): the report travels in the final message, and exit 0 means a report. Design D-3 follows it: an empty message becomes a `failed` report, not an exit code.
+- [ADR-023](../../../docs/decisions/ADR-023-a-step-asks-through-its-report.md): a step never asks in its session. This is why the write mode must never prompt (design D-2).
 - [ADR-016](../../../docs/decisions/ADR-016-review-and-handoff-stay-apart-from-step.md): one adapter method per kind of session, and an adapter may share one private function between `run` and `step`. Design D-1 is that function.
 - [ADR-017](../../../docs/decisions/ADR-017-lets-go-reads-where-a-run-stands-from-git-and-github.md) and [ADR-018](../../../docs/decisions/ADR-018-lets-build-stays-and-loses-its-handoff.md): `lets-go` and `lets-build`. Not touched by this change.
 

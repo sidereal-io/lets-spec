@@ -23,6 +23,6 @@ ADR review completed for this change.
 
 ## New Durable ADRs Created
 
-- [ADR-014](../../../docs/decisions/ADR-014-a-step-reports-through-its-final-message.md): a step reports through its final message, and exit 0 means a report. Design decisions D-2 and D-3.
+- [ADR-022](../../../docs/decisions/ADR-022-a-step-reports-through-its-final-message.md): a step reports through its final message, and exit 0 means a report. Design decisions D-2 and D-3.
 
 The other design decisions are recoverable from code: a third `Kind` and adapter method (D-1), the answers section (D-4), the default's step (D-5), finish on `done` (D-6), the config key (D-7) and the stderr record (D-8). None gets a record.
