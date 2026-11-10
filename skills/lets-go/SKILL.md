@@ -384,7 +384,10 @@ Next: [Enter the branch](#enter-the-branch).
      Say what the issue may be left holding: after a failed `status`
      write, your assignment, with its Status unchanged; after a failed
      `assign`, nothing, unless the message says the write may have
-     happened. Do not release the claim. Stop, and run no step.
+     happened. Say how to recover: run `lets backlog release <i>` to
+     give the issue back, then run `lets-go` again. Until then, a new
+     run finds the issue `taken`, by your own assignment. Do not release
+     the claim yourself. Stop, and run no step.
    - **`branch-failed`:** [Claim](#claim) has released the claim. Show
      the branch's error it carries. When it carries a release error
      too, show it, and say the issue may still hold your assignment or
