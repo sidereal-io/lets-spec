@@ -5,7 +5,7 @@
 
 ## 2. The backlog commands [depends-on: 1]
 
-- [ ] 2.1 [medium] `ready` lists the open Todo, non-Epic, Must/Should/Could, unassigned and unblocked issues of this repository, ranked Must, Should, Could, then lowest number, honours `--only` and `--exclude`, and passes today's 500-item limits to `gh` (verify: `node --test tests/lets/backlog/ready.test.ts`)
+- [x] 2.1 [medium] `ready` lists the open Todo, non-Epic, Must/Should/Could, unassigned and unblocked issues of this repository, ranked Must, Should, Could, then lowest number, honours `--only` and `--exclude`, and passes today's 500-item limits to `gh` (verify: `node --test tests/lets/backlog/ready.test.ts`) (✓ `node --test tests/lets/backlog/ready.test.ts` passed, 9 tests; 3 fail with the number order reversed)
 - [ ] 2.2 [medium] `item <i>` returns title, body, URL, state, Project fields (null when unset or off the Project), assignees, blockers with state, parent with body, and open sub-issues, and returns `not-found` for a missing issue (verify: `node --test tests/lets/backlog/item.test.ts`)
 - [ ] 2.3 [easy] `find <words>` returns the open issues whose titles match, unfiltered, and an empty list for no match (verify: `node --test tests/lets/backlog/find.test.ts`)
 - [ ] 2.4 [medium] `claim <i>` returns `taken` with the logins and writes nothing when anyone is assigned, otherwise assigns `@me` then sets Status In Progress and returns `claimed`, and returns `failed` with `write` and `gh`'s error, with no undo, when either write fails or times out (verify: `node --test tests/lets/backlog/claim.test.ts`)
@@ -26,3 +26,4 @@
 
 - 1.1: ADR-014 still links to `docs/backlog-adapter-contract.md`. It is superseded and kept as written, so the link now points at a removed file; the file stays in Git history.
 - 1.1: the README's `lets/src/backlog/` row is removed here and comes back with the new code in 1.2.
+- 2.1–2.5: the adapter and the shared rules were written whole in 1.2, as one object. Each command's tests in section 2 came after that code, so each was checked to fail against a deliberately broken rule before it was ticked.
