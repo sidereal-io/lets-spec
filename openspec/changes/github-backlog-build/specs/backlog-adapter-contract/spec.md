@@ -1,7 +1,7 @@
 ## REMOVED Requirements
 
 ### Requirement: Contract validation leaves production integrations unchanged
-**Reason**: The executable adapter contract is retired (ADR superseding ADR-015 for backlogs). lets runs backlog adapters in its own code.
+**Reason**: The executable adapter contract is retired (ADR-021 supersedes ADR-015). lets runs backlog adapters in its own code.
 **Migration**: None needed: no production integration used the contract. The `lets-backlog` capability describes the backlog behavior.
 
 ### Requirement: Executable boundary separates responsibilities

@@ -48,7 +48,7 @@
 
 7. **No `ref` command.** `Closes #<n>` is written by the schemas and `lets-review-build`. It is not a `gh` call, so D4 leaves it as it is. A provider whose reference differs adds it with that provider.
 
-8. **The ADR.** A new ADR records that backlog adapters are code in `lets` that runs the backend's commands itself and returns typed results. It supersedes ADR-015 for backlogs, and leaves ADR-015's delegation part alone. ADR-015 gets a note saying so. It names #236 as the way to a config-file adapter. The ADR step writes it.
+8. **The ADR.** ADR-021 records where a call to an outside tool runs: in lets code, through an adapter that returns typed results, or directly in the skill. The task's complexity and portability decide, not what the call is about. No agent stands between lets and a command it runs. It supersedes ADR-015 for delegation and backlogs, and confirms ADR-010's built-in resolvers. Loading an adapter from outside lets stays undecided.
 
 9. **Removing #135's kit.** Delete `lets/src/backlog/*` and `tests/lets/backlog/*` before adding the new files, `docs/backlog-adapter-contract.md`, and the flake's dist check for that doc. Keep the `test:backlog` script, pointing at the new tests. Remove README mentions of the executable contract.
 

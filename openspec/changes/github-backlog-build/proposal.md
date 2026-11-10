@@ -9,7 +9,7 @@
 - `claim` returns `claimed`, `taken` or `failed`. `failed` names the write that failed and `gh`'s error, with no undo, retry or journal (D8).
 - `lets-go` and `lets-plan` call `lets backlog` in place of their backlog `gh` commands. Pull request calls stay as `gh` (D10), and so do the comment thread read and the discovery query until #137 (D12). The `Closes #<n>` reference stays as written, and lets writes no completion (D11).
 - The provider is always GitHub: no config key yet (D7).
-- A new ADR supersedes ADR-015 where it covers backlogs (D2).
+- A new ADR, ADR-021, says where a call to an outside tool runs: in lets code or in the skill, by how complex and portable it must be. It supersedes ADR-015 entirely (D2).
 - **BREAKING** (unreleased surface only): #135's executable contract is removed: the `backlog-adapter-contract` spec, `docs/backlog-adapter-contract.md`, and the kit in `lets/src/backlog/` with its tests (D6). No production code uses it.
 
 ## Capabilities
@@ -27,6 +27,6 @@
 
 - **Code:** new `lets backlog` command group in `lets/src/main.ts`; `lets/src/backlog/` is rewritten as the adapter interface, shared policy and the GitHub adapter; the old kit and `tests/lets/backlog/` are replaced, with the `test:backlog` script and the flake's check on `docs/backlog-adapter-contract.md`.
 - **Skills:** `skills/lets-go/SKILL.md`, its references, and `skills/lets-plan/SKILL.md`; their checks in `tests/skill-interfaces.bats` and the `lets-go` prose checks.
-- **Docs:** the shared glossary's Adapter entry drops the execution hybrid's mechanics; a new ADR in `docs/decisions/`; ADR-015 gets a supersession note for backlogs; `docs/backlog-adapter-contract.md` is removed; README mentions are updated.
+- **Docs:** the shared glossary's Adapter entry drops the execution hybrid's mechanics; a new ADR in `docs/decisions/`; ADR-015 is marked superseded, and its notes on ADR-005, ADR-010 and ADR-011 are removed; the duplicate ADR-014 and ADR-015 numbers are fixed; `docs/backlog-adapter-contract.md` is removed; README mentions are updated.
 - **Dependencies:** `gh` stays a runtime requirement, now called by lets instead of by the agent.
 - **Backlog:** #180 has no target once this merges; #236 builds config-file adapters on this interface.
