@@ -20,7 +20,7 @@
 ## 4. Acceptance [depends-on: 3]
 
 - [x] 4.1 [medium] Every project check passes: the Node tests, the type check, the bats tests, the flake and OpenSpec validation (verify: `deli -- pnpm test && deli -- nix flake check && mise run check`) (✓ `deli -- pnpm test` passed: 574 Node tests, the type check and 370 bats tests; `deli -- nix flake check` exited 0; `mise run check` passed 15 of 15)
-- [ ] 4.2 [medium] Live run in a clone of `mstelz/test-repo-pls-ignore` with this branch's `lets`: `ready`, `item`, `find`, `claim` (`claimed`, then `taken` from a second account or a pre-assigned issue) and `release` behave as specified against its real Project, and one `lets-go` run claims a story and creates its branch; the results are recorded in the pull request (verify: `lets backlog item <claimed-issue>` in the clone shows `"status": "In Progress"` and the user in `assignees`)
+- [x] 4.2 [medium] Live run in a clone of `mstelz/test-repo-pls-ignore` with this branch's `lets`: `ready`, `item`, `find`, `claim` (`claimed`, then `taken` from a second account or a pre-assigned issue) and `release` behave as specified against its real Project, and one `lets-go` run claims a story and creates its branch; the results are recorded in the pull request (verify: `lets backlog item <claimed-issue>` in the clone shows `"status": "In Progress"` and the user in `assignees`) (✓ `lets backlog item 23` in the clone shows `"status": "In Progress"` and `mstelz` in `assignees`; results recorded in PR #237)
 
 ## Deviations Ledger
 
@@ -29,3 +29,4 @@
 - 2.1–2.5: the adapter and the shared rules were written whole in 1.2, as one object. Each command's tests in section 2 came after that code, so each was checked to fail against a deliberately broken rule before it was ticked.
 - 3.1: *Claim* still ran `gh project item-edit` with `<project>` and `<owner>` until 3.2, so those two rows stay in the Placeholders table, marked as Claim's, until 3.2 removes them with the calls.
 - 3.2: the `<issue-url>` row stays, because the step prompt still names the issue URL; it is now set from the `url` that `lets backlog item <i>` prints.
+- 4.2: no unassigned ready fixture in the test repository had a kebab-case title, so `lets-shape` filed #23 there for the success path, at the user's choice. #12 showed the `branch-failed` path: its change name is not a valid branch name, and the release put it back to Todo.
