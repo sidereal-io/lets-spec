@@ -7,11 +7,12 @@ Says what the `lets-go` skill does for a shaped Chore, Bug or Story, or for an i
 ## Requirements
 
 ### Requirement: Start finds, confirms, routes and claims the issue
-`lets-go` SHALL hold *Find the source of demand*, *Confirm the packet*, *Route*, *Glossary preflight*, *Claim* and *Import the glossary checkpoint* as sections of its own. They SHALL sit under no `## Start` heading: the parts that *lets-go opens with an overview of its parts* lists call them. It SHALL name no section of `lets-build`. It SHALL run *Find the source of demand*, *Confirm the packet* and *Route* in its own session on every run. It SHALL run *Claim* only when no branch with the change's name exists, locally or on `origin`. *Check the issue* SHALL be the only part that looks for the branch: *Claim* SHALL not look again, and SHALL have no `branch-exists` result. When a local branch with the change's name appears after *Check the issue* looked, creating it fails, and *Claim* SHALL release the claim and return `branch-failed`. A branch that appears only on `origin` does not make it fail: the plan step's first push is rejected, and that step fails. *Claim* claims the issue with `lets backlog claim <i>`, and releases it with `lets backlog release <i>`. It runs no `gh` command on the backlog. When the change's branch exists and `lets-go` is on the default branch, it SHALL run `git switch <name>`, and go on as on a change's branch. On a change's branch that `origin` has, it SHALL run `git fetch origin <name>` before it reads any record. A local branch behind `origin/<name>` SHALL be fast-forwarded with `git merge --ff-only origin/<name>`. A local branch that has diverged from `origin/<name>` is a disagreement. `lets-go` SHALL read the issue's blockers, and decide on an open one, before it runs *Find the source of demand* for that issue. The skill SHALL state this rule before that call, so that an agent that follows it in reading order decides on an open blocker before it reaches the section. The blocker read SHALL be `lets backlog item <i>`, whose `title` and `blockedBy` it uses, so the change's name is known as *Claim* names it, before *Confirm the packet* reads the title. `lets-go` SHALL look for the change's branch as *lets-go looks for the change's branch before the packet check* says. When a blocker is open and the branch exists, locally or on `origin`, it SHALL name the open blockers and go on: the user has stacked the branch by hand. *Find the source of demand* SHALL still run *Check the prerequisite* for the issue. When it returns `unresolved`, `lets-go` SHALL report the unresolved owner or checkpoint, and stop, even on a stacked branch. When a blocker is open and no such branch exists, `lets-go` SHALL say which open issues block it, and stop. The first case of *Find the source of demand*, for an issue the run already has, SHALL make no blocker decision of its own, because the blocker read has decided. That case SHALL cover an issue the user named, and an issue the run picked or shaped. Its heading SHALL not say the user named it: whether the user named it matters only to the shape step. Each procedure returns a result, and the part that ran it decides what comes next, as *Each lets-go procedure returns a result* says. *Check the issue* holds the blocker read. For an idea, `lets-go` SHALL run that section's second case, described work with no issue: the search for an existing issue. It SHALL show the user the matches and ask, in either mode, whether one is the same work. A yes SHALL make that issue `<i>`. On a no, or when the case returns `no-match`, `lets-go` SHALL run the shape step for the idea. With no number and no idea, `lets-go` SHALL run that section's third case, `next`, as *lets-go takes one issue number or an idea* says. After a shape report that names a parent and stories, `lets-go` SHALL run that third case again. The candidates SHALL be the report's stories, as *lets-go picks the first ready story* says. When *Claim* returns `taken`, `lets-go` SHALL go on as *A lost claim drops the issue, and three lost claims stop the run* says. When *Confirm the packet* returns `needs-shape`, `lets-go` SHALL go on as *Only an idea or a named issue goes to the shape step* says. When it returns `epic`, `lets-go` SHALL say that an epic is built through its stories, list its open sub-issues, and stop. Beside the commands those sections hold, the parts before *Walk the step table* SHALL run only:
+`lets-go` SHALL hold *Find the source of demand*, *Confirm the packet*, *Route*, *Glossary preflight*, *Claim* and *Import the glossary checkpoint* as sections of its own. They SHALL sit under no `## Start` heading: the parts that *lets-go opens with an overview of its parts* lists call them. It SHALL name no section of `lets-build`. It SHALL run *Find the source of demand*, *Confirm the packet* and *Route* in its own session on every run. It SHALL run *Claim* only when no branch with the change's name exists, locally or on `origin`. *Check the issue* SHALL be the only part that looks for the branch: *Claim* SHALL not look again, and SHALL have no `branch-exists` result. When a local branch with the change's name appears after *Check the issue* looked, creating it fails, and *Claim* SHALL release the claim and return `branch-failed`. A branch that appears only on `origin` does not make it fail: the plan step's first push is rejected, and that step fails. *Claim* sets the issue's Status with `gh project item-edit`, so `lets-go` sets that field itself. When the change's branch exists and `lets-go` is on the default branch, it SHALL run `git switch <name>`, and go on as on a change's branch. On a change's branch that `origin` has, it SHALL run `git fetch origin <name>` before it reads any record. A local branch behind `origin/<name>` SHALL be fast-forwarded with `git merge --ff-only origin/<name>`. A local branch that has diverged from `origin/<name>` is a disagreement. `lets-go` SHALL read the issue's blockers, and decide on an open one, before it runs *Find the source of demand* for that issue. The skill SHALL state this rule before that call, so that an agent that follows it in reading order decides on an open blocker before it reaches the section. The blocker read SHALL be `gh issue view <i> --json title,blockedBy`, so the change's name is known as *Claim* names it, before *Confirm the packet* reads the title. `lets-go` SHALL look for the change's branch as *lets-go looks for the change's branch before the packet check* says. When a blocker is open and the branch exists, locally or on `origin`, it SHALL name the open blockers and go on: the user has stacked the branch by hand. *Find the source of demand* SHALL still run *Check the prerequisite* for the issue. When it returns `unresolved`, `lets-go` SHALL report the unresolved owner or checkpoint, and stop, even on a stacked branch. When a blocker is open and no such branch exists, `lets-go` SHALL say which open issues block it, and stop. The first case of *Find the source of demand*, for an issue the run already has, SHALL make no blocker decision of its own, because the blocker read has decided. That case SHALL cover an issue the user named, and an issue the run picked or shaped. Its heading SHALL not say the user named it: whether the user named it matters only to the shape step. Each procedure returns a result, and the part that ran it decides what comes next, as *Each lets-go procedure returns a result* says. *Check the issue* holds the blocker read. For an idea, `lets-go` SHALL run that section's second case, described work with no issue: the search for an existing issue. It SHALL show the user the matches and ask, in either mode, whether one is the same work. A yes SHALL make that issue `<i>`. On a no, or when the case returns `no-match`, `lets-go` SHALL run the shape step for the idea. With no number and no idea, `lets-go` SHALL run that section's third case, `next`, as *lets-go takes one issue number or an idea* says. After a shape report that names a parent and stories, `lets-go` SHALL run that third case again. The candidates SHALL be the report's stories, as *lets-go picks the first ready story* says. When *Claim* returns `taken`, `lets-go` SHALL go on as *A lost claim drops the issue, and three lost claims stop the run* says. When *Confirm the packet* returns `needs-shape`, `lets-go` SHALL go on as *Only an idea or a named issue goes to the shape step* says. When it returns `epic`, `lets-go` SHALL say that an epic is built through its stories, list its open sub-issues, and stop. Beside the commands those sections hold, the parts before *Walk the step table* SHALL run only:
 
 - `lets go questions`, run once when it reads the request, as *lets-go picks the question mode and says why* says;
 - `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` and `git branch --show-current`, run once after it, to find the default branch and the current one;
-- the blocker read above;
+- the Project query, run once in *Read the settings*, as *The Project query runs once per run* says;
+- `title` beside `blockedBy` in the blocker read above;
 - `gh issue view <i> --json createdAt`, run only when the issue's `lastEditedAt` is null;
 - the issue search of *lets-go takes one issue number or an idea*;
 - `git branch --list <name>` and `git ls-remote --heads origin refs/heads/<name>`, to find the change's branch, and the fetch, switch and fast-forward above;
@@ -23,11 +24,11 @@ No part SHALL be a step: the parts before the walk SHALL run no `lets delegate s
 
 #### Scenario: The skill names the sections
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`
-- **THEN** it finds *Find the source of demand*, *Confirm the packet*, *Route*, *Glossary preflight*, *Claim* and *Import the glossary checkpoint* as headings of `lets-go`. It finds `gh issue view <i> --json createdAt`, `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` and `lets backlog claim <i>`, no `gh project` and no `gh api graphql`, and no section named as `lets-build`'s
+- **THEN** it finds *Find the source of demand*, *Confirm the packet*, *Route*, *Glossary preflight*, *Claim* and *Import the glossary checkpoint* as headings of `lets-go`. It finds `gh issue view <i> --json createdAt`, `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` and `gh project item-edit`, and no section named as `lets-build`'s
 
 #### Scenario: A lost race on next
 - **WHEN** `lets-go` ran alone, `next` picked #149, and *Claim* finds that #149 has an assignee
-- **THEN** `lets-go` leaves #149 out, runs `lets backlog ready --exclude 149`, prints a new `Picked` line, and runs the blocker read, *Confirm the packet* and *Route* for the new issue
+- **THEN** `lets-go` leaves #149 out, runs both `next` commands again, prints a new `Picked` line, and runs the blocker read, *Confirm the packet* and *Route* for the new issue
 
 #### Scenario: The branch exists
 - **WHEN** `lets-go` runs for #149 on the default branch, and `origin` has a branch `lets-go-chore`
@@ -55,7 +56,7 @@ No part SHALL be a step: the parts before the walk SHALL run no `lets delegate s
 
 #### Scenario: The blocker rule comes before the call
 - **WHEN** the skill-interfaces test reads *Check the issue* in `skills/lets-go/SKILL.md`
-- **THEN** it finds `lets backlog item <i>` before the call to *Find the source of demand*, and that section's named-issue case no longer says `If an open issue blocks it, say so and stop`
+- **THEN** it finds `gh issue view <i> --json title,blockedBy` before the call to *Find the source of demand*, and that section's named-issue case no longer says `If an open issue blocks it, say so and stop`
 
 #### Scenario: The search finds the same work
 - **WHEN** the user runs `lets-go add a --quiet flag to lets sync`, the search finds `#181 lets-sync-quiet — lets sync takes a --quiet flag`, and the user says it is the same work
@@ -609,7 +610,7 @@ In `ask` mode, when a report's outcome is `needs-input`, `lets-go` SHALL ask the
 - **THEN** `lets-go` asks the user that question alone, as it does at `auto`
 
 ### Requirement: lets-go takes one issue number or an idea
-`lets-go` SHALL take one issue number, or an idea in words, or nothing. A request names an issue when it holds `#<i>` or is a bare number. A leading or trailing `ask` or `auto` SHALL name the question mode when the rest of the request is a number or nothing. When the rest is words on the default branch, `lets-go` SHALL ask the user whether that word names the question mode or is part of the idea, and show both readings. It SHALL ask in either mode, before *Start from an idea* runs. Only when the user says the word names the question mode SHALL `lets-go` take it off, as the question mode. Otherwise the word SHALL stay in the idea, and *Set the question mode* SHALL take the question mode from its next source. On the default branch, every other request with words SHALL be the idea, kept word for word. When the idea holds no letter or digit, in any script, `lets-go` SHALL say that an idea needs at least one letter or digit, and stop. It SHALL stop before the discovery query and the title search, claiming nothing and running no step. On the default branch, when the request holds neither a number nor words, `lets-go` SHALL take `next`: the third case of *Find the source of demand*, over the whole backlog. That case keeps its rank, and its *Check the prerequisite* and *Confirm the packet* on each candidate, as *Only an idea or a named issue goes to the shape step* says. `lets-go` SHALL print `Picked #<i>: <title>, the next ready issue.` and go on from the blocker read with that issue as `<i>`. When the case returns `nothing-ready`, `lets-go` SHALL say the backlog has nothing ready, suggest the `lets-shape` skill, and stop, claiming nothing. On a change's branch, when it is given no number, it SHALL find the issue by the branch name. It SHALL run `lets backlog find <branch>` and keep the issues whose title starts with `<branch> — `. Exactly one match SHALL be the issue. Otherwise it SHALL say that it needs the issue number, and stop. When it is given a number on a change's branch, that issue's title SHALL start with `<branch> — `. If it does not, `lets-go` SHALL say the issue and the branch do not match, and stop. When it is given words on a change's branch, it SHALL say that an idea needs the default branch, and stop. It SHALL take an issue number as *Find the source of demand* takes a named issue. It SHALL take an idea as that section takes described work.
+`lets-go` SHALL take one issue number, or an idea in words, or nothing. A request names an issue when it holds `#<i>` or is a bare number. A leading or trailing `ask` or `auto` SHALL name the question mode when the rest of the request is a number or nothing. When the rest is words on the default branch, `lets-go` SHALL ask the user whether that word names the question mode or is part of the idea, and show both readings. It SHALL ask in either mode, before *Start from an idea* runs. Only when the user says the word names the question mode SHALL `lets-go` take it off, as the question mode. Otherwise the word SHALL stay in the idea, and *Set the question mode* SHALL take the question mode from its next source. On the default branch, every other request with words SHALL be the idea, kept word for word. When the idea holds no letter or digit, in any script, `lets-go` SHALL say that an idea needs at least one letter or digit, and stop. It SHALL stop before the discovery query and the title search, claiming nothing and running no step. On the default branch, when the request holds neither a number nor words, `lets-go` SHALL take `next`: the third case of *Find the source of demand*, over the whole backlog. That case keeps its rank, and its *Check the prerequisite* and *Confirm the packet* on each candidate, as *Only an idea or a named issue goes to the shape step* says. `lets-go` SHALL print `Picked #<i>: <title>, the next ready issue.` and go on from the blocker read with that issue as `<i>`. When the case returns `nothing-ready`, `lets-go` SHALL say the backlog has nothing ready, suggest the `lets-shape` skill, and stop, claiming nothing. On a change's branch, when it is given no number, it SHALL find the issue by the branch name. It SHALL run `gh issue list --state open --search "<branch> in:title" --json number,title` and keep the issues whose title starts with `<branch> — `. Exactly one match SHALL be the issue. Otherwise it SHALL say that it needs the issue number, and stop. When it is given a number on a change's branch, that issue's title SHALL start with `<branch> — `. If it does not, `lets-go` SHALL say the issue and the branch do not match, and stop. When it is given words on a change's branch, it SHALL say that an idea needs the default branch, and stop. It SHALL take an issue number as *Find the source of demand* takes a named issue. It SHALL take an idea as that section takes described work.
 
 #### Scenario: Neither a number nor words
 - **WHEN** the user runs `lets-go` alone on the default branch, and `next` finds `#149 lets-go-chore — ...` as the first ready issue
@@ -771,7 +772,7 @@ When discovery filed stories, the shape step's `done` report SHALL hold, as its 
 - **THEN** `lets-go` treats the step as `failed`, with a reason that says the shape step named no story, and stops
 
 ### Requirement: lets-go picks the first ready story
-After a shape report that names a parent and stories, `lets-go` SHALL pick one story with its own `next` case, the third case of *Find the source of demand*. The candidates SHALL be the report's stories and no other issue. That case SHALL run `lets backlog ready` with the report's stories as `--only`. So SHALL its rank, Must, then Should, then Could, then the lowest issue number, and its *Check the prerequisite* and *Confirm the packet* on each candidate in rank order. `lets-go` SHALL print `Picked #<i>: <title>, the first ready story under #<parent>.` It SHALL then go on from Start's blocker read with that story as `<i>`, as for an issue number. When the case returns `nothing-ready`, `lets-go` SHALL print the `Done shape` line, unless this run has printed it already, and say that no story under `#<parent>` is ready. It SHALL name each story and why it was left out, such as its blocker, its assignee, an unresolved prerequisite, or a packet that is not complete, say to run `lets-go` with a story's number once it is ready, and stop. It SHALL claim nothing and create no branch in that case.
+After a shape report that names a parent and stories, `lets-go` SHALL pick one story with its own `next` case, the third case of *Find the source of demand*. The candidates SHALL be the report's stories and no other issue. That case's two commands SHALL run as the section writes them. So SHALL its rank, Must, then Should, then Could, then the lowest issue number, and its *Check the prerequisite* and *Confirm the packet* on each candidate in rank order. `lets-go` SHALL print `Picked #<i>: <title>, the first ready story under #<parent>.` It SHALL then go on from Start's blocker read with that story as `<i>`, as for an issue number. When the case returns `nothing-ready`, `lets-go` SHALL print the `Done shape` line, unless this run has printed it already, and say that no story under `#<parent>` is ready. It SHALL name each story and why it was left out, such as its blocker, its assignee, an unresolved prerequisite, or a packet that is not complete, say to run `lets-go` with a story's number once it is ready, and stop. It SHALL claim nothing and create no branch in that case.
 
 #### Scenario: The walking skeleton is picked
 - **WHEN** the report names stories #191, #192 and #193, all Todo with Priority Must, #192 and #193 are blocked by #191, and nobody is assigned to any
@@ -857,6 +858,7 @@ Every placeholder in `skills/lets-go/SKILL.md` and in each file in `skills/lets-
 ### Requirement: Each placeholder in lets-go names one thing
 `skills/lets-go/SKILL.md` SHALL hold a `## Placeholders` section after the overview of its parts and before the first part. It SHALL hold a table with one row for each placeholder the skill uses, in `SKILL.md` or in a file in `skills/lets-go/references/`: the placeholder, the one thing it stands for, and where the run sets it. Each placeholder SHALL have one row, and SHALL name one thing everywhere in the skill. One thing SHALL have one placeholder. The names SHALL be these:
 
+- `<project>` is the number of the Project linked to the repository. `<owner>` is its owner, and `<repo>` the repository, as `owner/name`.
 - `<i>` is the run's issue: the number the user named, the issue `next` or *Pick the first ready story* picked, or the issue a shape step shaped. `<issue-url>` is its URL.
 - `<parent>` is a parent issue: an epic that discovery filed, or a discovery in progress.
 - `<story>` is one story that a shape step's report names.
@@ -866,7 +868,7 @@ Every placeholder in `skills/lets-go/SKILL.md` and in each file in `skills/lets-
 - `<session>` is a step's session label: `<name>-<step>` for plan, review plan, build and review build, and `<shape-name>-shape` for shape.
 - `<idea>` is the idea in the user's words.
 
-Neither `SKILL.md` nor any reference file SHALL hold `<n>`, `<p>`, `<url>`, `<issue URL>`, `<words>`, `<project>`, `<owner>` or `<repo>`. The table's *Where the run sets it* column SHALL name the part or section that sets each placeholder, never a step number.
+Neither `SKILL.md` nor any reference file SHALL hold `<n>`, `<p>`, `<url>`, `<issue URL>` or `<words>`. The table's *Where the run sets it* column SHALL name the part or section that sets each placeholder, never a step number.
 
 #### Scenario: Every placeholder has a row
 - **WHEN** the skill-interfaces test lists each distinct text in angle brackets that starts with a letter in `skills/lets-go/SKILL.md` and in each file in `skills/lets-go/references/`
@@ -885,8 +887,8 @@ Neither `SKILL.md` nor any reference file SHALL hold `<n>`, `<p>`, `<url>`, `<is
 - **THEN** it finds none of `<n>`, `<p>`, `<url>`, `<issue URL>` and `<words>`
 
 #### Scenario: The Project and the issue
-- **WHEN** `lets-go` claims #197
-- **THEN** it runs `lets backlog claim 197`, and no placeholder stands for the Project
+- **WHEN** `lets-go` claims #197 on Project 6
+- **THEN** it runs `gh project item-edit 6 --owner <owner> --url <issue-url> --field Status --value "In Progress"` with 6 as `<project>`, and never 197
 
 #### Scenario: The change's name after shape
 - **WHEN** the shape step ran as `issue-180-shape` and reported `done` with `issue #181: lets-sync-quiet — lets sync takes a --quiet flag`
@@ -1143,6 +1145,25 @@ This holds for `skills/lets-go/SKILL.md` and for each file in `skills/lets-go/re
 - **WHEN** the release build installs the `standard` flow and the `minimal` flow
 - **THEN** every link in each installed file of `lets-go` resolves to a file and a heading inside the installed skills
 
+### Requirement: The Project query runs once per run
+`lets-go` SHALL run its Project query once per run, in *Read the settings*, right after it finds the default branch and the current one. The query sets `<project>`, `<owner>` and `<repo>` for the whole run. When it finds no Project, `lets-go` SHALL say to run the `lets-setup-backlog` skill, and stop. When it finds two or more, `lets-go` SHALL list each one's title and URL, ask the user to unlink the extras, and stop. It SHALL never pick one itself. These two stops SHALL come before every other stop of the run but a failed `lets go questions`. No other part SHALL hold them. *Find the source of demand* SHALL not run the query, and SHALL return neither `no-project` nor `several-projects`.
+
+#### Scenario: Next, then the named issue
+- **WHEN** `lets-go` runs with nothing on the default branch, `next` picks #149, and *Check the issue* runs *Find the source of demand* for #149
+- **THEN** the Project query has run once in the run
+
+#### Scenario: No Project
+- **WHEN** no Project is linked to the repository, and the user runs `lets-go` on the branch `fix-typo`
+- **THEN** `lets-go` says to run the `lets-setup-backlog` skill and stops, before it searches for the branch's issue
+
+#### Scenario: Two Projects
+- **WHEN** two open Projects are linked to the repository
+- **THEN** `lets-go` lists both titles and URLs, asks the user to unlink the extras, claims nothing and stops
+
+#### Scenario: The rule is in the section
+- **WHEN** the skill-interfaces test reads `lets-go`
+- **THEN** *Read the settings* holds the Project query, and no part or procedure holds `no-project` or `several-projects`
+
 ### Requirement: Each lets-go procedure returns a result
 Each procedure of `lets-go` SHALL end by returning to the part that ran it, with a result. A procedure is a section under `## Procedures` in `SKILL.md`, or one of *Glossary preflight*, *Import the glossary checkpoint* and *Commit the discovery map* in a reference file. *Glossary preflight*, which only *Claim* runs, SHALL return to *Claim*. A procedure SHALL not tell the agent to stop, and SHALL not name the part that runs next: the part that ran it decides. Outside code, a procedure's text, its subsections included, SHALL not hold the word `stop` or `stops`, in any case. A procedure that can end more than one way SHALL list its results. Each result is a name in backticks, with when it is returned and what it carries, such as the issue, who has it, or what to tell the user. The results SHALL be these:
 
@@ -1153,7 +1174,7 @@ Each procedure of `lets-go` SHALL end by returning to the part that ran it, with
 | *Check the prerequisite* | `resolved`, `unresolved` |
 | *Check the checkpoint* | `verified`, `checkpoint-failed`, `unresolved` |
 | *Glossary preflight* | `no-owned-edits`, `verified`, `unresolved`, `checkpoint-failed` |
-| *Claim* | `claimed`, `taken`, `claim-failed`, `unresolved`, `checkpoint-failed`, `branch-failed` |
+| *Claim* | `claimed`, `taken`, `unresolved`, `checkpoint-failed`, `branch-failed` |
 | *Import the glossary checkpoint* | `imported`, `import-failed` |
 
 *Glossary preflight* returns `no-owned-edits` when the story owns no glossary edits, and otherwise passes on what *Check the checkpoint* returns. `verified` carries the checkpoint commits to import. *Claim*'s `claimed` carries what *Glossary preflight* returned, so *Enter the branch* runs *Import the glossary checkpoint* only after `verified`. *Commit the discovery map* ends one way only, so it names no result.
@@ -1165,10 +1186,6 @@ Each procedure of `lets-go` SHALL end by returning to the part that ran it, with
 #### Scenario: A procedure that stops
 - **WHEN** a skills folder holds `lets-go/SKILL.md` whose *Confirm the packet* says ``Say to run the `lets-shape` skill on `#<i>`, and stop.``
 - **THEN** the check fails, and its output names `Confirm the packet`
-
-#### Scenario: Claim lists its results
-- **WHEN** the skill-interfaces test reads *Claim*
-- **THEN** it finds `claimed`, `taken`, `claim-failed`, `unresolved`, `checkpoint-failed` and `branch-failed`
 
 #### Scenario: Confirm the packet lists its results
 - **WHEN** the skill-interfaces test reads *Confirm the packet*
@@ -1253,11 +1270,11 @@ Otherwise it SHALL say why the packet needs shaping, say to run `lets-shape` on 
 - **THEN** `lets-go` runs the shape step for #180
 
 ### Requirement: A lost claim drops the issue, and three lost claims stop the run
-When *Claim* returns `taken` for an issue the user named or confirmed as the same work, `lets-go` SHALL say who has it, and stop. When `next` or *Pick the first ready story* picked the issue, `lets-go` SHALL leave out every issue lost in this run. It SHALL run `lets backlog ready` again, with the same `--only` as the first pick and every lost issue in `--exclude`, and take the first ready candidate that is left. It SHALL print the `Picked` line in the same form as the first pick. That is `Picked #<i>: <title>, the next ready issue.` after `next`. After *Pick the first ready story*, it is `Picked #<i>: <title>, the first ready story under #<parent>.` It SHALL keep the lines it printed already. It SHALL go on from the blocker read with the new issue. When no candidate is left, it SHALL stop as when nothing is ready. After the third lost claim in one run, `lets-go` SHALL say that other sessions keep taking the picked issues, say to run `lets-go` again, and stop, claiming nothing.
+When *Claim* returns `taken` for an issue the user named or confirmed as the same work, `lets-go` SHALL say who has it, and stop. When `next` or *Pick the first ready story* picked the issue, `lets-go` SHALL leave out every issue lost in this run. It SHALL run both `next` commands again, with the same narrowing as the first pick, and take the first ready candidate that is left. It SHALL print the `Picked` line in the same form as the first pick. That is `Picked #<i>: <title>, the next ready issue.` after `next`. After *Pick the first ready story*, it is `Picked #<i>: <title>, the first ready story under #<parent>.` It SHALL keep the lines it printed already. It SHALL go on from the blocker read with the new issue. When no candidate is left, it SHALL stop as when nothing is ready. After the third lost claim in one run, `lets-go` SHALL say that other sessions keep taking the picked issues, say to run `lets-go` again, and stop, claiming nothing.
 
 #### Scenario: The lost issue is not picked again
 - **WHEN** `next` picked #149, *Claim* returns `taken` for it, and the candidate list read before the claim still holds #149
-- **THEN** `lets-go` leaves #149 out, runs `lets backlog ready --exclude 149`, and picks another issue
+- **THEN** `lets-go` leaves #149 out, runs both `next` commands again, and picks another issue
 
 #### Scenario: A lost story under a parent
 - **WHEN** *Pick the first ready story* picked #191 under #190, and *Claim* returns `taken` for it, and #192 is the next ready story
@@ -1296,7 +1313,7 @@ After a `done` report from plan, review plan, build or review build, the walk SH
 - The question mode, in *Set the question mode*.
 - The form of each step's `Done`, `Skipped` and `Failed` line, and what fills `<date>` and `<evidence>`, in one section.
 - The branch check, in *Check the issue*.
-- What a `lets backlog` error does, in *Backlog errors*.
+- The Project query and its two stops, in *Read the settings*.
 - The prerequisite check, in *Check the prerequisite*.
 - The packet check, in *Confirm the packet*.
 - Each step's done test, in the walk.
@@ -1543,48 +1560,3 @@ In prose, `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references
 #### Scenario: The Failed examples
 - **WHEN** the skill-interfaces test reads *The step lines*
 - **THEN** `Failed review build: <reason>` and `Failed shape: <reason>` are lines of a `text` block
-
-### Requirement: lets-go reads and claims the backlog only through lets backlog
-`lets-go` SHALL read the ready issues with `lets backlog ready`, read an issue with `lets backlog item <i>`, search titles with `lets backlog find`, claim with `lets backlog claim <i>` and release with `lets backlog release <i>`. It SHALL run no `gh project` command and no Project query. These stay as `gh` until the shaping side moves: the comment thread read of *Confirm the packet*, which is a GraphQL query with its pagination; `gh issue view <i> --json createdAt`; the in-progress parent query; and the issue body edit that records a **Glossary handoff** import. Pull request reads and edits stay as `gh pr` commands.
-
-#### Scenario: No backlog gh in the skill
-- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
-- **THEN** it finds no `gh project`, no `projectsV2`, no `--add-assignee`, no `--remove-assignee` and no `gh issue list --search "is:open no:assignee`, and finds `lets backlog ready`, `lets backlog item <i>`, `lets backlog find`, `lets backlog claim <i>` and `lets backlog release <i>`
-
-#### Scenario: Why no shaped story is ready
-- **WHEN** a shape step reports stories #191 and #192, `lets backlog ready --only 191,192` returns no issues, and `lets backlog item 191` returns `"assignees": ["octocat"]`
-- **THEN** `lets-go` names #191 as left out because `octocat` has it
-
-#### Scenario: An epic's sub-issues
-- **WHEN** the user runs `lets-go` for #52, and `lets backlog item 52` returns Kind Epic and `subIssues` #136 and #137
-- **THEN** `lets-go` says that an epic is built through its stories, lists #136 and #137, and runs no other command to find them
-
-#### Scenario: The parent's Shared decisions
-- **WHEN** `lets-go` confirms the packet of a Story whose parent is #52
-- **THEN** it reads the parent's **Shared decisions** from the `parent` that `lets backlog item <i>` returned, and runs no `gh issue view 52`
-
-### Requirement: A backlog error stops the run
-When a `lets backlog` command returns an `error`, `lets-go` SHALL stop, claim nothing more and run no step. For `no-backlog` it SHALL say to run the `lets-setup-backlog` skill. For `several-backlogs` it SHALL list each Project's title and URL, ask the user to unlink the extras, and never pick one. For any other error it SHALL show the error's `message`. *Backlog errors* SHALL hold this rule, and every part that runs a `lets backlog` command SHALL link to it.
-
-#### Scenario: No Project
-- **WHEN** no Project is linked to the repository, and the user runs `lets-go` on the branch `fix-typo`
-- **THEN** `lets backlog find fix-typo` returns `no-backlog`, and `lets-go` says to run the `lets-setup-backlog` skill and stops
-
-#### Scenario: Two Projects
-- **WHEN** two open Projects are linked to the repository, and the user runs `lets-go` on the default branch
-- **THEN** `lets-go` lists both titles and URLs from the `several-backlogs` error, asks the user to unlink the extras, claims nothing and stops
-
-#### Scenario: gh fails
-- **WHEN** `lets backlog item 149` returns `"error": "gh-failed"` with the message `gh auth login required`
-- **THEN** `lets-go` shows `gh auth login required` and stops
-
-### Requirement: A failed claim write stops the run
-When `lets backlog claim <i>` returns `failed`, *Claim* SHALL return `claim-failed` with the write and the message, before it creates a branch. `lets-go` SHALL show which write failed and the message, say what the issue may be left holding, such as the user's assignment, and stop. It SHALL not release the claim, and SHALL run no step. When creating the branch fails and `lets backlog release <i>` then returns `failed`, *Claim* SHALL return `branch-failed` with both errors.
-
-#### Scenario: The Status write fails
-- **WHEN** `lets backlog claim 149` returns `"result": "failed"`, `"write": "status"` and `"message": "field not found"`
-- **THEN** `lets-go` says the Status write failed with `field not found`, that #149 may still be assigned to the user, creates no branch and stops
-
-#### Scenario: Release fails after a branch failure
-- **WHEN** creating the branch `lets-go-chore` fails, and `lets backlog release 149` returns `failed` with `"write": "unassign"`
-- **THEN** *Claim* returns `branch-failed`, and `lets-go` shows the branch error and the release error, and stops
