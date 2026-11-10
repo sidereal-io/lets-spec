@@ -369,8 +369,11 @@ program
   .allowExcessArguments()
   .argument('[args...]')
   .addHelpText('after', BACKLOG_HELP)
-  .action(async (args: string[]) => {
-    process.exitCode = await backlog(args, realDeps());
+  .action(async () => {
+    // The raw words after backlog: commander drops a --, which the inner
+    // parser needs to read a word such as --help as a search word.
+    const argv = process.argv.slice(2);
+    process.exitCode = await backlog(argv.slice(argv.indexOf('backlog') + 1), realDeps());
   });
 
 try {
