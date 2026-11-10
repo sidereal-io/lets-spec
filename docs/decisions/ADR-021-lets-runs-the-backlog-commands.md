@@ -19,7 +19,7 @@ A backlog adapter is code inside lets. It runs the backend's commands itself, su
 ## Consequences
 
 - Easier: the same input always makes the same calls, so tests can fake the backend and check every branch, including failed writes.
-- Easier: lets knows what each write did, because it ran the write. A failed write is reported as it happened, with no journal or proof step.
+- Easier: lets sees each write's own response, with no agent report in between to doubt. A failed write is reported as it happened, with no journal or proof step. A write that times out can still have landed; lets says so and does not guess.
 - Easier: an adapter holds only what differs between backends, so it stays small. The skills hold no backend commands.
 - Harder: a new backlog program needs a change to lets and a release. Nobody can add one from outside. The way to change that is an adapter whose commands come from a config file that lets runs itself, still with no agent in between.
 - Harder: lets must keep each adapter working as its backend's tool changes, and needs that tool installed and signed in.

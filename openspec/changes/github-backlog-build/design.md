@@ -32,7 +32,7 @@
 
 2. **The adapter interface is the primitives today's calls need, and no more:**
    - `listCandidates()`: the open items of this repository on the Project, each with number, title, URL, Kind, Priority, Size, Status, and whether it is unassigned and unblocked. GitHub: `gh project item-list` plus the `is:open no:assignee -is:blocked` search, joined on number.
-   - `readItem(i)`: the fields `item` returns. GitHub: `gh issue view <i> --json number,title,body,url,state,parent,blockedBy`, the Project fields from `gh project item-list` for that number, and `gh issue view <parent> --json number,title,body` when there is a parent.
+   - `readItem(i)`: the fields `item` returns. GitHub: `gh issue view <i> --json number,title,body,url,state,assignees,parent,blockedBy,subIssues`, the Project fields from `gh project item-list` for that number, and `gh issue view <parent> --json number,title,body` when there is a parent.
    - `searchTitles(words)`: GitHub: `gh issue list --state open --search "<words> in:title" --json number,title`.
    - `assignees(i)`, `assignSelf(i)`, `unassignSelf(i)`, `setStatus(i, status)`: GitHub: `gh issue view --json assignees`, `gh issue edit --add-assignee @me`, `--remove-assignee @me`, `gh project item-edit … --field Status --value`.
 
@@ -58,6 +58,8 @@
 - [The `lets-go` spec and its bats checks pin many exact strings; moving to `lets backlog` touches many of them] → Change the prose and the checks together, one requirement at a time, and run the bats suite after each.
 - [A timed-out write may still have landed, and lets reports `failed` without checking] → Accepted by D8. The message says the write may have happened, and `lets-go` says what the issue may be left holding.
 - [One GraphQL query per command adds a second or so to each call] → Accepted (Decision 3). A `lets-go` run makes about five backlog calls.
+- [Today's queries are bounded: 500 Project items, 500 unassigned and unblocked issues, and 100 Projects per connection in the lookup. A ready issue past the window is not listed, and a second Project past it is not seen] → Kept as today's bounds (D4). The `lets-backlog` tests pin these limits, so a change to them is deliberate. This backlog holds about 240 issues.
+- [A Project relinked between `claim` and `release` in one run makes `release` write to the new Project] → Accepted: the window is the seconds between claiming and creating the branch, and relinking a Project is an admin action.
 - [Agents on an older `lets` release read skills that call `lets backlog`] → Skills and `lets` ship in the same release, and `lets sync` installs both together.
 
 ## Migration & Rollback

@@ -227,14 +227,53 @@ When *Claim* returns `taken` for an issue the user named or confirmed as the sam
 - **WHEN** *Claim* returns `taken` for three picked issues in one run
 - **THEN** `lets-go` says other sessions keep taking the picked issues, says to run `lets-go` again, claims nothing and stops
 
+### Requirement: Each lets-go procedure returns a result
+Each procedure of `lets-go` SHALL end by returning to the part that ran it, with a result. A procedure is a section under `## Procedures` in `SKILL.md`, or one of *Glossary preflight*, *Import the glossary checkpoint* and *Commit the discovery map* in a reference file. *Glossary preflight*, which only *Claim* runs, SHALL return to *Claim*. A procedure SHALL not tell the agent to stop, and SHALL not name the part that runs next: the part that ran it decides. Outside code, a procedure's text, its subsections included, SHALL not hold the word `stop` or `stops`, in any case. A procedure that can end more than one way SHALL list its results. Each result is a name in backticks, with when it is returned and what it carries, such as the issue, who has it, or what to tell the user. The results SHALL be these:
+
+| Procedure | Results |
+|---|---|
+| *Find the source of demand* | `found`, `unresolved`, `matches`, `no-match`, `picked`, `nothing-ready` |
+| *Confirm the packet* | `complete`, `needs-shape`, `epic` |
+| *Check the prerequisite* | `resolved`, `unresolved` |
+| *Check the checkpoint* | `verified`, `checkpoint-failed`, `unresolved` |
+| *Glossary preflight* | `no-owned-edits`, `verified`, `unresolved`, `checkpoint-failed` |
+| *Claim* | `claimed`, `taken`, `claim-failed`, `unresolved`, `checkpoint-failed`, `branch-failed` |
+| *Import the glossary checkpoint* | `imported`, `import-failed` |
+
+*Glossary preflight* returns `no-owned-edits` when the story owns no glossary edits, and otherwise passes on what *Check the checkpoint* returns. `verified` carries the checkpoint commits to import. *Claim*'s `claimed` carries what *Glossary preflight* returned, so *Enter the branch* runs *Import the glossary checkpoint* only after `verified`. *Commit the discovery map* ends one way only, so it names no result.
+
+#### Scenario: Every procedure returns
+- **WHEN** the skill-interfaces test reads each procedure of `lets-go`, in `SKILL.md` and in its reference files
+- **THEN** each one says it returns to the part that ran it, or, for *Glossary preflight*, to *Claim*, has no `Next:` line, and holds no `stop` or `stops` outside code
+
+#### Scenario: A procedure that stops
+- **WHEN** a skills folder holds `lets-go/SKILL.md` whose *Confirm the packet* says ``Say to run the `lets-shape` skill on `#<i>`, and stop.``
+- **THEN** the check fails, and its output names `Confirm the packet`
+
+#### Scenario: Claim lists its results
+- **WHEN** the skill-interfaces test reads *Claim*
+- **THEN** it finds `claimed`, `taken`, `claim-failed`, `unresolved`, `checkpoint-failed` and `branch-failed`
+
+#### Scenario: Confirm the packet lists its results
+- **WHEN** the skill-interfaces test reads *Confirm the packet*
+- **THEN** it finds `complete`, `needs-shape` and `epic`
+
 ## ADDED Requirements
 
 ### Requirement: lets-go reads and claims the backlog only through lets backlog
-`lets-go` SHALL read the ready issues with `lets backlog ready`, read an issue with `lets backlog item <i>`, search titles with `lets backlog find`, claim with `lets backlog claim <i>` and release with `lets backlog release <i>`. It SHALL run no `gh project` command and no `gh api graphql` query. The comment thread read of *Confirm the packet*, `gh issue view <i> --json createdAt`, and the in-progress parent query stay as `gh` commands. Pull request reads and edits stay as `gh pr` commands.
+`lets-go` SHALL read the ready issues with `lets backlog ready`, read an issue with `lets backlog item <i>`, search titles with `lets backlog find`, claim with `lets backlog claim <i>` and release with `lets backlog release <i>`. It SHALL run no `gh project` command and no Project query. These stay as `gh` until the shaping side moves: the comment thread read of *Confirm the packet*, which is a GraphQL query with its pagination; `gh issue view <i> --json createdAt`; the in-progress parent query; and the issue body edit that records a **Glossary handoff** import. Pull request reads and edits stay as `gh pr` commands.
 
 #### Scenario: No backlog gh in the skill
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
-- **THEN** it finds no `gh project`, no `gh api graphql`, no `gh issue edit` and no `gh issue list --search "is:open no:assignee`, and finds `lets backlog ready`, `lets backlog item <i>`, `lets backlog find`, `lets backlog claim <i>` and `lets backlog release <i>`
+- **THEN** it finds no `gh project`, no `projectsV2`, no `--add-assignee`, no `--remove-assignee` and no `gh issue list --search "is:open no:assignee`, and finds `lets backlog ready`, `lets backlog item <i>`, `lets backlog find`, `lets backlog claim <i>` and `lets backlog release <i>`
+
+#### Scenario: Why no shaped story is ready
+- **WHEN** a shape step reports stories #191 and #192, `lets backlog ready --only 191,192` returns no issues, and `lets backlog item 191` returns `"assignees": ["octocat"]`
+- **THEN** `lets-go` names #191 as left out because `octocat` has it
+
+#### Scenario: An epic's sub-issues
+- **WHEN** the user runs `lets-go` for #52, and `lets backlog item 52` returns Kind Epic and `subIssues` #136 and #137
+- **THEN** `lets-go` says that an epic is built through its stories, lists #136 and #137, and runs no other command to find them
 
 #### Scenario: The parent's Shared decisions
 - **WHEN** `lets-go` confirms the packet of a Story whose parent is #52
