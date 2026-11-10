@@ -8,7 +8,7 @@ import type { Deps, Io } from '../io.ts';
 import type { Adapter } from './adapter.ts';
 import { BacklogError } from './adapter.ts';
 import { createGithub } from './github.ts';
-import { claim, ready, release } from './policy.ts';
+import { claim, itemView, ready, release } from './policy.ts';
 
 export const BACKLOG_HELP = `
 lets runs the backlog's commands itself: the backlog is the one open GitHub
@@ -66,7 +66,7 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
   command('item', 'read one issue, with its Project fields')
     .argument('<i>', 'the issue number', issueNumber)
     .action((issue: number) => {
-      work = (adapter) => adapter.readItem(issue);
+      work = async (adapter) => itemView(await adapter.readItem(issue));
     });
   command('find', 'search the open issues\' titles')
     .argument('<words...>', 'the words to search for; a word that starts with -- is a word too')

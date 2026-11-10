@@ -1,6 +1,6 @@
 // The backlog rules every provider shares: what is ready, how it ranks, and
 // the claim and release sequences. Written once, here, outside the adapter.
-import type { Adapter, Candidate } from './adapter.ts';
+import type { Adapter, Candidate, Item, Related } from './adapter.ts';
 import { WriteFailed } from './adapter.ts';
 
 // The priorities that make an issue a candidate, best first. A Wont is never
@@ -18,6 +18,14 @@ export function ready(candidates: Candidate[], { only, exclude = [] }: { only?: 
     .filter((c) => (only === undefined || only.includes(c.number)) && !exclude.includes(c.number))
     .sort((a, b) => rank(a.priority) - rank(b.priority) || a.number - b.number)
     .map(({ number, title, url, kind, priority, size }) => ({ number, title, url, kind, priority, size }));
+}
+
+// An issue as lets backlog item prints it: only the open sub-issues, each
+// without its state.
+export type ItemView = Omit<Item, 'subIssues'> & { subIssues: Related[] };
+
+export function itemView({ subIssues, ...rest }: Item): ItemView {
+  return { ...rest, subIssues: subIssues.filter((s) => s.state === 'OPEN').map(({ number, title, url }) => ({ number, title, url })) };
 }
 
 export type WriteResult<Done extends string, Write extends string> =

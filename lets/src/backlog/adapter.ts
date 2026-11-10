@@ -2,8 +2,9 @@
 // and no more. An adapter returns data or throws. It never decides what is
 // ready, how work ranks, or whether a claim may go ahead: policy.ts does.
 
-// One open issue of this repository on the backlog, with its fields.
-// free: nobody is assigned to it, and no open issue blocks it.
+// One item of this repository on the backlog, with its fields. It may be
+// closed. free: it is open, nobody is assigned to it, and no open issue
+// blocks it.
 export type Candidate = {
   number: number;
   title: string;
@@ -19,8 +20,9 @@ export type Ref = { number: number; title: string };
 // A related issue, which can sit in another repository: its URL names it.
 export type Related = Ref & { url: string };
 
-// One issue, as lets backlog item returns it. A field the backlog does not
-// set, or every field of an issue that is not on the backlog, is null.
+// One issue, as the adapter reads it. A field the backlog does not set, or
+// every field of an issue that is not on the backlog, is null. subIssues
+// holds every sub-issue, with its state: policy.ts keeps the open ones.
 export type Item = {
   number: number;
   title: string;
@@ -34,7 +36,7 @@ export type Item = {
   assignees: string[];
   blockedBy: (Related & { state: string })[];
   parent: (Related & { body: string }) | null;
-  subIssues: Related[];
+  subIssues: (Related & { state: string })[];
 };
 
 // The Status values the claim writes.
