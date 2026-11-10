@@ -20,3 +20,14 @@ enter = "lets sync"
 
 [tasks]
 test = "pnpm test"
+
+# CI runs check. Add each new check, such as a linter, to its depends.
+[tasks.check]
+description = "Run every check"
+depends = ["check:specs"]
+
+# --strict fails on warnings as well as errors, so neither reaches main.
+[tasks."check:specs"]
+description = "Validate every OpenSpec spec and change"
+run = "openspec validate --all --strict --no-interactive"
+env = { OPENSPEC_TELEMETRY = "0" }

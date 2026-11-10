@@ -546,7 +546,7 @@ you Node 26, pnpm, bats, `jq`, `yq` and the OpenSpec CLI. Then run
 | `schemas/` | The OpenSpec schemas, each with its templates |
 | `overlays/` | The rules fragment and the files `lets sync` creates in a project. Each flow has its own `openspec/config.yaml`, in `openspec/config.d/<schema>.yaml` |
 | `tests/` | `*.bats`: end-to-end tests of `lets sync`, the release build, each schema, and every command, file and skill the prose names. The folders: unit tests for `lets` and each resolver, run with fakes. |
-| `.github/workflows/` | `ci.yml` runs `nix flake check` and a mise smoke test; `release.yml` publishes a release when a `v*` tag is pushed |
+| `.github/workflows/` | `ci.yml` runs `nix flake check`, `mise run check` and a mise smoke test; `release.yml` publishes a release when a `v*` tag is pushed |
 
 The [offline backlog adapter kit](lets/src/backlog/README.md) defines the provider
 boundary and runs from this repository. The runtime release excludes its unused
@@ -576,7 +576,10 @@ sets up sample projects. In the dev shell:
 | `bats tests` | The bats tests alone |
 
 Node runs the TypeScript source directly, so you do not need to build
-before you test. With mise, `mise run test` runs `pnpm test`.
+before you test. With mise, `mise run test` runs `pnpm test`, and
+`mise run check` runs the other checks. For now that is
+`check:specs`, which validates every OpenSpec spec and change and fails
+on warnings as well as errors. CI runs `mise run check` too.
 
 To try an unmerged change in a project, override the input for one shell:
 `nix develop --override-input lets-spec path:/path/to/your/clone`.
