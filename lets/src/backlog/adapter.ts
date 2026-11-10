@@ -33,7 +33,7 @@ export type Item = {
   status: string | null;
   assignees: string[];
   blockedBy: (Related & { state: string })[];
-  parent: (Ref & { body: string }) | null;
+  parent: (Related & { body: string }) | null;
   subIssues: Related[];
 };
 

@@ -40,7 +40,7 @@ test('item reads a shaped story with its Project fields, parent and blockers', a
     kind: 'Story', priority: 'Must', size: 'M', status: 'In Progress',
     assignees: [],
     blockedBy: [{ number: 135, title: 'contract', state: 'CLOSED', url: url(135) }],
-    parent: { number: 52, title: 'backlog-providers — epic', body: '## Shared decisions\n- D1' },
+    parent: { number: 52, title: 'backlog-providers — epic', url: url(52), body: '## Shared decisions\n- D1' },
     subIssues: [],
   });
   assert.deepEqual(t.calls()[1], ['issue', 'view', '136', '--json', 'number,title,body,url,state,assignees,parent,blockedBy,subIssues']);
@@ -116,7 +116,7 @@ test('a parent in another repository is read by its URL', async () => {
     [`issue view ${parentUrl} `, json({ number: 52, title: 'other epic', body: 'their decisions' })],
   ], [projectItem(136, { kind: 'Story' })]));
   assert.equal(await run(['item', '136'], t.deps), 0);
-  assert.deepEqual(t.json().parent, { number: 52, title: 'other epic', body: 'their decisions' });
+  assert.deepEqual(t.json().parent, { number: 52, title: 'other epic', url: parentUrl, body: 'their decisions' });
   assert.ok(!t.ran('issue view 52 '));
 });
 

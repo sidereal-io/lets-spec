@@ -66,7 +66,7 @@ It SHALL rank them Must, then Should, then Could, then by lowest issue number. E
 - **THEN** `issues` is an empty list, and the exit code is 0
 
 ### Requirement: item reads one issue with its Project fields
-`lets backlog item <i>` SHALL return the issue's `number`, `title`, `body`, `url` and `state`, and its Project fields `kind`, `priority`, `size` and `status`. A field that is unset, or an issue that is not on the Project, SHALL give `null` for each field it lacks. It SHALL return `assignees`, the login of each assigned user. It SHALL return `blockedBy`, each blocker's `number`, `title` and `state`. It SHALL return `parent` as `null`, or with the parent's `number`, `title` and `body`. It SHALL return `subIssues`, each open sub-issue's `number` and `title`. An issue that does not exist SHALL return the error `not-found`.
+`lets backlog item <i>` SHALL return the issue's `number`, `title`, `body`, `url` and `state`, and its Project fields `kind`, `priority`, `size` and `status`. A field that is unset, or an issue that is not on the Project, SHALL give `null` for each field it lacks. It SHALL return `assignees`, the login of each assigned user. It SHALL return `blockedBy`, each blocker's `number`, `title`, `state` and `url`. It SHALL return `parent` as `null`, or with the parent's `number`, `title`, `url` and `body`. It SHALL return `subIssues`, each open sub-issue's `number`, `title` and `url`. A related issue can sit in another repository, where its `number` alone names another issue, so its `url` names it. A parent that cannot be read SHALL return the error `gh-failed`, whose message names the parent, never `not-found`. An issue that does not exist SHALL return the error `not-found`.
 
 #### Scenario: A shaped story with a parent
 - **WHEN** #136 is a Story with Priority Must, Size M and Status In Progress, its parent is #52, and #135 blocks it and is closed
@@ -79,6 +79,14 @@ It SHALL rank them Must, then Should, then Could, then by lowest issue number. E
 #### Scenario: An epic
 - **WHEN** #52 is an Epic with open sub-issues #136 and #137, and a closed sub-issue #135
 - **THEN** `item 52` returns `subIssues` with #136 and #137 and not #135
+
+#### Scenario: A blocker in another repository
+- **WHEN** #52 is blocked by `acme/lib#7`
+- **THEN** `item 52` returns `blockedBy` with `"number": 7` and `"url": "https://github.com/acme/lib/issues/7"`
+
+#### Scenario: A parent that cannot be read
+- **WHEN** #136's parent sits in a repository the signed-in user cannot read
+- **THEN** `item 136` returns `"error": "gh-failed"` with a message that names the parent, and the exit code is 1
 
 #### Scenario: Not on the Project
 - **WHEN** #200 is an open issue that is not on the Project

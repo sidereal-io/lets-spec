@@ -151,7 +151,7 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
           if (!(error instanceof BacklogError)) throw error;
           throw new BacklogError('gh-failed', `could not read the parent ${which} of #${issue}: ${error.message}`);
         }
-        parent = { number: found.number, title: found.title, body: found.body };
+        parent = { number: found.number, title: found.title, url: typeof parentRef.url === 'string' ? parentRef.url : '', body: found.body };
       }
       urls.set(issue, raw.url as string);
       return {
