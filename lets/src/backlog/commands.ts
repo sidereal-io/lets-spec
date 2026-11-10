@@ -69,7 +69,8 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
       work = (adapter) => adapter.readItem(issue);
     });
   command('find', 'search the open issues\' titles')
-    .argument('<words...>', 'the words to search for')
+    .argument('<words...>', 'the words to search for; a word that starts with -- is a word too')
+    .allowUnknownOption()
     .action((words: string[]) => {
       work = async (adapter) => ({ issues: await adapter.searchTitles(words.join(' ')) });
     });
