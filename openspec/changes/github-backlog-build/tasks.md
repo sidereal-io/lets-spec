@@ -15,7 +15,7 @@
 
 - [x] 3.1 [complex] `lets-go` reads the backlog only through `lets backlog ready`, `item` and `find`: no Project query in *Read the settings*, no `<project>`, `<owner>` or `<repo>`, the parent and an epic's sub-issues taken from `item`, and a *Backlog errors* section that every call links to; the `lets-go` spec's bats checks are updated to match (verify: `deli -- bats tests/skill-interfaces.bats --filter 'lets-go'`) (✓ `deli -- bats tests/skill-interfaces.bats --filter 'lets-go'` passed, 89 tests; the whole file passed, 270 tests)
 - [x] 3.2 [medium] `lets-go`'s *Claim* claims with `lets backlog claim <i>` and releases with `lets backlog release <i>`, returns `claim-failed` with the write and message, and `branch-failed` with both errors when the release fails too; *Enter the branch* says what to do with each (verify: `deli -- bats tests/skill-interfaces.bats --filter 'Claim'`) (✓ `deli -- bats tests/skill-interfaces.bats --filter 'Claim'` passed; the whole file passed, 271 tests)
-- [ ] 3.3 [easy] `lets-plan` finds the change's issue with `lets backlog find <branch>`, keeping its `<branch> — ` title-prefix rule (verify: `deli -- bats tests/skill-interfaces.bats --filter 'lets-plan'`)
+- [x] 3.3 [easy] `lets-plan` finds the change's issue with `lets backlog find <branch>`, keeping its `<branch> — ` title-prefix rule (verify: `deli -- bats tests/skill-interfaces.bats --filter 'lets-plan'`) (✓ `deli -- bats tests/skill-interfaces.bats --filter 'lets-plan'` passed after failing on the old search; the whole file passed, 271 tests)
 
 ## 4. Acceptance [depends-on: 3]
 

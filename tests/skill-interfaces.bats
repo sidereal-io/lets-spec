@@ -2466,7 +2466,9 @@ step_row() {
 @test "lets-plan runs openspec-propose and reads the change state when it stops" {
   skill_says lets-plan '`openspec-propose` skill'
   skill_says lets-plan 'openspec instructions apply --change <name> --json'
-  skill_says lets-plan 'gh issue list --state open --search "<branch> in:title" --json number,title'
+  skill_says lets-plan 'lets backlog find <branch>'
+  skill_says lets-plan 'whose title starts with `<branch> — `'
+  skill_does_not_say lets-plan 'gh issue list'
 }
 
 @test "lets-plan offers no handoff" {
