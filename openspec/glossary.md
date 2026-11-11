@@ -9,11 +9,8 @@ The selected collection of work for a repository.
 
 ## Adapter
 
-An integration that translates supported `lets` operations into backend actions
-and results. Its provider definition describes backend tool usage and data
-mappings. The agent carries out bounded actions requested by `lets`; `lets` owns
-policy checks, sequencing, private local recovery and validation of submitted
-results. Packaging does not define the term.
+An integration that turns supported `lets` operations into a backend's actions
+and results. Shared policy stays out of it. Packaging does not define the term.
 
 ## Resolver
 

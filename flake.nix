@@ -284,7 +284,6 @@
             [ ! -e ${dist}/node_modules ]
             [ ! -e ${dist}/contrib ]
             [ ! -e ${dist}/tests ]
-            [ ! -e ${dist}/docs/backlog-adapter-contract.md ]
             [ ! -e ${dist}/resolvers ]
             [ "$(ls ${dist}/releases)" = "${names}" ]
             [ "$(jq -r .openspec ${dist}/release.json)" = "${pkgs.openspec.version}" ]

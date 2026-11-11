@@ -1,12 +1,18 @@
 ---
 id: adr-015
 date: 2026-11-04
-status: accepted
+status: superseded by ADR-021
 title: 'ADR-015: lets requests actions and validates agent-submitted results'
 description: One execution hybrid for delegation and backlogs, with open provider definitions and code-owned policy, sequencing, recovery and validation
 ---
 
 # ADR-015: lets requests actions and validates agent-submitted results
+
+> Superseded by [ADR-021](ADR-021-where-an-outside-command-runs.md), for
+> delegation and backlogs: a call to an outside tool runs in lets code or in the
+> skill, by how complex and portable it must be, and no agent stands between
+> lets and a command it runs. This body records the execution hybrid that was
+> withdrawn; none of it was built.
 
 ## Context and correction history
 

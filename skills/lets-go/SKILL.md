@@ -67,17 +67,20 @@ procedure ranks it.
 
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
-| [Read the settings](#read-the-settings) | Reads the default question mode, the default branch, the current branch and the Project | this session | [Read the request](#read-the-request) | `lets go questions` fails, or the Project query finds no Project, or several |
+| [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch | this session | [Read the request](#read-the-request) | `lets go questions` fails |
 | [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; otherwise [Route](#route) | An open blocker with no branch; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic`, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table) | Never |
 | [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run) | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL | this session | Nothing: the run is over | Always |
+
+Any part also stops when a `lets backlog` command returns an error, as
+[Backlog errors](#backlog-errors) says.
 
 ## Placeholders
 
@@ -87,11 +90,8 @@ sets it.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
-| `<project>` | The number of the Project linked to the repository | [Read the settings](#read-the-settings), from the Project query |
-| `<owner>` | The Project's owner | [Read the settings](#read-the-settings), from the Project query |
-| `<repo>` | The repository, as `owner/name` | [Read the settings](#read-the-settings), from the Project query's `repo` |
 | `<i>` | The run's issue: the number the user named, the issue `next` or [Pick the first ready story](#pick-the-first-ready-story) picked, or the issue a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
-| `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the issue's `url` |
+| `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the `url` that `lets backlog item <i>` prints |
 | `<parent>` | A parent issue: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in [Start from an idea](#start-from-an-idea) |
 | `<story>` | One story that a shape step's report names | Each `story` line of the shape report |
 | `<pr>` | The number of the change's pull request | [Read the records](references/records.md#read-the-records), from the pull request's `number` |
@@ -123,6 +123,27 @@ sets it.
 | `<one-line outcome>` | The part of an issue title after ` — `, in `lets-shape`'s template | The issue's title |
 | `<L or XL>` | The Size the shape step gave the work, `L` or `XL` | The shape step |
 
+## Backlog errors
+
+The run reads and claims the backlog through `lets backlog`. Three
+reads stay as `gh` commands for now: the comment thread read of
+[Confirm the packet](#confirm-the-packet),
+`gh issue view <i> --json createdAt`, and the in-progress parent query
+of [Start from an idea](#start-from-an-idea). Each `lets backlog`
+command prints one JSON object. When the object holds
+`error`, the backlog cannot answer. Stop: claim nothing more, and run no
+step. Say what the error is:
+
+- **`no-backlog`:** no Project is linked to the repository. Say to run
+  the `lets-setup-backlog` skill.
+- **`several-backlogs`:** list each Project's `title` and `url` from its
+  `projects`, and ask the user to unlink the extras. Never pick one
+  yourself.
+- **Any other error:** show the user its `message`.
+
+Each part and procedure that runs a `lets backlog` command links here
+for its errors.
+
 ## Read the settings
 
 Read the user's default question mode. Run this once, before anything
@@ -139,38 +160,6 @@ stderr and stop: claim nothing, and run no step. Then find the
 default branch with
 `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`,
 and run `git branch --show-current`.
-
-Then find the Project linked to this repository. Run this query once
-per run:
-
-```bash
-gh api graphql -F owner='{owner}' -F name='{repo}' -f query='
-query($owner: String!, $name: String!) {
-  repository(owner: $owner, name: $name) {
-    nameWithOwner
-    projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } } }
-  }
-  repositoryOwner(login: $owner) {
-    ... on ProjectV2Owner {
-      projectsV2(first: 100) { nodes { number title url closed owner { ... on User { login } ... on Organization { login } } repositories(first: 100) { nodes { nameWithOwner } } } }
-    }
-  }
-}' --jq '.data.repository.nameWithOwner as $repo
-  | {repo: $repo, projects: ([.data.repository.projectsV2.nodes[], (.data.repositoryOwner.projectsV2.nodes[] | select(any(.repositories.nodes[]; .nameWithOwner == $repo)))]
-      | map(select(.closed | not) | {number, title, url, owner: .owner.login}) | unique_by(.owner, .number))}'
-```
-
-The query lists the Projects linked to the repository, and the
-owner's Projects that link back to it. A user-owned Project can be
-missing from the repository's own listing for a while after it is
-linked, so neither list alone is enough.
-
-- **One Project:** use its `number` as `<project>` and its `owner` as
-  `<owner>` in every `gh project` command of this run. The query's
-  `repo` is the repository, `<repo>`, as `owner/name`.
-- **None:** say to run the `lets-setup-backlog` skill, and stop.
-- **Two or more:** list each one's title and URL, ask the user to unlink
-  the extras, and stop. Never pick one yourself.
 
 Next: [Read the request](#read-the-request).
 
@@ -229,13 +218,14 @@ whole backlog. On its result:
 
 On another branch, `<branch>`, when the request is words, say that an
 idea needs the default branch, and stop. Otherwise search for the
-change's issue, once:
+change's issue, once. On an error, act as
+[Backlog errors](#backlog-errors) says.
 
 ```bash
-gh issue list --state open --search "<branch> in:title" --json number,title
+lets backlog find <branch>
 ```
 
-Keep the issues whose title starts with `<branch> — `: these are the
+Keep the `issues` whose title starts with `<branch> — `: these are the
 matches. When the user gave a number, it must be one of them. If it is
 not, say that the issue and the branch do not match, and stop. When
 they gave none, exactly one match is the issue. If none matches, say
@@ -257,15 +247,17 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
 
 ## Check the issue
 
-1. Read the blockers of `<i>`:
+1. Read the blockers of `<i>`. On an error, act as
+   [Backlog errors](#backlog-errors) says.
 
    ```bash
-   gh issue view <i> --json title,blockedBy
+   lets backlog item <i>
    ```
 
-   It gives the title too. `<name>` is the change's name, which
-   [Claim](#claim) takes from the title. On a change's branch, it is
-   `<branch>`.
+   Its `blockedBy` lists each blocker with its `state`, and it gives the
+   `title` too. Keep the whole result: the packet check below reads it.
+   `<name>` is the change's name, which [Claim](#claim) takes from the
+   title. On a change's branch, it is `<branch>`.
 2. Look for the change's branch, here and on `origin`, every time:
 
    ```bash
@@ -283,6 +275,9 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
      by hand. Name the open blockers by number, and go on.
    - **It does not exist:** say which open issues block `#<i>`, and
      stop. The user stacks it on the blocker's branch by hand.
+
+   Either way, name a blocker in another repository by its `url`, not
+   its number: a bare number means an issue of this repository.
 4. Run [Find the source of demand](#find-the-source-of-demand) for
    `<i>`. Its first case runs
    [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite)
@@ -308,7 +303,8 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
      result carries it, and show nothing of what a comment says. Say to
      run the `lets-shape` skill on `#<i>`, and stop.
    - **`epic`:** say that an epic is built through its stories, list the
-     open sub-issues the result carries, and stop.
+     open sub-issues the result carries, and stop. List a sub-issue in
+     another repository by its `url`.
 6. When [Confirm the packet](#confirm-the-packet) returns `complete`,
    shape is done. Print shape's line, as
    [The step lines](#the-step-lines) says.
@@ -388,8 +384,18 @@ Next: [Enter the branch](#enter-the-branch).
    - **`unresolved`:** report the owner or the definitions it carries,
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
+   - **`claim-failed`:** say which write failed, and show its message.
+     Say what the issue may be left holding: after a failed `status`
+     write, your assignment, with its Status unchanged; after a failed
+     `assign`, nothing, unless the message says the write may have
+     happened. Say how to recover: run `lets backlog release <i>` to
+     give the issue back, then run `lets-go` again. Until then, a new
+     run finds the issue `taken`, by your own assignment. Do not release
+     the claim yourself. Stop, and run no step.
    - **`branch-failed`:** [Claim](#claim) has released the claim. Show
-     the error it carries, and stop.
+     the branch's error it carries. When it carries a release error
+     too, show it, and say the issue may still hold your assignment or
+     its In Progress Status. Then stop.
 3. When you ran
    [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint),
    act on its result:
@@ -591,8 +597,8 @@ Each one returns its result to what ran it.
 Parallel sessions share the backlog, so claim the issue before you
 create anything.
 
-It uses the `<project>`, `<owner>` and `<repo>` that
-[Read the settings](#read-the-settings) set.
+Each `lets backlog` command it runs acts on an error as
+[Backlog errors](#backlog-errors) says.
 
 A **Glossary handoff** is the section `lets-shape` writes in a story's
 issue body when shaping added glossary terms. It records which issue
@@ -611,36 +617,33 @@ Take the first case that applies:
    [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite)
    for it. The result is `found` when that returns `resolved`, and
    `unresolved` when it returns `unresolved`.
-2. **The run has described work, but no issue.** Search for it:
+2. **The run has described work, but no issue.** Search open issue
+   titles for it, with the idea as one quoted argument:
 
    ```bash
-   gh issue list --state open --search "<idea> in:title" --json number,title
+   lets backlog find "<idea>"
    ```
 
-   The result is `matches`, with the issues the search found, or
+   The result is `matches`, with the `issues` the search found, or
    `no-match` when it found none.
-3. **Otherwise, take `next`.** List the Project's Todo candidates with a
-   priority of Must, Should or Could. Any Kind but Epic counts, and
-   items from other repositories are left out:
+3. **Otherwise, take `next`.** List the ready issues, best first:
 
    ```bash
-   gh project item-list <project> --owner <owner> --format json --limit 500 \
-     --jq '.items[] | select(.content.repository == "<repo>" and .status == "Todo" and .kind != "Epic" and (.priority | IN("Must", "Should", "Could")))
-           | "\(.priority)\t\(.kind)\t\(.size // "-")\t#\(.content.number)\t\(.content.title)\t\(.content.url)"'
+   lets backlog ready
    ```
 
-   Then list the open issues that nobody is assigned to and nothing
-   blocks:
-
-   ```bash
-   gh issue list --search "is:open no:assignee -is:blocked" --limit 500 --json number --jq '.[].number'
-   ```
-
-   `next` comes from the candidates whose number is in the second list.
-   Rank them Must, then Should, then Could, then the lowest issue
-   number. A Wont is never a candidate. After a lost claim, leave out
-   every issue lost in this run: each one for which [Claim](#claim)
-   returned `taken`.
+   A ready issue is one of this repository's issues on the Project. Its
+   Status is Todo, its Kind is not Epic, and its priority is Must,
+   Should or Could. Nobody is assigned to it, and no open issue blocks
+   it. A Wont is never a candidate. The `issues` it prints are the
+   candidates, ranked Must, then Should, then Could, then the lowest
+   issue number. When the run picks among a shape report's stories,
+   pass their numbers with `--only`, such as
+   `lets backlog ready --only 191,192,193`. After a lost claim, leave
+   out every issue lost in this run: each one for which [Claim](#claim)
+   returned `taken`. Pass their numbers with `--exclude`, such as
+   `lets backlog ready --exclude 149`, with the same `--only` as the
+   first pick.
 
    Check each candidate in rank order, with its number as `<i>` while
    you check it. Run
@@ -674,18 +677,19 @@ Return to the part that ran it, with the result.
 
 ### Confirm the packet
 
-Read the issue, and its fields on the Project:
+Read the issue, with its fields on the Project. When
+[Check the issue](#check-the-issue) has read `<i>` in this run, use
+that result, and run nothing. On an error, act as
+[Backlog errors](#backlog-errors) says.
 
 ```bash
-gh issue view <i> --json number,title,body,url,parent
-gh project item-list <project> --owner <owner> --format json --limit 500 \
-  --jq '.items[] | select(.content.repository == "<repo>" and .content.number == <i>) | {kind, priority, size, status}'
+lets backlog item <i>
 ```
 
-- If the second command prints nothing, or no `kind`, the issue is not
-  shaped. The result is `needs-shape`: return it now.
-- If its Kind is Epic, the result is `epic`: return it now, with the
-  epic's open sub-issues.
+- If its `kind` is `null`, the issue is not on the Project, or has no
+  Kind: it is not shaped. The result is `needs-shape`: return it now.
+- If its `kind` is `Epic`, the result is `epic`: return it now, with the
+  open sub-issues in its `subIssues`.
 
 Read the whole body. Check that every required line for its Kind is
 there and filled in. These are the lines of the `lets-shape` skill's
@@ -717,8 +721,8 @@ author as the reference shows it, and the date that put it past the
 watermark: its edit date, else its creation date. It carries nothing of
 what a comment says.
 
-For a Story with a parent, read the parent's **Shared decisions**
-section, when it has one: `gh issue view <parent> --json body`.
+For a Story with a parent, read the **Shared decisions** section of the
+`body` in its `parent`, when it has one. Run no other command for it.
 [Route](#route) needs it.
 
 It returns one of these results:
@@ -748,30 +752,38 @@ return to the part that ran it, with the result.
    against the proposed base. When it returns `unresolved` or
    `checkpoint-failed`, return that result now, with what it carries,
    before you assign the issue.
-3. Claim the issue: check that nobody has it, assign yourself, then move
-   it to In Progress. `<issue-url>` is the issue's URL.
+3. Claim the issue. On an error, act as
+   [Backlog errors](#backlog-errors) says.
 
    ```bash
-   gh issue view <i> --json assignees --jq '.assignees | length'
-   gh issue edit <i> --add-assignee @me
-   gh project item-edit <project> --owner <owner> --url <issue-url> --field Status --value "In Progress"
+   lets backlog claim <i>
    ```
 
-   The first command must print `0`. Anything else means another
-   session took it: the result is `taken`, with who has it. Return it
-   now.
+   It checks that nobody has the issue, assigns you, then moves it to
+   In Progress. On its `result`:
+   - **`claimed`:** go on, below.
+   - **`taken`:** another session has the issue. The result is `taken`,
+     with the `assignees` it names. Return it now.
+   - **`failed`:** a write failed. The result is `claim-failed`, with
+     the `write` that failed and its `message`. Return it now, before
+     you create a branch, and undo nothing.
 4. Create a branch with the change's name off the default branch. This
    also fails when a local branch with the change's name appeared after
    [Check the issue](#check-the-issue) looked. A branch that appeared
    only on `origin` does not make it fail: the plan step's first push is
    then rejected, and that step fails. If creating the branch fails,
-   release the claim, so another session can pick the issue up. The
-   result is then `branch-failed`, with the error:
+   release the claim, so another session can pick the issue up. It
+   removes only your assignment, then sets the Status back to Todo:
 
    ```bash
-   gh issue edit <i> --remove-assignee @me
-   gh project item-edit <project> --owner <owner> --url <issue-url> --field Status --value Todo
+   lets backlog release <i>
    ```
+
+   The result is then `branch-failed`, with the branch's error. When the
+   release prints `"result": "failed"`, `branch-failed` also carries
+   the release's `write` and `message`. When it prints an `error`
+   instead, nothing was released: `branch-failed` also carries that
+   error's `message`.
 
 It returns one of these results:
 
@@ -779,6 +791,9 @@ It returns one of these results:
   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
   returned: `no-owned-edits`, or `verified` with the checkpoint commits.
 - `taken`: another session has the issue. It carries who has it.
+- `claim-failed`: a write of `lets backlog claim` failed, and no branch
+  exists. It carries the `write`, `assign` or `status`, and its
+  `message`.
 - `unresolved`:
   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
   returned `unresolved`. It carries what is unresolved.
@@ -786,7 +801,8 @@ It returns one of these results:
   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
   returned it. It carries what the check found.
 - `branch-failed`: creating the branch failed, and the claim is
-  released. It carries the error.
+  released. It carries the error, and the release's error when the
+  release failed too.
 
 Return to the part that ran it, with the result.
 

@@ -810,8 +810,10 @@ review_build_start() {
   skill_says lets-go 'gh issue view <i> --json createdAt'
   skill_says lets-go 'gh repo view --json defaultBranchRef --jq .defaultBranchRef.name'
   skill_says lets-go "Skipped shape: #<i>'s packet is complete, last edited <date>."
-  # Claim sets the Status, so lets-go sets that field itself.
-  skill_says lets-go 'gh project item-edit'
+  # Claim claims through lets backlog, which sets the Status.
+  skill_says lets-go 'lets backlog claim <i>'
+  skill_does_not_say lets-go 'gh project'
+  skill_does_not_say lets-go 'gh api graphql'
 }
 
 @test "lets-go names no section of lets-build" {
@@ -821,19 +823,45 @@ review_build_start() {
   done
 }
 
-@test "Read the settings runs the Project query once per run, and stops on none or several" {
-  local text
-  text="$(part_section 'Read the settings')"
-  grep -qF 'gh api graphql' <<<"$text" || { echo "Read the settings does not run the Project query"; false; }
-  grep -qF '**None:** say to run the `lets-setup-backlog` skill, and stop.' <<<"$text" ||
-    { echo "Read the settings does not stop on no Project"; false; }
-  grep -qF '**Two or more:** list each one'"'"'s title and URL, ask the user to unlink the extras, and stop.' <<<"$text" ||
-    { echo "Read the settings does not stop on several Projects"; false; }
-  ! grep -qF 'gh api graphql' <<<"$(procedure_text 'Find the source of demand')" ||
-    { echo "Find the source of demand still runs the Project query"; false; }
-  skill_says_once lets-go 'gh api graphql'
+@test "lets-go runs no Project query, and stops on a lets backlog error" {
+  local text part
+  ! grep -qF 'gh api graphql' <<<"$(part_section 'Read the settings')" ||
+    { echo "Read the settings still runs the Project query"; false; }
+  skill_does_not_say lets-go 'projectsV2'
+  skill_does_not_say lets-go 'gh project item-list'
+  skill_does_not_say lets-go 'gh issue list --search "is:open no:assignee'
+  skill_has_section lets-go 'Backlog errors'
+  text="$(skill_section lets-go 'Backlog errors')"
+  grep -qF '**`no-backlog`:**' <<<"$text" && grep -qF 'run the `lets-setup-backlog` skill' <<<"$text" ||
+    { echo "Backlog errors does not send no-backlog to lets-setup-backlog"; false; }
+  grep -qF '**`several-backlogs`:**' <<<"$text" && grep -qF 'ask the user to unlink the extras' <<<"$text" ||
+    { echo "Backlog errors does not list several-backlogs' Projects"; false; }
+  grep -qF 'Never pick one' <<<"$text" || { echo "Backlog errors may pick a Project"; false; }
+  grep -qF 'show the user its `message`' <<<"$text" || { echo "Backlog errors does not show other errors"; false; }
+  for part in 'Read the request' 'Check the issue'; do
+    grep -qF '](#backlog-errors)' <<<"$(part_section "$part")" || { echo "$part does not link Backlog errors"; false; }
+  done
+  for part in 'Find the source of demand' 'Confirm the packet'; do
+    grep -qF '](#backlog-errors)' <<<"$(procedure_text "$part")" || { echo "$part does not link Backlog errors"; false; }
+  done
   skill_does_not_say lets-go 'no-project'
   skill_does_not_say lets-go 'several-projects'
+}
+
+@test "lets-go reads the backlog through lets backlog ready, item and find" {
+  skill_says lets-go 'lets backlog ready'
+  skill_says lets-go 'lets backlog ready --exclude 149'
+  skill_says lets-go '--only'
+  skill_says lets-go 'lets backlog item <i>'
+  skill_says lets-go 'lets backlog find <branch>'
+  skill_says lets-go 'lets backlog find "<idea>"'
+  skill_does_not_say lets-go '<repo>'
+  skill_does_not_say lets-go 'gh issue view <parent>'
+  skill_does_not_say lets-go 'gh issue view <i> --json number,title,body,url,parent'
+  grep -qF '`subIssues`' <<<"$(procedure_text 'Confirm the packet')" ||
+    { echo "Confirm the packet does not take an epic's sub-issues from item"; false; }
+  grep -qF 'the `body` in its `parent`' <<<"$(procedure_text 'Confirm the packet' | tr -s '[:space:]' ' ')" ||
+    { echo "Confirm the packet does not read Shared decisions from item's parent"; false; }
 }
 
 @test "lets-go with nothing takes the next ready issue" {
@@ -874,7 +902,7 @@ review_build_start() {
   local phrase
   skill_says lets-go 'Questions: <mode>, because #<i> is a <Kind>.'
   skill_says lets-go 'Questions: <mode>, because you asked for it.'
-  skill_says lets-go 'gh issue view <i> --json title,blockedBy'
+  skill_says lets-go 'lets backlog item <i>'
   skill_says lets-go 'report the unresolved owner or checkpoint it carries, and stop, even on a stacked branch'
   skill_says lets-go 'The question mode is <mode>. At auto, the lets-go session answers each question that has a recommendation'
   skill_says lets-go 'Your rules are the same in both modes.'
@@ -889,7 +917,7 @@ review_build_start() {
 @test "lets-go states the blocker rule before it finds the source of demand" {
   local part read call
   part="$(part_section 'Check the issue')"
-  read="${part%%"gh issue view <i> --json title,blockedBy"*}"
+  read="${part%%"lets backlog item <i>"*}"
   call="${part%%"[Find the source of demand](#find-the-source-of-demand)"*}"
   [ "$read" != "$part" ] || { echo "Check the issue does not read the blockers"; false; }
   [ "$call" != "$part" ] || { echo "Check the issue does not run Find the source of demand"; false; }
@@ -1007,7 +1035,7 @@ review_build_start() {
   skill_says lets-go 'git fetch origin <name>'
   skill_says lets-go 'git merge --ff-only origin/<name>'
   skill_says lets-go 'git switch <name>'
-  skill_says lets-go 'gh issue list --state open --search "<branch> in:title" --json number,title'
+  skill_says lets-go 'lets backlog find <branch>'
   skill_says lets-go 'Records disagree:'
   skill_does_not_say lets-go '#150 adds resuming' || { echo "lets-go still defers resuming to #150"; false; }
 }
@@ -1703,8 +1731,8 @@ overview_row() {
   ! grep -qiF 'a stop in' <<<"$overview" || { echo "the overview still names a stop in a procedure"; false; }
   grep -qF '`taken`' <<<"$(overview_row 'Enter the branch')" || { echo "Enter the branch's row does not name taken"; false; }
   grep -qF '`epic`' <<<"$(overview_row 'Check the issue')" || { echo "Check the issue's row does not name epic"; false; }
-  grep -qF 'finds no Project, or several' <<<"$(overview_row 'Read the settings')" ||
-    { echo "Read the settings' row does not stop on the Project query"; false; }
+  ! grep -qF 'Project' <<<"$(overview_row 'Read the settings')" ||
+    { echo "Read the settings' row still reads the Project"; false; }
   [[ "$(overview_row 'Start from an idea')" == *'| Never |' ]] ||
     { echo "Start from an idea's row still stops: $(overview_row 'Start from an idea')"; false; }
 }
@@ -1958,8 +1986,38 @@ procedure_stops() {
 @test "Enter the branch acts on each result of the claim" {
   local part result
   part="$(part_section 'Enter the branch')"
-  for result in claimed taken unresolved checkpoint-failed branch-failed; do
+  for result in claimed taken claim-failed unresolved checkpoint-failed branch-failed; do
     grep -qF -- "**\`$result\`:**" <<<"$part" || { echo "Enter the branch does not act on: $result"; false; }
+  done
+}
+
+@test "Claim claims and releases only through lets backlog" {
+  local claim result enter
+  claim="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
+  grep -qF 'lets backlog claim <i>' <<<"$claim" || { echo "Claim does not run lets backlog claim"; false; }
+  grep -qF 'lets backlog release <i>' <<<"$claim" || { echo "Claim does not run lets backlog release"; false; }
+  grep -qF '](#backlog-errors)' <<<"$claim" || { echo "Claim does not link Backlog errors"; false; }
+  for result in claimed taken claim-failed unresolved checkpoint-failed branch-failed; do
+    grep -qF -- "- \`$result\`:" <<<"$(procedure_text 'Claim')" || { echo "Claim does not list the result: $result"; false; }
+  done
+  grep -qF 'before you create a branch, and undo nothing' <<<"$claim" ||
+    { echo "Claim does not return claim-failed before the branch"; false; }
+  grep -qF "the release's \`write\` and \`message\`" <<<"$claim" ||
+    { echo "branch-failed does not carry the release's error"; false; }
+  grep -qF "When it prints an \`error\` instead, nothing was released" <<<"$claim" ||
+    { echo "branch-failed does not carry a release that returned an error"; false; }
+  enter="$(part_section 'Enter the branch')"
+  grep -qF 'Do not release the claim yourself. Stop, and run no step.' <<<"$enter" ||
+    { echo "Enter the branch does not stop on claim-failed without releasing"; false; }
+  grep -qF 'Say how to recover: run `lets backlog release <i>`' <<<"$enter" ||
+    { echo "Enter the branch does not say how to recover from claim-failed"; false; }
+  grep -qF 'When it carries a release error too, show it' <<<"$enter" ||
+    { echo "Enter the branch does not show a failed release"; false; }
+  grep -qF '`claim-failed`' <<<"$(overview_row 'Enter the branch')" || { echo "Enter the branch's row does not name claim-failed"; false; }
+  grep -qF 'lets backlog release <i>' <<<"$(skill_section lets-go 'Recover from a failed import')" ||
+    { echo "Recover from a failed import does not release through lets backlog"; false; }
+  for gone in '--add-assignee' '--remove-assignee' '<project>' '<owner>' 'gh issue view <i> --json assignees'; do
+    skill_does_not_say lets-go "$gone" || return 1
   done
 }
 
@@ -2412,7 +2470,9 @@ step_row() {
 @test "lets-plan runs openspec-propose and reads the change state when it stops" {
   skill_says lets-plan '`openspec-propose` skill'
   skill_says lets-plan 'openspec instructions apply --change <name> --json'
-  skill_says lets-plan 'gh issue list --state open --search "<branch> in:title" --json number,title'
+  skill_says lets-plan 'lets backlog find <branch>'
+  skill_says lets-plan 'whose title starts with `<branch> — `'
+  skill_does_not_say lets-plan 'gh issue list'
 }
 
 @test "lets-plan offers no handoff" {

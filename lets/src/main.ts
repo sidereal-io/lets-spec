@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command, CommanderError, InvalidArgumentError, Option } from 'commander';
+import { BACKLOG_HELP, run as backlog } from './backlog/commands.ts';
 import { run as handoff } from './delegate/handoff.ts';
 import type { HandoffOptions } from './delegate/handoff.ts';
 import { run as instructions } from './delegate/instructions.ts';
@@ -356,11 +357,33 @@ program
     process.exitCode = await questions(realDeps());
   });
 
-try {
-  await program.parseAsync(process.argv);
-} catch (error) {
-  if (!(error instanceof CommanderError)) throw error;
-  process.exitCode = error.exitCode === 0 ? 0 : 2;
+// lets backlog parses its own arguments, so its help and usage errors come
+// from the same place its tests drive. The entry below hands it every word
+// after backlog before the root parser runs, so a word such as --version or
+// -- is a search word; this registration only lists it in lets --help.
+program
+  .command('backlog')
+  .summary('read and claim work on the repository\'s backlog')
+  .description('Read and claim work on the repository\'s backlog: ready, item, find, claim and release. Each prints one JSON object.')
+  .usage('<ready|item|find|claim|release> [args]')
+  .helpOption(false)
+  .allowUnknownOption()
+  .allowExcessArguments()
+  .argument('[args...]')
+  .addHelpText('after', BACKLOG_HELP)
+  .action(async () => {
+    process.exitCode = await backlog(process.argv.slice(3), realDeps());
+  });
+
+if (process.argv[2] === 'backlog') {
+  process.exitCode = await backlog(process.argv.slice(3), realDeps());
+} else {
+  try {
+    await program.parseAsync(process.argv);
+  } catch (error) {
+    if (!(error instanceof CommanderError)) throw error;
+    process.exitCode = error.exitCode === 0 ? 0 : 2;
+  }
 }
 
 // The command has answered, so exit once its output is written. A WebSocket

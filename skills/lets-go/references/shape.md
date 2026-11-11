@@ -79,9 +79,9 @@ of them in this run.
 1. Run the third case, `next`, of
    [Find the source of demand](../SKILL.md#find-the-source-of-demand),
    with one narrowing: the candidates are the stories the report named,
-   and no other issue. Run its two commands as the section writes them.
-   Rank as it does: Must, then Should, then Could, then the lowest issue
-   number. Run
+   and no other issue. Pass their numbers to `lets backlog ready` with
+   `--only`, as the section says. Rank as it does: Must, then Should,
+   then Could, then the lowest issue number. Run
    [Check the prerequisite](glossary-handoff.md#check-the-prerequisite)
    and [Confirm the packet](../SKILL.md#confirm-the-packet) on each
    candidate, in rank order. A ready story is one that `next` would
@@ -101,9 +101,13 @@ of them in this run.
      that no story under `#<parent>` is
      ready. Name each story, and why it was left out, as the result
      carries it: for example, its blocker, its assignee, an unresolved
-     prerequisite, or a packet that is not complete. Say to run
-     `lets-go` with a story's number once it is ready. Then stop. Claim
-     nothing, and create no branch.
+     prerequisite, or a packet that is not complete. For a story that
+     `lets backlog ready` did not list, read why with
+     `lets backlog item <story>`: the `assignees` it names, an open
+     issue in its `blockedBy`, or its `status`, `kind` or `priority`.
+     On an error, act as [Backlog errors](../SKILL.md#backlog-errors)
+     says. Say to run `lets-go` with a story's number once it is ready.
+     Then stop. Claim nothing, and create no branch.
 
 A run that stops after discovery and before [Claim](../SKILL.md#claim),
 for any reason, leaves the map's edits on the default branch. When

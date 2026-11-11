@@ -23,8 +23,8 @@ ADR-015's provider-definition architecture is a target with a separate delegatio
 - [ADR-011](../../../../docs/decisions/ADR-011-one-config-file-shaped-like-the-commands.md), as scoped.
 - [ADR-012](../../../../docs/decisions/ADR-012-issue-comments-are-evidence.md).
 - [ADR-013](../../../../docs/decisions/ADR-013-the-reply-is-the-read-marker.md).
-- [ADR-014, step reports](../../../../docs/decisions/ADR-014-a-step-reports-through-its-final-message.md).
-- [ADR-015, step questions](../../../../docs/decisions/ADR-015-a-step-asks-through-its-report.md).
+- [ADR-022, step reports](../../../../docs/decisions/ADR-022-a-step-reports-through-its-final-message.md).
+- [ADR-023, step questions](../../../../docs/decisions/ADR-023-a-step-asks-through-its-report.md).
 - [ADR-015, bounded actions and results](../../../../docs/decisions/ADR-015-lets-requests-actions-and-validates-results.md).
 - [ADR-016](../../../../docs/decisions/ADR-016-review-and-handoff-stay-apart-from-step.md).
 - [ADR-017](../../../../docs/decisions/ADR-017-lets-go-reads-where-a-run-stands-from-git-and-github.md).

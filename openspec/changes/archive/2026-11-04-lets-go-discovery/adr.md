@@ -10,8 +10,8 @@ ADR review completed for this change. The design's seven decisions are skill pro
 ## In-Force ADRs Reviewed
 
 - [ADR-001](../../../docs/decisions/ADR-001-default-delegate-starts-no-session.md) to [ADR-013](../../../docs/decisions/ADR-013-the-reply-is-the-read-marker.md): read for context; none bears on this change. ADR-012 and ADR-013 govern how `lets-shape` reads comments, which discovery's Ingest phase inherits unchanged.
-- [ADR-014](../../../docs/decisions/ADR-014-a-step-reports-through-its-final-message.md): a step reports through its final message. The parent and the stories travel in that report's evidence (design D-3).
-- [ADR-015](../../../docs/decisions/ADR-015-a-step-asks-through-its-report.md): a step asks through its report, and the caller owns the interactivity level. The discovery offer and every phase confirmation follow that rule (design D-1, D-2).
+- [ADR-022](../../../docs/decisions/ADR-022-a-step-reports-through-its-final-message.md): a step reports through its final message. The parent and the stories travel in that report's evidence (design D-3).
+- [ADR-023](../../../docs/decisions/ADR-023-a-step-asks-through-its-report.md): a step asks through its report, and the caller owns the interactivity level. The discovery offer and every phase confirmation follow that rule (design D-1, D-2).
 - [ADR-016](../../../docs/decisions/ADR-016-review-and-handoff-stay-apart-from-step.md): review and handoff stay their own strategies. Unchanged.
 - [ADR-017](../../../docs/decisions/ADR-017-lets-go-reads-where-a-run-stands-from-git-and-github.md): `lets-go` keeps no state. Where a discovery stands is read from the parent issue and the map (design D-2), and the map must be committed before the tree is read (design D-5).
 

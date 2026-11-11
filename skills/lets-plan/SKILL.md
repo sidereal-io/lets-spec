@@ -23,16 +23,18 @@ artifact is still needed.
    change's name, `<name>`.
 3. The current branch is `<branch>` and the change name is `<name>`.
    Take the issue number, `<i>`, and the route line from the caller.
-   The route line names the selected schema and explains the choice. When
-   the
-   caller gives no issue, search for it:
+   The route line names the selected schema and explains the choice.
+   When the caller gives no issue, search for it:
 
    ```bash
-   gh issue list --state open --search "<branch> in:title" --json number,title
+   lets backlog find <branch>
    ```
 
-   Keep the one whose title starts with `<branch> — `. If none or
-   several match, say that `lets-plan` needs the issue number, and stop.
+   Of the `issues` it prints, keep the one whose title starts with
+   `<branch> — `. If none or several match, say that `lets-plan` needs
+   the issue number, and stop. When it prints an `error`, show the user
+   its `message`, and stop. For `no-backlog`, say to run the
+   `lets-setup-backlog` skill.
 
 ## Plan
 
