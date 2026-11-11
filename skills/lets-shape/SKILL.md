@@ -31,7 +31,9 @@ definitions: no roadmap, release plan or changelog.
 
 - `openspec/discovery.md` — the living map: personas and journey map
   ([templates/discovery-template.md](templates/discovery-template.md)). It
-  outlives every run; see [The map](#the-map).
+  outlives every run; see [The map](#the-map). In a repository with several
+  products, each product has a map of its own, and this file lists them; see
+  [Pick the map](#pick-the-map).
 - GitHub issues — one **parent issue** per discovery run, and the stories
   ([templates/issue-template.md](templates/issue-template.md)).
 
@@ -123,7 +125,7 @@ and nothing else.
 
 ## The map
 
-`discovery.md` describes the people the product serves and the paths they
+The run's map describes the people the product serves and the paths they
 take through it. It is not a record of runs. Many runs edit the same map, so
 its size follows the number of personas and paths, never the number of runs.
 Every run keeps these rules:
@@ -192,6 +194,32 @@ At the start:
 
 If any of these fails, stop and show the error. Never write the map anywhere
 but the resolved root.
+
+## Pick the map
+
+Each run reads and writes one discovery map: the run's map. Ingest picks it
+before its first write. Write no map until the run's map is settled.
+
+1. Read `<root.path>/openspec/discovery.md`. When it does not exist, or it
+   has no `## Products` heading, the repository has one product, and that
+   file is the run's map. Ask no question about products, unless the idea
+   is a separate thing the repository delivers, apart from the map's
+   product. A new persona or a new journey of the same product asks
+   nothing. When the idea is a separate thing, ask whether it belongs to
+   the map's product or to a new product.
+2. When it has a `## Products` heading, it is the root map. Each row of its
+   table names a product, what it covers and the path to its map. When the
+   idea clearly fits one listed product, use that product's map. When you
+   cannot tell, ask which product the idea belongs to, offering each listed
+   product and a new product.
+3. Name the run's map to the user every time, such as
+   `This run uses openspec/discovery/web-shop.md.`, so they can catch a
+   wrong pick.
+
+The question about which product an idea belongs to, and the question that
+moves the map for a second product, are confirmation questions, with no
+recommendation: the user decides them, so `lets-go` at `auto` puts them to
+the user.
 
 ## Develop the vocabulary
 
@@ -277,10 +305,10 @@ phase: `personas`, `journey-map`, `moscow`, then `stories`. A revision run
 that skips personas and the journey map goes from Ingest straight to
 `moscow`.
 
-Personas and the journey map go in `discovery.md`. Everything else goes in
+Personas and the journey map go in the run's map. Everything else goes in
 the parent issue.
 
-The parent issue and `discovery.md` are the resume point. A future session
+The parent issue and the run's map are the resume point. A future session
 with none of this conversation must be able to pick up exactly where this
 one stopped.
 
@@ -290,6 +318,8 @@ Take in the input — a file path, an issue (`gh issue view <n>`), pasted
 text, or just conversation. Then:
 
 - Restate the scope in your own words; have the user confirm
+- Pick the run's map, as [Pick the map](#pick-the-map) says, before the
+  checkpoint writes anything
 - Surface goals and non-goals
 - List open questions as they emerge (they land in the parent issue)
 - When the input is an issue, read its thread as [Issue
@@ -302,7 +332,10 @@ text, or just conversation. Then:
 **Checkpoint:** The parent issue is public, so confirm its text first. Write
 it from the parent template in
 [templates/issue-template.md](templates/issue-template.md): the status line,
-the input reference, the confirmed scope and any open questions so far.
+the input reference, the `Map:` line with the run's map, the confirmed scope
+and any open questions so far. In the same step, create the run's map from
+[templates/discovery-template.md](templates/discovery-template.md) when the
+file is missing, so a resumed run always finds it.
 Title it `Epic: <capability>`, create it with `gh issue create --title "Epic: <capability>" --body-file <file> --project "<project title>"`, then
 set its Kind to `Epic` with `item-edit`. Phase 5 may turn it into a single
 story.
@@ -318,7 +351,7 @@ lists each point taken in as `Taken into #<parent>:`, and each dismissal as
 
 ### Phase 2: Personas
 
-Start from the personas already in `discovery.md`. For the people this input
+Start from the personas already in the run's map. For the people this input
 serves, reuse an existing persona first; extend its entry only if the input
 reveals a lasting fact about them. Add a new persona only for a person the
 map lacks; most runs add none. For each new persona:
@@ -332,9 +365,7 @@ Push back if personas are roles without needs ("admin") rather than people
 with goals, or if an entry would stop being true once this run ships (see
 [The map](#the-map)).
 
-**Checkpoint:** write the Personas section of `discovery.md` (create the
-file from [templates/discovery-template.md](templates/discovery-template.md)
-if it is missing).
+**Checkpoint:** write the Personas section of the run's map.
 
 ### Phase 3: Journey map
 
@@ -360,7 +391,7 @@ Cite the open issue that closes a gap as a full link,
 `[#N](https://github.com/<owner>/<repo>/issues/N)`; a bare `#N` does not
 link inside a repository file. A `supported` stage carries no link.
 
-**Checkpoint:** write the Journey Map section of `discovery.md`, with
+**Checkpoint:** write the Journey Map section of the run's map, with
 today's date on its freshness line.
 
 ### Phase 4: MoSCoW

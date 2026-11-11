@@ -3032,3 +3032,57 @@ shape_templates="$repo/skills/lets-shape/templates"
     grep -qF 'See [<Persona name>](../discovery.md#<anchor>) in the root map.' ||
     { echo "the discovery template has no shared persona link"; false; }
 }
+
+@test "discovery maps: pick the map follows Locate the discovery" {
+  local file="$repo/skills/lets-shape/SKILL.md"
+  [ "$(grep -E '^## ' "$file" | grep -A1 -xF '## Locate the discovery' | tail -n 1)" = '## Pick the map' ] ||
+    { echo "Pick the map is not the section after Locate the discovery"; false; }
+}
+
+@test "discovery maps: pick the map reads a root with no Products heading as one product" {
+  local section
+  section="$(skill_section lets-shape 'Pick the map')"
+  grep -qF 'has no `## Products` heading, the repository has one product, and that file is the run'"'"'s map' <<<"$section" ||
+    { echo "Pick the map does not read a root with no Products heading as one product"; false; }
+  grep -qF 'A new persona or a new journey of the same product asks nothing.' <<<"$section" ||
+    { echo "Pick the map asks about a new persona or journey"; false; }
+}
+
+@test "discovery maps: pick the map uses a listed product the idea clearly fits" {
+  local section
+  section="$(skill_section lets-shape 'Pick the map')"
+  grep -qF 'When the idea clearly fits one listed product, use that product'"'"'s map' <<<"$section" ||
+    { echo "Pick the map does not pick a listed product"; false; }
+  grep -qF 'Name the run'"'"'s map to the user every time' <<<"$section" ||
+    { echo "Pick the map does not name the map to the user"; false; }
+}
+
+@test "discovery maps: pick the map asks with no recommendation when it cannot tell" {
+  local section
+  section="$(skill_section lets-shape 'Pick the map')"
+  grep -qF 'offering each listed product and a new product' <<<"$section" ||
+    { echo "Pick the map does not offer each product and a new one"; false; }
+  grep -qF 'are confirmation questions, with no recommendation' <<<"$section" ||
+    { echo "Pick the map's questions carry a recommendation"; false; }
+  grep -qF 'Write no map until the run'"'"'s map is settled.' <<<"$section" ||
+    { echo "Pick the map writes before the map is settled"; false; }
+}
+
+@test "discovery maps: pick the map runs in Ingest, which creates the run's map with the Map line" {
+  local section
+  section="$(skill_section lets-shape 'Phase 1: Ingest')"
+  grep -qF '[Pick the map](#pick-the-map)' <<<"$section" || { echo "Ingest does not link Pick the map"; false; }
+  grep -qF 'the `Map:` line with the run'"'"'s map' <<<"$section" || { echo "Ingest writes no Map line"; false; }
+  grep -qF 'In the same step, create the run'"'"'s map' <<<"$section" ||
+    { echo "Ingest does not create the run's map with the Map line"; false; }
+}
+
+@test "discovery maps: pick the map leaves the phases naming the run's map, not discovery.md" {
+  local name section
+  for name in 'The map' 'The phases' 'Phase 1: Ingest' 'Phase 2: Personas' 'Phase 3: Journey map'; do
+    section="$(skill_section lets-shape "$name")"
+    ! grep -qF 'discovery.md`' <<<"$section" || { echo "$name still names discovery.md"; false; }
+    grep -qF "the run's map" <<<"$section" || grep -qF "The run's map" <<<"$section" ||
+      { echo "$name does not say the run's map"; false; }
+  done
+}
