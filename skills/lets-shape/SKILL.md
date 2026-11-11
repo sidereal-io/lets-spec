@@ -267,6 +267,31 @@ more products, nothing moves:
    [templates/discovery-template.md](templates/discovery-template.md). It is
    the run's map. Change no other product's map.
 
+### Read the parent's map
+
+Resume mode and Finalize take the run's map from the parent issue's `Map:`
+line, not from the idea:
+
+1. With one product, a parent with no `Map:` line means
+   `openspec/discovery.md`.
+2. In any repository, when the file the `Map:` line names does not exist,
+   write no map and create no file. Say the file is missing. Say that it
+   may be on a branch this checkout does not have yet, or may have been
+   discarded, and that choosing a product cannot bring back its phases. Say
+   to bring the map into this checkout, or correct the parent's `Map:`
+   line. Then stop.
+3. When the root lists products, a parent with no `Map:` line, or one that
+   says `Map: openspec/discovery.md`, points at the root, which holds no
+   journeys. Write no map, and ask the user which product the parent
+   belongs to, offering each listed product, as a confirmation question
+   with no recommendation. On the answer, write that product's `Map:` line
+   to the parent with `gh issue edit <parent> --body-file <file>`, and go
+   on with that map.
+
+Write the phases to the run's map only. The one edit a run makes to another
+product's map is the link that replaces a shared persona's entry, as
+[Phase 2: Personas](#phase-2-personas) says.
+
 ## Develop the vocabulary
 
 Use the shared reference in discovery, revision, resume and single-issue
@@ -407,6 +432,14 @@ map lacks; most runs add none. For each new persona:
 - **Pain today** their real-world problem without a good tool
 - **Success looks like** the lasting, observable signal they got value
 
+When the run's product serves a persona whose entry is in another
+product's map, move its entry to the root map's `## Shared personas`, under
+its audience group. In the other map, leave a link to the root entry in its
+place, as [templates/discovery-template.md](templates/discovery-template.md)
+shows, and name the persona the same way in the run's map. That link is
+the one edit a run makes to another product's map. A persona only one
+product serves stays in that product's map.
+
 Push back if personas are roles without needs ("admin") rather than people
 with goals, or if an entry would stop being true once this run ships (see
 [The map](#the-map)).
@@ -483,8 +516,8 @@ splitting), and resolve with the user before finalizing.
   Retitle it `<kebab-story-name> — <one-line outcome>` and replace its body
   with the story template. Then set Kind `Story`, its Priority, its Size and
   Status `Todo`, with four `item-edit` commands. Keep the status line, input
-  reference and complete **Glossary handoff** recovery record when replacing
-  the body. Won't calls go in its Scope `out`.
+  reference, `Map:` line and complete **Glossary handoff** recovery record
+  when replacing the body. Won't calls go in its Scope `out`.
 - **More than one story.** The stories are sub-issues of the parent.
 
 **Checkpoint:** Issues are public, so show the new and changed issues as a
@@ -513,9 +546,11 @@ For each issue:
 
 ### Phase 6: Finalize
 
-Remove the status line from the parent issue. Keep the `Input:` line, so the
-run always names what it started from. Resolve every open question, or move
-it to the story it blocks. Link the journey stages in `discovery.md` to the
+Take the run's map from the parent's `Map:` line, as [Read the parent's
+map](#read-the-parents-map) says. Remove the status line from the parent
+issue. Keep the `Input:` and `Map:` lines, so the run always names what it
+started from and where its map is. Resolve every open question, or move it
+to the story it blocks. Link the journey stages in the run's map to the
 stories that close them. `## Backlog` stays a single link to the
 repository's issues page, never a list of issues. Show the user the stories
 as a checklist of issue links.
@@ -588,8 +623,9 @@ next issue, or the user can name this one.
 When an open parent issue says `Discovery status: in-progress` (or the user
 picked one of several):
 
-1. **Read it and `discovery.md`.** Recover any recorded glossary checkpoint
-   as above first. The status line records the next phase; the sections
+1. **Read it and its map.** Take the run's map from the parent's `Map:`
+   line, as [Read the parent's map](#read-the-parents-map) says. Recover any
+   recorded glossary checkpoint as above first. The status line records the next phase; the sections
    already present are confirmed work.
 2. **Restate where discovery stopped** — a one-paragraph summary of what the
    parent issue and map already capture — and confirm with the user.

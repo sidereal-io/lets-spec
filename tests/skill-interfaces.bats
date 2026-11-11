@@ -3154,3 +3154,51 @@ shape_templates="$repo/skills/lets-shape/templates"
   grep -qF 'Change no other product'"'"'s map.' <<<"$section" ||
     { echo "Add a later product may change another map"; false; }
 }
+
+@test "discovery maps: parent map line is read by Resume mode and Finalize" {
+  skill_has_section lets-shape "Read the parent's map"
+  skill_section lets-shape 'Resume mode' | grep -qF "[Read the parent's map](#read-the-parents-map)" ||
+    { echo "Resume mode does not link Read the parent's map"; false; }
+  skill_section lets-shape 'Phase 6: Finalize' | grep -qF "[Read the parent's map](#read-the-parents-map)" ||
+    { echo "Finalize does not link Read the parent's map"; false; }
+}
+
+@test "discovery maps: parent map line naming a missing file stops the run" {
+  local section
+  section="$(skill_section lets-shape "Read the parent's map")"
+  grep -qF 'In any repository, when the file the `Map:` line names does not exist, write no map and create no file.' <<<"$section" ||
+    { echo "Read the parent's map does not stop on a missing file"; false; }
+  grep -qF 'may be on a branch this checkout does not have yet, or may have been discarded' <<<"$section" ||
+    { echo "Read the parent's map does not say why the file may be missing"; false; }
+  grep -qF 'bring the map into this checkout, or correct the parent'"'"'s `Map:` line. Then stop.' <<<"$section" ||
+    { echo "Read the parent's map does not say how to repair and stop"; false; }
+}
+
+@test "discovery maps: parent map line pointing at the root is repaired with the user when there are several products" {
+  local section
+  section="$(skill_section lets-shape "Read the parent's map")"
+  grep -qF 'With one product, a parent with no `Map:` line means `openspec/discovery.md`.' <<<"$section" ||
+    { echo "Read the parent's map does not default an older parent"; false; }
+  grep -qF 'ask the user which product the parent belongs to' <<<"$section" ||
+    { echo "Read the parent's map does not ask which product"; false; }
+  grep -qF 'write that product'"'"'s `Map:` line to the parent' <<<"$section" ||
+    { echo "Read the parent's map does not write the Map line"; false; }
+}
+
+@test "discovery maps: parent map line survives the one-story body" {
+  skill_section lets-shape 'Phase 5: Stories' | grep -qF 'Keep the status line, input reference, `Map:` line and complete' ||
+    { echo "Phase 5's one-story body drops the Map line"; false; }
+  skill_section lets-shape 'Phase 6: Finalize' | grep -qF 'Keep the `Input:` and `Map:` lines' ||
+    { echo "Finalize drops the Map line"; false; }
+}
+
+@test "discovery maps: parent map line run promotes a shared persona to the root" {
+  local section
+  section="$(skill_section lets-shape 'Phase 2: Personas')"
+  grep -qF 'move its entry to the root map'"'"'s `## Shared personas`' <<<"$section" ||
+    { echo "Personas does not move a shared persona to the root"; false; }
+  grep -qF 'leave a link to the root entry in its place' <<<"$section" ||
+    { echo "Personas leaves no link in the other map"; false; }
+  grep -qF 'the one edit a run makes to another product'"'"'s map' <<<"$section" ||
+    { echo "Personas does not limit edits to another map"; false; }
+}
