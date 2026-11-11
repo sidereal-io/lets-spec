@@ -35,6 +35,13 @@ their own, so it gets a discovery map of its own. A repository with one
 product is that product, and keeps one map. A product is not a spec domain:
 one product's journey can cross several domains.
 
+## Discovery map
+
+The file that records a product's personas and journeys. In a repository
+with one product, it is `openspec/discovery.md`. With two or more, each
+product's map is `openspec/discovery/<product>.md`, and the root map,
+`openspec/discovery.md`, lists them and holds the personas they share.
+
 ## Work item
 
 An epic, story, bug or chore stored in a backlog.
