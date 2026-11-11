@@ -3086,3 +3086,48 @@ shape_templates="$repo/skills/lets-shape/templates"
       { echo "$name does not say the run's map"; false; }
   done
 }
+
+@test "discovery maps: second product is a subsection of Pick the map that step 1 links" {
+  local file="$repo/skills/lets-shape/SKILL.md"
+  [ "$(grep -E '^##+ ' "$file" | grep -A1 -xF '## Pick the map' | tail -n 1)" = '### Add a second product' ] ||
+    { echo "Add a second product does not open Pick the map's subsections"; false; }
+  skill_section lets-shape 'Pick the map' | grep -qF '[Add a second product](#add-a-second-product)' ||
+    { echo "Pick the map does not link Add a second product"; false; }
+}
+
+@test "discovery maps: second product proposes both names and asks before it moves" {
+  local section
+  section="$(skill_section lets-shape 'Add a second product')"
+  grep -qF 'Propose kebab-case names for both products, from the map'"'"'s title and the idea' <<<"$section" ||
+    { echo "Add a second product does not propose both names"; false; }
+  grep -qF 'Show the user the move' <<<"$section" || { echo "Add a second product does not show the move"; false; }
+  grep -qF 'with no recommendation' <<<"$section" || { echo "the move question carries a recommendation"; false; }
+  grep -qF 'On a no, keep `openspec/discovery.md` as the run'"'"'s map, and move nothing.' <<<"$section" ||
+    { echo "Add a second product moves something on a no"; false; }
+}
+
+@test "discovery maps: second product writes the files before it touches an issue" {
+  local section
+  section="$(skill_section lets-shape 'Add a second product')"
+  grep -qF 'Move the map to `openspec/discovery/<first-product>.md`' <<<"$section" ||
+    { echo "Add a second product does not move the map"; false; }
+  grep -qF '[templates/discovery-root-template.md](templates/discovery-root-template.md)' <<<"$section" ||
+    { echo "Add a second product does not write the root from its template"; false; }
+  grep -qF 'Create `openspec/discovery/<new-product>.md`' <<<"$section" ||
+    { echo "Add a second product does not create the new product's map"; false; }
+  grep -qF 'write the files before you touch any issue' <<<"$section" ||
+    { echo "Add a second product does not write files first"; false; }
+}
+
+@test "discovery maps: second product retargets each open parent whose map is the root" {
+  local section
+  section="$(skill_section lets-shape 'Add a second product')"
+  grep -qF "gh issue list --state open --search '\"Input:\" in:body' --json number,title,body" <<<"$section" ||
+    { echo "Add a second product does not find the parents"; false; }
+  grep -qF 'has no `Map:` line or says `Map: openspec/discovery.md`' <<<"$section" ||
+    { echo "Add a second product does not keep both kinds of parent"; false; }
+  grep -qF 'Map: openspec/discovery/<first-product>.md' <<<"$section" ||
+    { echo "Add a second product does not write the first product's Map line"; false; }
+  grep -qF 'When an update fails, stop, and name each parent you have not retargeted' <<<"$section" ||
+    { echo "Add a second product does not stop on a failed update"; false; }
+}

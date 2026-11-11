@@ -206,7 +206,8 @@ before its first write. Write no map until the run's map is settled.
    is a separate thing the repository delivers, apart from the map's
    product. A new persona or a new journey of the same product asks
    nothing. When the idea is a separate thing, ask whether it belongs to
-   the map's product or to a new product.
+   the map's product or to a new product. A new product goes to [Add a
+   second product](#add-a-second-product).
 2. When it has a `## Products` heading, it is the root map. Each row of its
    table names a product, what it covers and the path to its map. When the
    idea clearly fits one listed product, use that product's map. When you
@@ -220,6 +221,36 @@ The question about which product an idea belongs to, and the question that
 moves the map for a second product, are confirmation questions, with no
 recommendation: the user decides them, so `lets-go` at `auto` puts them to
 the user.
+
+### Add a second product
+
+When the idea belongs to a new product, and the repository has one product:
+
+1. Propose kebab-case names for both products, from the map's title and
+   the idea, such as `web-shop` for `Discovery: Web shop` and `warehouse`
+   for a warehouse app.
+2. Show the user the move: the existing map's new path,
+   `openspec/discovery/<first-product>.md`, and the root's table of
+   contents with a row for each product. Ask whether to make it, as a
+   confirmation question with no recommendation. On a no, keep
+   `openspec/discovery.md` as the run's map, and move nothing.
+3. On a yes, write the files before you touch any issue:
+   1. Move the map to `openspec/discovery/<first-product>.md`, with a plain
+      file move, not `git mv`, so nothing is staged.
+   2. Write `openspec/discovery.md` from
+      [templates/discovery-root-template.md](templates/discovery-root-template.md),
+      with a row for each product.
+   3. Create `openspec/discovery/<new-product>.md` from
+      [templates/discovery-template.md](templates/discovery-template.md).
+      It is the run's map.
+4. Retarget each open parent issue whose map is the root. Find the parents
+   with `gh issue list --state open --search '"Input:" in:body' --json number,title,body`,
+   and keep each whose body has no `Map:` line or says
+   `Map: openspec/discovery.md`. Give each one
+   `Map: openspec/discovery/<first-product>.md`, beside its `Input:` line,
+   with `gh issue edit <parent> --body-file <file>`. When an update fails,
+   stop, and name each parent you have not retargeted. A later Resume or
+   Finalize repairs it, as [Resume mode](#resume-mode) says.
 
 ## Develop the vocabulary
 
