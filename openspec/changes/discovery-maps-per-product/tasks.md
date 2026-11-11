@@ -22,7 +22,7 @@
 
 ## 4. Docs and integration [depends-on: 2]
 
-- [ ] 4.1 [easy] `docs/monorepo.md` has a section on discovery maps: one map per product, the root's `## Products` table and shared personas, and that a repository with several domains can still be one product. The README's *Monorepos* section links it, and every README line that names the map's path covers both layouts (verify: deli -- bats tests/skill-interfaces.bats --filter 'discovery maps: docs')
+- [x] 4.1 [easy] `docs/monorepo.md` has a section on discovery maps: one map per product, the root's `## Products` table and shared personas, and that a repository with several domains can still be one product. The README's *Monorepos* section links it, and every README line that names the map's path covers both layouts (verify: deli -- bats tests/skill-interfaces.bats --filter 'discovery maps: docs') (✓ deli -- mise exec -- bats tests/skill-interfaces.bats --filter 'discovery maps: docs' passed)
 - [ ] 4.2 [medium] The whole project passes its checks, with no change to `.agents/skills/` or `openspec/schemas/` (verify: deli -- sh -c 'pnpm test && nix flake check && mise run check')
 
 ## Deviations Ledger

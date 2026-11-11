@@ -2,7 +2,8 @@
 
 This page is for you if you are setting up Let's Spec in a repository that
 holds several applications or services. It says how to lay out the specs,
-and how to tell agents which code each group of specs describes.
+how to tell agents which code each group of specs describes, and where
+discovery keeps its maps.
 
 ## Keep one setup at the root
 
@@ -68,3 +69,47 @@ requirements change.
 Skills, git branches and pull requests stay shared across the repository.
 One change is still one branch and one pull request, however many domains
 it touches.
+
+## Discovery maps
+
+A discovery map records the personas a product serves and the journeys
+they walk. `lets-shape` writes it, and `lets-go` commits it on the first
+story's branch.
+
+A **product** is something the repository delivers to people of its own,
+who walk journeys of their own. It is not a spec domain. A repository with
+several domains can still be one product: one journey can cross the
+`backend` and `frontend` specs. Such a repository keeps one map,
+`openspec/discovery.md`, and discovery asks nothing about products.
+
+When a discovery run brings a second product, `lets-shape` proposes a name
+for each product and shows you the move. It asks before it moves anything.
+On your yes, each product gets a map of its own, and the root map becomes
+the list of products:
+
+```text
+openspec/
+  discovery.md                 # the root map: the list of products
+  discovery/
+    web-shop.md                # one product's personas and journeys
+    warehouse.md
+```
+
+- **Each product's map** is `openspec/discovery/<product>.md`. It holds
+  every journey of that product, the journeys of the personas it shares
+  too.
+- **The root map** opens with a `## Products` table. Each row gives a
+  product, what it covers and a link to its map. That heading is how
+  `lets-shape` knows the repository has several products.
+- **The root also holds the shared personas**: the personas more than one
+  product serves. A product's map names a shared persona with a link to
+  the root entry instead of a copy. The root holds no journeys.
+
+Each discovery run picks one map. When the idea clearly fits a listed
+product, `lets-shape` uses that product's map and says which. When it
+cannot tell, it asks you. Each parent issue names its map on a `Map:`
+line, so a later session resumes the run on the right map. A later
+product adds a row and a map, and moves nothing.
+
+[ADR-021](decisions/ADR-021-each-product-has-a-map-and-the-root-lists-them.md)
+records why the maps follow products, not spec domains.

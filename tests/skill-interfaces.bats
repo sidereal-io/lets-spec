@@ -3330,3 +3330,23 @@ commit_maps() {
 @test "discovery maps: shape prompt makes the product and move questions confirmation questions" {
   skill_says lets-go 'The question about which product an idea belongs to, and the question that moves the map for a second product, are confirmation questions too: give them no recommendation.'
 }
+
+@test "discovery maps: docs explain one map per product in a monorepo" {
+  local text
+  text="$(tr -s '[:space:]' ' ' <"$repo/docs/monorepo.md")"
+  grep -qxF '## Discovery maps' "$repo/docs/monorepo.md" || { echo "docs/monorepo.md has no Discovery maps section"; false; }
+  for fixed in 'openspec/discovery/<product>.md' '## Products' 'shared personas' \
+    'A repository with several domains can still be one product'; do
+    grep -qF -- "$fixed" <<<"$text" || { echo "docs/monorepo.md does not say: $fixed"; false; }
+  done
+}
+
+@test "discovery maps: docs are linked from the README's Monorepos section" {
+  local section line
+  section="$(awk '/^### Monorepos$/ { on = 1; next } on && /^#/ { exit } on' "$repo/README.md")"
+  grep -qF '(docs/monorepo.md#discovery-maps)' <<<"$section" ||
+    { echo "the README's Monorepos section does not link Discovery maps"; false; }
+  while IFS= read -r line; do
+    grep -qF 'openspec/discovery/' <<<"$line" || { echo "README names one map layout only: $line"; false; }
+  done < <(tr -s '[:space:]' ' ' <"$repo/README.md" | sed 's/\. /.\n/g' | grep -F 'openspec/discovery.md')
+}
