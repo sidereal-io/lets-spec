@@ -5,7 +5,7 @@
 
 ## Review Summary
 
-ADR review completed for this change. Of design.md's decisions, only Decision 8 qualifies: the map layout is written into users' repositories, so it is costly to reverse. The others, such as the `## Products` heading, the template's shape and the commands, can be read from the skills and changed cheaply.
+ADR review completed for this change. Of design.md's decisions, only Decision 10 qualifies: the map layout is written into users' repositories, so it is costly to reverse. The others, such as the `## Products` heading, the template's shape and the commands, can be read from the skills and changed cheaply.
 
 ## In-Force ADRs Reviewed
 

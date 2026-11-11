@@ -56,7 +56,9 @@ A discovery run and a Revision mode run SHALL pick their map in Ingest, before t
 - **THEN** `lets-shape` asks which product the idea belongs to, offering `web-shop`, `warehouse` and a new product, and writes no map before the answer
 
 ### Requirement: A second product moves the map with the user's yes
-When a run's idea belongs to a new product, and the repository has one product, `lets-shape` SHALL propose kebab-case names for both products, taken from the map's title and the idea. It SHALL show the move: the existing map's new path, `openspec/discovery/<first-product>.md`, and the root's table of contents. On the user's yes, it SHALL move the map, write the root from the table-of-contents template, and add `Map: openspec/discovery/<first-product>.md` to each open parent issue that has no `Map:` line. On a no, the run SHALL keep using `openspec/discovery.md`, and SHALL move nothing.
+When a run's idea belongs to a new product, and the repository has one product, `lets-shape` SHALL propose kebab-case names for both products. It SHALL take them from the map's title and the idea. It SHALL show the user the move: the existing map's new path, `openspec/discovery/<first-product>.md`, and the root's table of contents. On a no, the run SHALL keep using `openspec/discovery.md`, and SHALL move nothing.
+
+On a yes, `lets-shape` SHALL write the files first. It SHALL move the map to `openspec/discovery/<first-product>.md`, and write `openspec/discovery.md` from the table-of-contents template. Then it SHALL retarget each open parent issue whose map is the root: one with no `Map:` line, or with `Map: openspec/discovery.md`. Each gets `Map: openspec/discovery/<first-product>.md`. When an issue update fails, `lets-shape` SHALL stop, and name each parent it has not retargeted.
 
 #### Scenario: The user says yes
 - **WHEN** `openspec/discovery.md` is titled `Discovery: Web shop`, the idea is a warehouse app for staff, and the user says yes to the names `web-shop` and `warehouse`
@@ -66,12 +68,42 @@ When a run's idea belongs to a new product, and the repository has one product, 
 - **WHEN** the user says yes to the move, and the open parent `Epic: checkout` has `Input:` and no `Map:` line
 - **THEN** `Epic: checkout` then holds `Map: openspec/discovery/web-shop.md`
 
+#### Scenario: An open parent that names the root
+- **WHEN** the user says yes to the move, and the open parent `Epic: returns` says `Discovery status: in-progress` and `Map: openspec/discovery.md`
+- **THEN** `Epic: returns` then holds `Map: openspec/discovery/web-shop.md`, and no longer holds `Map: openspec/discovery.md`
+
+#### Scenario: An issue update fails
+- **WHEN** the files are written, `Epic: checkout` is retargeted, and the update of `Epic: returns` fails
+- **THEN** `lets-shape` stops, and says that `Epic: returns` still points at the root
+
 #### Scenario: The user says no
 - **WHEN** the user says no to the move
 - **THEN** no file moves, no `openspec/discovery/` folder exists, and the run writes its phases to `openspec/discovery.md`
 
+### Requirement: A later product gets a map of its own
+When a run's idea belongs to a new product, and the root map already lists two or more products, `lets-shape` SHALL propose a kebab-case name for it. It SHALL refuse a name whose map path, `openspec/discovery/<product>.md`, already exists, and ask for another. On the user's yes, it SHALL add the product's row to the root's table of contents, and create its map from the discovery template. It SHALL change no other product's map.
+
+#### Scenario: A third product
+- **WHEN** the root lists `web-shop` and `warehouse`, and the user says yes to the name `supplier-portal`
+- **THEN** the root has a third row that links `discovery/supplier-portal.md`, the file exists with the discovery template's headings, and `openspec/discovery/web-shop.md` and `openspec/discovery/warehouse.md` are unchanged
+
+#### Scenario: A name that is taken
+- **WHEN** the user proposes the name `warehouse` for a new product, and `openspec/discovery/warehouse.md` exists
+- **THEN** `lets-shape` says the name is taken, asks for another, and writes no file
+
+### Requirement: A parent whose map is missing is repaired with the user
+In a repository whose root map lists products, a parent issue's map is missing when it has no `Map:` line, says `Map: openspec/discovery.md`, or names a file that does not exist. When Resume mode or Finalize reads such a parent, `lets-shape` SHALL write no map. It SHALL say which map is missing, and ask the user which product the parent belongs to. On the answer, it SHALL write that product's `Map:` line to the parent, and go on with that map.
+
+#### Scenario: A parent the move did not retarget
+- **WHEN** the root lists `web-shop` and `warehouse`, and Resume mode picks up `Epic: returns`, which says `Map: openspec/discovery.md`
+- **THEN** `lets-shape` asks which product `Epic: returns` belongs to, writes nothing to `openspec/discovery.md`, and on the answer `web-shop` writes `Map: openspec/discovery/web-shop.md` to `Epic: returns`
+
+#### Scenario: A map that was discarded
+- **WHEN** a parent says `Map: openspec/discovery/warehouse.md`, and that file does not exist
+- **THEN** `lets-shape` says `openspec/discovery/warehouse.md` is missing, asks which product the parent belongs to, and creates no file before the answer
+
 ### Requirement: A parent issue names its map
-Every parent issue that a discovery run creates SHALL hold a `Map: <path>` line beside its `Input:` line, with the path of the run's map from the repository root. Finalize SHALL keep the line. A parent issue with no `Map:` line SHALL mean `openspec/discovery.md`. Resume mode SHALL read the parent's map from that line, and SHALL write its phases there.
+Every parent issue that a discovery run creates SHALL hold a `Map: <path>` line beside its `Input:` line, with the path of the run's map from the repository root. Finalize SHALL keep the line. In a repository with one product, a parent issue with no `Map:` line SHALL mean `openspec/discovery.md`. Resume mode SHALL read the parent's map from that line, and SHALL write its phases there.
 
 #### Scenario: A new parent with one product
 - **WHEN** a discovery run creates its parent issue in a repository with one product
