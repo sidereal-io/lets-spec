@@ -3321,3 +3321,12 @@ commit_maps() {
   ! grep -qF 'Run `git status --porcelain`. When it lists `openspec/discovery.md`' <<<"$section" ||
     { echo "the dirty check still reads one map"; false; }
 }
+
+@test "discovery maps: shape prompt allows every discovery map in its clean tree" {
+  skill_says lets-go 'with a clean tree, except the discovery maps, `openspec/discovery.md` and the files under `openspec/discovery/`, when discovery ran'
+  skill_does_not_say lets-go 'with a clean tree, except `openspec/discovery.md` when discovery ran'
+}
+
+@test "discovery maps: shape prompt makes the product and move questions confirmation questions" {
+  skill_says lets-go 'The question about which product an idea belongs to, and the question that moves the map for a second product, are confirmation questions too: give them no recommendation.'
+}

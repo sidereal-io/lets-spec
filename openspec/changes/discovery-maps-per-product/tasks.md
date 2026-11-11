@@ -18,7 +18,7 @@
 ## 3. lets-go
 
 - [x] 3.1 [parallel] [medium] A behavior test runs `git status --porcelain -uall -- openspec/discovery.md openspec/discovery`, `git add -- <paths>` and `git commit -- <paths>` in a temporary repository, with only `openspec/discovery.md` changed and no folder, then after a move, and checks that each commit holds exactly the listed paths. `references/shape.md`'s dirty check, stop note and *Commit the discovery map* use those commands, name each dirty path, and never pass `openspec/discovery` to `git add` (verify: deli -- bats tests/skill-interfaces.bats --filter 'discovery maps: lets-go commit') (✓ deli -- mise exec -- bats tests/skill-interfaces.bats --filter 'discovery maps: lets-go commit' passed)
-- [ ] 3.2 [parallel] [easy] The shape prompt in `references/shape.md` names `openspec/discovery/` in its clean-tree exception. It says the product question and the move question are confirmation questions with no recommendation (verify: deli -- bats tests/skill-interfaces.bats --filter 'discovery maps: shape prompt')
+- [x] 3.2 [parallel] [easy] The shape prompt in `references/shape.md` names `openspec/discovery/` in its clean-tree exception. It says the product question and the move question are confirmation questions with no recommendation (verify: deli -- bats tests/skill-interfaces.bats --filter 'discovery maps: shape prompt') (✓ deli -- mise exec -- bats tests/skill-interfaces.bats --filter 'discovery maps: shape prompt' passed)
 
 ## 4. Docs and integration [depends-on: 2]
 

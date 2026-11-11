@@ -216,13 +216,17 @@ Discovery runs every phase from Ingest to Finalize, including the
 glossary handoff. Write the idea's words, or #<i>, in the parent's
 `Input:` line, so a later round can find the parent. Each phase's
 confirmation, and the story table in Phase 5, is a confirmation
-question: give it no recommendation. When the glossary handoff asks who
-carries the edits, recommend the first story in dependency order.
+question: give it no recommendation. The question about which product
+an idea belongs to, and the question that moves the map for a second
+product, are confirmation questions too: give them no recommendation.
+When the glossary handoff asks who carries the edits, recommend the
+first story in dependency order.
 
 Create no change and no change branch. The parent issue, the stories
 and a glossary holding branch that `lets-shape` makes are allowed. End on
-the branch <default>, with a clean tree, except `openspec/discovery.md`
-when discovery ran.
+the branch <default>, with a clean tree, except the discovery maps,
+`openspec/discovery.md` and the files under `openspec/discovery/`, when
+discovery ran.
 
 A done report's first evidence line is `issue #<i>: <title>` for one
 issue. When discovery filed stories, it is `epic #<parent>: <title>`,
