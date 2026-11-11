@@ -3251,3 +3251,73 @@ shape_templates="$repo/skills/lets-shape/templates"
   grep -qF 'It never edits a discovery map' <<<"$section" || { echo "Shape one issue may edit a map"; false; }
   ! grep -qF '`discovery.md`' <<<"$section" || { echo "Shape one issue still names discovery.md"; false; }
 }
+
+# The commands references/shape.md gives for the discovery maps. The behavior
+# tests run these strings, and a wording test checks the reference holds them.
+map_status='git status --porcelain -uall -- openspec/discovery.md openspec/discovery'
+map_add='git add -- <paths>'
+map_commit='git commit -m "docs: the discovery map from #<parent>" -- <paths>'
+
+# map_repo: a repository in the test's folder, with a committed one-product
+# map and a README, and the shell inside it.
+map_repo() {
+  cd "$BATS_TEST_TMPDIR" && git init -q repo && cd repo
+  mkdir openspec
+  printf '# Discovery: Web shop\n' >openspec/discovery.md
+  printf 'readme\n' >README.md
+  git add . && git commit -q -m init
+}
+
+# commit_maps: list the changed maps with the status command, then add and
+# commit exactly those paths, as references/shape.md says.
+commit_maps() {
+  local paths
+  mapfile -t paths < <(eval "$map_status" | cut -c4-)
+  [ "${#paths[@]}" -gt 0 ] || { echo "the status command listed no map"; return 1; }
+  eval "${map_add/<paths>/\"\${paths[@]\}\"}"
+  eval "${map_commit/<paths>/\"\${paths[@]\}\"}" >/dev/null
+}
+
+@test "discovery maps: lets-go commit takes only the one map when no folder exists" {
+  map_repo
+  printf 'personas\n' >>openspec/discovery.md
+  printf 'other\n' >>README.md
+  commit_maps
+  [ "$(git show --name-only --format= HEAD)" = openspec/discovery.md ] ||
+    { echo "the commit holds: $(git show --name-only --format= HEAD)"; false; }
+  [ "$(git status --porcelain)" = ' M README.md' ] || { echo "left: $(git status --porcelain)"; false; }
+}
+
+@test "discovery maps: lets-go commit takes every map a move wrote" {
+  map_repo
+  mkdir openspec/discovery
+  mv openspec/discovery.md openspec/discovery/web-shop.md
+  printf '# Discovery: shop\n\n## Products\n' >openspec/discovery.md
+  printf '# Discovery: Warehouse\n' >openspec/discovery/warehouse.md
+  printf 'other\n' >>README.md
+  commit_maps
+  [ "$(git show --name-only --format= HEAD | sort | tr '\n' ' ')" = \
+    'openspec/discovery.md openspec/discovery/warehouse.md openspec/discovery/web-shop.md ' ] ||
+    { echo "the commit holds: $(git show --name-only --format= HEAD)"; false; }
+  [ "$(git status --porcelain)" = ' M README.md' ] || { echo "left: $(git status --porcelain)"; false; }
+}
+
+@test "discovery maps: lets-go commit commands are the ones references/shape.md gives" {
+  local file="$repo/skills/lets-go/references/shape.md" section
+  skill_says lets-go "$map_status"
+  skill_says lets-go "$map_add"
+  skill_says lets-go "$map_commit"
+  run grep -nE 'git (add|commit)( .*)? (-- )?openspec/discovery( |$|`)' "$file"
+  [ "$status" -eq 1 ] || { echo "shape.md passes the folder to git: $output"; false; }
+  run grep -nF 'git add openspec/discovery.md' "$file"
+  [ "$status" -eq 1 ] || { echo "shape.md still adds the one map: $output"; false; }
+}
+
+@test "discovery maps: lets-go commit names each dirty map before the shape step and at a stop" {
+  local section
+  section="$(skill_section lets-go 'Run the shape step')"
+  grep -qF "$map_status" <<<"$section" || { echo "the dirty check does not run the status command"; false; }
+  grep -qF 'name each path it lists' <<<"$section" || { echo "the dirty check names no path"; false; }
+  ! grep -qF 'Run `git status --porcelain`. When it lists `openspec/discovery.md`' <<<"$section" ||
+    { echo "the dirty check still reads one map"; false; }
+}

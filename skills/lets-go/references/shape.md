@@ -40,17 +40,25 @@ on the default branch, before any branch or change exists, and at most
 once per run. [Check the issue](../SKILL.md#check-the-issue) decides
 when it runs.
 
-1. Check the discovery map. Run `git status --porcelain`. When it lists
-   `openspec/discovery.md`, look for this input's discovery: an open
+1. Check the discovery maps:
+
+   ```bash
+   git status --porcelain -uall -- openspec/discovery.md openspec/discovery
+   ```
+
+   It names each changed map, new files included, and works when the
+   `openspec/discovery/` folder does not exist. When it lists a path,
+   look for this input's discovery: an open
    parent issue that says `Discovery status: in-progress`, and whose
    `Input:` line names this input, the idea's words or `#<i>`. For an
    idea, use what [Start from an idea](#start-from-an-idea) found. For
    an issue, run the query in [Start from an idea](#start-from-an-idea).
    - **There is one:** the edits are that discovery's confirmed phases.
      Go on: the step resumes it, and its map commit takes them.
-   - **There is none:** say that the map has uncommitted edits, and to
-     commit or discard them. Stop, and run no step. If the run went on,
-     a discovery's commit could sweep those edits in.
+   - **There is none:** say that the maps have uncommitted edits, name
+     each path it lists, and say to commit or discard them. Stop, and
+     run no step. If the run went on, a discovery's commit could sweep
+     those edits in.
 2. Set `<mode>` and print its line, as
    [Set the question mode](../SKILL.md#set-the-question-mode)
    says for a question mode before a shape step. Then go on here, with
@@ -106,28 +114,39 @@ of them in this run.
      nothing, and create no branch.
 
 A run that stops after discovery and before [Claim](../SKILL.md#claim),
-for any reason, leaves the map's edits on the default branch. When
-`git status --porcelain` lists `openspec/discovery.md`, say that it
-holds the discovery's map, uncommitted on the default branch. While the
-parent still says `Discovery status: in-progress`, say to leave the map
-as it is: running `lets-go` again with the same idea, or `#<i>`, resumes
-the discovery and keeps its edits. Otherwise, say to commit or discard
-the map before the next run, because the next run stops on it.
+for any reason, leaves the maps' edits on the default branch. When the
+status command in [Commit the discovery map](#commit-the-discovery-map)
+lists a path, name each one, and say that they hold the discovery's
+edits, uncommitted on the default branch. While the parent still says
+`Discovery status: in-progress`, say to leave the maps as they are:
+running `lets-go` again with the same idea, or `#<i>`, resumes the
+discovery and keeps its edits. Otherwise, say to commit or discard them
+before the next run, because the next run stops on them.
 
 ## Commit the discovery map
 
-Discovery edits `openspec/discovery.md` on the default branch, and the
-new branch carries the edits with it. When a shape step ran in this
-run, and `git status --porcelain` lists `openspec/discovery.md`, commit
-the edits on the new branch, before
-[Walk the step table](../SKILL.md#walk-the-step-table) reads the tree.
-Otherwise make no commit.
+Discovery edits the discovery maps on the default branch:
+`openspec/discovery.md`, and in a repository with several products the
+files under `openspec/discovery/`. The new branch carries the edits with
+it. When a shape step ran in this run, list the changed maps on the new
+branch, before [Walk the step table](../SKILL.md#walk-the-step-table)
+reads the tree:
 
 ```bash
-git add openspec/discovery.md
-git commit -m "docs: the discovery map from #<parent>" -- openspec/discovery.md
+git status --porcelain -uall -- openspec/discovery.md openspec/discovery
 ```
 
+Each line is two status letters, a space, then a path. When it lists no
+path, make no commit. Otherwise take each path, new files included, as
+`<paths>`, and commit them:
+
+```bash
+git add -- <paths>
+git commit -m "docs: the discovery map from #<parent>" -- <paths>
+```
+
+Never pass the `openspec/discovery` folder itself to `git add` or
+`git commit`: both fail on a path that matches no file.
 `<parent>` is the parent's number, or the story's when the parent
 became the one story. Commit no other path. This is the one commit
 `lets-go` makes itself, beside the glossary import.
