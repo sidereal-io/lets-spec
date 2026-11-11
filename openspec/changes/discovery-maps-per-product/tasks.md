@@ -4,7 +4,7 @@
 ## 1. Templates
 
 - [x] 1.1 [easy] A table-of-contents template, `skills/lets-shape/templates/discovery-root-template.md`, has `# Discovery: <repository name>`, a `## Products` table with the columns Product, Covers and Map, and `## Shared personas` with the discovery template's audience groups, and no `## Journey Map`. The tests read the template file directly (verify: deli -- bats tests/skill-interfaces.bats --filter 'discovery maps: root template') (✓ deli -- mise exec -- bats tests/skill-interfaces.bats --filter 'discovery maps: root template' passed)
-- [ ] 1.2 [easy] The parent issue template holds `> Map: <path>` under `> Input:`, and its finalize note says Finalize and the one-story body replacement keep it. The discovery template shows a shared persona as `#### <Persona name> — shared` with a link line to the root map (verify: deli -- bats tests/skill-interfaces.bats --filter 'discovery maps: templates')
+- [x] 1.2 [easy] The parent issue template holds `> Map: <path>` under `> Input:`, and its finalize note says Finalize and the one-story body replacement keep it. The discovery template shows a shared persona as `#### <Persona name> — shared` with a link line to the root map (verify: deli -- bats tests/skill-interfaces.bats --filter 'discovery maps: templates') (✓ deli -- mise exec -- bats tests/skill-interfaces.bats --filter 'discovery maps: templates' passed)
 
 ## 2. lets-shape [depends-on: 1]
 

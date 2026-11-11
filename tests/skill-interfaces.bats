@@ -3014,3 +3014,21 @@ shape_templates="$repo/skills/lets-shape/templates"
   run grep -nF '## Journey Map' "$file"
   [ "$status" -eq 1 ] || { echo "the root template has a journey map: $output"; false; }
 }
+
+@test "discovery maps: templates name the parent's map" {
+  local file="$shape_templates/issue-template.md" text
+  grep -A1 -xF '> Input: <file path, issue link, or "conversation, YYYY-MM-DD">' "$file" |
+    grep -qxF '> Map: <path>' || { echo "the parent template has no Map line under Input"; false; }
+  text="$(tr -s '[:space:]' ' ' <"$file")"
+  grep -qF 'keep the `Input:` and `Map:` lines' <<<"$text" ||
+    { echo "the finalize note does not keep the Map line"; false; }
+  grep -qF 'keeping the status line, input reference and `Map:` line' <<<"$text" ||
+    { echo "the one-story note does not keep the Map line"; false; }
+}
+
+@test "discovery maps: templates link a shared persona to the root map" {
+  local file="$shape_templates/discovery-template.md"
+  grep -A2 -xF '#### <Persona name> — shared' "$file" |
+    grep -qF 'See [<Persona name>](../discovery.md#<anchor>) in the root map.' ||
+    { echo "the discovery template has no shared persona link"; false; }
+}
