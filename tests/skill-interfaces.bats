@@ -3229,3 +3229,25 @@ shape_templates="$repo/skills/lets-shape/templates"
     { echo "Revision mode does not limit the rest to the run's map"; false; }
   ! grep -qF '`discovery.md`' <<<"$section" || { echo "Revision mode still names discovery.md"; false; }
 }
+
+@test "discovery maps: shape one issue reads its product's map and the root's shared personas" {
+  skill_section lets-shape 'Shape one issue' |
+    grep -qF 'read the map of the issue'"'"'s product and the root'"'"'s `## Shared personas`' ||
+    { echo "Shape one issue does not read its product's map"; false; }
+}
+
+@test "discovery maps: shape one issue offers only listed products" {
+  local section
+  section="$(skill_section lets-shape 'Shape one issue')"
+  grep -qF 'Offer only the listed products, never a new one.' <<<"$section" ||
+    { echo "Shape one issue may offer a new product"; false; }
+  grep -qF 'When no listed product fits, use no map'"'"'s names.' <<<"$section" ||
+    { echo "Shape one issue uses a map's names when no product fits"; false; }
+}
+
+@test "discovery maps: shape one issue edits no map" {
+  local section
+  section="$(skill_section lets-shape 'Shape one issue')"
+  grep -qF 'It never edits a discovery map' <<<"$section" || { echo "Shape one issue may edit a map"; false; }
+  ! grep -qF '`discovery.md`' <<<"$section" || { echo "Shape one issue still names discovery.md"; false; }
+}

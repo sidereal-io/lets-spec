@@ -565,8 +565,8 @@ Then hand off:
 ## Shape one issue
 
 Use this when the user brings one bug, chore or small story, or names an
-open issue that has no packet. It shapes that one issue. It never touches
-`discovery.md` and never starts a discovery run. Another skill can send work
+open issue that has no packet. It shapes that one issue. It never edits a
+discovery map and never starts a discovery run. Another skill can send work
 here too, such as `lets-brainstorm` when it splits a story; it gives you the
 issue's parent and what blocks it.
 
@@ -593,8 +593,12 @@ issue's parent and what blocks it.
    [templates/issue-template.md](templates/issue-template.md), one question
    at a time: the story template for a Story, the bug template for a Bug. A
    Chore has no template. It needs only its one-line outcome, and a title in
-   the template's shape. When `discovery.md` exists, use its persona and
-   journey names, but do not edit it.
+   the template's shape. When `openspec/discovery.md` exists, use its
+   persona and journey names, but do not edit it. When it lists products,
+   read the map of the issue's product and the root's `## Shared personas`
+   instead, picking the product as [Pick the map](#pick-the-map) says, with
+   one difference. Offer only the listed products, never a new one. When
+   no listed product fits, use no map's names.
 6. **Size it** XS, S, M, L or XL. L or XL is too big for one change: say so,
    offer a discovery run on it instead, and stop.
 7. **Confirm, then write.** The issue is public, so show the user its title,
