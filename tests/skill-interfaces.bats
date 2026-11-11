@@ -2996,3 +2996,21 @@ pr_reference_says() {
   ! grep -qF 'lets-review-pr' "$repo/skills/lets-go/SKILL.md"
   ! grep -rF 'lets-review-pr' "$repo/schemas"
 }
+
+# Discovery maps: one map for each product, and the root map that lists them.
+# skill_says reads only SKILL.md and references/, so the template tests read
+# the template files directly.
+shape_templates="$repo/skills/lets-shape/templates"
+
+@test "discovery maps: root template lists the products and holds no journey" {
+  local file="$shape_templates/discovery-root-template.md"
+  [ -f "$file" ] || { echo "no root template: $file"; false; }
+  grep -qxF '# Discovery: <repository name>' "$file" || { echo "no title line"; false; }
+  grep -qxF '## Products' "$file" || { echo "no Products heading"; false; }
+  grep -qxF '| Product | Covers | Map |' "$file" || { echo "no Product, Covers, Map table"; false; }
+  grep -qxF '## Shared personas' "$file" || { echo "no Shared personas heading"; false; }
+  grep -qE '^### People who (use|build) ' "$file" || { echo "no audience group"; false; }
+  grep -qE '^#### <Persona name>' "$file" || { echo "no persona entry"; false; }
+  run grep -nF '## Journey Map' "$file"
+  [ "$status" -eq 1 ] || { echo "the root template has a journey map: $output"; false; }
+}
