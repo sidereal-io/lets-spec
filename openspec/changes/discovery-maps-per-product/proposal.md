@@ -22,8 +22,8 @@ Out of scope: maps keyed by spec domain or nested under `openspec/specs/`, and p
 - `discovery-maps`: where a discovery run's map lives, how `lets-shape` picks it, what the root map holds, how a repository gets its second product, and how parent issues name their map.
 
 ### Modified Capabilities
-- `lets-go`: *lets-go commits the discovery map on the story's branch* checks and commits every discovery map path, not only `openspec/discovery.md`.
-- `issue-comments`: *Revision mode reads the thread of each open story the map links* reads the stories that the run's map links, not those that every map links. The map-change scenarios name the run's map.
+- `lets-go`: *lets-go commits the discovery map on the story's branch* checks and commits every discovery map path, not only `openspec/discovery.md`. *The shape step shapes an idea or an unshaped issue* lets the shape step end with any discovery map changed, not only `openspec/discovery.md`.
+- `issue-comments`: *Revision mode reads the thread of each open story the map links* reads the stories that the run's map links, not those that every map links.
 
 ## Impact
 
