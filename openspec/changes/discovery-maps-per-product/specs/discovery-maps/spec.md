@@ -8,8 +8,12 @@ Says where each product's discovery map lives, what the root map holds in a repo
 A repository whose root map has no table of contents SHALL have one product. Its map SHALL be `openspec/discovery.md`, written from the discovery template as today. `lets-shape` SHALL create no `openspec/discovery/` folder for it, and SHALL ask no question about products unless the run's idea serves people or journeys that the map's product does not.
 
 #### Scenario: A discovery run with one product
-- **WHEN** `openspec/discovery.md` has personas and journeys and no table of contents, and a discovery run's idea serves a persona the map already has
+- **WHEN** `openspec/discovery.md` has personas and journeys and no table of contents, and a discovery run's idea extends a journey the map already has
 - **THEN** the run writes its phases to `openspec/discovery.md`, asks no question about products, and creates no `openspec/discovery/` folder
+
+#### Scenario: A known persona on a new product's journey
+- **WHEN** `openspec/discovery.md` is titled `Discovery: Web shop` and has the persona Mo, and the idea is a warehouse app that Mo would use, on a journey the map does not have
+- **THEN** `lets-shape` asks whether the idea belongs to the web shop or to a new product, and writes no map before the answer
 
 #### Scenario: A first discovery
 - **WHEN** no `openspec/discovery.md` exists and a discovery run starts
@@ -45,7 +49,7 @@ When a second product adopts a persona that one product's map holds, `lets-shape
 - **THEN** Ada's entry stays in `openspec/discovery/web-shop.md`, and the root map does not name Ada
 
 ### Requirement: lets-shape picks the run's map
-A discovery run and a Revision mode run SHALL pick their map in Ingest, before they write a phase. When the root map has a table of contents and the idea clearly fits one product, `lets-shape` SHALL use that product's map and tell the user which one. When it cannot tell, it SHALL ask the user, offering each listed product and a new product, and SHALL write no map until the user answers.
+A discovery run SHALL pick its map in Ingest, before it writes a phase. Revision mode SHALL pick its map from what the user brings, before its step 1: before it reads a thread or re-annotates a stage. When the root map has a table of contents and the idea clearly fits one product, `lets-shape` SHALL use that product's map and tell the user which one. When it cannot tell, it SHALL ask the user, offering each listed product and a new product, and SHALL write no map until the user answers.
 
 #### Scenario: The idea fits one product
 - **WHEN** the root lists `web-shop` and `warehouse`, and the idea is about the checkout page that `web-shop` covers
@@ -54,6 +58,10 @@ A discovery run and a Revision mode run SHALL pick their map in Ingest, before t
 #### Scenario: The idea fits no product clearly
 - **WHEN** the root lists `web-shop` and `warehouse`, and the idea is about stock alerts that both could cover
 - **THEN** `lets-shape` asks which product the idea belongs to, offering `web-shop`, `warehouse` and a new product, and writes no map before the answer
+
+#### Scenario: Revision mode picks before it reconciles
+- **WHEN** a Revision mode run starts in a repository whose root lists `web-shop` and `warehouse`, and the user brings changed priorities for stock alerts
+- **THEN** `lets-shape` settles the run's map before it fetches the thread of any issue the map links, and before it changes any stage
 
 ### Requirement: A second product moves the map with the user's yes
 When a run's idea belongs to a new product, and the repository has one product, `lets-shape` SHALL propose kebab-case names for both products. It SHALL take them from the map's title and the idea. It SHALL show the user the move: the existing map's new path, `openspec/discovery/<first-product>.md`, and the root's table of contents. On a no, the run SHALL keep using `openspec/discovery.md`, and SHALL move nothing.
@@ -91,19 +99,22 @@ When a run's idea belongs to a new product, and the root map already lists two o
 - **WHEN** the user proposes the name `warehouse` for a new product, and `openspec/discovery/warehouse.md` exists
 - **THEN** `lets-shape` says the name is taken, asks for another, and writes no file
 
-### Requirement: A parent whose map is missing is repaired with the user
-In a repository whose root map lists products, a parent issue's map is missing when it has no `Map:` line, says `Map: openspec/discovery.md`, or names a file that does not exist. When Resume mode or Finalize reads such a parent, `lets-shape` SHALL write no map. It SHALL say which map is missing, and ask the user which product the parent belongs to. On the answer, it SHALL write that product's `Map:` line to the parent, and go on with that map.
+### Requirement: A parent whose map file is missing stops the run
+This holds in every repository, whatever the root map holds. When Resume mode or Finalize reads a parent whose `Map:` line names a file that does not exist, `lets-shape` SHALL write no map and create no file. It SHALL say the file is missing. It SHALL say that the map may be on a branch this checkout does not have yet, or may have been discarded. It SHALL say to bring the map into this checkout, or to correct the parent's `Map:` line. Then it SHALL stop.
+
+#### Scenario: A map this checkout does not have
+- **WHEN** a parent says `Map: openspec/discovery/warehouse.md`, the checkout's `openspec/discovery.md` has no table of contents, and `openspec/discovery/warehouse.md` does not exist
+- **THEN** `lets-shape` says `openspec/discovery/warehouse.md` is missing, writes and creates no file, and stops
+
+### Requirement: A parent that points at the root of a monorepo is repaired with the user
+In a repository whose root map lists products, a parent points at the root when it has no `Map:` line or says `Map: openspec/discovery.md`. When Resume mode or Finalize reads such a parent, `lets-shape` SHALL write no map. It SHALL ask the user which product the parent belongs to. On the answer, it SHALL write that product's `Map:` line to the parent, and go on with that map.
 
 #### Scenario: A parent the move did not retarget
 - **WHEN** the root lists `web-shop` and `warehouse`, and Resume mode picks up `Epic: returns`, which says `Map: openspec/discovery.md`
 - **THEN** `lets-shape` asks which product `Epic: returns` belongs to, writes nothing to `openspec/discovery.md`, and on the answer `web-shop` writes `Map: openspec/discovery/web-shop.md` to `Epic: returns`
 
-#### Scenario: A map that was discarded
-- **WHEN** a parent says `Map: openspec/discovery/warehouse.md`, and that file does not exist
-- **THEN** `lets-shape` says `openspec/discovery/warehouse.md` is missing, asks which product the parent belongs to, and creates no file before the answer
-
 ### Requirement: A parent issue names its map
-Every parent issue that a discovery run creates SHALL hold a `Map: <path>` line beside its `Input:` line, with the path of the run's map from the repository root. Finalize SHALL keep the line. In a repository with one product, a parent issue with no `Map:` line SHALL mean `openspec/discovery.md`. Resume mode SHALL read the parent's map from that line, and SHALL write its phases there.
+Every parent issue that a discovery run creates SHALL hold a `Map: <path>` line beside its `Input:` line, with the path of the run's map from the repository root. Finalize SHALL keep the line. In a repository with one product, a parent issue with no `Map:` line SHALL mean `openspec/discovery.md`. Resume mode SHALL read the parent's map from that line, and SHALL write its phases there. The one edit it SHALL make to another product's map is the link that replaces a persona's entry when the persona moves to the root.
 
 #### Scenario: A new parent with one product
 - **WHEN** a discovery run creates its parent issue in a repository with one product
@@ -111,7 +122,11 @@ Every parent issue that a discovery run creates SHALL hold a `Map: <path>` line 
 
 #### Scenario: Resume reads the Map line
 - **WHEN** Resume mode picks up a parent that says `Map: openspec/discovery/warehouse.md`
-- **THEN** it reads and writes `openspec/discovery/warehouse.md`, and does not edit another product's map
+- **THEN** it writes its phases to `openspec/discovery/warehouse.md`, and edits no other product's map
+
+#### Scenario: A resumed run that adopts a shared persona
+- **WHEN** Resume mode picks up a parent that says `Map: openspec/discovery/warehouse.md` and `next phase: personas`, and the user agrees that warehouse serves Mo, whose entry is in `openspec/discovery/web-shop.md`
+- **THEN** Mo's entry is in `openspec/discovery.md`, and the only change to `openspec/discovery/web-shop.md` is that Mo's entry became a link to the root
 
 #### Scenario: An older parent
 - **WHEN** Resume mode picks up a parent that has `Input:` and no `Map:` line, in a repository with one product
