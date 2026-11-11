@@ -3202,3 +3202,30 @@ shape_templates="$repo/skills/lets-shape/templates"
   grep -qF 'the one edit a run makes to another product'"'"'s map' <<<"$section" ||
     { echo "Personas does not limit edits to another map"; false; }
 }
+
+@test "discovery maps: revision picks its map before step 1" {
+  local section
+  section="$(skill_section lets-shape 'Revision mode')"
+  grep -qF 'Before step 1, pick the run'"'"'s map from what the user brings, as [Pick the map](#pick-the-map) says' <<<"$section" ||
+    { echo "Revision mode does not pick its map before step 1"; false; }
+  skill_section lets-shape 'Pick the map' | grep -qF 'Revision mode picks it before its step 1' ||
+    { echo "Pick the map does not name Revision mode"; false; }
+}
+
+@test "discovery maps: revision checks stale links in every map" {
+  local file="$repo/skills/lets-shape/SKILL.md"
+  grep -qF "grep -rhoE 'issues/[0-9]+' <root.path>/openspec/discovery.md <root.path>/openspec/discovery 2>/dev/null" "$file" ||
+    { echo "the stale-link grep does not read every map"; false; }
+  run grep -nF "grep -oE 'issues/[0-9]+' <root.path>/openspec/discovery.md |" "$file"
+  [ "$status" -eq 1 ] || { echo "the single-file grep is still there: $output"; false; }
+}
+
+@test "discovery maps: revision reads threads and re-annotates the run's map only" {
+  local section
+  section="$(skill_section lets-shape 'Revision mode')"
+  grep -qF 'Read the thread of each open issue the map links' <<<"$section" ||
+    { echo "Revision mode lost its thread-read sentence"; false; }
+  grep -qF 'The thread reads, the re-annotation and the freshness line below cover the run'"'"'s map only' <<<"$section" ||
+    { echo "Revision mode does not limit the rest to the run's map"; false; }
+  ! grep -qF '`discovery.md`' <<<"$section" || { echo "Revision mode still names discovery.md"; false; }
+}

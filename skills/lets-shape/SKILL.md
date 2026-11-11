@@ -198,7 +198,8 @@ but the resolved root.
 ## Pick the map
 
 Each run reads and writes one discovery map: the run's map. Ingest picks it
-before its first write. Write no map until the run's map is settled.
+before its first write. Revision mode picks it before its step 1, from what
+the user brings. Write no map until the run's map is settled.
 
 1. Read `<root.path>/openspec/discovery.md`. When it does not exist, or it
    has no `## Products` heading, the repository has one product, and that
@@ -635,20 +636,25 @@ picked one of several):
 
 ## Revision mode
 
-When `discovery.md` exists and no run is in progress:
+Use this when `openspec/discovery.md` exists and no run is in progress.
+Before step 1, pick the run's map from what the user brings, as [Pick the
+map](#pick-the-map) says, so you read no thread and change no stage first.
 
-1. **Read it**, then reconcile the map against reality:
+1. **Read the run's map**, then reconcile the map against reality. The
+   stale-link check covers every map. The thread reads, the re-annotation
+   and the freshness line below cover the run's map only.
    - `gh issue list --state all --limit 500 --json number,title,state,stateReason,parent` lists shipped and open stories
-   - Find the map's links to closed issues. This prints the number of each
-     closed issue the map still links:
+   - Find the links to closed issues in the root map and every product's
+     map. This prints the number of each closed issue a map still links:
 
      ```bash
-     grep -oE 'issues/[0-9]+' <root.path>/openspec/discovery.md | cut -d/ -f2 | sort -u \
+     grep -rhoE 'issues/[0-9]+' <root.path>/openspec/discovery.md <root.path>/openspec/discovery 2>/dev/null | cut -d/ -f2 | sort -u \
        | grep -xFf <(gh issue list --state closed --limit 500 --json number --jq '.[].number')
      ```
 
      No output means no link is stale. Re-check each one's stage against the
-     code, then do one of:
+     code, in the map that links it, and change nothing else in another
+     product's map. Then do one of:
      - the stage now works: upgrade it and drop the link;
      - an open issue now closes the gap: link that one instead;
      - nothing open does: drop the link and leave the stage an unplanned
@@ -667,7 +673,7 @@ When `discovery.md` exists and no run is in progress:
      3. Write what the answers call for. For a fold, show the folded body,
         get a yes, and write it once with `gh issue edit <i> --body-file <file>`. Write the body only. The story may be In Progress, so leave
         its title and Project fields as they are. For a map change, edit
-        `discovery.md` now, with one of the three outcomes above.
+        the run's map now, with one of the three outcomes above.
      4. If you asked anything, fetch the thread again after the write, or
         after the last answer when nothing was folded. Ask about each new or
         edited comment, and write what each yes calls for. Repeat until a
