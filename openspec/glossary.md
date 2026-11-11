@@ -28,6 +28,13 @@ The system or tool an adapter uses.
 An added integration implemented by an adapter. The term does not imply
 independent installation.
 
+## Product
+
+Something a repository delivers to people of its own, who walk journeys of
+their own, so it gets a discovery map of its own. A repository with one
+product is that product, and keeps one map. A product is not a spec domain:
+one product's journey can cross several domains.
+
 ## Work item
 
 An epic, story, bug or chore stored in a backlog.
