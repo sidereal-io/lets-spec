@@ -3131,3 +3131,26 @@ shape_templates="$repo/skills/lets-shape/templates"
   grep -qF 'When an update fails, stop, and name each parent you have not retargeted' <<<"$section" ||
     { echo "Add a second product does not stop on a failed update"; false; }
 }
+
+@test "discovery maps: later product is a subsection of Pick the map that step 2 links" {
+  skill_has_section lets-shape 'Add a later product'
+  skill_section lets-shape 'Pick the map' | grep -qF '[Add a later product](#add-a-later-product)' ||
+    { echo "Pick the map does not link Add a later product"; false; }
+}
+
+@test "discovery maps: later product refuses a name whose map exists" {
+  skill_section lets-shape 'Add a later product' |
+    grep -qF 'When `openspec/discovery/<product>.md` already exists, say the name is taken, ask for another, and write no file.' ||
+    { echo "Add a later product does not refuse a taken name"; false; }
+}
+
+@test "discovery maps: later product adds a row and a map, and changes no other map" {
+  local section
+  section="$(skill_section lets-shape 'Add a later product')"
+  grep -qF 'add the product'"'"'s row to the root'"'"'s `## Products` table' <<<"$section" ||
+    { echo "Add a later product adds no row"; false; }
+  grep -qF 'create `openspec/discovery/<product>.md` from' <<<"$section" ||
+    { echo "Add a later product creates no map"; false; }
+  grep -qF 'Change no other product'"'"'s map.' <<<"$section" ||
+    { echo "Add a later product may change another map"; false; }
+}

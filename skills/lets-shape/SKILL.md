@@ -212,7 +212,8 @@ before its first write. Write no map until the run's map is settled.
    table names a product, what it covers and the path to its map. When the
    idea clearly fits one listed product, use that product's map. When you
    cannot tell, ask which product the idea belongs to, offering each listed
-   product and a new product.
+   product and a new product. A new product goes to [Add a later
+   product](#add-a-later-product).
 3. Name the run's map to the user every time, such as
    `This run uses openspec/discovery/web-shop.md.`, so they can catch a
    wrong pick.
@@ -251,6 +252,20 @@ When the idea belongs to a new product, and the repository has one product:
    with `gh issue edit <parent> --body-file <file>`. When an update fails,
    stop, and name each parent you have not retargeted. A later Resume or
    Finalize repairs it, as [Resume mode](#resume-mode) says.
+
+### Add a later product
+
+When the idea belongs to a new product, and the root already lists two or
+more products, nothing moves:
+
+1. Propose a kebab-case name for the product, from the idea. When
+   `openspec/discovery/<product>.md` already exists, say the name
+   is taken, ask for another, and write no file.
+2. Ask whether to add it, as a confirmation question with no
+   recommendation. On a yes, add the product's row to the root's
+   `## Products` table, and create `openspec/discovery/<product>.md` from
+   [templates/discovery-template.md](templates/discovery-template.md). It is
+   the run's map. Change no other product's map.
 
 ## Develop the vocabulary
 
