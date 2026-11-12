@@ -43,9 +43,8 @@ When nothing qualifies, say so. Never invent a record to have one.
 
 Before writing, read every existing ADR. Note the highest number in use, and
 which records supersede which, so a new record names the one it replaces or
-builds on. Rewrite a record that is hard to read; never delete it. Preserve
-the recorded decision, its reasons and its supersession relationships when
-rewriting.
+builds on. Rewrite a record that is hard to read, but keep its decision, its
+reasons and which records it supersedes or is superseded by. Never delete it.
 
 ## Writing one
 
