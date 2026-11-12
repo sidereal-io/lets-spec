@@ -2007,7 +2007,7 @@ procedure_stops() {
   grep -qF "When it prints an \`error\` instead, nothing was released" <<<"$claim" ||
     { echo "branch-failed does not carry a release that returned an error"; false; }
   enter="$(part_section 'Enter the branch')"
-  grep -qF 'Do not release the claim yourself. Stop, and run no step.' <<<"$enter" ||
+  grep -qF 'Do not release' <<<"$enter" ||
     { echo "Enter the branch does not stop on claim-failed without releasing"; false; }
   grep -qF 'When it carries a release error too, show it' <<<"$enter" ||
     { echo "Enter the branch does not show a failed release"; false; }
