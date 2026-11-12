@@ -24,7 +24,7 @@ None.
 ## Impact
 
 - Code: `lets/src/resolvers/t3/t3.ts` (`buildLaunch`, `launchThread`).
-- Tests: `tests/lets/resolvers/t3/t3.test.ts`.
+- Tests: `tests/lets/resolvers/t3/t3.test.ts`, and the git fixtures in `tests/lets/resolvers/t3/delegate.test.ts`.
 - Docs: `docs/resolvers.md`.
 - Protocol: uses T3 Code's `existing_worktree` workspace strategy, which T3 Code 0.1.7 accepts. No new dependency.
 - This repository gets the fix only at the next release, when its `lets` pin moves past 0.7.0 (D12).
