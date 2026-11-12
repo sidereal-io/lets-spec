@@ -3419,6 +3419,7 @@ commit_maps() {
 }
 
 @test "shape-checkpoints: stale links keep code-based status" {
+  sed -n '/^## Revision mode/,/^## Glossary handoff/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'keep that status'
   ! sed -n '/^## Revision mode/,/^## Glossary handoff/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'unplanned'
 }
 
