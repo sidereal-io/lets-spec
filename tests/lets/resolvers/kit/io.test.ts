@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { test, type TestContext } from 'node:test';
 import { parentPid, realIo } from '../../../../lets/src/resolvers/kit/io.ts';
 
 test('execFile writes its input to the command\'s stdin', async () => {
@@ -39,6 +43,56 @@ test('execFile starts a command in a process group of its own', async () => {
   const { stdout } = await realIo().execFile('sh', ['-c', PRINT_GROUP]);
   const [pid, group] = stdout.trim().split(/\s+/);
   assert.equal(group, pid);
+});
+
+// A folder for the process ID files a test's commands write. The test's
+// end removes it, and kills every process named in pids, so a failed test
+// leaves none behind.
+function pidsDir(t: TestContext) {
+  const dir = mkdtempSync(join(tmpdir(), 'lets-io-'));
+  const pids = join(dir, 'pids');
+  t.after(() => {
+    for (const pid of readPids(pids)) try { process.kill(pid, 'SIGKILL'); } catch {}
+    rmSync(dir, { recursive: true, force: true });
+  });
+  return pids;
+}
+
+function readPids(file: string): number[] {
+  return existsSync(file) ? readFileSync(file, 'utf8').split(/\s+/).filter(Boolean).map(Number) : [];
+}
+
+// A process is gone when it no longer exists, or is a zombie: an orphan's
+// zombie waits for whatever adopted it to reap it. The node-tests sandbox
+// has no ps, so this reads /proc where there is one.
+function gone(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ESRCH') return true;
+  }
+  let state: string | undefined;
+  if (existsSync('/proc/self')) {
+    try {
+      state = readFileSync(`/proc/${pid}/stat`, 'utf8').split(') ')[1]?.[0];
+    } catch {
+      return true;
+    }
+  } else {
+    state = spawnSync('ps', ['-o', 'stat=', '-p', String(pid)], { encoding: 'utf8' }).stdout.trim()[0];
+  }
+  return state === undefined || state === 'Z';
+}
+
+test('after its time limit, execFile stops every process the command started', { timeout: 30000 }, async (t) => {
+  const pids = pidsDir(t);
+  const script = `sleep 600 & echo $! >> '${pids}'; sleep 600 & echo $! >> '${pids}'; echo $$ >> '${pids}'; wait`;
+  const started = Date.now();
+  const result = await realIo().execFile('sh', ['-c', script], { timeoutMs: 1000 });
+  assert.equal(result.timedOut, true);
+  assert.ok(Date.now() - started < 1000 + 10000, 'it returned within 10 seconds of the limit');
+  assert.equal(readPids(pids).length, 3);
+  assert.deepEqual(readPids(pids).filter((pid) => !gone(pid)), []);
 });
 
 // A fake system for parentPid: files maps a path to its text, and ps is

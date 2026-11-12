@@ -12,6 +12,43 @@ export const SCRATCH = '.workspace/lets-delegate';
 
 // How much of each output stream execFile keeps before it gives up.
 const MAX_BUFFER = 64 * 1024 * 1024;
+// How long a group stopped with SIGTERM has before it gets SIGKILL, how
+// long execFile then waits for it to end, and how often it checks.
+const KILL_GRACE_MS = 5000;
+const KILL_WAIT_MS = 1000;
+const GROUP_POLL_MS = 100;
+
+// Sends signal to every process in the group that pid leads. false when
+// the group is gone.
+function signalGroup(pid: number, signal: NodeJS.Signals | 0): boolean {
+  try {
+    process.kill(-pid, signal);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ESRCH') return false;
+    throw error;
+  }
+}
+
+// Stops the group that pid leads: SIGTERM, then SIGKILL after
+// KILL_GRACE_MS. Calls done once the group is gone, or KILL_WAIT_MS after
+// SIGKILL, since a process can take a moment to end.
+function stopGroup(pid: number, done: () => void) {
+  const started = Date.now();
+  let killed = false;
+  if (!signalGroup(pid, 'SIGTERM')) return done();
+  const poll = setInterval(() => {
+    const waited = Date.now() - started;
+    if (!signalGroup(pid, 0) || waited >= KILL_GRACE_MS + KILL_WAIT_MS) {
+      clearInterval(poll);
+      return done();
+    }
+    if (!killed && waited >= KILL_GRACE_MS) {
+      killed = true;
+      signalGroup(pid, 'SIGKILL');
+    }
+  }, GROUP_POLL_MS);
+}
 
 // timedOut: the command ran past timeoutMs, and was stopped.
 export type ExecResult = { stdout: string; stderr: string; code: number; timedOut?: boolean };
@@ -71,6 +108,8 @@ export function realIo(): Io {
       return new Promise((resolve, reject) => {
         let timedOut = false;
         let settled = false;
+        let stopping = false;
+        let code: number | null = null;
         const output = { stdout: '', stderr: '' };
         // detached: the command leads a process group of its own, which a
         // signal to the group reaches with every process it started.
@@ -81,21 +120,34 @@ export function realIo(): Io {
           clearTimeout(timer);
           finish();
         };
+        // A process outside the group can still hold the pipes, so stop
+        // reading them rather than wait for them to close.
+        const stop = (finish: () => void) => {
+          if (stopping) return;
+          stopping = true;
+          stopGroup(child.pid!, () => {
+            child.stdout.destroy();
+            child.stderr.destroy();
+            settle(finish);
+          });
+        };
         for (const name of ['stdout', 'stderr'] as const) {
           child[name].setEncoding('utf8');
           child[name].on('data', (chunk: string) => {
+            if (output[name].length > MAX_BUFFER) return;
             output[name] += chunk;
-            if (output[name].length <= MAX_BUFFER) return;
-            child.kill();
-            settle(() => reject(new Error(`cannot run ${cmd}: ${name} maxBuffer length exceeded`)));
+            if (output[name].length > MAX_BUFFER) stop(() => reject(new Error(`cannot run ${cmd}: ${name} maxBuffer length exceeded`)));
           });
         }
         child.on('error', (error) => settle(() => reject(new Error(`cannot run ${cmd}: ${error.message}`))));
-        child.on('close', (code) => settle(() => resolve({ ...output, code: code ?? 1, timedOut })));
+        child.on('exit', (exitCode) => { code = exitCode ?? 1; });
+        // Once the group is being stopped, only its end settles: the command
+        // can close its pipes while a process it started still runs.
+        child.on('close', (exitCode) => { if (!stopping) settle(() => resolve({ ...output, code: exitCode ?? 1, timedOut })); });
         // Do not leave the command running, and spending tokens, after we stop waiting.
         const timer = timeoutMs === undefined ? undefined : setTimeout(() => {
           timedOut = true;
-          child.kill();
+          stop(() => resolve({ ...output, code: code ?? 1, timedOut }));
         }, timeoutMs);
         // Close stdin after the input, so a command that reads it does not hang.
         child.stdin.on('error', () => {});
