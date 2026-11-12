@@ -19,6 +19,28 @@ test('a command that ends in time has not timed out', async () => {
   assert.deepEqual(result, { stdout: '', stderr: '', code: 0, timedOut: false });
 });
 
+test('execFile gives a command\'s output, and its exit code', async () => {
+  const result = await realIo().execFile('sh', ['-c', 'echo out; echo err >&2; exit 3']);
+  assert.deepEqual(result, { stdout: 'out\n', stderr: 'err\n', code: 3, timedOut: false });
+});
+
+test('execFile rejects a command that cannot start', async () => {
+  await assert.rejects(realIo().execFile('lets-no-such-command', []), /^Error: cannot run lets-no-such-command: spawn lets-no-such-command ENOENT$/);
+});
+
+test('execFile rejects a command whose output passes 64 MiB', async () => {
+  await assert.rejects(realIo().execFile('head', ['-c', String(64 * 1024 * 1024 + 1), '/dev/zero']), /^Error: cannot run head: stdout maxBuffer length exceeded$/);
+});
+
+// The shell prints its process ID, then its process group's.
+const PRINT_GROUP = 'if [ -r /proc/$$/stat ]; then s=$(cat /proc/$$/stat); set -- ${s##*) }; echo "$$ $3"; else echo "$$ $(ps -o pgid= -p $$)"; fi';
+
+test('execFile starts a command in a process group of its own', async () => {
+  const { stdout } = await realIo().execFile('sh', ['-c', PRINT_GROUP]);
+  const [pid, group] = stdout.trim().split(/\s+/);
+  assert.equal(group, pid);
+});
+
 // A fake system for parentPid: files maps a path to its text, and ps is
 // what `ps` prints. calls records each command it runs.
 function fakeSys({ files = {}, ps = '' }: { files?: Record<string, string>; ps?: string }) {

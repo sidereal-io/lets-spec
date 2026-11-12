@@ -1,6 +1,6 @@
 // The real world, as the adapters see it. Tests pass fakes with the same
 // fields instead.
-import { execFile as nodeExecFile, spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { accessSync, chmodSync, constants, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { delimiter, join } from 'node:path';
@@ -9,6 +9,9 @@ import { DatabaseSync } from 'node:sqlite';
 // Where a resolver writes its working files, relative to the request's
 // folder: the repo root, whose .workspace/ git ignores.
 export const SCRATCH = '.workspace/lets-delegate';
+
+// How much of each output stream execFile keeps before it gives up.
+const MAX_BUFFER = 64 * 1024 * 1024;
 
 // timedOut: the command ran past timeoutMs, and was stopped.
 export type ExecResult = { stdout: string; stderr: string; code: number; timedOut?: boolean };
@@ -63,23 +66,40 @@ export function parentPid(pid: number, sys: ProcessSys = { readFileSync, existsS
 export function realIo(): Io {
   return {
     // Resolves on any exit code, and on a timeout. Rejects only when the
-    // command cannot start.
+    // command cannot start, or its output passes MAX_BUFFER.
     execFile(cmd, args, { cwd, env, input, timeoutMs } = {}) {
       return new Promise((resolve, reject) => {
         let timedOut = false;
-        const child = nodeExecFile(cmd, args, { cwd, env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }, (error, stdout, stderr) => {
+        let settled = false;
+        const output = { stdout: '', stderr: '' };
+        // detached: the command leads a process group of its own, which a
+        // signal to the group reaches with every process it started.
+        const child = spawn(cmd, args, { cwd, env, detached: true });
+        const settle = (finish: () => void) => {
+          if (settled) return;
+          settled = true;
           clearTimeout(timer);
-          if (error && typeof error.code === 'string') return reject(new Error(`cannot run ${cmd}: ${error.message}`));
-          resolve({ stdout, stderr, code: error ? ((error.code as number | undefined) ?? 1) : 0, timedOut });
-        });
+          finish();
+        };
+        for (const name of ['stdout', 'stderr'] as const) {
+          child[name].setEncoding('utf8');
+          child[name].on('data', (chunk: string) => {
+            output[name] += chunk;
+            if (output[name].length <= MAX_BUFFER) return;
+            child.kill();
+            settle(() => reject(new Error(`cannot run ${cmd}: ${name} maxBuffer length exceeded`)));
+          });
+        }
+        child.on('error', (error) => settle(() => reject(new Error(`cannot run ${cmd}: ${error.message}`))));
+        child.on('close', (code) => settle(() => resolve({ ...output, code: code ?? 1, timedOut })));
         // Do not leave the command running, and spending tokens, after we stop waiting.
         const timer = timeoutMs === undefined ? undefined : setTimeout(() => {
           timedOut = true;
           child.kill();
         }, timeoutMs);
         // Close stdin after the input, so a command that reads it does not hang.
-        child.stdin!.on('error', () => {});
-        child.stdin!.end(input);
+        child.stdin.on('error', () => {});
+        child.stdin.end(input);
       });
     },
 
