@@ -397,8 +397,9 @@ Next: [Enter the branch](#enter-the-branch).
      - `unassign`: your assignment.
      - `status`: your assignment, comment and possibly Status.
 
-     Ask the user to inspect the issue; show the token if one exists.
-     Do not release the claim yourself. Stop, and run no step.
+     Ask the user to inspect the issue. With a token, they can run
+     `lets backlog release <i> --claim <claim>`. Do not release it
+     yourself. Stop, and run no step.
    - **`branch-failed`:** [Claim](#claim) attempted release. Show
      the branch's error it carries. When it carries a release error
      too, show it, and say the issue may still hold your assignment or
