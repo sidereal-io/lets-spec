@@ -3457,6 +3457,11 @@ commit_maps() {
   skill_does_not_say lets-review-plan '`subagent, same family` after the subagent step'
 }
 
+@test "review model choice: missing REVIEW.md names the absent source" {
+  skill_says lets-review-build 'say that REVIEW.md was absent'
+  skill_does_not_say lets-review-build 'the reviewer ran without project rules'
+}
+
 @test "step reports: planning checks prerequisites before proposing" {
   local plan guard invoke
   plan="$(sed -n '/^## Plan$/,/^## When propose stops$/p' "$repo/skills/lets-plan/SKILL.md" | tr -s '[:space:]' ' ')"

@@ -4,7 +4,7 @@
 - [x] 1.2 [easy] Build review ranks against every author family with a session-family CLI compatibility value (✓ bats tests/skill-interfaces.bats --filter 'review model choice: ranking' passed)
 - [x] 1.3 [easy] Build review reports whole-author overlap separately from CLI independence (✓ bats tests/skill-interfaces.bats --filter 'review model choice: overlap' passed)
 - [x] 1.4 [easy] Plan review describes the evidenced subagent family without contradictory context labels (✓ bats tests/skill-interfaces.bats --filter 'review model choice: subagent provenance' passed)
-- [ ] 1.5 [easy] Build review names REVIEW.md specifically as the absent source (verify: bats tests/skill-interfaces.bats --filter 'review model choice: missing REVIEW.md')
+- [x] 1.5 [easy] Build review names REVIEW.md specifically as the absent source (✓ bats tests/skill-interfaces.bats --filter 'review model choice: missing REVIEW.md' passed)
 
 ## Deviations Ledger
 

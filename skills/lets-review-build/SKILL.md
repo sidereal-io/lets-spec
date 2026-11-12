@@ -198,8 +198,8 @@ For a GPT session reviewing GPT-and-Claude-authored work with Claude,
 report CLI `independent: true`, overlap `claude`, and independent from all
 authors: no.
 
- When the project has no
-`REVIEW.md`, say the reviewer ran without project rules.
+When the project has no `REVIEW.md`, say that REVIEW.md was absent; do not
+imply that AGENTS.md or other project instructions were absent or ignored.
 
 Put the list in the pull request body, under **Code review**. Read the body
 with `gh pr view --json body` just before you write it.
