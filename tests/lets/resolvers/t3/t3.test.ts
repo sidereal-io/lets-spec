@@ -912,3 +912,22 @@ test('a handoff from a linked worktree runs in the worktree, on its branch', asy
   await createAdapter(launchingIo(database(), log, { checkout: { top: '/w/fix-login', branch: 'fix-login' } })).start!({ ...startInput, cwd: '/w/fix-login' });
   assert.deepEqual(launched(log).workspaceStrategy, { type: 'existing_worktree', worktreePath: '/w/fix-login', branch: 'fix-login' });
 });
+
+test('a review from the main checkout runs in the project\'s root, on its branch', async () => {
+  const launch = await reviewedFrom('/r', {});
+  assert.deepEqual(launch.workspaceStrategy, { type: 'root', branch: 'main' });
+});
+
+test('a review asks git for the common dir, the top level, then the branch', async () => {
+  const log: Log = [];
+  const db = database();
+  addRun(db, 'T', 'run-1', 1, 'completed');
+  addMessage(db, 'a1', 'run-1', 'FINDINGS', 0);
+  const io = launchingIo(db, log);
+  await createAdapter(io).run({ ...runInput, cwd: '/r' }, { timeoutMs: 60000 });
+  assert.deepEqual(io.calls.map(([, args]) => args.slice(2).join(' ')), [
+    'rev-parse --path-format=absolute --git-common-dir',
+    'rev-parse --show-toplevel',
+    'branch --show-current',
+  ]);
+});
