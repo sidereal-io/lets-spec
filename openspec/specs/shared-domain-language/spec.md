@@ -72,7 +72,7 @@ Before recording a new definition, the agent SHALL propose and confirm its meani
 
 ### Requirement: Record agreed definitions immediately
 
-Shaping and brainstorming SHALL write a definition to the appropriate project-owned glossary once the user agrees on its meaning and scope, without waiting for implementation or the end of shaping.
+Shaping and brainstorming SHALL write a definition to the appropriate project-owned glossary once the user agrees on its meaning and scope, without waiting for implementation or the end of shaping. In single-issue shaping, agents SHALL check size before agreeing and writing new definitions. An L or XL stop SHALL keep candidate meanings tentative; only if the user starts a discovery run SHALL its parent record them. The size stop SHALL NOT create an issue or start discovery.
 
 #### Scenario: Meaning and scope are settled during shaping
 - **WHEN** the user agrees on a new definition and its scope before implementation stories start
@@ -81,6 +81,14 @@ Shaping and brainstorming SHALL write a definition to the appropriate project-ow
 #### Scenario: A brainstorm settles a new definition
 - **WHEN** the user agrees on the meaning and scope of a term during a story's brainstorm
 - **THEN** the agent updates the appropriate glossary as part of the current change
+
+#### Scenario: Oversized single-issue shaping stops
+- **WHEN** a new single issue is sized L or XL
+- **THEN** shaping stops without writing definitions or creating an issue, and records tentative meanings in a discovery parent only if the user starts that run
+
+#### Scenario: Single-issue shaping passes sizing
+- **WHEN** the single issue passes the size check and the user agrees on meaning and scope
+- **THEN** shaping writes the definition and follows the existing glossary checkpoint and handoff procedures
 
 ### Requirement: Keep tentative meanings out of authoritative glossaries
 
@@ -173,6 +181,10 @@ When several shaped stories share new definitions, the glossary handoff SHALL as
 #### Scenario: The user declines blocker links
 - **WHEN** the user declines blocker links while a story still needs definitions from an unmerged owner PR
 - **THEN** the issue packet retains that unresolved prerequisite and build selection does not claim the story until it is resolved
+
+#### Scenario: The glossary owner has an issue and a PR
+- **WHEN** the user approves blockers for definitions owned by an issue with a separate PR
+- **THEN** each dependent story's blocker uses the owner issue number recorded in Glossary handoff, not the Project owner login or the PR number
 
 ### Requirement: Review glossary definitions when retiring a capability
 
