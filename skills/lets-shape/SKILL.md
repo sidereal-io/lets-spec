@@ -586,7 +586,7 @@ issue's parent and what blocks it.
    a CI fix or a tidy-up. A Story is something a persona can do once it
    ships.
 3. **Read the code the issue names**, and search for more. Load shared,
-   ancestor and affected-scope vocabulary and develop candidate definitions
+   ancestor and affected-scope vocabulary and develop candidate meanings
    as above. Keep them tentative until step 6.
    **Relevant code** lists what you find, or `new` when the story builds on
    nothing that exists.
