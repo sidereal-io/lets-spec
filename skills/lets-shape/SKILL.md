@@ -373,7 +373,7 @@ checkpoint branch until the destination safely contains its definitions.
 **Checkpoint every phase.** Apply the glossary checkpoint procedure above
 whenever the phase changed definitions. When the user confirms a phase,
 write its result at once, and set the parent issue's status line to the next
-phase: `personas`, `journey-map`, `moscow`, then `stories`. A revision run
+phase: `personas`, `journey-map`, `moscow`, `stories`, then `finalize`. A revision run
 that skips personas and the journey map goes from Ingest straight to
 `moscow`.
 
@@ -545,6 +545,9 @@ For each issue:
    issue exists but a field is unset, set it on that issue. Do not create
    the issue again.
 
+Once Stories is confirmed and written, set the parent status line to
+`next phase: finalize`, including when the parent became a single story.
+
 ### Phase 6: Finalize
 
 Take the run's map from the parent's `Map:` line, as [Read the parent's
@@ -636,7 +639,8 @@ picked one of several):
    parent issue and map already capture — and confirm with the user.
 3. **Continue from the recorded phase.** Do not re-litigate confirmed
    sections unless the user brings new information; then revisit and update
-   them.
+   them. When the line says `next phase: finalize`, go directly to
+   [Phase 6: Finalize](#phase-6-finalize). Do not repeat confirmed Stories.
 
 ## Revision mode
 

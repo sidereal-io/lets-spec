@@ -1,6 +1,6 @@
 ## 1. Shaping recovery
 
-- [ ] 1.1 [easy] Persist the pending Finalize phase in skill and template (verify: bats tests/skill-interfaces.bats --filter 'shape-checkpoints: finalize')
+- [x] 1.1 [easy] Persist the pending Finalize phase in skill and template (✓ bats tests/skill-interfaces.bats --filter 'shape-checkpoints: finalize' passed)
 - [ ] 1.2 [easy] Preserve code-based status when dropping stale links (verify: bats tests/skill-interfaces.bats --filter 'shape-checkpoints: stale')
 - [ ] 1.3 [easy] Put single-issue sizing before glossary writes with explicit oversized recovery (verify: bats tests/skill-interfaces.bats --filter 'shape-checkpoints: size')
 - [ ] 1.4 [easy] Identify the blocker owner issue locally (verify: bats tests/skill-interfaces.bats --filter 'shape-checkpoints: owner')

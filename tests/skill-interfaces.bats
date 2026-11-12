@@ -3410,3 +3410,17 @@ commit_maps() {
     grep -qF 'openspec/discovery/' <<<"$line" || { echo "README names one map layout only: $line"; false; }
   done < <(tr -s '[:space:]' ' ' <"$repo/README.md" | sed 's/\. /.\n/g' | grep -F 'openspec/discovery.md')
 }
+
+# BEGIN shape-checkpoints (#231): shaping recovery contracts.
+# Keep these checks together so sibling stories can append their own blocks.
+@test "shape-checkpoints: finalize is a durable resume phase" {
+  local skill template resume stories
+  skill="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-shape/SKILL.md")"
+  template="$(cat "$repo/skills/lets-shape/templates/issue-template.md")"
+  [[ "$skill" == *'`personas`, `journey-map`, `moscow`, `stories`, then `finalize`'* ]]
+  [[ "$template" == *'<personas | journey-map | moscow | stories | finalize>'* ]]
+  stories="$(sed -n '/^### Phase 5: Stories/,/^### Phase 6: Finalize/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
+  [[ "$stories" == *'confirmed and written'*'`next phase: finalize`'* ]]
+  resume="$(sed -n '/^## Resume mode/,/^## Revision mode/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
+  [[ "$resume" == *'`next phase: finalize`'*'Phase 6: Finalize'*'Do not repeat confirmed Stories'* ]]
+}
