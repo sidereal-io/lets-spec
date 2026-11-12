@@ -5,11 +5,11 @@ import type { Io } from '../io.ts';
 import type { Adapter, Candidate, Claim, Item, Ref, Status } from './adapter.ts';
 import { BacklogError, WriteFailed } from './adapter.ts';
 
-// Every gh call has a finite timeout. A read past it is gh-failed; a write
-// past it is WriteFailed, because it may still have happened.
 export const CLAIM_MARKER = 'lets-go claimed this issue.';
 const CLAIM_BODY = /^lets-go claimed this issue\.\n\nToken: ([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/;
 
+// Every gh call has a finite timeout. A read past it is gh-failed; a write
+// past it is WriteFailed, because it may still have happened.
 export const READ_TIMEOUT_MS = 60_000;
 export const WRITE_TIMEOUT_MS = 60_000;
 export const TIMED_OUT_WRITE = 'timed out; the write may have happened';

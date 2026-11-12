@@ -51,10 +51,10 @@ export type Adapter = {
   searchTitles(words: string): Promise<Ref[]>;
   // The login of each user assigned to the issue.
   assignees(issue: number): Promise<string[]>;
-  // The writes. Each throws WriteFailed when the write fails or times out.
   signedInLogin(): Promise<string>;
-  postClaim(issue: number, token: string): Promise<void>;
   claims(issue: number): Promise<Claim[]>;
+  // The writes. Each throws WriteFailed when the write fails or times out.
+  postClaim(issue: number, token: string): Promise<void>;
   deleteClaim(issue: number, id: number): Promise<void>;
   assignSelf(issue: number): Promise<void>;
   unassignSelf(issue: number): Promise<void>;

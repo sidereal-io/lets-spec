@@ -80,7 +80,7 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
     .action((issue: number) => {
       work = (adapter) => claim(adapter, issue);
     });
-  command('release', 'remove yourself from the issue and set it back to Todo')
+  command('release', 'release the session identified by --claim')
     .argument('<i>', 'the issue number', issueNumber)
     .requiredOption('--claim <token>', 'the session token returned by claim')
     .action((issue: number, { claim: token }: { claim: string }) => {
