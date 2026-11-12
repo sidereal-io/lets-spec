@@ -78,9 +78,7 @@ or review it. They need to identify the actor, the starting condition and
 an observable outcome. Replace vague results such as "works correctly"
 with the value, message or state that demonstrates success.
 
-## Changing an existing requirement
-
-### Choose the capability paths
+## Choose the capability paths
 
 Use `planningHome.root` from `openspec instructions ... --json` to locate the
 main specs under `openspec/specs/`. A capability path is the directory relative
@@ -100,6 +98,8 @@ specs read only for context out of the change's delta files. Keep flat paths
 flat; grouping by domain is optional and needs no migration or registry.
 Domain names do not map to source folders, so find the specs a change
 touches from the project context, the request and the code.
+
+## Changing an existing requirement
 
 ### Preserve the requirement
 

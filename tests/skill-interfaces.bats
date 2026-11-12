@@ -3438,6 +3438,17 @@ commit_maps() {
   skill_says lets-write-adrs 'Preserve the recorded decision, its reasons and its supersession relationships when rewriting.'
   skill_does_not_say lets-write-adrs 'decision still stands'
 }
+
+@test "authoring wording: capability paths precede existing-requirement guidance" {
+  local file="$repo/skills/lets-write-specs/SKILL.md" paths existing preserve
+  paths="$(grep -nFx '## Choose the capability paths' "$file" | cut -d: -f1)"
+  existing="$(grep -nFx '## Changing an existing requirement' "$file" | cut -d: -f1)"
+  preserve="$(grep -nFx '### Preserve the requirement' "$file" | cut -d: -f1)"
+  [ -n "$paths" ]
+  [ "$paths" -lt "$existing" ]
+  [ "$existing" -lt "$preserve" ]
+  sed -n "${paths},${existing}p" "$file" | tr '\n' ' ' | grep -qF "For new capabilities, follow the project's existing layout and check that the behavior is not already covered under another path."
+}
 @test "review model choice: policy anchors" {
   for skill in lets-review-plan lets-review-build; do
     skill_says "$skill" '**allowed models**'
