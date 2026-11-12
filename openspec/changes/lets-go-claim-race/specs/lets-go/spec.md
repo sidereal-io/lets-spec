@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Claim instructions describe session arbitration
-Claim SHALL explain the zero-assignee guard before assignment, the unique comment token, the earliest-comment tie-break before In Progress, and loser cleanup preserving a winner under the same login. It SHALL pass the returned claim token to release on branch creation or glossary import failure. Existing lost-claim routing SHALL remain unchanged.
+Claim SHALL state that an assigned issue returns taken before any write, and that concurrent claims produce one winner and one taken result. It SHALL link to the claim comment format. It SHALL pass the returned claim token to release on branch creation or glossary import failure. Existing lost-claim routing SHALL remain unchanged.
 
 #### Scenario: An assigned issue
 - **WHEN** the assignee read finds a nonzero count

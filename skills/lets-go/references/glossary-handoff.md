@@ -161,11 +161,9 @@ If the import fails:
    it, and note how to recover. Never delete an existing change branch,
    and never reset unrelated commits.
 4. Release with `lets backlog release <i> --claim <claim>`, using the
-   token kept by [Claim](../SKILL.md#claim). It deletes only this
-   session's comment, preserves a shared assignment under the same
-   login, and keeps Status while another claim remains. Otherwise it
-   removes your assignment and sets Status back to Todo. Do this even
-   if the Git cleanup failed. When it prints `"result": "failed"`, keep
+   token kept by [Claim](../SKILL.md#claim). It releases only this
+   session's claim. Do this even if the Git cleanup failed. When it
+   prints `"result": "failed"`, keep
    its `write` and `message` for the result. When it prints an `error`,
    nothing was released: keep the error's `message` for the result.
    Handle `not-found` as [Claim](../SKILL.md#claim) does.

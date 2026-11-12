@@ -395,8 +395,7 @@ Next: [Enter the branch](#enter-the-branch).
      - `delete-claim`: your comment and assignment.
      - `unassign`: your assignment.
      - `status`: your assignment, comment and possibly Status.
-     Stop and ask the user to inspect the issue; show the token if one
-     exists. Do not release the claim yourself. Stop, and run no step.
+     Ask the user to inspect the issue; show the token if one exists. Do not release the claim yourself. Stop, and run no step.
    - **`branch-failed`:** [Claim](#claim) attempted release. Show
      the branch's error it carries. When it carries a release error
      too, show it, and say the issue may still hold your assignment or
@@ -767,19 +766,11 @@ return to the part that ran it, with the result.
    lets backlog claim <i>
    ```
 
-   The command reads the assignee count first. A nonzero count returns
-   `taken` before any write. Only a zero count proceeds to assignment.
-   It then posts a claim comment with a token unique to this run and
-   reads every page of comments again. The earliest claim comment wins,
-   ordered by GitHub comment ID, before Status moves to In Progress.
-   This distinguishes two sessions even under the same login.
-
-   The loser deletes only its own comment. It removes its assignment
-   only when the winner has a different login, and leaves Status alone.
-   It returns `taken` to the caller, which handles the lost claim.
-   The reference defines the
+   It returns `taken` before any write if someone has the issue. When
+   two sessions claim at once, it picks one winner and gives the other
+   `taken`. The
    [claim comment](../lets-shape/references/issue-comments.md#claim-comments)
-   marker and token format.
+   reference describes the comment it posts.
 
    On its `result`:
    - **`claimed`:** keep its `claim` field as `<claim>` for release,
@@ -795,11 +786,7 @@ return to the part that ran it, with the result.
    [Check the issue](#check-the-issue) looked. A branch that appeared
    only on `origin` does not make it fail: the plan step's first push is
    then rejected, and that step fails. If creating the branch fails,
-   release the claim, so another session can pick the issue up. It
-   deletes only the comment matching this session's token. It keeps
-   an assignment shared with another claim under the same login, and
-   keeps Status while another claim remains. Otherwise it removes your
-   assignment and sets Status back to Todo:
+   release the claim. It releases only this session's claim:
 
    ```bash
    lets backlog release <i> --claim <claim>
