@@ -75,8 +75,10 @@ export async function claim(adapter: Adapter, issue: number): Promise<ClaimResul
     if (winner.id !== own.id) {
       write = 'delete-claim';
       await adapter.deleteClaim(issue, own.id);
-      write = 'unassign';
-      await adapter.unassignSelf(issue);
+      if (winner.login !== login) {
+        write = 'unassign';
+        await adapter.unassignSelf(issue);
+      }
       return { result: 'taken', assignees: [winner.login] };
     }
     write = 'status';

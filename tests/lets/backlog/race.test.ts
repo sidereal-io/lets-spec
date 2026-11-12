@@ -65,3 +65,13 @@ test('two logins produce one claim owner', async () => {
   assert.equal(t.comments.length, 1);
   assert.ok(results[winner].claim);
 });
+
+test('sessions sharing a login preserve the winning assignment', async () => {
+  const t = race(['alice', 'alice']);
+  await Promise.all(t.sessions.map((s) => run(['claim', '149'], s.deps)));
+  const results = t.sessions.map((s) => JSON.parse(s.stdout()));
+  assert.equal(results.filter((r) => r.result === 'claimed').length, 1);
+  assert.deepEqual([...t.assigned], ['alice']);
+  assert.equal(t.comments.length, 1);
+  assert.deepEqual(t.statuses.flat(), ['In Progress']);
+});
