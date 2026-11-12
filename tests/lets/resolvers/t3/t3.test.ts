@@ -285,7 +285,7 @@ test('findProject matches the workspace root, or names the known projects', () =
 test('buildLaunch has the shape the UI sends for a new thread, on the current branch', () => {
   const modelSelection = { instanceId: 'codex', model: 'gpt-6.1-sol', options: [{ id: 'reasoningEffort', value: 'high' }] };
   const input = buildLaunch({
-    threadId: 'T', projectId: 'P', title: 'x-plan-review', text: 'PROMPT', modelSelection, interactionMode: 'plan', branch: 'main', messageId: 'M', commandId: 'C',
+    threadId: 'T', projectId: 'P', title: 'x-plan-review', text: 'PROMPT', modelSelection, interactionMode: 'plan', branch: 'main', worktreePath: null, messageId: 'M', commandId: 'C',
   });
   assert.deepEqual(input, {
     commandId: 'C',
@@ -301,11 +301,20 @@ test('buildLaunch has the shape the UI sends for a new thread, on the current br
     initialMessage: { messageId: 'M', text: 'PROMPT', attachments: [] },
   });
   // A detached HEAD has no branch, and the root strategy then has none either.
-  const plain = buildLaunch({ threadId: 'T', projectId: 'P', title: 't', text: 'x', modelSelection, interactionMode: 'default', branch: null });
+  const plain = buildLaunch({ threadId: 'T', projectId: 'P', title: 't', text: 'x', modelSelection, interactionMode: 'default', branch: null, worktreePath: null });
   assert.equal(plain.interactionMode, 'default');
   assert.deepEqual(plain.workspaceStrategy, { type: 'root' });
   assert.match(plain.commandId, /^[0-9a-f-]{36}$/);
   assert.match(plain.initialMessage.messageId, /^[0-9a-f-]{36}$/);
+});
+
+test('buildLaunch binds a linked worktree as an existing worktree, on its branch when it has one', () => {
+  const modelSelection = { instanceId: 'codex', model: 'gpt-6-luna', options: [] };
+  const input = (branch: string | null) => buildLaunch({
+    threadId: 'T', projectId: 'P', title: 't', text: 'x', modelSelection, interactionMode: 'plan', branch, worktreePath: '/w/fix-login',
+  });
+  assert.deepEqual(input('fix-login').workspaceStrategy, { type: 'existing_worktree', worktreePath: '/w/fix-login', branch: 'fix-login' });
+  assert.deepEqual(input(null).workspaceStrategy, { type: 'existing_worktree', worktreePath: '/w/fix-login' });
 });
 
 test('readRun returns the newest run, or null when there is none', () => {
@@ -484,7 +493,7 @@ test('dispatch sends one request frame and returns the success value', async () 
 test('launch sends one launchThread request and returns the thread t3 names', async () => {
   const log: Log = [];
   const io = fakeIo({ env: {}, fetch: fakeFetch([200], []), WebSocket: fakeWebSocket(LAUNCHED, log) });
-  const input = buildLaunch({ threadId: 'T', projectId: 'P', title: 't', text: 'x', modelSelection: { instanceId: 'codex', model: 'm', options: [] }, interactionMode: 'plan', branch: null });
+  const input = buildLaunch({ threadId: 'T', projectId: 'P', title: 't', text: 'x', modelSelection: { instanceId: 'codex', model: 'm', options: [] }, interactionMode: 'plan', branch: null, worktreePath: null });
   assert.deepEqual(await launch(io, { origin: ORIGIN, token: 'tok' }, input), { threadId: 'T' });
   assert.deepEqual(log[1], ['send', { _tag: 'Request', id: '1', tag: 'orchestration.launchThread', payload: input, headers: [] }]);
 });

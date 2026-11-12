@@ -182,17 +182,19 @@ export function findProject(db: Db, repoRoot: string): Project {
 
 type LaunchInput = {
   threadId: string; projectId: string; title: string; text: string; modelSelection: ModelSelection;
-  interactionMode: 'plan' | 'default'; branch: string | null; messageId?: string; commandId?: string;
+  interactionMode: 'plan' | 'default'; branch: string | null; worktreePath: string | null; messageId?: string; commandId?: string;
 };
 
 // The `orchestration.launchThread` request, as the UI sends it for a new
-// thread: the thread's settings, a root workspace on the current branch, and
-// the first message. The title is a seed; t3 generates a durable one from
-// the message. messageId and commandId are random unless given, so tests
-// can fix them.
+// thread: the thread's settings, its workspace on the current branch, and
+// the first message. The workspace is the project's root, or the linked
+// worktree at worktreePath. The title is a seed; t3 generates a durable one
+// from the message. messageId and commandId are random unless given, so
+// tests can fix them.
 export function buildLaunch({
-  threadId, projectId, title, text, modelSelection, interactionMode, branch, messageId = randomUUID(), commandId = randomUUID(),
+  threadId, projectId, title, text, modelSelection, interactionMode, branch, worktreePath, messageId = randomUUID(), commandId = randomUUID(),
 }: LaunchInput) {
+  const onBranch = branch === null ? {} : { branch };
   return {
     commandId,
     creationSource: 'web',
@@ -203,7 +205,9 @@ export function buildLaunch({
     modelSelection,
     runtimeMode: 'full-access',
     interactionMode,
-    workspaceStrategy: { type: 'root', ...(branch === null ? {} : { branch }) },
+    workspaceStrategy: worktreePath === null
+      ? { type: 'root', ...onBranch }
+      : { type: 'existing_worktree', worktreePath, ...onBranch },
     initialMessage: { messageId, text, attachments: [] },
   };
 }
@@ -442,6 +446,7 @@ export function createAdapter(io: Io): Adapter {
       modelSelection,
       interactionMode: readOnly ? 'plan' : 'default',
       branch,
+      worktreePath: null,
     }));
     // origin is for people to read: finish sends the token only to the
     // running server, never to the origin a handle names.
