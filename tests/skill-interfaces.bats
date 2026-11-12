@@ -3411,6 +3411,17 @@ commit_maps() {
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
 # #229 review-model-choice: keep this block together for sibling story rebases.
 
+# #234: setup guards and reusable PR review wording (SLR-05, SLR-15, SLR-16).
+# Keep this block independent of sibling stories' additions.
+@test "SLR-05 number binding precedes dependent setup commands" {
+  local text before
+  text="$(skill_section lets-setup-backlog Create | tr -s '[:space:]' ' ')"
+  before="${text%%gh project field-create*}"
+  [ "$before" != "$text" ]
+  grep -qF 'The first command prints the Project' <<<"$before"
+  grep -qF 'number, `<n>`' <<<"$before"
+}
+
 # Issue #233: authoring wording.
 @test "authoring wording: modified export retains the signed-out scenario" {
   sed -n '/^## MODIFIED Requirements$/,/^## REMOVED Requirements$/p' "$repo/skills/lets-write-specs/SKILL.md" |

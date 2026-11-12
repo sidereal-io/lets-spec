@@ -72,7 +72,9 @@ it when `--repo` names the owner. A Project can only link to a repository
 with the same owner, so for a user's repository that user must be you. If it
 belongs to someone else, stop and say that its owner has to run this skill.
 
-Then create the Project, add the three fields and link it:
+Then create the Project, add the three fields and link it. The first
+command prints the Project's number, `<n>`. Use that number in the commands
+that follow:
 
 ```bash
 gh project create --owner <owner> --title "<repo name>" --format json --jq .number
@@ -82,8 +84,7 @@ gh project field-create <n> --owner <owner> --name Size --data-type SINGLE_SELEC
 gh project link <n> --owner <owner> --repo <repo>
 ```
 
-The first command prints the Project's number, `<n>`. Stop at the first
-error and show it.
+Stop at the first error and show it.
 
 A new Project already has the Status field with Todo, In Progress and Done.
 It also has two workflows on: item closed sets Done, and pull request merged
