@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: claim assigns the issue only when nobody has it
-`lets backlog claim <i>` SHALL read claims before assignees. If anyone is assigned, it SHALL return `taken` with their logins and write nothing. Otherwise it SHALL assign the signed-in user and post a unique claim token. It SHALL exclude claims seen before the empty-assignee check and elect the lowest remaining comment ID. Only the winner SHALL set Status to In Progress and return `claimed` with its token as `claim`. A loser SHALL delete its comment, recheck claims and return `taken` with the winner's login. It SHALL remove its assignment unless another claim shares its login, and set Status to Todo only if no claim remains. A missing own comment or unreadable election SHALL never grant ownership.
+`lets backlog claim <i>` SHALL read claims before assignees. If anyone is assigned, it SHALL return `taken` with their logins and write nothing. Otherwise it SHALL assign the signed-in user and post a unique claim token. It SHALL exclude claims seen before the empty-assignee check and elect the lowest remaining comment ID. The winner SHALL delete the excluded abandoned comments. Only the winner SHALL set Status to In Progress and return `claimed` with its token as `claim`. A loser SHALL delete its comment, recheck claims and return `taken` with the winner's login. It SHALL remove its assignment unless another claim shares its login, and set Status to Todo only if no claim remains. A missing own comment or unreadable election SHALL never grant ownership.
 
 #### Scenario: Claimed
 - **WHEN** nobody is assigned to #149 and its Status is Todo
@@ -10,6 +10,10 @@
 #### Scenario: Abandoned claim
 - **WHEN** nobody is assigned but a previous claim comment remains
 - **THEN** a new claim ignores that comment and can win
+
+#### Scenario: Release after reclaiming
+- **WHEN** a new session reclaims an issue with an abandoned comment under the same or a different login, then releases its token
+- **THEN** no claim comments remain, its assignment is removed, and Status is Todo
 
 #### Scenario: Taken
 - **WHEN** `octocat` is assigned to #149

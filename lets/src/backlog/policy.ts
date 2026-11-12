@@ -87,6 +87,8 @@ export async function claim(adapter: Adapter, issue: number): Promise<ClaimResul
       }
       return { result: 'taken', assignees: [winner.login] };
     }
+    write = 'delete-claim';
+    for (const id of previous) await adapter.deleteClaim(issue, id);
     write = 'status';
     await adapter.setStatus(issue, 'In Progress');
     return { result: 'claimed', claim: token };
