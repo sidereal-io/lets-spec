@@ -3413,7 +3413,7 @@ commit_maps() {
 @test "review model choice: policy anchors" {
   for skill in lets-review-plan lets-review-build; do
     skill_says "$skill" '**allowed models**'
-    skill_says "$skill" 'excluded-all stop'
+    skill_says "$skill" 'the allowed models are empty, stop'
   done
   skill_says lets-review-plan 'subagent, family not evidenced'
   skill_says lets-review-build 'REVIEW.md was absent'
