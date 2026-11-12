@@ -3430,6 +3430,22 @@ commit_maps() {
   grep -qF 'Stop at the first error and show it.' <<<"$before"
 }
 
+@test "SLR-05 Status options use only settings-page repair" {
+  local text replacement status_fix
+  text="$(skill_section lets-setup-backlog Check)"
+  replacement="${text#*\*\*A field other than Status that lacks an option:\*\*}"
+  [ "$replacement" != "$text" ]
+  replacement="${replacement%%\*\*A missing Status option:\*\**}"
+  grep -qF 'Delete the field and create it again.' <<<"$replacement"
+  grep -qF 'the delete clears that field on every item' <<<"$replacement"
+  status_fix="${text#*\*\*A missing Status option:\*\*}"
+  [ "$status_fix" != "$text" ]
+  grep -qF '<project url>/settings' <<<"$status_fix"
+  grep -qF "A rename keeps every item's value." <<<"$status_fix"
+  ! grep -qF 'field-delete' <<<"$status_fix"
+  grep -qF 'Run a fix only when the user says so.' <<<"$text"
+}
+
 # Issue #233: authoring wording.
 @test "authoring wording: modified export retains the signed-out scenario" {
   sed -n '/^## MODIFIED Requirements$/,/^## REMOVED Requirements$/p' "$repo/skills/lets-write-specs/SKILL.md" |
