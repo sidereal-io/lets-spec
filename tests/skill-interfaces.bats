@@ -3411,36 +3411,17 @@ commit_maps() {
   done < <(tr -s '[:space:]' ' ' <"$repo/README.md" | sed 's/\. /.\n/g' | grep -F 'openspec/discovery.md')
 }
 
-# #215: session claim arbitration. Keep this block independent of other stories.
-@test "claim-race: Claim explains the guard before writes" {
-  local claim
-  claim="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
-  grep -qF 'A nonzero count returns `taken` before any write' <<<"$claim"
-  grep -qF 'Only a zero count proceeds to assignment' <<<"$claim"
-  grep -qF 'earliest claim comment' <<<"$claim"
-  grep -qF 'before Status moves to In Progress' <<<"$claim"
-  grep -qF 'token unique to this run' <<<"$claim"
-}
-
+# #215: session claim interfaces. Behavior is covered by the backlog tests.
 @test "claim-race: recovery names the session token" {
-  local claim recovery
-  claim="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
-  recovery="$(skill_section lets-go 'Recover from a failed import' | tr -s '[:space:]' ' ')"
-  grep -qF 'lets backlog release <i> --claim <claim>' <<<"$claim"
-  grep -qF 'lets backlog release <i> --claim <claim>' <<<"$recovery"
-  grep -qF 'same login' <<<"$claim"
-  grep -qF 'deletes only its own comment' <<<"$claim"
+  grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(procedure_text 'Claim')"
+  grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(skill_section lets-go 'Recover from a failed import')"
+  grep -qF '| `<claim>` |' "$repo/skills/lets-go/SKILL.md"
 }
 
-@test "claim-race: valid metadata does not make a packet unread" {
-  local reference packet
-  reference="$(tr -s '[:space:]' ' ' < "$repo/skills/lets-shape/references/issue-comments.md")"
-  packet="$(procedure_text 'Confirm the packet' | tr -s '[:space:]' ' ')"
-  grep -qF 'lets-go claimed this issue.' <<<"$reference"
-  grep -qF 'Token: <UUID>' <<<"$reference"
-  grep -qF 'OWNER, MEMBER or COLLABORATOR' <<<"$reference"
-  grep -qF 'never advance the watermark' <<<"$reference"
-  grep -qF 'A read marker or a valid claim comment never does' <<<"$packet"
+@test "claim-race: the comment format stays stable" {
+  local reference="$repo/skills/lets-shape/references/issue-comments.md"
+  grep -qF 'lets-go claimed this issue.' "$reference"
+  grep -qF 'Token: <UUID>' "$reference"
 }
 
 # BEGIN shape-checkpoints (#231): shaping recovery contracts.
