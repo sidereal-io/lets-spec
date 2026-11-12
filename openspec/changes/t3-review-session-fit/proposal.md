@@ -20,8 +20,8 @@ None.
 
 ### Modified Capabilities
 
-- `delegate-resolvers`: a new requirement, *The T3 resolver runs a review in default mode*, covers the mode and the proposed plan.
-- `delegate-review`: *The review record says what the review was for* adds `checkout` and `commit` to the JSON line. A new requirement, *A review has time to finish*, sets the default limits.
+- `delegate-resolvers`: three new requirements. *The T3 resolver runs a review in default mode*, *A T3 review that returns a plan exits 5*, and *The T3 resolver names the checkout T3 ran the review in*.
+- `delegate-review`: two new requirements. *The review record names the checkout and commit the session read* adds `checkout` and `commit` to the JSON line. *A review has time to finish* sets the default limits. *The review record says what the review was for* stays as it is.
 
 ## Impact
 
