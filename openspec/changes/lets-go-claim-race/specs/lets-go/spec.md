@@ -11,6 +11,17 @@ Claim SHALL state that an assigned issue returns taken before any write, and tha
 - **WHEN** the session wins a claim and cannot create its branch
 - **THEN** it releases with its own claim token
 
+### Requirement: Claim recovery names the next action
+On a failed assignment without a token, the skill SHALL stop and ask the user to inspect the assignment. On release returning `not-found`, it SHALL ask the user to inspect the issue before retrying.
+
+#### Scenario: Assignment fails without a token
+- **WHEN** claim reports a failed assignment with no token
+- **THEN** the skill stops and asks the user to inspect the assignment
+
+#### Scenario: Release finds no comment
+- **WHEN** release returns `not-found`
+- **THEN** the skill asks the user to inspect the issue before retrying
+
 ## MODIFIED Requirements
 
 ### Requirement: Each placeholder in lets-go names one thing

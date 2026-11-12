@@ -40,10 +40,10 @@ When a write of `claim` fails, the command SHALL stop at that write and return `
 
 #### Scenario: Assign times out
 - **WHEN** assigning the user times out and no claim comment was posted
-- **THEN** the result has no claim token, and the skill tells the agent to stop and ask the user to inspect the assignment
+- **THEN** the result has no claim token, and no claim comment is posted
 
 ### Requirement: release gives the issue back
-`lets backlog release <i> --claim <token>` SHALL require the token returned by claim. It SHALL delete only the signed-in user's claim comment matching that token, then recheck the remaining claims. If another active claim uses the same login, it SHALL preserve that assignment. If any other active claim remains, it SHALL preserve Status. Otherwise it SHALL remove the signed-in user's assignment, set Status to Todo, and return `"result": "released"`. When the token has no matching comment by the signed-in user, release SHALL return `not-found` and write nothing; the skill SHALL ask the user to inspect the issue before retrying. It SHALL never remove another user's assignment. When a write fails, it SHALL return `"result": "failed"` with `write` set to `delete-claim`, `unassign` or `status` and `gh`'s error, as `claim` does.
+`lets backlog release <i> --claim <token>` SHALL require the token returned by claim. If no comment matches the token and signed-in login, it SHALL return `not-found` and write nothing. Otherwise it SHALL delete that comment and recheck claims. It SHALL preserve its assignment if another claim shares its login, or remove it otherwise. It SHALL preserve Status if any claim remains, or set it to Todo otherwise. After successful writes it SHALL return `released`. It SHALL never remove another user's assignment. A failed write SHALL return `failed`, with `write` naming `delete-claim`, `unassign` or `status`, and `message` holding `gh`'s error.
 
 #### Scenario: Released
 - **WHEN** the signed-in user is assigned to #149 and its Status is In Progress
