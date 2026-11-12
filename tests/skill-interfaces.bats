@@ -854,7 +854,7 @@ review_build_start() {
   skill_says lets-go '--only'
   skill_says lets-go 'lets backlog item <i>'
   skill_says lets-go 'lets backlog find <branch>'
-  skill_says lets-go 'lets backlog find "<idea>"'
+  skill_says lets-go "lets backlog find '<idea>'"
   skill_does_not_say lets-go '<repo>'
   skill_does_not_say lets-go 'gh issue view <parent>'
   skill_does_not_say lets-go 'gh issue view <i> --json number,title,body,url,parent'

@@ -636,26 +636,13 @@ Take the first case that applies:
    for it. The result is `found` when that returns `resolved`, and
    `unresolved` when it returns `unresolved`.
 2. **The run has described work, but no issue.** Search open issue
-   titles for it, with the idea as one literal argument. The command
-   adds the title qualifier itself; pass only the idea.
-
-   Do not paste the idea inside the double quotes shown below: dollar
-   signs, quotes, backticks and command substitutions in the idea must
-   reach the command unchanged, without shell evaluation. Use quoting
-   for the shell you run. In a POSIX shell, put the idea in single
-   quotes; for an apostrophe, close the quotes, write `\'`, then reopen
-   them. The placeholder command is schematic:
+   titles for it. Pass only the idea, as one argument in single quotes,
+   so the shell passes `$`, quotes and backticks unchanged. Write an
+   apostrophe as `'\''`. The command limits the search to titles.
 
    ```bash
-   lets backlog find "<idea>"
-   ```
-
-   For example, these POSIX shell commands pass literal dollar signs,
-   both kinds of quotes and command-substitution characters:
-
-   ```bash
-   lets backlog find 'fix $HOME display'
-   lets backlog find 'fix user'\''s "$HOME" $(printf unsafe) `printf unsafe`'
+   lets backlog find '<idea>'
+   lets backlog find 'fix user'\''s $HOME display'
    ```
 
    The result is `matches`, with the `issues` the search found, or
