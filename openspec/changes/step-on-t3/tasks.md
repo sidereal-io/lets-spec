@@ -14,7 +14,7 @@
 
 ## 3. Docs [parallel]
 
-- [ ] 3.1 [easy] `docs/resolvers.md` says `t3` runs steps. The resolver table's `t3` row says a step runs in a new thread, archived when it is done. *It runs no step yet* gives way to a short part on steps: the checkout and mode, and which threads are kept. A bullet beside the review bullets says that a `t3` review or step still running at its time limit is stopped, and its thread kept (verify: grep -n "archived when it is done" docs/resolvers.md)
+- [x] 3.1 [easy] `docs/resolvers.md` says `t3` runs steps. The resolver table's `t3` row says a step runs in a new thread, archived when it is done. *It runs no step yet* gives way to a short part on steps: the checkout and mode, and which threads are kept. A bullet beside the review bullets says that a `t3` review or step still running at its time limit is stopped, and its thread kept (verify: grep -n "archived when it is done" docs/resolvers.md) (✓ grep -n "archived when it is done" docs/resolvers.md found line 11)
 - [ ] 3.2 [easy] The smoke test in *After a t3 update* gains a step whose prompt asks for a `done` step report. It expects `"outcome":"done"` on stdout, `"resolver":"t3"` on stderr and an archived thread (verify: grep -n "step run" docs/resolvers.md)
 
 ## 4. Integration [depends-on: 1, 2, 3]
@@ -25,3 +25,4 @@
 
 - 1.1: adding `step` makes `t3` answer step instructions, so the old test *step instructions inside T3 Code decline* failed at once. Task 1.1's commit turns it into 1.5's test *step instructions inside T3 Code list the catalogue's models*. Task 1.5's commit adds the test that a step outside T3 Code opens no thread.
 - 2.2: the stop's `reason` says `the session ran past its time limit`, not design.md decision 3's `the step ran past its time limit`, because the same stop ends a timed-out review.
+- 3.1: the README's resolver table repeats the `t3` row, so it changes too. The `t3` section's model bullets now name step instructions and steps beside reviews and handoffs.
