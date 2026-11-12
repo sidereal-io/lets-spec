@@ -110,9 +110,9 @@ source.
 
 Silence is not agreement: a recommendation the user did not accept is an
 `Assumption`. Keep each row to one line so readers can scan the decisions.
-When the flow has a design, it explains the reasons and implementation.
-Without a design, follow the schema's ledger requirements for the reasons
-and implementation decisions.
+The design, if the flow has one, explains the reasons and implementation.
+Without one, the ledger holds the decisions the tasks need, as the schema
+says.
 
 A comment the user has not said yes to stays out of every row, `Assumption`
 included: settle the question from the packet and the code alone. When the
