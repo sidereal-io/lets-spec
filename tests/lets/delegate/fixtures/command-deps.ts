@@ -12,6 +12,8 @@
 //   gitAfter:  what it prints after; default gitBefore
 //   gitAfterFails: true when `git status` fails after the session
 //   head:      what `git rev-parse HEAD` prints; default HEAD
+//   headAfter: what it prints once the session has run, as after a session
+//              that made a commit; default head
 //   headFails: true when `git rev-parse HEAD` fails
 //   files:     the files there are; default the prompt file /repo/p.md
 //   config:    the text of the delegate config, CONFIG, when there is one
@@ -146,20 +148,23 @@ type Options = {
   gitAfter?: string;
   gitAfterFails?: boolean;
   head?: string;
+  headAfter?: string;
   headFails?: boolean;
   files?: Record<string, string>;
   config?: string;
 };
 
 export function commandDeps({
-  adapters = {}, real = {}, gitBefore = '', gitAfter = gitBefore, gitAfterFails = false, head = HEAD, headFails = false, files = { [PROMPT_FILE]: 'PROMPT TEXT' }, config,
+  adapters = {}, real = {}, gitBefore = '', gitAfter = gitBefore, gitAfterFails = false, head = HEAD, headAfter = head, headFails = false, files = { [PROMPT_FILE]: 'PROMPT TEXT' }, config,
 }: Options = {}) {
   const io = fakeIo({ files: { ...files, ...(config === undefined ? {} : { [CONFIG]: config }) } });
+  const calls: AdapterCall[] = [];
   let statusCalls = 0;
   io.execFile = async (cmd, args, opts = {}) => {
     io.calls.push([cmd, args, opts]);
     if (cmd === 'git' && args.join(' ') === 'rev-parse HEAD') {
-      return headFails ? { stdout: 'HEAD\n', stderr: 'fatal: not a git repository', code: 128 } : { stdout: `${head}\n`, stderr: '', code: 0 };
+      if (headFails) return { stdout: 'HEAD\n', stderr: 'fatal: not a git repository', code: 128 };
+      return { stdout: `${calls.some(([, method]) => method === 'run') ? headAfter : head}\n`, stderr: '', code: 0 };
     }
     if (cmd === 'git' && args[0] === 'rev-parse') return { stdout: '/repo\n', stderr: '', code: 0 };
     if (cmd === 'git') {
@@ -171,7 +176,6 @@ export function commandDeps({
 
   // What the real subagent writes, by its path under /repo.
   const resolverIo = fakeResolverIo();
-  const calls: AdapterCall[] = [];
   const built = (name: ResolverName, fallback: () => Adapter) =>
     recorded(real[name] ?? (adapters[name] === undefined ? fallback() : fakeAdapter(name, adapters[name])), calls);
   const resolvers = {

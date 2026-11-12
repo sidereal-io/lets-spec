@@ -73,6 +73,12 @@ test('a HEAD that cannot be read gives a null commit, and the review still succe
   assert.deepEqual({ checkout, commit }, { checkout: '/gone', commit: null });
 });
 
+test('a session that commits gives the commit it made, not the one before it', async () => {
+  const t = withT3({ head: 'a'.repeat(40), headAfter: 'b'.repeat(40) });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.equal(JSON.parse(t.stderr()).commit, 'b'.repeat(40));
+});
+
 test('a bare family is asked for with no particular model', async () => {
   const t = withT3();
   await run(options({ models: ['claude'] }), t.deps);
