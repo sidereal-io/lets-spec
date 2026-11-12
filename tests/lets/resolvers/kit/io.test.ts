@@ -46,13 +46,13 @@ test('execFile starts a command in a process group of its own', async () => {
 });
 
 // A folder for the process ID files a test's commands write. The test's
-// end removes it, and kills every process named in pids, so a failed test
-// leaves none behind.
+// end removes it, and kills every process named in pids or pids.held, so a
+// failed test leaves none behind.
 function pidsDir(t: TestContext) {
   const dir = mkdtempSync(join(tmpdir(), 'lets-io-'));
   const pids = join(dir, 'pids');
   t.after(() => {
-    for (const pid of readPids(pids)) try { process.kill(pid, 'SIGKILL'); } catch {}
+    for (const pid of [...readPids(pids), ...readPids(`${pids}.held`)]) try { process.kill(pid, 'SIGKILL'); } catch {}
     rmSync(dir, { recursive: true, force: true });
   });
   return pids;
@@ -144,8 +144,9 @@ async function waitFor(check: () => boolean, what: string, ms = 10000) {
 
 // Starts exec-and-wait with args, waits until its file names count
 // processes, then sends it signal. Gives how it ended.
-async function signalExecAndWait(pids: string, args: string[], count: number, signal: NodeJS.Signals) {
+async function signalExecAndWait(t: TestContext, pids: string, args: string[], count: number, signal: NodeJS.Signals) {
   const fixture = spawn(process.execPath, [EXEC_AND_WAIT, pids, ...args], { stdio: 'inherit' });
+  t.after(() => { if (fixture.exitCode === null && fixture.signalCode === null) fixture.kill('SIGKILL'); });
   const ended = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => fixture.on('exit', (code, signal) => resolve({ code, signal })));
   await waitFor(() => readPids(pids).length >= count, 'the process IDs');
   fixture.kill(signal);
@@ -155,11 +156,18 @@ async function signalExecAndWait(pids: string, args: string[], count: number, si
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   test(`a ${signal} to lets reaches the group of a command it runs`, { timeout: 30000 }, async (t) => {
     const pids = pidsDir(t);
-    const ended = await signalExecAndWait(pids, [], 2, signal);
+    const ended = await signalExecAndWait(t, pids, [], 2, signal);
     assert.deepEqual(ended, { code: null, signal });
     await waitFor(() => readPids(pids).every(gone), 'the shell and its child to end', 2000);
   });
 }
+
+test('a signal to lets reaches a group after another command\'s group has ended', { timeout: 30000 }, async (t) => {
+  const pids = pidsDir(t);
+  const ended = await signalExecAndWait(t, pids, ['ended-group'], 2, 'SIGINT');
+  assert.deepEqual(ended, { code: null, signal: 'SIGINT' });
+  await waitFor(() => readPids(pids).every(gone), 'the shell and its child to end', 2000);
+});
 
 // A fake system for parentPid: files maps a path to its text, and ps is
 // what `ps` prints. calls records each command it runs.

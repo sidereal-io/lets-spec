@@ -9,7 +9,7 @@
 ## 2. Pass signals on to running groups [depends-on: 1]
 
 - [x] 2.1 [complex] While a command runs, a `SIGINT` or `SIGTERM` to `lets` reaches the command's group, and `lets` then ends by that signal. A fixture, `tests/lets/resolvers/kit/fixtures/exec-and-wait.ts`, runs `realIo().execFile` on a shell that starts a child, with no time limit. The test starts it with `node`, waits for its process ID file, sends the signal, and checks that the fixture ended by that signal and that the shell and its child are gone (verify: node --test tests/lets/resolvers/kit/io.test.ts) (✓ node --test tests/lets/resolvers/kit/io.test.ts passed, 18 tests)
-- [ ] 2.2 [medium] A signal still reaches every running group when another command's group has already ended but its command has not settled, because a process in a new session holds its stdout. The handler ignores `ESRCH` and `EPERM` for that group. The fixture gains this case (verify: node --test tests/lets/resolvers/kit/io.test.ts)
+- [x] 2.2 [medium] A signal still reaches every running group when another command's group has already ended but its command has not settled, because a process in a new session holds its stdout. The handler ignores `ESRCH` and `EPERM` for that group. The fixture gains this case (verify: node --test tests/lets/resolvers/kit/io.test.ts) (✓ node --test tests/lets/resolvers/kit/io.test.ts passed, 19 tests)
 - [ ] 2.3 [easy] `execFile` leaves no signal handler behind: `process.listenerCount` for `SIGINT`, `SIGTERM` and `SIGHUP` is back to its starting value after a command settles, after a timeout, and after a command that cannot start (verify: node --test tests/lets/resolvers/kit/io.test.ts)
 
 ## 3. Docs [parallel]

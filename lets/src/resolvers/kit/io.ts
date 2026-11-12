@@ -107,7 +107,17 @@ const running = new Set<number>();
 const FORWARDED: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGHUP'];
 
 function forward(signal: NodeJS.Signals) {
-  for (const pid of running) process.kill(-pid, signal);
+  for (const pid of running) {
+    try {
+      process.kill(-pid, signal);
+    } catch (error) {
+      // One group must not keep the signal from the rest. A group can end
+      // before its command settles, while a process outside it holds the
+      // output open (ESRCH), or hold only processes lets may not signal
+      // (EPERM).
+      if (!['ESRCH', 'EPERM'].includes((error as NodeJS.ErrnoException).code!)) throw error;
+    }
+  }
   stopForwarding();
   process.kill(process.pid, signal);
 }
