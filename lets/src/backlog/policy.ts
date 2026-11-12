@@ -59,6 +59,7 @@ export type ClaimResult =
 // Elect before changing Status. Comment IDs distinguish concurrent sessions,
 // even when assigning @me twice changes the assignee list only once.
 export async function claim(adapter: Adapter, issue: number): Promise<ClaimResult> {
+  const previous = new Set((await adapter.claims(issue)).map((c) => c.id));
   const assignees = await adapter.assignees(issue);
   if (assignees.length > 0) return { result: 'taken', assignees };
   const login = await adapter.signedInLogin();
@@ -68,7 +69,7 @@ export async function claim(adapter: Adapter, issue: number): Promise<ClaimResul
     await adapter.assignSelf(issue);
     write = 'claim';
     await adapter.postClaim(issue, token);
-    const claims = await adapter.claims(issue);
+    const claims = (await adapter.claims(issue)).filter((c) => !previous.has(c.id));
     const own = claims.find((c) => c.token === token && c.login === login);
     if (!own) throw new BacklogError('gh-failed', 'The posted claim is missing from the issue comments; inspect the issue before retrying.');
     const winner = claims.reduce((a, b) => a.id < b.id ? a : b);

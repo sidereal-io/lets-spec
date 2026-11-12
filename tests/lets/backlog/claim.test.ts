@@ -16,7 +16,7 @@ const rows = ({ assignees = [] as string[], assign = ok('') as Answer, status = 
     ['api user', json({ login: 'octocat' })],
     ['issue edit 149 --add-assignee', assign],
     ['api repos/acme/app/issues/149/comments --method POST', (args) => { body = args.find((a) => a.startsWith('body='))!.slice(5); return ok(''); }],
-    ['api repos/acme/app/issues/149/comments --paginate --slurp', () => json(comments(body))],
+    ['api repos/acme/app/issues/149/comments --paginate --slurp', () => json(body ? comments(body) : [[]])],
     ['project item-edit', status],
     ['api repos/acme/app/issues/comments/', ok('')],
     ['issue edit 149 --remove-assignee', ok('')],
@@ -65,7 +65,7 @@ test('a write that times out is failed, and says it may have happened', async ()
 });
 
 test('a failed assignee read is gh-failed, and writes nothing', async () => {
-  const t = backlogDeps([...LOOKUP_ONE, ['issue view 149', fail('HTTP 502')]]);
+  const t = backlogDeps([...LOOKUP_ONE, ['api repos/acme/app/issues/149/comments --paginate', json([[]])], ['issue view 149', fail('HTTP 502')]]);
   assert.equal(await run(['claim', '149'], t.deps), 1);
   assert.equal(t.json().error, 'gh-failed');
   assert.ok(!t.ran('issue edit'));
@@ -90,8 +90,9 @@ test('a failed claim comment write retains its recovery token', async () => {
 });
 
 test('an unreadable election retains its recovery token', async () => {
+  let reads = 0;
   const t = backlogDeps([
-    ['api repos/acme/app/issues/149/comments --paginate', fail('HTTP 502')],
+    ['api repos/acme/app/issues/149/comments --paginate', () => ++reads === 1 ? json([[]]) : fail('HTTP 502')],
     ...rows(),
   ]);
   assert.equal(await run(['claim', '149'], t.deps), 1);
@@ -123,3 +124,19 @@ test('the earliest valid claim wins across comment pages', async () => {
   assert.ok(t.ran('issue edit 149 --remove-assignee'));
   assert.ok(!t.ran('project item-edit'));
 });
+
+for (const login of ['octocat', 'abandoned']) {
+  test(`an unassigned issue ignores an old claim by ${login}`, async () => {
+    const old = { id: 0, body: 'lets-go claimed this issue.\n\nToken: 00000000-0000-4000-8000-000000000001', user: { login, type: 'User' }, author_association: 'OWNER' };
+    let body = '';
+    const t = backlogDeps([
+      ['api repos/acme/app/issues/149/comments --method POST', (args) => { body = args.find((a) => a.startsWith('body='))!.slice(5); return ok(''); }],
+      ['api repos/acme/app/issues/149/comments --paginate', () => json([[old, ...(body ? [{ ...old, id: 2, body, user: { login: 'octocat', type: 'User' } }] : [])]])],
+      ...rows(),
+    ]);
+    assert.equal(await run(['claim', '149'], t.deps), 0);
+    assert.equal(t.json().result, 'claimed');
+    assert.ok(t.ran('project item-edit'));
+    assert.ok(!t.ran('issue edit 149 --remove-assignee'));
+  });
+}

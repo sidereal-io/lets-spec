@@ -61,8 +61,6 @@ a comment by a bot or an outside author, is ordinary discussion.
 Label a valid claim comment `claim` and show it as workflow metadata.
 Never ask about it or count it as unread discussion. Claim comments
 never advance the watermark and never cover other comments.
-If an assignee is cleared by hand, delete that login's stale claim
-comments before retrying.
 
 ## The read marker
 
