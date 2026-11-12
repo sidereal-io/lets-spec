@@ -10,7 +10,7 @@
 - [x] 2.4 [easy] A review from the main checkout launches its thread with `{ type: 'root', branch: 'main' }`, and the resolver's git calls are the common dir, the top level and the branch, in that order (verify: node --test tests/lets/resolvers/t3/t3.test.ts) (✓ node --test tests/lets/resolvers/t3/t3.test.ts passed, 86 tests)
 - [x] 2.5 [easy] A review from a subdirectory of a linked worktree sends the worktree's top level as `worktreePath`, not the subdirectory (verify: node --test tests/lets/resolvers/t3/t3.test.ts) (✓ node --test tests/lets/resolvers/t3/t3.test.ts passed, 87 tests)
 - [x] 2.6 [easy] A review from a linked worktree with a detached HEAD sends `existing_worktree` with no `branch` (verify: node --test tests/lets/resolvers/t3/t3.test.ts) (✓ node --test tests/lets/resolvers/t3/t3.test.ts passed, 88 tests)
-- [ ] 2.7 [easy] `lets delegate review run` from a linked worktree of a repository T3 has no project for exits 3, creates no thread, and names the main checkout on stderr (verify: node --test tests/lets/resolvers/t3/delegate.test.ts)
+- [x] 2.7 [easy] `lets delegate review run` from a linked worktree of a repository T3 has no project for exits 3, creates no thread, and names the main checkout on stderr (verify: node --test tests/lets/resolvers/t3/delegate.test.ts) (✓ node --test tests/lets/resolvers/t3/delegate.test.ts passed, 28 tests)
 
 ## 3. Docs [depends-on: 2]
 

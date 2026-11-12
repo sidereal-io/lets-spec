@@ -225,14 +225,14 @@ type Answer = { stdout: string; stderr: string; code: number };
 const ok = (stdout: string): Answer => ({ stdout: `${stdout}\n`, stderr: '', code: 0 });
 
 // Commands run in a checkout of the repository whose main checkout is
-// /repo, on branch main. git is answered by its arguments; others answers
-// every other command, in order.
-function inCheckout(others: Answer[]) {
+// /repo, on branch main, whose top level is top. git is answered by its
+// arguments; others answers every other command, in order.
+function inCheckout(others: Answer[], top = '/repo') {
   return (cmd: string, args: string[]): Answer => {
     if (cmd !== 'git') return others.shift() ?? ok('');
     const asked = args.slice(2).join(' ');
     if (asked === 'rev-parse --path-format=absolute --git-common-dir') return ok('/repo/.git');
-    if (asked === 'rev-parse --show-toplevel') return ok('/repo');
+    if (asked === 'rev-parse --show-toplevel') return ok(top);
     if (asked === 'branch --show-current') return ok('main');
     return { stdout: '', stderr: `no answer for git ${asked}`, code: 1 };
   };
@@ -241,9 +241,10 @@ function inCheckout(others: Answer[]) {
 // A T3 that is running, with a project for projectRoot and the state in db.
 // It answers the catalogue request with config, and every other request
 // over the WebSocket with thread T. Each request is logged in sent. results
-// answers the commands other than git, in order.
-type Running = { projectRoot?: string; config?: unknown; fetch?: typeof globalThis.fetch; results?: Answer[] };
-function runningT3({ projectRoot = '/repo', config = ONLY_DISABLED as unknown, fetch = ticketFetch, results = [] }: Running = {}) {
+// answers the commands other than git, in order. git answers from the
+// checkout whose top level is top.
+type Running = { projectRoot?: string; config?: unknown; fetch?: typeof globalThis.fetch; results?: Answer[]; top?: string };
+function runningT3({ projectRoot = '/repo', config = ONLY_DISABLED as unknown, fetch = ticketFetch, results = [], top }: Running = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec(SCHEMA);
   db.prepare(`insert into projection_projects (project_id, title, workspace_root, scripts_json, created_at, updated_at)
@@ -255,7 +256,7 @@ function runningT3({ projectRoot = '/repo', config = ONLY_DISABLED as unknown, f
     parentPid: (pid) => (CHAIN as Record<number, number>)[pid] ?? null,
     processAlive: (pid) => pid === 7,
     env: {},
-    results: inCheckout(results),
+    results: inCheckout(results, top),
     openDb: () => ({ prepare: (sql: string) => db.prepare(sql), close() {} }) as Db,
     fetch,
     WebSocket: t3Socket(sent, config),
@@ -283,6 +284,13 @@ test('a review in a repository T3 has no project for is exit 3, naming it, and c
   assert.equal(await review(astraReview, t.deps), 3, t.stderr());
   assert.match(t.stderr(), /t3 has no project for \/repo/);
   assert.doesNotMatch(t.stderr(), /\(thread /);
+  assert.deepEqual(sent, []);
+});
+
+test('a review from a linked worktree of a repository T3 has no project for is exit 3, naming the main checkout', async () => {
+  const { sent, t } = runningT3({ projectRoot: '/elsewhere', top: '/w/fix-login' });
+  assert.equal(await review(astraReview, t.deps), 3, t.stderr());
+  assert.match(t.stderr(), /t3 has no project for \/repo;/);
   assert.deepEqual(sent, []);
 });
 
