@@ -3443,6 +3443,17 @@ commit_maps() {
   skill_says lets-build 'Do not invent a state or retry the query'
   skill_says lets-build 'When `instruction` is absent or unusable, show the full output instead'
 }
+
+@test "step reports: archive folder reports only archive evidence" {
+  local rows archive
+  rows="$(grep '^| has a' "$repo/skills/lets-build/SKILL.md")"
+  archive="$(grep '^| has an archived folder' <<<"$rows")"
+  [[ "$archive" != *'ready for review'* ]]
+  [[ "$archive" == *'Say the change is archived'* ]]
+  [[ "$archive" == *'Check the pull request'* ]]
+  [ "$(tail -n 1 <<<"$rows")" = "$archive" ]
+  skill_says lets-build 'later rows do not override it'
+}
 @test "claim-race: recovery names the session token" {
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(procedure_text 'Claim')"
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(skill_section lets-go 'Recover from a failed import')"

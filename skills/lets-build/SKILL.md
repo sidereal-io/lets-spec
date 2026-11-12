@@ -35,7 +35,7 @@ and the next action.
 | has a change folder | `blocked` | Say that the plan is not finished: run the `lets-plan` skill. Stop. |
 | has a change folder | `all_done` | Say that every task is ticked, and that the `lets-review-build` skill finishes the change. Stop. |
 | has a change folder | anything else | Show the user the CLI's `instruction`, and stop. When `instruction` is absent or unusable, show the full output instead. |
-| has an archived folder whose whole name is `<date>-<branch>` in `openspec/changes/archive/` | — | Say the change is archived and its pull request is ready for review. Stop. |
+| has an archived folder whose whole name is `<date>-<branch>` in `openspec/changes/archive/` | — | Say the change is archived. This folder does not show whether its pull request is ready. Check the pull request, and stop. |
 | anything else | — | Say that `lets-plan` plans a claimed change on its branch, and that `lets-go` starts an issue. Stop. |
 
 ## Apply
