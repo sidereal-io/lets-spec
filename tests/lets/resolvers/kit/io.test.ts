@@ -108,6 +108,19 @@ test('a group that ignores SIGTERM is stopped 5 seconds after its time limit', {
   assert.deepEqual(readPids(pids).filter((pid) => !gone(pid)), []);
 });
 
+test('a group that ignores SIGTERM gets SIGKILL when the event loop stalls past the grace period', { timeout: 30000 }, async (t) => {
+  const pids = pidsDir(t);
+  const script = `trap '' TERM; sleep 600 & echo $! >> '${pids}'; echo $$ >> '${pids}'; wait`;
+  const result = realIo().execFile('sh', ['-c', script], { timeoutMs: 500 });
+  // After SIGTERM, block the loop for longer than the grace period and the
+  // wait after SIGKILL together, as a loaded machine can.
+  await waitFor(() => readPids(pids).length === 2, 'the process IDs');
+  await new Promise((resolve) => setTimeout(resolve, 700));
+  for (const until = Date.now() + 6500; Date.now() < until;);
+  assert.equal((await result).timedOut, true);
+  assert.deepEqual(readPids(pids).filter((pid) => !gone(pid)), []);
+});
+
 // Node starts a sleep in a new session, which holds Node's stdout, and
 // writes its process ID to the file named in argv[1]. Then Node runs on.
 const HOLD_STDOUT = `

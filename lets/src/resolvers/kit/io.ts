@@ -35,16 +35,16 @@ function signalGroup(pid: number, signal: NodeJS.Signals | 0): boolean {
 // SIGKILL, since a process can take a moment to end.
 function stopGroup(pid: number, done: () => void) {
   const started = Date.now();
-  let killed = false;
+  let killed: number | undefined;
   if (!signalGroup(pid, 'SIGTERM')) return done();
   const poll = setInterval(() => {
-    const waited = Date.now() - started;
-    if (!signalGroup(pid, 0) || waited >= KILL_GRACE_MS + KILL_WAIT_MS) {
+    // Timed from SIGKILL, not from the start: a stalled tick must not skip it.
+    if (!signalGroup(pid, 0) || (killed !== undefined && Date.now() - killed >= KILL_WAIT_MS)) {
       clearInterval(poll);
       return done();
     }
-    if (!killed && waited >= KILL_GRACE_MS) {
-      killed = true;
+    if (killed === undefined && Date.now() - started >= KILL_GRACE_MS) {
+      killed = Date.now();
       signalGroup(pid, 'SIGKILL');
     }
   }, GROUP_POLL_MS);
