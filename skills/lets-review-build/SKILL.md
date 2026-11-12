@@ -183,7 +183,7 @@ review. Then run the project's checks.
 ## Report
 
 List every finding, most severe first, with its verdict and any fix commit.
-Name the family and model that reviewed, how it ran (`fresh context` or
+Name the family and model that reviewed, and how it ran (`fresh context` or
 `subagent`). Name the author families and any reviewer overlap (or none).
 Report the CLI's `independent` value as its own line. Call the review
 independent only when the reviewer's family is evidenced and is not an
