@@ -14,7 +14,7 @@
 
 ## 3. Docs [depends-on: 2]
 
-- [ ] 3.1 [easy] `docs/resolvers.md` says, in its `t3` section, that a session started from a linked worktree runs in that worktree on its branch, and its *After a t3 update* smoke test runs a handoff from a linked worktree and checks that the new thread shows that worktree (verify: grep -n "linked worktree" docs/resolvers.md)
+- [x] 3.1 [easy] `docs/resolvers.md` says, in its `t3` section, that a session started from a linked worktree runs in that worktree on its branch, and its *After a t3 update* smoke test runs a handoff from a linked worktree and checks that the new thread shows that worktree (verify: grep -n "linked worktree" docs/resolvers.md) (✓ grep -n "linked worktree" docs/resolvers.md found lines 41 and 125)
 
 ## 4. Integration [depends-on: 3]
 

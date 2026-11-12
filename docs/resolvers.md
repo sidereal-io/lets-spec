@@ -37,6 +37,11 @@ terminals, list `cli` after it.
 
 It runs no step yet, so it declines every one and opens no thread.
 
+A session runs in the checkout you started it from. A session started
+from a linked worktree runs in that worktree, on its branch, as part of
+the main checkout's T3 project. From the main checkout, it runs in the project's
+own checkout. Either way, a detached HEAD gives the session no branch.
+
 ### Which model runs
 
 The caller chooses the model, and `t3` runs exactly that one:
@@ -116,6 +121,22 @@ lets delegate handoff instructions --for apply
 
 Its `options` should list the same models as the model picker in a new
 T3 thread. If they are empty, stderr says why.
+
+Then check that a session from a linked worktree runs in that worktree.
+A handoff keeps its thread open, so you can look at it:
+
+```sh
+git worktree add ../smoke-worktree -b smoke-worktree
+cd ../smoke-worktree
+mkdir -p .workspace
+printf 'Reply with the single word READY and nothing else.\n' > .workspace/p.md
+lets delegate handoff run --for apply --name smoke-handoff \
+  --prompt-file .workspace/p.md --model gpt
+```
+
+The new thread should show the `smoke-worktree` folder and branch, not
+the main checkout. Then archive the thread, and remove the worktree with
+`git worktree remove ../smoke-worktree` and `git branch -D smoke-worktree`.
 
 The review spends tokens. CI never runs it.
 
