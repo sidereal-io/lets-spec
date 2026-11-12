@@ -3428,6 +3428,10 @@ commit_maps() {
 @test "authoring wording: design reference is conditional on the flow" {
   skill_says lets-brainstorm 'When the flow has a design, it explains the reasons and implementation.'
 }
+
+@test "authoring wording: no-design flow follows schema ledger requirements" {
+  skill_says lets-brainstorm "Without a design, follow the schema's ledger requirements for the reasons and implementation decisions."
+}
 @test "review model choice: policy anchors" {
   for skill in lets-review-plan lets-review-build; do
     skill_says "$skill" '**allowed models**'
