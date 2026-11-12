@@ -643,8 +643,8 @@ picked one of several):
    parent issue and map already capture — and confirm with the user.
 3. **Continue from the recorded phase.** Do not re-litigate confirmed
    sections unless the user brings new information; then revisit and update
-   them. When the line says `next phase: finalize`, go directly to
-   [Phase 6: Finalize](#phase-6-finalize). Do not repeat confirmed Stories.
+   them. When it says `finalize`, go straight to
+   [Phase 6: Finalize](#phase-6-finalize).
 
 ## Revision mode
 
