@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/review.ts';
 import type { ReviewOptions } from '../../../lets/src/delegate/review.ts';
 import { SessionFailed, SpawnError, TimeoutError } from '../../../lets/src/resolvers/kit/errors.ts';
-import { commandDeps, CONFIG } from './fixtures/command-deps.ts';
+import { commandDeps, CONFIG, HEAD } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<ReviewOptions> = {}): ReviewOptions =>
   ({ for: 'code', name: 'X Plan Review', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
@@ -25,9 +25,18 @@ test('a review prints the final message, then one metadata line on stderr', asyn
   assert.equal(t.stdout(), 'FINDINGS\n');
   assert.deepEqual(JSON.parse(t.stderr()), {
     for: 'code', resolver: 't3', family: 'gpt', model: 'gpt-6-luna', independent: true,
-    handle: { kind: 't3', id: 't3-1' }, gitClean: true, durationSeconds: 0,
+    handle: { kind: 't3', id: 't3-1' }, checkout: '/repo', commit: HEAD, gitClean: true, durationSeconds: 0,
   });
-  assert.deepEqual(Object.keys(JSON.parse(t.stderr())), ['for', 'resolver', 'family', 'model', 'independent', 'handle', 'gitClean', 'durationSeconds']);
+  assert.deepEqual(Object.keys(JSON.parse(t.stderr())),
+    ['for', 'resolver', 'family', 'model', 'independent', 'handle', 'checkout', 'commit', 'gitClean', 'durationSeconds']);
+});
+
+test('the metadata line names the checkout the resolver ran in, and the commit at its HEAD', async () => {
+  const t = withT3({ adapters: { t3: { run: { checkout: '/w/elsewhere' } } } });
+  assert.equal(await run(options(), t.deps), 0);
+  const { checkout, commit } = JSON.parse(t.stderr());
+  assert.deepEqual({ checkout, commit }, { checkout: '/w/elsewhere', commit: HEAD });
+  assert.ok(t.io.calls.some(([cmd, args, opts]) => cmd === 'git' && args.join(' ') === 'rev-parse HEAD' && opts.cwd === '/w/elsewhere'), 'HEAD was read in the checkout');
 });
 
 test('a code review\'s metadata line starts with for: code, and a plan review\'s with for: plan', async () => {

@@ -11,6 +11,12 @@ export async function repoRoot(cwd: string, io: Io): Promise<string> {
   return stdout.trim();
 }
 
+// The full hash at HEAD in checkout.
+export async function headCommit(checkout: string, io: Io): Promise<string> {
+  const { stdout } = await io.execFile('git', ['rev-parse', 'HEAD'], { cwd: checkout });
+  return stdout.trim();
+}
+
 // Each entry of `git status`: two status letters, a space, then the path.
 // -z keeps a path with spaces whole; a rename adds its source as a second
 // entry, which is skipped.

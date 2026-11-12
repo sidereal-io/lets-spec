@@ -114,7 +114,7 @@ export function createAdapter(io: Io): Adapter {
     }
     // For a review, the kit turns an empty message, or a missing file, into
     // a failed session. For a step, the report reader does.
-    return { handle: { kind: 'process', id: name }, text };
+    return { handle: { kind: 'process', id: name }, text, checkout: null };
   }
 
   return {

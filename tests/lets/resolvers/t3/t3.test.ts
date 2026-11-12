@@ -365,7 +365,7 @@ test('run waits for the run to complete and the message to stop streaming', asyn
     () => db.exec("update orchestration_v2_projection_runs set status = 'completed'"),
     () => db.exec(`update orchestration_v2_projection_messages set payload_json = '{"text":"FINDINGS"}', streaming = 0`),
   ];
-  assert.deepEqual(await running(db, steps), { handle: HANDLE, text: 'FINDINGS' });
+  assert.deepEqual(await running(db, steps), { handle: HANDLE, text: 'FINDINGS', checkout: null });
   assert.equal(steps.length, 0);
 });
 // A thread whose run failed before any assistant message.
@@ -426,14 +426,14 @@ test('run returns a completed run with no message as an empty one; the resolver 
   const db = database();
   addThread(db, 'T');
   addRun(db, 'T', 'run-1', 1, 'completed');
-  assert.deepEqual(await running(db), { handle: HANDLE, text: '' });
+  assert.deepEqual(await running(db), { handle: HANDLE, text: '', checkout: null });
 });
 test('run returns an empty final message as it is; the resolver rejects it', async () => {
   const db = database();
   addThread(db, 'T');
   addRun(db, 'T', 'run-1', 1, 'completed');
   addMessage(db, 'a1', 'run-1', '', 0);
-  assert.deepEqual(await running(db), { handle: HANDLE, text: '' });
+  assert.deepEqual(await running(db), { handle: HANDLE, text: '', checkout: null });
 });
 
 const ISSUE = ['auth', 'session', 'issue', '--base-dir', '/home/u/.t3', '--ttl', '30d', '--label', 'lets-delegate', '--token-only'];

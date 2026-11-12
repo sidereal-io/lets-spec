@@ -510,7 +510,7 @@ export function createAdapter(io: Io): Adapter {
       // to archive or name.
       const handle = await launchThread(input, { readOnly: true, effort });
       try {
-        return { handle, ...(await waitForText(handle, timeoutMs)) };
+        return { handle, ...(await waitForText(handle, timeoutMs)), checkout: null };
       } catch (error) {
         if (error instanceof Refused) {
           // Nothing ran, so the thread goes, as finish with ok would do.
