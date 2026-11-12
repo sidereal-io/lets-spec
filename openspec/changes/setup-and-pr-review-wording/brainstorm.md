@@ -14,7 +14,6 @@ https://github.com/sidereal-io/lets-spec/issues/234
 | D3 | What happens to the completed trial directive? | Remove it; retain the distinction between scripted exercises, static checks and live evidence. No new live review or public comment. | Evidence: #234 SLR-15; archived collaborator-pr-review tasks |
 | D4 | How does the review overview change? | Introduce bounded exchanges and evidence mediation before the decision pass, then decide on focused passes after both full passes. Preserve early exit, role limits and focused-pass conditions. | Evidence: #234 SLR-16 |
 | D5 | Do requirements change? | No; these are wording corrections preserving the existing behavior. Set skip_specs rather than inventing a requirement. | Evidence: #234 scope; collaborator-pr-review spec |
-| D6 | When does this run stop? | After all three required checks pass and an open PR exists; never merge. The orchestrator performs the review. | User |
 
 ## Changes from the story
 
