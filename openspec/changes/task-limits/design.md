@@ -29,7 +29,7 @@ The Size section says to report an oversized story without specifying whether `t
 
 - [Static prose tests can overfit wording] → Assert only the actionable policy clauses; accompany them with recorded reader walkthroughs.
 - [An example could imply dependency changes] → Explain existing dependency chains without adding syntax or scheduling rules.
-- [Shared test-file merge conflicts] → Append one self-contained block with a task-limits helper name.
+- [Shared test-file merge conflicts] → Keep the two checks in one self-contained block.
 
 ## Migration & Rollback
 
