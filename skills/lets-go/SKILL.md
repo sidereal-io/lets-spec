@@ -388,7 +388,8 @@ Next: [Enter the branch](#enter-the-branch).
    - **`unresolved`:** report the owner or the definitions it carries,
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
-   - **`claim-failed`:** show its message and what may remain by `write`:
+   - **`claim-failed`:** show its message. Report what may remain by
+     `write`:
 
      - `assign`: your assignment; no claim token exists.
      - `claim`: your assignment and possibly a claim comment.
