@@ -3435,3 +3435,14 @@ commit_maps() {
   [[ "$revision" != *'leave the stage an unplanned `gap`'* ]]
 }
 
+@test "shape-checkpoints: size gates single-issue glossary writes" {
+  local single vocabulary
+  single="$(sed -n '/^## Shape one issue/,/^## Resume mode/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
+  vocabulary="$(sed -n '/^## Develop the vocabulary/,/^## Preserve glossary edits/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
+  [[ "$vocabulary" == *'For single-issue shaping, check the size before writing any glossary definition'* ]]
+  [[ "$single" == *'Keep candidate meanings tentative; write no glossary definition before step 6 passes sizing'* ]]
+  [[ "$single" == *'offer a discovery run on it instead, and stop'* ]]
+  [[ "$single" == *'If the user starts that discovery run, record the tentative meanings in its parent issue'* ]]
+  [[ "$single" == *'Do not create an issue or start discovery as part of this size stop'* ]]
+  [[ "$single" == *'Once sizing passes, confirm meaning and scope with the user and write accepted definitions'* ]]
+}
