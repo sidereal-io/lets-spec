@@ -85,6 +85,7 @@ test('a usage error exits 2 and prints nothing on stdout', async () => {
     ['item', 'abc'],
     ['item', '0'],
     ['claim'],
+    ['release', '149'],
     ['release', '1.5'],
     ['find'],
     ['ready', '--bogus'],

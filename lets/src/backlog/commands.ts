@@ -19,10 +19,11 @@ stdout: one JSON object and a newline.
   item <i>           { number, title, body, url, state, kind, priority, size,
                        status, assignees, blockedBy, parent, subIssues }
   find <words...>    { issues: [{ number, title }] }
-  claim <i>          { result: claimed } | { result: taken, assignees }
-                     | { result: failed, write: assign|status, message }
-  release <i>        { result: released }
-                     | { result: failed, write: unassign|status, message }
+  claim <i>          { result: claimed, claim } | { result: taken, assignees }
+                     | { result: failed, write: assign|claim|delete-claim|unassign|status, message, claim? }
+  release <i> --claim <token>
+                     { result: released }
+                     | { result: failed, write: delete-claim|unassign|status, message }
 On an error: { error, message }, where error is no-backlog,
 several-backlogs (with projects: [{ title, url }]), gh-failed or not-found.
 
@@ -81,8 +82,9 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
     });
   command('release', 'remove yourself from the issue and set it back to Todo')
     .argument('<i>', 'the issue number', issueNumber)
-    .action((issue: number) => {
-      work = (adapter) => release(adapter, issue);
+    .requiredOption('--claim <token>', 'the session token returned by claim')
+    .action((issue: number, { claim: token }: { claim: string }) => {
+      work = (adapter) => release(adapter, issue, token);
     });
 
   try {

@@ -8,6 +8,7 @@ import { json, ok, PROJECT, REPO } from './fixtures/fake-gh.ts';
 function race(logins: [string, string]) {
   const assigned = new Set<string>();
   const comments: { id: number; body: string; user: { login: string; type: string }; author_association: string }[] = [];
+  const tokens: string[] = [];
   const statuses: string[][] = [[], []];
   let nextId = 1;
   let reads = 0;
@@ -31,6 +32,7 @@ function race(logins: [string, string]) {
         if (args.includes('POST')) {
           const body = args.find((a) => a.startsWith('body='))!.slice(5);
           const comment = { id: nextId++, body, user: { login, type: 'User' }, author_association: 'OWNER' };
+          tokens[session] = body.split('Token: ')[1];
           comments.push(comment);
           return json(comment);
         }
@@ -48,7 +50,7 @@ function race(logins: [string, string]) {
     };
     return t;
   });
-  return { sessions, comments, assigned, statuses };
+  return { sessions, comments, assigned, statuses, tokens };
 }
 
 test('two logins produce one claim owner', async () => {
@@ -71,6 +73,16 @@ test('sessions sharing a login preserve the winning assignment', async () => {
   await Promise.all(t.sessions.map((s) => run(['claim', '149'], s.deps)));
   const results = t.sessions.map((s) => JSON.parse(s.stdout()));
   assert.equal(results.filter((r) => r.result === 'claimed').length, 1);
+  assert.deepEqual([...t.assigned], ['alice']);
+  assert.equal(t.comments.length, 1);
+  assert.deepEqual(t.statuses.flat(), ['In Progress']);
+});
+
+test('a repeated loser release preserves a shared-login winner', async () => {
+  const t = race(['alice', 'alice']);
+  await Promise.all(t.sessions.map((s) => run(['claim', '149'], s.deps)));
+  const loser = t.sessions.findIndex((s) => JSON.parse(s.stdout()).result === 'taken');
+  assert.equal(await run(['release', '149', '--claim', t.tokens[loser]], t.sessions[loser].deps), 0);
   assert.deepEqual([...t.assigned], ['alice']);
   assert.equal(t.comments.length, 1);
   assert.deepEqual(t.statuses.flat(), ['In Progress']);

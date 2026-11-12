@@ -91,11 +91,17 @@ export async function claim(adapter: Adapter, issue: number): Promise<ClaimResul
   }
 }
 
-// Give the issue back: remove the signed-in user only, then set Status to
-// Todo.
-export function release(adapter: Adapter, issue: number): Promise<WriteResult<'released', 'unassign' | 'status'>> {
-  return inOrder('released', [
-    ['unassign', () => adapter.unassignSelf(issue)],
-    ['status', () => adapter.setStatus(issue, 'Todo')],
-  ]);
+// Release only the named session. A stale token never touches an assignment.
+export async function release(adapter: Adapter, issue: number, token: string): Promise<WriteResult<'released', 'delete-claim' | 'unassign' | 'status'>> {
+  const login = await adapter.signedInLogin();
+  const claims = await adapter.claims(issue);
+  const own = claims.find((c) => c.token === token && c.login === login);
+  if (!own) return { result: 'released' };
+  const others = claims.filter((c) => c.id !== own.id);
+  const writes: ['delete-claim' | 'unassign' | 'status', () => Promise<void>][] = [
+    ['delete-claim', () => adapter.deleteClaim(issue, own.id)],
+  ];
+  if (!others.some((c) => c.login === login)) writes.push(['unassign', () => adapter.unassignSelf(issue)]);
+  if (others.length === 0) writes.push(['status', () => adapter.setStatus(issue, 'Todo')]);
+  return inOrder('released', writes);
 }
