@@ -111,8 +111,8 @@ Commit first. The review covers commits, not the working tree.
 When only author families can run, the review still runs in a fresh session.
 Never review in an author's own session.
 
-Note the range you reviewed: `<head-sha>` is `git rev-parse --short HEAD`,
-and `<base-sha>` is `git rev-parse --short "$(git merge-base <base> HEAD)"`.
+Note the range you reviewed: `<head-sha>` is the short form of the `<head>`
+you noted in step 1, `git rev-parse --short <head>`, and `<base-sha>` is `git rev-parse --short "$(git merge-base <base> HEAD)"`.
 An answer of only `(none)`, then the `Read:` line, is a clean result, not a
 failure.
 

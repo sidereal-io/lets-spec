@@ -138,8 +138,8 @@ next one each time a model is refused. When only the author's family can
 run, the review still runs, and the meta line says `"independent": false`.
 Never review in the author's own session.
 
-Note the commit you reviewed: `git rev-parse --short HEAD`, on a clean tree.
-The report records it, so a later session can tell whether the plan changed
+Note the commit you reviewed: the short form of the `<head>` you noted in
+step 1, `git rev-parse --short <head>`. The report records it, so a later session can tell whether the plan changed
 after the verdict.
 
 The report also records how the review ran, as the reviewer context:
