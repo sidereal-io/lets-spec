@@ -906,3 +906,9 @@ test('a review from a linked worktree runs in the worktree, on its branch, in th
   assert.deepEqual(launch.workspaceStrategy, { type: 'existing_worktree', worktreePath: '/w/fix-login', branch: 'fix-login' });
   assert.equal(launch.projectId, 'p1');
 });
+
+test('a handoff from a linked worktree runs in the worktree, on its branch', async () => {
+  const log: Log = [];
+  await createAdapter(launchingIo(database(), log, { checkout: { top: '/w/fix-login', branch: 'fix-login' } })).start!({ ...startInput, cwd: '/w/fix-login' });
+  assert.deepEqual(launched(log).workspaceStrategy, { type: 'existing_worktree', worktreePath: '/w/fix-login', branch: 'fix-login' });
+});
