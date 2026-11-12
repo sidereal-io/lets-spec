@@ -18,7 +18,7 @@ to locate the work and verify completion.
 - **Five to twelve tasks.** Fewer, and the tasks hide too much. More, and
   the story is too big. Do not write or commit `tasks.md`. Report the count
   and the slice to move to a new story, then wait. The user decides the split
-  in the brainstorm, and this step runs again on the smaller story.
+  in the brainstorm, and task planning runs again on the smaller story.
 - **One task is one red-green cycle:** one behavior, its failing test,
   then the code that makes the test pass. A task that needs "and" to
   describe is two tasks.
