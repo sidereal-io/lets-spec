@@ -82,7 +82,8 @@ Commit first. The review covers commits, not the working tree.
    and take the [subagent step](#review-in-a-subagent).
 4. Run the review with one `--model` per ranked allowed model, best first.
    `<family>` is this session's own family: `gpt`, `claude` or `gemini`.
-   It is only a CLI compatibility value, not the author families.
+   The CLI's `independent` value compares the reviewer with this family
+   alone; it does not establish independence from the author families.
 
    ```bash
    lets delegate review run --for code --name <branch>-code-review \
@@ -93,18 +94,15 @@ Commit first. The review covers commits, not the working tree.
 
 5. Act on its exit code:
    - **0**: the findings are in the raw file. The meta file's last line is
-     JSON: the resolver, the model that answered, and the CLI's single-family
-     independence comparison. The report below checks all author families.
+     JSON: the resolver, the model that answered, and the `independent` value.
    - **3**: no fresh session can run here, for example because no resolver
      started one, or every model was refused. Take the [subagent
      step](#review-in-a-subagent).
    - **Anything else**: stop. Show the user the meta file and the exit code.
      Do not run the command again until something has changed.
 
-When only author families can run, a permitted review still runs in a fresh
-session. The CLI's `independent` boolean compares only against this session's
-family, the `--source-family` compatibility value; it is not independence
-from the author families. Never review in an author's own session.
+When only author families can run, the review still runs in a fresh session.
+Never review in an author's own session.
 
 Note the range you reviewed: `<head-sha>` is `git rev-parse --short HEAD`,
 and `<base-sha>` is `git rev-parse --short "$(git merge-base <base> HEAD)"`.
