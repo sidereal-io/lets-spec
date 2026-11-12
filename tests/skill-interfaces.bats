@@ -3454,6 +3454,31 @@ commit_maps() {
   [ "$(tail -n 1 <<<"$rows")" = "$archive" ]
   skill_says lets-build 'later rows do not override it'
 }
+
+@test "step reports: idea arguments are literal shell text" {
+  local examples expected
+  examples="$BATS_TEST_TMPDIR/idea-examples.sh"
+  sed -n "/^   lets backlog find 'fix /p" "$repo/skills/lets-go/SKILL.md" > "$examples"
+  [ "$(wc -l < "$examples")" -eq 2 ]
+  run bash -c 'lets() { printf "%s\n" "$#" "$@"; }; source "$1"' _ "$examples"
+  [ "$status" -eq 0 ]
+  expected=$(cat <<'EXPECTED'
+3
+backlog
+find
+fix $HOME display
+3
+backlog
+find
+fix user's "$HOME" $(printf unsafe) `printf unsafe`
+EXPECTED
+)
+  [ "$output" = "$expected" ] || { printf 'arguments changed: %s\n' "$output"; false; }
+  skill_says lets-go 'pass only the idea'
+  skill_says lets-go 'adds the title qualifier itself'
+  skill_says lets-go 'Do not paste the idea inside the double quotes shown below'
+  ! grep -qF 'in:title' "$repo/skills/lets-go/SKILL.md"
+}
 @test "claim-race: recovery names the session token" {
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(procedure_text 'Claim')"
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(skill_section lets-go 'Recover from a failed import')"
