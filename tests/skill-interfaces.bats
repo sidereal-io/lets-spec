@@ -3432,6 +3432,12 @@ commit_maps() {
 @test "authoring wording: no-design flow follows schema ledger requirements" {
   skill_says lets-brainstorm "Without a design, follow the schema's ledger requirements for the reasons and implementation decisions."
 }
+
+@test "authoring wording: ADR rewrite preserves supersession relationships" {
+  skill_says lets-write-adrs 'Rewrite a record that is hard to read; never delete it.'
+  skill_says lets-write-adrs 'Preserve the recorded decision, its reasons and its supersession relationships when rewriting.'
+  skill_does_not_say lets-write-adrs 'decision still stands'
+}
 @test "review model choice: policy anchors" {
   for skill in lets-review-plan lets-review-build; do
     skill_says "$skill" '**allowed models**'
