@@ -3479,6 +3479,16 @@ EXPECTED
   skill_says lets-go 'Do not paste the idea inside the double quotes shown below'
   ! grep -qF 'in:title' "$repo/skills/lets-go/SKILL.md"
 }
+
+@test "step reports: claim rule names concrete change outputs" {
+  local demand
+  demand="$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')"
+  [[ "$demand" != *'create anything'* ]]
+  [[ "$demand" == *'change branch, OpenSpec artifacts or implementation'* ]]
+  [[ "$demand" == *'[What shape runs](references/shape.md#what-shape-runs)'* ]]
+  [[ "$demand" == *'issue, parent, stories and glossary holding branch'* ]]
+}
+# End #228 step-skill-reports checks.
 @test "claim-race: recovery names the session token" {
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(procedure_text 'Claim')"
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(skill_section lets-go 'Recover from a failed import')"
