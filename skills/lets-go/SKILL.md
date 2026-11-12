@@ -393,11 +393,12 @@ Next: [Enter the branch](#enter-the-branch).
 
      - `assign`: your assignment; no claim token exists.
      - `claim`: your assignment and possibly a claim comment.
-     - `delete-claim`: your comment and assignment.
-     - `unassign`: your assignment.
-     - `status`: your assignment, comment and possibly Status.
+     - `delete-claim`: claim comments and your assignment.
+     - `unassign`: your assignment; the user removes it by hand.
+     - `status`: Status, and possibly your assignment and comment.
+       With no comment left, the user resets Status by hand.
 
-     Ask the user to inspect the issue. With a token, they can run
+     Ask the user to inspect the issue. With a claim comment, they can run
      `lets backlog release <i> --claim <claim>`. Do not release it
      yourself. Stop, and run no step.
    - **`branch-failed`:** [Claim](#claim) attempted release. Show
