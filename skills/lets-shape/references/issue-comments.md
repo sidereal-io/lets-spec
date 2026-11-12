@@ -55,15 +55,12 @@ Token: <UUID>
 ```
 
 The token is a lowercase UUID v4 unique to the claiming run. The author
-must be a non-bot with association OWNER, MEMBER or COLLABORATOR. Check
-the whole format, not just the marker: malformed comments, extra prose,
-bots and outside authors remain ordinary discussion.
+must have association OWNER, MEMBER or COLLABORATOR. Anything else, or
+a comment by a bot or an outside author, is ordinary discussion.
 
 Label a valid claim comment `claim` and show it as workflow metadata.
 Never ask about it or count it as unread discussion. Claim comments
-never advance the watermark and never cover other comments. The claim
-command reads every page and elects the earliest active claim by GitHub
-comment ID. Only that session may move Status to In Progress.
+never advance the watermark and never cover other comments.
 
 ## The read marker
 
