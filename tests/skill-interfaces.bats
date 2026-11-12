@@ -3422,6 +3422,14 @@ commit_maps() {
   grep -qF 'number, `<n>`' <<<"$before"
 }
 
+@test "SLR-05 error stop precedes setup creation commands" {
+  local text before
+  text="$(skill_section lets-setup-backlog Create)"
+  before="${text%%gh project create*}"
+  [ "$before" != "$text" ]
+  grep -qF 'Stop at the first error and show it.' <<<"$before"
+}
+
 # Issue #233: authoring wording.
 @test "authoring wording: modified export retains the signed-out scenario" {
   sed -n '/^## MODIFIED Requirements$/,/^## REMOVED Requirements$/p' "$repo/skills/lets-write-specs/SKILL.md" |

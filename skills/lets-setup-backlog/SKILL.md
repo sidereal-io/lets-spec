@@ -74,7 +74,7 @@ belongs to someone else, stop and say that its owner has to run this skill.
 
 Then create the Project, add the three fields and link it. The first
 command prints the Project's number, `<n>`. Use that number in the commands
-that follow:
+that follow. Stop at the first error and show it.
 
 ```bash
 gh project create --owner <owner> --title "<repo name>" --format json --jq .number
@@ -84,7 +84,6 @@ gh project field-create <n> --owner <owner> --name Size --data-type SINGLE_SELEC
 gh project link <n> --owner <owner> --repo <repo>
 ```
 
-Stop at the first error and show it.
 
 A new Project already has the Status field with Todo, In Progress and Done.
 It also has two workflows on: item closed sets Done, and pull request merged
