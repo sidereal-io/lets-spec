@@ -66,8 +66,8 @@ Commit first. The review covers commits, not the working tree.
    `null`. If it exits non-zero, stop, and show the user its stderr.
 3. Keep the **allowed models**: the listed models left after guidance
    exclusions. Rank the allowed models: the guidance first, then families
-   other than the author's, then the order the options came in. A model's
-   family is the part before the first `/`.
+   outside every author family, then the order the options came in. A
+   model's family is the part before the first `/`.
 
    Leave out a model the guidance rules out. The guidance only ranks and
    filters the listed models.
@@ -82,7 +82,12 @@ Commit first. The review covers commits, not the working tree.
    When the listed models are empty, whatever the resolver, skip the command
    and take the [subagent step](#review-in-a-subagent).
 4. Run the review with one `--model` per ranked allowed model, best first.
-   `<family>` is the author's family: `gpt`, `claude` or `gemini`.
+   `<family>` is this session's own family: `gpt`, `claude` or `gemini`.
+   It is only a CLI compatibility value, not the full author set.
+
+   For GPT-and-Claude-authored work, pass `gpt` when this session is GPT.
+   With no guidance preference, rank Gemini first if listed and allowed;
+   keep GPT and Claude in discovery order after it.
 
    ```bash
    lets delegate review run --for code --name <branch>-code-review \

@@ -520,9 +520,8 @@ fixture_file() {
 }
 
 @test "each review skill ranks by the guidance, then other families, then the order given" {
-  for skill in lets-review-build lets-review-plan; do
-    skill_says "$skill" "the guidance first, then families other than the author's, then the order the options came in"
-  done
+  skill_says lets-review-plan "the guidance first, then families other than the author's, then the order the options came in"
+  skill_says lets-review-build "the guidance first, then families outside every author family, then the order the options came in"
 }
 
 @test "each review skill takes the subagent step when there are no options" {
@@ -3425,6 +3424,17 @@ commit_maps() {
     skill_says "$skill" 'Take this step only when'
     skill_says "$skill" 'the user explicitly chooses it after the excluded-all stop'
   done
+}
+
+@test "review model choice: ranking uses all build author families" {
+  skill_says lets-review-build 'families outside every author family'
+  skill_says lets-review-build "the guidance first, then families outside every author family, then the order the options came in"
+  skill_says lets-review-build "<family>\` is this session's own family"
+  skill_says lets-review-build 'only a CLI compatibility value'
+  skill_says lets-review-build 'For GPT-and-Claude-authored work'
+  skill_says lets-review-build 'pass `gpt` when this session is GPT'
+  skill_says lets-review-build 'rank Gemini first'
+  skill_says lets-review-build 'keep GPT and Claude in discovery order'
 }
 
 @test "step reports: planning checks prerequisites before proposing" {
