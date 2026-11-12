@@ -3420,6 +3420,14 @@ commit_maps() {
   local reference="$repo/skills/lets-shape/references/issue-comments.md"
   grep -qF 'lets-go claimed this issue.' "$reference"
   grep -qF 'Token: <UUID>' "$reference"
+  local marker
+  marker="$(sed -n "s/^export const CLAIM_MARKER = '\([^']*\)';$/\1/p" "$repo/lets/src/backlog/github.ts")"
+  [ -n "$marker" ]
+  grep -qxF "$marker" "$reference"
+}
+
+@test "claim-race: backlog errors show the recovery token" {
+  grep -qF 'When it carries `claim`, show the token' <<<"$(skill_section lets-go 'Backlog errors')"
 }
 
 # BEGIN shape-checkpoints (#231): shaping recovery contracts.
