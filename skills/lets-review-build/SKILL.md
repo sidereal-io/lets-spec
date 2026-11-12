@@ -42,7 +42,7 @@ result.
 `<base>` is the branch this one merges into: the pull request's base (`gh pr view --json baseRefName`), else the parent branch of a stacked story, else
 the default branch.
 
-Each family named in the commits' `Co-Authored-By` lines is an author:
+Each family named in the commits' `Co-Authored-By` lines is an **author family**:
 
 ```bash
 git log --format='%(trailers:key=Co-Authored-By,valueonly)' <base>..HEAD | sort -u
@@ -82,7 +82,7 @@ Commit first. The review covers commits, not the working tree.
    and take the [subagent step](#review-in-a-subagent).
 4. Run the review with one `--model` per ranked allowed model, best first.
    `<family>` is this session's own family: `gpt`, `claude` or `gemini`.
-   It is only a CLI compatibility value, not the full author set.
+   It is only a CLI compatibility value, not the author families.
 
    ```bash
    lets delegate review run --for code --name <branch>-code-review \
@@ -104,7 +104,7 @@ Commit first. The review covers commits, not the working tree.
 When only author families can run, a permitted review still runs in a fresh
 session. The CLI's `independent` boolean compares only against this session's
 family, the `--source-family` compatibility value; it is not independence
-from the whole author set. Never review in an author's own session.
+from the author families. Never review in an author's own session.
 
 Note the range you reviewed: `<head-sha>` is `git rev-parse --short HEAD`,
 and `<base-sha>` is `git rev-parse --short "$(git merge-base <base> HEAD)"`.
@@ -183,11 +183,10 @@ review. Then run the project's checks.
 
 List every finding, most severe first, with its verdict and any fix commit.
 Name the family and model that reviewed, how it ran (`fresh context` or
-`subagent`), the known author families, and any overlap with the reviewer
-family (name the overlapping family, or say none). Report independence from
-all author families only when the reviewer family is evidenced and outside
-the whole author set. For a fresh-session review, report the CLI metadata's
-`independent` value separately as its single-family comparison.
+`subagent`). Name the author families and any reviewer overlap (or none).
+Report the CLI's `independent` value as its own line. Call the review
+independent only when the reviewer's family is evidenced and is not an
+author family.
 
 Example: a GPT session, GPT and Claude authors, Claude reviewer:
 CLI `independent: true`, overlap `claude`.
