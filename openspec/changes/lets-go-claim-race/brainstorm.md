@@ -10,7 +10,7 @@ https://github.com/sidereal-io/lets-spec/issues/215
 | # | Question | Answer | Source |
 |---|---|---|---|
 | D1 | What chooses the owner? | A comment with a unique run token; the earliest active claim comment wins before Status changes, including under one login. | Evidence: #215 |
-| D2 | What can a loser remove? | Its own comment and, only when the winner uses another login, its own assignment; never the winner's assignment or Status. | Evidence: #215 |
+| D2 | What can a loser remove? | Its own comment; recheck claims before removing its assignment or resetting Status. Preserve any remaining owner's assignment and Status. | Evidence: #215 |
 | D3 | What prevents an already assigned issue from changing? | Return taken immediately after the assignee read, before any write. | Evidence: #226 SLR-01 folded into #215 |
 | D4 | Where does arbitration run now? | In lets backlog claim, which replaced the skill's direct GitHub mutations; return a claim identifier for session-specific release. | Evidence: lets/src/backlog/policy.ts and commit 35b2b02d |
 | D5 | Do claim comments require shaping? | Recognize a fixed first line in the shared comment reference and exempt valid claim comments from unread-comment gating. | Evidence: #215 |

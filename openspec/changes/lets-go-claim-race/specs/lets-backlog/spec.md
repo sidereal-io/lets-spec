@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: claim assigns the issue only when nobody has it
-`lets backlog claim <i>` SHALL read claim comments before checking the issue's assignees. When anyone is assigned, it SHALL return `"result": "taken"` with the `assignees`' logins, and SHALL write nothing. Otherwise it SHALL assign the signed-in `gh` user and post a claim comment with a token unique to this run. It SHALL exclude comments seen before the empty-assignee check, then use increasing GitHub comment IDs to choose the earliest new claim. Only that claim SHALL set Status to In Progress and return `"result": "claimed"` with `claim`, its token. A loser SHALL delete only its own claim comment, recheck the remaining claims, preserve any remaining claim’s assignment and Status, and return `taken` with the winner's login. If no claim remains, it SHALL remove its assignment and set Status to Todo. A missing own comment or an unreadable election SHALL never grant ownership.
+`lets backlog claim <i>` SHALL read claims before assignees. If anyone is assigned, it SHALL return `taken` with their logins and write nothing. Otherwise it SHALL assign the signed-in user and post a unique claim token. It SHALL exclude claims seen before the empty-assignee check and elect the lowest remaining comment ID. Only the winner SHALL set Status to In Progress and return `claimed` with its token as `claim`. A loser SHALL delete its comment, recheck claims and return `taken` with the winner's login. It SHALL remove its assignment unless another claim shares its login, and set Status to Todo only if no claim remains. A missing own comment or unreadable election SHALL never grant ownership.
 
 #### Scenario: Claimed
 - **WHEN** nobody is assigned to #149 and its Status is Todo
