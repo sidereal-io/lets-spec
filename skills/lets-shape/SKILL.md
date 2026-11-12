@@ -306,8 +306,9 @@ ancestor definitions and siblings. Order used by checkout and fulfillment
 belongs in their common scope; Checkout attempt used only by checkout stays
 local. Confirm meaning and scope with the user, then write the accepted
 entry immediately to its authoritative glossary (in single-issue shaping,
-only after step 6 sizing passes). Subsequent packets use that agreed concept. Qualify conflicting local meanings rather than silently
-overriding shared ones; move newly shared definitions and update references
+only after step 6 sizing passes). Subsequent packets use that agreed
+concept. Qualify conflicting local meanings rather than silently overriding
+shared ones; move newly shared definitions and update references
 without duplicate authoritative copies. A stale declared glossary path must
 be reported and resolved before dependent discussion continues.
 
@@ -373,9 +374,9 @@ checkpoint branch until the destination safely contains its definitions.
 **Checkpoint every phase.** Apply the glossary checkpoint procedure above
 whenever the phase changed definitions. When the user confirms a phase,
 write its result at once, and set the parent issue's status line to the next
-phase: `personas`, `journey-map`, `moscow`, `stories`, then `finalize`. A revision run
-that skips personas and the journey map goes from Ingest straight to
-`moscow`.
+phase: `personas`, `journey-map`, `moscow`, `stories`, then `finalize`. A
+revision run that skips personas and the journey map goes from Ingest
+straight to `moscow`.
 
 Personas and the journey map go in the run's map. Everything else goes in
 the parent issue.
