@@ -76,7 +76,8 @@ Commit first. The review covers commits, not the working tree.
    skipping the review. When the listed models are nonempty but the allowed
    models are empty, stop. Show the guidance and the listed models. Ask the
    user to change the guidance to allow a model or the subagent step, and
-   wait for the answer.
+   wait for the answer. In a `lets-go` step, return `needs-input` so the
+   caller asks the user.
 
    When the listed models are empty, whatever the resolver, skip the command
    and take the [subagent step](#review-in-a-subagent).
