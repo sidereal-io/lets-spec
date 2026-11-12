@@ -529,3 +529,14 @@ test('a step outside T3 Code opens no thread, and the default answers', async ()
   assert.deepEqual(sent, []);
   assert.ok(t.savedFile('.workspace/lets-delegate/build-x.prompt.md'), 'the default saved the prompt');
 });
+
+test('a step still running at its time limit stops its thread, keeps it, and is exit 6', async () => {
+  const { db, sent, t } = runningT3();
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'codex', 'running', 'now', '{}')`).run();
+  assert.equal(await step({ ...lunaStep, timeoutMinutes: 0 }, t.deps), 6);
+  assert.equal(t.stdout(), '');
+  assert.match(t.stderr(), /no result after 0 ms \(thread T\)\n$/);
+  assert.deepEqual(asked(sent), ['launch', 'thread.stop']);
+  assert.equal(sent[1].payload.threadId, 'T');
+});

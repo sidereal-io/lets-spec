@@ -8,7 +8,7 @@
 
 ## 2. Stop a timed-out thread [depends-on: 1]
 
-- [ ] 2.1 [medium] A step still running at its time limit sends T3 one `thread.stop` for its thread, does not archive it, and exits 6 with an empty stdout and the thread on stderr. The header comment of `t3.ts` says that `thread.stop` was read from the T3 Code 0.1.7 server bundle (verify: node --test tests/lets/resolvers/t3/delegate.test.ts)
+- [x] 2.1 [medium] A step still running at its time limit sends T3 one `thread.stop` for its thread, does not archive it, and exits 6 with an empty stdout and the thread on stderr. The header comment of `t3.ts` says that `thread.stop` was read from the T3 Code 0.1.7 server bundle (verify: node --test tests/lets/resolvers/t3/delegate.test.ts) (✓ node --test tests/lets/resolvers/t3/ passed, 138 tests)
 - [ ] 2.2 [easy] A review still running at its time limit is stopped in the same way: one `thread.stop`, no archive, exit 6 (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
 - [ ] 2.3 [medium] A stop that T3 rejects, or does not answer within 10 seconds, still ends in a timeout. The error says `could not stop it, so it may still be running` and names the thread. `dispatch` takes an optional deadline and passes it to `request` (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
 

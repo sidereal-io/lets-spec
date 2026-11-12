@@ -5,13 +5,15 @@
 //
 // This speaks orchestration protocol 2, read on 2026-10-17 from the t3code
 // 0.1.0 server bundle (apps/server/dist/binCli-*.mjs) and its web client.
+// `thread.stop` was read on 2026-11-12 from the 0.1.7 server bundle's
+// OrchestrationV2Command.
 // Protocol types live in packages/contracts/src/orchestrationV2.ts of
 // https://github.com/pingdotgg/t3code. A t3 update can change any of this;
 // run the smoke test in the README after each one.
 //
 // What is private here, and why it stays:
-// - The WebSocket RPC and the `launchThread` and `thread.archive` calls are
-//   the UI's own, so they move only when the UI does.
+// - The WebSocket RPC and the `launchThread`, `thread.archive` and
+//   `thread.stop` calls are the UI's own, so they move only when the UI does.
 // - `server.getConfig` is the request the UI makes to fill its model
 //   picker, so it lists the models the composer offers. T3's
 //   model-manifest.json is not that list.
@@ -24,7 +26,7 @@
 import { randomUUID } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { configDir } from '../../config-dir.ts';
-import { exitCodeOf, Refused, SessionFailed, SpawnError } from '../kit/errors.ts';
+import { exitCodeOf, Refused, SessionFailed, SpawnError, TimeoutError } from '../kit/errors.ts';
 import { withoutEffort } from '../kit/families.ts';
 import type { Adapter, RunInput, StartInput, StepInput } from '../kit/adapter.ts';
 import type { Db, Io } from '../kit/io.ts';
@@ -489,6 +491,15 @@ export function createAdapter(io: Io): Adapter {
     await dispatch(io, { origin, token: await readToken(io) }, { type: 'thread.archive', commandId: randomUUID(), threadId: handle.id });
   }
 
+  // Stop the thread's run, as T3 Code's Stop does, with every task it
+  // delegated.
+  async function stop(handle: Handle): Promise<void> {
+    const { origin } = runningServer();
+    await dispatch(io, { origin, token: await readToken(io) }, {
+      type: 'thread.stop', commandId: randomUUID(), threadId: handle.id, reason: 'lets delegate: the step ran past its time limit',
+    });
+  }
+
   // Wait for the thread's run to end, and read its final message.
   async function waitForText(handle: Handle, timeoutMs: number): Promise<{ text: string }> {
     // Open the database fresh on each check: the server writes it, and a
@@ -533,6 +544,13 @@ export function createAdapter(io: Io): Adapter {
         // Nothing ran, so the thread goes, as finish with ok would do.
         await archive(handle).catch((why: Error) => {
           error.message += `; could not archive it: ${why.message}`;
+        });
+      }
+      // A thread left running past its limit could still write in the
+      // checkout. It is kept, so a person can see where it stopped.
+      if (error instanceof TimeoutError) {
+        await stop(handle).catch((why: Error) => {
+          error.message += `; could not stop it, so it may still be running: ${why.message}`;
         });
       }
       // A kit error names the thread, so a person can find it.
