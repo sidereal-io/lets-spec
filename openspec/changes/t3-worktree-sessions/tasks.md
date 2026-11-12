@@ -18,6 +18,9 @@
 
 ## 4. Integration [depends-on: 3]
 
-- [ ] 4.1 [easy] Every project check passes (verify: pnpm test && nix flake check && mise run check)
+- [x] 4.1 [easy] Every project check passes (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test passed, 589 node tests and 370 bats tests; nix flake check passed; mise run check passed, 15 items)
 
 ## Deviations Ledger
+
+- `tests/lets/resolvers/kit/fixtures/fake-io.ts` now also takes `results` as one function that answers every call. Task 1.1 needed git answered by its arguments, and a queue of functions still answers by place.
+- Tasks 2.3 to 2.6 passed on their first run, because 2.2 built the shared launch path. Each test was seen to fail against a mutated resolver before it was kept.
