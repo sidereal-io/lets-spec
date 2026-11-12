@@ -34,15 +34,16 @@ compare each comment's `url` and `lastEditedAt`, never the local clock.
 
 ## Label each comment
 
-- **`candidate`:** `authorAssociation` is OWNER, MEMBER or COLLABORATOR,
+- **`claim`:** matches [Claim comments](#claim-comments), below.
+- **`candidate`:** another comment whose `authorAssociation` is OWNER,
+  MEMBER or COLLABORATOR,
   and the author's `__typename` is not `Bot`.
 - **`outside`:** every other comment. A null `author` is a deleted
   account. Show it as `ghost`.
-- **`read`:** the newest read marker covers it. This label replaces the
-  other two.
+- **`read`:** the newest read marker covers it. Replaces `candidate`
+  or `outside`.
 
-A label tells the user who wrote a comment. It never hides, skips or
-accepts one.
+Labels never hide, skip or accept a comment.
 
 ## Claim comments
 
