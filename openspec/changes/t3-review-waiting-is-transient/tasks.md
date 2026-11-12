@@ -7,7 +7,7 @@
 
 ## 2. Integration [depends-on: 1]
 
-- [ ] 2.1 [easy] Every project check passes (verify: pnpm test && nix flake check && mise run check)
+- [x] 2.1 [easy] Every project check passes (verify: pnpm test && nix flake check && mise run check) (✓ all three passed: 609 Node tests and 371 bats tests, flake checks, 15 of 15 OpenSpec items)
 
 ## Deviations Ledger
 
