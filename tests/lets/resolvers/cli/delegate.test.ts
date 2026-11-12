@@ -9,7 +9,7 @@ import { run as step } from '../../../../lets/src/delegate/step.ts';
 import type { ReviewOptions } from '../../../../lets/src/delegate/review.ts';
 import type { StepOptions } from '../../../../lets/src/delegate/step.ts';
 import { createAdapter } from '../../../../lets/src/resolvers/cli/cli.ts';
-import { commandDeps, DONE_REPORT } from '../../delegate/fixtures/command-deps.ts';
+import { commandDeps, DONE_REPORT, HEAD } from '../../delegate/fixtures/command-deps.ts';
 import { fakeIo } from '../kit/fixtures/fake-io.ts';
 import type { FakeIo } from '../kit/fixtures/fake-io.ts';
 
@@ -126,6 +126,13 @@ test('a review with codex prints codex\'s final message, on gpt, with a process 
   assert.equal(t.stdout(), 'FINDINGS\n');
   const { resolver, family, model, handle } = metadata(t);
   assert.deepEqual({ resolver, family, model, handle }, { resolver: 'cli', family: 'gpt', model: 'gpt', handle: { kind: 'process', id: 'x' } });
+});
+
+test('a review through cli names the command\'s checkout, and the commit at its HEAD', async () => {
+  const t = withCli(answering());
+  assert.equal(await review(reviewOptions(), t.deps), 0);
+  const { checkout, commit } = metadata(t);
+  assert.deepEqual({ checkout, commit }, { checkout: '/repo', commit: HEAD });
 });
 
 test('a review with codex runs the given model with -m, and names it', async () => {

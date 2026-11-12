@@ -7,7 +7,7 @@
 
 ## 2. The cli resolver [depends-on: 1]
 
-- [ ] 2.1 [parallel] [easy] A review through `cli` has the command's checkout as `checkout`, and that checkout's `HEAD` as `commit` (verify: node --test tests/lets/resolvers/cli/delegate.test.ts)
+- [x] 2.1 [parallel] [easy] A review through `cli` has the command's checkout as `checkout`, and that checkout's `HEAD` as `commit` (verify: node --test tests/lets/resolvers/cli/delegate.test.ts) (✓ node --test tests/lets/resolvers/cli/delegate.test.ts passed)
 
 ## 3. The t3 resolver [depends-on: 1]
 
