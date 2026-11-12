@@ -13,11 +13,11 @@ Shaping can repeat confirmed stories on resume, mislabel incomplete code after r
 
 ### New Capabilities
 
-- `shaping-recovery`: durable phase checkpoints, size-stop recovery and code-based map status.
+- `discovery-checkpoints`: phase checkpoints and code-based journey status.
 
 ### Modified Capabilities
 
-None.
+- `shared-domain-language`: size before glossary writes and identify the owner issue for blockers.
 
 ## Impact
 

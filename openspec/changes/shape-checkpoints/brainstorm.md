@@ -13,6 +13,6 @@
 
 ## Changes from the story
 
-None. The user requested these settled decisions through an open PR; checks precede every push and the orchestrator performs independent review afterward. No new glossary terms.
+None
 
 Confirmed by user: yes

@@ -7,4 +7,4 @@
 
 ## Deviations Ledger
 
-- 2026-11-11: The user requires all checks before any push and an independent orchestrator review after handoff. Defer draft publication and independent review accordingly; leave this change unarchived for that review.
+None

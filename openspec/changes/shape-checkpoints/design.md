@@ -22,9 +22,9 @@ The shaping skill is an executable instruction interface for fresh agents. Its p
 
 1. Extend the existing phase list and checkpoint after Stories. Explicitly route `finalize` in Resume; retain Finalize's current order.
 2. Keep status classification separate from issue-link replacement. Reuse the existing three code-based meanings.
-3. During code inspection, develop candidate vocabulary without writing it. Once sizing passes, agree and write definitions with the existing method. This narrow exception implements the user's size-before-write decision without changing glossary ownership or checkpoint recovery.
+3. Keep glossary sizing and blocker ownership in `shared-domain-language`; use `discovery-checkpoints` for phase and journey recovery. Agree and write candidate definitions after sizing passes.
 4. Define `<owner>` locally beside the existing command, preserving its syntax and permission guard.
-5. Append a single labeled test block to reduce conflict with sibling stories. Tests inspect the instructional contract; author walkthroughs separately check reader tasks.
+5. Keep six token checks in one labeled Bats block; use reader walkthroughs to check meaning.
 
 ## Risks / Trade-offs
 
