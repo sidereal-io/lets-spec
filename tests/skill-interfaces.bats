@@ -3437,6 +3437,17 @@ commit_maps() {
   skill_says lets-review-build 'keep GPT and Claude in discovery order'
 }
 
+@test "review model choice: overlap is reported separately from CLI independence" {
+  skill_says lets-review-build 'the known author families'
+  skill_says lets-review-build 'any overlap with the reviewer family'
+  skill_says lets-review-build "The CLI's \`independent\` boolean compares only against this session's family"
+  skill_says lets-review-build 'not independence from the whole author set'
+  skill_says lets-review-build 'For a GPT session reviewing GPT-and-Claude-authored work with Claude'
+  skill_says lets-review-build 'CLI `independent: true`, overlap `claude`, and independent from all authors: no'
+  skill_says lets-review-build 'outside every author family and the tool'
+  skill_does_not_say lets-review-build "When only the author's family can run"
+}
+
 @test "step reports: planning checks prerequisites before proposing" {
   local plan guard invoke
   plan="$(sed -n '/^## Plan$/,/^## When propose stops$/p' "$repo/skills/lets-plan/SKILL.md" | tr -s '[:space:]' ' ')"

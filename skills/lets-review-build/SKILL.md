@@ -98,16 +98,18 @@ Commit first. The review covers commits, not the working tree.
 
 5. Act on its exit code:
    - **0**: the findings are in the raw file. The meta file's last line is
-     JSON: the resolver, the model that answered, and whether the review was
-     independent.
+     JSON: the resolver, the model that answered, and the CLI's single-family
+     independence comparison. The report below checks all author families.
    - **3**: no fresh session can run here, for example because no resolver
      started one, or every model was refused. Take the [subagent
      step](#review-in-a-subagent).
    - **Anything else**: stop. Show the user the meta file and the exit code.
      Do not run the command again until something has changed.
 
-When only the author's family can run, the review still runs, and the meta
-line says `"independent": false`. Never review in the author's own session.
+When only author families can run, a permitted review still runs in a fresh
+session. The CLI's `independent` boolean compares only against this session's
+family, the `--source-family` compatibility value; it is not independence
+from the whole author set. Never review in an author's own session.
 
 Note the range you reviewed: `<head-sha>` is `git rev-parse --short HEAD`,
 and `<base-sha>` is `git rev-parse --short "$(git merge-base <base> HEAD)"`.
@@ -124,8 +126,8 @@ starts with no context from this session.
 Save its output to `.workspace/<branch>-code-review-raw.md`. Run `git status --porcelain` before and after, and stop if they differ.
 
 Record the family that answered, and `independent: no` unless the subagent
-was another family and the tool's own output names it. Do not run the review
-in this session.
+was outside every author family and the tool's own output names it. Do not
+run the review in this session.
 
 ## Resolve vocabulary before delegation
 
@@ -186,7 +188,17 @@ review. Then run the project's checks.
 
 List every finding, most severe first, with its verdict and any fix commit.
 Name the family and model that reviewed, how it ran (`fresh context` or
-`subagent`), and whether it was independent. When the project has no
+`subagent`), the known author families, and any overlap with the reviewer
+family (name the overlapping family, or say none). Report independence from
+all author families only when the reviewer family is evidenced and outside
+the whole author set. For a fresh-session review, report the CLI metadata's
+`independent` value separately as its single-family comparison.
+
+For a GPT session reviewing GPT-and-Claude-authored work with Claude,
+report CLI `independent: true`, overlap `claude`, and independent from all
+authors: no.
+
+ When the project has no
 `REVIEW.md`, say the reviewer ran without project rules.
 
 Put the list in the pull request body, under **Code review**. Read the body
