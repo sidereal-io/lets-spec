@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -133,6 +133,33 @@ test('execFile leaves the background child of a command that ends in time runnin
   assert.equal(readPids(pids).length, 1);
   assert.equal(gone(readPids(pids)[0]), false);
 });
+
+const EXEC_AND_WAIT = join(import.meta.dirname, 'fixtures', 'exec-and-wait.ts');
+
+async function waitFor(check: () => boolean, what: string, ms = 10000) {
+  for (const deadline = Date.now() + ms; !check(); await new Promise((resolve) => setTimeout(resolve, 50))) {
+    if (Date.now() > deadline) throw new Error(`still waiting for ${what}`);
+  }
+}
+
+// Starts exec-and-wait with args, waits until its file names count
+// processes, then sends it signal. Gives how it ended.
+async function signalExecAndWait(pids: string, args: string[], count: number, signal: NodeJS.Signals) {
+  const fixture = spawn(process.execPath, [EXEC_AND_WAIT, pids, ...args], { stdio: 'inherit' });
+  const ended = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => fixture.on('exit', (code, signal) => resolve({ code, signal })));
+  await waitFor(() => readPids(pids).length >= count, 'the process IDs');
+  fixture.kill(signal);
+  return ended;
+}
+
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  test(`a ${signal} to lets reaches the group of a command it runs`, { timeout: 30000 }, async (t) => {
+    const pids = pidsDir(t);
+    const ended = await signalExecAndWait(pids, [], 2, signal);
+    assert.deepEqual(ended, { code: null, signal });
+    await waitFor(() => readPids(pids).every(gone), 'the shell and its child to end', 2000);
+  });
+}
 
 // A fake system for parentPid: files maps a path to its text, and ps is
 // what `ps` prints. calls records each command it runs.

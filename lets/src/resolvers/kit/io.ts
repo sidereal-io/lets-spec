@@ -100,6 +100,31 @@ export function parentPid(pid: number, sys: ProcessSys = { readFileSync, existsS
   return text && /^\d+$/.test(text) ? Number(text) : null;
 }
 
+// The groups of the commands execFile runs now. A command in a group of
+// its own no longer gets the terminal's Ctrl-C, so while any runs, lets
+// passes these signals on to every group, then ends by the signal itself.
+const running = new Set<number>();
+const FORWARDED: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGHUP'];
+
+function forward(signal: NodeJS.Signals) {
+  for (const pid of running) process.kill(-pid, signal);
+  stopForwarding();
+  process.kill(process.pid, signal);
+}
+
+function startRunning(pid: number) {
+  if (running.size === 0) for (const signal of FORWARDED) process.on(signal, forward);
+  running.add(pid);
+}
+
+function stopRunning(pid: number) {
+  if (running.delete(pid) && running.size === 0) stopForwarding();
+}
+
+function stopForwarding() {
+  for (const signal of FORWARDED) process.off(signal, forward);
+}
+
 export function realIo(): Io {
   return {
     // Resolves on any exit code, and on a timeout. Rejects only when the
@@ -114,10 +139,13 @@ export function realIo(): Io {
         // detached: the command leads a process group of its own, which a
         // signal to the group reaches with every process it started.
         const child = spawn(cmd, args, { cwd, env, detached: true });
+        // A command that cannot start has no pid, and only gets an error.
+        if (child.pid !== undefined) startRunning(child.pid);
         const settle = (finish: () => void) => {
           if (settled) return;
           settled = true;
           clearTimeout(timer);
+          if (child.pid !== undefined) stopRunning(child.pid);
           finish();
         };
         // A process outside the group can still hold the pipes, so stop
