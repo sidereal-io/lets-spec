@@ -545,8 +545,7 @@ For each issue:
    issue exists but a field is unset, set it on that issue. Do not create
    the issue again.
 
-Once Stories is confirmed and written, set the parent status line to
-`next phase: finalize`, including when the parent became a single story.
+When every story issue exists, set the status line to `next phase: finalize`.
 
 ### Phase 6: Finalize
 
