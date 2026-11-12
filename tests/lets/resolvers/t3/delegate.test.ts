@@ -12,7 +12,7 @@ import type { ReviewOptions } from '../../../../lets/src/delegate/review.ts';
 import { parentPid } from '../../../../lets/src/resolvers/kit/io.ts';
 import type { Db, Io } from '../../../../lets/src/resolvers/kit/io.ts';
 import { createAdapter } from '../../../../lets/src/resolvers/t3/t3.ts';
-import { commandDeps } from '../../delegate/fixtures/command-deps.ts';
+import { commandDeps, HEAD } from '../../delegate/fixtures/command-deps.ts';
 import { fakeIo } from '../kit/fixtures/fake-io.ts';
 
 const ONLY_T3 = 'version: 3\ndelegate: { resolvers: [t3] }\n';
@@ -291,6 +291,30 @@ test('a review whose run returns a plan is exit 5 with nothing on stdout, and ke
   assert.equal(t.stdout(), '');
   assert.match(t.stderr(), /the session returned a plan, not a result \(thread T\)\n$/);
   assert.deepEqual(sent.map(({ payload }) => payload.type ?? 'launch'), ['launch']);
+});
+
+// A review whose run T3 completes with findings, in a thread T3 records in
+// worktreePath, or in the project's root when it is null. It is asked for
+// from the checkout whose top level is top.
+async function recordedReview(worktreePath: string | null, top: string) {
+  const { db, t } = runningT3({ top });
+  db.prepare(`insert into orchestration_v2_projection_threads (thread_id, project_id, title, default_provider, runtime_mode, interaction_mode, created_at, updated_at, payload_json)
+    values ('T', 'p1', 'x', 'codex', 'full-access', 'default', 'now', 'now', ?)`).run(JSON.stringify({ worktreePath, branch: 'fix-login' }));
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'codex', 'completed', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_messages (message_id, thread_id, run_id, role, streaming, created_at, updated_at, payload_json)
+    values ('a1', 'T', 'run-1', 'assistant', 0, 'now', 'now', ?)`).run(JSON.stringify({ text: 'FINDINGS' }));
+  assert.equal(await review(astraReview, t.deps), 0, t.stderr());
+  const { checkout, commit } = JSON.parse(t.stderr());
+  return { checkout, commit };
+}
+
+test('a review T3 runs in the worktree it was asked for names that worktree', async () => {
+  assert.deepEqual(await recordedReview('/w/fix-login', '/w/fix-login'), { checkout: '/w/fix-login', commit: HEAD });
+});
+
+test('a review T3 runs in the project\'s root instead names the root', async () => {
+  assert.deepEqual(await recordedReview(null, '/w/fix-login'), { checkout: '/repo', commit: HEAD });
 });
 
 test('a review in a repository T3 has no project for is exit 3, naming it, and creates no thread', async () => {

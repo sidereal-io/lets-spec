@@ -43,9 +43,12 @@ function addProject(db: DatabaseSync, { id = 'p1', title = 'lets-spec', root = '
   db.prepare(`insert into projection_projects (project_id, title, workspace_root, scripts_json, created_at, updated_at, default_model_selection_json)
     values (?, ?, ?, '[]', 'now', 'now', ?)`).run(id, title, root, selection);
 }
-function addThread(db: DatabaseSync, threadId: string) {
+// A thread of project p1. T3 records its worktree in the payload; a null
+// worktreePath is the project's root, and payload replaces the whole payload.
+function addThread(db: DatabaseSync, threadId: string, { worktreePath = undefined as string | null | undefined, payload = undefined as string | undefined } = {}) {
+  const json = payload ?? JSON.stringify(worktreePath === undefined ? {} : { worktreePath });
   db.prepare(`insert into orchestration_v2_projection_threads (thread_id, project_id, title, default_provider, runtime_mode, interaction_mode, created_at, updated_at, payload_json)
-    values (?, 'p1', 't', 'claudeAgent', 'full-access', 'plan', 'now', 'now', '{}')`).run(threadId);
+    values (?, 'p1', 't', 'claudeAgent', 'full-access', 'default', 'now', 'now', ?)`).run(threadId, json);
 }
 // Runs are numbered; the newest has the highest ordinal.
 function addRun(db: DatabaseSync, threadId: string, runId: string, ordinal: number, status: string) {
@@ -371,7 +374,7 @@ test('run waits for the run to complete and the message to stop streaming', asyn
     () => db.exec("update orchestration_v2_projection_runs set status = 'completed'"),
     () => db.exec(`update orchestration_v2_projection_messages set payload_json = '{"text":"FINDINGS"}', streaming = 0`),
   ];
-  assert.deepEqual(await running(db, steps), { handle: HANDLE, text: 'FINDINGS', checkout: null });
+  assert.deepEqual(await running(db, steps), { handle: HANDLE, text: 'FINDINGS', checkout: '/r' });
   assert.equal(steps.length, 0);
 });
 // A thread whose run failed before any assistant message.
@@ -441,6 +444,31 @@ test('run returns the final message of a completed run whose items hold no plan'
   addMessage(db, 'a1', 'run-1', 'FINDINGS', 0);
   assert.equal((await running(db)).text, 'FINDINGS');
 });
+// The checkout run returns, when T3 records thread T as thread does, and
+// the review was asked for from the checkout whose top level is top.
+async function checkoutOf(thread: ((db: DatabaseSync) => void) | null, top = '/r') {
+  const db = database();
+  thread?.(db);
+  addRun(db, 'T', 'run-1', 1, 'completed');
+  addMessage(db, 'a1', 'run-1', 'FINDINGS', 0);
+  const io = launchingIo(db, [], { checkout: { top } });
+  return (await createAdapter(io).run(runInput, { timeoutMs: 60000 })).checkout;
+}
+test('run returns the worktree T3 records for the thread', async () => {
+  assert.equal(await checkoutOf((db) => addThread(db, 'T', { worktreePath: '/w/fix-login' }), '/w/fix-login'), '/w/fix-login');
+});
+test('run returns the project\'s root when T3 records the thread with no worktree', async () => {
+  assert.equal(await checkoutOf((db) => addThread(db, 'T', { worktreePath: null })), '/r');
+});
+test('run returns the checkout T3 records, not the one it asked for', async () => {
+  assert.equal(await checkoutOf((db) => addThread(db, 'T', { worktreePath: null }), '/w/fix-login'), '/r');
+});
+test('run returns no checkout when T3 has no row for the thread', async () => {
+  assert.equal(await checkoutOf(null), null);
+});
+test('run returns no checkout when the thread\'s payload does not parse', async () => {
+  assert.equal(await checkoutOf((db) => addThread(db, 'T', { payload: '{not json' })), null);
+});
 test('run fails on an interrupted, cancelled or rolled back run', async () => {
   for (const [status, reason] of [['interrupted', 'run interrupted'], ['cancelled', 'run cancelled'], ['rolled_back', 'run rolled back']]) {
     const db = database();
@@ -460,14 +488,14 @@ test('run returns a completed run with no message as an empty one; the resolver 
   const db = database();
   addThread(db, 'T');
   addRun(db, 'T', 'run-1', 1, 'completed');
-  assert.deepEqual(await running(db), { handle: HANDLE, text: '', checkout: null });
+  assert.deepEqual(await running(db), { handle: HANDLE, text: '', checkout: '/r' });
 });
 test('run returns an empty final message as it is; the resolver rejects it', async () => {
   const db = database();
   addThread(db, 'T');
   addRun(db, 'T', 'run-1', 1, 'completed');
   addMessage(db, 'a1', 'run-1', '', 0);
-  assert.deepEqual(await running(db), { handle: HANDLE, text: '', checkout: null });
+  assert.deepEqual(await running(db), { handle: HANDLE, text: '', checkout: '/r' });
 });
 
 const ISSUE = ['auth', 'session', 'issue', '--base-dir', '/home/u/.t3', '--ttl', '30d', '--label', 'lets-delegate', '--token-only'];

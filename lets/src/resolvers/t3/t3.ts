@@ -253,6 +253,24 @@ export function hasProposedPlan(db: Db, runId: string): boolean {
   return plans > 0;
 }
 
+// The checkout T3 ran the thread in: the worktree it records, else its
+// project's root. null when T3 has no row for the thread, or its payload
+// does not parse.
+export function readCheckout(db: Db, threadId: string): string | null {
+  const row = db.prepare(`
+    select thread.payload_json, project.workspace_root from orchestration_v2_projection_threads as thread
+    left join projection_projects as project on project.project_id = thread.project_id
+    where thread.thread_id = ?`).get(threadId) as { payload_json: string; workspace_root: string | null } | undefined;
+  if (!row) return null;
+  let worktreePath: unknown;
+  try {
+    ({ worktreePath } = (JSON.parse(row.payload_json) ?? {}) as { worktreePath?: unknown });
+  } catch {
+    return null;
+  }
+  return typeof worktreePath === 'string' ? worktreePath : row.workspace_root;
+}
+
 // The run's newest assistant message, or null when it has none yet.
 export function readFinalMessage(db: Db, runId: string): { text: string; streaming: boolean } | null {
   const row = db.prepare(`
@@ -521,7 +539,9 @@ export function createAdapter(io: Io): Adapter {
       // to archive or name.
       const handle = await launchThread(input, { effort });
       try {
-        return { handle, ...(await waitForText(handle, timeoutMs)), checkout: null };
+        const { text } = await waitForText(handle, timeoutMs);
+        // Where T3 ran it, which need not be where it was asked to.
+        return { handle, text, checkout: withDb((db) => readCheckout(db, handle.id)) };
       } catch (error) {
         if (error instanceof Refused) {
           // Nothing ran, so the thread goes, as finish with ok would do.
