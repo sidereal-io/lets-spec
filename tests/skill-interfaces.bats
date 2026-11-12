@@ -3436,6 +3436,14 @@ task_limits_says() {
 }
 
 
+@test "task-limits: other sections compare when no dependency chain connects them" {
+  task_limits_says 'every task in any other section with no `depends-on` chain between the two sections'
+  task_limits_says 'A chain in either direction, including an indirect dependency, means those sections cannot run at the same time.'
+  task_limits_says 'Sections that only share a prerequisite still need the file comparison.'
+  task_limits_says '| `[depends-on: <section>]` | On a section heading: this section waits for that one. |'
+}
+
+
 # #234: setup guards and reusable PR review wording.
 @test "setup guards precede Project creation" {
   local text before
