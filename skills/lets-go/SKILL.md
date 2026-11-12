@@ -402,7 +402,7 @@ Next: [Enter the branch](#enter-the-branch).
      Show the token. If no comment exists but an assignment remains,
      ask the user to inspect and repair it before running `lets-go`
      again. Do not release the claim yourself. Stop, and run no step.
-   - **`branch-failed`:** [Claim](#claim) has released the claim. Show
+   - **`branch-failed`:** [Claim](#claim) attempted release. Show
      the branch's error it carries. When it carries a release error
      too, show it, and say the issue may still hold your assignment or
      its In Progress Status. Then stop.
@@ -810,6 +810,7 @@ return to the part that ran it, with the result.
    lets backlog release <i> --claim <claim>
    ```
 
+   On `not-found`, ask the user to inspect the issue before retrying.
    The result is then `branch-failed`, with the branch's error. When the
    release prints `"result": "failed"`, `branch-failed` also carries
    the release's `write` and `message`. When it prints an `error`
@@ -832,9 +833,8 @@ It returns one of these results:
 - `checkpoint-failed`:
   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
   returned it. It carries what the check found.
-- `branch-failed`: creating the branch failed, and the claim is
-  released. It carries the error, and the release's error when the
-  release failed too.
+- `branch-failed`: creating the branch failed. It carries the branch's
+  error and any release failure.
 
 Return to the part that ran it, with the result.
 

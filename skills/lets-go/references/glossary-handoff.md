@@ -168,6 +168,7 @@ If the import fails:
    if the Git cleanup failed. When it prints `"result": "failed"`, keep
    its `write` and `message` for the result. When it prints an `error`,
    nothing was released: keep the error's `message` for the result.
+   Handle `not-found` as [Claim](../SKILL.md#claim) does.
 5. The result is `import-failed`. It carries every cleanup failure, and
    anything kept: the branch, commits or claim, with how to recover.
 

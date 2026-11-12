@@ -92,11 +92,11 @@ export async function claim(adapter: Adapter, issue: number): Promise<ClaimResul
 }
 
 // Release only the named session. A stale token never touches an assignment.
-export async function release(adapter: Adapter, issue: number, token: string): Promise<WriteResult<'released', 'delete-claim' | 'unassign' | 'status'>> {
+export async function release(adapter: Adapter, issue: number, token: string): Promise<WriteResult<'released', 'delete-claim' | 'unassign' | 'status'> | { result: 'not-found' }> {
   const login = await adapter.signedInLogin();
   const claims = await adapter.claims(issue);
   const own = claims.find((c) => c.token === token && c.login === login);
-  if (!own) return { result: 'released' };
+  if (!own) return { result: 'not-found' };
   const others = claims.filter((c) => c.id !== own.id);
   const writes: ['delete-claim' | 'unassign' | 'status', () => Promise<void>][] = [
     ['delete-claim', () => adapter.deleteClaim(issue, own.id)],

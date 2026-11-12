@@ -53,10 +53,10 @@ test('a failed read of the issue\'s URL is a failed Status write', async () => {
   assert.ok(!t.ran('project item-edit'));
 });
 
-test('a stale token leaves the winning session untouched', async () => {
+test('a stale token returns not-found without touching the winner', async () => {
   const t = backlogDeps(rows());
   assert.equal(await run(['release', '149', '--claim', OTHER], t.deps), 0);
-  assert.deepEqual(t.json(), { result: 'released' });
+  assert.deepEqual(t.json(), { result: 'not-found' });
   assert.ok(!t.ran('issue edit'));
   assert.ok(!t.ran('project item-edit'));
   assert.ok(!t.ran('api repos/acme/app/issues/comments/'));

@@ -22,7 +22,7 @@ stdout: one JSON object and a newline.
   claim <i>          { result: claimed, claim } | { result: taken, assignees }
                      | { result: failed, write: assign|claim|delete-claim|unassign|status, message, claim? }
   release <i> --claim <token>
-                     { result: released }
+                     { result: released } | { result: not-found }
                      | { result: failed, write: delete-claim|unassign|status, message }
 On an error: { error, message }, where error is no-backlog,
 several-backlogs (with projects: [{ title, url }]), gh-failed or not-found.
