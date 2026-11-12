@@ -451,6 +451,25 @@ test('a bare gemini step runs the catalogue\'s default without its effort', asyn
   assert.deepEqual(launches(sent), [{ instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] }]);
 });
 
+// What T3 was asked to do, in order: launch a thread, or the command's type.
+const asked = (sent: Sent) => sent.map(({ payload }) => payload.type ?? 'launch');
+
+test('a step whose report is done archives its thread', async () => {
+  const { db, sent, t } = runningT3();
+  completes(db, DONE);
+  assert.equal(await step(lunaStep, t.deps), 0, t.stderr());
+  assert.deepEqual(asked(sent), ['launch', 'thread.archive']);
+  assert.equal(sent[1].payload.threadId, 'T');
+});
+
+test('a step whose report is needs-input keeps its thread', async () => {
+  const { db, sent, t } = runningT3();
+  completes(db, ending('outcome: needs-input\nquestions:\n  - question: Which schema?\n'));
+  assert.equal(await step(lunaStep, t.deps), 0, t.stderr());
+  assert.equal(JSON.parse(t.stdout()).outcome, 'needs-input');
+  assert.deepEqual(asked(sent), ['launch']);
+});
+
 test('step instructions inside T3 Code list the catalogue\'s models', async () => {
   const t = withT3(insideT3({ config: { providers: [provider('codex', ['gpt-6-luna'])] } }));
   assert.equal(await instructions({ strategy: 'step', for: 'plan' }, t.deps), 0, t.stderr());
