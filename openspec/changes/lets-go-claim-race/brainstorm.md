@@ -21,3 +21,11 @@ https://github.com/sidereal-io/lets-spec/issues/215
 Claiming moved into lets backlog after the issue was written. Apply the race fix in that CLI and update only its skill instructions, release paths and shared comment handling. No story is split out.
 
 Confirmed by user: yes
+
+## Remaining risk
+
+GitHub comment reads can lag behind writes. Arbitration assumes each
+post-write read includes earlier claims; delayed reads can let two sessions
+win. Another read reduces that window but cannot guarantee visibility.
+GitHub offers no atomic claim operation. This remains a limit of comment
+arbitration, including cleanup reads.
