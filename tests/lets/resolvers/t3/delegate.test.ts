@@ -521,3 +521,11 @@ test('step instructions inside T3 Code list the catalogue\'s models', async () =
   const { strategy, resolver, options } = JSON.parse(t.stdout());
   assert.deepEqual({ strategy, resolver, options }, { strategy: 'step', resolver: 't3', options: ['gpt/gpt-6-luna'] });
 });
+
+test('a step outside T3 Code opens no thread, and the default answers', async () => {
+  const sent: Sent = [];
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3, subagent] }\n', real: { t3: createAdapter(io({ 100: 50, 50: 1 }, { sent })) } });
+  assert.equal(await step({ ...lunaStep, models: ['claude'] }, t.deps), 3);
+  assert.deepEqual(sent, []);
+  assert.ok(t.savedFile('.workspace/lets-delegate/build-x.prompt.md'), 'the default saved the prompt');
+});

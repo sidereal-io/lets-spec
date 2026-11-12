@@ -4,7 +4,7 @@
 - [x] 1.2 [easy] A step thread whose report is `done` is archived, and one whose report is `needs-input` is not (verify: node --test tests/lets/resolvers/t3/delegate.test.ts) (✓ node --test tests/lets/resolvers/t3/delegate.test.ts passed, 34 tests)
 - [x] 1.3 [easy] A step whose first thread T3 fails before any assistant message archives that thread and runs the next `--model`. When every model is refused, the command exits 3 with T3's failure message on stderr (verify: node --test tests/lets/resolvers/t3/delegate.test.ts) (✓ node --test tests/lets/resolvers/t3/delegate.test.ts passed, 36 tests)
 - [x] 1.4 [easy] A step thread with a pending request gives exit 0 and a `failed` report whose `reason` says `the session stopped to ask` and names the thread. The thread is not archived, and the record has `"handle":null` (verify: node --test tests/lets/resolvers/t3/delegate.test.ts) (✓ node --test tests/lets/resolvers/t3/delegate.test.ts passed, 37 tests)
-- [ ] 1.5 [easy] Inside T3 Code, `lets delegate step instructions --for plan` exits 0 with `"strategy":"step"`, `"resolver":"t3"` and the catalogue's options. The test *step instructions inside T3 Code decline* becomes this one, and a step outside T3 Code still opens no thread (verify: node --test tests/lets/resolvers/t3/delegate.test.ts)
+- [x] 1.5 [easy] Inside T3 Code, `lets delegate step instructions --for plan` exits 0 with `"strategy":"step"`, `"resolver":"t3"` and the catalogue's options. The test *step instructions inside T3 Code decline* becomes this one, and a step outside T3 Code still opens no thread (verify: node --test tests/lets/resolvers/t3/delegate.test.ts) (✓ node --test tests/lets/resolvers/t3/delegate.test.ts passed, 38 tests)
 
 ## 2. Stop a timed-out thread [depends-on: 1]
 
