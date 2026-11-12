@@ -129,8 +129,8 @@ After the [subagent step](#review-in-a-subagent) there is no meta line, so
 check only its `Read:` line.
 
 When a value differs, is `null`, or the `Read:` line is missing, record no
-review. Show the user the meta file and the `Read:` line, or say that it is
-missing, and stop.
+review. Show the user the meta file, when this run wrote one, and the
+`Read:` line, or say that it is missing. Then stop.
 
 ### Review in a subagent
 
