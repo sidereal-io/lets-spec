@@ -837,7 +837,7 @@ review_build_start() {
   grep -qF '**`several-backlogs`:**' <<<"$text" && grep -qF 'ask the user to unlink the extras' <<<"$text" ||
     { echo "Backlog errors does not list several-backlogs' Projects"; false; }
   grep -qF 'Never pick one' <<<"$text" || { echo "Backlog errors may pick a Project"; false; }
-  grep -qF '`message`' <<<"$text" || { echo "Backlog errors does not show other errors"; false; }
+  grep -qF 'show its `message`' <<<"$text" || { echo "Backlog errors does not show other errors"; false; }
   for part in 'Read the request' 'Check the issue'; do
     grep -qF '](#backlog-errors)' <<<"$(part_section "$part")" || { echo "$part does not link Backlog errors"; false; }
   done
