@@ -141,10 +141,9 @@ step. Say what the error is:
 - **`several-backlogs`:** list each Project's `title` and `url` from its
   `projects`, and ask the user to unlink the extras. Never pick one
   yourself.
-- **Any other error:** show the user its `message`. When it carries
-  `claim`, show that token too: assignment or a claim comment may
-  remain. Say to inspect the issue before recovery. Do not retry
-  automatically.
+- **Any other error:** show its `message`. When it carries `claim`,
+  show the token. Tell the user the issue may still hold your assignment
+  or claim comment. Do not retry.
 
 Each part and procedure that runs a `lets backlog` command links here
 for its errors.
