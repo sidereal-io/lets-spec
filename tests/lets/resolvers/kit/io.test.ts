@@ -108,6 +108,24 @@ test('a group that ignores SIGTERM is stopped 5 seconds after its time limit', {
   assert.deepEqual(readPids(pids).filter((pid) => !gone(pid)), []);
 });
 
+// Node starts a sleep in a new session, which holds Node's stdout, and
+// writes its process ID to the file named in argv[1]. Then Node runs on.
+const HOLD_STDOUT = `
+  const { spawn } = require('node:child_process');
+  const sleep = spawn('sleep', ['600'], { detached: true, stdio: ['ignore', 'inherit', 'ignore'] });
+  require('node:fs').writeFileSync(process.argv[1], sleep.pid + '\\n');
+  setInterval(() => {}, 1000);
+`;
+
+test('a process outside the group that holds stdout does not delay a timed-out execFile', { timeout: 30000 }, async (t) => {
+  const pids = pidsDir(t);
+  const started = Date.now();
+  const result = await realIo().execFile(process.execPath, ['-e', HOLD_STDOUT, pids], { timeoutMs: 1000 });
+  assert.equal(result.timedOut, true);
+  assert.ok(Date.now() - started < 1000 + 10000, 'it returned within 10 seconds of the limit');
+  assert.equal(readPids(pids).length, 1);
+});
+
 // A fake system for parentPid: files maps a path to its text, and ps is
 // what `ps` prints. calls records each command it runs.
 function fakeSys({ files = {}, ps = '' }: { files?: Record<string, string>; ps?: string }) {
