@@ -10,21 +10,24 @@ const TOKEN = '00000000-0000-4000-8000-000000000001';
 const OTHER = '00000000-0000-4000-8000-000000000002';
 const comment = (token: string, id = 1) => ({ id, body: `lets-go claimed this issue.\n\nToken: ${token}`, user: { login: 'octocat', type: 'User' }, author_association: 'OWNER' });
 
-const rows = ({ unassign = ok('') as Answer, url = json({ url: URL_149 }) as Answer, status = ok('') as Answer } = {}): Row[] => [
+const rows = ({ unassign = ok('') as Answer, url = json({ url: URL_149 }) as Answer, status = ok('') as Answer } = {}): Row[] => {
+  let deleted = false;
+  return [
   ...LOOKUP_ONE,
   ['api user', json({ login: 'octocat' })],
-  ['api repos/acme/app/issues/149/comments --paginate --slurp', json([[comment(TOKEN)]])],
-  ['api repos/acme/app/issues/comments/1 --method DELETE', ok('')],
+  ['api repos/acme/app/issues/149/comments --paginate --slurp', () => json([deleted ? [] : [comment(TOKEN)]])],
+  ['api repos/acme/app/issues/comments/1 --method DELETE', () => { deleted = true; return ok(''); }],
   ['issue edit 149 --remove-assignee', unassign],
   ['issue view 149 --json url', url],
   ['project item-edit', status],
-];
+  ];
+};
 
 test('release removes only the signed-in user, then sets Status to Todo, and returns released', async () => {
   const t = backlogDeps(rows());
   assert.equal(await run(['release', '149', '--claim', TOKEN], t.deps), 0);
   assert.deepEqual(t.json(), { result: 'released' });
-  assert.deepEqual(t.calls().slice(4), [
+  assert.deepEqual(t.calls().slice(5), [
     ['issue', 'edit', '149', '--remove-assignee', '@me'],
     ['issue', 'view', '149', '--json', 'url'],
     ['project', 'item-edit', '7', '--owner', 'acme', '--url', URL_149, '--field', 'Status', '--value', 'Todo'],

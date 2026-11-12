@@ -5,7 +5,7 @@ import { run } from '../../../lets/src/backlog/commands.ts';
 import { commandDeps } from '../delegate/fixtures/command-deps.ts';
 import { json, ok, PROJECT, REPO } from './fixtures/fake-gh.ts';
 
-function race(logins: [string, string]) {
+function race(logins: [string, string], releaseDuringCleanup = false) {
   const assigned = new Set<string>();
   const comments: { id: number; body: string; user: { login: string; type: string }; author_association: string }[] = [];
   const tokens: string[] = [];
@@ -26,6 +26,7 @@ function race(logins: [string, string]) {
         await bothRead;
         return json({ assignees: [], url: `https://github.com/${REPO}/issues/149` });
       }
+      if (cmd === 'issue view 149 --json url') return json({ url: `https://github.com/${REPO}/issues/149` });
       if (cmd.startsWith('issue edit 149 --add-assignee')) { assigned.add(login); return ok(''); }
       if (cmd.startsWith('issue edit 149 --remove-assignee')) { assigned.delete(login); return ok(''); }
       if (cmd.includes('/issues/149/comments')) {
@@ -40,6 +41,11 @@ function race(logins: [string, string]) {
       }
       if (cmd.includes('/issues/comments/') && args.includes('DELETE')) {
         const id = Number(args.find((a) => a.includes('/issues/comments/'))!.split('/').at(-1));
+        if (releaseDuringCleanup && id === 2) {
+          const token = comments.find((c) => c.id === 1)!.body.split('Token: ')[1];
+          const winner = tokens.indexOf(token);
+          assert.equal(await run(['release', '149', '--claim', token], sessions[winner].deps), 0);
+        }
         const i = comments.findIndex((c) => c.id === id);
         assert.equal(comments[i]?.user.login, login, 'delete only your comment');
         comments.splice(i, 1);
@@ -87,3 +93,13 @@ test('a repeated loser release preserves a shared-login winner', async () => {
   assert.equal(t.comments.length, 1);
   assert.deepEqual(t.statuses.flat(), ['In Progress']);
 });
+
+for (const logins of [['alice', 'alice'], ['alice', 'bob']] as [string, string][]) {
+  test(`release while the loser cleans up leaves no owner (${logins.join(', ')})`, async () => {
+    const t = race(logins, true);
+    await Promise.all(t.sessions.map((s) => run(['claim', '149'], s.deps)));
+    assert.deepEqual([...t.assigned], []);
+    assert.deepEqual(t.comments, []);
+    assert.equal(t.statuses.flat().filter((s) => s === 'Todo').length, 1);
+  });
+}

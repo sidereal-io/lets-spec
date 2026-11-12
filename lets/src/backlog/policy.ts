@@ -76,9 +76,14 @@ export async function claim(adapter: Adapter, issue: number): Promise<ClaimResul
     if (winner.id !== own.id) {
       write = 'delete-claim';
       await adapter.deleteClaim(issue, own.id);
-      if (winner.login !== login) {
+      const remaining = (await adapter.claims(issue)).filter((c) => !previous.has(c.id) && c.id !== own.id);
+      if (!remaining.some((c) => c.login === login)) {
         write = 'unassign';
         await adapter.unassignSelf(issue);
+      }
+      if (remaining.length === 0) {
+        write = 'status';
+        await adapter.setStatus(issue, 'Todo');
       }
       return { result: 'taken', assignees: [winner.login] };
     }
@@ -98,10 +103,10 @@ export async function release(adapter: Adapter, issue: number, token: string): P
   const claims = await adapter.claims(issue);
   const own = claims.find((c) => c.token === token && c.login === login);
   if (!own) return { result: 'not-found' };
-  const others = claims.filter((c) => c.id !== own.id);
-  const writes: ['delete-claim' | 'unassign' | 'status', () => Promise<void>][] = [
-    ['delete-claim', () => adapter.deleteClaim(issue, own.id)],
-  ];
+  const deleted = await inOrder('released', [['delete-claim', () => adapter.deleteClaim(issue, own.id)]]);
+  if (deleted.result === 'failed') return deleted;
+  const others = (await adapter.claims(issue)).filter((c) => c.id !== own.id);
+  const writes: ['delete-claim' | 'unassign' | 'status', () => Promise<void>][] = [];
   if (!others.some((c) => c.login === login)) writes.push(['unassign', () => adapter.unassignSelf(issue)]);
   if (others.length === 0) writes.push(['status', () => adapter.setStatus(issue, 'Todo')]);
   return inOrder('released', writes);
