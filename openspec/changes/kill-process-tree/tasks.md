@@ -22,8 +22,10 @@
 
 ## Deviations Ledger
 
+- 1.2: the shell starts both sleeps with `&`, writes all three process IDs, and waits, in place of `sleep 600 & echo $! > pids; sleep 600`. The test then knows every process ID it checks, and the shell, its child and its grandchild are covered as planned.
 - 1.3: task 1.2 built the whole of design.md decision 2, `SIGKILL` included, so the new test passed when it was written. To show that it tests the `SIGKILL`, it was run once with that line removed, and it failed: the group was still alive.
 - 1.4: task 1.2 already settles a timed-out command on the group's end, so the new test passed when it was written. Run against the `execFile` from before this change, it timed out after 30 seconds.
+- 1.4: the command is Node, which starts a sleep with `detached: true`, so in a new session. The `node-tests` sandbox and macOS have no `setsid` command.
 - 1.5: the test pins behavior that does not change (D6), so it passed when it was written, as planned.
 - 2.1: the fixture's shell runs its child in the foreground, not with `&`. A shell with no job control starts a background child with `SIGINT` ignored, so a background child would survive the `SIGINT` case whatever `lets` does.
 - 2.3: task 2.1 already removed the handlers when the last command settles, so the new tests passed when they were written. Each was run once with the code broken: no removal on settle, then a failed start that joins the set. Each failed. The tests compare with the count when the file loads, not when the test starts, so a handler an earlier test left behind also fails them.
