@@ -605,11 +605,12 @@ issue's parent and what blocks it.
    one difference. Offer only the listed products, never a new one. When
    no listed product fits, use no map's names.
 6. **Size it** XS, S, M, L or XL. L or XL is too big for one change: say so,
-   offer a discovery run on it instead, and stop. Write no glossary definition.
-   If the user starts the discovery run, record the tentative meanings in its
-   parent issue when Ingest writes it. This stop creates no issue and starts
-   no discovery. Once sizing passes, agree each meaning and scope with the
-   user and write it as [Develop the vocabulary](#develop-the-vocabulary) says.
+   offer a discovery run on it instead, and stop. Then write no glossary
+   definition. If the user starts the discovery run, record the tentative
+   meanings in its parent issue when Ingest writes it. This stop creates no
+   issue and starts no discovery. Once sizing passes, agree each meaning and
+   scope with the user and write it as
+   [Develop the vocabulary](#develop-the-vocabulary) says.
 7. **Confirm, then write.** The issue is public, so show the user its title,
    body, Kind, Priority and Size, and get a yes. The body carries every
    fold, so one write covers them all. When the user confirms that an
