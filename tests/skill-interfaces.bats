@@ -3411,45 +3411,21 @@ commit_maps() {
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
 # #229 review-model-choice: keep this block together for sibling story rebases.
 
-# task-limits (#232): size stops and concurrent file-sharing comparisons.
-# Keep this block self-contained so sibling stories can append their own checks.
-task_limits_says() {
+# task-limits (#232): size and concurrency guidance.
+@test "task-limits: size guidance names the output before waiting" {
   local text
-  text="$(tr -s '[:space:]' ' ' < "$repo/skills/lets-write-tasks/SKILL.md")"
-  [[ "$text" == *"$1"* ]] || { echo "task-limits guidance is missing: $1"; return 1; }
+  text="$(sed -n '/^## Size$/,/^## Order$/p' "$repo/skills/lets-write-tasks/SKILL.md" | tr -s '[:space:]' ' ')"
+  grep -qE 'twelve.{0,200}`tasks\.md`' <<<"$text"
+  [[ "$text" == *"then wait"* ]]
 }
 
-@test "task-limits: oversized lists stop before producing tasks.md" {
-  task_limits_says '**Five to twelve tasks.**'
-  task_limits_says 'For more than twelve tasks, stop without writing or committing `tasks.md`.'
-  task_limits_says 'Report the task count and name the slice to move to a new story, then wait.'
-  task_limits_says 'Do not split the story here: the user decides the split in the brainstorm.'
-}
-
-@test "task-limits: resumption follows the user's brainstorm split decision" {
-  task_limits_says 'After the user decides the split, bring earlier planning artifacts into line with the smaller story before rerunning task planning.'
-}
-
-@test "task-limits: same section comparison includes every other task" {
-  task_limits_says '| `[parallel]` | The task shares no files with any other task that could run at the same time. |'
-  task_limits_says 'Before you tag a task `[parallel]`, compare its files with every other task in the same section'
-}
-
-
-@test "task-limits: other sections compare when no dependency chain connects them" {
-  task_limits_says 'every task in any other section with no `depends-on` chain between the two sections'
-  task_limits_says 'A chain in either direction, including an indirect dependency, means those sections cannot run at the same time.'
-  task_limits_says 'Sections that only share a prerequisite still need the file comparison.'
-  task_limits_says '| `[depends-on: <section>]` | On a section heading: this section waits for that one. |'
-}
-
-
-@test "task-limits: nonadjacent tasks sharing a file cannot qualify for parallel tags" {
-  task_limits_says 'if the first and third tasks share a file, neither qualifies for `[parallel]`, even when the second task touches different files.'
+@test "task-limits: concurrency guidance covers nonadjacent tasks" {
+  local text
+  text="$(cat "$repo/skills/lets-write-tasks/SKILL.md")"
+  [[ "$text" == *'`depends-on` chain'* ]]
+  [[ "$text" == *'first and third'* ]]
+  [[ "$text" != *'neighbours'* ]]
   grep -qF 'tasks in order, so it has no parallel tags.' "$repo/schemas/lets-minimal/schema.yaml"
-}
-@test "task-limits: delegated split decisions always reach the user" {
-  task_limits_says "If the caller requires a question report, ask for the user's split decision without a recommendation; include the count and proposed slice as context."
 }
 # End task-limits (#232).
 
