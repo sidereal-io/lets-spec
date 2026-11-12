@@ -1,7 +1,7 @@
 ## 1. A brief waiting status
 
 - [x] 1.1 [easy] A `t3` review whose run reads `waiting` with no pending request on one poll, then `completed` with a final message and no proposed plan on the next, returns that message. `waitForText` stops treating `run.status === 'waiting'` alone as a question, and its comment says why (verify: node --test tests/lets/resolvers/t3/t3.test.ts) (✓ node --test tests/lets/resolvers/t3/t3.test.ts passed: 97 pass, 0 fail)
-- [ ] 1.2 [easy] A `t3` review whose thread holds a pending request fails at once with `the session stopped to ask (thread <id>)`, both while the run is `waiting` and while it is `running`. The test *run fails when the session stops to ask* holds a pending request in both cases (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
+- [x] 1.2 [easy] A `t3` review whose thread holds a pending request fails at once with `the session stopped to ask (thread <id>)`, both while the run is `waiting` and while it is `running`. The test *run fails when the session stops to ask* holds a pending request in both cases (verify: node --test tests/lets/resolvers/t3/t3.test.ts) (✓ node --test tests/lets/resolvers/t3/t3.test.ts passed: 97 pass, 0 fail)
 - [ ] 1.3 [easy] A `t3` review whose run stays `waiting` with no pending request past its time limit fails with `TimeoutError`, naming the thread (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
 - [ ] 1.4 [easy] `docs/resolvers.md`'s `t3` section has one paragraph, after the one on default mode and proposed plans: a review exits 5 when the session asks a question and waits for an answer, the thread stays so you can answer it in T3 Code, and a run T3 shows as `waiting` for a moment does not count (verify: grep -n "waiting" docs/resolvers.md)
 
@@ -12,3 +12,4 @@
 ## Deviations Ledger
 
 - 1.1 also drops the `waiting`-with-no-request case from the test *run fails when the session stops to ask*. That case asserts the behavior 1.1 removes, and with it in place the suite polls forever. 1.2 adds the `waiting`-with-a-request case in its place.
+- 1.2 pins behavior the code already had, so it had no natural red. A temporary mutation that ignored a request on a `waiting` run made the test poll until it was killed, which showed the test can fail. The mutation was not committed.

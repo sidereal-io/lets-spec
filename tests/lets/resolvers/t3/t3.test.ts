@@ -408,11 +408,11 @@ test('run fails a run that failed after an assistant message, with its failure',
     (error) => error instanceof SessionFailed && !(error instanceof Refused) && error.message === 'quota exceeded (thread T)');
 });
 test('run fails when the session stops to ask', async () => {
-  for (const [status, pending] of [['running', true]] as const) {
+  for (const status of ['waiting', 'running']) {
     const db = database();
     addThread(db, 'T');
     addRun(db, 'T', 'run-1', 1, status);
-    if (pending) addPendingRequest(db, 'T');
+    addPendingRequest(db, 'T');
     await assert.rejects(running(db), (error) => error instanceof SessionFailed && error.message === 'the session stopped to ask (thread T)');
   }
 });
