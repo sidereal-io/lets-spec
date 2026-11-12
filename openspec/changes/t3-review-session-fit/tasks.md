@@ -11,7 +11,7 @@
 
 ## 3. The t3 resolver [depends-on: 1]
 
-- [ ] 3.1 [parallel] [easy] A `t3` review opens its thread with `interactionMode: 'default'`, for plan and code reviews, and a handoff still does. `buildLaunch` sends the mode itself, and `launchThread` no longer takes `readOnly` (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
+- [x] 3.1 [parallel] [easy] A `t3` review opens its thread with `interactionMode: 'default'`, for plan and code reviews, and a handoff still does. `buildLaunch` sends the mode itself, and `launchThread` no longer takes `readOnly` (verify: node --test tests/lets/resolvers/t3/t3.test.ts) (✓ node --test tests/lets/resolvers/t3/t3.test.ts passed)
 - [ ] 3.2 [medium] A `t3` review whose completed run holds a `proposed_plan` item fails with `the session returned a plan, not a result (thread <id>)`, exits 5 with empty stdout, and does not archive the thread. A completed run with no such item returns its final message as before (verify: node --test tests/lets/resolvers/t3/t3.test.ts tests/lets/resolvers/t3/delegate.test.ts)
 - [ ] 3.3 [medium] A `t3` review returns as `checkout` the worktree T3 records for the thread, else the root of the thread's T3 project, else `null` when T3 has no row or its payload does not parse. It does not return the checkout it asked for (verify: node --test tests/lets/resolvers/t3/t3.test.ts tests/lets/resolvers/t3/delegate.test.ts)
 

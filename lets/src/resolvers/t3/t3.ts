@@ -182,17 +182,19 @@ export function findProject(db: Db, repoRoot: string): Project {
 
 type LaunchInput = {
   threadId: string; projectId: string; title: string; text: string; modelSelection: ModelSelection;
-  interactionMode: 'plan' | 'default'; branch: string | null; worktreePath: string | null; messageId?: string; commandId?: string;
+  branch: string | null; worktreePath: string | null; messageId?: string; commandId?: string;
 };
 
 // The `orchestration.launchThread` request, as the UI sends it for a new
 // thread: the thread's settings, its workspace on the current branch, and
-// the first message. The workspace is the project's root, or the linked
+// the first message. Every thread opens in default mode: in plan mode a
+// session can end on a plan instead of a result, and the tree check keeps a
+// review read-only (ADR-024). The workspace is the project's root, or the linked
 // worktree at worktreePath. The title is a seed; t3 generates a durable one
 // from the message. messageId and commandId are random unless given, so
 // tests can fix them.
 export function buildLaunch({
-  threadId, projectId, title, text, modelSelection, interactionMode, branch, worktreePath, messageId = randomUUID(), commandId = randomUUID(),
+  threadId, projectId, title, text, modelSelection, branch, worktreePath, messageId = randomUUID(), commandId = randomUUID(),
 }: LaunchInput) {
   const onBranch = branch === null ? {} : { branch };
   return {
@@ -204,7 +206,7 @@ export function buildLaunch({
     generateTitle: true,
     modelSelection,
     runtimeMode: 'full-access',
-    interactionMode,
+    interactionMode: 'default',
     workspaceStrategy: worktreePath === null
       ? { type: 'root', ...onBranch }
       : { type: 'existing_worktree', worktreePath, ...onBranch },
@@ -423,9 +425,9 @@ export function createAdapter(io: Io): Adapter {
     return runtime;
   }
 
-  // Launch a thread for the request. A read-only one is in plan mode; a null
-  // effort is a start's, which sends no effort option.
-  async function launchThread({ name, prompt, cwd, family, model }: StartInput, { readOnly, effort }: { readOnly: boolean; effort: Effort | null }): Promise<Handle> {
+  // Launch a thread for the request. A null effort is a start's, which
+  // sends no effort option.
+  async function launchThread({ name, prompt, cwd, family, model }: StartInput, { effort }: { effort: Effort | null }): Promise<Handle> {
     const { origin } = runningServer();
     // The main checkout, even when cwd is a linked worktree.
     const repoRoot = resolve(await git(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir']), '..');
@@ -447,7 +449,6 @@ export function createAdapter(io: Io): Adapter {
       title: name,
       text: prompt,
       modelSelection,
-      interactionMode: readOnly ? 'plan' : 'default',
       branch,
       worktreePath,
     }));
@@ -508,7 +509,7 @@ export function createAdapter(io: Io): Adapter {
     async run({ effort, ...input }: RunInput, { timeoutMs }) {
       // An error before the thread exists passes through: there is nothing
       // to archive or name.
-      const handle = await launchThread(input, { readOnly: true, effort });
+      const handle = await launchThread(input, { effort });
       try {
         return { handle, ...(await waitForText(handle, timeoutMs)), checkout: null };
       } catch (error) {
@@ -525,7 +526,7 @@ export function createAdapter(io: Io): Adapter {
     },
 
     async start(input: StartInput) {
-      return launchThread(input, { readOnly: false, effort: null });
+      return launchThread(input, { effort: null });
     },
 
     // Archives the thread on ok. A failure throws, and the resolver reports it.
