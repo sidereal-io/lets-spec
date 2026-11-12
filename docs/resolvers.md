@@ -211,8 +211,13 @@ can read them.
 The review's JSON line on stderr names the repository the CLI ran in as
 `checkout`, and the full hash at its `HEAD` after the review as `commit`.
 
-A review that runs past its time limit is stopped. Each failure has its
-own exit code:
+When a review runs past its time limit, `lets` sends `SIGTERM` to the
+CLI and to every process the CLI started. Any that are still running 5
+seconds later get `SIGKILL`, and `lets` exits 6. `lets` cannot stop a
+process that moves itself out of the CLI's process group, such as a
+daemon. Ctrl-C reaches the CLI and every process it started.
+
+Each failure has its own exit code:
 
 | What happened | Exit |
 |---|---|

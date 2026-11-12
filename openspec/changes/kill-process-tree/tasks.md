@@ -14,7 +14,7 @@
 
 ## 3. Docs [parallel]
 
-- [ ] 3.1 [easy] The `cli` section of `docs/resolvers.md` replaces *A review that runs past its time limit is stopped*. The new text says that `lets` sends `SIGTERM` to the CLI and every process it started, then `SIGKILL` 5 seconds later, and exits 6. It says that `lets` cannot stop a process that moves itself out of the CLI's process group, such as a daemon, and that Ctrl-C reaches the CLI and every process it started (verify: grep -n "SIGKILL" docs/resolvers.md)
+- [x] 3.1 [easy] The `cli` section of `docs/resolvers.md` replaces *A review that runs past its time limit is stopped*. The new text says that `lets` sends `SIGTERM` to the CLI and every process it started, then `SIGKILL` 5 seconds later, and exits 6. It says that `lets` cannot stop a process that moves itself out of the CLI's process group, such as a daemon, and that Ctrl-C reaches the CLI and every process it started (verify: grep -n "SIGKILL" docs/resolvers.md) (✓ grep -n "SIGKILL" docs/resolvers.md found line 216)
 
 ## 4. Integration [depends-on: 1, 2, 3]
 
