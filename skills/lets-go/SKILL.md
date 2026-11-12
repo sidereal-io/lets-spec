@@ -389,19 +389,14 @@ Next: [Enter the branch](#enter-the-branch).
    - **`unresolved`:** report the owner or the definitions it carries,
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
-   - **`claim-failed`:** say which write failed, and show its message.
-     For `assign`, stop and ask the user to inspect your assignment:
-     the failed write has no claim token for release.
-     A failed `status` write leaves the assignment and claim comment;
-     a failed `claim` write leaves the assignment and may have posted
-     the comment. A failed `assign` may have assigned you if it timed
-     out. Cleanup failures can leave the losing comment or assignment.
-     Say how to recover: run `lets backlog release <i>` with
-     `--claim <claim>` when the report carries a token. It releases only
-     that token's comment; an absent comment makes release do nothing.
-     Show the token. If no comment exists but an assignment remains,
-     ask the user to inspect and repair it before running `lets-go`
-     again. Do not release the claim yourself. Stop, and run no step.
+   - **`claim-failed`:** show its message and what may remain by `write`:
+     - `assign`: your assignment; no claim token exists.
+     - `claim`: your assignment and possibly a claim comment.
+     - `delete-claim`: your comment and assignment.
+     - `unassign`: your assignment.
+     - `status`: your assignment, comment and possibly Status.
+     Stop and ask the user to inspect the issue; show the token if one
+     exists. Do not release the claim yourself. Stop, and run no step.
    - **`branch-failed`:** [Claim](#claim) attempted release. Show
      the branch's error it carries. When it carries a release error
      too, show it, and say the issue may still hold your assignment or
