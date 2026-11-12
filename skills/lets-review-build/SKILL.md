@@ -101,7 +101,8 @@ Commit first. The review covers commits, not the working tree.
 5. Act on its exit code:
    - **0**: the findings are in the raw file. The meta file's last line is
      JSON: the resolver, the model that answered, and the `independent` value.
-     Then [check what the review read](#check-what-the-review-read).
+     Then read on below this list: note the range, and check what the review
+     read.
    - **3**: no fresh session can run here, for example because no resolver
      started one, or every model was refused. Take the [subagent
      step](#review-in-a-subagent).
@@ -132,6 +133,8 @@ When a value differs, is `null`, or the `Read:` line is missing, record no
 review. Show the user the meta file, when this run wrote one, and the
 `Read:` line, or say that it is missing. Then stop.
 
+When everything matches, go on to [Act on the findings](#act-on-the-findings).
+
 ### Review in a subagent
 
 Take this step only when the command exits 3, when the listed models are
@@ -140,12 +143,12 @@ A fallback must respect the guidance exclusions. If no permitted subagent
 can run, stop and ask the user. Run the prompt in a read-only subagent that
 starts with no context from this session.
 
-Save its output to `.workspace/<branch>-code-review-raw.md`. Run `git status --porcelain` before and after, and stop if they differ. Then
-[check what the review read](#check-what-the-review-read).
+Save its output to `.workspace/<branch>-code-review-raw.md`. Run `git status --porcelain` before and after, and stop if they differ.
 
 Record the family that answered, and `independent: no` unless the subagent
 was outside every author family and the tool's own output names it. Do not
-run the review in this session.
+run the review in this session. Then [check what the review
+read](#check-what-the-review-read).
 
 ## Resolve vocabulary before delegation
 

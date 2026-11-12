@@ -126,7 +126,8 @@ In a `lets-go` step, return `needs-input` whenever this skill asks the user.
    - **0**: the findings are in the raw file. The meta file's last line is
      JSON. It names what the review was for, the resolver, the family and
      model that answered, and whether the review was independent. Then
-     [check what the review read](#check-what-the-review-read).
+     read on below this list: note the commit, and check what the review
+     read.
    - **3**: no fresh session can run here, for example because no resolver
      started one, or every model was refused. Take the [subagent
      step](#review-in-a-subagent).
@@ -167,6 +168,8 @@ When a value differs, is `null`, or the `Read:` line is missing, record no
 review. Show the user the meta file, when this run wrote one, and the
 `Read:` line, or say that it is missing. Then stop.
 
+When everything matches, go on to [Check the findings](#check-the-findings).
+
 ### Review in a subagent
 
 Take this step only when `lets delegate review run` exits 3, when the
@@ -176,12 +179,11 @@ permitted subagent can run, stop and ask the user. Run the prompt at the selecte
 read-only subagent: one that starts with no context from this session and
 cannot write files.
 
-Save its output to `.workspace/<change>-review-raw.md`. Run `git status --porcelain` before and after, and stop if they differ. Then
-[check what the review read](#check-what-the-review-read).
+Save its output to `.workspace/<change>-review-raw.md`. Run `git status --porcelain` before and after, and stop if they differ.
 
 Record the family that answered, and `independent: no` unless the subagent
 was another family and the tool's own output names it. Do not run the review
-in this session.
+in this session. Then [check what the review read](#check-what-the-review-read).
 
 This costs real tokens. Never loop it. Run again only when the plan or the
 question changed.
