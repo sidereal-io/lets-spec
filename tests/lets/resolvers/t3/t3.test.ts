@@ -408,13 +408,22 @@ test('run fails a run that failed after an assistant message, with its failure',
     (error) => error instanceof SessionFailed && !(error instanceof Refused) && error.message === 'quota exceeded (thread T)');
 });
 test('run fails when the session stops to ask', async () => {
-  for (const [status, pending] of [['waiting', false], ['running', true]] as const) {
+  for (const [status, pending] of [['running', true]] as const) {
     const db = database();
     addThread(db, 'T');
     addRun(db, 'T', 'run-1', 1, status);
     if (pending) addPendingRequest(db, 'T');
     await assert.rejects(running(db), (error) => error instanceof SessionFailed && error.message === 'the session stopped to ask (thread T)');
   }
+});
+test('run waits through a waiting run with no pending request', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'waiting');
+  addMessage(db, 'a1', 'run-1', 'FINDINGS', 0);
+  const steps = [() => db.exec("update orchestration_v2_projection_runs set status = 'completed'")];
+  assert.equal((await running(db, steps)).text, 'FINDINGS');
+  assert.equal(steps.length, 0);
 });
 // A thread whose completed run ends with a proposed plan, then a checkpoint,
 // and a final message.

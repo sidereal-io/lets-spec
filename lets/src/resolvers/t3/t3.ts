@@ -496,7 +496,10 @@ export function createAdapter(io: Io): Adapter {
     const check = () => withDb((db) => {
       const run = readRun(db, handle.id);
       if (run === null) return undefined;
-      if (run.pendingRequests > 0 || run.status === 'waiting') throw new SessionFailed('the session stopped to ask');
+      // A question always leaves a pending request. A run with none can
+      // still read waiting for a moment, while T3 captures the checkpoint at
+      // the end of a turn, so it is polled again like any running one.
+      if (run.pendingRequests > 0) throw new SessionFailed('the session stopped to ask');
       // A run that failed before any message is a refusal, such as a model
       // the account cannot run. run then archives the thread.
       if (run.status === 'failed') {
