@@ -3410,6 +3410,26 @@ commit_maps() {
 }
 
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
+
+# #228 step-skill-reports: keep these checks together for sibling changes.
+@test "step reports: planning checks prerequisites before proposing" {
+  local plan guard invoke
+  plan="$(sed -n '/^## Plan$/,/^## When propose stops$/p' "$repo/skills/lets-plan/SKILL.md" | tr -s '[:space:]' ' ')"
+  guard="${plan%%'stop: say that `lets-go` routes and claims the issue.'*}"
+  invoke="${plan%%'Invoke the `openspec-propose` skill'*}"
+  [ "$guard" != "$plan" ]
+  [ "$invoke" != "$plan" ]
+  [ "${#guard}" -lt "${#invoke}" ] || { echo 'the prerequisite stop follows propose'; false; }
+}
+
+@test "step reports: planning preserves the saved schema on continuation" {
+  skill_says lets-plan 'When `openspec/changes/<name>/` exists, continue it'
+  skill_says lets-plan 'Keep the schema saved in its `.openspec.yaml`'
+  skill_says lets-plan 'even when the current route names another schema'
+  skill_says lets-plan 'When no schema is saved, use the schema `lets-go` already set'
+  skill_says lets-plan 'For a new change'
+  skill_says lets-plan 'When the route is `lets-minimal` and the flow'
+}
 @test "claim-race: recovery names the session token" {
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(procedure_text 'Claim')"
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(skill_section lets-go 'Recover from a failed import')"

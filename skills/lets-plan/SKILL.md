@@ -38,15 +38,21 @@ artifact is still needed.
 
 ## Plan
 
-Invoke the `openspec-propose` skill for the change `<name>`, for issue
-`#<i>`. Give it the route line for the proposal's commit message. When the
-route is `lets-minimal` and the flow's schema is not, say to use the
-schema `lets-minimal`. The flow's schema is the `schema:` line of
-`openspec/config.yaml`.
+Check whether `openspec/changes/<name>/` exists before invoking propose.
+When it does not, and you have no route line, stop: say that `lets-go`
+routes and claims the issue.
 
-When `openspec/changes/<name>/` exists, say to continue the change. When
-it does not, and you have no route line, stop: say that `lets-go` routes
-and claims the issue.
+Invoke the `openspec-propose` skill for the change `<name>`, for issue
+`#<i>`, with these instructions:
+
+- When `openspec/changes/<name>/` exists, continue it, even without a
+  route line. Keep the schema saved in its `.openspec.yaml`, even when
+  the current route names another schema. When no schema is saved, use
+  the schema `lets-go` already set.
+- For a new change, give it the route line for the proposal's commit
+  message. When the route is `lets-minimal` and the flow's schema is
+  not, say to use the schema `lets-minimal`. The flow's schema is the
+  `schema:` line of `openspec/config.yaml`.
 
 ## When propose stops
 
