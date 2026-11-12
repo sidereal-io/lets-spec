@@ -3430,6 +3430,19 @@ commit_maps() {
   skill_says lets-plan 'For a new change'
   skill_says lets-plan 'When the route is `lets-minimal` and the flow'
 }
+
+@test "step reports: build query stops on unusable state output" {
+  local text guard router
+  text="$(cat "$repo/skills/lets-build/SKILL.md" | tr -s '[:space:]' ' ')"
+  guard="${text%%'If the command exits non-zero'*}"
+  router="${text%%'Use the table from top to bottom'*}"
+  [ "$guard" != "$text" ]
+  [ "${#guard}" -lt "${#router}" ]
+  skill_says lets-build 'output is not a JSON object with a nonempty string `state`'
+  skill_says lets-build 'show its actual stdout and stderr, and stop'
+  skill_says lets-build 'Do not invent a state or retry the query'
+  skill_says lets-build 'When `instruction` is absent or unusable, show the full output instead'
+}
 @test "claim-race: recovery names the session token" {
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(procedure_text 'Claim')"
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(skill_section lets-go 'Recover from a failed import')"
