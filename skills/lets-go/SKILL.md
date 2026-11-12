@@ -101,6 +101,7 @@ sets it.
 | `<default>` | The repository's default branch | [Read the settings](#read-the-settings) |
 | `<shape-name>` | The shape step's name: `issue-<i>` or `idea-<slug>` | [The shape step's name](references/shape.md#the-shape-steps-name) |
 | `<slug>` | The first five words of the idea, as [The shape step's name](references/shape.md#the-shape-steps-name) makes them | [The shape step's name](references/shape.md#the-shape-steps-name) |
+| `<claim>` | The unique token of this session's claim | [Claim](#claim), from the command's `claim` field |
 | `<idea>` | The idea, in the user's words | [Read the request](#read-the-request) |
 | `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs, or `shape` in [Run the shape step](#run-the-shape-step) |
 | `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
@@ -140,7 +141,10 @@ step. Say what the error is:
 - **`several-backlogs`:** list each Project's `title` and `url` from its
   `projects`, and ask the user to unlink the extras. Never pick one
   yourself.
-- **Any other error:** show the user its `message`.
+- **Any other error:** show the user its `message`. When it carries
+  `claim`, show that token too: assignment or a claim comment may
+  remain. Say to inspect the issue before recovery. Do not retry
+  automatically.
 
 Each part and procedure that runs a `lets backlog` command links here
 for its errors.
@@ -386,13 +390,16 @@ Next: [Enter the branch](#enter-the-branch).
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
    - **`claim-failed`:** say which write failed, and show its message.
-     Say what the issue may be left holding: after a failed `status`
-     write, your assignment, with its Status unchanged; after a failed
-     `assign`, nothing, unless the message says the write may have
-     happened. Say how to recover: run `lets backlog release <i>` to
-     give the issue back, then run `lets-go` again. Until then, a new
-     run finds the issue `taken`, by your own assignment. Do not release
-     the claim yourself. Stop, and run no step.
+     A failed `status` write leaves the assignment and claim comment;
+     a failed `claim` write leaves the assignment and may have posted
+     the comment. A failed `assign` may have assigned you if it timed
+     out. Cleanup failures can leave the losing comment or assignment.
+     Say how to recover: run `lets backlog release <i>` with
+     `--claim <claim>` when the report carries a token. It releases only
+     that token's comment; an absent comment makes release do nothing.
+     Show the token. If no comment exists but an assignment remains,
+     ask the user to inspect and repair it before running `lets-go`
+     again. Do not release the claim yourself. Stop, and run no step.
    - **`branch-failed`:** [Claim](#claim) has released the claim. Show
      the branch's error it carries. When it carries a release error
      too, show it, and say the issue may still hold your assignment or
@@ -716,9 +723,12 @@ watermark is the later of the body's last edit and the newest read
 marker. When neither exists, every comment is after it. A comment is
 unread when it was created or edited after both the body's last edit and
 the newest read marker: after the watermark. An unread comment makes the
-result `needs-shape`, whoever wrote it. A read marker never does. The
-result then carries how many comments shaping has not read, each one's
-author as the reference shows it, and the date that put it past the
+result `needs-shape`, whoever wrote it. A read marker or a valid claim
+comment never does. Recognize claim comments as
+[Claim comments](../lets-shape/references/issue-comments.md#claim-comments)
+says; they never advance the watermark. The result then carries how
+many comments shaping has not read, each one's author as the reference
+shows it, and the date that put it past the
 watermark: its edit date, else its creation date. It carries nothing of
 what a comment says.
 
@@ -760,24 +770,42 @@ return to the part that ran it, with the result.
    lets backlog claim <i>
    ```
 
-   It checks that nobody has the issue, assigns you, then moves it to
-   In Progress. On its `result`:
-   - **`claimed`:** go on, below.
+   The command reads the assignee count first. A nonzero count returns
+   `taken` before any write. Only a zero count proceeds to assignment.
+   It then posts a claim comment with a token unique to this run and
+   reads every page of comments again. The earliest claim comment wins,
+   ordered by GitHub comment ID, before Status moves to In Progress.
+   This distinguishes two sessions even under the same login.
+
+   The loser deletes only its own comment. It removes its assignment
+   only when the winner has a different login, and leaves Status alone.
+   It returns `taken` to the caller, which handles the lost claim.
+   The reference defines the
+   [claim comment](../lets-shape/references/issue-comments.md#claim-comments)
+   marker and token format.
+
+   On its `result`:
+   - **`claimed`:** keep its `claim` field as `<claim>` for release,
+     then go on, below.
    - **`taken`:** another session has the issue. The result is `taken`,
      with the `assignees` it names. Return it now.
    - **`failed`:** a write failed. The result is `claim-failed`, with
-     the `write` that failed and its `message`. Return it now, before
-     you create a branch, and undo nothing.
+     the `write` that failed, its `message` and its `claim` token when
+     present. Return it now, before you create a branch, and undo
+     nothing.
 4. Create a branch with the change's name off the default branch. This
    also fails when a local branch with the change's name appeared after
    [Check the issue](#check-the-issue) looked. A branch that appeared
    only on `origin` does not make it fail: the plan step's first push is
    then rejected, and that step fails. If creating the branch fails,
    release the claim, so another session can pick the issue up. It
-   removes only your assignment, then sets the Status back to Todo:
+   deletes only the comment matching this session's token. It keeps
+   an assignment shared with another claim under the same login, and
+   keeps Status while another claim remains. Otherwise it removes your
+   assignment and sets Status back to Todo:
 
    ```bash
-   lets backlog release <i>
+   lets backlog release <i> --claim <claim>
    ```
 
    The result is then `branch-failed`, with the branch's error. When the
@@ -788,13 +816,14 @@ return to the part that ran it, with the result.
 
 It returns one of these results:
 
-- `claimed`: the issue is yours, and the branch exists. It carries what
+- `claimed`: the issue is yours, and the branch exists. It carries the
+  claim token and what
   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
   returned: `no-owned-edits`, or `verified` with the checkpoint commits.
 - `taken`: another session has the issue. It carries who has it.
 - `claim-failed`: a write of `lets backlog claim` failed, and no branch
-  exists. It carries the `write`, `assign` or `status`, and its
-  `message`.
+  exists. It carries the failed `write` and its `message`, plus the
+  claim token when available for recovery.
 - `unresolved`:
   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
   returned `unresolved`. It carries what is unresolved.

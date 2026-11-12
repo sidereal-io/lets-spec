@@ -3411,6 +3411,28 @@ commit_maps() {
   done < <(tr -s '[:space:]' ' ' <"$repo/README.md" | sed 's/\. /.\n/g' | grep -F 'openspec/discovery.md')
 }
 
+# #215: session claim arbitration. Keep this block independent of other stories.
+@test "claim-race: Claim explains the guard before writes" {
+  local claim
+  claim="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
+  grep -qF 'A nonzero count returns `taken` before any write' <<<"$claim"
+  grep -qF 'Only a zero count proceeds to assignment' <<<"$claim"
+  grep -qF 'earliest claim comment' <<<"$claim"
+  grep -qF 'before Status moves to In Progress' <<<"$claim"
+  grep -qF 'token unique to this run' <<<"$claim"
+}
+
+@test "claim-race: recovery names the session token" {
+  local claim recovery
+  claim="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
+  recovery="$(skill_section lets-go 'Recover from a failed import' | tr -s '[:space:]' ' ')"
+  grep -qF 'lets backlog release <i> --claim <claim>' <<<"$claim"
+  grep -qF 'lets backlog release <i> --claim <claim>' <<<"$recovery"
+  grep -qF 'same login' <<<"$claim"
+  grep -qF 'deletes only its own comment' <<<"$claim"
+}
+
+
 # BEGIN shape-checkpoints (#231): shaping recovery contracts.
 @test "shape-checkpoints: finalize is a durable resume phase" {
   grep -qF '| finalize>' "$repo/skills/lets-shape/templates/issue-template.md"
