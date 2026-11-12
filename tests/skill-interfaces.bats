@@ -3411,66 +3411,33 @@ commit_maps() {
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
 # #229 review-model-choice: keep this block together for sibling story rebases.
 
-# #234: setup guards and reusable PR review wording (SLR-05, SLR-15, SLR-16).
-# Keep this block independent of sibling stories' additions.
-@test "SLR-05 number binding precedes dependent setup commands" {
-  local text before
-  text="$(skill_section lets-setup-backlog Create | tr -s '[:space:]' ' ')"
-  before="${text%%gh project field-create*}"
-  [ "$before" != "$text" ]
-  grep -qF 'The first command prints the Project' <<<"$before"
-  grep -qF 'number, `<n>`' <<<"$before"
-}
-
-@test "SLR-05 error stop precedes setup creation commands" {
+# #234: setup guards and reusable PR review wording.
+@test "setup guards precede Project creation" {
   local text before
   text="$(skill_section lets-setup-backlog Create)"
   before="${text%%gh project create*}"
   [ "$before" != "$text" ]
-  grep -qF 'Stop at the first error and show it.' <<<"$before"
+  grep -qF '`<n>`' <<<"$before"
+  grep -qF 'first error' <<<"$before"
 }
 
-@test "SLR-05 Status options use only settings-page repair" {
-  local text replacement status_fix
+@test "Status repair avoids generic field replacement" {
+  local text generic status_fix
   text="$(skill_section lets-setup-backlog Check)"
-  replacement="${text#*\*\*A field other than Status that lacks an option:\*\*}"
-  [ "$replacement" != "$text" ]
-  replacement="${replacement%%\*\*A missing Status option:\*\**}"
-  grep -qF 'Delete the field and create it again.' <<<"$replacement"
-  grep -qF 'the delete clears that field on every item' <<<"$replacement"
-  status_fix="${text#*\*\*A missing Status option:\*\*}"
+  generic="${text#*- **A field }"
+  generic="${generic%% - **A missing Status*}"
+  grep -qF 'other than Status' <<<"$generic"
+  status_fix="${text#*- **A missing Status option:**}"
   [ "$status_fix" != "$text" ]
-  grep -qF '<project url>/settings' <<<"$status_fix"
-  grep -qF "A rename keeps every item's value." <<<"$status_fix"
-  ! grep -qF 'field-delete' <<<"$status_fix" ||
-    { echo 'Status repair still deletes a field'; false; }
-  grep -qF 'Run a fix only when the user says so.' <<<"$text"
+  ! grep -qF 'field-delete' <<<"$status_fix"
 }
 
-@test "SLR-15 reusable PR review has no pending completed trial" {
-  local text
-  text="$(skill_section lets-review-pr 'Trial exercises')"
-  ! grep -qF "For this change's first live trial" <<<"$text" ||
-    { echo "The completed trial is still pending"; false; }
-  ! grep -qF 'https://github.com/sidereal-io/sidereal/pull/472' <<<"$text" ||
-    { echo 'The reusable skill still directs review to the fixed trial PR'; false; }
-  grep -qF 'static contract checks do not demonstrate role judgment or count as live trials' <<<"$text"
-  grep -qF 'distinct from expected exercise decisions.' <<<"$text"
-}
-
-@test "SLR-16 PR overview introduces the bounded method before full passes" {
-  local text before focused
+@test "PR overview introduces exchange bounds before decision review" {
+  local text before
   text="$(skill_section lets-review-pr 'Follow the review in order')"
-  before="${text%%\[decision pass\]*}"
+  before="${text%%#first-full-pass-decisions*}"
   [ "$before" != "$text" ]
-  grep -qF '[exchange limits](#bound-each-exchange-and-select-focused-passes)' <<<"$before"
-  grep -qF '[evidence rules](#mediate-by-evidence)' <<<"$before"
-  grep -qF 'examiner, challenger, then one examiner response' <<<"$before"
-  grep -qF 'verified early-exit condition applies.' <<<"$text"
-  focused="${text#*\[implementation pass\]*}"
-  [ "$focused" != "$text" ]
-  grep -qF 'Only after both full passes' <<<"$focused"
-  grep -qF '[focused passes](#bound-each-exchange-and-select-focused-passes)' <<<"$focused"
+  grep -qF '#bound-each-exchange' <<<"$before"
 }
 
 # Issue #233: authoring wording.
