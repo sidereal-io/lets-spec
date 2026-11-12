@@ -142,6 +142,15 @@ Note the commit you reviewed: `git rev-parse --short HEAD`, on a clean tree.
 The report records it, so a later session can tell whether the plan changed
 after the verdict.
 
+The report also records how the review ran, as the reviewer context:
+
+- `fresh context, other family` when the meta line says `"independent": true`;
+- `fresh context, same family` when it says `"independent": false`;
+- `subagent, other family` only when the tool's own output identifies a
+  family other than the author's;
+- `subagent, same family` when the tool identifies the author's family;
+- `subagent, family not evidenced` when the tool does not identify it.
+
 ### Check what the review read
 
 A resolver can run the session in another checkout, and a reviewer can
@@ -157,15 +166,6 @@ check only its `Read:` line.
 When a value differs, is `null`, or the `Read:` line is missing, record no
 review. Show the user the meta file, when this run wrote one, and the
 `Read:` line, or say that it is missing. Then stop.
-
-The report also records how the review ran, as the reviewer context:
-
-- `fresh context, other family` when the meta line says `"independent": true`;
-- `fresh context, same family` when it says `"independent": false`;
-- `subagent, other family` only when the tool's own output identifies a
-  family other than the author's;
-- `subagent, same family` when the tool identifies the author's family;
-- `subagent, family not evidenced` when the tool does not identify it.
 
 ### Review in a subagent
 
