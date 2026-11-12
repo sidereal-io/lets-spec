@@ -15,7 +15,7 @@
 ## 3. Docs [parallel]
 
 - [x] 3.1 [easy] `docs/resolvers.md` says `t3` runs steps. The resolver table's `t3` row says a step runs in a new thread, archived when it is done. *It runs no step yet* gives way to a short part on steps: the checkout and mode, and which threads are kept. A bullet beside the review bullets says that a `t3` review or step still running at its time limit is stopped, and its thread kept (verify: grep -n "archived when it is done" docs/resolvers.md) (✓ grep -n "archived when it is done" docs/resolvers.md found line 11)
-- [ ] 3.2 [easy] The smoke test in *After a t3 update* gains a step whose prompt asks for a `done` step report. It expects `"outcome":"done"` on stdout, `"resolver":"t3"` on stderr and an archived thread (verify: grep -n "step run" docs/resolvers.md)
+- [x] 3.2 [easy] The smoke test in *After a t3 update* gains a step whose prompt asks for a `done` step report. It expects `"outcome":"done"` on stdout, `"resolver":"t3"` on stderr and an archived thread (verify: grep -n "step run" docs/resolvers.md) (✓ grep -n "step run" docs/resolvers.md found the smoke test at line 168)
 
 ## 4. Integration [depends-on: 1, 2, 3]
 

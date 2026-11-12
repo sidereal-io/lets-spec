@@ -161,6 +161,17 @@ Expect:
    `"checkout"` set to the top level of the checkout you ran it from.
 3. An archived thread for the review.
 
+Then check that a step runs, and ends with its report:
+
+```sh
+printf 'Change no file. End your reply with this block, exactly:\n\n```step-report\noutcome: done\nevidence:\n  - smoke test\n```\n' > .workspace/s.md
+lets delegate step run --for build --name smoke-step --prompt-file .workspace/s.md \
+  --effort low --model gpt
+```
+
+Expect `"outcome":"done"` on stdout, a JSON line on stderr with
+`"resolver":"t3"`, and an archived thread for the step.
+
 Then check that `t3` still reads T3 Code's model catalogue:
 
 ```sh
@@ -186,7 +197,7 @@ The new thread should show the `smoke-worktree` folder and branch, not
 the main checkout. Then archive the thread, and remove the worktree with
 `git worktree remove ../smoke-worktree` and `git branch -D smoke-worktree`.
 
-The review spends tokens. CI never runs it.
+The review and the step spend tokens. CI never runs them.
 
 ## `cli`
 
