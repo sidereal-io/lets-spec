@@ -59,3 +59,12 @@ The focused idea test failed before examples were present and passed after the c
 - **Correctness:** no requirement changes are declared (`skip_specs: true`), so delta-spec coverage and scenario mapping are not applicable. The reader cases above cover the issue's acceptance criteria.
 - **Coherence:** the implementation follows the design's narrow edits and existing interface-test seam. Tests are appended as one self-contained #228 block. No CLI, schema, glossary or installed-copy changes are included.
 - **Limits:** these are author walkthroughs and executable shell examples, not human usability validation. The completed PR's code review is assigned to the orchestrator by the user. The change remains active and the PR remains a draft pending that review; it has not been archived or claimed ready.
+
+## Repository checks
+
+- `pnpm test` passed: 581 Node tests, the typecheck and all 376 Bats tests. The corrected prose-width check passed in this run.
+- `nix flake check` passed on x86_64-linux: flows, commands, dist, flake-module and node-tests. The initial run found one new 73-column prose line; it was wrapped in 449f3119 and the complete check passed on rerun.
+- `mise run check` passed strict OpenSpec validation: 15 items passed, zero failed.
+- `git diff --check` passed.
+
+All three required checks passed before the first push. Code review, formal finishing verification and archive remain for the orchestrator's review handoff.
