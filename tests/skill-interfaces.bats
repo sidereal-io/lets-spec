@@ -3458,6 +3458,21 @@ commit_maps() {
   grep -qF 'distinct from expected exercise decisions.' <<<"$text"
 }
 
+@test "SLR-16 PR overview introduces the bounded method before full passes" {
+  local text before focused
+  text="$(skill_section lets-review-pr 'Follow the review in order')"
+  before="${text%%\[decision pass\]*}"
+  [ "$before" != "$text" ]
+  grep -qF '[exchange limits](#bound-each-exchange-and-select-focused-passes)' <<<"$before"
+  grep -qF '[evidence rules](#mediate-by-evidence)' <<<"$before"
+  grep -qF 'examiner, challenger, then one examiner response' <<<"$before"
+  grep -qF 'verified early-exit condition applies.' <<<"$text"
+  focused="${text#*\[implementation pass\]*}"
+  [ "$focused" != "$text" ]
+  grep -qF 'Only after both full passes' <<<"$focused"
+  grep -qF '[focused passes](#bound-each-exchange-and-select-focused-passes)' <<<"$focused"
+}
+
 # Issue #233: authoring wording.
 @test "authoring wording: modified export retains the signed-out scenario" {
   sed -n '/^## MODIFIED Requirements$/,/^## REMOVED Requirements$/p' "$repo/skills/lets-write-specs/SKILL.md" |

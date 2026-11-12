@@ -22,12 +22,14 @@ Keep material limits beside the findings they qualify.
    [supporting context](#capture-supporting-context).
 2. [Select models](#select-models-from-attributed-provenance) and
    [prepare the read-only roles](#delegate-fresh-read-only-roles).
-3. Run the [decision pass](#first-full-pass-decisions), then the
+3. Use the [exchange limits](#bound-each-exchange-and-select-focused-passes)
+   for each pass: examiner, challenger, then one examiner response. Apply
+   the [evidence rules](#mediate-by-evidence) throughout to decide which
+   concerns remain.
+4. Run the [decision pass](#first-full-pass-decisions), then the
    [implementation pass](#second-full-pass-implementation), unless the
-   verified early-exit condition applies.
-4. Use the [exchange limits](#bound-each-exchange-and-select-focused-passes)
-   and [evidence rules](#mediate-by-evidence) to decide which concerns
-   remain.
+   verified early-exit condition applies. Only after both full passes,
+   decide whether to run [focused passes](#bound-each-exchange-and-select-focused-passes).
 5. [Publish one comment](#publish-once-from-the-mediator) with the result
    and its limits.
 
