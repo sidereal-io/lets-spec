@@ -2,11 +2,11 @@
 
 ### Requirement: Review skills distinguish listed models from allowed models
 
-Both review skills SHALL keep the resolver's listed models separate from the allowed models remaining after guidance exclusions. If listed models are nonempty but allowed models are empty, the skill SHALL stop, show the guidance and listed models, and ask the user to choose a model or the subagent step. It SHALL NOT silently fall back. Every fallback SHALL respect guidance exclusions unless the user changes them. Discovery failures and review exit handling SHALL retain their existing stops and required reviews.
+Both review skills SHALL distinguish listed models from allowed models after guidance exclusions. With listed models but none allowed, they SHALL stop, show the guidance and listed models, and ask which listed model to allow for this run. They SHALL offer the subagent step only if a permitted subagent can run. The user's model choice SHALL change exclusions for this run without editing config. Fallbacks SHALL respect the resulting exclusions. Existing discovery-error stops, exit handling and required reviews SHALL remain.
 
 #### Scenario: Guidance excludes every listed model
 - **WHEN** the resolver lists models but the user's guidance excludes all of them
-- **THEN** each review skill stops before running a review or subagent, shows the guidance and listed models, and asks for the user's choice
+- **THEN** each skill shows the guidance and listed models, asks which model to allow for this run (or offers a permitted subagent), and waits before resuming selection
 
 #### Scenario: Resolver lists no models
 - **WHEN** discovery succeeds with no listed models

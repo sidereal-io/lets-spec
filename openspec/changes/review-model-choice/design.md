@@ -21,7 +21,7 @@ The implementation is prose consumed by agents. Both skills use resolver `option
 
 ## Decisions
 
-1. Name resolver `options` the **listed models** and the filtered result the **allowed models**. Check excluded-all before delegation. Keep empty-discovery and exit-3 paths, but require guidance-compliant fallback; if none is available, stop and ask. A user selecting a previously excluded model must change the exclusion explicitly.
+1. Name resolver `options` the **listed models** and the filtered result the **allowed models**. Check excluded-all before delegation. Keep empty-discovery and exit-3 paths, but require guidance-compliant fallback; if none is available, stop and ask. The user's explicit model choice changes exclusions for this run without editing config. Offer a subagent only if guidance permits one.
 2. Retain all known build author families for ranking and reporting. Use the current session's family only for CLI compatibility. Explain the GPT/Claude example directly so the single-family metadata cannot be mistaken for full independence.
 3. Describe the identified plan subagent family and classify same/other only with evidence. Name missing REVIEW.md without changing the review's other inputs.
 4. Keep tests beside the existing skill interface suite. Literal assertions protect the instructions' decision points; reader walkthroughs cover their interpretation. No new policy evaluator is introduced.
