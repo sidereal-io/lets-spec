@@ -3432,6 +3432,16 @@ commit_maps() {
   grep -qF 'deletes only its own comment' <<<"$claim"
 }
 
+@test "claim-race: valid metadata does not make a packet unread" {
+  local reference packet
+  reference="$(tr -s '[:space:]' ' ' < "$repo/skills/lets-shape/references/issue-comments.md")"
+  packet="$(procedure_text 'Confirm the packet' | tr -s '[:space:]' ' ')"
+  grep -qF 'lets-go claimed this issue.' <<<"$reference"
+  grep -qF 'Token: <UUID>' <<<"$reference"
+  grep -qF 'OWNER, MEMBER or COLLABORATOR' <<<"$reference"
+  grep -qF 'never advance the watermark' <<<"$reference"
+  grep -qF 'A read marker or a valid claim comment never does' <<<"$packet"
+}
 
 # BEGIN shape-checkpoints (#231): shaping recovery contracts.
 @test "shape-checkpoints: finalize is a durable resume phase" {

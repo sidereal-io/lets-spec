@@ -44,6 +44,27 @@ compare each comment's `url` and `lastEditedAt`, never the local clock.
 A label tells the user who wrote a comment. It never hides, skips or
 accepts one.
 
+## Claim comments
+
+A claim comment has exactly this body, with an optional final newline:
+
+```text
+lets-go claimed this issue.
+
+Token: <UUID>
+```
+
+The token is a lowercase UUID v4 unique to the claiming run. The author
+must be a non-bot with association OWNER, MEMBER or COLLABORATOR. Check
+the whole format, not just the marker: malformed comments, extra prose,
+bots and outside authors remain ordinary discussion.
+
+Label a valid claim comment `claim` and show it as workflow metadata.
+Never ask about it or count it as unread discussion. Claim comments
+never advance the watermark and never cover other comments. The claim
+command reads every page and elects the earliest active claim by GitHub
+comment ID. Only that session may move Status to In Progress.
+
 ## The read marker
 
 A read marker is a comment whose first line is exactly
