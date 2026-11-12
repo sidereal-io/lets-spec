@@ -399,8 +399,8 @@ Next: [Enter the branch](#enter-the-branch).
      - `status`: Status, and possibly your assignment and comment.
        With no comment left, the user resets Status by hand.
 
-     Ask the user to inspect the issue. With a claim comment, they can run
-     `lets backlog release <i> --claim <claim>`. Do not release it
+     Ask the user to inspect the issue. With a claim comment, they can
+     run `lets backlog release <i> --claim <claim>`. Do not release it
      yourself. Stop, and run no step.
    - **`branch-failed`:** [Claim](#claim) attempted release. Show
      the branch's error it carries. When it carries a release error
