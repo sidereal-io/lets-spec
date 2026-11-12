@@ -169,6 +169,23 @@ test('a signal to lets reaches a group after another command\'s group has ended'
   await waitFor(() => readPids(pids).every(gone), 'the shell and its child to end', 2000);
 });
 
+const listeners = () => ['SIGINT', 'SIGTERM', 'SIGHUP'].map((signal) => process.listenerCount(signal));
+// Before any test runs, so a handler an earlier test left behind counts too.
+const LISTENERS_AT_START = listeners();
+
+const SETTLES = {
+  'a command that ends': () => realIo().execFile('true', []),
+  'a command that times out': () => realIo().execFile('sleep', ['30'], { timeoutMs: 100 }),
+  'a command that cannot start': () => realIo().execFile('lets-no-such-command', []).catch(() => {}),
+};
+
+for (const [what, run] of Object.entries(SETTLES)) {
+  test(`execFile leaves no signal handler behind after ${what}`, async () => {
+    await run();
+    assert.deepEqual(listeners(), LISTENERS_AT_START);
+  });
+}
+
 // A fake system for parentPid: files maps a path to its text, and ps is
 // what `ps` prints. calls records each command it runs.
 function fakeSys({ files = {}, ps = '' }: { files?: Record<string, string>; ps?: string }) {

@@ -10,7 +10,7 @@
 
 - [x] 2.1 [complex] While a command runs, a `SIGINT` or `SIGTERM` to `lets` reaches the command's group, and `lets` then ends by that signal. A fixture, `tests/lets/resolvers/kit/fixtures/exec-and-wait.ts`, runs `realIo().execFile` on a shell that starts a child, with no time limit. The test starts it with `node`, waits for its process ID file, sends the signal, and checks that the fixture ended by that signal and that the shell and its child are gone (verify: node --test tests/lets/resolvers/kit/io.test.ts) (✓ node --test tests/lets/resolvers/kit/io.test.ts passed, 18 tests)
 - [x] 2.2 [medium] A signal still reaches every running group when another command's group has already ended but its command has not settled, because a process in a new session holds its stdout. The handler ignores `ESRCH` and `EPERM` for that group. The fixture gains this case (verify: node --test tests/lets/resolvers/kit/io.test.ts) (✓ node --test tests/lets/resolvers/kit/io.test.ts passed, 19 tests)
-- [ ] 2.3 [easy] `execFile` leaves no signal handler behind: `process.listenerCount` for `SIGINT`, `SIGTERM` and `SIGHUP` is back to its starting value after a command settles, after a timeout, and after a command that cannot start (verify: node --test tests/lets/resolvers/kit/io.test.ts)
+- [x] 2.3 [easy] `execFile` leaves no signal handler behind: `process.listenerCount` for `SIGINT`, `SIGTERM` and `SIGHUP` is back to its starting value after a command settles, after a timeout, and after a command that cannot start (verify: node --test tests/lets/resolvers/kit/io.test.ts) (✓ node --test tests/lets/resolvers/kit/io.test.ts passed, 22 tests)
 
 ## 3. Docs [parallel]
 
@@ -26,3 +26,4 @@
 - 1.4: task 1.2 already settles a timed-out command on the group's end, so the new test passed when it was written. Run against the `execFile` from before this change, it timed out after 30 seconds.
 - 1.5: the test pins behavior that does not change (D6), so it passed when it was written, as planned.
 - 2.1: the fixture's shell runs its child in the foreground, not with `&`. A shell with no job control starts a background child with `SIGINT` ignored, so a background child would survive the `SIGINT` case whatever `lets` does.
+- 2.3: task 2.1 already removed the handlers when the last command settles, so the new tests passed when they were written. Each was run once with the code broken: no removal on settle, then a failed start that joins the set. Each failed. The tests compare with the count when the file loads, not when the test starts, so a handler an earlier test left behind also fails them.
