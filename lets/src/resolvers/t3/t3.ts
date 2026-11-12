@@ -40,6 +40,9 @@ export const ORCHESTRATION_PROTOCOL = 2;
 
 const POLL_MS = 5000;
 const REPLY_TIMEOUT_MS = 120_000;
+// How long a stop may take, so a T3 that hangs cannot hold a timed-out
+// command for REPLY_TIMEOUT_MS more.
+const STOP_TIMEOUT_MS = 10_000;
 // The whole catalogue request, from the token to the reply.
 const CATALOGUE_TIMEOUT_MS = 10_000;
 
@@ -416,9 +419,10 @@ export async function readCatalogue(io: Io, origin: string): Promise<Catalogue> 
   }
 }
 
-// Send one orchestration command, such as `thread.archive`.
-export function dispatch(io: Io, server: Server, command: { threadId?: string; [field: string]: unknown }): Promise<unknown> {
-  return request(io, server, { tag: 'orchestration.dispatchCommand', payload: command, threadId: command.threadId });
+// Send one orchestration command, such as `thread.archive`, by the
+// deadline when there is one.
+export function dispatch(io: Io, server: Server, command: { threadId?: string; [field: string]: unknown }, deadline?: number): Promise<unknown> {
+  return request(io, server, { tag: 'orchestration.dispatchCommand', payload: command, threadId: command.threadId }, deadline);
 }
 
 // Create a thread and send its first message. The answer names the thread.
@@ -494,10 +498,11 @@ export function createAdapter(io: Io): Adapter {
   // Stop the thread's run, as T3 Code's Stop does, with every task it
   // delegated.
   async function stop(handle: Handle): Promise<void> {
+    const deadline = Date.now() + STOP_TIMEOUT_MS;
     const { origin } = runningServer();
-    await dispatch(io, { origin, token: await readToken(io) }, {
+    await dispatch(io, { origin, token: await readToken(io, Math.max(0, deadline - Date.now())) }, {
       type: 'thread.stop', commandId: randomUUID(), threadId: handle.id, reason: 'lets delegate: the session ran past its time limit',
-    });
+    }, deadline);
   }
 
   // Wait for the thread's run to end, and read its final message.
