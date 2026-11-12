@@ -11,8 +11,16 @@
 - **WHEN** `octocat` is assigned to #149
 - **THEN** `claim 149` returns `"result": "taken"` with `"assignees": ["octocat"]`, and changes neither the assignees nor the Status
 
+#### Scenario: Two sessions use one login
+- **WHEN** two sessions read an empty assignee list and post different claim tokens under the same login
+- **THEN** only the earliest comment's session returns claimed, the loser deletes its own comment, and the shared assignment remains
+
+#### Scenario: Two sessions use different logins
+- **WHEN** two sessions read an empty assignee list and post different claim tokens under different logins
+- **THEN** only the earliest comment's session returns claimed, and the loser removes only its own comment and assignment without writing Status
+
 ### Requirement: A failed claim write is reported, not repaired
-When a write of `claim` fails, the command SHALL stop at that write and return `"result": "failed"`, with `write` naming the failed write (`assign`, `claim`, `delete-claim`, `delete-claim`, `unassign` or `status`), and `message` holding `gh`'s error. It SHALL not undo an earlier write, retry, or keep a local claim record. A failure after posting SHALL carry the claim token for recovery; the comment can remain until explicitly released. The exit code SHALL be 0, because `failed` is a result the caller acts on.
+When a write of `claim` fails, the command SHALL stop at that write and return `"result": "failed"`, with `write` naming the failed write (`assign`, `claim`, `delete-claim`, `unassign` or `status`), and `message` holding `gh`'s error. It SHALL not undo an earlier write, retry, or keep a local claim record. A failure after posting SHALL carry the claim token for recovery; the comment can remain until explicitly released. The exit code SHALL be 0, because `failed` is a result the caller acts on.
 
 #### Scenario: Status write fails
 - **WHEN** `claim 149` assigns the user, and setting Status fails with `gh`'s error `field not found`
@@ -32,14 +40,6 @@ When a write of `claim` fails, the command SHALL stop at that write and return `
 #### Scenario: Another user stays
 - **WHEN** the signed-in user and `octocat` are assigned to #149
 - **THEN** `release 149 --claim <token>` removes only the signed-in user, and `octocat` stays assigned
-
-#### Scenario: Two sessions use one login
-- **WHEN** two sessions read an empty assignee list and post different claim tokens under the same login
-- **THEN** only the earliest comment's session returns claimed, the loser deletes its own comment, and the shared assignment remains
-
-#### Scenario: Two sessions use different logins
-- **WHEN** two sessions read an empty assignee list and post different claim tokens under different logins
-- **THEN** only the earliest comment's session returns claimed, and the loser removes only its own comment and assignment without writing Status
 
 #### Scenario: A stale release uses the winner's login
 - **WHEN** a loser has already deleted its comment and later releases its own token while the winner under the same login is active

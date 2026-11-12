@@ -8,18 +8,26 @@ const URL_149 = `https://github.com/${REPO}/issues/149`;
 const ASSIGN = ['issue', 'edit', '149', '--add-assignee', '@me'];
 const STATUS = ['project', 'item-edit', '7', '--owner', 'acme', '--url', URL_149, '--field', 'Status', '--value', 'In Progress'];
 
-const rows = ({ assignees = [] as string[], assign = ok('') as Answer, status = ok('') as Answer } = {}): Row[] => [
-  ...LOOKUP_ONE,
-  ['issue view 149 --json assignees,url', json({ assignees: assignees.map((login) => ({ login })), url: URL_149 })],
-  ['issue edit 149 --add-assignee', assign],
-  ['project item-edit', status],
-];
+const rows = ({ assignees = [] as string[], assign = ok('') as Answer, status = ok('') as Answer } = {}): Row[] => {
+  let body = '';
+  return [
+    ...LOOKUP_ONE,
+    ['issue view 149 --json assignees,url', json({ assignees: assignees.map((login) => ({ login })), url: URL_149 })],
+    ['api user', json({ login: 'octocat' })],
+    ['issue edit 149 --add-assignee', assign],
+    ['api repos/acme/app/issues/149/comments --method POST', (args) => { body = args.find((a) => a.startsWith('body='))!.slice(5); return ok(''); }],
+    ['api repos/acme/app/issues/149/comments --paginate --slurp', () => json([[{ id: 1, body, user: { login: 'octocat', type: 'User' }, author_association: 'OWNER' }]])],
+    ['project item-edit', status],
+  ];
+};
 
 test('claim assigns the user, then sets Status to In Progress, and returns claimed', async () => {
   const t = backlogDeps(rows());
   assert.equal(await run(['claim', '149'], t.deps), 0);
-  assert.deepEqual(t.json(), { result: 'claimed' });
-  assert.deepEqual(t.calls().slice(1), [['issue', 'view', '149', '--json', 'assignees,url'], ASSIGN, STATUS]);
+  assert.equal(t.json().result, 'claimed');
+  assert.match(t.json().claim, /^[0-9a-f-]{36}$/);
+  assert.deepEqual(t.calls().at(-1), STATUS);
+  assert.ok(t.calls().find((args) => JSON.stringify(args) === JSON.stringify(ASSIGN)));
 });
 
 test('claim returns taken with the logins, and writes nothing, when anyone is assigned', async () => {
@@ -33,7 +41,7 @@ test('claim returns taken with the logins, and writes nothing, when anyone is as
 test('a failed Status write returns failed with status and gh\'s error, and undoes nothing', async () => {
   const t = backlogDeps(rows({ status: fail('field not found') }));
   assert.equal(await run(['claim', '149'], t.deps), 0);
-  assert.deepEqual(t.json(), { result: 'failed', write: 'status', message: 'field not found' });
+  assert.deepEqual(t.json(), { result: 'failed', write: 'status', message: 'field not found', claim: t.json().claim });
   assert.ok(!t.ran('issue edit 149 --remove-assignee'));
   assert.equal(t.calls().filter((args) => args[0] === 'project').length, 1);
 });
@@ -50,7 +58,7 @@ test('a write that times out is failed, and says it may have happened', async ()
   for (const [which, write] of [['assign', 'assign'], ['status', 'status']] as const) {
     const t = backlogDeps(rows({ [which]: TIMED_OUT }));
     assert.equal(await run(['claim', '149'], t.deps), 0);
-    assert.deepEqual(t.json(), { result: 'failed', write, message: 'timed out; the write may have happened' });
+    assert.deepEqual(t.json(), { result: 'failed', write, message: 'timed out; the write may have happened', ...(write === 'status' ? { claim: t.json().claim } : {}) });
   }
 });
 
