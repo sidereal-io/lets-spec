@@ -61,3 +61,14 @@ test('a stale token leaves the winning session untouched', async () => {
   assert.ok(!t.ran('project item-edit'));
   assert.ok(!t.ran('api repos/acme/app/issues/comments/'));
 });
+
+test('release preserves another claim under the same login', async () => {
+  const t = backlogDeps([
+    ['api repos/acme/app/issues/149/comments --paginate', json([[comment(TOKEN), comment(OTHER, 2)]])],
+    ...rows(),
+  ]);
+  assert.equal(await run(['release', '149', '--claim', TOKEN], t.deps), 0);
+  assert.ok(t.ran('api repos/acme/app/issues/comments/1 --method DELETE'));
+  assert.ok(!t.ran('issue edit'));
+  assert.ok(!t.ran('project item-edit'));
+});

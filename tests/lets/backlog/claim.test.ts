@@ -8,7 +8,7 @@ const URL_149 = `https://github.com/${REPO}/issues/149`;
 const ASSIGN = ['issue', 'edit', '149', '--add-assignee', '@me'];
 const STATUS = ['project', 'item-edit', '7', '--owner', 'acme', '--url', URL_149, '--field', 'Status', '--value', 'In Progress'];
 
-const rows = ({ assignees = [] as string[], assign = ok('') as Answer, status = ok('') as Answer } = {}): Row[] => {
+const rows = ({ assignees = [] as string[], assign = ok('') as Answer, status = ok('') as Answer, comments = (body: string): unknown => [[{ id: 1, body, user: { login: 'octocat', type: 'User' }, author_association: 'OWNER' }]] } = {}): Row[] => {
   let body = '';
   return [
     ...LOOKUP_ONE,
@@ -16,8 +16,10 @@ const rows = ({ assignees = [] as string[], assign = ok('') as Answer, status = 
     ['api user', json({ login: 'octocat' })],
     ['issue edit 149 --add-assignee', assign],
     ['api repos/acme/app/issues/149/comments --method POST', (args) => { body = args.find((a) => a.startsWith('body='))!.slice(5); return ok(''); }],
-    ['api repos/acme/app/issues/149/comments --paginate --slurp', () => json([[{ id: 1, body, user: { login: 'octocat', type: 'User' }, author_association: 'OWNER' }]])],
+    ['api repos/acme/app/issues/149/comments --paginate --slurp', () => json(comments(body))],
     ['project item-edit', status],
+    ['api repos/acme/app/issues/comments/', ok('')],
+    ['issue edit 149 --remove-assignee', ok('')],
   ];
 };
 
@@ -73,4 +75,51 @@ test('every write has a finite timeout', async () => {
   const t = backlogDeps(rows());
   await run(['claim', '149'], t.deps);
   for (const opts of t.options()) assert.ok(Number.isFinite(opts.timeoutMs));
+});
+
+test('a failed claim comment write retains its recovery token', async () => {
+  const t = backlogDeps([
+    ['api repos/acme/app/issues/149/comments --method POST', TIMED_OUT],
+    ...rows(),
+  ]);
+  assert.equal(await run(['claim', '149'], t.deps), 0);
+  assert.equal(t.json().result, 'failed');
+  assert.equal(t.json().write, 'claim');
+  assert.match(t.json().claim, /^[0-9a-f-]{36}$/);
+  assert.ok(!t.ran('project item-edit'));
+});
+
+test('an unreadable election retains its recovery token', async () => {
+  const t = backlogDeps([
+    ['api repos/acme/app/issues/149/comments --paginate', fail('HTTP 502')],
+    ...rows(),
+  ]);
+  assert.equal(await run(['claim', '149'], t.deps), 1);
+  assert.equal(t.json().error, 'gh-failed');
+  assert.match(t.json().claim, /^[0-9a-f-]{36}$/);
+  assert.ok(!t.ran('project item-edit'));
+});
+
+test('a missing posted claim never grants ownership', async () => {
+  const t = backlogDeps([
+    ['api repos/acme/app/issues/149/comments --paginate', json([[]])],
+    ...rows(),
+  ]);
+  assert.equal(await run(['claim', '149'], t.deps), 1);
+  assert.match(t.json().message, /posted claim is missing/);
+  assert.ok(!t.ran('project item-edit'));
+});
+
+test('the earliest valid claim wins across comment pages', async () => {
+  const earlier = 'lets-go claimed this issue.\n\nToken: 00000000-0000-4000-8000-000000000001';
+  const t = backlogDeps(rows({ comments: (body) => [
+    [{ id: 200, body, user: { login: 'octocat', type: 'User' }, author_association: 'OWNER' },
+     { id: 1, body: earlier, user: { login: 'outsider', type: 'User' }, author_association: 'NONE' }],
+    [{ id: 100, body: earlier, user: { login: 'winner', type: 'User' }, author_association: 'MEMBER' }],
+  ] }));
+  assert.equal(await run(['claim', '149'], t.deps), 0);
+  assert.deepEqual(t.json(), { result: 'taken', assignees: ['winner'] });
+  assert.ok(t.ran('api repos/acme/app/issues/comments/200 --method DELETE'));
+  assert.ok(t.ran('issue edit 149 --remove-assignee'));
+  assert.ok(!t.ran('project item-edit'));
 });
