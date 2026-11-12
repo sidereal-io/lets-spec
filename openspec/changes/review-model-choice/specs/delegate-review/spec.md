@@ -16,6 +16,10 @@ Both review skills SHALL distinguish listed models from allowed models after gui
 - **WHEN** a review run with allowed models exits 3
 - **THEN** the skill takes the existing subagent path subject to guidance exclusions
 
+#### Scenario: No permitted fallback can run
+- **WHEN** discovery lists no models or a review exits 3, and no permitted subagent can run
+- **THEN** the skill stops and asks the user, returning `needs-input` in a `lets-go` step so the caller asks
+
 ### Requirement: Build review evaluates the complete author family set
 
 The build review skill SHALL rank allowed models by guidance first, families outside every known author family next, and discovery order last. It SHALL pass the reviewing session's own family as `--source-family` for CLI compatibility. Its pull request report SHALL name the author families and reviewer overlap separately from the CLI's single-family `independent` comparison. Independence from the whole author set SHALL require evidence identifying a reviewer family outside that set. Permitted same-family reviews SHALL remain available in a fresh session or subagent.

@@ -55,6 +55,8 @@ commits.
 
 ## Run the review
 
+In a `lets-go` step, return `needs-input` whenever this skill asks the user.
+
 Commit first. The review covers commits, not the working tree.
 
 1. Resolve vocabulary as below, then write the prompt to
@@ -77,8 +79,7 @@ Commit first. The review covers commits, not the working tree.
    models are empty, stop. Show the guidance and the listed models. Ask the
    user to allow a listed model for this run. Offer the subagent step too,
    if a permitted subagent can run. Wait for the answer, then resume step 3
-   with it. In a `lets-go` step, return `needs-input` so the caller asks the
-   user.
+   with it.
 
    When the listed models are empty, whatever the resolver, skip the command
    and take the [subagent step](#review-in-a-subagent).
