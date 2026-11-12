@@ -12,6 +12,7 @@
 //   gitAfter:  what it prints after; default gitBefore
 //   gitAfterFails: true when `git status` fails after the session
 //   head:      what `git rev-parse HEAD` prints; default HEAD
+//   headFails: true when `git rev-parse HEAD` fails
 //   files:     the files there are; default the prompt file /repo/p.md
 //   config:    the text of the delegate config, CONFIG, when there is one
 import type { ResolverName } from '../../../../lets/src/delegate/config.ts';
@@ -145,18 +146,21 @@ type Options = {
   gitAfter?: string;
   gitAfterFails?: boolean;
   head?: string;
+  headFails?: boolean;
   files?: Record<string, string>;
   config?: string;
 };
 
 export function commandDeps({
-  adapters = {}, real = {}, gitBefore = '', gitAfter = gitBefore, gitAfterFails = false, head = HEAD, files = { [PROMPT_FILE]: 'PROMPT TEXT' }, config,
+  adapters = {}, real = {}, gitBefore = '', gitAfter = gitBefore, gitAfterFails = false, head = HEAD, headFails = false, files = { [PROMPT_FILE]: 'PROMPT TEXT' }, config,
 }: Options = {}) {
   const io = fakeIo({ files: { ...files, ...(config === undefined ? {} : { [CONFIG]: config }) } });
   let statusCalls = 0;
   io.execFile = async (cmd, args, opts = {}) => {
     io.calls.push([cmd, args, opts]);
-    if (cmd === 'git' && args.join(' ') === 'rev-parse HEAD') return { stdout: `${head}\n`, stderr: '', code: 0 };
+    if (cmd === 'git' && args.join(' ') === 'rev-parse HEAD') {
+      return headFails ? { stdout: 'HEAD\n', stderr: 'fatal: not a git repository', code: 128 } : { stdout: `${head}\n`, stderr: '', code: 0 };
+    }
     if (cmd === 'git' && args[0] === 'rev-parse') return { stdout: '/repo\n', stderr: '', code: 0 };
     if (cmd === 'git') {
       if (statusCalls++ === 0) return { stdout: gitBefore, stderr: '', code: 0 };

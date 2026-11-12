@@ -11,10 +11,11 @@ export async function repoRoot(cwd: string, io: Io): Promise<string> {
   return stdout.trim();
 }
 
-// The full hash at HEAD in checkout.
-export async function headCommit(checkout: string, io: Io): Promise<string> {
-  const { stdout } = await io.execFile('git', ['rev-parse', 'HEAD'], { cwd: checkout });
-  return stdout.trim();
+// The full hash at HEAD in checkout, or null when git cannot read it, such
+// as a checkout that is gone.
+export async function headCommit(checkout: string, io: Io): Promise<string | null> {
+  const { stdout, code } = await io.execFile('git', ['rev-parse', 'HEAD'], { cwd: checkout });
+  return code === 0 ? stdout.trim() : null;
 }
 
 // Each entry of `git status`: two status letters, a space, then the path.

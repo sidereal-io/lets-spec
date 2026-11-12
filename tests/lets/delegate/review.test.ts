@@ -57,6 +57,22 @@ test('the adapter is asked to run the normalized name, the prompt, the family, t
   }]);
 });
 
+test('a resolver that cannot tell the checkout gives a null commit, and the review still succeeds', async () => {
+  const t = withT3({ adapters: { t3: { run: { checkout: null } } } });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.equal(t.stdout(), 'FINDINGS\n');
+  const { checkout, commit } = JSON.parse(t.stderr());
+  assert.deepEqual({ checkout, commit }, { checkout: null, commit: null });
+});
+
+test('a HEAD that cannot be read gives a null commit, and the review still succeeds', async () => {
+  const t = withT3({ adapters: { t3: { run: { checkout: '/gone' } } }, headFails: true });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.equal(t.stdout(), 'FINDINGS\n');
+  const { checkout, commit } = JSON.parse(t.stderr());
+  assert.deepEqual({ checkout, commit }, { checkout: '/gone', commit: null });
+});
+
 test('a bare family is asked for with no particular model', async () => {
   const t = withT3();
   await run(options({ models: ['claude'] }), t.deps);
