@@ -394,8 +394,9 @@ Next: [Enter the branch](#enter-the-branch).
 
      - `assign`: your assignment; no claim token exists.
      - `claim`: your assignment and possibly a claim comment.
-     - `delete-claim`: claim comments and your assignment. After release,
-       check that no claim comment or assignment of yours remains.
+     - `delete-claim`: claim comments and your assignment. After
+       release, check that no claim comment or assignment of yours
+       remains.
      - `unassign`: your assignment and possibly In Progress Status;
        the user fixes both by hand.
      - `status`: Status, and possibly your assignment and comment.
