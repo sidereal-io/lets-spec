@@ -10,3 +10,5 @@
 
 - Pushes and PR creation wait until all three repository checks pass, as the user requires.
 - No new brainstorm policy questions: the user explicitly requested the already decided SLR-19/20 policies from #226.
+
+- Code review M1 clarified the existing user-owned split: refresh earlier planning artifacts before resuming, and request the decision without a recommendation when a caller requires a question report. The count and proposed slice remain context. No other skill or caller policy changes.

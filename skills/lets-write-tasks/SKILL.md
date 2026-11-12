@@ -19,7 +19,10 @@ to locate the work and verify completion.
   than twelve tasks, stop without writing or committing `tasks.md`. Report
   the task count and name the slice to move to a new story, then wait.
   Do not split the story here: the user decides the split in the brainstorm.
-  After the user decides the split, rerun task planning on the smaller story.
+  If the caller requires a question report, ask for the user's split decision
+  without a recommendation; include the count and proposed slice as context.
+  After the user decides the split, bring earlier planning artifacts into
+  line with the smaller story before rerunning task planning.
 - **One task is one red-green cycle:** one behavior, its failing test,
   then the code that makes the test pass. A task that needs "and" to
   describe is two tasks.

@@ -6,7 +6,7 @@ Give agents writing task lists explicit size limits and file-sharing rules so th
 
 ### Requirement: Stop before writing an oversized task list
 
-The tasks skill SHALL retain the five-to-twelve task range. When the planned list exceeds twelve tasks, it SHALL stop without writing or committing `tasks.md`, report the task count and name the slice to move to a new story. It SHALL leave the split decision to the user in the brainstorm.
+The tasks skill SHALL retain the five-to-twelve task range. When the planned list exceeds twelve tasks, it SHALL stop without writing or committing `tasks.md`, report the task count and name the slice to move to a new story. It SHALL leave the split decision to the user in the brainstorm. When a caller requires a question report, it SHALL request the user's decision without a recommendation, keeping the count and proposed slice as context.
 
 #### Scenario: Thirteen behaviors need thirteen tasks
 - **WHEN** task planning identifies thirteen tasks
@@ -18,11 +18,19 @@ The tasks skill SHALL retain the five-to-twelve task range. When the planned lis
 
 ### Requirement: Resume tasks after the split decision
 
-The tasks skill SHALL direct the agent to rerun task planning on the smaller story after the user decides the split in the brainstorm.
+The tasks skill SHALL direct the agent to bring earlier planning artifacts into line with the smaller story after the user decides the split in the brainstorm, before rerunning task planning.
 
 #### Scenario: User decides the split
 - **WHEN** the user has decided the split in the brainstorm
-- **THEN** the next action is to rerun task planning on the smaller story
+- **THEN** the agent updates earlier planning artifacts to match the smaller story before rerunning task planning
+
+#### Scenario: A moved slice was already in the plan
+- **WHEN** the user moves three of thirteen planned behaviors to another story in the brainstorm
+- **THEN** the earlier proposal, specs, design and other affected artifacts no longer require those three behaviors before task planning runs again
+
+#### Scenario: A caller can accept recommended answers automatically
+- **WHEN** an oversized list stops task planning inside a caller that requires a question report
+- **THEN** the report requests the user's split decision without a recommended answer and includes the count and proposed slice only as context
 
 ### Requirement: Compare all concurrently eligible tasks for file sharing
 
