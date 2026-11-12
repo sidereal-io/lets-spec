@@ -42,6 +42,21 @@ from a linked worktree runs in that worktree, on its branch, as part of
 the main checkout's T3 project. From the main checkout, it runs in the project's
 own checkout. Either way, a detached HEAD gives the session no branch.
 
+A review opens in T3's default mode, not in plan mode, so the model works
+through to a result instead of stopping on a plan. It can run the tests.
+The tree check still keeps it read-only: a review that changes files
+outside `.workspace/` exits 7
+([ADR-024](decisions/ADR-024-the-tree-check-keeps-a-review-read-only.md)).
+A review whose run ends holding a proposed plan exits 5, and stderr says
+`the session returned a plan, not a result (thread <id>)`. The thread
+stays, so you can read it.
+
+The review's JSON line on stderr names `checkout` and `commit`. `checkout`
+is where T3 records that the thread ran: its worktree, or else the
+project's root. It is not where `t3` asked for the thread, so a thread T3
+opened elsewhere shows up. `commit` is the full hash at that checkout's
+`HEAD` after the session. Each is `null` when `lets` cannot tell.
+
 ### Which model runs
 
 The caller chooses the model, and `t3` runs exactly that one:
@@ -110,7 +125,8 @@ lets delegate review run --for code --name smoke-review --prompt-file .workspace
 Expect:
 
 1. `READY` on stdout.
-2. A JSON line on stderr with `"resolver":"t3"` and `"independent":true`.
+2. A JSON line on stderr with `"resolver":"t3"`, `"independent":true`, and
+   `"checkout"` set to the top level of the checkout you ran it from.
 3. An archived thread for the review.
 
 Then check that `t3` still reads T3 Code's model catalogue:
@@ -185,6 +201,9 @@ model, so the CLI runs its default. `cli` also tries a model it did not
 list. When the review succeeds, the session's files in
 `.workspace/lets-delegate/` are removed. When it fails, they stay, so you
 can read them.
+
+The review's JSON line on stderr names the repository the CLI ran in as
+`checkout`, and the full hash at its `HEAD` after the review as `commit`.
 
 A review that runs past its time limit is stopped. Each failure has its
 own exit code:
