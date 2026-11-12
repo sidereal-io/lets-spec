@@ -19,13 +19,16 @@ const KILL_WAIT_MS = 1000;
 const GROUP_POLL_MS = 100;
 
 // Sends signal to every process in the group that pid leads. false when
-// the group is gone.
+// the group is gone. EPERM means the group is there, but holds only
+// processes lets may not signal, so stopGroup can only wait it out.
 function signalGroup(pid: number, signal: NodeJS.Signals | 0): boolean {
   try {
     process.kill(-pid, signal);
     return true;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ESRCH') return false;
+    const { code } = error as NodeJS.ErrnoException;
+    if (code === 'EPERM') return true;
+    if (code === 'ESRCH') return false;
     throw error;
   }
 }

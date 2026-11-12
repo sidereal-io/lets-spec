@@ -121,6 +121,18 @@ test('a group that ignores SIGTERM gets SIGKILL when the event loop stalls past 
   assert.deepEqual(readPids(pids).filter((pid) => !gone(pid)), []);
 });
 
+test('a timed-out group that lets may not signal ends the wait, and does not crash lets', { timeout: 30000 }, async (t) => {
+  const pids = pidsDir(t);
+  // As when every process left in the group runs as another user.
+  const kill = process.kill.bind(process);
+  t.mock.method(process, 'kill', (pid: number, signal?: NodeJS.Signals | number) => {
+    if (pid < 0) throw Object.assign(new Error('kill EPERM'), { code: 'EPERM' });
+    return kill(pid, signal);
+  });
+  const result = await realIo().execFile('sh', ['-c', `echo $$ > '${pids}'; exec sleep 600`], { timeoutMs: 100 });
+  assert.equal(result.timedOut, true);
+});
+
 // Node starts a sleep in a new session, which holds Node's stdout, and
 // writes its process ID to the file named in argv[1]. Then Node runs on.
 const HOLD_STDOUT = `
