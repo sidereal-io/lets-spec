@@ -49,6 +49,9 @@ in either direction, including an indirect dependency, means those sections
 cannot run at the same time. Sections that only share a prerequisite still
 need the file comparison.
 
+For example, if the first and third tasks share a file, neither qualifies
+for `[parallel]`, even when the second task touches different files.
+
 ## Verification
 
 Every task ends with `(verify: <command>)`. A good verify command:

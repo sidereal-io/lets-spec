@@ -3444,6 +3444,12 @@ task_limits_says() {
 }
 
 
+@test "task-limits: nonadjacent tasks sharing a file cannot qualify for parallel tags" {
+  task_limits_says 'if the first and third tasks share a file, neither qualifies for `[parallel]`, even when the second task touches different files.'
+  grep -qF 'tasks in order, so it has no parallel tags.' "$repo/schemas/lets-minimal/schema.yaml"
+}
+# End task-limits (#232).
+
 # #234: setup guards and reusable PR review wording.
 @test "setup guards precede Project creation" {
   local text before
