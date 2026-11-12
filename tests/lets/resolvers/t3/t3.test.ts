@@ -807,6 +807,7 @@ test('run launches a plan-mode thread in the project for this repo, and the hand
   const { handle } = await createAdapter(io).run(runInput, { timeoutMs: 60000 });
   assert.deepEqual(io.calls.map(([cmd, args]) => [cmd, args]), [
     ['git', ['-C', '/r/sub', 'rev-parse', '--path-format=absolute', '--git-common-dir']],
+    ['git', ['-C', '/r/sub', 'rev-parse', '--show-toplevel']],
     ['git', ['-C', '/r/sub', 'branch', '--show-current']],
   ]);
   const frame = log[1][1] as { tag: string; payload: ReturnType<typeof buildLaunch> };
@@ -843,15 +844,17 @@ test('run is refused when t3 is not running', async () => {
   await assert.rejects(createAdapter(fakeIo({ env: {} })).run(runInput, { timeoutMs: 60000 }), (error) => error instanceof Refused && /not running/.test(error.message));
 });
 
-// An io inside a running T3 with a project for /r, whose state is db. t3
-// answers each request over the WebSocket with LAUNCHED, which names thread
-// T, and logs it.
-function launchingIo(db: DatabaseSync, log: Log, { projectDefault = null as string | null, sleep = async () => {}, statuses = [200, 200] } = {}) {
+// An io inside a running T3 with a project for /r, whose state is db, in
+// checkout, a checkout of /r's repository. t3 answers each request over the
+// WebSocket with LAUNCHED, which names thread T, and logs it.
+function launchingIo(db: DatabaseSync, log: Log, {
+  projectDefault = null as string | null, sleep = async () => {}, statuses = [200, 200], checkout = {} as Parameters<typeof inCheckout>[0],
+} = {}) {
   addProject(db, { root: '/r', selection: projectDefault });
   return fakeIo({
     env: {},
     files: RUNNING,
-    results: inCheckout(),
+    results: inCheckout(checkout),
     openDb: () => shared(db),
     fetch: fakeFetch(statuses, []),
     WebSocket: fakeWebSocket(LAUNCHED, log),
@@ -886,4 +889,20 @@ test('a start runs the request\'s model, not the project default, with no effort
 test('a gemini start sends the model as given, with no effort option', async () => {
   assert.deepEqual(await startedSelection({ family: 'gemini', model: 'gemini-3.8-flash' }),
     { instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] });
+});
+
+// Run a review from cwd, in checkout, and answer the launch t3 was sent.
+async function reviewedFrom(cwd: string, checkout: Parameters<typeof inCheckout>[0]) {
+  const db = database();
+  const log: Log = [];
+  addRun(db, 'T', 'run-1', 1, 'completed');
+  addMessage(db, 'a1', 'run-1', 'FINDINGS', 0);
+  await createAdapter(launchingIo(db, log, { checkout })).run({ ...runInput, cwd }, { timeoutMs: 60000 });
+  return launched(log);
+}
+
+test('a review from a linked worktree runs in the worktree, on its branch, in the main checkout\'s project', async () => {
+  const launch = await reviewedFrom('/w/fix-login', { top: '/w/fix-login', branch: 'fix-login' });
+  assert.deepEqual(launch.workspaceStrategy, { type: 'existing_worktree', worktreePath: '/w/fix-login', branch: 'fix-login' });
+  assert.equal(launch.projectId, 'p1');
 });

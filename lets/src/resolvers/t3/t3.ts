@@ -429,6 +429,9 @@ export function createAdapter(io: Io): Adapter {
     const { origin } = runningServer();
     // The main checkout, even when cwd is a linked worktree.
     const repoRoot = resolve(await git(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir']), '..');
+    // cwd may be a subdirectory, so compare the checkout's top level.
+    const topLevel = resolve(await git(cwd, ['rev-parse', '--show-toplevel']));
+    const worktreePath = topLevel === repoRoot ? null : topLevel;
     const project = withDb((db) => findProject(db, repoRoot));
     const branch = (await git(cwd, ['branch', '--show-current'])) || null;
     // A bare family runs the catalogue's default. T3 rejects a launch with
@@ -446,7 +449,7 @@ export function createAdapter(io: Io): Adapter {
       modelSelection,
       interactionMode: readOnly ? 'plan' : 'default',
       branch,
-      worktreePath: null,
+      worktreePath,
     }));
     // origin is for people to read: finish sends the token only to the
     // running server, never to the origin a handle names.

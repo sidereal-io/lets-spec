@@ -5,7 +5,7 @@
 ## 2. Where the thread runs [depends-on: 1]
 
 - [x] 2.1 [easy] `buildLaunch` given a `worktreePath` sends `{ type: 'existing_worktree', worktreePath, branch }`, leaves `branch` out when it is null, and sends `{ type: 'root', branch? }` as today when `worktreePath` is null (verify: node --test tests/lets/resolvers/t3/t3.test.ts) (✓ node --test tests/lets/resolvers/t3/t3.test.ts passed, 82 tests)
-- [ ] 2.2 [medium] A review (`run`) from a linked worktree on branch `fix-login` launches its thread with `existing_worktree`, the worktree's top level and branch `fix-login`, in the T3 project for the main checkout (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
+- [x] 2.2 [medium] A review (`run`) from a linked worktree on branch `fix-login` launches its thread with `existing_worktree`, the worktree's top level and branch `fix-login`, in the T3 project for the main checkout (verify: node --test tests/lets/resolvers/t3/t3.test.ts) (✓ node --test tests/lets/resolvers/t3/t3.test.ts passed, 83 tests)
 - [ ] 2.3 [easy] A handoff (`start`) from a linked worktree launches its thread with `existing_worktree`, the worktree's top level and its branch (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
 - [ ] 2.4 [easy] A review from the main checkout launches its thread with `{ type: 'root', branch: 'main' }`, and the resolver's git calls are the common dir, the top level and the branch, in that order (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
 - [ ] 2.5 [easy] A review from a subdirectory of a linked worktree sends the worktree's top level as `worktreePath`, not the subdirectory (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
