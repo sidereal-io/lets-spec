@@ -18,6 +18,14 @@ names, and keep status and issue links beside the stage they describe. -->
 - **Pain today**: <their real-world problem without a good tool — no code, milestones, or epics>
 - **Success looks like**: <the lasting, observable signal they got value>
 
+<!-- In a repository with several products, a persona that more than one
+product serves lives in the root map. Name it here with a link instead of a
+copy (optional): -->
+
+#### <Persona name> — shared
+
+See [<Persona name>](../discovery.md#<anchor>) in the root map.
+
 ### People who build <product name>
 
 #### <Persona name> — <short role>

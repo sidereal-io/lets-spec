@@ -31,7 +31,9 @@ definitions: no roadmap, release plan or changelog.
 
 - `openspec/discovery.md` — the living map: personas and journey map
   ([templates/discovery-template.md](templates/discovery-template.md)). It
-  outlives every run; see [The map](#the-map).
+  outlives every run; see [The map](#the-map). In a repository with several
+  products, each product has a map of its own, and this file lists them; see
+  [Pick the map](#pick-the-map).
 - GitHub issues — one **parent issue** per discovery run, and the stories
   ([templates/issue-template.md](templates/issue-template.md)).
 
@@ -123,7 +125,7 @@ and nothing else.
 
 ## The map
 
-`discovery.md` describes the people the product serves and the paths they
+The run's map describes the people the product serves and the paths they
 take through it. It is not a record of runs. Many runs edit the same map, so
 its size follows the number of personas and paths, never the number of runs.
 Every run keeps these rules:
@@ -192,6 +194,104 @@ At the start:
 
 If any of these fails, stop and show the error. Never write the map anywhere
 but the resolved root.
+
+## Pick the map
+
+Each run reads and writes one discovery map: the run's map. Ingest picks it
+before its first write. Revision mode picks it before its step 1, from what
+the user brings. Write no map until the run's map is settled.
+
+1. Read `<root.path>/openspec/discovery.md`. When it does not exist, or it
+   has no `## Products` heading, the repository has one product, and that
+   file is the run's map. Ask no question about products, unless the idea
+   is a separate thing the repository delivers, apart from the map's
+   product. A new persona or a new journey of the same product asks
+   nothing. When the idea is a separate thing, ask whether it belongs to
+   the map's product or to a new product. A new product goes to [Add a
+   second product](#add-a-second-product).
+2. When it has a `## Products` heading, it is the root map. Each row of its
+   table names a product, what it covers and the path to its map. When the
+   idea clearly fits one listed product, use that product's map. When you
+   cannot tell, ask which product the idea belongs to, offering each listed
+   product and a new product. A new product goes to [Add a later
+   product](#add-a-later-product).
+3. Name the run's map to the user every time, such as
+   `This run uses openspec/discovery/web-shop.md.`, so they can catch a
+   wrong pick.
+
+The question about which product an idea belongs to, and the question that
+moves the map for a second product, are confirmation questions, with no
+recommendation: the user decides them, so `lets-go` at `auto` puts them to
+the user.
+
+### Add a second product
+
+When the idea belongs to a new product, and the repository has one product:
+
+1. Propose kebab-case names for both products, from the map's title and
+   the idea, such as `web-shop` for `Discovery: Web shop` and `warehouse`
+   for a warehouse app.
+2. Show the user the move: the existing map's new path,
+   `openspec/discovery/<first-product>.md`, and the root's table of
+   contents with a row for each product. Ask whether to make it, as a
+   confirmation question with no recommendation. On a no, keep
+   `openspec/discovery.md` as the run's map, and move nothing.
+3. On a yes, write the files before you touch any issue:
+   1. Move the map to `openspec/discovery/<first-product>.md`, with a plain
+      file move, not `git mv`, so nothing is staged.
+   2. Write `openspec/discovery.md` from
+      [templates/discovery-root-template.md](templates/discovery-root-template.md),
+      with a row for each product.
+   3. Create `openspec/discovery/<new-product>.md` from
+      [templates/discovery-template.md](templates/discovery-template.md).
+      It is the run's map.
+4. Retarget each open parent issue whose map is the root. Find the parents
+   with `gh issue list --state open --search '"Input:" in:body' --json number,title,body`,
+   and keep each whose body has no `Map:` line or says
+   `Map: openspec/discovery.md`. Give each one
+   `Map: openspec/discovery/<first-product>.md`, beside its `Input:` line,
+   with `gh issue edit <parent> --body-file <file>`. When an update fails,
+   stop, and name each parent you have not retargeted. A later Resume or
+   Finalize repairs it, as [Resume mode](#resume-mode) says.
+
+### Add a later product
+
+When the idea belongs to a new product, and the root already lists two or
+more products, nothing moves:
+
+1. Propose a kebab-case name for the product, from the idea. When
+   `openspec/discovery/<product>.md` already exists, say the name
+   is taken, ask for another, and write no file.
+2. Ask whether to add it, as a confirmation question with no
+   recommendation. On a yes, add the product's row to the root's
+   `## Products` table, and create `openspec/discovery/<product>.md` from
+   [templates/discovery-template.md](templates/discovery-template.md). It is
+   the run's map. Change no other product's map.
+
+### Read the parent's map
+
+Resume mode and Finalize take the run's map from the parent issue's `Map:`
+line, not from the idea:
+
+1. With one product, a parent with no `Map:` line means
+   `openspec/discovery.md`.
+2. In any repository, when the file the `Map:` line names does not exist,
+   write no map and create no file. Say the file is missing. Say that it
+   may be on a branch this checkout does not have yet, or may have been
+   discarded, and that choosing a product cannot bring back its phases. Say
+   to bring the map into this checkout, or correct the parent's `Map:`
+   line. Then stop.
+3. When the root lists products, a parent with no `Map:` line, or one that
+   says `Map: openspec/discovery.md`, points at the root, which holds no
+   journeys. Write no map, and ask the user which product the parent
+   belongs to, offering each listed product, as a confirmation question
+   with no recommendation. On the answer, write that product's `Map:` line
+   to the parent with `gh issue edit <parent> --body-file <file>`, and go
+   on with that map.
+
+Write the phases to the run's map only. The one edit a run makes to another
+product's map is the link that replaces a shared persona's entry, as
+[Phase 2: Personas](#phase-2-personas) says.
 
 ## Develop the vocabulary
 
@@ -277,10 +377,10 @@ phase: `personas`, `journey-map`, `moscow`, then `stories`. A revision run
 that skips personas and the journey map goes from Ingest straight to
 `moscow`.
 
-Personas and the journey map go in `discovery.md`. Everything else goes in
+Personas and the journey map go in the run's map. Everything else goes in
 the parent issue.
 
-The parent issue and `discovery.md` are the resume point. A future session
+The parent issue and the run's map are the resume point. A future session
 with none of this conversation must be able to pick up exactly where this
 one stopped.
 
@@ -290,6 +390,8 @@ Take in the input — a file path, an issue (`gh issue view <n>`), pasted
 text, or just conversation. Then:
 
 - Restate the scope in your own words; have the user confirm
+- Pick the run's map, as [Pick the map](#pick-the-map) says, before the
+  checkpoint writes anything
 - Surface goals and non-goals
 - List open questions as they emerge (they land in the parent issue)
 - When the input is an issue, read its thread as [Issue
@@ -302,7 +404,10 @@ text, or just conversation. Then:
 **Checkpoint:** The parent issue is public, so confirm its text first. Write
 it from the parent template in
 [templates/issue-template.md](templates/issue-template.md): the status line,
-the input reference, the confirmed scope and any open questions so far.
+the input reference, the `Map:` line with the run's map, the confirmed scope
+and any open questions so far. In the same step, create the run's map from
+[templates/discovery-template.md](templates/discovery-template.md) when the
+file is missing, so a resumed run always finds it.
 Title it `Epic: <capability>`, create it with `gh issue create --title "Epic: <capability>" --body-file <file> --project "<project title>"`, then
 set its Kind to `Epic` with `item-edit`. Phase 5 may turn it into a single
 story.
@@ -318,7 +423,7 @@ lists each point taken in as `Taken into #<parent>:`, and each dismissal as
 
 ### Phase 2: Personas
 
-Start from the personas already in `discovery.md`. For the people this input
+Start from the personas already in the run's map. For the people this input
 serves, reuse an existing persona first; extend its entry only if the input
 reveals a lasting fact about them. Add a new persona only for a person the
 map lacks; most runs add none. For each new persona:
@@ -328,13 +433,19 @@ map lacks; most runs add none. For each new persona:
 - **Pain today** their real-world problem without a good tool
 - **Success looks like** the lasting, observable signal they got value
 
+When the run's product serves a persona whose entry is in another
+product's map, move its entry to the root map's `## Shared personas`, under
+its audience group. In the other map, leave a link to the root entry in its
+place, as [templates/discovery-template.md](templates/discovery-template.md)
+shows, and name the persona the same way in the run's map. That link is
+the one edit a run makes to another product's map. A persona only one
+product serves stays in that product's map.
+
 Push back if personas are roles without needs ("admin") rather than people
 with goals, or if an entry would stop being true once this run ships (see
 [The map](#the-map)).
 
-**Checkpoint:** write the Personas section of `discovery.md` (create the
-file from [templates/discovery-template.md](templates/discovery-template.md)
-if it is missing).
+**Checkpoint:** write the Personas section of the run's map.
 
 ### Phase 3: Journey map
 
@@ -360,7 +471,7 @@ Cite the open issue that closes a gap as a full link,
 `[#N](https://github.com/<owner>/<repo>/issues/N)`; a bare `#N` does not
 link inside a repository file. A `supported` stage carries no link.
 
-**Checkpoint:** write the Journey Map section of `discovery.md`, with
+**Checkpoint:** write the Journey Map section of the run's map, with
 today's date on its freshness line.
 
 ### Phase 4: MoSCoW
@@ -406,8 +517,8 @@ splitting), and resolve with the user before finalizing.
   Retitle it `<kebab-story-name> — <one-line outcome>` and replace its body
   with the story template. Then set Kind `Story`, its Priority, its Size and
   Status `Todo`, with four `item-edit` commands. Keep the status line, input
-  reference and complete **Glossary handoff** recovery record when replacing
-  the body. Won't calls go in its Scope `out`.
+  reference, `Map:` line and complete **Glossary handoff** recovery record
+  when replacing the body. Won't calls go in its Scope `out`.
 - **More than one story.** The stories are sub-issues of the parent.
 
 **Checkpoint:** Issues are public, so show the new and changed issues as a
@@ -436,9 +547,11 @@ For each issue:
 
 ### Phase 6: Finalize
 
-Remove the status line from the parent issue. Keep the `Input:` line, so the
-run always names what it started from. Resolve every open question, or move
-it to the story it blocks. Link the journey stages in `discovery.md` to the
+Take the run's map from the parent's `Map:` line, as [Read the parent's
+map](#read-the-parents-map) says. Remove the status line from the parent
+issue. Keep the `Input:` and `Map:` lines, so the run always names what it
+started from and where its map is. Resolve every open question, or move it
+to the story it blocks. Link the journey stages in the run's map to the
 stories that close them. `## Backlog` stays a single link to the
 repository's issues page, never a list of issues. Show the user the stories
 as a checklist of issue links.
@@ -452,8 +565,8 @@ Then hand off:
 ## Shape one issue
 
 Use this when the user brings one bug, chore or small story, or names an
-open issue that has no packet. It shapes that one issue. It never touches
-`discovery.md` and never starts a discovery run. Another skill can send work
+open issue that has no packet. It shapes that one issue. It never edits a
+discovery map and never starts a discovery run. Another skill can send work
 here too, such as `lets-brainstorm` when it splits a story; it gives you the
 issue's parent and what blocks it.
 
@@ -480,8 +593,12 @@ issue's parent and what blocks it.
    [templates/issue-template.md](templates/issue-template.md), one question
    at a time: the story template for a Story, the bug template for a Bug. A
    Chore has no template. It needs only its one-line outcome, and a title in
-   the template's shape. When `discovery.md` exists, use its persona and
-   journey names, but do not edit it.
+   the template's shape. When `openspec/discovery.md` exists, use its
+   persona and journey names, but do not edit it. When it lists products,
+   read the map of the issue's product and the root's `## Shared personas`
+   instead, picking the product as [Pick the map](#pick-the-map) says, with
+   one difference. Offer only the listed products, never a new one. When
+   no listed product fits, use no map's names.
 6. **Size it** XS, S, M, L or XL. L or XL is too big for one change: say so,
    offer a discovery run on it instead, and stop.
 7. **Confirm, then write.** The issue is public, so show the user its title,
@@ -511,8 +628,9 @@ next issue, or the user can name this one.
 When an open parent issue says `Discovery status: in-progress` (or the user
 picked one of several):
 
-1. **Read it and `discovery.md`.** Recover any recorded glossary checkpoint
-   as above first. The status line records the next phase; the sections
+1. **Read it and its map.** Take the run's map from the parent's `Map:`
+   line, as [Read the parent's map](#read-the-parents-map) says. Recover any
+   recorded glossary checkpoint as above first. The status line records the next phase; the sections
    already present are confirmed work.
 2. **Restate where discovery stopped** — a one-paragraph summary of what the
    parent issue and map already capture — and confirm with the user.
@@ -522,20 +640,25 @@ picked one of several):
 
 ## Revision mode
 
-When `discovery.md` exists and no run is in progress:
+Use this when `openspec/discovery.md` exists and no run is in progress.
+Before step 1, pick the run's map from what the user brings, as [Pick the
+map](#pick-the-map) says, so you read no thread and change no stage first.
 
-1. **Read it**, then reconcile the map against reality:
+1. **Read the run's map**, then reconcile the map against reality. The
+   stale-link check covers every map. The thread reads, the re-annotation
+   and the freshness line below cover the run's map only.
    - `gh issue list --state all --limit 500 --json number,title,state,stateReason,parent` lists shipped and open stories
-   - Find the map's links to closed issues. This prints the number of each
-     closed issue the map still links:
+   - Find the links to closed issues in the root map and every product's
+     map. This prints the number of each closed issue a map still links:
 
      ```bash
-     grep -oE 'issues/[0-9]+' <root.path>/openspec/discovery.md | cut -d/ -f2 | sort -u \
+     grep -rhoE 'issues/[0-9]+' <root.path>/openspec/discovery.md <root.path>/openspec/discovery 2>/dev/null | cut -d/ -f2 | sort -u \
        | grep -xFf <(gh issue list --state closed --limit 500 --json number --jq '.[].number')
      ```
 
      No output means no link is stale. Re-check each one's stage against the
-     code, then do one of:
+     code, in the map that links it, and change nothing else in another
+     product's map. Then do one of:
      - the stage now works: upgrade it and drop the link;
      - an open issue now closes the gap: link that one instead;
      - nothing open does: drop the link and leave the stage an unplanned
@@ -554,7 +677,7 @@ When `discovery.md` exists and no run is in progress:
      3. Write what the answers call for. For a fold, show the folded body,
         get a yes, and write it once with `gh issue edit <i> --body-file <file>`. Write the body only. The story may be In Progress, so leave
         its title and Project fields as they are. For a map change, edit
-        `discovery.md` now, with one of the three outcomes above.
+        the run's map now, with one of the three outcomes above.
      4. If you asked anything, fetch the thread again after the write, or
         after the last answer when nothing was folded. Ask about each new or
         edited comment, and write what each yes calls for. Repeat until a

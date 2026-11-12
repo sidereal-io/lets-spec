@@ -153,7 +153,9 @@ first run, `lets sync` prints nothing when all is well.
 Keep one set of skills and one `openspec/` directory at the repository
 root. Group the specs by application, service or feature, and say in
 `openspec/config.yaml` which code each group describes.
-[Specs in a monorepo](docs/monorepo.md) shows the layout.
+[Specs in a monorepo](docs/monorepo.md) shows the layout. A repository
+that delivers several products keeps a discovery map for each, as
+[Discovery maps](docs/monorepo.md#discovery-maps) says.
 
 ## ⚙️ Usage
 
@@ -263,8 +265,9 @@ for an issue number. An idea too large for one issue runs discovery, once you sa
 shape step runs `lets-shape`'s discovery one phase per round, and you
 confirm each phase. Discovery files a parent issue and its stories. The
 run then picks the first ready story, as it picks the next issue, and
-builds it. The discovery map, `openspec/discovery.md`, is
-committed on that story's branch, so it reaches the default branch with
+builds it. The discovery map, `openspec/discovery.md`, or each
+product's map under `openspec/discovery/` in a repository with several
+products, is committed on that story's branch, so it reaches the default branch with
 that story's pull request. When no story is ready, the run says why, and
 stops.
 

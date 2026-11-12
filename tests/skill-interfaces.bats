@@ -3056,3 +3056,357 @@ pr_reference_says() {
   ! grep -qF 'lets-review-pr' "$repo/skills/lets-go/SKILL.md"
   ! grep -rF 'lets-review-pr' "$repo/schemas"
 }
+
+# Discovery maps: one map for each product, and the root map that lists them.
+# skill_says reads only SKILL.md and references/, so the template tests read
+# the template files directly.
+shape_templates="$repo/skills/lets-shape/templates"
+
+@test "discovery maps: root template lists the products and holds no journey" {
+  local file="$shape_templates/discovery-root-template.md"
+  [ -f "$file" ] || { echo "no root template: $file"; false; }
+  grep -qxF '# Discovery: <repository name>' "$file" || { echo "no title line"; false; }
+  grep -qxF '## Products' "$file" || { echo "no Products heading"; false; }
+  grep -qxF '| Product | Covers | Map |' "$file" || { echo "no Product, Covers, Map table"; false; }
+  grep -qxF '## Shared personas' "$file" || { echo "no Shared personas heading"; false; }
+  grep -qE '^### People who (use|build) ' "$file" || { echo "no audience group"; false; }
+  grep -qE '^#### <Persona name>' "$file" || { echo "no persona entry"; false; }
+  run grep -nF '## Journey Map' "$file"
+  [ "$status" -eq 1 ] || { echo "the root template has a journey map: $output"; false; }
+}
+
+@test "discovery maps: templates name the parent's map" {
+  local file="$shape_templates/issue-template.md" text
+  grep -A1 -xF '> Input: <file path, issue link, or "conversation, YYYY-MM-DD">' "$file" |
+    grep -qxF '> Map: <path>' || { echo "the parent template has no Map line under Input"; false; }
+  text="$(tr -s '[:space:]' ' ' <"$file")"
+  grep -qF 'keep the `Input:` and `Map:` lines' <<<"$text" ||
+    { echo "the finalize note does not keep the Map line"; false; }
+  grep -qF 'keeping the status line, input reference and `Map:` line' <<<"$text" ||
+    { echo "the one-story note does not keep the Map line"; false; }
+}
+
+@test "discovery maps: templates link a shared persona to the root map" {
+  local file="$shape_templates/discovery-template.md"
+  grep -A2 -xF '#### <Persona name> — shared' "$file" |
+    grep -qF 'See [<Persona name>](../discovery.md#<anchor>) in the root map.' ||
+    { echo "the discovery template has no shared persona link"; false; }
+}
+
+@test "discovery maps: pick the map follows Locate the discovery" {
+  local file="$repo/skills/lets-shape/SKILL.md"
+  [ "$(grep -E '^## ' "$file" | grep -A1 -xF '## Locate the discovery' | tail -n 1)" = '## Pick the map' ] ||
+    { echo "Pick the map is not the section after Locate the discovery"; false; }
+}
+
+@test "discovery maps: pick the map reads a root with no Products heading as one product" {
+  local section
+  section="$(skill_section lets-shape 'Pick the map')"
+  grep -qF 'has no `## Products` heading, the repository has one product, and that file is the run'"'"'s map' <<<"$section" ||
+    { echo "Pick the map does not read a root with no Products heading as one product"; false; }
+  grep -qF 'A new persona or a new journey of the same product asks nothing.' <<<"$section" ||
+    { echo "Pick the map asks about a new persona or journey"; false; }
+}
+
+@test "discovery maps: pick the map uses a listed product the idea clearly fits" {
+  local section
+  section="$(skill_section lets-shape 'Pick the map')"
+  grep -qF 'When the idea clearly fits one listed product, use that product'"'"'s map' <<<"$section" ||
+    { echo "Pick the map does not pick a listed product"; false; }
+  grep -qF 'Name the run'"'"'s map to the user every time' <<<"$section" ||
+    { echo "Pick the map does not name the map to the user"; false; }
+}
+
+@test "discovery maps: pick the map asks with no recommendation when it cannot tell" {
+  local section
+  section="$(skill_section lets-shape 'Pick the map')"
+  grep -qF 'offering each listed product and a new product' <<<"$section" ||
+    { echo "Pick the map does not offer each product and a new one"; false; }
+  grep -qF 'are confirmation questions, with no recommendation' <<<"$section" ||
+    { echo "Pick the map's questions carry a recommendation"; false; }
+  grep -qF 'Write no map until the run'"'"'s map is settled.' <<<"$section" ||
+    { echo "Pick the map writes before the map is settled"; false; }
+}
+
+@test "discovery maps: pick the map runs in Ingest, which creates the run's map with the Map line" {
+  local section
+  section="$(skill_section lets-shape 'Phase 1: Ingest')"
+  grep -qF '[Pick the map](#pick-the-map)' <<<"$section" || { echo "Ingest does not link Pick the map"; false; }
+  grep -qF 'the `Map:` line with the run'"'"'s map' <<<"$section" || { echo "Ingest writes no Map line"; false; }
+  grep -qF 'In the same step, create the run'"'"'s map' <<<"$section" ||
+    { echo "Ingest does not create the run's map with the Map line"; false; }
+}
+
+@test "discovery maps: pick the map leaves the phases naming the run's map, not discovery.md" {
+  local name section
+  for name in 'The map' 'The phases' 'Phase 1: Ingest' 'Phase 2: Personas' 'Phase 3: Journey map'; do
+    section="$(skill_section lets-shape "$name")"
+    ! grep -qF 'discovery.md`' <<<"$section" || { echo "$name still names discovery.md"; false; }
+    grep -qF "the run's map" <<<"$section" || grep -qF "The run's map" <<<"$section" ||
+      { echo "$name does not say the run's map"; false; }
+  done
+}
+
+@test "discovery maps: second product is a subsection of Pick the map that step 1 links" {
+  local file="$repo/skills/lets-shape/SKILL.md"
+  [ "$(grep -E '^##+ ' "$file" | grep -A1 -xF '## Pick the map' | tail -n 1)" = '### Add a second product' ] ||
+    { echo "Add a second product does not open Pick the map's subsections"; false; }
+  skill_section lets-shape 'Pick the map' | grep -qF '[Add a second product](#add-a-second-product)' ||
+    { echo "Pick the map does not link Add a second product"; false; }
+}
+
+@test "discovery maps: second product proposes both names and asks before it moves" {
+  local section
+  section="$(skill_section lets-shape 'Add a second product')"
+  grep -qF 'Propose kebab-case names for both products, from the map'"'"'s title and the idea' <<<"$section" ||
+    { echo "Add a second product does not propose both names"; false; }
+  grep -qF 'Show the user the move' <<<"$section" || { echo "Add a second product does not show the move"; false; }
+  grep -qF 'with no recommendation' <<<"$section" || { echo "the move question carries a recommendation"; false; }
+  grep -qF 'On a no, keep `openspec/discovery.md` as the run'"'"'s map, and move nothing.' <<<"$section" ||
+    { echo "Add a second product moves something on a no"; false; }
+}
+
+@test "discovery maps: second product writes the files before it touches an issue" {
+  local section
+  section="$(skill_section lets-shape 'Add a second product')"
+  grep -qF 'Move the map to `openspec/discovery/<first-product>.md`' <<<"$section" ||
+    { echo "Add a second product does not move the map"; false; }
+  grep -qF '[templates/discovery-root-template.md](templates/discovery-root-template.md)' <<<"$section" ||
+    { echo "Add a second product does not write the root from its template"; false; }
+  grep -qF 'Create `openspec/discovery/<new-product>.md`' <<<"$section" ||
+    { echo "Add a second product does not create the new product's map"; false; }
+  grep -qF 'write the files before you touch any issue' <<<"$section" ||
+    { echo "Add a second product does not write files first"; false; }
+}
+
+@test "discovery maps: second product retargets each open parent whose map is the root" {
+  local section
+  section="$(skill_section lets-shape 'Add a second product')"
+  grep -qF "gh issue list --state open --search '\"Input:\" in:body' --json number,title,body" <<<"$section" ||
+    { echo "Add a second product does not find the parents"; false; }
+  grep -qF 'has no `Map:` line or says `Map: openspec/discovery.md`' <<<"$section" ||
+    { echo "Add a second product does not keep both kinds of parent"; false; }
+  grep -qF 'Map: openspec/discovery/<first-product>.md' <<<"$section" ||
+    { echo "Add a second product does not write the first product's Map line"; false; }
+  grep -qF 'When an update fails, stop, and name each parent you have not retargeted' <<<"$section" ||
+    { echo "Add a second product does not stop on a failed update"; false; }
+}
+
+@test "discovery maps: later product is a subsection of Pick the map that step 2 links" {
+  skill_has_section lets-shape 'Add a later product'
+  skill_section lets-shape 'Pick the map' | grep -qF '[Add a later product](#add-a-later-product)' ||
+    { echo "Pick the map does not link Add a later product"; false; }
+}
+
+@test "discovery maps: later product refuses a name whose map exists" {
+  skill_section lets-shape 'Add a later product' |
+    grep -qF 'When `openspec/discovery/<product>.md` already exists, say the name is taken, ask for another, and write no file.' ||
+    { echo "Add a later product does not refuse a taken name"; false; }
+}
+
+@test "discovery maps: later product adds a row and a map, and changes no other map" {
+  local section
+  section="$(skill_section lets-shape 'Add a later product')"
+  grep -qF 'add the product'"'"'s row to the root'"'"'s `## Products` table' <<<"$section" ||
+    { echo "Add a later product adds no row"; false; }
+  grep -qF 'create `openspec/discovery/<product>.md` from' <<<"$section" ||
+    { echo "Add a later product creates no map"; false; }
+  grep -qF 'Change no other product'"'"'s map.' <<<"$section" ||
+    { echo "Add a later product may change another map"; false; }
+}
+
+@test "discovery maps: parent map line is read by Resume mode and Finalize" {
+  skill_has_section lets-shape "Read the parent's map"
+  skill_section lets-shape 'Resume mode' | grep -qF "[Read the parent's map](#read-the-parents-map)" ||
+    { echo "Resume mode does not link Read the parent's map"; false; }
+  skill_section lets-shape 'Phase 6: Finalize' | grep -qF "[Read the parent's map](#read-the-parents-map)" ||
+    { echo "Finalize does not link Read the parent's map"; false; }
+}
+
+@test "discovery maps: parent map line naming a missing file stops the run" {
+  local section
+  section="$(skill_section lets-shape "Read the parent's map")"
+  grep -qF 'In any repository, when the file the `Map:` line names does not exist, write no map and create no file.' <<<"$section" ||
+    { echo "Read the parent's map does not stop on a missing file"; false; }
+  grep -qF 'may be on a branch this checkout does not have yet, or may have been discarded' <<<"$section" ||
+    { echo "Read the parent's map does not say why the file may be missing"; false; }
+  grep -qF 'bring the map into this checkout, or correct the parent'"'"'s `Map:` line. Then stop.' <<<"$section" ||
+    { echo "Read the parent's map does not say how to repair and stop"; false; }
+}
+
+@test "discovery maps: parent map line pointing at the root is repaired with the user when there are several products" {
+  local section
+  section="$(skill_section lets-shape "Read the parent's map")"
+  grep -qF 'With one product, a parent with no `Map:` line means `openspec/discovery.md`.' <<<"$section" ||
+    { echo "Read the parent's map does not default an older parent"; false; }
+  grep -qF 'ask the user which product the parent belongs to' <<<"$section" ||
+    { echo "Read the parent's map does not ask which product"; false; }
+  grep -qF 'write that product'"'"'s `Map:` line to the parent' <<<"$section" ||
+    { echo "Read the parent's map does not write the Map line"; false; }
+}
+
+@test "discovery maps: parent map line survives the one-story body" {
+  skill_section lets-shape 'Phase 5: Stories' | grep -qF 'Keep the status line, input reference, `Map:` line and complete' ||
+    { echo "Phase 5's one-story body drops the Map line"; false; }
+  skill_section lets-shape 'Phase 6: Finalize' | grep -qF 'Keep the `Input:` and `Map:` lines' ||
+    { echo "Finalize drops the Map line"; false; }
+}
+
+@test "discovery maps: parent map line run promotes a shared persona to the root" {
+  local section
+  section="$(skill_section lets-shape 'Phase 2: Personas')"
+  grep -qF 'move its entry to the root map'"'"'s `## Shared personas`' <<<"$section" ||
+    { echo "Personas does not move a shared persona to the root"; false; }
+  grep -qF 'leave a link to the root entry in its place' <<<"$section" ||
+    { echo "Personas leaves no link in the other map"; false; }
+  grep -qF 'the one edit a run makes to another product'"'"'s map' <<<"$section" ||
+    { echo "Personas does not limit edits to another map"; false; }
+}
+
+@test "discovery maps: revision picks its map before step 1" {
+  local section
+  section="$(skill_section lets-shape 'Revision mode')"
+  grep -qF 'Before step 1, pick the run'"'"'s map from what the user brings, as [Pick the map](#pick-the-map) says' <<<"$section" ||
+    { echo "Revision mode does not pick its map before step 1"; false; }
+  skill_section lets-shape 'Pick the map' | grep -qF 'Revision mode picks it before its step 1' ||
+    { echo "Pick the map does not name Revision mode"; false; }
+}
+
+@test "discovery maps: revision checks stale links in every map" {
+  local file="$repo/skills/lets-shape/SKILL.md"
+  grep -qF "grep -rhoE 'issues/[0-9]+' <root.path>/openspec/discovery.md <root.path>/openspec/discovery 2>/dev/null" "$file" ||
+    { echo "the stale-link grep does not read every map"; false; }
+  run grep -nF "grep -oE 'issues/[0-9]+' <root.path>/openspec/discovery.md |" "$file"
+  [ "$status" -eq 1 ] || { echo "the single-file grep is still there: $output"; false; }
+}
+
+@test "discovery maps: revision reads threads and re-annotates the run's map only" {
+  local section
+  section="$(skill_section lets-shape 'Revision mode')"
+  grep -qF 'Read the thread of each open issue the map links' <<<"$section" ||
+    { echo "Revision mode lost its thread-read sentence"; false; }
+  grep -qF 'The thread reads, the re-annotation and the freshness line below cover the run'"'"'s map only' <<<"$section" ||
+    { echo "Revision mode does not limit the rest to the run's map"; false; }
+  ! grep -qF '`discovery.md`' <<<"$section" || { echo "Revision mode still names discovery.md"; false; }
+}
+
+@test "discovery maps: shape one issue reads its product's map and the root's shared personas" {
+  skill_section lets-shape 'Shape one issue' |
+    grep -qF 'read the map of the issue'"'"'s product and the root'"'"'s `## Shared personas`' ||
+    { echo "Shape one issue does not read its product's map"; false; }
+}
+
+@test "discovery maps: shape one issue offers only listed products" {
+  local section
+  section="$(skill_section lets-shape 'Shape one issue')"
+  grep -qF 'Offer only the listed products, never a new one.' <<<"$section" ||
+    { echo "Shape one issue may offer a new product"; false; }
+  grep -qF 'When no listed product fits, use no map'"'"'s names.' <<<"$section" ||
+    { echo "Shape one issue uses a map's names when no product fits"; false; }
+}
+
+@test "discovery maps: shape one issue edits no map" {
+  local section
+  section="$(skill_section lets-shape 'Shape one issue')"
+  grep -qF 'It never edits a discovery map' <<<"$section" || { echo "Shape one issue may edit a map"; false; }
+  ! grep -qF '`discovery.md`' <<<"$section" || { echo "Shape one issue still names discovery.md"; false; }
+}
+
+# The commands references/shape.md gives for the discovery maps. The behavior
+# tests run these strings, and a wording test checks the reference holds them.
+map_status='git status --porcelain -uall -- openspec/discovery.md openspec/discovery'
+map_add='git add -- <paths>'
+map_commit='git commit -m "docs: the discovery map from #<parent>" -- <paths>'
+
+# map_repo: a repository in the test's folder, with a committed one-product
+# map and a README, and the shell inside it.
+map_repo() {
+  cd "$BATS_TEST_TMPDIR" && git init -q repo && cd repo
+  mkdir openspec
+  printf '# Discovery: Web shop\n' >openspec/discovery.md
+  printf 'readme\n' >README.md
+  git add . && git commit -q -m init
+}
+
+# commit_maps: list the changed maps with the status command, then add and
+# commit exactly those paths, as references/shape.md says.
+commit_maps() {
+  local paths
+  mapfile -t paths < <(eval "$map_status" | cut -c4-)
+  [ "${#paths[@]}" -gt 0 ] || { echo "the status command listed no map"; return 1; }
+  eval "${map_add/<paths>/\"\${paths[@]\}\"}"
+  eval "${map_commit/<paths>/\"\${paths[@]\}\"}" >/dev/null
+}
+
+@test "discovery maps: lets-go commit takes only the one map when no folder exists" {
+  map_repo
+  printf 'personas\n' >>openspec/discovery.md
+  printf 'other\n' >>README.md
+  commit_maps
+  [ "$(git show --name-only --format= HEAD)" = openspec/discovery.md ] ||
+    { echo "the commit holds: $(git show --name-only --format= HEAD)"; false; }
+  [ "$(git status --porcelain)" = ' M README.md' ] || { echo "left: $(git status --porcelain)"; false; }
+}
+
+@test "discovery maps: lets-go commit takes every map a move wrote" {
+  map_repo
+  mkdir openspec/discovery
+  mv openspec/discovery.md openspec/discovery/web-shop.md
+  printf '# Discovery: shop\n\n## Products\n' >openspec/discovery.md
+  printf '# Discovery: Warehouse\n' >openspec/discovery/warehouse.md
+  printf 'other\n' >>README.md
+  commit_maps
+  [ "$(git show --name-only --format= HEAD | sort | tr '\n' ' ')" = \
+    'openspec/discovery.md openspec/discovery/warehouse.md openspec/discovery/web-shop.md ' ] ||
+    { echo "the commit holds: $(git show --name-only --format= HEAD)"; false; }
+  [ "$(git status --porcelain)" = ' M README.md' ] || { echo "left: $(git status --porcelain)"; false; }
+}
+
+@test "discovery maps: lets-go commit commands are the ones references/shape.md gives" {
+  local file="$repo/skills/lets-go/references/shape.md" section
+  skill_says lets-go "$map_status"
+  skill_says lets-go "$map_add"
+  skill_says lets-go "$map_commit"
+  run grep -nE 'git (add|commit)( .*)? (-- )?openspec/discovery( |$|`)' "$file"
+  [ "$status" -eq 1 ] || { echo "shape.md passes the folder to git: $output"; false; }
+  run grep -nF 'git add openspec/discovery.md' "$file"
+  [ "$status" -eq 1 ] || { echo "shape.md still adds the one map: $output"; false; }
+}
+
+@test "discovery maps: lets-go commit names each dirty map before the shape step and at a stop" {
+  local section
+  section="$(skill_section lets-go 'Run the shape step')"
+  grep -qF "$map_status" <<<"$section" || { echo "the dirty check does not run the status command"; false; }
+  grep -qF 'name each path it lists' <<<"$section" || { echo "the dirty check names no path"; false; }
+  ! grep -qF 'Run `git status --porcelain`. When it lists `openspec/discovery.md`' <<<"$section" ||
+    { echo "the dirty check still reads one map"; false; }
+}
+
+@test "discovery maps: shape prompt allows every discovery map in its clean tree" {
+  skill_says lets-go 'with a clean tree, except the discovery maps, `openspec/discovery.md` and the files under `openspec/discovery/`, when discovery ran'
+  skill_does_not_say lets-go 'with a clean tree, except `openspec/discovery.md` when discovery ran'
+}
+
+@test "discovery maps: shape prompt makes the product and move questions confirmation questions" {
+  skill_says lets-go 'The question about which product an idea belongs to, and the question that moves the map for a second product, are confirmation questions too: give them no recommendation.'
+}
+
+@test "discovery maps: docs explain one map per product in a monorepo" {
+  local text
+  text="$(tr -s '[:space:]' ' ' <"$repo/docs/monorepo.md")"
+  grep -qxF '## Discovery maps' "$repo/docs/monorepo.md" || { echo "docs/monorepo.md has no Discovery maps section"; false; }
+  for fixed in 'openspec/discovery/<product>.md' '## Products' 'shared personas' \
+    'A repository with several domains can still be one product'; do
+    grep -qF -- "$fixed" <<<"$text" || { echo "docs/monorepo.md does not say: $fixed"; false; }
+  done
+}
+
+@test "discovery maps: docs are linked from the README's Monorepos section" {
+  local section line
+  section="$(awk '/^### Monorepos$/ { on = 1; next } on && /^#/ { exit } on' "$repo/README.md")"
+  grep -qF '(docs/monorepo.md#discovery-maps)' <<<"$section" ||
+    { echo "the README's Monorepos section does not link Discovery maps"; false; }
+  while IFS= read -r line; do
+    grep -qF 'openspec/discovery/' <<<"$line" || { echo "README names one map layout only: $line"; false; }
+  done < <(tr -s '[:space:]' ' ' <"$repo/README.md" | sed 's/\. /.\n/g' | grep -F 'openspec/discovery.md')
+}
