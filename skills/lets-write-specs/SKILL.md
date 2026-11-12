@@ -153,6 +153,10 @@ JSON file, as they choose.
 - **WHEN** a signed-in user chooses Export and picks a format
 - **THEN** the browser downloads one file in that format that holds every record the user owns
 
+#### Scenario: Export while signed out
+- **WHEN** a request to export arrives without a session
+- **THEN** the system responds 401 and sends no data
+
 ## REMOVED Requirements
 
 ### Requirement: Legacy export endpoint
