@@ -608,9 +608,9 @@ Each one returns its result to what ran it.
 ### Find the source of demand
 
 Parallel sessions share the backlog, so claim the issue before you
-create its change branch, OpenSpec artifacts or code. Shaping runs
-first. It may create the issue, its parent and stories, and a glossary
-holding branch: see
+create its change branch, OpenSpec artifacts or code. When shaping runs,
+it comes first and may create the issue, its parent and stories, and a
+glossary holding branch: see
 [What shape runs](references/shape.md#what-shape-runs).
 
 Each `lets backlog` command it runs acts on an error as
