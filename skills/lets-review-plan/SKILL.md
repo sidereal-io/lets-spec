@@ -78,10 +78,10 @@ The report then says that the plan's author was not recorded.
    lets delegate review instructions --for plan
    ```
 
-   It prints one JSON line. `options` is the **listed models**: those the
-   resolver can run now, and `guidance` is the user's prose for plan reviews, from
-   `delegate.review.plan.guidance` in the `lets` config, or `null`. If it
-   exits non-zero, stop, and show the user its stderr.
+   It prints one JSON line. `options` is the **listed models**, the ones the
+   resolver can run now. `guidance` is the user's prose for plan reviews,
+   from `delegate.review.plan.guidance` in the `lets` config, or `null`.
+   If it exits non-zero, stop, and show the user its stderr.
 3. Keep the **allowed models**: the listed models left after guidance
    exclusions. Rank the allowed models: the guidance first, then families
    other than the author's, then the order the options came in. A model's
