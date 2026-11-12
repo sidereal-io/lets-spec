@@ -12,7 +12,7 @@ The Size section says to report an oversized story without specifying whether `t
 
 - **Primary test seam:** source skill prose checked by Bats.
 - **Existing seams reused:** `tests/skill-interfaces.bats`, with a self-contained task-limits block that appends safely beside sibling stories' tests.
-- **Reader tasks:** author walkthroughs cover thirteen tasks, twelve tasks, resumption, nonadjacent conflicts, independent sections and transitive dependencies. Static assertions protect the explicit contract; they cannot establish comprehension. No human usability trial is claimed.
+- **Reader tasks:** author walkthroughs cover thirteen tasks, twelve tasks, resumption, nonadjacent conflicts, independent sections, shared prerequisites and transitive dependencies in either direction. Static assertions protect the explicit contract; they cannot establish comprehension. No human usability trial is claimed.
 
 ## Scrutiny Tier & Blast Radius
 

@@ -9,20 +9,20 @@ Give agents writing task lists explicit size limits and file-sharing rules so th
 The tasks skill SHALL retain the five-to-twelve task range. When the planned list exceeds twelve tasks, it SHALL stop without writing or committing `tasks.md`, report the task count and name the slice to move to a new story. It SHALL leave the split decision to the user in the brainstorm.
 
 #### Scenario: Thirteen behaviors need thirteen tasks
-- **WHEN** a tasks step identifies thirteen tasks
+- **WHEN** task planning identifies thirteen tasks
 - **THEN** it reports thirteen and a proposed slice, writes or commits no tasks.md, and waits for the user's split decision in the brainstorm
 
 #### Scenario: Twelve tasks fit
 - **WHEN** the plan has twelve tasks and no other stop condition applies
-- **THEN** the tasks step can write the task list
+- **THEN** task planning can write the task list
 
 ### Requirement: Resume tasks after the split decision
 
-The tasks skill SHALL direct the agent to run the tasks step again on the smaller story after the user decides the split in the brainstorm.
+The tasks skill SHALL direct the agent to rerun task planning on the smaller story after the user decides the split in the brainstorm.
 
 #### Scenario: User decides the split
 - **WHEN** the user has decided the split in the brainstorm
-- **THEN** the next action is to run the tasks step again on the smaller story
+- **THEN** the next action is to rerun task planning on the smaller story
 
 ### Requirement: Compare all concurrently eligible tasks for file sharing
 
@@ -43,3 +43,11 @@ A task SHALL qualify for `[parallel]` only when it shares no files with any othe
 #### Scenario: Minimal flow writes tasks
 - **WHEN** the minimal flow produces a task list
 - **THEN** it continues to prohibit parallel tags
+
+#### Scenario: A prerequisite compares against its descendants
+- **WHEN** section C depends on B and B depends on A
+- **THEN** tasks in A need not compare files against tasks in B or C for parallel eligibility
+
+#### Scenario: Sections share only a prerequisite
+- **WHEN** sections B and C both depend on A but neither has a dependency chain to the other
+- **THEN** tasks in B and C compare files against each other for parallel eligibility
