@@ -137,9 +137,6 @@ The report also records how the review ran, as the reviewer context:
 - `subagent, same family` when the tool identifies the author's family;
 - `subagent, family not evidenced` when the tool does not identify it.
 
-Record the identified family with that context; do not claim independence
-without the tool evidence required by the subagent step.
-
 ### Review in a subagent
 
 Take this step only when `lets delegate review run` exits 3, when the
