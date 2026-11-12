@@ -3424,6 +3424,10 @@ commit_maps() {
   [[ "$example" == *'- **WHEN** a request to export arrives without a session'* ]]
   [[ "$example" == *'- **THEN** the system responds 401 and sends no data'* ]]
 }
+
+@test "authoring wording: design reference is conditional on the flow" {
+  skill_says lets-brainstorm 'When the flow has a design, it explains the reasons and implementation.'
+}
 @test "review model choice: policy anchors" {
   for skill in lets-review-plan lets-review-build; do
     skill_says "$skill" '**allowed models**'

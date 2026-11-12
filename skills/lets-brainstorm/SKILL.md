@@ -110,8 +110,7 @@ source.
 
 Silence is not agreement: a recommendation the user did not accept is an
 `Assumption`. Keep each row to one line so readers can scan the decisions.
-The design
-explains the reasons and implementation.
+When the flow has a design, it explains the reasons and implementation.
 
 A comment the user has not said yes to stays out of every row, `Assumption`
 included: settle the question from the packet and the code alone. When the
