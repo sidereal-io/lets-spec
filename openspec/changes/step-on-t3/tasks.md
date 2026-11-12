@@ -1,6 +1,6 @@
 ## 1. Run a step in a T3 thread
 
-- [ ] 1.1 [medium] Inside T3 Code, `lets delegate step run --for build --model gpt/gpt-6-luna --effort high` from a linked worktree asks T3 for one new thread in that worktree, on its branch, in default mode, running `gpt-6-luna` with effort `high`. It prints the `done` report from the thread's final message, and its record has `"resolver":"t3"` and a `handle` of kind `thread`. A bare `gemini` step runs the catalogue's default with no effort option. `t3` gets `step` through one helper that `run` also uses. The test *a step inside T3 Code opens no thread* becomes this one (verify: node --test tests/lets/resolvers/t3/delegate.test.ts)
+- [x] 1.1 [medium] Inside T3 Code, `lets delegate step run --for build --model gpt/gpt-6-luna --effort high` from a linked worktree asks T3 for one new thread in that worktree, on its branch, in default mode, running `gpt-6-luna` with effort `high`. It prints the `done` report from the thread's final message, and its record has `"resolver":"t3"` and a `handle` of kind `thread`. A bare `gemini` step runs the catalogue's default with no effort option. `t3` gets `step` through one helper that `run` also uses. The test *a step inside T3 Code opens no thread* becomes this one (verify: node --test tests/lets/resolvers/t3/delegate.test.ts) (✓ node --test tests/lets/resolvers/t3/ passed, 131 tests)
 - [ ] 1.2 [easy] A step thread whose report is `done` is archived, and one whose report is `needs-input` is not (verify: node --test tests/lets/resolvers/t3/delegate.test.ts)
 - [ ] 1.3 [easy] A step whose first thread T3 fails before any assistant message archives that thread and runs the next `--model`. When every model is refused, the command exits 3 with T3's failure message on stderr (verify: node --test tests/lets/resolvers/t3/delegate.test.ts)
 - [ ] 1.4 [easy] A step thread with a pending request gives exit 0 and a `failed` report whose `reason` says `the session stopped to ask` and names the thread. The thread is not archived, and the record has `"handle":null` (verify: node --test tests/lets/resolvers/t3/delegate.test.ts)
@@ -22,3 +22,5 @@
 - [ ] 4.1 [easy] Every project check passes (verify: pnpm test && nix flake check && mise run check)
 
 ## Deviations Ledger
+
+- 1.1: adding `step` makes `t3` answer step instructions, so the old test *step instructions inside T3 Code decline* failed at once. Task 1.1's commit turns it into 1.5's test *step instructions inside T3 Code list the catalogue's models*. Task 1.5's commit adds the test that a step outside T3 Code opens no thread.

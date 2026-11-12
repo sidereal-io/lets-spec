@@ -26,7 +26,7 @@ import { dirname, join, resolve } from 'node:path';
 import { configDir } from '../../config-dir.ts';
 import { exitCodeOf, Refused, SessionFailed, SpawnError } from '../kit/errors.ts';
 import { withoutEffort } from '../kit/families.ts';
-import type { Adapter, RunInput, StartInput } from '../kit/adapter.ts';
+import type { Adapter, RunInput, StartInput, StepInput } from '../kit/adapter.ts';
 import type { Db, Io } from '../kit/io.ts';
 import type { Handle, ModelString } from '../kit/adapter.ts';
 import { FAMILIES } from '../kit/families.ts';
@@ -519,6 +519,28 @@ export function createAdapter(io: Io): Adapter {
     return pollUntil(check, { intervalMs: POLL_MS, timeoutMs, now: io.now, sleep: io.sleep });
   }
 
+  // Launch a thread, wait for its final message, and add what done reads
+  // from the finished thread. A review and a step end in the same ways.
+  async function session<T>({ effort, ...input }: RunInput, timeoutMs: number, done: (handle: Handle) => T): Promise<{ handle: Handle; text: string } & T> {
+    // An error before the thread exists passes through: there is nothing
+    // to archive or name.
+    const handle = await launchThread(input, { effort });
+    try {
+      const { text } = await waitForText(handle, timeoutMs);
+      return { handle, text, ...done(handle) };
+    } catch (error) {
+      if (error instanceof Refused) {
+        // Nothing ran, so the thread goes, as finish with ok would do.
+        await archive(handle).catch((why: Error) => {
+          error.message += `; could not archive it: ${why.message}`;
+        });
+      }
+      // A kit error names the thread, so a person can find it.
+      if (error instanceof Error && exitCodeOf(error) !== null) error.message += ` (thread ${handle.id})`;
+      throw error;
+    }
+  }
+
   return {
     name: 't3',
 
@@ -537,25 +559,15 @@ export function createAdapter(io: Io): Adapter {
       }
     },
 
-    async run({ effort, ...input }: RunInput, { timeoutMs }) {
-      // An error before the thread exists passes through: there is nothing
-      // to archive or name.
-      const handle = await launchThread(input, { effort });
-      try {
-        const { text } = await waitForText(handle, timeoutMs);
+    async run(input: RunInput, { timeoutMs }) {
+      return session(input, timeoutMs, (handle) => ({
         // Where T3 ran it, which need not be where it was asked to.
-        return { handle, text, checkout: withDb((db) => readCheckout(db, handle.id)) };
-      } catch (error) {
-        if (error instanceof Refused) {
-          // Nothing ran, so the thread goes, as finish with ok would do.
-          await archive(handle).catch((why: Error) => {
-            error.message += `; could not archive it: ${why.message}`;
-          });
-        }
-        // A kit error names the thread, so a person can find it.
-        if (error instanceof Error && exitCodeOf(error) !== null) error.message += ` (thread ${handle.id})`;
-        throw error;
-      }
+        checkout: withDb((db) => readCheckout(db, handle.id)),
+      }));
+    },
+
+    async step(input: StepInput, { timeoutMs }) {
+      return session(input, timeoutMs, () => ({}));
     },
 
     async start(input: StartInput) {
