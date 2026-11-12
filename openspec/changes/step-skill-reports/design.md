@@ -20,11 +20,11 @@ The source skills are the release inputs. The current backlog adapter now adds `
 
 ## Decisions
 
-1. Check directory existence before invoking propose. Continue an existing change with its saved `.openspec.yaml` schema; apply route selection only to creation or a change with no saved schema, following lets-go's existing precedence.
-2. Stop immediately on a failed query or unusable state output, displaying the actual output. For an unknown state, display `instruction` when present, otherwise the full output. Keep the table order unchanged and remove the unsupported archive-to-readiness inference.
-3. Keep `lets backlog find` and explain POSIX single quotes, the embedded-apostrophe escape, and the existing title qualifier. Include literal dollar, quote and command-substitution examples that tests can execute against an argument recorder.
+1. Check directory existence before invoking propose. Continue an existing change with its saved `.openspec.yaml` schema; when no schema is saved, defer to the schema lets-go already set, following its existing precedence.
+2. Stop immediately on a failed query or unusable state output, displaying the actual output. For an unknown state, display `instruction` when present, otherwise the full output. Keep the table order unchanged. The archive row says the change is archived, the folder does not establish PR readiness, and to check the pull request. It takes no further action.
+3. Keep `lets backlog find` and explain shell-appropriate quoting, with POSIX single quotes and the embedded-apostrophe escape as examples. Say to pass only the idea: the command adds the title qualifier itself. Include literal dollar, quote and command-substitution examples that tests can execute against an argument recorder.
 4. Name the change branch, OpenSpec artifacts and implementation as outputs needing a prior claim. Link What shape runs for the issue, parent, story and glossary holding-branch exceptions. Keep the Claim section untouched.
-5. Use focused static checks for ordering and guard visibility plus executable quoting examples. Record reader walkthroughs separately rather than claiming that string checks establish comprehension.
+5. Use focused static checks for ordering and guard visibility plus executable quoting examples. Record reader walkthroughs in verification.md and summarize them in the PR description rather than claiming that string checks establish comprehension.
 
 ## Risks / Trade-offs
 

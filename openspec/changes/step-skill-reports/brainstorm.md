@@ -15,6 +15,6 @@ https://github.com/sidereal-io/lets-spec/issues/228
 
 ## Changes from the story
 
-None. Apply SLR-17 to the current backlog command, preserving its existing title qualifier.
+SLR-17 uses the current `lets backlog find` interface rather than the pinned `gh` example (D5). The caller passes only the idea; the adapter adds the title qualifier. No behavior change.
 
 Confirmed by user: yes

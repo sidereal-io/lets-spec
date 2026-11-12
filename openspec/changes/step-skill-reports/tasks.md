@@ -6,6 +6,9 @@
 - [ ] 1.4 [easy] Explain literal shell arguments for idea searches without changing the title search (verify: bats tests/skill-interfaces.bats --filter 'step reports: idea').
 - [ ] 1.5 [easy] Scope the prior-claim rule to change outputs and link shaping exceptions (verify: bats tests/skill-interfaces.bats --filter 'step reports: claim').
 
+- [ ] 1.6 [easy] Record author walkthroughs for planning schema cases, unusable state output, literal ideas and shaping-before-claim in verification.md (verify: inspect verification.md against #228 acceptance criteria).
+- [ ] 1.7 [easy] Pass pnpm test, nix flake check and mise run check before pushing (verify: all three commands exit zero).
+
 ## Deviations Ledger
 
 None.
