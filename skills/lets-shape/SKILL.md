@@ -670,7 +670,7 @@ map](#pick-the-map) says, so you read no thread and change no stage first.
      No output means no link is stale. Re-check each one's stage against the
      code, in the map that links it, and change nothing else in another
      product's map. Set its status by the [Journey map](#phase-3-journey-map)
-     definitions, whatever issues are open. Then do one of:
+     definitions; open issues do not decide it. Then do one of:
      - the stage now works: upgrade it and drop the link;
      - an open issue now closes the gap: link that one instead;
      - nothing open does: drop the link and keep that status.
