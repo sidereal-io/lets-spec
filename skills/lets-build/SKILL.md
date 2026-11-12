@@ -22,9 +22,8 @@ and the next action.
 2. Run `git branch --show-current`.
 3. If the branch has a folder `openspec/changes/<branch>/`, read its state:
    `openspec instructions apply --change <branch> --json`.
-   If the command exits non-zero, or its output is not a JSON object
-   with a nonempty string `state`, show its actual stdout and stderr,
-   and stop. Do not invent a state or retry the query.
+   If the command fails, or prints no JSON object with a `state`, show
+   what it printed, and stop. Do not guess a state or retry.
 4. Use the table from top to bottom. Follow the first matching row;
    later rows do not override it:
 
