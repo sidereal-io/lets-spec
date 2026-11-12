@@ -47,8 +47,7 @@ Invoke the `openspec-propose` skill for the change `<name>`, for issue
 
 - When `openspec/changes/<name>/` exists, continue it, even without a
   route line. Keep the schema saved in its `.openspec.yaml`, even when
-  the current route names another schema. When no schema is saved, use
-  the schema `lets-go` already set.
+  the current route names another schema.
 - For a new change, give it the route line for the proposal's commit
   message. When the route is `lets-minimal` and the flow's schema is
   not, say to use the schema `lets-minimal`. The flow's schema is the
