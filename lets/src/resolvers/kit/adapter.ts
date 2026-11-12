@@ -12,7 +12,7 @@ export type Handle = { kind: string; id: string; [field: string]: unknown };
 export type ModelString = string;
 
 // How long a review may run, in minutes, for each effort.
-export const DEFAULT_TIMEOUT_MINUTES: Record<Effort, number> = { low: 15, medium: 15, high: 45 };
+export const DEFAULT_TIMEOUT_MINUTES: Record<Effort, number> = { low: 30, medium: 30, high: 45 };
 
 // A session's name: lowercase, kebab-case, a letter first, at most 32
 // characters.

@@ -90,9 +90,11 @@ test('the timeout is the one given, else the default by effort', async () => {
   const given = withT3();
   await run(options({ timeoutMinutes: 7 }), given.deps);
   assert.deepEqual(runs(given.adapterCalls)[0].options, { timeoutMs: 7 * 60000 });
-  const low = withT3();
-  await run(options({ effort: 'low' }), low.deps);
-  assert.deepEqual(runs(low.adapterCalls)[0].options, { timeoutMs: 15 * 60000 });
+  for (const effort of ['low', 'medium'] as const) {
+    const t = withT3();
+    await run(options({ effort }), t.deps);
+    assert.deepEqual(runs(t.adapterCalls)[0].options, { timeoutMs: 30 * 60000 }, effort);
+  }
 });
 
 test('a bad --model is exit 2, naming it, and no resolver is asked', async () => {

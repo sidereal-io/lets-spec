@@ -112,9 +112,11 @@ Run lets delegate from the repo root.`;
 const REVIEW_HELP = `
 stdout: the session's final message.
 stderr: one JSON line with for, resolver, family, model, independent,
-handle, gitClean and durationSeconds. for is the intent --for gave.
-independent is true when the family that answered is not the source
-family.
+handle, checkout, commit, gitClean and durationSeconds. for is the intent
+--for gave. independent is true when the family that answered is not the
+source family. checkout is the checkout the session ran in, and commit the
+full hash at its HEAD after the session; each is null when lets cannot
+tell.
 
 --model may be given more than once, best first. When the resolver
 refuses a model, lets asks the same resolver for the next one.
@@ -309,7 +311,7 @@ strategyCommand('review', 'run a prompt in a fresh, read-only session and wait f
   .addOption(new Option('--source-family <family>', 'the model family that wrote the work').choices(FAMILIES).makeOptionMandatory())
   .addOption(new Option('--effort <effort>', 'how hard the session thinks').choices(EFFORTS).makeOptionMandatory())
   .addOption(modelOption())
-  .option('--timeout-minutes <minutes>', 'how long to wait (default: 15, or 45 with --effort high)', wholeMinutes)
+  .option('--timeout-minutes <minutes>', 'how long to wait (default: 30, or 45 with --effort high)', wholeMinutes)
   .addHelpText('after', REVIEW_HELP)
   .action(async ({ model, ...options }: Omit<ReviewOptions, 'models'> & { model: string[] }) => {
     process.exitCode = await review({ ...options, models: model }, realDeps());

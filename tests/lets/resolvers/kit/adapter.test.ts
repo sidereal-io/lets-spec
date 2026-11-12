@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { DEFAULT_TIMEOUT_MINUTES, normalizeName } from '../../../../lets/src/resolvers/kit/adapter.ts';
 
 test('a session\'s default time limit depends on its effort', () => {
-  assert.deepEqual(DEFAULT_TIMEOUT_MINUTES, { low: 15, medium: 15, high: 45 });
+  assert.deepEqual(DEFAULT_TIMEOUT_MINUTES, { low: 30, medium: 30, high: 45 });
 });
 
 test('names are normalized, not refused', () => {
