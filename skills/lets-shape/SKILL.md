@@ -773,11 +773,11 @@ Only when the user chose a documentation pull request:
 ### Link the blocked stories
 
 1. Ask the user before you add blockers. Then, on each other story that
-   needs the unmerged definitions, run the command below. Here, `<owner>` is
-   the recorded glossary owner issue number from **Glossary handoff**, not
-   the Project owner login or the owner PR number.
-   `gh issue edit <dependent> --add-blocked-by <owner>`. Never put the
-   blocker only on the parent, and never use a "relates to" link.
+   needs the unmerged definitions, run
+   `gh issue edit <dependent> --add-blocked-by <owner>`, where `<owner>` is
+   the owner issue number recorded in **Glossary handoff**, not the Project
+   owner login or the PR number. Never put the blocker only on the parent,
+   and never use a "relates to" link.
 2. If the user declines the links, make the dependent story's
    **Depends on** name the owner, the definitions it needs and the
    unresolved prerequisite. Do not call the story ready. Build's
