@@ -51,6 +51,12 @@ A review whose run ends holding a proposed plan exits 5, and stderr says
 `the session returned a plan, not a result (thread <id>)`. The thread
 stays, so you can read it.
 
+A review also exits 5 when the session asks a question and waits for an
+answer. Stderr then says `the session stopped to ask (thread <id>)`. The
+thread stays, so you can answer it in T3 Code. A run that T3 shows as
+`waiting` for a moment, with no question, does not count: `t3` waits for
+it to end, up to the review's time limit.
+
 The review's JSON line on stderr names `checkout` and `commit`. `checkout`
 is where T3 records that the thread ran: its worktree, or else the
 project's root. It is not where `t3` asked for the thread, so a thread T3
