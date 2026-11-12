@@ -610,7 +610,8 @@ Each one returns its result to what ran it.
 Parallel sessions share the backlog, so claim the issue before you
 create its change branch, OpenSpec artifacts or implementation.
 Shaping may first create the issue, parent, stories and glossary holding
-branch, as [What shape runs](references/shape.md#what-shape-runs) allows.
+branch, as
+[What shape runs](references/shape.md#what-shape-runs) allows.
 An idea becomes an issue during shaping; the run claims that issue
 before creating its change branch and planning artifacts.
 
