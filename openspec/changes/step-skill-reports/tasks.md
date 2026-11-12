@@ -6,7 +6,7 @@
 - [x] 1.4 [easy] Pass the idea literally to title search (✓ original red-green test; argument recorder).
 - [x] 1.5 [easy] Scope the claim rule and link shaping exceptions (✓ author walkthrough; Claim remains unchanged).
 - [x] 1.6 [easy] Record reader walkthrough results (✓ verification.md).
-- [x] 1.7 [easy] Pass all three repository checks before pushing (✓ initial pnpm test, nix flake check, mise run check).
+- [x] 1.7 [easy] Pass all three repository checks before pushing (✓ pnpm test, nix flake check, mise run check).
 
 ## Deviations Ledger
 
