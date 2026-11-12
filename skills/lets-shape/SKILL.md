@@ -305,10 +305,10 @@ Propose meaning and the narrowest scope covering actual uses, checking
 ancestor definitions and siblings. Order used by checkout and fulfillment
 belongs in their common scope; Checkout attempt used only by checkout stays
 local. Confirm meaning and scope with the user, then write the accepted
-entry immediately to its authoritative glossary (in single-issue shaping,
-only after step 6 sizing passes). Subsequent packets use that agreed
-concept. Qualify conflicting local meanings rather than silently overriding
-shared ones; move newly shared definitions and update references
+entry immediately to its authoritative glossary. In single-issue shaping,
+confirm and write only after [step 6](#shape-one-issue) sizing passes.
+Subsequent packets use that agreed concept. Qualify conflicting local
+meanings rather than silently overriding shared ones; move newly shared definitions and update references
 without duplicate authoritative copies. A stale declared glossary path must
 be reported and resolved before dependent discussion continues.
 
