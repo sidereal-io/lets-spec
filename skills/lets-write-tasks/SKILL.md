@@ -42,15 +42,12 @@ Put tags after the task number and before the description.
 | `[parallel]` | The task shares no files with any other task that could run at the same time. |
 | `[depends-on: <section>]` | On a section heading: this section waits for that one. |
 
-Before you tag a task `[parallel]`, compare its files with every other task
-in the same section, and every task in any
-other section with no `depends-on` chain between the two sections. A chain
-in either direction, including an indirect dependency, means those sections
-cannot run at the same time. Sections that only share a prerequisite still
-need the file comparison.
-
-For example, if the first and third tasks share a file, neither qualifies
-for `[parallel]`, even when the second task touches different files.
+Before you tag a task `[parallel]`, compare its files with every task that
+could run at the same time. That is the rest of its section, plus each
+section with no `depends-on` chain, direct or indirect, to or from its own.
+Sections that share only a prerequisite can run at the same time. If the
+first and third tasks share a file, neither is `[parallel]`, even when the
+second touches other files.
 
 ## Verification
 
