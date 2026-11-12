@@ -1,6 +1,6 @@
 ## 1. Review model choice
 
-- [ ] 1.1 [easy] Both review skills stop for user choice when guidance excludes all listed models (verify: bats tests/skill-interfaces.bats --filter 'review model choice: exclusions')
+- [x] 1.1 [easy] Both review skills stop for user choice when guidance excludes all listed models (✓ bats tests/skill-interfaces.bats --filter 'review model choice: exclusions' passed)
 - [ ] 1.2 [easy] Build review ranks against every author family with a session-family CLI compatibility value (verify: bats tests/skill-interfaces.bats --filter 'review model choice: ranking')
 - [ ] 1.3 [easy] Build review reports whole-author overlap separately from CLI independence (verify: bats tests/skill-interfaces.bats --filter 'review model choice: overlap')
 - [ ] 1.4 [easy] Plan review describes the evidenced subagent family without contradictory context labels (verify: bats tests/skill-interfaces.bats --filter 'review model choice: subagent provenance')

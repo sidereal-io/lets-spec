@@ -527,7 +527,7 @@ fixture_file() {
 
 @test "each review skill takes the subagent step when there are no options" {
   for skill in lets-review-build lets-review-plan; do
-    skill_says "$skill" "When \`options\` is empty, whatever the resolver, skip the command and take the [subagent step]"
+    skill_says "$skill" "When the listed models are empty, whatever the resolver, skip the command and take the [subagent step]"
   done
 }
 
@@ -3410,6 +3410,22 @@ commit_maps() {
 }
 
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
+# #229 review-model-choice: keep this block together for sibling story rebases.
+@test "review model choice: exclusions require user choice" {
+  local skill
+  for skill in lets-review-plan lets-review-build; do
+    skill_says "$skill" '**listed models**'
+    skill_says "$skill" '**allowed models**'
+    skill_says "$skill" 'When the listed models are nonempty but the allowed models are empty, stop'
+    skill_says "$skill" 'Show the guidance and the listed models'
+    skill_says "$skill" 'ask the user to choose a model or the subagent step'
+    skill_says "$skill" 'Do not run either until the user answers'
+    skill_says "$skill" 'A fallback must respect the guidance exclusions'
+    skill_says "$skill" 'If no permitted subagent can run, stop and ask the user'
+    skill_says "$skill" 'Take this step only when'
+    skill_says "$skill" 'the user explicitly chooses it after the excluded-all stop'
+  done
+}
 
 @test "step reports: planning checks prerequisites before proposing" {
   local plan guard invoke

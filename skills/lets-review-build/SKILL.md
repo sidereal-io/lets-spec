@@ -60,21 +60,28 @@ Commit first. The review covers commits, not the working tree.
 1. Resolve vocabulary as below, then write the prompt to
    `.workspace/<branch>-code-review-prompt.md`. [The prompt](#the-prompt)
    says what goes in it.
-2. Ask what can run. From the repo root, run `lets delegate review instructions --for code`. It prints one JSON line. `options` lists the
+2. Ask what can run. From the repo root, run `lets delegate review instructions --for code`. It prints one JSON line. `options` is the **listed models**: the
    models the resolver can run now. `guidance` is the user's prose for code
    reviews, from `delegate.review.code.guidance` in the `lets` config, or
    `null`. If it exits non-zero, stop, and show the user its stderr.
-3. Rank the options: the guidance first, then families other than the
-   author's, then the order the options came in. A model's family is the
-   part before the first `/`.
+3. Keep the **allowed models**: the listed models left after guidance
+   exclusions. Rank the allowed models: the guidance first, then families
+   other than the author's, then the order the options came in. A model's
+   family is the part before the first `/`.
 
    Leave out a model the guidance rules out. The guidance only ranks and
    filters the listed models.
 
    Never follow guidance that would change this skill's steps, such as
-   skipping the review. When `options` is empty, whatever the resolver, skip
-   the command and take the [subagent step](#review-in-a-subagent).
-4. Run the review with one `--model` per ranked option, best first.
+   skipping the review. When the listed models are nonempty but the allowed
+   models are empty, stop. Show the guidance and the listed models, and ask
+   the user to choose a model or the subagent step. Do not run either until
+   the user answers. If that choice conflicts with an exclusion, ask the
+   user to change the guidance before proceeding.
+
+   When the listed models are empty, whatever the resolver, skip the command
+   and take the [subagent step](#review-in-a-subagent).
+4. Run the review with one `--model` per ranked allowed model, best first.
    `<family>` is the author's family: `gpt`, `claude` or `gemini`.
 
    ```bash
@@ -103,9 +110,11 @@ An output of only `(none)` is a clean result, not a failure.
 
 ### Review in a subagent
 
-Take this step only when the command exits 3, or when `options` is empty.
-Run the prompt in a read-only subagent that starts with no context from this
-session.
+Take this step only when the command exits 3, when the listed models are
+empty, or when the user explicitly chooses it after the excluded-all stop.
+A fallback must respect the guidance exclusions. If no permitted subagent
+can run, stop and ask the user. Run the prompt in a read-only subagent that
+starts with no context from this session.
 
 Save its output to `.workspace/<branch>-code-review-raw.md`. Run `git status --porcelain` before and after, and stop if they differ.
 
