@@ -3424,3 +3424,14 @@ commit_maps() {
   resume="$(sed -n '/^## Resume mode/,/^## Revision mode/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
   [[ "$resume" == *'`next phase: finalize`'*'Phase 6: Finalize'*'Do not repeat confirmed Stories'* ]]
 }
+
+@test "shape-checkpoints: stale links do not determine implementation status" {
+  local revision
+  revision="$(sed -n '/^## Revision mode/,/^## Glossary handoff/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
+  [[ "$revision" == *'Choose `supported`, `partial` or `gap` from the code'* ]]
+  [[ "$revision" == *'nothing open does: drop the link and keep the code-based status'* ]]
+  [[ "$revision" == *'incomplete code stays `partial`'* ]]
+  [[ "$revision" == *'A `supported` stage has no issue link'* ]]
+  [[ "$revision" != *'leave the stage an unplanned `gap`'* ]]
+}
+

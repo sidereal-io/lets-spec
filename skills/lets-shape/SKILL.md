@@ -662,11 +662,14 @@ map](#pick-the-map) says, so you read no thread and change no stage first.
 
      No output means no link is stale. Re-check each one's stage against the
      code, in the map that links it, and change nothing else in another
-     product's map. Then do one of:
+     product's map. Choose `supported`, `partial` or `gap` from the code,
+     using the [Journey map](#phase-3-journey-map) definitions; issue
+     availability does not set the status. A `supported` stage has no issue
+     link. Then do one of:
      - the stage now works: upgrade it and drop the link;
      - an open issue now closes the gap: link that one instead;
-     - nothing open does: drop the link and leave the stage an unplanned
-       `gap`.
+     - nothing open does: drop the link and keep the code-based status:
+       incomplete code stays `partial`, absent code stays `gap`.
    - **Read the thread of each open issue the map links**, one issue at a
      time, in ascending number. Take the numbers from the map's `issues/<n>`
      links, and keep those the issue list shows as open. Finish each issue
