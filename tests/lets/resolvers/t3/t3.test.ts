@@ -17,6 +17,20 @@ const TOKEN = '/home/u/.config/lets/t3-token';
 const ORIGIN = 'http://127.0.0.1:3773';
 const RUNNING = { [RUNTIME]: JSON.stringify({ pid: 7, origin: ORIGIN }), [TOKEN]: 'tok' };
 
+// git in a checkout of the repository whose main checkout is /r, answering
+// each call by its arguments. top is the checkout's top level, and a null
+// branch is a detached HEAD.
+function inCheckout({ top = '/r', branch = 'main' as string | null } = {}) {
+  return (_cmd: string, args: string[]) => {
+    const asked = args.slice(2).join(' ');
+    const ok = (stdout: string) => ({ stdout: `${stdout}\n`, stderr: '', code: 0 });
+    if (asked === 'rev-parse --path-format=absolute --git-common-dir') return ok('/r/.git');
+    if (asked === 'rev-parse --show-toplevel') return ok(top);
+    if (asked === 'branch --show-current') return ok(branch ?? '');
+    return { stdout: '', stderr: `no answer for git ${asked}`, code: 1 };
+  };
+}
+
 function database() {
   const db = new DatabaseSync(':memory:');
   db.exec(SCHEMA);
@@ -774,7 +788,7 @@ test('run launches a plan-mode thread in the project for this repo, and the hand
   const io = fakeIo({
     env: {},
     files: RUNNING,
-    results: [{ stdout: '/r/.git\n', stderr: '', code: 0 }, { stdout: 'main\n', stderr: '', code: 0 }],
+    results: inCheckout(),
     openDb: () => shared(db),
     fetch: fakeFetch([200], []),
     WebSocket: fakeWebSocket(LAUNCHED, log),
@@ -805,7 +819,7 @@ test('run fails with the add hint when t3 does not know the repo', async () => {
   const io = fakeIo({
     env: {},
     files: RUNNING,
-    results: [{ stdout: '/r/.git\n', stderr: '', code: 0 }],
+    results: inCheckout(),
     openDb: () => shared(db),
   });
   await assert.rejects(createAdapter(io).run({ ...runInput, cwd: '/r' }, { timeoutMs: 60000 }), (error) => error instanceof Refused && /t3 project add \/r; known: other/.test(error.message));
@@ -828,7 +842,7 @@ function launchingIo(db: DatabaseSync, log: Log, { projectDefault = null as stri
   return fakeIo({
     env: {},
     files: RUNNING,
-    results: [{ stdout: '/r/.git\n', stderr: '', code: 0 }, { stdout: 'main\n', stderr: '', code: 0 }],
+    results: inCheckout(),
     openDb: () => shared(db),
     fetch: fakeFetch(statuses, []),
     WebSocket: fakeWebSocket(LAUNCHED, log),

@@ -1,6 +1,6 @@
 ## 1. Fixtures
 
-- [ ] 1.1 [easy] The git fixtures that answer `launchThread` (`launchingIo` and the inline `results` in `tests/lets/resolvers/t3/t3.test.ts`, `runningT3` and its callers in `tests/lets/resolvers/t3/delegate.test.ts`) answer each git call by its arguments, not by its place in the queue, and answer `git rev-parse --show-toplevel` with the main checkout. Every existing test still passes on the unchanged resolver (verify: node --test tests/lets/resolvers/t3/t3.test.ts tests/lets/resolvers/t3/delegate.test.ts)
+- [x] 1.1 [easy] The git fixtures that answer `launchThread` (`launchingIo` and the inline `results` in `tests/lets/resolvers/t3/t3.test.ts`, `runningT3` and its callers in `tests/lets/resolvers/t3/delegate.test.ts`) answer each git call by its arguments, not by its place in the queue, and answer `git rev-parse --show-toplevel` with the main checkout. Every existing test still passes on the unchanged resolver (verify: node --test tests/lets/resolvers/t3/t3.test.ts tests/lets/resolvers/t3/delegate.test.ts) (✓ node --test tests/lets/resolvers/t3/t3.test.ts tests/lets/resolvers/t3/delegate.test.ts passed, 108 tests)
 
 ## 2. Where the thread runs [depends-on: 1]
 

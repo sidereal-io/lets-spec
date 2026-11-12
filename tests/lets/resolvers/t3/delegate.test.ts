@@ -221,10 +221,28 @@ test('review instructions decline when the running T3 server is not an ancestor'
   assert.match(t.stderr(), /every resolver declined/);
 });
 
+type Answer = { stdout: string; stderr: string; code: number };
+const ok = (stdout: string): Answer => ({ stdout: `${stdout}\n`, stderr: '', code: 0 });
+
+// Commands run in a checkout of the repository whose main checkout is
+// /repo, on branch main. git is answered by its arguments; others answers
+// every other command, in order.
+function inCheckout(others: Answer[]) {
+  return (cmd: string, args: string[]): Answer => {
+    if (cmd !== 'git') return others.shift() ?? ok('');
+    const asked = args.slice(2).join(' ');
+    if (asked === 'rev-parse --path-format=absolute --git-common-dir') return ok('/repo/.git');
+    if (asked === 'rev-parse --show-toplevel') return ok('/repo');
+    if (asked === 'branch --show-current') return ok('main');
+    return { stdout: '', stderr: `no answer for git ${asked}`, code: 1 };
+  };
+}
+
 // A T3 that is running, with a project for projectRoot and the state in db.
 // It answers the catalogue request with config, and every other request
-// over the WebSocket with thread T. Each request is logged in sent.
-type Running = { projectRoot?: string; config?: unknown; fetch?: typeof globalThis.fetch; results?: { stdout: string; stderr: string; code: number }[] };
+// over the WebSocket with thread T. Each request is logged in sent. results
+// answers the commands other than git, in order.
+type Running = { projectRoot?: string; config?: unknown; fetch?: typeof globalThis.fetch; results?: Answer[] };
 function runningT3({ projectRoot = '/repo', config = ONLY_DISABLED as unknown, fetch = ticketFetch, results = [] }: Running = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec(SCHEMA);
@@ -237,7 +255,7 @@ function runningT3({ projectRoot = '/repo', config = ONLY_DISABLED as unknown, f
     parentPid: (pid) => (CHAIN as Record<number, number>)[pid] ?? null,
     processAlive: (pid) => pid === 7,
     env: {},
-    results: [{ stdout: '/repo/.git\n', stderr: '', code: 0 }, { stdout: 'main\n', stderr: '', code: 0 }, ...results],
+    results: inCheckout(results),
     openDb: () => ({ prepare: (sql: string) => db.prepare(sql), close() {} }) as Db,
     fetch,
     WebSocket: t3Socket(sent, config),
@@ -315,8 +333,7 @@ test('a bare-family handoff on an instance with no visible model is exit 3, nami
 
 test('a bare-family handoff on a failing instance tries the next model', async () => {
   const config = { providers: [provider('claudeAgent', [{ slug: 'claude-fable-5-1', isDefault: true }], { status: 'error' }), provider('codex', ['gpt-6-luna'])] };
-  // Each model it tries asks git again.
-  const { sent, t } = runningT3({ config, results: [{ stdout: '/repo/.git\n', stderr: '', code: 0 }, { stdout: 'main\n', stderr: '', code: 0 }] });
+  const { sent, t } = runningT3({ config });
   assert.equal(await handoff(handoffOn('claude', 'gpt'), t.deps), 0, t.stderr());
   assert.deepEqual(launches(sent).map((selection) => selection?.model), ['gpt-6-luna']);
 });
