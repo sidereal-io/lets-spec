@@ -3448,6 +3448,15 @@ commit_maps() {
   skill_does_not_say lets-review-build "When only the author's family can run"
 }
 
+@test "review model choice: subagent provenance follows tool evidence" {
+  skill_says lets-review-plan '`subagent, other family` only when the tool'
+  skill_says lets-review-plan "`subagent, same family` when the tool identifies the author's family"
+  skill_says lets-review-plan '`subagent, family not evidenced` when the tool does not identify it'
+  skill_says lets-review-plan 'Record the identified family with that context'
+  skill_says lets-review-plan "`independent: no` unless the subagent was another family and the tool's own output names it"
+  skill_does_not_say lets-review-plan '`subagent, same family` after the subagent step'
+}
+
 @test "step reports: planning checks prerequisites before proposing" {
   local plan guard invoke
   plan="$(sed -n '/^## Plan$/,/^## When propose stops$/p' "$repo/skills/lets-plan/SKILL.md" | tr -s '[:space:]' ' ')"

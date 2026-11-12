@@ -133,7 +133,13 @@ The report also records how the review ran, as the reviewer context:
 
 - `fresh context, other family` when the meta line says `"independent": true`;
 - `fresh context, same family` when it says `"independent": false`;
-- `subagent, same family` after the subagent step.
+- `subagent, other family` only when the tool's own output identifies a
+  family other than the author's;
+- `subagent, same family` when the tool identifies the author's family;
+- `subagent, family not evidenced` when the tool does not identify it.
+
+Record the identified family with that context; do not claim independence
+without the tool evidence required by the subagent step.
 
 ### Review in a subagent
 
