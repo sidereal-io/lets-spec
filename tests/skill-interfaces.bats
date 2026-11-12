@@ -2466,7 +2466,7 @@ step_row() {
 }
 
 @test "lets-plan runs openspec-propose and reads the change state when it stops" {
-  skill_says lets-plan '`openspec-propose` skill'
+  skill_says lets-plan '`openspec-propose`'
   skill_says lets-plan 'openspec instructions apply --change <name> --json'
   skill_says lets-plan 'lets backlog find <branch>'
   skill_says lets-plan 'whose title starts with `<branch> — `'
@@ -3411,84 +3411,51 @@ commit_maps() {
 
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
 
-# #228 step-skill-reports: keep these checks together for sibling changes.
 @test "step reports: planning checks prerequisites before proposing" {
   local plan guard invoke
   plan="$(sed -n '/^## Plan$/,/^## When propose stops$/p' "$repo/skills/lets-plan/SKILL.md" | tr -s '[:space:]' ' ')"
-  guard="${plan%%'stop: say that `lets-go` routes and claims the issue.'*}"
-  invoke="${plan%%'Invoke the `openspec-propose` skill'*}"
-  [ "$guard" != "$plan" ]
-  [ "$invoke" != "$plan" ]
-  [ "${#guard}" -lt "${#invoke}" ] || { echo 'the prerequisite stop follows propose'; false; }
+  guard="${plan%%'stop:'*}"
+  invoke="${plan%%'`openspec-propose`'*}"
+  [ "$guard" != "$plan" ] && [ "$invoke" != "$plan" ]
+  [ "${#guard}" -lt "${#invoke}" ]
+  for token in '.openspec.yaml' 'Existing change' 'New change'; do
+    [[ "$plan" == *"$token"* ]]
+  done
 }
 
-@test "step reports: planning preserves the saved schema on continuation" {
-  skill_says lets-plan 'When `openspec/changes/<name>/` exists, continue it'
-  skill_says lets-plan 'Keep the schema saved in its `.openspec.yaml`'
-  skill_says lets-plan 'even when the current route names another schema'
-  skill_says lets-plan 'When no schema is saved, use the schema `lets-go` already set'
-  skill_says lets-plan 'For a new change'
-  skill_says lets-plan 'When the route is `lets-minimal` and the flow'
-}
-
-@test "step reports: build query stops on unusable state output" {
-  local text guard router
-  text="$(cat "$repo/skills/lets-build/SKILL.md" | tr -s '[:space:]' ' ')"
-  guard="${text%%'If the command exits non-zero'*}"
-  router="${text%%'Use the table from top to bottom'*}"
+@test "step reports: routing checks query output before the table" {
+  local text query guard table rows archive
+  text="$(tr -s '[:space:]' ' ' < "$repo/skills/lets-build/SKILL.md")"
+  query="${text%%'openspec instructions apply'*}"
+  guard="${text%%'If the command'*}"
+  table="${text%%'| The current branch |'*}"
   [ "$guard" != "$text" ]
-  [ "${#guard}" -lt "${#router}" ]
-  skill_says lets-build 'output is not a JSON object with a nonempty string `state`'
-  skill_says lets-build 'show its actual stdout and stderr, and stop'
-  skill_says lets-build 'Do not invent a state or retry the query'
-  skill_says lets-build 'When `instruction` is absent or unusable, show the full output instead'
-}
-
-@test "step reports: archive folder reports only archive evidence" {
-  local rows archive
+  [ "${#query}" -lt "${#guard}" ] && [ "${#guard}" -lt "${#table}" ]
+  for token in 'JSON' '`state`' 'retry' '`instruction`'; do
+    [[ "$text" == *"$token"* ]]
+  done
   rows="$(grep '^| has a' "$repo/skills/lets-build/SKILL.md")"
   archive="$(grep '^| has an archived folder' <<<"$rows")"
-  [[ "$archive" != *'ready for review'* ]]
-  [[ "$archive" == *'Say the change is archived'* ]]
-  [[ "$archive" == *'Check the pull request'* ]]
   [ "$(tail -n 1 <<<"$rows")" = "$archive" ]
-  skill_says lets-build 'later rows do not override it'
+  [[ "$archive" == *'pull request'* ]] && [[ "$archive" != *'ready for review'* ]]
 }
 
-@test "step reports: idea arguments are literal shell text" {
-  local examples expected
-  examples="$BATS_TEST_TMPDIR/idea-examples.sh"
-  sed -n "/^   lets backlog find 'fix /p" "$repo/skills/lets-go/SKILL.md" > "$examples"
-  [ "$(wc -l < "$examples")" -eq 2 ]
-  run bash -c 'lets() { printf "%s\n" "$#" "$@"; }; source "$1"' _ "$examples"
+@test "step reports: idea argument stays literal" {
+  local example expected
+  example="$BATS_TEST_TMPDIR/idea.sh"
+  sed -n "/^   lets backlog find 'fix /p" "$repo/skills/lets-go/SKILL.md" > "$example"
+  [ "$(wc -l < "$example")" -eq 1 ]
+  run bash -c 'lets() { printf "%s\n" "$#" "$@"; }; source "$1"' _ "$example"
   [ "$status" -eq 0 ]
   expected=$(cat <<'EXPECTED'
 3
 backlog
 find
-fix $HOME display
-3
-backlog
-find
-fix user's "$HOME" $(printf unsafe) `printf unsafe`
+fix user's $HOME display
 EXPECTED
 )
-  [ "$output" = "$expected" ] || { printf 'arguments changed: %s\n' "$output"; false; }
-  skill_says lets-go 'pass only the idea'
-  skill_says lets-go 'adds the title qualifier itself'
-  skill_says lets-go 'Do not paste the idea inside the double quotes shown below'
-  ! grep -qF 'in:title' "$repo/skills/lets-go/SKILL.md"
+  [ "$output" = "$expected" ]
 }
-
-@test "step reports: claim rule names concrete change outputs" {
-  local demand
-  demand="$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')"
-  [[ "$demand" != *'create anything'* ]]
-  [[ "$demand" == *'change branch, OpenSpec artifacts or implementation'* ]]
-  [[ "$demand" == *'[What shape runs](references/shape.md#what-shape-runs)'* ]]
-  [[ "$demand" == *'issue, parent, stories and glossary holding branch'* ]]
-}
-# End #228 step-skill-reports checks.
 @test "claim-race: recovery names the session token" {
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(procedure_text 'Claim')"
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(skill_section lets-go 'Recover from a failed import')"

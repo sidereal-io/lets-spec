@@ -10,7 +10,7 @@ The source skills are the release inputs. The current backlog adapter now adds `
 
 ## Test Seams
 
-- **Primary test seam:** `tests/skill-interfaces.bats`, with an independent block for #228.
+- **Primary test seam:** `tests/skill-interfaces.bats`, reusing its existing checks.
 - **Existing seams reused:** Source interface assertions and shell argument capture; author walkthroughs cover interpretation that static tests cannot prove.
 
 ## Scrutiny Tier & Blast Radius

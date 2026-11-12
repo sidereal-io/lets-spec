@@ -1,14 +1,13 @@
 ## 1. Step skill instruction corrections
 
-- [x] 1.1 [easy] Check missing planning prerequisites before proposing; preserve saved schema on continuation (✓ bats tests/skill-interfaces.bats --filter 'step reports: planning' passed, 2 tests; both failed before the correction).
-- [x] 1.2 [easy] Stop on unusable build state output with the actual evidence (✓ bats tests/skill-interfaces.bats --filter 'step reports: build query' passed after its expected red failure).
-- [x] 1.3 [easy] Report only archiving from an archive folder while preserving table precedence (✓ bats tests/skill-interfaces.bats --filter 'step reports: archive' passed after its expected red failure).
-- [x] 1.4 [easy] Explain literal shell arguments for idea searches without changing the title search (✓ bats tests/skill-interfaces.bats --filter 'step reports: idea' passed after its expected red failure; both examples preserved exact arguments).
-- [x] 1.5 [easy] Scope the prior-claim rule to change outputs and link shaping exceptions (✓ bats tests/skill-interfaces.bats --filter 'step reports:' passed, 6 tests; claim test first failed on the blanket rule).
-
-- [x] 1.6 [easy] Record author walkthroughs for planning schema cases, unusable state output, literal ideas and shaping-before-claim in verification.md (✓ verification.md records each acceptance case, the author method and evidence limits).
-- [x] 1.7 [easy] Pass pnpm test, nix flake check and mise run check before pushing (✓ pnpm test passed: 581 Node tests, typecheck, 376 Bats tests; nix flake check passed on x86_64-linux; mise run check passed: 15 items).
+- [x] 1.1 [easy] Check planning prerequisites and preserve saved schemas (✓ original red-green tests; consolidated planning check).
+- [x] 1.2 [easy] Stop with actual query output on failure (✓ original red-green test; consolidated routing check).
+- [x] 1.3 [easy] Report only archive evidence and preserve precedence (✓ original red-green test; consolidated routing check).
+- [x] 1.4 [easy] Pass the idea literally to title search (✓ original red-green test; argument recorder).
+- [x] 1.5 [easy] Scope the claim rule and link shaping exceptions (✓ author walkthrough; Claim remains unchanged).
+- [x] 1.6 [easy] Record reader walkthrough results (✓ verification.md).
+- [x] 1.7 [easy] Pass all three repository checks before pushing (✓ initial pnpm test, nix flake check, mise run check).
 
 ## Deviations Ledger
 
-None.
+The user's PR review requested shorter wording, records and three consolidated tests. CI setup stays in #247.
