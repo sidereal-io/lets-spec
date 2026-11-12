@@ -3426,6 +3426,10 @@ task_limits_says() {
   task_limits_says 'Do not split the story here: the user decides the split in the brainstorm.'
 }
 
+@test "task-limits: resumption follows the user's brainstorm split decision" {
+  task_limits_says 'After the user decides the split, rerun task planning on the smaller story.'
+}
+
 # #234: setup guards and reusable PR review wording.
 @test "setup guards precede Project creation" {
   local text before
