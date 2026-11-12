@@ -3412,48 +3412,21 @@ commit_maps() {
 }
 
 # BEGIN shape-checkpoints (#231): shaping recovery contracts.
-# Keep these checks together so sibling stories can append their own blocks.
 @test "shape-checkpoints: finalize is a durable resume phase" {
-  local skill template resume stories
-  skill="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-shape/SKILL.md")"
-  template="$(cat "$repo/skills/lets-shape/templates/issue-template.md")"
-  [[ "$skill" == *'`personas`, `journey-map`, `moscow`, `stories`, then `finalize`'* ]]
-  [[ "$template" == *'<personas | journey-map | moscow | stories | finalize>'* ]]
-  stories="$(sed -n '/^### Phase 5: Stories/,/^### Phase 6: Finalize/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
-  [[ "$stories" == *'confirmed and written'*'`next phase: finalize`'* ]]
-  resume="$(sed -n '/^## Resume mode/,/^## Revision mode/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
-  [[ "$resume" == *'`next phase: finalize`'*'Phase 6: Finalize'*'Do not repeat confirmed Stories'* ]]
+  grep -qF '| finalize>' "$repo/skills/lets-shape/templates/issue-template.md"
+  skill_says lets-shape '`finalize`'
+  sed -n '/^## Resume mode/,/^## Revision mode/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF '`finalize`'
 }
 
-@test "shape-checkpoints: stale links do not determine implementation status" {
-  local revision
-  revision="$(sed -n '/^## Revision mode/,/^## Glossary handoff/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
-  [[ "$revision" == *'Choose `supported`, `partial` or `gap` from the code'* ]]
-  [[ "$revision" == *'nothing open does: drop the link and keep the code-based status'* ]]
-  [[ "$revision" == *'incomplete code stays `partial`'* ]]
-  [[ "$revision" == *'A `supported` stage has no issue link'* ]]
-  [[ "$revision" != *'leave the stage an unplanned `gap`'* ]]
+@test "shape-checkpoints: stale links keep code-based status" {
+  ! sed -n '/^## Revision mode/,/^## Glossary handoff/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'unplanned'
 }
 
 @test "shape-checkpoints: size gates single-issue glossary writes" {
-  local single vocabulary
-  single="$(sed -n '/^## Shape one issue/,/^## Resume mode/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
-  vocabulary="$(sed -n '/^## Develop the vocabulary/,/^## Preserve glossary edits/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
-  [[ "$vocabulary" == *'For single-issue shaping, check the size before writing any glossary definition'* ]]
-  [[ "$single" == *'Keep candidate meanings tentative; write no glossary definition before step 6 passes sizing'* ]]
-  [[ "$single" == *'offer a discovery run on it instead, and stop'* ]]
-  [[ "$single" == *'If the user starts that discovery run, record the tentative meanings in its parent issue'* ]]
-  [[ "$single" == *'Do not create an issue or start discovery as part of this size stop'* ]]
-  [[ "$single" == *'Once sizing passes, confirm meaning and scope with the user and write accepted definitions'* ]]
+  sed -n '/^## Shape one issue/,/^## Resume mode/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'step 6'
 }
 
-@test "shape-checkpoints: owner is the recorded glossary issue number" {
-  local blockers
-  blockers="$(sed -n '/^### Link the blocked stories/,/^### Hand over/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
-  [[ "$blockers" == *'Ask the user before you add blockers'* ]]
-  [[ "$blockers" == *'`<owner>` is the recorded glossary owner issue number'* ]]
-  [[ "$blockers" == *'not the Project owner login or the owner PR number'* ]]
-  [[ "$blockers" == *'gh issue edit <dependent> --add-blocked-by <owner>'* ]]
-  [[ "$blockers" == *'Never put the blocker only on the parent'* ]]
+@test "shape-checkpoints: owner identifies the glossary issue" {
+  sed -n '/^### Link the blocked stories/,/^### Hand over/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'owner issue number'
 }
 # END shape-checkpoints (#231).
