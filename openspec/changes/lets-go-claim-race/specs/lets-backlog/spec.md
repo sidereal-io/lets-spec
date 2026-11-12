@@ -46,7 +46,7 @@ When a write of `claim` fails, the command SHALL stop at that write and return `
 `lets backlog release <i> --claim <token>` SHALL require the token returned by claim. If no comment matches the token and signed-in login, it SHALL return `not-found` and write nothing. Otherwise it SHALL delete that comment and recheck claims. It SHALL preserve its assignment if another claim shares its login, or remove it otherwise. It SHALL preserve Status if any claim remains, or set it to Todo otherwise. After successful writes it SHALL return `released`. It SHALL never remove another user's assignment. A failed write SHALL return `failed`, with `write` naming `delete-claim`, `unassign` or `status`, and `message` holding `gh`'s error.
 
 #### Scenario: Released
-- **WHEN** the signed-in user is assigned to #149 and its Status is In Progress
+- **WHEN** the signed-in user is assigned to #149, its Status is In Progress, and their claim comment holds `<token>`
 - **THEN** `release 149 --claim <token>` removes the assignment, sets Status to Todo, and returns `"result": "released"`
 
 #### Scenario: Another user stays

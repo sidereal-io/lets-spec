@@ -27,7 +27,7 @@ test('release removes only the signed-in user, then sets Status to Todo, and ret
   const t = backlogDeps(rows());
   assert.equal(await run(['release', '149', '--claim', TOKEN], t.deps), 0);
   assert.deepEqual(t.json(), { result: 'released' });
-  assert.deepEqual(t.calls().slice(5), [
+  assert.deepEqual(t.calls().slice(t.calls().findIndex((args) => args[0] === 'issue' && args[1] === 'edit')), [
     ['issue', 'edit', '149', '--remove-assignee', '@me'],
     ['issue', 'view', '149', '--json', 'url'],
     ['project', 'item-edit', '7', '--owner', 'acme', '--url', URL_149, '--field', 'Status', '--value', 'Todo'],
