@@ -84,10 +84,6 @@ Commit first. The review covers commits, not the working tree.
    `<family>` is this session's own family: `gpt`, `claude` or `gemini`.
    It is only a CLI compatibility value, not the full author set.
 
-   For GPT-and-Claude-authored work, pass `gpt` when this session is GPT.
-   With no guidance preference, rank Gemini first if listed and allowed;
-   keep GPT and Claude in discovery order after it.
-
    ```bash
    lets delegate review run --for code --name <branch>-code-review \
      --prompt-file .workspace/<branch>-code-review-prompt.md \
@@ -193,9 +189,8 @@ all author families only when the reviewer family is evidenced and outside
 the whole author set. For a fresh-session review, report the CLI metadata's
 `independent` value separately as its single-family comparison.
 
-For a GPT session reviewing GPT-and-Claude-authored work with Claude,
-report CLI `independent: true`, overlap `claude`, and independent from all
-authors: no.
+Example: a GPT session, GPT and Claude authors, Claude reviewer:
+CLI `independent: true`, overlap `claude`.
 
 When the project has no `REVIEW.md`, say that REVIEW.md was absent; do not
 imply that AGENTS.md or other project instructions were absent or ignored.
