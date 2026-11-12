@@ -3446,3 +3446,14 @@ commit_maps() {
   [[ "$single" == *'Do not create an issue or start discovery as part of this size stop'* ]]
   [[ "$single" == *'Once sizing passes, confirm meaning and scope with the user and write accepted definitions'* ]]
 }
+
+@test "shape-checkpoints: owner is the recorded glossary issue number" {
+  local blockers
+  blockers="$(sed -n '/^### Link the blocked stories/,/^### Hand over/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
+  [[ "$blockers" == *'Ask the user before you add blockers'* ]]
+  [[ "$blockers" == *'`<owner>` is the recorded glossary owner issue number'* ]]
+  [[ "$blockers" == *'not the Project owner login or the owner PR number'* ]]
+  [[ "$blockers" == *'gh issue edit <dependent> --add-blocked-by <owner>'* ]]
+  [[ "$blockers" == *'Never put the blocker only on the parent'* ]]
+}
+# END shape-checkpoints (#231).
