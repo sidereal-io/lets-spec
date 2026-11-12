@@ -4,7 +4,7 @@
 - [x] 1.2 [medium] After its time limit, `execFile` stops a grandchild too: `sh -c 'sleep 600 & echo $! > pids; sleep 600'` with `timeoutMs: 1000` returns `timedOut: true` within 10 seconds, and the shell and both sleeps are gone. The test's "gone" check reads `/proc/<pid>/stat` on Linux and runs `ps` only where there is no `/proc` (verify: node --test tests/lets/resolvers/kit/io.test.ts) (✓ node --test tests/lets/resolvers/kit/io.test.ts passed, 13 tests)
 - [x] 1.3 [medium] A group that ignores `SIGTERM` (`trap '' TERM` in the shell) gets `SIGKILL` 5 seconds after `SIGTERM`. `execFile` returns no sooner than 5 seconds and no later than 10 seconds after the limit, and every process in the group is gone (verify: node --test tests/lets/resolvers/kit/io.test.ts) (✓ node --test tests/lets/resolvers/kit/io.test.ts passed, 14 tests)
 - [x] 1.4 [easy] A process in a new session that holds the command's stdout open does not delay a timed-out `execFile`: it returns within 10 seconds of the limit. The test stops that process itself (verify: node --test tests/lets/resolvers/kit/io.test.ts) (✓ node --test tests/lets/resolvers/kit/io.test.ts passed, 15 tests)
-- [ ] 1.5 [easy] A command that ends in time is not signalled: a background child that sends its output to `/dev/null` is still running after `execFile` returns. The test stops the child itself (verify: node --test tests/lets/resolvers/kit/io.test.ts)
+- [x] 1.5 [easy] A command that ends in time is not signalled: a background child that sends its output to `/dev/null` is still running after `execFile` returns. The test stops the child itself (verify: node --test tests/lets/resolvers/kit/io.test.ts) (✓ node --test tests/lets/resolvers/kit/io.test.ts passed, 16 tests)
 
 ## 2. Pass signals on to running groups [depends-on: 1]
 
@@ -24,3 +24,4 @@
 
 - 1.3: task 1.2 built the whole of design.md decision 2, `SIGKILL` included, so the new test passed when it was written. To show that it tests the `SIGKILL`, it was run once with that line removed, and it failed: the group was still alive.
 - 1.4: task 1.2 already settles a timed-out command on the group's end, so the new test passed when it was written. Run against the `execFile` from before this change, it timed out after 30 seconds.
+- 1.5: the test pins behavior that does not change (D6), so it passed when it was written, as planned.

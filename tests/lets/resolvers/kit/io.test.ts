@@ -126,6 +126,14 @@ test('a process outside the group that holds stdout does not delay a timed-out e
   assert.equal(readPids(pids).length, 1);
 });
 
+test('execFile leaves the background child of a command that ends in time running', async (t) => {
+  const pids = pidsDir(t);
+  const result = await realIo().execFile('sh', ['-c', `sleep 600 > /dev/null 2>&1 & echo $! > '${pids}'`], { timeoutMs: 10000 });
+  assert.equal(result.timedOut, false);
+  assert.equal(readPids(pids).length, 1);
+  assert.equal(gone(readPids(pids)[0]), false);
+});
+
 // A fake system for parentPid: files maps a path to its text, and ps is
 // what `ps` prints. calls records each command it runs.
 function fakeSys({ files = {}, ps = '' }: { files?: Record<string, string>; ps?: string }) {
