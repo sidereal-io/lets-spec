@@ -3429,6 +3429,7 @@ commit_maps() {
   grep -qF 'other than Status' <<<"$generic"
   status_fix="${text#*- **A missing Status option:**}"
   [ "$status_fix" != "$text" ]
+  status_fix="${status_fix%% When there are no gaps*}"
   ! grep -qF 'field-delete' <<<"$status_fix"
 }
 
