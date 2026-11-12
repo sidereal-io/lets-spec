@@ -499,6 +499,16 @@ test('run times out naming the thread, when the run stays waiting with no pendin
   addRun(db, 'T', 'run-1', 1, 'waiting');
   await assert.rejects(running(db, [], { timeoutMs: 0 }), (error) => error instanceof TimeoutError && error.message === 'no result after 0 ms (thread T)');
 });
+test('a review still running at its time limit stops its thread, and keeps it', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'running');
+  const log: Log = [];
+  await assert.rejects(running(db, [], { timeoutMs: 0, log }), TimeoutError);
+  assert.deepEqual(sentTypes(log), ['launch', 'thread.stop']);
+  const { payload } = log.filter(([what]) => what === 'send')[1][1] as { payload: Record<string, unknown> };
+  assert.deepEqual({ ...payload, commandId: 'C' }, { type: 'thread.stop', commandId: 'C', threadId: 'T', reason: 'lets delegate: the session ran past its time limit' });
+});
 test('run returns a completed run with no message as an empty one; the resolver rejects it', async () => {
   const db = database();
   addThread(db, 'T');

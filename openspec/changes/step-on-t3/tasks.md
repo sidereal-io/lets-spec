@@ -9,7 +9,7 @@
 ## 2. Stop a timed-out thread [depends-on: 1]
 
 - [x] 2.1 [medium] A step still running at its time limit sends T3 one `thread.stop` for its thread, does not archive it, and exits 6 with an empty stdout and the thread on stderr. The header comment of `t3.ts` says that `thread.stop` was read from the T3 Code 0.1.7 server bundle (verify: node --test tests/lets/resolvers/t3/delegate.test.ts) (✓ node --test tests/lets/resolvers/t3/ passed, 138 tests)
-- [ ] 2.2 [easy] A review still running at its time limit is stopped in the same way: one `thread.stop`, no archive, exit 6 (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
+- [x] 2.2 [easy] A review still running at its time limit is stopped in the same way: one `thread.stop`, no archive, exit 6 (verify: node --test tests/lets/resolvers/t3/t3.test.ts) (✓ node --test tests/lets/resolvers/t3/ passed, 139 tests)
 - [ ] 2.3 [medium] A stop that T3 rejects, or does not answer within 10 seconds, still ends in a timeout. The error says `could not stop it, so it may still be running` and names the thread. `dispatch` takes an optional deadline and passes it to `request` (verify: node --test tests/lets/resolvers/t3/t3.test.ts)
 
 ## 3. Docs [parallel]
@@ -24,3 +24,4 @@
 ## Deviations Ledger
 
 - 1.1: adding `step` makes `t3` answer step instructions, so the old test *step instructions inside T3 Code decline* failed at once. Task 1.1's commit turns it into 1.5's test *step instructions inside T3 Code list the catalogue's models*. Task 1.5's commit adds the test that a step outside T3 Code opens no thread.
+- 2.2: the stop's `reason` says `the session ran past its time limit`, not design.md decision 3's `the step ran past its time limit`, because the same stop ends a timed-out review.

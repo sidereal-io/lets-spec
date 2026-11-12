@@ -496,7 +496,7 @@ export function createAdapter(io: Io): Adapter {
   async function stop(handle: Handle): Promise<void> {
     const { origin } = runningServer();
     await dispatch(io, { origin, token: await readToken(io) }, {
-      type: 'thread.stop', commandId: randomUUID(), threadId: handle.id, reason: 'lets delegate: the step ran past its time limit',
+      type: 'thread.stop', commandId: randomUUID(), threadId: handle.id, reason: 'lets delegate: the session ran past its time limit',
     });
   }
 
