@@ -21,7 +21,7 @@ None.
 
 ### Modified Capabilities
 
-- `delegate-resolvers`: one new requirement, *A cli session that stops ends every process it started*.
+- `delegate-resolvers`: two new requirements, *A timed-out cli session stops every process it started* and *A signal to lets reaches every process a cli session started*.
 
 ## Impact
 
