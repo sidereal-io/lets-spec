@@ -167,9 +167,9 @@ actual prompt. Keep the criteria when invoking a built-in review command.
 
 Start the prompt with `<checkout>`, the branch (`git branch --show-current`)
 and `<head>`, and tell the reviewer to read files only in `<checkout>`. End
-it by asking for a last line `Read: <absolute path> <full commit>`: what
-`git rev-parse --show-toplevel` and `git rev-parse HEAD` print in the
-checkout the reviewer read.
+it by asking for a last line `Read: <absolute path> <full commit>`, as plain
+text with no backticks: what `git rev-parse --show-toplevel` and
+`git rev-parse HEAD` print in the checkout the reviewer read.
 
 Any family can follow this prompt. Fill in `<checkout>`, `<branch>`, `<head>`
 and `<base>`:
@@ -194,7 +194,8 @@ Check semantic consistency, explicit scoped meanings and capability-retirement c
 Investigate representation mappings; spelling or casing alone is not a finding.
 For each finding give the file, the line, the defect, and the concrete scenario where it bites, most severe first.
 If you find nothing, answer `(none)`.
-End your answer with one last line: `Read: <absolute path> <full commit>`, from `git rev-parse --show-toplevel` and `git rev-parse HEAD` in the checkout you read.
+End your answer with one last line, as plain text with no backticks: Read: <absolute path> <full commit>
+Take the path and commit from `git rev-parse --show-toplevel` and `git rev-parse HEAD` in the checkout you read.
 ```
 
 ## Act on the findings

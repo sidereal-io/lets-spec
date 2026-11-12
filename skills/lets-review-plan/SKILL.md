@@ -206,9 +206,9 @@ actual prompt. Keep the criteria when invoking a built-in review command.
 
 Start the prompt with `<checkout>`, the branch (`git branch --show-current`)
 and `<head>`, and tell the reviewer to read files only in `<checkout>`. End
-it by asking for a last line `Read: <absolute path> <full commit>`: what
-`git rev-parse --show-toplevel` and `git rev-parse HEAD` print in the
-checkout the reviewer read.
+it by asking for a last line `Read: <absolute path> <full commit>`, as plain
+text with no backticks: what `git rev-parse --show-toplevel` and
+`git rev-parse HEAD` print in the checkout the reviewer read.
 
 Tell the reviewer which files hold the plan, which files it should check the
 plan against, and that it works read-only. Then give it this method:
