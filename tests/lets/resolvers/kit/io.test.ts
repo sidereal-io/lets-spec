@@ -95,6 +95,19 @@ test('after its time limit, execFile stops every process the command started', {
   assert.deepEqual(readPids(pids).filter((pid) => !gone(pid)), []);
 });
 
+test('a group that ignores SIGTERM is stopped 5 seconds after its time limit', { timeout: 30000 }, async (t) => {
+  const pids = pidsDir(t);
+  // A signal the shell ignores stays ignored in what it starts.
+  const script = `trap '' TERM; sleep 600 & echo $! >> '${pids}'; echo $$ >> '${pids}'; wait`;
+  const started = Date.now();
+  const result = await realIo().execFile('sh', ['-c', script], { timeoutMs: 1000 });
+  const waited = Date.now() - started - 1000;
+  assert.equal(result.timedOut, true);
+  assert.ok(waited >= 5000 && waited < 10000, `it returned ${waited} ms after the limit`);
+  assert.equal(readPids(pids).length, 2);
+  assert.deepEqual(readPids(pids).filter((pid) => !gone(pid)), []);
+});
+
 // A fake system for parentPid: files maps a path to its text, and ps is
 // what `ps` prints. calls records each command it runs.
 function fakeSys({ files = {}, ps = '' }: { files?: Record<string, string>; ps?: string }) {
