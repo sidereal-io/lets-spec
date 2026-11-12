@@ -773,10 +773,10 @@ return to the part that ran it, with the result.
    ```
 
    It returns `taken` before any write if someone has the issue. When
-   two sessions claim at once, it picks one winner and gives the other
-   `taken`. The
+   two sessions claim at once, it normally picks one winner and gives
+   the other `taken`. The
    [claim comment](../lets-shape/references/issue-comments.md#claim-comments)
-   reference describes the comment it posts.
+   reference describes its format and read-lag risk.
 
    On its `result`:
    - **`claimed`:** keep its `claim` field as `<claim>` for release,

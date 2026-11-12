@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Claim instructions describe session arbitration
-Claim SHALL state that an assigned issue returns taken before any write, and that concurrent claims produce one winner and one taken result. It SHALL link to the claim comment format. It SHALL pass the returned claim token to release on branch creation or glossary import failure. Existing lost-claim routing SHALL remain unchanged.
+Claim SHALL state that an assigned issue returns taken before any write, and that concurrent claims normally produce one winner and one taken result, with a link to the read-lag risk. It SHALL link to the claim comment format. It SHALL pass the returned claim token to release on branch creation or glossary import failure. Existing lost-claim routing SHALL remain unchanged.
 
 #### Scenario: An assigned issue
 - **WHEN** the assignee read finds a nonzero count

@@ -62,6 +62,8 @@ Label a valid claim comment `claim` and show it as workflow metadata.
 Never ask about it or count it as unread discussion. Claim comments
 never advance the watermark and never cover other comments.
 
+Delayed GitHub comment reads can let two sessions both win a claim.
+
 ## The read marker
 
 A read marker is a comment whose first line is exactly
