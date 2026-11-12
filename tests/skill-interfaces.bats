@@ -3432,7 +3432,7 @@ task_limits_says() {
 
 @test "task-limits: same section comparison includes every other task" {
   task_limits_says '| `[parallel]` | The task shares no files with any other task that could run at the same time. |'
-  task_limits_says 'Compare with every other task in the same section'
+  task_limits_says 'Before you tag a task `[parallel]`, compare its files with every other task in the same section'
 }
 
 
