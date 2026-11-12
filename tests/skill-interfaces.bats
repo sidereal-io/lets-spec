@@ -3415,7 +3415,8 @@ commit_maps() {
 @test "task-limits: size guidance names the output before waiting" {
   local text
   text="$(sed -n '/^## Size$/,/^## Order$/p' "$repo/skills/lets-write-tasks/SKILL.md" | tr -s '[:space:]' ' ')"
-  grep -qE 'twelve.{0,200}`tasks\.md`' <<<"$text"
+  [[ "$text" == *'Do not write or commit `tasks.md`'* ]]
+  [[ "$text" == *'runs again'* ]]
   [[ "$text" == *"then wait"* ]]
 }
 
