@@ -5,7 +5,7 @@
 
 ## Review Summary
 
-ADR review completed for this change. No decision in design.md needs a record. Decision 1 is one condition in `waitForText`: a comment says why, a test pins it, and putting the old condition back costs one line. Decisions 2 and 3 keep the stop-to-ask exit and the time limit as they are. The change follows the in-force records: the `t3` adapter stays code inside `lets` (ADR-010, ADR-021), `run` stays its own adapter method (ADR-016), and the tree check still keeps a review read-only (ADR-024, from #221).
+ADR review completed for this change. No decision in design.md needs a record. Decision 1 is one condition in `waitForText`: a comment says why, a test pins it, and putting the old condition back costs one line. Decisions 2 and 3 keep the stop-to-ask exit and the time limit as they are. The change follows the in-force records. The `t3` adapter stays code inside `lets` (ADR-010, ADR-021), and `run` stays its own adapter method (ADR-016). The tree check still keeps a review read-only (ADR-024, from #221).
 
 ## In-Force ADRs Reviewed
 

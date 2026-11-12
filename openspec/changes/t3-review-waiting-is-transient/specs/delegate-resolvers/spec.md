@@ -5,7 +5,7 @@ When `t3` answers `lets delegate review run`, it SHALL treat the session as stop
 
 #### Scenario: The run shows waiting for a moment, then completes
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for code --model gpt/gpt-6-luna` with every required option inside T3 Code
-- **AND** T3 shows the thread's run as `waiting`, with no pending request, and then as completed with a final message
+- **AND** T3 shows the thread's run as `waiting`, with no pending request, and then as completed with a final message and no proposed plan
 - **THEN** the command exits 0 and prints the final message
 
 #### Scenario: The session asks a question
