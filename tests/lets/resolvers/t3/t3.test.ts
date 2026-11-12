@@ -936,3 +936,8 @@ test('a review from a subdirectory of a linked worktree runs in the worktree\'s 
   const launch = await reviewedFrom('/w/fix-login/lets', { top: '/w/fix-login', branch: 'fix-login' });
   assert.equal((launch.workspaceStrategy as { worktreePath?: string }).worktreePath, '/w/fix-login');
 });
+
+test('a review from a linked worktree with a detached HEAD runs in the worktree with no branch', async () => {
+  const launch = await reviewedFrom('/w/fix-login', { top: '/w/fix-login', branch: null });
+  assert.deepEqual(launch.workspaceStrategy, { type: 'existing_worktree', worktreePath: '/w/fix-login' });
+});
