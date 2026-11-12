@@ -1,6 +1,6 @@
 ## Context
 
-This change stacks on `t3-review-session-fit` (#221, pull request #249). That change is planned but not built, so this design builds on `waitForText` as #221's plan leaves it. It relies on these parts of #221's plan (`openspec/changes/t3-review-session-fit/design.md`):
+This change stacks on `t3-review-session-fit` (#221, pull request #249). That change is built and archived, and the `waitForText` on this branch's base is the one its plan describes. This design relies on these parts of #221's design (`openspec/changes/archive/2026-11-12-t3-review-session-fit/design.md`):
 
 - Decision 3: `waitForText` gains one check in its `completed` branch. After a run is `completed`, `hasProposedPlan(db, run.id)` makes it throw `SessionFailed('the session returned a plan, not a result')`. #221 leaves the `waiting` condition as it is, and does not change `readRun` or the `Run` type.
 - Decision 1: every review opens in default mode. Plan mode is where the stray `waiting` status was seen, but this fix does not depend on the mode.
@@ -43,21 +43,21 @@ T3 Code 0.1.7 treats a `waiting` run as still active. When the provider ends a t
 ## Scrutiny Tier & Blast Radius
 
 - **Tier:** low
-- **Blast radius:** one condition in `waitForText` in `lets/src/resolvers/t3/t3.ts`, its tests, and one bullet in `docs/resolvers.md`. Only a `t3` review waits through `waitForText`. No contract, config, stored data or other resolver changes.
+- **Blast radius:** one condition in `waitForText` in `lets/src/resolvers/t3/t3.ts`, its tests, and one paragraph in `docs/resolvers.md`. Only a `t3` review waits through `waitForText`. No contract, config, stored data or other resolver changes.
 
 ## Decisions
 
 1. **Step 2 tests only `run.pendingRequests > 0`.** A `waiting` run with no request then falls through to step 4 and is polled again. Its comment says why: T3 shows `waiting` for a moment near the end of a turn, and a question always leaves a pending request. *Alternatives:* fail when `waiting` lasts for some number of polls, or for some seconds. Either picks a length that cannot tell a slow turn from a stuck one, and T3's own CLI uses the request alone. Or keep step 2 and treat `waiting` as asking only after `completed` is ruled out on a second read. That is the same as polling again, with more code.
 2. **A pending request stops the review whatever the run's status.** The condition does not look at the status at all, so a request on a `running` run still exits 5 at once, as today.
 3. **A run that stays `waiting` is left to the time limit.** No new error or message. `pollUntil` throws `TimeoutError`, and `run` names the thread, so the command exits 6 with `no result after <ms> ms (thread <id>)`.
-4. **Docs.** The `t3` section of `docs/resolvers.md` gets one bullet, after the one on refusals. It says that a review exits 5 when the session asks a question and waits for an answer. The thread stays, so you can answer it in T3 Code. A run T3 shows as `waiting` for a moment does not count. #221 adds its own bullets on default mode and proposed plans to the same section. This bullet stands apart from them, so the two changes do not edit the same lines.
+4. **Docs.** The `t3` section of `docs/resolvers.md` gets one short paragraph, after #221's paragraph on default mode and proposed plans, which also ends on an exit 5. It says that a review exits 5 when the session asks a question and waits for an answer. The thread stays, so you can answer it in T3 Code. A run T3 shows as `waiting` for a moment does not count.
 
 ## Risks / Trade-offs
 
 - [A session that waits on the user without a runtime request, such as a secret request, now holds the caller until the time limit.] → It exits 6 and names the thread, so a person can find it. Before this change the same session exited 5 on its first poll. A review has no reason to ask for a secret or a link (D5).
 - [T3's run finalization fails some other way, such as a database error after the capture, and the run stays `waiting`.] → The review exits 6 at its limit and names the thread, and the final message stays in the thread. Before this change the same run exited 5 on its first poll. Neither path returns the message, so this change loses nothing.
 - [T3 stops writing a runtime request for a question.] → The review would then wait to the time limit, not exit 5. The request query runs against T3's schema fixture, `tests/lets/resolvers/t3/fixtures/t3-schema.sql`, which is refreshed when T3's database changes. T3 0.1.7 writes a runtime request beside each approval and user-input node it marks `waiting`.
-- [#221 lands with a different `waitForText` than its plan says.] → The change is one condition. The build reads the code as it is on the base, and the tests pin the behavior, not the line.
+- [#221 lands with a different `waitForText` than its plan says.] → It did not: the base's `waitForText` checks each poll in the order above. The tests pin the behavior, not the line.
 
 ## Migration & Rollback
 

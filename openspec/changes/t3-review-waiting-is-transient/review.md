@@ -7,6 +7,7 @@
 - **Tool restrictions**: read-only by prompt. The `t3` resolver in the pinned `lets` 0.7.0 opens the thread in the main checkout, so the prompt named this worktree's absolute path, branch and commit. The reviewer answered `Read: /home/andrew/.t3/worktrees/lets-spec/t3-0a89ce71 at 7601d1cc0b4243afe85da25514a42532549c2a56`, which is this branch's head at the time of review. The tree stayed clean (`"gitClean":true`), and the review took 476 seconds. No fallback through `delegate_task` was needed.
 - **Artifacts reviewed**: brainstorm.md, proposal.md, design.md, specs/, adr.md, relevant source files, and T3 Code 0.1.7's server code
 - **Commit reviewed**: `7601d1cc`
+- **After the review**: the branch was rebased onto `t3-review-session-fit` at `c02af04b`, once #221 was built and archived. `git range-diff` shows every plan commit unchanged, so `7601d1cc` is now `5ad35d12`. The plan was then updated to point at #221's archived design, and to put the docs text in a paragraph, as #221 did. That edit changes no decision the review checked.
 
 ## Findings
 
