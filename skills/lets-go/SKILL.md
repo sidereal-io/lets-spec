@@ -396,7 +396,8 @@ Next: [Enter the branch](#enter-the-branch).
      - `claim`: your assignment and possibly a claim comment.
      - `delete-claim`: claim comments and your assignment. After release,
        check that no claim comment or assignment of yours remains.
-     - `unassign`: your assignment; the user removes it by hand.
+     - `unassign`: your assignment and possibly In Progress Status;
+       the user fixes both by hand.
      - `status`: Status, and possibly your assignment and comment.
        With no comment left, the user resets Status by hand.
 
