@@ -493,6 +493,12 @@ test('run times out naming the thread, when the run does not end in time', async
   addRun(db, 'T', 'run-1', 1, 'running');
   await assert.rejects(running(db, [], { timeoutMs: 0 }), (error) => error instanceof TimeoutError && error.message === 'no result after 0 ms (thread T)');
 });
+test('run times out naming the thread, when the run stays waiting with no pending request', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'waiting');
+  await assert.rejects(running(db, [], { timeoutMs: 0 }), (error) => error instanceof TimeoutError && error.message === 'no result after 0 ms (thread T)');
+});
 test('run returns a completed run with no message as an empty one; the resolver rejects it', async () => {
   const db = database();
   addThread(db, 'T');
