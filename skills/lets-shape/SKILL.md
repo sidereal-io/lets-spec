@@ -295,11 +295,6 @@ product's map is the link that replaces a shared persona's entry, as
 
 ## Develop the vocabulary
 
-For single-issue shaping, check the size before writing any glossary
-definition, as [Shape one issue](#shape-one-issue) step 6 says. Until then,
-keep meanings tentative; apply the agreement and write instructions below
-only after sizing passes.
-
 Use the shared reference in discovery, revision, resume and single-issue
 shaping. Before writing a packet that relies on a term, compare its meaning
 with established vocabulary. For example, distinguish an authentication
@@ -310,8 +305,8 @@ Propose meaning and the narrowest scope covering actual uses, checking
 ancestor definitions and siblings. Order used by checkout and fulfillment
 belongs in their common scope; Checkout attempt used only by checkout stays
 local. Confirm meaning and scope with the user, then write the accepted
-entry immediately to its authoritative glossary. Subsequent packets use
-that agreed concept. Qualify conflicting local meanings rather than silently
+entry immediately to its authoritative glossary (in single-issue shaping,
+only after step 6 sizing passes). Subsequent packets use that agreed concept. Qualify conflicting local meanings rather than silently
 overriding shared ones; move newly shared definitions and update references
 without duplicate authoritative copies. A stale declared glossary path must
 be reported and resolved before dependent discussion continues.
@@ -591,8 +586,7 @@ issue's parent and what blocks it.
    ships.
 3. **Read the code the issue names**, and search for more. Load shared,
    ancestor and affected-scope vocabulary and develop candidate definitions
-   as above. Keep candidate meanings tentative; write no glossary definition
-   before step 6 passes sizing.
+   as above. Keep them tentative until step 6.
    **Relevant code** lists what you find, or `new` when the story builds on
    nothing that exists.
 4. **Ask about each comment not labelled `read`**, in list order, one at a
@@ -610,18 +604,11 @@ issue's parent and what blocks it.
    one difference. Offer only the listed products, never a new one. When
    no listed product fits, use no map's names.
 6. **Size it** XS, S, M, L or XL. L or XL is too big for one change: say so,
-   offer a discovery run on it instead, and stop. Keep any meanings discussed
-   so far tentative, including those the user accepted before sizing; write
-   no glossary definition. If the user starts that discovery run, record the
-   tentative meanings in its parent issue for agreement there. Do not create
-   an issue or start discovery as part of this size stop. Preserve any
-   recovered glossary checkpoint and unrelated edits under their existing
-   ownership and publication rules.
-
-   Once sizing passes, confirm meaning and scope with the user and write
-   accepted definitions using [Develop the vocabulary](#develop-the-vocabulary)
-   and [Preserve glossary edits between sessions](#preserve-glossary-edits-between-sessions)
-   before writing the packet.
+   offer a discovery run on it instead, and stop. Write no glossary definition.
+   If the user starts the discovery run, record the tentative meanings in its
+   parent issue. This stop creates no issue and starts no discovery. Once
+   sizing passes, agree each meaning and scope with the user and write it as
+   [Develop the vocabulary](#develop-the-vocabulary) says.
 7. **Confirm, then write.** The issue is public, so show the user its title,
    body, Kind, Priority and Size, and get a yes. The body carries every
    fold, so one write covers them all. When the user confirms that an
