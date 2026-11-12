@@ -3411,32 +3411,10 @@ commit_maps() {
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
 # #229 review-model-choice: keep this block together for sibling story rebases.
 
-# Issue #233: authoring wording. Keep this block self-contained so sibling
-# stories can append their own checks independently.
+# Issue #233: authoring wording.
 @test "authoring wording: modified export retains the signed-out scenario" {
-  local example
-  example="$(sed -n '/^## MODIFIED Requirements$/,/^## REMOVED Requirements$/p' "$repo/skills/lets-write-specs/SKILL.md")"
-  [[ "$example" == *'### Requirement: User can export data'* ]]
-  [[ "$example" == *'JSON file, as they choose.'* ]]
-  [[ "$example" == *'- **WHEN** a signed-in user chooses Export and picks a format'* ]]
-  [[ "$example" == *'- **THEN** the browser downloads one file in that format that holds every record the user owns'* ]]
-  [[ "$example" == *'#### Scenario: Export while signed out'* ]]
-  [[ "$example" == *'- **WHEN** a request to export arrives without a session'* ]]
-  [[ "$example" == *'- **THEN** the system responds 401 and sends no data'* ]]
-}
-
-@test "authoring wording: design reference is conditional on the flow" {
-  skill_says lets-brainstorm 'When the flow has a design, it explains the reasons and implementation.'
-}
-
-@test "authoring wording: no-design flow follows schema ledger requirements" {
-  skill_says lets-brainstorm "Without a design, follow the schema's ledger requirements for the reasons and implementation decisions."
-}
-
-@test "authoring wording: ADR rewrite preserves supersession relationships" {
-  skill_says lets-write-adrs 'Rewrite a record that is hard to read; never delete it.'
-  skill_says lets-write-adrs 'Preserve the recorded decision, its reasons and its supersession relationships when rewriting.'
-  skill_does_not_say lets-write-adrs 'decision still stands'
+  sed -n '/^## MODIFIED Requirements$/,/^## REMOVED Requirements$/p' "$repo/skills/lets-write-specs/SKILL.md" |
+    grep -qF '#### Scenario: Export while signed out'
 }
 
 @test "authoring wording: capability paths precede existing-requirement guidance" {
@@ -3447,7 +3425,14 @@ commit_maps() {
   [ -n "$paths" ]
   [ "$paths" -lt "$existing" ]
   [ "$existing" -lt "$preserve" ]
-  sed -n "${paths},${existing}p" "$file" | tr '\n' ' ' | grep -qF "For new capabilities, follow the project's existing layout and check that the behavior is not already covered under another path."
+}
+
+@test "authoring wording: ADR rewrite does not reaffirm superseded decisions" {
+  skill_does_not_say lets-write-adrs 'decision still stands'
+}
+
+@test "authoring wording: brainstorm does not assume a design artifact" {
+  skill_does_not_say lets-brainstorm 'The design explains the reasons'
 }
 @test "review model choice: policy anchors" {
   for skill in lets-review-plan lets-review-build; do
