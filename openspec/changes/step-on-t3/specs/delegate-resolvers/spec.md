@@ -19,13 +19,13 @@ The command's JSON line on stderr SHALL have a `handle` of kind `thread`.
 - **THEN** T3 is asked for a thread in the project's own checkout, on its current branch
 
 #### Scenario: A gemini step
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate step run --for plan --effort medium --model gemini` inside T3 Code, and the catalogue lists `antigravity` with a default of `gemini-3.8-flash-high`
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate step run --for plan --effort medium --model gemini` with the other required options inside T3 Code, and the catalogue lists `antigravity` with a default of `gemini-3.8-flash-high`
 - **THEN** the thread runs `gemini-3.8-flash`, with no effort option
 
 ### Requirement: A T3 step ends as a T3 review does
 When `t3` answers `lets delegate step run`, it SHALL tell a refusal, a stopped session and a final message apart as it does for a review:
 - T3 or the account saying no before any assistant message SHALL be a refusal. `t3` SHALL archive the thread, and the command SHALL try the next `--model`. When every `--model` is refused, it SHALL exit 3.
-- A session that stops to ask, that ends with a proposed plan, that fails after an assistant message, or whose run is interrupted, cancelled or rolled back, SHALL be a failed session. The command SHALL exit 0 and print a `failed` report whose `reason` names the thread. `t3` SHALL keep the thread.
+- A session SHALL be a failed session when it stops to ask, ends with a proposed plan or fails after an assistant message. So SHALL a session whose run is interrupted, cancelled or rolled back. The command SHALL exit 0 and print a `failed` report whose `reason` names the thread. `t3` SHALL keep the thread.
 - A step whose report is `done` SHALL have its thread archived. A step whose report is `needs-input` or `failed` SHALL keep its thread, so a person can read it.
 
 #### Scenario: The model is refused, and the next one runs
@@ -49,8 +49,8 @@ When `t3` answers `lets delegate step run`, it SHALL tell a refusal, a stopped s
 - **WHEN** a step thread's final message ends with a `needs-input` step report
 - **THEN** the command exits 0 with that report, and the thread is not archived
 
-### Requirement: A timed-out T3 step is stopped
-When a step that `t3` answered is still running at the step's time limit, `t3` SHALL ask T3 to stop the thread, as T3 Code's Stop does, and SHALL keep the thread. The command SHALL then exit 6, print nothing on stdout, and name the thread on stderr. When T3 does not accept the stop, the command SHALL still exit 6, and stderr SHALL say that the thread could not be stopped and may still be running.
+### Requirement: A timed-out T3 session is stopped
+When a step or a review that `t3` answered is still running at its time limit, `t3` SHALL ask T3 to stop the thread, as T3 Code's Stop does, and SHALL keep the thread. The command SHALL then exit 6, print nothing on stdout, and name the thread on stderr. `t3` SHALL wait at most 10 seconds for T3 to accept the stop. When T3 rejects the stop or does not answer in time, the command SHALL still exit 6. Its stderr SHALL then say that the thread could not be stopped and may still be running.
 
 #### Scenario: The step runs too long
 - **WHEN** `t3` answers `lets delegate step run --timeout-minutes 3` with the other required options, and the thread's run has not ended after 3 minutes
@@ -60,9 +60,13 @@ When a step that `t3` answered is still running at the step's time limit, `t3` S
 - **WHEN** the same step times out, and T3 rejects the request to stop the thread
 - **THEN** the command exits 6, stdout is empty, and stderr names the thread and says it could not be stopped
 
-#### Scenario: A review that runs too long is not stopped
-- **WHEN** `t3` answers `lets delegate review run --timeout-minutes 3`, and the thread's run has not ended after 3 minutes
-- **THEN** the command exits 6, and T3 is not asked to stop the thread
+#### Scenario: T3 does not answer the stop
+- **WHEN** the same step times out, and T3 does not answer the request to stop the thread
+- **THEN** the command exits 6 no more than 10 seconds after the time limit, and stderr names the thread and says it could not be stopped
+
+#### Scenario: The review runs too long
+- **WHEN** `t3` answers `lets delegate review run --timeout-minutes 3` with the other required options, and the thread's run has not ended after 3 minutes
+- **THEN** T3 is asked to stop that thread, the thread is not archived, the command exits 6, and stdout is empty
 
 ### Requirement: The T3 resolver lists the same models for a step as for a review
 Inside T3 Code, `lets delegate step instructions` SHALL answer with `resolver` `t3` and the same `options` as `lets delegate review instructions`.

@@ -11,7 +11,7 @@ ADR review completed for this change. No decision in design.md needs a record. T
 - A step thread that stops to ask is a `failed` report at exit 0, and the step asks only through its report (ADR-022, ADR-023).
 - A step thread opens in default mode, as every `t3` thread does since ADR-024.
 
-Decision 3, stopping a timed-out step thread with `thread.stop`, is the closest call. An engineer could drop the stop without knowing why, but putting it back is one call in one function, the spec requires it, and its tests fail at once. Decision 1, the helper `run` and `step` share, lives in the code.
+Decision 3, stopping a timed-out thread with `thread.stop`, is the closest call. An engineer could drop the stop without knowing why. Putting it back is cheap: it is one call in one function, the spec requires it, and its tests fail at once. Decision 1, the helper `run` and `step` share, lives in the code.
 
 ## In-Force ADRs Reviewed
 

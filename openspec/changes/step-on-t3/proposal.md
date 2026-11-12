@@ -7,7 +7,7 @@ Inside T3 Code, `t3` declines every step, so `lets delegate step run` falls thro
 - `t3` runs a step. `lets delegate step run` inside T3 Code opens a new T3 thread in the caller's checkout, in default mode, with the model and effort a review would get (D1, D2, D3).
 - `t3` waits for the thread's final message as it does for a review, and the command reads the step report from it (D4).
 - A refusal archives the thread and tries the next `--model`, then exits 3 (D5). A thread that stops to ask, ends on a plan or fails after a message gives a `failed` report that names the thread, and the thread stays (D6). A `done` step's thread is archived; any other is kept (D7).
-- **Added to the story:** a step thread still running at its time limit is stopped in T3, with the UI's own Stop, before the command exits 6. The thread stays (D8). A review's timeout does not change (D9).
+- **Added to the story:** a `t3` thread still running at its time limit is stopped in T3, with the UI's own Stop, before the command exits 6. This holds for a step and for a review, since #221 gives a review thread full access too. The thread stays (D8, D9).
 - `lets delegate step instructions` inside T3 Code answers with `t3` and its models (D10).
 - Unchanged: the step's record on stderr (D11), resuming with `--answers-file` (D12), and signals to `lets` (D13).
 - `docs/resolvers.md` describes `t3` steps, and its smoke test after a T3 update runs one (D14).
@@ -21,7 +21,7 @@ None.
 
 ### Modified Capabilities
 
-- `delegate-resolvers`: *The T3 resolver declines every step* is removed. New requirements say that `t3` runs a step in a T3 thread, how a `t3` step ends, that a timed-out one is stopped, and that `t3` lists the same models for a step as for a review. *The T3 resolver declines outside T3 Code* adds steps.
+- `delegate-resolvers`: *The T3 resolver declines every step* is removed. New requirements say that `t3` runs a step in a T3 thread, how a `t3` step ends, that a timed-out `t3` thread is stopped, and that `t3` lists the same models for a step as for a review. *The T3 resolver declines outside T3 Code* adds steps.
 - `delegate-step`: *A step runs in a session that may write files* keeps its rule. Its scenario of a resolver that runs no step no longer names `t3`.
 
 ## Impact
