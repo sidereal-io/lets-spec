@@ -3414,7 +3414,7 @@ commit_maps() {
 # BEGIN shape-checkpoints (#231): shaping recovery contracts.
 @test "shape-checkpoints: finalize is a durable resume phase" {
   grep -qF '| finalize>' "$repo/skills/lets-shape/templates/issue-template.md"
-  skill_says lets-shape '`finalize`'
+  sed -n '/^### Phase 5: Stories/,/^### Phase 6/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'next phase: finalize'
   sed -n '/^## Resume mode/,/^## Revision mode/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF '`finalize`'
 }
 
