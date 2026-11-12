@@ -279,6 +279,20 @@ test('a review T3 fails before any message is exit 3 with its failure, and archi
   assert.equal(sent[1].payload.threadId, 'T');
 });
 
+test('a review whose run returns a plan is exit 5 with nothing on stdout, and keeps the thread', async () => {
+  const { db, sent, t } = runningT3();
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'codex', 'completed', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_turn_items (turn_item_id, thread_id, run_id, ordinal, type, status, updated_at, payload_json)
+    values ('plan', 'T', 'run-1', 1, 'proposed_plan', 'completed', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_messages (message_id, thread_id, run_id, role, streaming, created_at, updated_at, payload_json)
+    values ('a1', 'T', 'run-1', 'assistant', 0, 'now', 'now', ?)`).run(JSON.stringify({ text: 'Here is my plan.' }));
+  assert.equal(await review(astraReview, t.deps), 5, t.stderr());
+  assert.equal(t.stdout(), '');
+  assert.match(t.stderr(), /the session returned a plan, not a result \(thread T\)\n$/);
+  assert.deepEqual(sent.map(({ payload }) => payload.type ?? 'launch'), ['launch']);
+});
+
 test('a review in a repository T3 has no project for is exit 3, naming it, and creates no thread', async () => {
   const { sent, t } = runningT3({ projectRoot: '/elsewhere' });
   assert.equal(await review(astraReview, t.deps), 3, t.stderr());

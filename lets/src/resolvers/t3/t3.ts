@@ -244,6 +244,15 @@ export function readRun(db: Db, threadId: string): Run | null {
   return { id: run.run_id, status: run.status, pendingRequests: pending, failure };
 }
 
+// True when the run holds a proposed plan, which T3 writes for a session
+// in plan mode. A review never needs one.
+export function hasProposedPlan(db: Db, runId: string): boolean {
+  const { plans } = db.prepare(`
+    select count(*) as plans from orchestration_v2_projection_turn_items
+    where run_id = ? and type = 'proposed_plan'`).get(runId) as { plans: number };
+  return plans > 0;
+}
+
 // The run's newest assistant message, or null when it has none yet.
 export function readFinalMessage(db: Db, runId: string): { text: string; streaming: boolean } | null {
   const row = db.prepare(`
@@ -478,6 +487,7 @@ export function createAdapter(io: Io): Adapter {
       }
       if (run.status === 'interrupted' || run.status === 'cancelled' || run.status === 'rolled_back') throw new SessionFailed(`run ${run.status.replace('_', ' ')}`);
       if (run.status !== 'completed') return undefined;
+      if (hasProposedPlan(db, run.id)) throw new SessionFailed('the session returned a plan, not a result');
       // A completed run with no message yet is one with none at all; the
       // resolver rejects the empty text. One still streaming will finish.
       const message = readFinalMessage(db, run.id);

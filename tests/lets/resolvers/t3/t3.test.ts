@@ -65,6 +65,13 @@ function addFailure(db: DatabaseSync, runId: string, message: string) {
     values ('e1', 'T', ?, 1, 'error', 'failed', 'now', ?)`).run(runId, JSON.stringify({ failure: { class: 'provider', message } }));
 }
 
+// An item of the given type in the run, such as the proposed_plan a session
+// in plan mode ends with.
+function addTurnItem(db: DatabaseSync, runId: string, type: string, { id = 'i1', ordinal = 1 } = {}) {
+  db.prepare(`insert into orchestration_v2_projection_turn_items (turn_item_id, thread_id, run_id, ordinal, type, status, updated_at, payload_json)
+    values (?, 'T', ?, ?, ?, 'completed', 'now', '{}')`).run(id, runId, ordinal, type);
+}
+
 type Log = [string, unknown][];
 
 // A WebSocket stand-in: opens at once and answers each request with `reply`.
@@ -405,6 +412,34 @@ test('run fails when the session stops to ask', async () => {
     if (pending) addPendingRequest(db, 'T');
     await assert.rejects(running(db), (error) => error instanceof SessionFailed && error.message === 'the session stopped to ask (thread T)');
   }
+});
+// A thread whose completed run ends with a proposed plan, then a checkpoint,
+// and a final message.
+function plannedRun() {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'completed');
+  addTurnItem(db, 'run-1', 'proposed_plan', { id: 'plan', ordinal: 1 });
+  addTurnItem(db, 'run-1', 'checkpoint', { id: 'cp', ordinal: 2 });
+  addMessage(db, 'a1', 'run-1', 'Here is my plan.', 0);
+  return db;
+}
+test('run fails a completed run that holds a proposed plan, naming the thread', async () => {
+  await assert.rejects(running(plannedRun()),
+    (error) => error instanceof SessionFailed && !(error instanceof Refused) && error.message === 'the session returned a plan, not a result (thread T)');
+});
+test('run keeps the thread of a run that returned a plan', async () => {
+  const log: Log = [];
+  await assert.rejects(running(plannedRun(), [], { log }), SessionFailed);
+  assert.deepEqual(sentTypes(log), ['launch']);
+});
+test('run returns the final message of a completed run whose items hold no plan', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'completed');
+  addTurnItem(db, 'run-1', 'checkpoint');
+  addMessage(db, 'a1', 'run-1', 'FINDINGS', 0);
+  assert.equal((await running(db)).text, 'FINDINGS');
 });
 test('run fails on an interrupted, cancelled or rolled back run', async () => {
   for (const [status, reason] of [['interrupted', 'run interrupted'], ['cancelled', 'run cancelled'], ['rolled_back', 'run rolled back']]) {
