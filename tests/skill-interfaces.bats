@@ -3442,8 +3442,20 @@ commit_maps() {
   [ "$status_fix" != "$text" ]
   grep -qF '<project url>/settings' <<<"$status_fix"
   grep -qF "A rename keeps every item's value." <<<"$status_fix"
-  ! grep -qF 'field-delete' <<<"$status_fix"
+  ! grep -qF 'field-delete' <<<"$status_fix" ||
+    { echo 'Status repair still deletes a field'; false; }
   grep -qF 'Run a fix only when the user says so.' <<<"$text"
+}
+
+@test "SLR-15 reusable PR review has no pending completed trial" {
+  local text
+  text="$(skill_section lets-review-pr 'Trial exercises')"
+  ! grep -qF "For this change's first live trial" <<<"$text" ||
+    { echo "The completed trial is still pending"; false; }
+  ! grep -qF 'https://github.com/sidereal-io/sidereal/pull/472' <<<"$text" ||
+    { echo 'The reusable skill still directs review to the fixed trial PR'; false; }
+  grep -qF 'static contract checks do not demonstrate role judgment or count as live trials' <<<"$text"
+  grep -qF 'distinct from expected exercise decisions.' <<<"$text"
 }
 
 # Issue #233: authoring wording.

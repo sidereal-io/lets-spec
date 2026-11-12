@@ -386,8 +386,3 @@ Use [the scripted exercises](references/trial-exercises.md) to rehearse
 judgments; static contract checks do not demonstrate role judgment or count
 as live trials. Keep actual outcomes, passes, limits and comment URLs
 distinct from expected exercise decisions.
-
-For this change's first live trial, the user selected
-https://github.com/sidereal-io/sidereal/pull/472; capture its then-current
-head when starting, after implementation review. Do not substitute another
-PR or count planning as that trial.
