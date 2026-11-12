@@ -640,6 +640,7 @@ Take the first case that applies:
 
    ```bash
    lets backlog find '<idea>'
+   # example
    lets backlog find 'fix user'\''s $HOME display'
    ```
 
