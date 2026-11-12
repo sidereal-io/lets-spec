@@ -12,10 +12,11 @@ When `t3` answers `lets delegate review run`, it SHALL open the thread in T3's d
 - **THEN** the thread opens with interaction mode `default`
 
 ### Requirement: A T3 review that returns a plan exits 5
-When the thread's run ends and holds a proposed plan, `lets delegate review run` SHALL exit 5, print nothing on stdout, and say on stderr `the session returned a plan, not a result`, followed by the thread's id. `t3` SHALL NOT archive the thread, so a person can read it. A run that holds no proposed plan SHALL be read as it is today.
+A run can end holding a proposed plan. Then `lets delegate review run` SHALL exit 5 and print nothing on stdout. Its stderr SHALL say `the session returned a plan, not a result`, followed by the thread's id. `t3` SHALL NOT archive the thread, so a person can read it. A run that holds no proposed plan SHALL be read as it is today.
 
 #### Scenario: The run ends with a proposed plan
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, the user runs `lets delegate review run --for code` with every required option inside T3 Code, and the thread's run completes holding a proposed plan and a final message
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for code` with every required option inside T3 Code
+- **AND** the thread's run completes holding a proposed plan and a final message
 - **THEN** the command exits 5, stdout is empty, stderr says `the session returned a plan, not a result (thread <id>)`, and the thread is not archived
 
 #### Scenario: The run ends with findings

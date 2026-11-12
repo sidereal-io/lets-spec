@@ -37,3 +37,8 @@ When `lets` cannot tell the checkout, or cannot read its `HEAD`, the field SHALL
 #### Scenario: The user sets the limit
 - **WHEN** the user runs `lets delegate review run --effort medium --timeout-minutes 7`
 - **THEN** the resolver is given 7 minutes
+
+#### Scenario: The session runs past the limit
+- **WHEN** the user runs `lets delegate review run --effort medium` with no `--timeout-minutes`
+- **AND** the session has not finished after 30 minutes
+- **THEN** the command exits 6, stdout is empty, and stderr says that no result came in time

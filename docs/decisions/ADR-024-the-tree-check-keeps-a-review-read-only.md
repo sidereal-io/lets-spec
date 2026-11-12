@@ -22,7 +22,7 @@ A resolver runs a review in the harness mode that ends with the reviewer's answe
 
 - Easier: a review in T3 Code ends with findings, and the reviewer can run the tests and read the diff.
 - Easier: one guarantee holds for every resolver, so a new resolver needs no read-only mode to run reviews.
-- Harder: a reviewer can write while it runs. The tree check sees it only afterwards, and only in the checkout `lets` watches. A write in another checkout, or a commit that leaves the tree clean, needs another check, such as comparing the commit the review ran on with the caller's.
+- Harder: a reviewer can write while it runs. The tree check sees it only afterwards, and only in the checkout `lets` watches. A write in another checkout, or a commit that leaves the tree clean, needs another check, such as comparing the commit the review ran on with the caller's. Neither check sees a change inside `.git/`, such as a hook or the config, or a commit to another branch.
 - Harder: anyone who sees a review run in a mode that can write may switch it back to a read-only mode, and bring the stalled reviews back. This record says why not to.
 
 ## Alternatives Considered
