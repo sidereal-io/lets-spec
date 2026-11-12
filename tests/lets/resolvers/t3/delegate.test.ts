@@ -503,6 +503,18 @@ test('a step whose every model T3 refuses is exit 3, with T3\'s failure', async 
   assert.deepEqual(asked(sent), ['launch', 'thread.archive']);
 });
 
+test('a step thread that stops to ask is a failed report naming the thread, and keeps it', async () => {
+  const { db, sent, t } = runningT3();
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'codex', 'waiting', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_runtime_requests (runtime_request_id, thread_id, node_id, kind, status, created_at, payload_json)
+    values ('rq1', 'T', 'n1', 'user_input', 'pending', 'now', '{}')`).run();
+  assert.equal(await step(lunaStep, t.deps), 0, t.stderr());
+  assert.deepEqual(JSON.parse(t.stdout()), { outcome: 'failed', reason: 'the session stopped to ask (thread T)' });
+  assert.equal(JSON.parse(t.stderr()).handle, null);
+  assert.deepEqual(asked(sent), ['launch']);
+});
+
 test('step instructions inside T3 Code list the catalogue\'s models', async () => {
   const t = withT3(insideT3({ config: { providers: [provider('codex', ['gpt-6-luna'])] } }));
   assert.equal(await instructions({ strategy: 'step', for: 'plan' }, t.deps), 0, t.stderr());
