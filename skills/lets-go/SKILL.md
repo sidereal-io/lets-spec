@@ -389,12 +389,15 @@ Next: [Enter the branch](#enter-the-branch).
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
    - **`claim-failed`:** show its message and what may remain by `write`:
+
      - `assign`: your assignment; no claim token exists.
      - `claim`: your assignment and possibly a claim comment.
      - `delete-claim`: your comment and assignment.
      - `unassign`: your assignment.
      - `status`: your assignment, comment and possibly Status.
-     Ask the user to inspect the issue; show the token if one exists. Do not release the claim yourself. Stop, and run no step.
+
+     Ask the user to inspect the issue; show the token if one exists.
+     Do not release the claim yourself. Stop, and run no step.
    - **`branch-failed`:** [Claim](#claim) attempted release. Show
      the branch's error it carries. When it carries a release error
      too, show it, and say the issue may still hold your assignment or

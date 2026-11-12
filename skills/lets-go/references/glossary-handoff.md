@@ -163,9 +163,8 @@ If the import fails:
 4. Release with `lets backlog release <i> --claim <claim>`, using the
    token kept by [Claim](../SKILL.md#claim). It releases only this
    session's claim. Do this even if the Git cleanup failed. When it
-   prints `"result": "failed"`, keep
-   its `write` and `message` for the result. When it prints an `error`,
-   nothing was released: keep the error's `message` for the result.
+   prints `"result": "failed"`, keep its `write` and `message`. When it
+   prints an `error`, nothing was released: keep the error's `message`.
    Handle `not-found` as [Claim](../SKILL.md#claim) does.
 5. The result is `import-failed`. It carries every cleanup failure, and
    anything kept: the branch, commits or claim, with how to recover.
