@@ -931,3 +931,8 @@ test('a review asks git for the common dir, the top level, then the branch', asy
     'branch --show-current',
   ]);
 });
+
+test('a review from a subdirectory of a linked worktree runs in the worktree\'s top level', async () => {
+  const launch = await reviewedFrom('/w/fix-login/lets', { top: '/w/fix-login', branch: 'fix-login' });
+  assert.equal((launch.workspaceStrategy as { worktreePath?: string }).worktreePath, '/w/fix-login');
+});
