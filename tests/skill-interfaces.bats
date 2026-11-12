@@ -484,6 +484,18 @@ fixture_file() {
   done
 }
 
+@test "each review skill checks that the review read its own checkout and commit" {
+  for skill in lets-review-plan lets-review-build; do
+    skill_says "$skill" 'note `<checkout>`, the output of `git rev-parse --show-toplevel`, and `<head>`, the output of `git rev-parse HEAD`'
+    skill_says "$skill" 'tell the reviewer to read files only in `<checkout>`'
+    skill_says "$skill" 'Read: <absolute path> <full commit>'
+    skill_says "$skill" "the meta line's \`checkout\` is \`<checkout>\` and its \`commit\` is \`<head>\`"
+    skill_says "$skill" 'Read: <checkout> <head>'
+    skill_says "$skill" 'record no review'
+    skill_says "$skill" 'check only its `Read:` line'
+  done
+}
+
 @test "lets-review-plan starts from the change alone" {
   grep -qx '## Start' "$repo/skills/lets-review-plan/SKILL.md" || { echo "lets-review-plan has no Start"; false; }
   skill_says lets-review-plan "git log --format='%(trailers:key=Co-Authored-By,valueonly)'"

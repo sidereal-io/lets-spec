@@ -59,7 +59,10 @@ In a `lets-go` step, return `needs-input` whenever this skill asks the user.
 
 Commit first. The review covers commits, not the working tree.
 
-1. Resolve vocabulary as below, then write the prompt to
+1. Before you write the prompt, note `<checkout>`, the output of
+   `git rev-parse --show-toplevel`, and `<head>`, the output of
+   `git rev-parse HEAD`. Note them now: a reviewer that commits moves
+   `HEAD`. Then resolve vocabulary as below, and write the prompt to
    `.workspace/<branch>-code-review-prompt.md`. [The prompt](#the-prompt)
    says what goes in it.
 2. Ask what can run. From the repo root, run `lets delegate review instructions --for code`. It prints one JSON line. `options` is the **listed models**: the
@@ -98,6 +101,7 @@ Commit first. The review covers commits, not the working tree.
 5. Act on its exit code:
    - **0**: the findings are in the raw file. The meta file's last line is
      JSON: the resolver, the model that answered, and the `independent` value.
+     Then [check what the review read](#check-what-the-review-read).
    - **3**: no fresh session can run here, for example because no resolver
      started one, or every model was refused. Take the [subagent
      step](#review-in-a-subagent).
@@ -109,7 +113,24 @@ Never review in an author's own session.
 
 Note the range you reviewed: `<head-sha>` is `git rev-parse --short HEAD`,
 and `<base-sha>` is `git rev-parse --short "$(git merge-base <base> HEAD)"`.
-An output of only `(none)` is a clean result, not a failure.
+An answer of only `(none)`, then the `Read:` line, is a clean result, not a
+failure.
+
+### Check what the review read
+
+A resolver can run the session in another checkout, and a reviewer can
+commit. Either way, the review read other code than yours. After exit 0,
+check that:
+
+- the meta line's `checkout` is `<checkout>` and its `commit` is `<head>`;
+- the raw file's last line is `Read: <checkout> <head>`.
+
+After the [subagent step](#review-in-a-subagent) there is no meta line, so
+check only its `Read:` line.
+
+When a value differs, is `null`, or the `Read:` line is missing, record no
+review. Show the user the meta file and the `Read:` line, or say that it is
+missing, and stop.
 
 ### Review in a subagent
 
@@ -119,7 +140,8 @@ A fallback must respect the guidance exclusions. If no permitted subagent
 can run, stop and ask the user. Run the prompt in a read-only subagent that
 starts with no context from this session.
 
-Save its output to `.workspace/<branch>-code-review-raw.md`. Run `git status --porcelain` before and after, and stop if they differ.
+Save its output to `.workspace/<branch>-code-review-raw.md`. Run `git status --porcelain` before and after, and stop if they differ. Then
+[check what the review read](#check-what-the-review-read).
 
 Record the family that answered, and `independent: no` unless the subagent
 was outside every author family and the tool's own output names it. Do not
@@ -143,9 +165,18 @@ Before writing the prompt, resolve the installed
 absolute path. Put that path and its delegated-review criteria in the
 actual prompt. Keep the criteria when invoking a built-in review command.
 
-Any family can follow this prompt. Fill in `<base>`:
+Start the prompt with `<checkout>`, the branch (`git branch --show-current`)
+and `<head>`, and tell the reviewer to read files only in `<checkout>`. End
+it by asking for a last line `Read: <absolute path> <full commit>`: what
+`git rev-parse --show-toplevel` and `git rev-parse HEAD` print in the
+checkout the reviewer read.
+
+Any family can follow this prompt. Fill in `<checkout>`, `<branch>`, `<head>`
+and `<base>`:
 
 ```text
+Checkout: <checkout>. Branch: <branch>. HEAD: <head>.
+Read files only in <checkout>, and run every git command there.
 Review the changes in `git diff <base>...HEAD` for correctness bugs. Work read-only.
 If you have a built-in /code-review command, run it at effort high on <base>...HEAD, and answer with its findings.
 Apply the review rules in REVIEW.md if that file exists.
@@ -163,6 +194,7 @@ Check semantic consistency, explicit scoped meanings and capability-retirement c
 Investigate representation mappings; spelling or casing alone is not a finding.
 For each finding give the file, the line, the defect, and the concrete scenario where it bites, most severe first.
 If you find nothing, answer `(none)`.
+End your answer with one last line: `Read: <absolute path> <full commit>`, from `git rev-parse --show-toplevel` and `git rev-parse HEAD` in the checkout you read.
 ```
 
 ## Act on the findings
