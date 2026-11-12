@@ -3431,7 +3431,7 @@ commit_maps() {
   table="${text%%'| The current branch |'*}"
   [ "$guard" != "$text" ]
   [ "${#query}" -lt "${#guard}" ] && [ "${#guard}" -lt "${#table}" ]
-  for token in 'JSON' '`state`' 'retry' '`instruction`'; do
+  for token in 'JSON' 'retry' 'full output'; do
     [[ "$text" == *"$token"* ]]
   done
   rows="$(grep '^| has a' "$repo/skills/lets-build/SKILL.md")"
