@@ -1,6 +1,6 @@
 ## Why
 
-When a delegated session runs past its time limit, `lets` stops only the CLI's own process. A child the CLI started, such as a build, a test run or a background write, can keep running, and its open pipes can delay the exit 6. Since #156, a `cli` step runs with no sandbox and the user's own rights, so a surviving child can keep changing the repository after the caller has moved on or retried the step.
+When a delegated session runs past its time limit, `lets` stops only the CLI's own process. A child the CLI started, such as a build, a test run or a background write, can keep running, and its open pipes can delay the exit 6. Since #156, a `cli` step runs with no sandbox and with the user's own rights. So a surviving child can keep changing the repository after the caller has moved on, or retried the step.
 
 ## What Changes
 

@@ -13,7 +13,7 @@ When a review or a step that `cli` answers runs past its time limit, `cli` SHALL
 
 #### Scenario: A child that ignores SIGTERM
 - **WHEN** `cli` answers a step, and the CLI's child ignores `SIGTERM` and is still running after the step's time limit
-- **THEN** the child gets `SIGKILL` 5 seconds after `SIGTERM`, and the command exits 6 within 10 seconds of the time limit
+- **THEN** the command exits 6 no sooner than 5 seconds and no later than 10 seconds after the time limit, and the child is no longer running when it exits
 
 #### Scenario: A process outside the group holds the output
 - **WHEN** `cli` answers a step, the CLI has started a process in a new session that holds the CLI's stdout open, and the CLI is still running after the step's time limit
