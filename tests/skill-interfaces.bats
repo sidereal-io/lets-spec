@@ -3411,6 +3411,21 @@ commit_maps() {
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
 # #229 review-model-choice: keep this block together for sibling story rebases.
 
+# task-limits (#232): size stops and concurrent file-sharing comparisons.
+# Keep this block self-contained so sibling stories can append their own checks.
+task_limits_says() {
+  local text
+  text="$(tr -s '[:space:]' ' ' < "$repo/skills/lets-write-tasks/SKILL.md")"
+  [[ "$text" == *"$1"* ]] || { echo "task-limits guidance is missing: $1"; return 1; }
+}
+
+@test "task-limits: oversized lists stop before producing tasks.md" {
+  task_limits_says '**Five to twelve tasks.**'
+  task_limits_says 'For more than twelve tasks, stop without writing or committing `tasks.md`.'
+  task_limits_says 'Report the task count and name the slice to move to a new story, then wait.'
+  task_limits_says 'Do not split the story here: the user decides the split in the brainstorm.'
+}
+
 # #234: setup guards and reusable PR review wording.
 @test "setup guards precede Project creation" {
   local text before
