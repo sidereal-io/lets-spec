@@ -3430,6 +3430,12 @@ task_limits_says() {
   task_limits_says 'After the user decides the split, rerun task planning on the smaller story.'
 }
 
+@test "task-limits: same section comparison includes every other task" {
+  task_limits_says '| `[parallel]` | The task shares no files with any other task that could run at the same time. |'
+  task_limits_says 'Compare with every other task in the same section'
+}
+
+
 # #234: setup guards and reusable PR review wording.
 @test "setup guards precede Project creation" {
   local text before

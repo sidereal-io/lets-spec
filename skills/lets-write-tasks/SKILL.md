@@ -40,8 +40,10 @@ Put tags after the task number and before the description.
 | Tag | Means |
 |---|---|
 | `[easy]`, `[medium]`, `[complex]` | How hard the task is. The apply step may use it to choose who does the task. |
-| `[parallel]` | The task shares no files with its neighbours, so it can run beside them. |
+| `[parallel]` | The task shares no files with any other task that could run at the same time. |
 | `[depends-on: <section>]` | On a section heading: this section waits for that one. |
+
+Compare with every other task in the same section.
 
 ## Verification
 
