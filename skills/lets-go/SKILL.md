@@ -390,6 +390,8 @@ Next: [Enter the branch](#enter-the-branch).
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
    - **`claim-failed`:** say which write failed, and show its message.
+     For `assign`, stop and ask the user to inspect your assignment:
+     the failed write has no claim token for release.
      A failed `status` write leaves the assignment and claim comment;
      a failed `claim` write leaves the assignment and may have posted
      the comment. A failed `assign` may have assigned you if it timed
