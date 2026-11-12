@@ -6,7 +6,7 @@ import type { Adapter, Candidate, Claim, Item, Ref, Status } from './adapter.ts'
 import { BacklogError, WriteFailed } from './adapter.ts';
 
 export const CLAIM_MARKER = 'lets-go claimed this issue.';
-const CLAIM_BODY = /^lets-go claimed this issue\.\n\nToken: ([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/;
+const CLAIM_BODY = /^lets-go claimed this issue\.\n\nToken: ([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\n?$/;
 
 // Every gh call has a finite timeout. A read past it is gh-failed; a write
 // past it is WriteFailed, because it may still have happened.

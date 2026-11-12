@@ -140,3 +140,12 @@ for (const login of ['octocat', 'abandoned']) {
     assert.ok(!t.ran('issue edit 149 --remove-assignee'));
   });
 }
+
+test('a claim with a final newline participates in the election', async () => {
+  const t = backlogDeps(rows({ comments: (body) => [[
+    { id: 2, body, user: { login: 'octocat', type: 'User' }, author_association: 'OWNER' },
+    { id: 1, body: 'lets-go claimed this issue.\n\nToken: 00000000-0000-4000-8000-000000000001\n', user: { login: 'winner', type: 'User' }, author_association: 'MEMBER' },
+  ]] }));
+  assert.equal(await run(['claim', '149'], t.deps), 0);
+  assert.deepEqual(t.json(), { result: 'taken', assignees: ['winner'] });
+});
