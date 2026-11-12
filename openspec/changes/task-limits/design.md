@@ -21,9 +21,9 @@ The Size section says to report an oversized story without specifying whether `t
 
 ## Decisions
 
-1. Expand the Size bullet in place. Say no writing or committing `tasks.md`, report count and slice, then wait. Give resumption after the user's brainstorm split decision and refresh earlier planning artifacts before task planning runs again. For delegated callers, request the split without a recommended answer so automatic recommendation handling cannot make this user-owned decision. A separate procedure would move the stop away from its condition.
+1. Expand the Size bullet in place. Say no writing or committing `tasks.md`, report count and slice, then wait. Task planning runs again on the smaller story after the user's brainstorm split decision. A separate procedure would move the stop away from its condition.
 2. Replace "neighbours" in the Tags table with all concurrently eligible tasks; define section scope immediately below. Clarify that a dependency chain in either direction includes indirect dependencies. Add the first/third shared-file example to prevent an adjacent-only reading.
-3. Keep checks in one appended block with a local helper that normalizes paragraph whitespace. Assert each instruction contract separately, avoiding assertions against the full file or unrelated wording. Preserve existing minimal-flow checks and add a focused guard if needed.
+3. Keep checks in one appended block with no shared helper. Check the size/output proximity and concurrency key phrases in two tests. Keep one guard for the minimal flow; avoid whole-sentence assertions.
 
 ## Risks / Trade-offs
 
