@@ -1,11 +1,11 @@
 ## Context
 
-This change stacks on `kill-process-tree` (#178), which stacks on `t3-review-waiting-is-transient` (#102), `t3-review-session-fit` (#221) and the archived `t3-worktree-sessions` (#123). It designs against `lets/src/resolvers/t3/t3.ts` as those changes leave it:
+This change stacks on `kill-process-tree` (#178), which stacks on `t3-review-waiting-is-transient` (#102), `t3-review-session-fit` (#221) and `t3-worktree-sessions` (#123). All four are built and archived. It designs against `lets/src/resolvers/t3/t3.ts` as those changes leave it. The design was written against the plans of #221, #102 and #178, and was checked against their built code after the rebase onto #178's archive; the code matches:
 
 - **From #123, in the code:** `launchThread` asks T3 for an `existing_worktree` workspace when the caller's top level is a linked worktree, and for the project's `root` otherwise, on the current branch.
-- **From #221's plan:** `buildLaunch` always sends `interactionMode: 'default'`, and `launchThread` takes only `{ effort }`. `waitForText` throws `SessionFailed('the session returned a plan, not a result')` when a completed run holds a `proposed_plan` item. `run` returns `{ handle, text, checkout }`, with `checkout` read by `readCheckout` after the wait. ADR-024 says the tree check keeps a review read-only.
-- **From #102's plan:** `waitForText` treats only `run.pendingRequests > 0` as stopped to ask. A `waiting` run with no request is polled again, until the time limit.
-- **From #178's plan:** nothing this change uses. It changes `execFile` in `kit/io.ts`, which `t3` calls only to issue a token.
+- **From #221, in the code:** `buildLaunch` always sends `interactionMode: 'default'`, and `launchThread` takes only `{ effort }`. `waitForText` throws `SessionFailed('the session returned a plan, not a result')` when a completed run holds a `proposed_plan` item. `run` returns `{ handle, text, checkout }`, with `checkout` read by `readCheckout` after the wait. ADR-024 says the tree check keeps a review read-only.
+- **From #102, in the code:** `waitForText` treats only `run.pendingRequests > 0` as stopped to ask. A `waiting` run with no request is polled again, until the time limit.
+- **From #178, in the code:** nothing this change uses. It runs each `execFile` in its own process group and stops the group at its timeout. `t3` calls `execFile` for `git`, with no timeout, and to issue a token.
 
 The rest is already in place:
 
