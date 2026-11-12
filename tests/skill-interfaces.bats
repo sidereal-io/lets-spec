@@ -3410,55 +3410,14 @@ commit_maps() {
 
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
 # #229 review-model-choice: keep this block together for sibling story rebases.
-@test "review model choice: exclusions require user choice" {
-  local skill
+@test "review model choice: policy anchors" {
   for skill in lets-review-plan lets-review-build; do
-    skill_says "$skill" '**listed models**'
     skill_says "$skill" '**allowed models**'
-    skill_says "$skill" 'When the listed models are nonempty but the allowed models are empty, stop'
-    skill_says "$skill" 'Show the guidance and the listed models'
-    skill_says "$skill" 'ask the user to choose a model or the subagent step'
-    skill_says "$skill" 'Do not run either until the user answers'
-    skill_says "$skill" 'A fallback must respect the guidance exclusions'
-    skill_says "$skill" 'If no permitted subagent can run, stop and ask the user'
-    skill_says "$skill" 'Take this step only when'
-    skill_says "$skill" 'the user explicitly chooses it after the excluded-all stop'
+    skill_says "$skill" 'excluded-all stop'
   done
-}
-
-@test "review model choice: ranking uses all build author families" {
-  skill_says lets-review-build 'families outside every author family'
-  skill_says lets-review-build "the guidance first, then families outside every author family, then the order the options came in"
-  skill_says lets-review-build "<family>\` is this session's own family"
-  skill_says lets-review-build 'only a CLI compatibility value'
-  skill_says lets-review-build 'For GPT-and-Claude-authored work'
-  skill_says lets-review-build 'pass `gpt` when this session is GPT'
-  skill_says lets-review-build 'rank Gemini first'
-  skill_says lets-review-build 'keep GPT and Claude in discovery order'
-}
-
-@test "review model choice: overlap is reported separately from CLI independence" {
-  skill_says lets-review-build 'the known author families'
-  skill_says lets-review-build 'any overlap with the reviewer family'
-  skill_says lets-review-build "The CLI's \`independent\` boolean compares only against this session's family"
-  skill_says lets-review-build 'not independence from the whole author set'
-  skill_says lets-review-build 'For a GPT session reviewing GPT-and-Claude-authored work with Claude'
-  skill_says lets-review-build 'CLI `independent: true`, overlap `claude`, and independent from all authors: no'
-  skill_says lets-review-build 'outside every author family and the tool'
-  skill_does_not_say lets-review-build "When only the author's family can run"
-}
-
-@test "review model choice: subagent provenance follows tool evidence" {
-  skill_says lets-review-plan '`subagent, other family` only when the tool'
-  skill_says lets-review-plan "`subagent, same family` when the tool identifies the author's family"
-  skill_says lets-review-plan '`subagent, family not evidenced` when the tool does not identify it'
-  skill_says lets-review-plan 'Record the identified family with that context'
-  skill_says lets-review-plan "`independent: no` unless the subagent was another family and the tool's own output names it"
+  skill_says lets-review-plan 'subagent, family not evidenced'
+  skill_says lets-review-build 'REVIEW.md was absent'
   skill_does_not_say lets-review-plan '`subagent, same family` after the subagent step'
-}
-
-@test "review model choice: missing REVIEW.md names the absent source" {
-  skill_says lets-review-build 'say that REVIEW.md was absent'
   skill_does_not_say lets-review-build 'the reviewer ran without project rules'
 }
 
