@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/backlog/commands.ts';
 import type { Row } from './fixtures/fake-gh.ts';
+import { PROVIDERS } from '../../../lets/src/backlog/providers.ts';
 import { backlogDeps, json, LOOKUP_ONE, REPO } from './fixtures/fake-gh.ts';
+import { fakeProvider, JIRA_CONFIG, jiraCandidate } from './fixtures/fake-provider.ts';
 
 type Spec = { number: number; priority?: string | null; kind?: string; status?: string; size?: string; repo?: string };
 
@@ -17,17 +19,20 @@ const item = ({ number, priority = 'Must', kind = 'Story', status = 'Todo', size
   status,
 });
 
+// When an issue was created: by default in the order of its number.
+const createdAt = (number: number) => new Date(Date.UTC(2026, 0, 1) + number * 60_000).toISOString();
+
 // The rows for a Project holding items, where free are the unassigned,
-// unblocked open issues.
-const rows = (items: Spec[], free: number[]): Row[] => [
+// unblocked open issues, each created at created(number).
+const rows = (items: Spec[], free: number[], created: (number: number) => string = createdAt): Row[] => [
   ...LOOKUP_ONE,
   ['project item-list', json({ items: items.map(item), totalCount: items.length })],
-  ['issue list --search is:open no:assignee -is:blocked', json(free.map((number) => ({ number })))],
+  ['issue list --search is:open no:assignee -is:blocked', json(free.map((number) => ({ number, createdAt: created(number) })))],
 ];
 
 const keys = (t: ReturnType<typeof backlogDeps>) => t.json().issues.map((i: { key: string }) => i.key);
 
-test('ready ranks Must, Should, Could, then the lowest number', async () => {
+test('ready ranks Must, Should, Could, then the oldest first', async () => {
   const t = backlogDeps(rows([
     { number: 160, priority: 'Should' }, { number: 120, priority: 'Must' }, { number: 110, priority: 'Should' }, { number: 105, priority: 'Could' },
   ], [160, 120, 110, 105]));
@@ -87,6 +92,44 @@ test('ready passes today\'s 500-item limits to gh, and writes nothing', async ()
   await run(['ready'], t.deps);
   const [, items, free] = t.calls();
   assert.deepEqual(items, ['project', 'item-list', '7', '--owner', 'acme', '--format', 'json', '--limit', '500']);
-  assert.deepEqual(free, ['issue', 'list', '--search', 'is:open no:assignee -is:blocked', '--limit', '500', '--json', 'number']);
+  assert.deepEqual(free, ['issue', 'list', '--search', 'is:open no:assignee -is:blocked', '--limit', '500', '--json', 'number,createdAt']);
   assert.equal(t.calls().length, 3);
+});
+
+test('ties break by creation time, not by number', async () => {
+  const created: Record<number, string> = { 10: '2026-03-01T00:00:00Z', 9: '2026-02-01T00:00:00Z', 200: '2026-01-01T00:00:00Z' };
+  const t = backlogDeps(rows([{ number: 9 }, { number: 10 }, { number: 200 }], [9, 10, 200], (n) => created[n]));
+  await run(['ready'], t.deps);
+  assert.deepEqual(keys(t), ['200', '9', '10']);
+});
+
+test('issues created at the same time keep the lowest number first, as listed in any order', async () => {
+  const t = backlogDeps(rows([{ number: 100 }, { number: 9 }, { number: 10 }], [9, 10, 100], () => '2026-01-01T00:00:00Z'));
+  await run(['ready'], t.deps);
+  assert.deepEqual(keys(t), ['9', '10', '100']);
+});
+
+test('ready --only and --exclude take #<n> too, and leave out a key GitHub does not use', async () => {
+  const t = backlogDeps(rows([{ number: 191 }, { number: 192 }, { number: 193 }], [191, 192, 193]));
+  await run(['ready', '--only', '#191,192,PROJ-1', '--exclude', '#192'], t.deps);
+  assert.deepEqual(keys(t), ['191']);
+});
+
+test('a backlog provider with Jira-style keys ranks the one created first, and takes its keys in --only and --exclude', async () => {
+  const jira = fakeProvider({ candidates: [
+    jiraCandidate('PROJ-9', '2026-02-01T00:00:00Z'),
+    jiraCandidate('PROJ-12', '2026-01-01T00:00:00Z'),
+    jiraCandidate('PROJ-3', '2026-03-01T00:00:00Z'),
+  ] });
+  const providers = { ...PROVIDERS, jira: jira.provider };
+  const all = backlogDeps([], { config: JIRA_CONFIG });
+  assert.equal(await run(['ready'], all.deps, providers), 0);
+  assert.deepEqual(keys(all), ['PROJ-12', 'PROJ-9', 'PROJ-3']);
+  assert.deepEqual(all.json().issues[0], { key: 'PROJ-12', label: 'PROJ-12', title: 'proj-12 — outcome', url: 'https://acme.atlassian.net/browse/PROJ-12', kind: 'Story', priority: 'Must', size: 'S' });
+  const only = backlogDeps([], { config: JIRA_CONFIG });
+  await run(['ready', '--only', 'PROJ-9,PROJ-12'], only.deps, providers);
+  assert.deepEqual(keys(only), ['PROJ-12', 'PROJ-9']);
+  const exclude = backlogDeps([], { config: JIRA_CONFIG });
+  await run(['ready', '--exclude', 'PROJ-12'], exclude.deps, providers);
+  assert.deepEqual(keys(exclude), ['PROJ-9', 'PROJ-3']);
 });

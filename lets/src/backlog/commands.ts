@@ -56,12 +56,6 @@ ${SETTING} Run it from the repo.
 ${HELP_BODY}`;
 }
 
-// An issue number: a whole number above zero, kept as the issue's key.
-function issueNumber(value: string): string {
-  if (!/^[1-9][0-9]*$/.test(value)) throw new InvalidArgumentError('Give an issue number.');
-  return value;
-}
-
 // An item's key, as typed. Any text but the empty string: the backlog
 // provider decides whether it is one of its keys.
 function itemKey(value: string): string {
@@ -69,9 +63,10 @@ function itemKey(value: string): string {
   return value;
 }
 
-// A list of issue numbers, such as 191,192.
-function issueList(value: string): string[] {
-  return value.split(',').map((part) => issueNumber(part.trim()));
+// A list of item keys, such as 191,192. No backlog provider's key holds a
+// comma.
+function keyList(value: string): string[] {
+  return value.split(',').map((part) => itemKey(part.trim()));
 }
 
 // The exit code. argv is what follows lets backlog. providers lists the
@@ -89,7 +84,8 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
   }
   // The command's work, once its arguments parse. Its result is printed.
   // key is the command's item, once the backlog provider has parsed it.
-  let work: ((adapter: Adapter, key: string) => Promise<unknown>) | undefined;
+  // keys parses a list of typed keys, and leaves out text that is not one.
+  let work: ((adapter: Adapter, key: string, keys: (typed: string[]) => string[]) => Promise<unknown>) | undefined;
   // The item a command names, as typed, when it names one.
   let typed: string | undefined;
   // A command that needs only the backlog provider, not its adapter.
@@ -103,10 +99,12 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
   const command = (name: string, summary: string) => program.command(name).summary(summary).description(`${summary[0].toUpperCase()}${summary.slice(1)}.`).exitOverride().configureOutput({ writeOut: deps.stdout, writeErr: deps.stderr });
 
   command('ready', 'list the ready issues, best first')
-    .option('--only <issues>', 'keep only these issues, such as 191,192', issueList)
-    .option('--exclude <issues>', 'leave these issues out, such as 149', issueList)
+    .option('--only <keys>', 'keep only these items, such as 191,192', keyList)
+    .option('--exclude <keys>', 'leave these items out, such as 149', keyList)
     .action(({ only, exclude }: { only?: string[]; exclude?: string[] }) => {
-      work = async (adapter) => ({ issues: ready(await adapter.listCandidates(), { only, exclude }) });
+      work = async (adapter, _key, keys) => ({
+        issues: ready(await adapter.listCandidates(), { only: only && keys(only), exclude: exclude && keys(exclude) }),
+      });
     });
   command('item', 'read one issue, with its Project fields')
     .argument('<i>', 'the item\'s key, such as 136', itemKey)
@@ -161,7 +159,8 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
     const { name, provider } = selection;
     const key = typed === undefined ? '' : provider.parseKey(typed)?.key;
     if (key === undefined) throw new BacklogError('not-found', `${typed} is not a key of the ${name} backlog provider, so it names no item.`);
-    print(await work!(await provider.create(deps.io, deps.cwd), key));
+    const keys = (texts: string[]) => texts.flatMap((text) => provider.parseKey(text)?.key ?? []);
+    print(await work!(await provider.create(deps.io, deps.cwd), key, keys));
     return 0;
   } catch (error) {
     if (!(error instanceof BacklogError)) throw error;

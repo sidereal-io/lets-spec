@@ -10,14 +10,24 @@ export const RANK = ['Must', 'Should', 'Could'] as const;
 
 export type ReadyIssue = Pick<Candidate, 'key' | 'label' | 'title' | 'url' | 'kind' | 'priority' | 'size'>;
 
-// The ready candidates, ranked Must, Should, Could, then lowest number.
-// only keeps the issues named; exclude leaves the issues named out.
+// The ready candidates, ranked Must, Should, Could, then oldest first. The
+// sort is stable, so items created at the same time keep the adapter's
+// order: keys are never compared. only keeps the items named; exclude
+// leaves the items named out.
 export function ready(candidates: Candidate[], { only, exclude = [] }: { only?: string[]; exclude?: string[] } = {}): ReadyIssue[] {
   const rank = (priority: string | null) => RANK.indexOf(priority as (typeof RANK)[number]);
+  const time = ({ created }: Candidate) => {
+    const parsed = Date.parse(created);
+    return Number.isNaN(parsed) ? Infinity : parsed;
+  };
+  const older = (a: Candidate, b: Candidate) => {
+    const [x, y] = [time(a), time(b)];
+    return x < y ? -1 : x > y ? 1 : 0;
+  };
   return candidates
     .filter((c) => c.status === 'Todo' && c.kind !== 'Epic' && rank(c.priority) >= 0 && c.free)
     .filter((c) => (only === undefined || only.includes(c.key)) && !exclude.includes(c.key))
-    .sort((a, b) => rank(a.priority) - rank(b.priority) || Number(a.key) - Number(b.key))
+    .sort((a, b) => rank(a.priority) - rank(b.priority) || older(a, b))
     .map(({ key, label, title, url, kind, priority, size }) => ({ key, label, title, url, kind, priority, size }));
 }
 

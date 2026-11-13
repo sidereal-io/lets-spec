@@ -24,7 +24,7 @@ export const jiraItem = (key: string, extra: Partial<Item> = {}): Item => ({
 export const jiraCandidate = (key: string, created: string, extra: Partial<Candidate> = {}): Candidate => ({
   key, label: key, title: `${key.toLowerCase()} — outcome`, url: `https://acme.atlassian.net/browse/${key}`,
   kind: 'Story', priority: 'Must', size: 'S', status: 'Todo', free: true, created, ...extra,
-} as Candidate);
+});
 
 export function fakeProvider({ items = [], candidates = [] }: { items?: Item[]; candidates?: Candidate[] } = {}) {
   const calls: [string, ...unknown[]][] = [];

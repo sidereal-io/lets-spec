@@ -143,12 +143,17 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
   return {
     async listCandidates() {
       const items = await projectItems();
-      const free = await read(gh, ['issue', 'list', '--search', 'is:open no:assignee -is:blocked', '--limit', FREE_LIMIT, '--json', 'number']) as { number: number }[];
-      const freeNumbers = new Set(free.map(({ number }) => number));
-      return items.map((item): Candidate => {
-        const content = item.content as { number: number; title: string; url: string };
-        return { ...named(content.number, content.url), title: content.title, url: content.url, ...fields(item), free: freeNumbers.has(content.number) };
-      });
+      // Only a free issue can be ready, so the search for them gives each
+      // one's creation time, with no other call.
+      const free = await read(gh, ['issue', 'list', '--search', 'is:open no:assignee -is:blocked', '--limit', FREE_LIMIT, '--json', 'number,createdAt']) as { number: number; createdAt: string }[];
+      const created = new Map(free.map(({ number, createdAt }) => [number, createdAt]));
+      // In issue-number order, so issues created at the same time rank
+      // lowest number first.
+      const contents = items.map((item) => ({ item, content: item.content as { number: number; title: string; url: string } }));
+      return contents.sort((a, b) => a.content.number - b.content.number).map(({ item, content }): Candidate => ({
+        ...named(content.number, content.url), title: content.title, url: content.url, ...fields(item),
+        free: created.has(content.number), created: created.get(content.number) ?? '',
+      }));
     },
 
     async readItem(issue) {
