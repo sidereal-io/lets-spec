@@ -36,6 +36,12 @@ jobs:
       - name: Install the tools with mise
         uses: jdx/mise-action@v2
 
+      # Git ignores the lets-* schemas, and mise runs its enter hook only in
+      # an interactive shell. Sync them, or a change that names a lets-*
+      # schema fails validation.
+      - name: Sync the pinned skills and schemas
+        run: mise exec -- lets sync
+
       - name: Check
         run: mise run check
 
