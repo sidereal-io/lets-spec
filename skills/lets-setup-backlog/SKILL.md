@@ -72,7 +72,8 @@ it when `--repo` names the owner. A Project can only link to a repository
 with the same owner, so for a user's repository that user must be you. If it
 belongs to someone else, stop and say that its owner has to run this skill.
 
-Then create the Project, add the three fields and link it:
+The first command prints the Project's number. Use it as `<n>` below.
+Stop at the first error and show it.
 
 ```bash
 gh project create --owner <owner> --title "<repo name>" --format json --jq .number
@@ -81,9 +82,6 @@ gh project field-create <n> --owner <owner> --name Priority --data-type SINGLE_S
 gh project field-create <n> --owner <owner> --name Size --data-type SINGLE_SELECT --single-select-options XS,S,M,L,XL
 gh project link <n> --owner <owner> --repo <repo>
 ```
-
-The first command prints the Project's number, `<n>`. Stop at the first
-error and show it.
 
 A new Project already has the Status field with Todo, In Progress and Done.
 It also has two workflows on: item closed sets Done, and pull request merged
@@ -116,8 +114,8 @@ consequence of the fix before asking. Run a fix only when the user says so.
 
 - **A missing field:** run its `field-create` command from
   [Create](#create).
-- **A field that lacks an option:** `gh` cannot add an option to a field.
-  Delete the field and create it again. Get its id with `gh project field-list <n> --owner <owner> --format json --jq '.fields[] | select(.name == "<field>") | .id'`, then run `gh project field-delete --id <field id>` and the field's `field-create` command. Warn the user first:
+- **A field other than Status that lacks an option:** `gh` cannot add an
+  option to a field. Delete the field and create it again. Get its id with `gh project field-list <n> --owner <owner> --format json --jq '.fields[] | select(.name == "<field>") | .id'`, then run `gh project field-delete --id <field id>` and the field's `field-create` command. Warn the user first:
   the delete clears that field on every item, so they set the values again
   by hand.
 - **A missing Status option:** `gh` cannot change Status. Give the user the

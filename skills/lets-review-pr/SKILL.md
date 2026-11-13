@@ -22,13 +22,14 @@ Keep material limits beside the findings they qualify.
    [supporting context](#capture-supporting-context).
 2. [Select models](#select-models-from-attributed-provenance) and
    [prepare the read-only roles](#delegate-fresh-read-only-roles).
-3. Run the [decision pass](#first-full-pass-decisions), then the
+3. Run each pass as one [bounded exchange](#bound-each-exchange-and-select-focused-passes):
+   examiner, challenger, then one examiner response. Keep only concerns the
+   [evidence](#mediate-by-evidence) supports. Run the
+   [decision pass](#first-full-pass-decisions), then the
    [implementation pass](#second-full-pass-implementation), unless the
-   verified early-exit condition applies.
-4. Use the [exchange limits](#bound-each-exchange-and-select-focused-passes)
-   and [evidence rules](#mediate-by-evidence) to decide which concerns
-   remain.
-5. [Publish one comment](#publish-once-from-the-mediator) with the result
+   verified early-exit condition applies. After both full passes, decide
+   whether to run [focused passes](#bound-each-exchange-and-select-focused-passes).
+4. [Publish one comment](#publish-once-from-the-mediator) with the result
    and its limits.
 
 The sections below define each action and its stop conditions. The
@@ -386,8 +387,3 @@ Use [the scripted exercises](references/trial-exercises.md) to rehearse
 judgments; static contract checks do not demonstrate role judgment or count
 as live trials. Keep actual outcomes, passes, limits and comment URLs
 distinct from expected exercise decisions.
-
-For this change's first live trial, the user selected
-https://github.com/sidereal-io/sidereal/pull/472; capture its then-current
-head when starting, after implementation review. Do not substitute another
-PR or count planning as that trial.

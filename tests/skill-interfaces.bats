@@ -3411,6 +3411,36 @@ commit_maps() {
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
 # #229 review-model-choice: keep this block together for sibling story rebases.
 
+# #234: setup guards and reusable PR review wording.
+@test "setup guards precede Project creation" {
+  local text before
+  text="$(skill_section lets-setup-backlog Create)"
+  before="${text%%gh project create*}"
+  [ "$before" != "$text" ]
+  grep -qF '`<n>`' <<<"$before"
+  grep -qF 'first error' <<<"$before"
+}
+
+@test "Status repair avoids generic field replacement" {
+  local text generic status_fix
+  text="$(skill_section lets-setup-backlog Check)"
+  generic="${text#*- **A field }"
+  generic="${generic%% - **A missing Status*}"
+  grep -qF 'other than Status' <<<"$generic"
+  status_fix="${text#*- **A missing Status option:**}"
+  [ "$status_fix" != "$text" ]
+  status_fix="${status_fix%% When there are no gaps*}"
+  ! grep -qF 'field-delete' <<<"$status_fix"
+}
+
+@test "PR overview introduces exchange bounds before decision review" {
+  local text before
+  text="$(skill_section lets-review-pr 'Follow the review in order')"
+  before="${text%%#first-full-pass-decisions*}"
+  [ "$before" != "$text" ]
+  grep -qF '#bound-each-exchange' <<<"$before"
+}
+
 # Issue #233: authoring wording.
 @test "authoring wording: modified export retains the signed-out scenario" {
   sed -n '/^## MODIFIED Requirements$/,/^## REMOVED Requirements$/p' "$repo/skills/lets-write-specs/SKILL.md" |
