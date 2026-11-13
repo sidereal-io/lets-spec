@@ -9,10 +9,11 @@ All tests go in `tests/lets/backlog/complete.test.ts` and drive `run()` with the
 - [x] 1.5 [easy] A state read that times out prints `"error": "backend-failed"` with exit 1, and runs no `gh issue close` (verify: deli -- node --test tests/lets/backlog/complete.test.ts) (✓ deli -- node --test tests/lets/backlog/complete.test.ts passed)
 - [x] 1.6 [easy] A close that fails prints `{ "result": "failed", "message": <gh's error> }` with exit 0. A close that times out prints `"message": "timed out; the write may have happened"`, runs `gh issue close` once, and exits 0 (verify: deli -- node --test tests/lets/backlog/complete.test.ts) (✓ deli -- node --test tests/lets/backlog/complete.test.ts passed)
 - [x] 1.7 [easy] With a non-GitHub backlog provider, `complete PROJ-12` passes the key `PROJ-12` to that provider's adapter and prints `completed` (verify: deli -- node --test tests/lets/backlog/complete.test.ts) (✓ deli -- node --test tests/lets/backlog/complete.test.ts passed)
-- [ ] 1.8 [easy] `lets backlog --help` lists `complete <i>` and its results, and the program description says it reads, claims and completes work (verify: deli -- node --test tests/lets/backlog/cli.test.ts)
+- [x] 1.8 [easy] `lets backlog --help` lists `complete <i>` and its results, and the program description says it reads, claims and completes work (verify: deli -- node --test tests/lets/backlog/cli.test.ts) (✓ deli -- node --test tests/lets/backlog/cli.test.ts passed)
 
 ## 2. Integration [depends-on: 1]
 
 - [ ] 2.1 [easy] The whole suite, the type check and the OpenSpec validation pass (verify: deli -- pnpm test && mise run check)
 
 ## Deviations Ledger
+- 1.8: `lets --help` describes the backlog command in `lets/src/main.ts` too. Its line now also says it completes work and names `complete`, so it matches `lets backlog --help`.

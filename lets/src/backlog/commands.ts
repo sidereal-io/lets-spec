@@ -30,6 +30,7 @@ An item's key names it in commands; its label is how the backlog writes it.
   release <i> --claim <token>
                      { result: released } | { result: not-found }
                      | { result: failed, write: delete-claim|unassign|status, message }
+  complete <i>       { result: completed } | { result: failed, message }
 On an error: { error, message }, where error is no-backlog,
 several-backlogs (with projects: [{ title, url }]), backend-failed, not-found
 or unknown-backlog-provider.
@@ -96,7 +97,7 @@ export async function run(argv: string[], deps: Pick<Deps, 'env' | 'io' | 'cwd' 
   let answer: ((selection: Selection) => unknown) | undefined;
 
   const program = new Command('lets backlog')
-    .description('Read and claim work on the repository\'s backlog. Each command prints one JSON object.')
+    .description('Read, claim and complete work on the repository\'s backlog. Each command prints one JSON object.')
     .addHelpText('after', backlogHelp(selection))
     .exitOverride()
     .configureOutput({ writeOut: deps.stdout, writeErr: deps.stderr });

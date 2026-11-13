@@ -366,7 +366,7 @@ program
 program
   .command('backlog')
   .summary('read and claim work on the repository\'s backlog')
-  .description('Read and claim work on the repository\'s backlog: ready, item, find, key, claim and release. Each prints one JSON object.')
+  .description('Read, claim and complete work on the repository\'s backlog: ready, item, find, key, claim, release and complete. Each prints one JSON object.')
   .usage('<ready|item|find|key|claim|release> [args]')
   .helpOption(false)
   .allowUnknownOption()

@@ -1,5 +1,5 @@
 // The backlog rules every backend shares: what is ready, how it ranks, and
-// the claim and release sequences. Written once, here, outside the adapter.
+// the claim, release and complete sequences. Written once, here, outside the adapter.
 import { randomUUID } from 'node:crypto';
 import type { Adapter, Candidate, Item, Related } from './adapter.ts';
 import { BacklogError, WriteFailed } from './adapter.ts';
