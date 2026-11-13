@@ -32,7 +32,7 @@ run costs a cross-model review.
 
 For an OpenSpec change on its branch, read the pull request's body with `gh pr view --json body`.
 
-- **No Plan review section:** [run the review](#run-the-review).
+- **No Plan review section:** [find the author](#find-the-author).
 - **A Plan review section:** follow [Check an earlier
   review](#check-an-earlier-review).
   - When one of its rules calls for a new round, run one, as
@@ -43,7 +43,7 @@ For an OpenSpec change on its branch, read the pull request's body with `gh pr v
     Name its commit in the rebuttals, and stop. The reviewer does not run
     again.
 
-For any other plan, run the review.
+For any other plan, [find the author](#find-the-author).
 
 ## Find the author
 
@@ -66,6 +66,8 @@ A session that cannot ask, such as `lets-go`'s review plan step, takes its
 own family as the author's when nothing above answers. It usually runs in
 the same harness as the plan step, so its own family is its best estimate.
 The report then says that the plan's author was not recorded.
+
+Then [run the review](#run-the-review).
 
 ## Run the review
 
@@ -287,7 +289,8 @@ Carry forward a one-line summary of the prior round's verdict, so the
 history is auditable.
 
 - REVISE: revise the plan with the `openspec-update-change` skill and commit
-  it. Then run a new round in a fresh context.
+  it. Then [find the author](#find-the-author) and run a new round in a fresh
+  context.
 - APPROVE_WITH_CHANGES: apply the listed changes, name their commits in the
   rebuttals, and proceed. No new round.
 - After two REVISE verdicts in a row, stop and ask the user. Do not loop

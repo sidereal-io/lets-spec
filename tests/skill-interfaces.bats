@@ -3579,3 +3579,14 @@ EXPECTED
   sed -n '/^### Link the blocked stories/,/^### Hand over/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'owner issue number'
 }
 # END shape-checkpoints (#231).
+
+@test "plan review routes new rounds through author identification" {
+  skill_says lets-review-plan '(#find-the-author)'
+  local section
+  for section in Start Rounds; do
+    [[ "$(skill_section lets-review-plan "$section")" == *'(#find-the-author)'* ]] ||
+      { echo "$section skips author identification"; false; }
+  done
+  [[ "$(skill_section lets-review-plan 'Find the author')" == *'(#run-the-review)'* ]] ||
+    { echo 'author identification has no continuation'; false; }
+}
