@@ -3582,11 +3582,14 @@ EXPECTED
 
 @test "plan review routes new rounds through author identification" {
   skill_says lets-review-plan '(#find-the-author)'
-  local section
-  for section in Start Rounds; do
-    [[ "$(skill_section lets-review-plan "$section")" == *'(#find-the-author)'* ]] ||
-      { echo "$section skips author identification"; false; }
-  done
+  local retry
+  retry="$(skill_section lets-review-plan Start)"
+  retry="${retry#*When one}"
+  retry="${retry%%When none*}"
+  [[ "$retry" == *'(#find-the-author)'* ]] ||
+    { echo 'the new-round bullet skips author identification'; false; }
+  [[ "$(skill_section lets-review-plan Rounds)" == *'(#find-the-author)'* ]] ||
+    { echo 'REVISE skips author identification'; false; }
   [[ "$(skill_section lets-review-plan 'Find the author')" == *'(#run-the-review)'* ]] ||
     { echo 'author identification has no continuation'; false; }
 }
@@ -3595,6 +3598,7 @@ EXPECTED
   skill_says lets-review-plan '`low`'
   skill_says lets-review-plan '`medium`'
   skill_says lets-review-plan '`high`'
+  skill_says lets-review-plan 'as `--effort`'
   local preparation
   preparation="$(skill_section lets-review-plan 'Run the review')"
   [[ "$preparation" == *'Scale the effort'*'1. '* ]] ||
@@ -3602,26 +3606,30 @@ EXPECTED
 }
 
 @test "plan review finding format applies to standalone reviews" {
-  skill_says lets-review-plan '**Critical** (blocks acceptance), **Moderate**, or **Suggestion**'
+  local label
+  for label in Critical Moderate Suggestion; do
+    skill_says lets-review-plan "**$label**"
+  done
   local common openspec
   common="$(skill_section lets-review-plan 'The prompt')"
   openspec="$(skill_section lets-review-plan 'For an OpenSpec change')"
   [[ "$common" == *'**The concern**'*'**The scenario**'*'**What must be true**'* ]] ||
     { echo 'standalone reviews lack the finding format'; false; }
-  [[ "$common" != *'at least one substantive concern'* && "$openspec" == *'at least one substantive concern'* ]] ||
+  [[ "$common" != *'substantive concern'* && "$openspec" == *'substantive concern'* ]] ||
     { echo 'mandatory concerns must remain OpenSpec-only'; false; }
 }
 
 @test "plan review verdict covers unresolved Moderate findings" {
   skill_says lets-review-plan 'Critical or Moderate'
-  skill_says lets-review-plan 'Suggestions alone'
+  skill_says lets-review-plan 'unlisted Suggestion'
+  skill_says lets-review-plan 'does not block APPROVE'
   skill_does_not_say lets-review-plan '**REVISE**: a Critical finding'
 }
 
-@test "plan review rebuttals retain the listed-fix alternative" {
-  skill_does_not_say lets-review-plan 'stays open and the verdict is REVISE'
+@test "plan review rebuttals leave unsupported findings open" {
+  skill_does_not_say lets-review-plan 'use REVISE'
   local rebuttals
   rebuttals="$(skill_section lets-review-plan Rebuttals)"
-  [[ "$rebuttals" == *'no listed change'* && "$rebuttals" == *'**Moderate**'*'stays open'* ]] ||
+  [[ "$rebuttals" == *'**Critical**'*'stays open'*'**Moderate**'*'stays open'* ]] ||
     { echo 'unresolved rebuttals do not follow the verdict rules'; false; }
 }

@@ -35,8 +35,8 @@ For an OpenSpec change on its branch, read the pull request's body with `gh pr v
 - **No Plan review section:** [find the author](#find-the-author).
 - **A Plan review section:** follow [Check an earlier
   review](#check-an-earlier-review).
-  - When one of its rules calls for a new round, run one, as
-    [Rounds](#rounds) says.
+  - When one of its rules calls for a new round, [find the author](#find-the-author)
+    and run one, as [Rounds](#rounds) says.
   - When none does and the review is finished, say so, and stop.
   - When none does, but a required change has no fix commit that holds up,
     apply the change as [Severity and verdict](#severity-and-verdict) says.
@@ -74,7 +74,7 @@ Then [run the review](#run-the-review).
 Scale the effort to what the plan changes, not its length. Use `low` for a
 narrow fix, `medium` for one subsystem on known patterns, and `high` for new
 contracts, migrations or trust boundaries. When the plan has a `design.md`
-with a scrutiny tier, use that tier.
+with a scrutiny tier, use that tier as `--effort`.
 
 In a `lets-go` step, return `needs-input` whenever this skill asks the user.
 
@@ -255,8 +255,7 @@ disagreement.
 
 ## Severity and verdict
 
-The verdict follows from the findings, never the other way round. Do not
-change severity to fit a verdict.
+Findings set the verdict. Never change a severity to fit one.
 
 - **APPROVE**: no finding is open. The plan may proceed.
 - **APPROVE_WITH_CHANGES**: every open finding is fixed by a small,
@@ -266,7 +265,7 @@ change severity to fit a verdict.
 - **REVISE**: a Critical or Moderate finding is open and no listed change
   fixes it. Fix the plan and run the full review again in a fresh context.
 
-Suggestions alone do not require REVISE.
+Decline an unlisted Suggestion with a reason; it does not block APPROVE.
 
 An open Critical finding forbids APPROVE. A review that lists one and says
 APPROVE is itself invalid.
@@ -280,10 +279,8 @@ context, and a second run costs as much as the first.
 - Every finding ends up **fixed** (cite the edit) or **rebutted** (cite the
   evidence). None is dropped in silence.
 - A rebuttal of a **Critical** finding must cite the file and line that
-  contradicts it. Without that, the finding stays open; use REVISE when no
-  listed change fixes it.
-- A **Moderate** finding is rebutted with a reason. Otherwise it stays open
-  until fixed.
+  contradicts it. Without that, the finding stays open.
+- A **Moderate** finding needs a reason, or it stays open.
 - A **Suggestion** may be declined with a one-line reason.
 
 ## Rounds
