@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/backlog/commands.ts';
 import type { Row } from './fixtures/fake-gh.ts';
+import { PROVIDERS } from '../../../lets/src/backlog/providers.ts';
 import { backlogDeps, fail, json, LOOKUP_ONE, REPO } from './fixtures/fake-gh.ts';
+import { fakeProvider, JIRA_CONFIG, jiraItem } from './fixtures/fake-provider.ts';
 
 const url = (n: number) => `https://github.com/${REPO}/issues/${n}`;
 
@@ -143,4 +145,43 @@ test('a parent that cannot be read is backend-failed naming the parent, not not-
   const out = t.json();
   assert.equal(out.error, 'backend-failed');
   assert.ok(out.message.includes(parentUrl), out.message);
+});
+
+test('item with a key GitHub does not use is not-found, and runs no gh command', async () => {
+  for (const key of ['PROJ-12', 'abc', '0']) {
+    const t = backlogDeps([...LOOKUP_ONE]);
+    assert.equal(await run(['item', key], t.deps), 1, key);
+    const out = t.json();
+    assert.equal(out.error, 'not-found', key);
+    assert.match(out.message, new RegExp(key), key);
+    assert.deepEqual(t.calls(), [], key);
+  }
+});
+
+test('item #149 reads issue 149', async () => {
+  const t = backlogDeps(rows([['issue view 149 ', json(issue(149))]], []));
+  assert.equal(await run(['item', '#149'], t.deps), 0);
+  assert.equal(t.json().key, '149');
+  assert.equal(t.json().label, '#149');
+  assert.deepEqual(t.calls()[1].slice(0, 3), ['issue', 'view', '149']);
+});
+
+test('a backlog provider with Jira-style keys answers item PROJ-12', async () => {
+  const jira = fakeProvider({ items: [jiraItem('PROJ-12', { parent: { key: 'PROJ-1', label: 'PROJ-1', title: 'epic', url: 'u1', body: 'decisions' } })] });
+  const t = backlogDeps([], { config: JIRA_CONFIG });
+  assert.equal(await run(['item', 'PROJ-12'], t.deps, { ...PROVIDERS, jira: jira.provider }), 0);
+  const out = t.json();
+  assert.equal(out.key, 'PROJ-12');
+  assert.equal(out.label, 'PROJ-12');
+  assert.equal(out.parent.key, 'PROJ-1');
+  assert.deepEqual(jira.calls(), [['create'], ['readItem', 'PROJ-12']]);
+  assert.deepEqual(t.calls(), []);
+});
+
+test('a key the backlog provider does not use is not-found, and builds no adapter', async () => {
+  const jira = fakeProvider({ items: [jiraItem('PROJ-12')] });
+  const t = backlogDeps([], { config: JIRA_CONFIG });
+  assert.equal(await run(['item', '149'], t.deps, { ...PROVIDERS, jira: jira.provider }), 1);
+  assert.equal(t.json().error, 'not-found');
+  assert.deepEqual(jira.calls(), []);
 });

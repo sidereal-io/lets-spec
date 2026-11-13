@@ -62,6 +62,13 @@ function issueNumber(value: string): string {
   return value;
 }
 
+// An item's key, as typed. Any text but the empty string: the backlog
+// provider decides whether it is one of its keys.
+function itemKey(value: string): string {
+  if (value === '') throw new InvalidArgumentError('Give an item key.');
+  return value;
+}
+
 // A list of issue numbers, such as 191,192.
 function issueList(value: string): string[] {
   return value.split(',').map((part) => issueNumber(part.trim()));
@@ -81,7 +88,10 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
     selection = error;
   }
   // The command's work, once its arguments parse. Its result is printed.
-  let work: ((adapter: Adapter) => Promise<unknown>) | undefined;
+  // key is the command's item, once the backlog provider has parsed it.
+  let work: ((adapter: Adapter, key: string) => Promise<unknown>) | undefined;
+  // The item a command names, as typed, when it names one.
+  let typed: string | undefined;
   // A command that needs only the backlog provider, not its adapter.
   let answer: ((selection: Selection) => unknown) | undefined;
 
@@ -99,9 +109,10 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
       work = async (adapter) => ({ issues: ready(await adapter.listCandidates(), { only, exclude }) });
     });
   command('item', 'read one issue, with its Project fields')
-    .argument('<i>', 'the issue number', issueNumber)
-    .action((issue: string) => {
-      work = async (adapter) => itemView(await adapter.readItem(issue));
+    .argument('<i>', 'the item\'s key, such as 136', itemKey)
+    .action((text: string) => {
+      typed = text;
+      work = async (adapter, key) => itemView(await adapter.readItem(key));
     });
   command('find', 'search the open issues\' titles')
     .argument('<words...>', 'the words to search for; a word that starts with -- is a word too')
@@ -115,15 +126,17 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
       answer = ({ provider }) => provider.parseKey(text) ?? { key: null, label: null };
     });
   command('claim', 'assign the issue to yourself and set it In Progress, when nobody has it')
-    .argument('<i>', 'the issue number', issueNumber)
-    .action((issue: string) => {
-      work = (adapter) => claim(adapter, issue);
+    .argument('<i>', 'the item\'s key, such as 136', itemKey)
+    .action((text: string) => {
+      typed = text;
+      work = (adapter, key) => claim(adapter, key);
     });
   command('release', 'release the session identified by --claim')
-    .argument('<i>', 'the issue number', issueNumber)
+    .argument('<i>', 'the item\'s key, such as 136', itemKey)
     .requiredOption('--claim <token>', 'the session token returned by claim')
-    .action((issue: string, { claim: token }: { claim: string }) => {
-      work = (adapter) => release(adapter, issue, token);
+    .action((text: string, { claim: token }: { claim: string }) => {
+      typed = text;
+      work = (adapter, key) => release(adapter, key, token);
     });
 
   try {
@@ -139,7 +152,16 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
 
   try {
     if (selection instanceof BacklogError) throw selection;
-    print(answer !== undefined ? answer(selection) : await work!(await selection.provider.create(deps.io, deps.cwd)));
+    if (answer !== undefined) {
+      print(answer(selection));
+      return 0;
+    }
+    // A key the backlog provider does not use names no item: not-found,
+    // before the adapter is built, so no backend command runs.
+    const { name, provider } = selection;
+    const key = typed === undefined ? '' : provider.parseKey(typed)?.key;
+    if (key === undefined) throw new BacklogError('not-found', `${typed} is not a key of the ${name} backlog provider, so it names no item.`);
+    print(await work!(await provider.create(deps.io, deps.cwd), key));
     return 0;
   } catch (error) {
     if (!(error instanceof BacklogError)) throw error;

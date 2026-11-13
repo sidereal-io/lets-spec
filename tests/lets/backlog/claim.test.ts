@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/backlog/commands.ts';
 import type { Answer, Row } from './fixtures/fake-gh.ts';
+import { PROVIDERS } from '../../../lets/src/backlog/providers.ts';
 import { backlogDeps, fail, json, LOOKUP_ONE, ok, REPO, TIMED_OUT } from './fixtures/fake-gh.ts';
+import { fakeProvider, JIRA_CONFIG, jiraItem, LOGIN } from './fixtures/fake-provider.ts';
 
 const URL_149 = `https://github.com/${REPO}/issues/149`;
 const ASSIGN = ['issue', 'edit', '149', '--add-assignee', '@me'];
@@ -148,4 +150,29 @@ test('a claim with a final newline participates in the election', async () => {
   ]] }));
   assert.equal(await run(['claim', '149'], t.deps), 0);
   assert.deepEqual(t.json(), { result: 'taken', assignees: ['winner'] });
+});
+
+test('claim with a key GitHub does not use is not-found, and runs no gh command', async () => {
+  const t = backlogDeps(rows());
+  assert.equal(await run(['claim', 'PROJ-12'], t.deps), 1);
+  assert.equal(t.json().error, 'not-found');
+  assert.deepEqual(t.calls(), []);
+});
+
+test('claim #149 claims issue 149', async () => {
+  const t = backlogDeps(rows());
+  assert.equal(await run(['claim', '#149'], t.deps), 0);
+  assert.equal(t.json().result, 'claimed');
+  assert.deepEqual(t.calls().at(-1), STATUS);
+});
+
+test('a backlog provider with Jira-style keys answers claim PROJ-12', async () => {
+  const jira = fakeProvider({ items: [jiraItem('PROJ-12')] });
+  const t = backlogDeps([], { config: JIRA_CONFIG });
+  assert.equal(await run(['claim', 'PROJ-12'], t.deps, { ...PROVIDERS, jira: jira.provider }), 0);
+  assert.equal(t.json().result, 'claimed');
+  assert.deepEqual(jira.item('PROJ-12')!.assignees, [LOGIN]);
+  assert.equal(jira.item('PROJ-12')!.status, 'In Progress');
+  assert.ok(jira.calls().every(([, key]) => key === undefined || key === 'PROJ-12'));
+  assert.deepEqual(t.calls(), []);
 });

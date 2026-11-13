@@ -82,8 +82,8 @@ test('every gh call has a finite timeout', async () => {
 test('a usage error exits 2 and prints nothing on stdout', async () => {
   const cases = [
     ['item'],
-    ['item', 'abc'],
-    ['item', '0'],
+    ['item', ''],
+    ['claim', ''],
     ['claim'],
     ['release', '149'],
     ['release', '1.5'],
