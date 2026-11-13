@@ -209,6 +209,15 @@ Also have it check:
 
 Add any checks the caller supplies.
 
+Ask for findings ranked most severe first. Each finding gets a label,
+**Critical** (blocks acceptance), **Moderate**, or **Suggestion**, and three
+parts:
+
+- **The concern** — one line, stated as the defect.
+- **The scenario** — the concrete conditions where it bites, with file and
+  line.
+- **What must be true** for it not to matter.
+
 ### For an OpenSpec change
 
 The plan is these files in `openspec/changes/<name>/`: brainstorm.md,
@@ -228,15 +237,6 @@ Add these checks to the prompt:
 - **Contradictions.** No design choice conflicts with a spec requirement.
 - **Tasks.** Each task names one behavior and a verify command the project
   has. Together, the tasks cover every scenario in the specs.
-
-Ask for findings ranked most severe first. Each finding gets a label,
-**Critical** (blocks acceptance), **Moderate**, or **Suggestion**, and three
-parts:
-
-- **The concern** — one line, stated as the defect.
-- **The scenario** — the concrete conditions where it bites, with file and
-  line.
-- **What must be true** for it not to matter.
 
 Ask for at least one substantive concern and one failure mode the author
 would not have listed alone.

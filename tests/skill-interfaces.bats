@@ -3600,3 +3600,14 @@ EXPECTED
   [[ "$preparation" == *'Scale the effort'*'1. '* ]] ||
     { echo 'effort selection follows execution preparation'; false; }
 }
+
+@test "plan review finding format applies to standalone reviews" {
+  skill_says lets-review-plan '**Critical** (blocks acceptance), **Moderate**, or **Suggestion**'
+  local common openspec
+  common="$(skill_section lets-review-plan 'The prompt')"
+  openspec="$(skill_section lets-review-plan 'For an OpenSpec change')"
+  [[ "$common" == *'**The concern**'*'**The scenario**'*'**What must be true**'* ]] ||
+    { echo 'standalone reviews lack the finding format'; false; }
+  [[ "$common" != *'at least one substantive concern'* && "$openspec" == *'at least one substantive concern'* ]] ||
+    { echo 'mandatory concerns must remain OpenSpec-only'; false; }
+}
