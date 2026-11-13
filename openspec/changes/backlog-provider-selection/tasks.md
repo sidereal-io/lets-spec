@@ -19,6 +19,6 @@
 ## 4. Acceptance [depends-on: 3]
 
 - [x] 4.1 [medium] Every project check passes: the Node tests, the type check, the bats tests, the flake and OpenSpec validation (verify: `deli -- pnpm test && deli -- nix flake check && mise run check`) (✓ all three passed: 689 Node tests and every bats test, the flake, and `openspec validate --all --strict`)
-- [ ] 4.2 [medium] Live run in a clone of `mstelz/test-repo-pls-ignore` with this branch's `lets`: `key`, `ready`, `item`, `find`, `claim` and `release` return `key` and `label` against its real Project, and a claim and its release still assign and set Status. The results are recorded in the pull request (verify: `lets backlog item <claimed-issue>` in the clone shows `"key"`, `"label"`, `"status": "In Progress"` and the user in `assignees`)
+- [x] 4.2 [medium] Live run in a clone of `mstelz/test-repo-pls-ignore` with this branch's `lets`: `key`, `ready`, `item`, `find`, `claim` and `release` return `key` and `label` against its real Project, and a claim and its release still assign and set Status. The results are recorded in the pull request (verify: `lets backlog item <claimed-issue>` in the clone shows `"key"`, `"label"`, `"status": "In Progress"` and the user in `assignees`) (✓ `lets backlog item 11` showed `"key": "11"`, `"label": "#11"`, `"status": "In Progress"` and `mstelz` after the claim, and Todo with no assignee after the release; recorded in https://github.com/sidereal-io/lets-spec/pull/259#issuecomment-6858850257)
 
 ## Deviations Ledger
