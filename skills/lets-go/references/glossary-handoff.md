@@ -160,12 +160,12 @@ If the import fails:
    work beyond its starting base. If earlier picks survived on it, keep
    it, and note how to recover. Never delete an existing change branch,
    and never reset unrelated commits.
-4. Release the claim with `lets backlog release <i>`, as a failed branch
-   creation in [Claim](../SKILL.md#claim) does: it removes your
-   assignment, and sets Status back to Todo. Do this even if the Git
-   cleanup failed. When it prints `"result": "failed"`, keep its `write`
-   and `message` for the result. When it prints an `error`, nothing was
-   released: keep the error's `message` for the result.
+4. Release with `lets backlog release <i> --claim <claim>`, using the
+   token kept by [Claim](../SKILL.md#claim). It releases only this
+   session's claim. Do this even if the Git cleanup failed. When it
+   prints `"result": "failed"`, keep its `write` and `message`. When it
+   prints an `error`, nothing was released: keep the error's `message`.
+   Handle `not-found` as [Claim](../SKILL.md#claim) does.
 5. The result is `import-failed`. It carries every cleanup failure, and
    anything kept: the branch, commits or claim, with how to recover.
 

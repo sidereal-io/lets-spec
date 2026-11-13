@@ -42,13 +42,20 @@ export type Item = {
 // The Status values the claim writes.
 export type Status = 'Todo' | 'In Progress';
 
+// One active session claim, ordered by the backend's comment ID.
+export type Claim = { id: number; login: string; token: string };
+
 export type Adapter = {
   listCandidates(): Promise<Candidate[]>;
   readItem(issue: number): Promise<Item>;
   searchTitles(words: string): Promise<Ref[]>;
   // The login of each user assigned to the issue.
   assignees(issue: number): Promise<string[]>;
+  signedInLogin(): Promise<string>;
+  claims(issue: number): Promise<Claim[]>;
   // The writes. Each throws WriteFailed when the write fails or times out.
+  postClaim(issue: number, token: string): Promise<void>;
+  deleteClaim(issue: number, id: number): Promise<void>;
   assignSelf(issue: number): Promise<void>;
   unassignSelf(issue: number): Promise<void>;
   setStatus(issue: number, status: Status): Promise<void>;

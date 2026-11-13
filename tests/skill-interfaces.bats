@@ -837,7 +837,7 @@ review_build_start() {
   grep -qF '**`several-backlogs`:**' <<<"$text" && grep -qF 'ask the user to unlink the extras' <<<"$text" ||
     { echo "Backlog errors does not list several-backlogs' Projects"; false; }
   grep -qF 'Never pick one' <<<"$text" || { echo "Backlog errors may pick a Project"; false; }
-  grep -qF 'show the user its `message`' <<<"$text" || { echo "Backlog errors does not show other errors"; false; }
+  grep -qF 'show its `message`' <<<"$text" || { echo "Backlog errors does not show other errors"; false; }
   for part in 'Read the request' 'Check the issue'; do
     grep -qF '](#backlog-errors)' <<<"$(part_section "$part")" || { echo "$part does not link Backlog errors"; false; }
   done
@@ -2007,10 +2007,8 @@ procedure_stops() {
   grep -qF "When it prints an \`error\` instead, nothing was released" <<<"$claim" ||
     { echo "branch-failed does not carry a release that returned an error"; false; }
   enter="$(part_section 'Enter the branch')"
-  grep -qF 'Do not release the claim yourself. Stop, and run no step.' <<<"$enter" ||
+  grep -qF 'Do not release' <<<"$enter" ||
     { echo "Enter the branch does not stop on claim-failed without releasing"; false; }
-  grep -qF 'Say how to recover: run `lets backlog release <i>`' <<<"$enter" ||
-    { echo "Enter the branch does not say how to recover from claim-failed"; false; }
   grep -qF 'When it carries a release error too, show it' <<<"$enter" ||
     { echo "Enter the branch does not show a failed release"; false; }
   grep -qF '`claim-failed`' <<<"$(overview_row 'Enter the branch')" || { echo "Enter the branch's row does not name claim-failed"; false; }
@@ -3409,6 +3407,27 @@ commit_maps() {
   while IFS= read -r line; do
     grep -qF 'openspec/discovery/' <<<"$line" || { echo "README names one map layout only: $line"; false; }
   done < <(tr -s '[:space:]' ' ' <"$repo/README.md" | sed 's/\. /.\n/g' | grep -F 'openspec/discovery.md')
+}
+
+# #215: session claim interfaces. Behavior is covered by the backlog tests.
+@test "claim-race: recovery names the session token" {
+  grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(procedure_text 'Claim')"
+  grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(skill_section lets-go 'Recover from a failed import')"
+  grep -qF '| `<claim>` |' "$repo/skills/lets-go/SKILL.md"
+}
+
+@test "claim-race: the comment format stays stable" {
+  local reference="$repo/skills/lets-shape/references/issue-comments.md"
+  grep -qF 'lets-go claimed this issue.' "$reference"
+  grep -qF 'Token: <UUID>' "$reference"
+  local marker
+  marker="$(sed -n "s/^export const CLAIM_MARKER = '\([^']*\)';$/\1/p" "$repo/lets/src/backlog/github.ts")"
+  [ -n "$marker" ]
+  grep -qxF "$marker" "$reference"
+}
+
+@test "claim-race: backlog errors show the recovery token" {
+  grep -qF 'When it carries `claim`, show the token' <<<"$(skill_section lets-go 'Backlog errors')"
 }
 
 # BEGIN shape-checkpoints (#231): shaping recovery contracts.

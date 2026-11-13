@@ -2,8 +2,11 @@
 // repository, and lets calls gh for each primitive, with the same commands
 // and limits the skills ran before lets backlog existed.
 import type { Io } from '../io.ts';
-import type { Adapter, Candidate, Item, Ref, Status } from './adapter.ts';
+import type { Adapter, Candidate, Claim, Item, Ref, Status } from './adapter.ts';
 import { BacklogError, WriteFailed } from './adapter.ts';
+
+export const CLAIM_MARKER = 'lets-go claimed this issue.';
+const CLAIM_BODY = /^lets-go claimed this issue\.\n\nToken: ([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\n?$/;
 
 // Every gh call has a finite timeout. A read past it is gh-failed; a write
 // past it is WriteFailed, because it may still have happened.
@@ -178,6 +181,30 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
       urls.set(issue, url);
       return nodes(assignees).map((user) => user.login as string);
     },
+
+    async signedInLogin() {
+      const user = await read(gh, ['api', 'user']) as { login: string };
+      return user.login;
+    },
+
+    postClaim: (issue, token) => write(gh, ['api', `repos/${repo}/issues/${issue}/comments`, '--method', 'POST', '-f', `body=${CLAIM_MARKER}\n\nToken: ${token}`]),
+
+    async claims(issue) {
+      // --slurp retains page boundaries; read every page before electing.
+      const pages = await read(gh, ['api', `repos/${repo}/issues/${issue}/comments`, '--paginate', '--slurp']) as Record<string, unknown>[][];
+      if (!Array.isArray(pages) || !pages.every(Array.isArray)) throw new BacklogError('gh-failed', 'Invalid issue comment pages');
+      const claims: Claim[] = [];
+      for (const c of pages.flat()) {
+        const user = c.user as { login?: string; type?: string } | null;
+        const token = typeof c.body === 'string' ? CLAIM_BODY.exec(c.body)?.[1] : undefined;
+        if (token && user?.login && user.type !== 'Bot' && ['OWNER', 'MEMBER', 'COLLABORATOR'].includes(c.author_association as string) && Number.isSafeInteger(c.id)) {
+          claims.push({ id: c.id as number, login: user.login, token });
+        }
+      }
+      return claims.sort((a, b) => a.id - b.id);
+    },
+
+    deleteClaim: (_issue, id) => write(gh, ['api', `repos/${repo}/issues/comments/${id}`, '--method', 'DELETE']),
 
     assignSelf: (issue) => write(gh, ['issue', 'edit', String(issue), '--add-assignee', '@me']),
     unassignSelf: (issue) => write(gh, ['issue', 'edit', String(issue), '--remove-assignee', '@me']),

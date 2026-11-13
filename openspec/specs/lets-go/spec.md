@@ -872,6 +872,7 @@ Every placeholder in `skills/lets-go/SKILL.md` and in each file in `skills/lets-
 - `<name>` is the change's name, the part of `<i>`'s title before ` — `. On a change's branch it is `<branch>`. *Check the issue* sets it from the blocker read's title, so after a shape step it is set again from the shaped issue's title.
 - `<shape-name>` is the shape step's name: `issue-<i>` or `idea-<slug>`.
 - `<session>` is a step's session label: `<name>-<step>` for plan, review plan, build and review build, and `<shape-name>-shape` for shape.
+- `<claim>` is the unique session token returned by `lets backlog claim <i>`, kept by *Claim* for release.
 - `<idea>` is the idea in the user's words.
 
 Neither `SKILL.md` nor any reference file SHALL hold `<n>`, `<p>`, `<url>`, `<issue URL>`, `<words>`, `<project>`, `<owner>` or `<repo>`. The table's *Where the run sets it* column SHALL name the part or section that sets each placeholder, never a step number.
@@ -1596,3 +1597,25 @@ When `lets backlog claim <i>` returns `failed`, *Claim* SHALL return `claim-fail
 #### Scenario: Release fails after a branch failure
 - **WHEN** creating the branch `lets-go-chore` fails, and `lets backlog release 149` returns `failed` with `"write": "unassign"`
 - **THEN** *Claim* returns `branch-failed`, and `lets-go` shows the branch error and the release error, and stops
+
+### Requirement: Claim instructions describe session arbitration
+Claim SHALL state that an assigned issue returns taken before any write, and that concurrent claims normally produce one winner and one taken result, with a link to the read-lag risk. It SHALL link to the claim comment format. It SHALL pass the returned claim token to release on branch creation or glossary import failure. Existing lost-claim routing SHALL remain unchanged.
+
+#### Scenario: An assigned issue
+- **WHEN** the assignee read finds a nonzero count
+- **THEN** Claim returns taken before assignment or Status changes
+
+#### Scenario: Branch creation fails
+- **WHEN** the session wins a claim and cannot create its branch
+- **THEN** it releases with its own claim token
+
+### Requirement: Claim recovery names the next action
+On a failed assignment without a token, the skill SHALL stop and ask the user to inspect the assignment. On release returning `not-found`, it SHALL ask the user to inspect the issue before retrying.
+
+#### Scenario: Assignment fails without a token
+- **WHEN** claim reports a failed assignment with no token
+- **THEN** the skill stops and asks the user to inspect the assignment
+
+#### Scenario: Release finds no comment
+- **WHEN** release returns `not-found`
+- **THEN** the skill asks the user to inspect the issue before retrying
