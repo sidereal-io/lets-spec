@@ -3599,6 +3599,7 @@ EXPECTED
   skill_says lets-review-plan '`medium`'
   skill_says lets-review-plan '`high`'
   skill_says lets-review-plan 'as `--effort`'
+  skill_says lets-review-plan 'at the selected effort'
   local preparation
   preparation="$(skill_section lets-review-plan 'Run the review')"
   [[ "$preparation" == *'Scale the effort'*'1. '* ]] ||

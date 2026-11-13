@@ -152,7 +152,7 @@ The report also records how the review ran, as the reviewer context:
 Take this step only when `lets delegate review run` exits 3, when the
 listed models are empty, or when the user explicitly chooses it after the
 excluded-all stop. A fallback must respect the guidance exclusions. If no
-permitted subagent can run, stop and ask the user. Run the prompt in a
+permitted subagent can run, stop and ask the user. Run the prompt at the selected effort in a
 read-only subagent: one that starts with no context from this session and
 cannot write files.
 
