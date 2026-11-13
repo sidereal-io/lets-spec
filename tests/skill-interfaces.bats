@@ -3683,3 +3683,33 @@ EXPECTED
   grep -qF "Pass the word as one argument in single quotes, after \`--\`, and write each \`'\` in it as \`'\\''\`" <<<"$(part_section 'Read the request')" ||
     { echo "Read the request does not say how to quote the word"; false; }
 }
+
+@test "lets-go's placeholders show an item by its label and run commands with its key" {
+  local intro
+  intro="$(awk '/^## Placeholders$/ { on = 1; next } /^## / { on = 0 } on && !/^\|/' "$(lets_go_skill)" | tr -s '[:space:]' ' ')"
+  for phrase in \
+    'In anything shown to a person, `#<i>`, `#<parent>` and `#<story>` stand for the item'"'"'s `label`' \
+    'In a command, `<i>`, `<parent>` and `<story>` stand for its `key`'; do
+    grep -qF -- "$phrase" <<<"$intro" || { echo "the Placeholders intro does not say: $phrase"; false; }
+  done
+  grep -qF '| `<i>` | The run'"'"'s issue, as its key: the key the user named' "$(lets_go_skill)" ||
+    { echo "the <i> row does not say key"; false; }
+}
+
+@test "lets-go ranks ready issues oldest first, not by number" {
+  skill_says lets-go 'then Could, then the oldest issue first'
+  skill_does_not_say lets-go 'lowest issue number'
+}
+
+@test "lets-go's Backlog errors names backend-failed" {
+  grep -qF '`backend-failed`' <<<"$(part_section 'Backlog errors')" || { echo "Backlog errors does not name backend-failed"; false; }
+  skill_does_not_say lets-go 'gh-failed'
+}
+
+@test "lets-go and lets-plan read no number field from lets backlog" {
+  local skill
+  for skill in lets-go lets-plan; do
+    skill_does_not_say "$skill" 'their numbers with `--'
+    ! skill_text "$skill" | grep -qE 'lets backlog[^.]*(\.number|"number")' || { echo "$skill reads number from lets backlog"; false; }
+  done
+}

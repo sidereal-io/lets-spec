@@ -88,12 +88,20 @@ A name in angle brackets is a placeholder. Each one stands for one
 thing, the same everywhere in this skill. Fill it in from where the run
 sets it.
 
+`lets backlog` names each item by its `key`, and shows it by its
+`label`: `149` and `#149` on GitHub. In anything shown to a person,
+`#<i>`, `#<parent>` and `#<story>` stand for the item's `label`: a
+printed line, a question, or text written in an issue. In a command,
+`<i>`, `<parent>` and `<story>` stand for its `key`. With the GitHub
+backlog provider, the label is `#` and the number, so each line reads
+as it always has.
+
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
-| `<i>` | The run's issue: the number the user named, the issue `next` or [Pick the first ready story](#pick-the-first-ready-story) picked, or the issue a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
+| `<i>` | The run's issue, as its key: the key the user named, the issue `next` or [Pick the first ready story](#pick-the-first-ready-story) picked, or the issue a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
 | `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the `url` that `lets backlog item <i>` prints |
-| `<parent>` | A parent issue: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in [Start from an idea](#start-from-an-idea) |
-| `<story>` | One story that a shape step's report names | Each `story` line of the shape report |
+| `<parent>` | A parent issue, as its key: an epic that discovery filed, or a discovery in progress | The shape report's `epic` line, or the discovery query in [Start from an idea](#start-from-an-idea) |
+| `<story>` | One story that a shape step's report names, as its key | Each `story` line of the shape report |
 | `<paths>` | The changed discovery maps, one path each | [Commit the discovery map](references/shape.md#commit-the-discovery-map), from its `git status` command |
 | `<pr>` | The number of the change's pull request | [Read the records](references/records.md#read-the-records), from the pull request's `number` |
 | `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | [Check the issue](#check-the-issue), from the blocker read's title. After a shape step, [Check the issue](#check-the-issue) sets it again from the shaped issue's title |
@@ -142,7 +150,9 @@ step. Say what the error is:
 - **`several-backlogs`:** list each Project's `title` and `url` from its
   `projects`, and ask the user to unlink the extras. Never pick one
   yourself.
-- **Any other error:** show its `message`.
+- **Any other error,** such as `backend-failed` when the backlog
+  provider's tool fails, or `unknown-backlog-provider`: show its
+  `message`.
   When it carries `claim`, show the token. The user can run
   `lets backlog release <i> --claim <claim>`. Say the issue may still
   hold your assignment or claim comment. Do not retry.
@@ -673,16 +683,16 @@ Take the first case that applies:
    Status is Todo, its Kind is not Epic, and its priority is Must,
    Should or Could. Nobody is assigned to it, and no open issue blocks
    it. A Wont is never a candidate. The `issues` it prints are the
-   candidates, ranked Must, then Should, then Could, then the lowest
-   issue number. When the run picks among a shape report's stories,
-   pass their numbers with `--only`, such as
+   candidates, ranked Must, then Should, then Could, then the oldest
+   issue first. When the run picks among a shape report's stories,
+   pass their keys with `--only`, such as
    `lets backlog ready --only 191,192,193`. After a lost claim, leave
    out every issue lost in this run: each one for which [Claim](#claim)
-   returned `taken`. Pass their numbers with `--exclude`, such as
+   returned `taken`. Pass their keys with `--exclude`, such as
    `lets backlog ready --exclude 149`, with the same `--only` as the
    first pick.
 
-   Check each candidate in rank order, with its number as `<i>` while
+   Check each candidate in rank order, with its key as `<i>` while
    you check it. Run
    [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite),
    then [Confirm the packet](#confirm-the-packet). Take the first
@@ -702,10 +712,10 @@ It returns one of these results:
   returned `unresolved` for the run's issue. It carries the unresolved
   owner or checkpoint.
 - `matches`: the search for described work found issues. It carries
-  each one's number and title.
+  each one's key, label and title.
 - `no-match`: the search found no issue.
-- `picked`: `next` took a candidate. It carries the candidate's number
-  and title.
+- `picked`: `next` took a candidate. It carries the candidate's key,
+  label and title.
 - `nothing-ready`: `next` has no candidate left. It carries each
   candidate it left out, and why: its blocker, its assignee, an
   unresolved prerequisite, or a packet that is not complete.
