@@ -36,6 +36,7 @@ The GitHub adapter finds the one linked Project before anything else (`createGit
 
 - [The issue closes between the read and the write] → `gh issue close` on a closed issue exits 0 with a warning, so the result is still `completed`. If it doesn't, the result is `failed` with `gh`'s message, which is safe to retry.
 - [A CI job needs the GitHub Project as well as the issue, because `createGithub` looks it up first] → This is accepted. It matches every other command, and CI was out of scope (D1). A later CI story can move the lookup if it matters.
+- [`complete` runs while a session still holds a claim on the item, and that session then runs `release`] → `release` sets Status back to Todo on a closed issue (`policy.ts`, `release`). Running `complete` again doesn't repair it, because a closed issue gets no write. This is accepted: `complete` promises a closed issue, not a Project Status. Whoever calls `complete` should release first. Changing `release` to skip Status on a closed item is a separate decision.
 - [A new primitive is a contract every later adapter must meet] → It is small: one method, one meaning. The fake provider implements it now, so the tests show its shape.
 
 ## Migration & Rollback
