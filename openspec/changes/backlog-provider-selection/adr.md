@@ -5,14 +5,16 @@
 
 ## Review Summary
 
-Two of design.md's decisions are costly to reverse.
+One of design.md's decisions is costly to reverse.
 
 - **Decision 3, keys are opaque strings.** Reversing it would rework every adapter, the `lets backlog` contract and the skills that read it.
-- **Decision 2, where the backlog provider is set.** It puts the first repository setting in `openspec/config.yaml`, beside ADR-011's user file. Moving it later would break every repository's config.
+
+Decision 2, where the backlog provider is set, needs no record of its own. `backlog.provider` is a new section of the user's lets config, laid out as ADR-011 says. A first version of this review recorded ADR-026, which put the setting in a `lets:` block of `openspec/config.yaml`. The user rejected that after the code review: lets settings stay out of OpenSpec's file. ADR-026 was never merged, so it is deleted. The story that adds a repository setting, in a file of lets's own, records that decision.
 
 The other decisions can be recovered from the code:
 - the registry of backlog providers (1);
 - the creation-time tie-break and the GitHub field it reads (4);
+- where the backlog provider is set (2);
 - the error names (5);
 - how `lets-go` asks for a key (6);
 - the placeholder rule for labels (7).
@@ -20,7 +22,7 @@ The other decisions can be recovered from the code:
 ## In-Force ADRs Reviewed
 
 - [ADR-021](../../../docs/decisions/ADR-021-where-an-outside-command-runs.md): backlog calls run in lets code through an adapter, with shared rules outside it. This change follows it. ADR-025 builds on it.
-- [ADR-011](../../../docs/decisions/ADR-011-one-config-file-shaped-like-the-commands.md): the user config. ADR-026 narrows its one-file rule to settings that belong to a person, and ADR-011 now carries a note that says so. Its layout rule stands.
+- [ADR-011](../../../docs/decisions/ADR-011-one-config-file-shaped-like-the-commands.md): the user config, one section per command group. This change follows it: the backlog provider is `backlog.provider`. Unchanged.
 - [ADR-002](../../../docs/decisions/ADR-002-lets-owns-the-delegate-config.md): only lets reads its config. Unchanged.
 - [ADR-017](../../../docs/decisions/ADR-017-lets-go-reads-where-a-run-stands-from-git-and-github.md): `lets-go` reads records from Git and GitHub. Unchanged, since pull request reads stay as `gh`.
 - [ADR-020](../../../docs/decisions/ADR-020-lets-go-is-the-only-runner.md): `lets-go` is the runner whose input rule changes. Unaffected.
@@ -30,4 +32,3 @@ The other decisions can be recovered from the code:
 ## New Durable ADRs Created
 
 - [ADR-025: A backlog item is named by an opaque key that only its backlog provider reads](../../../docs/decisions/ADR-025-an-item-key-is-opaque.md)
-- [ADR-026: A repository's own lets settings live in a `lets:` block of `openspec/config.yaml`](../../../docs/decisions/ADR-026-project-settings-live-in-the-openspec-config.md)

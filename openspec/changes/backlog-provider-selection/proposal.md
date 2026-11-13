@@ -4,7 +4,7 @@
 
 ## What Changes
 
-- **Choosing a backlog provider.** `lets.backlog.provider` in `openspec/config.yaml` names the backlog provider (see the glossary). Unset means `github`. An unknown value stops every `lets backlog` command with a new error, `unknown-backlog-provider` (D5, D6).
+- **Choosing a backlog provider.** `backlog.provider` in the user's lets config, `~/.config/lets/config.yaml`, names the backlog provider (see the glossary). Unset means `github`. An unknown value, or a config lets cannot read, stops every `lets backlog` command with a new error, `unknown-backlog-provider` (D5, D6, D11).
 - **BREAKING** (`lets backlog` JSON; skills and lets ship together): a string `key` replaces `number` in every result, nested items included. A new `label` is how the backlog provider writes the ID, such as `#136` or `PROJ-12` (D2, D8).
 - **Arguments.** `item`, `claim`, `release`, `--only` and `--exclude` take any non-empty key (D3).
 - **A new command, `lets backlog key <text>`.** It returns `{ key, label }` when the text is one of the backlog provider's IDs, and `{ key: null }` otherwise (D10).
@@ -14,6 +14,7 @@
   - They show an item by its `label` and pass its `key` to commands.
   - `lets-go` asks `lets backlog key` whether a one-word request names an item (D8, D10).
 - The PR reference and the `complete` step are not part of this change; they are #258 (D1).
+- **Not in this change: a repository setting.** A repository cannot set its backlog provider yet. A new story adds a file of lets's own in the repository, which wins over the user's config (D12).
 
 ## Capabilities
 
@@ -24,7 +25,7 @@ None.
 ### Modified Capabilities
 
 - `lets-backlog`:
-  - the backlog provider selection and `unknown-backlog-provider`;
+  - the backlog provider selection, from the user's lets config, and `unknown-backlog-provider`;
   - `key` and `label` in place of `number`;
   - the `key` command;
   - ranking by creation time;
@@ -40,14 +41,14 @@ None.
 
 - **Code:**
   - `lets/src/backlog/`: `adapter.ts`, `policy.ts`, `commands.ts`, `github.ts`, and a backlog provider lookup;
-  - a reader for the `lets:` block of `openspec/config.yaml`;
+  - `lets/src/backlog/config.ts`, which reads `backlog.provider` from the user's lets config with `parseDocument`;
   - `tests/lets/backlog/`.
 - **Skills:**
   - `skills/lets-go/SKILL.md` and its references;
-  - `skills/lets-plan/SKILL.md`;
-  - their checks in `tests/skill-interfaces.bats`.
+  - `skills/lets-plan/SKILL.md`.
 - **Specs:** `lets-backlog` and `lets-go`.
 - **Unchanged:**
+  - `openspec/config.yaml`, which lets does not write to or read settings from;
   - `gh` calls and writes;
   - `Closes #<n>` in pull requests (#258);
   - the `gh` calls `lets-go` keeps until #137.

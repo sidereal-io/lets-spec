@@ -2,7 +2,8 @@
 
 - `lets/src/backlog/commands.ts` always builds the GitHub adapter (`createGithub` is the default `makeAdapter`). `createGithub` runs the Project lookup before it returns, so every command needs a linked Project.
 - `Adapter`, `Candidate`, `Item`, `Ref` and `Related` in `adapter.ts` name items by `number: number`. `commands.ts` parses every argument with `issueNumber`, a whole number above zero. `policy.ts` ranks ties by `a.number - b.number`.
-- `lets/src/sync/config.ts` reads `openspec/config.yaml` line by line, because Node has no YAML parser. It reads only the top-level `schema:` line. Nothing reads a `lets:` block yet.
+- The user's lets config, `$XDG_CONFIG_HOME/lets/config.yaml` or `~/.config/lets/config.yaml`, is parsed with the `yaml` package. `parseDocument` in `lets/src/delegate/config.ts` checks that it is YAML, a mapping and `version: 3`, and each command group reads its own section: `questionModeFor` reads `go.questions`. ADR-011 lays the file out as one section per command group.
+- `openspec/config.yaml` is OpenSpec's file. lets reads only its `schema:` line, in `lets sync`, and keeps its own settings out of it.
 - The GitHub adapter's free-issue search (`gh issue list --search "is:open no:assignee -is:blocked" --json number`) already decides which candidates are `free`, and only free candidates can be ready.
 - `lets-go` decides "number or idea" in its own prose (`SKILL.md`, *Read the request*). It writes `#<i>` in about 24 lines it prints, and its spec quotes those lines in 22 requirements.
 
@@ -14,7 +15,8 @@
 - GitHub keeps the same `gh` commands, writes and results, apart from the field names and the one `--json` field D4 needs.
 
 **Non-Goals:**
-- A second backlog provider, or settings beyond `provider` under `lets.backlog`.
+- A second backlog provider, or settings beyond `provider` under `backlog`.
+- A repository setting for the backlog provider. A new story adds a file of lets's own in the repository, which wins over the user's config.
 - The pull request reference and completion (#258).
 - The `gh` calls `lets-go` keeps until #137: the comment thread read, `gh issue view <i> --json createdAt`, the in-progress parent query and the glossary-handoff body edit.
 - Rewriting every `#<i>` line in the `lets-go` spec (Decision 7).
@@ -22,22 +24,20 @@
 ## Test Seams
 
 - **Primary test seam:** `run(argv, deps)` in `lets/src/backlog/commands.ts`, driven by a fake `Io`. Today the fake `Io` answers `gh` calls from a table keyed by their arguments. This change adds:
-  - `readFile` for `openspec/config.yaml`;
-  - `git rev-parse --show-toplevel` for the repository root;
+  - `readFile` for the user's lets config, at the path `configPath` gives for the fake `env` and home folder;
   - a fake backlog provider registered in place of the shipped list, whose keys look like Jira's.
 
   The Node tests in `tests/lets/backlog/` assert the printed JSON, the exit code and the backend calls made.
 - **Existing seams reused:**
   - `tests/lets/backlog/fixtures/` for the GitHub `gh` tables;
-  - `tests/skill-interfaces.bats` for the `lets-go` and `lets-plan` prose;
   - the live run on `mstelz/test-repo-pls-ignore` that #136 used.
 
 ## Scrutiny Tier & Blast Radius
 
-- **Tier:** high. It changes a CLI contract the skills depend on (`key`, `label`, `backend-failed`), adds the first reader of the project config's `lets:` block, and changes how `lets-go` reads a request.
+- **Tier:** high. It changes a CLI contract the skills depend on (`key`, `label`, `backend-failed`), adds a `backlog` section to the user's lets config, and changes how `lets-go` reads a request.
 - **Blast radius:**
   - code and tests: `lets/src/backlog/`, `tests/lets/backlog/`;
-  - skills: `skills/lets-go/`, `skills/lets-plan/SKILL.md`, `tests/skill-interfaces.bats`;
+  - skills: `skills/lets-go/`, `skills/lets-plan/SKILL.md`;
   - specs: `lets-backlog` and `lets-go`.
 
   A wrong key mapping could claim or release the wrong GitHub issue.
@@ -52,13 +52,14 @@
 
    *Alternative:* a `parseKey` method on `Adapter`. Rejected: building the GitHub adapter runs the Project lookup, so `key` would need a Project and a network call.
 
-2. **Reading the backlog provider.** `backlogProvider(text)` sits in `lets/src/backlog/config.ts`, next to `schemaOf`'s line rules (it reuses `withoutComment` and `unquote`, exported from `sync/config.ts`). It finds a top-level `lets:` line, then `backlog:` indented under it, then `provider:` indented under that, and returns the value or `null`.
-   - The file is `openspec/config.yaml` at `git rev-parse --show-toplevel`, or `cwd` when that command fails, which matches how `gh` finds the repository.
-   - `null` means `github`, but only when the file has no top-level `lets:` line, or the `lets:` block holds no `backlog:` or no `provider:`.
-   - A top-level `lets:` line with a value on it (flow style), or a `provider:` line the reader cannot unquote, throws `BacklogError('unknown-backlog-provider')`, whose message says only block style is read. An explicit setting is never taken for absence.
+2. **Reading the backlog provider.** `backlogProviderFor(document, path)` sits in `lets/src/backlog/config.ts`, beside `questionModeFor`'s pattern. `selectProvider` reads the user's lets config at `configPath`, checks it with `parseDocument`, and reads `backlog.provider`.
+   - No file, no `backlog`, or no `provider` (absent or null) means `github`.
+   - A file `parseDocument` rejects, a `backlog` that is not a mapping, or a `provider` that is not a string throws `BacklogError('unknown-backlog-provider')`, whose message names the file and what is wrong. A setting that is there is never taken for absence.
    - A name not in the registry throws `BacklogError('unknown-backlog-provider')` before any backend call.
+   - lets never reads the backlog provider from `openspec/config.yaml`, and needs no repository root to find the setting.
 
-   *Alternative:* add a YAML parser dependency. Rejected: lets has no runtime dependencies for config, and #23's `lets:` block will need the same line reader for `flow` and `skills`.
+   *Alternative:* a `lets:` block in `openspec/config.yaml`. Rejected: it is OpenSpec's file, and lets settings stay out of it, even though OpenSpec ignores keys it does not know.
+   *Alternative:* a file of lets's own in the repository, which a whole team shares. Deferred to a new story: it is a second config file and a precedence rule, and this change keeps to the setting's first home.
 
 3. **Keys are opaque strings.**
    - In the types: `number: number` becomes `key: string` and `label: string` in `Candidate`, `Item`, `Ref` and `Related`. Every `Adapter` method takes `key: string`.
@@ -90,15 +91,14 @@
 ## Risks / Trade-offs
 
 - [An agent reads `#<i>` literally and prints `#PROJ-12`] → The placeholder rule sits in the section every placeholder is defined in. A bats check asserts the rule is there. It matters only once a second backlog provider ships, and that story's live run will show it.
-- [The line reader meets a `lets:` block it cannot read, such as flow style `lets: {backlog: {provider: jira}}`] → It stops with `unknown-backlog-provider` and runs no backend command, so a backlog provider set in another style never falls back to GitHub. A command test pins it.
+- [Each person sets the backlog provider on each machine, so two people on one repository can differ] → Until the repository setting story ships, the default, GitHub, is the only backlog provider, so nobody needs to set it. The pull request names the gap.
 - [Renaming `number` to `key` misses a reader in the skills] → The bats checks search the `lets-go` and `lets-plan` prose for `.number` and `"number"` on `lets backlog` output, and the live run exercises `ready`, `item`, `claim` and `release`.
 - [`created: ''` for a candidate that is not free reaches the sort] → `ready` filters on `free` before it sorts, and a policy test pins it.
-- [`git rev-parse` adds a process to every command] → It is local and fast. The fallback to `cwd` keeps a checkout without git working.
 
 ## Migration & Rollback
 
 - No data changes shape: assignees, Status and claim comments are written as today.
-- Repositories without a `lets:` block keep GitHub.
+- A user config without a `backlog` section keeps GitHub.
 - Skills and `lets` ship together through `lets sync`, so nothing outside the release reads the renamed fields.
 - To roll back, revert the merge commit.
 

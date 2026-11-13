@@ -21,6 +21,13 @@
 - [x] 4.1 [medium] Every project check passes: the Node tests, the type check, the bats tests, the flake and OpenSpec validation (verify: `deli -- pnpm test && deli -- nix flake check && mise run check`) (✓ all three passed: 689 Node tests and every bats test, the flake, and `openspec validate --all --strict`)
 - [x] 4.2 [medium] Live run in a clone of `mstelz/test-repo-pls-ignore` with this branch's `lets`: `key`, `ready`, `item`, `find`, `claim` and `release` return `key` and `label` against its real Project, and a claim and its release still assign and set Status. The results are recorded in the pull request (verify: `lets backlog item <claimed-issue>` in the clone shows `"key"`, `"label"`, `"status": "In Progress"` and the user in `assignees`) (✓ `lets backlog item 11` showed `"key": "11"`, `"label": "#11"`, `"status": "In Progress"` and `mstelz` after the claim, and Todo with no assignee after the release; recorded in https://github.com/sidereal-io/lets-spec/pull/259#issuecomment-6858850257)
 
+## 5. Change requests [depends-on: 4]
+
+- [ ] 5.1 [medium] The backlog provider comes from `backlog.provider` in the user's lets config, `$XDG_CONFIG_HOME/lets/config.yaml` or `~/.config/lets/config.yaml`, read with `parseDocument`. It is `github` when the file, `backlog` or `provider` is absent. An unknown name, a file `parseDocument` rejects, a `backlog` that is not a mapping, or a `provider` that is not a string returns `unknown-backlog-provider`, naming the file, and runs no `gh` command. `openspec/config.yaml` is no longer read, and the line reader and the `git rev-parse` lookup are gone (verify: `node --test tests/lets/backlog/config.test.ts tests/lets/backlog/commands.test.ts`)
+- [ ] 5.2 [easy] The `tests/skill-interfaces.bats` checks this branch added are gone, and the existing ones still pass (verify: `deli -- bats tests/skill-interfaces.bats`)
+- [ ] 5.3 [medium] Every project check passes (verify: `deli -- pnpm test && deli -- nix flake check && mise run check`)
+- [ ] 5.4 [medium] Live run in the clone of `mstelz/test-repo-pls-ignore` with `backlog.provider: github` in a lets config under a scratch `XDG_CONFIG_HOME`: `claim` and `release` still assign and set Status, and `jria` there is `unknown-backlog-provider` with no `gh` call. The results are recorded in the pull request (verify: `lets backlog item <claimed-issue>` shows `"status": "In Progress"` and the user in `assignees`)
+
 ## Deviations Ledger
 
 - 3.1: `lets-go`'s Placeholders table gains a `<word>` row, for the one
@@ -30,3 +37,8 @@
   block is read like an unquoted one (df4d5466). A label for an issue in
   another repository is read from any GitHub host's URL, not only
   `github.com` (ab3170a5).
+- After the code review, the user moved the setting out of
+  `openspec/config.yaml` (brainstorm D11 to D13). Task 5.1 replaces where
+  1.3 reads it from; the rest of 1.3 stands. The quoted-key fix
+  (df4d5466) goes with the line reader. The checks 3.1 to 3.3 added to
+  `tests/skill-interfaces.bats` go in 5.2.

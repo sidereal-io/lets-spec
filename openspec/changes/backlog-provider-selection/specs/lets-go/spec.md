@@ -11,10 +11,6 @@
 - **WHEN** `next` picks the item whose `key` and `label` are both `PROJ-12`
 - **THEN** `lets-go` prints `Picked PROJ-12: <title>, the next ready issue.` and runs `lets backlog claim PROJ-12`
 
-#### Scenario: The placeholder table says it
-- **WHEN** the skill-interfaces test reads the `## Placeholders` section of `skills/lets-go/SKILL.md`
-- **THEN** it finds `label` and `key` named for the item placeholders
-
 ## MODIFIED Requirements
 
 ### Requirement: lets-go takes one issue number or an idea
@@ -162,5 +158,5 @@ When a `lets backlog` command returns an `error`, `lets-go` SHALL stop, claim no
 - **THEN** `lets-go` shows `gh auth login required` and stops
 
 #### Scenario: An unknown backlog provider
-- **WHEN** `openspec/config.yaml` sets `lets.backlog.provider` to `jria`, and `lets backlog ready` returns `"error": "unknown-backlog-provider"`
+- **WHEN** the user's lets config sets `backlog.provider` to `jria`, and `lets backlog ready` returns `"error": "unknown-backlog-provider"`
 - **THEN** `lets-go` shows the error's `message`, which names `jria`, and stops

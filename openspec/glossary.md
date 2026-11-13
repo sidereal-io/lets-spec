@@ -23,10 +23,10 @@ The system or tool an adapter uses.
 ## Backlog provider
 
 The backend that holds a repository's backlog, such as GitHub, Jira Cloud,
-Linear or Beads. A repository selects exactly one, with
-`lets.backlog.provider` in `openspec/config.yaml`; GitHub when unset. A
-backlog provider is a backend; not every backend is a backlog provider.
-Delegation backends, such as a harness, are not.
+Linear or Beads. The user's lets config selects exactly one, with
+`backlog.provider`; GitHub when unset. A backlog provider is a backend;
+not every backend is a backlog provider. Delegation backends, such as a
+harness, are not.
 
 ## Extension
 
