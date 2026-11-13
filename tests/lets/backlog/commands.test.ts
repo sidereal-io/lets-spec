@@ -49,28 +49,28 @@ test('two Projects are several-backlogs, with each title and URL, and nothing el
   assert.equal(t.calls().length, 1);
 });
 
-test('gh failing is gh-failed with gh\'s error, and exits 1', async () => {
+test('gh failing is backend-failed with gh\'s error, and exits 1', async () => {
   const t = backlogDeps([['api graphql', fail('To get started with GitHub CLI, please run:  gh auth login')]]);
   assert.equal(await run(['ready'], t.deps), 1);
   const out = t.json();
-  assert.equal(out.error, 'gh-failed');
+  assert.equal(out.error, 'backend-failed');
   assert.match(out.message, /gh auth login/);
 });
 
-test('gh that cannot start or times out is gh-failed', async () => {
+test('gh that cannot start or times out is backend-failed', async () => {
   for (const answer of [{ stdout: '', stderr: 'spawn gh ENOENT', code: null }, TIMED_OUT]) {
     const t = backlogDeps([['api graphql', answer]]);
     assert.equal(await run(['ready'], t.deps), 1);
     const out = t.json();
-    assert.equal(out.error, 'gh-failed');
+    assert.equal(out.error, 'backend-failed');
     assert.ok(out.message.length > 0);
   }
 });
 
-test('a read that gh answers with something other than JSON is gh-failed', async () => {
+test('a read that gh answers with something other than JSON is backend-failed', async () => {
   const t = backlogDeps([['api graphql', { stdout: 'not json', stderr: '', code: 0 }]]);
   assert.equal(await run(['ready'], t.deps), 1);
-  assert.equal(t.json().error, 'gh-failed');
+  assert.equal(t.json().error, 'backend-failed');
 });
 
 test('every gh call has a finite timeout', async () => {

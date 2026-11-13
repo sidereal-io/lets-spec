@@ -68,7 +68,7 @@ export type Adapter = {
 };
 
 // The backlog cannot answer. code is what lets backlog prints as error.
-export type ErrorCode = 'no-backlog' | 'several-backlogs' | 'gh-failed' | 'not-found';
+export type ErrorCode = 'no-backlog' | 'several-backlogs' | 'backend-failed' | 'not-found';
 
 export class BacklogError extends Error {
   readonly code: ErrorCode;

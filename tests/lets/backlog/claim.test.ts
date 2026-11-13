@@ -64,10 +64,10 @@ test('a write that times out is failed, and says it may have happened', async ()
   }
 });
 
-test('a failed assignee read is gh-failed, and writes nothing', async () => {
+test('a failed assignee read is backend-failed, and writes nothing', async () => {
   const t = backlogDeps([...LOOKUP_ONE, ['api repos/acme/app/issues/149/comments --paginate', json([[]])], ['issue view 149', fail('HTTP 502')]]);
   assert.equal(await run(['claim', '149'], t.deps), 1);
-  assert.equal(t.json().error, 'gh-failed');
+  assert.equal(t.json().error, 'backend-failed');
   assert.ok(!t.ran('issue edit'));
 });
 
@@ -96,7 +96,7 @@ test('an unreadable election retains its recovery token', async () => {
     ...rows(),
   ]);
   assert.equal(await run(['claim', '149'], t.deps), 1);
-  assert.equal(t.json().error, 'gh-failed');
+  assert.equal(t.json().error, 'backend-failed');
   assert.match(t.json().claim, /^[0-9a-f-]{36}$/);
   assert.ok(!t.ran('project item-edit'));
 });

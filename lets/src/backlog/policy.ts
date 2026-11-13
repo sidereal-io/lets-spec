@@ -71,7 +71,7 @@ export async function claim(adapter: Adapter, issue: string): Promise<ClaimResul
     await adapter.postClaim(issue, token);
     const claims = (await adapter.claims(issue)).filter((c) => !previous.has(c.id));
     const own = claims.find((c) => c.token === token && c.login === login);
-    if (!own) throw new BacklogError('gh-failed', 'The posted claim is missing from the issue comments; inspect the issue before retrying.');
+    if (!own) throw new BacklogError('backend-failed', 'The posted claim is missing from the issue comments; inspect the issue before retrying.');
     const winner = claims.reduce((a, b) => a.id < b.id ? a : b);
     if (winner.id !== own.id) {
       write = 'delete-claim';

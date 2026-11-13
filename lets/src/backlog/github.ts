@@ -8,7 +8,7 @@ import { BacklogError, WriteFailed } from './adapter.ts';
 export const CLAIM_MARKER = 'lets-go claimed this issue.';
 const CLAIM_BODY = /^lets-go claimed this issue\.\n\nToken: ([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\n?$/;
 
-// Every gh call has a finite timeout. A read past it is gh-failed; a write
+// Every gh call has a finite timeout. A read past it is backend-failed; a write
 // past it is WriteFailed, because it may still have happened.
 export const READ_TIMEOUT_MS = 60_000;
 export const WRITE_TIMEOUT_MS = 60_000;
@@ -55,17 +55,17 @@ function ghRunner(io: Pick<Io, 'execFile'>, cwd: string): Gh {
   };
 }
 
-// A read: its JSON, or gh-failed. A missing issue is not-found.
+// A read: its JSON, or backend-failed. A missing issue is not-found.
 async function read(gh: Gh, args: string[]): Promise<unknown> {
   const result = await gh(args, READ_TIMEOUT_MS);
   if (!result.ok) {
     if (NOT_FOUND.test(result.message)) throw new BacklogError('not-found', result.message);
-    throw new BacklogError('gh-failed', result.message);
+    throw new BacklogError('backend-failed', result.message);
   }
   try {
     return JSON.parse(result.stdout);
   } catch {
-    throw new BacklogError('gh-failed', `gh ${args.slice(0, 2).join(' ')} printed something other than JSON: ${result.stdout.slice(0, 200)}`);
+    throw new BacklogError('backend-failed', `gh ${args.slice(0, 2).join(' ')} printed something other than JSON: ${result.stdout.slice(0, 200)}`);
   }
 }
 
@@ -160,7 +160,7 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
         } catch (error) {
           // The issue exists; only its parent could not be read.
           if (!(error instanceof BacklogError)) throw error;
-          throw new BacklogError('gh-failed', `could not read the parent ${which} of #${issue}: ${error.message}`);
+          throw new BacklogError('backend-failed', `could not read the parent ${which} of #${issue}: ${error.message}`);
         }
         const url = typeof parentRef.url === 'string' ? parentRef.url : '';
         parent = { ...named(found.number, url), title: found.title, url, body: found.body };
@@ -201,7 +201,7 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
     async claims(issue) {
       // --slurp retains page boundaries; read every page before electing.
       const pages = await read(gh, ['api', `repos/${repo}/issues/${issue}/comments`, '--paginate', '--slurp']) as Record<string, unknown>[][];
-      if (!Array.isArray(pages) || !pages.every(Array.isArray)) throw new BacklogError('gh-failed', 'Invalid issue comment pages');
+      if (!Array.isArray(pages) || !pages.every(Array.isArray)) throw new BacklogError('backend-failed', 'Invalid issue comment pages');
       const claims: Claim[] = [];
       for (const c of pages.flat()) {
         const user = c.user as { login?: string; type?: string } | null;

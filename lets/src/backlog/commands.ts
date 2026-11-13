@@ -26,7 +26,7 @@ An item's key names it in commands; its label is how the backlog writes it.
                      { result: released } | { result: not-found }
                      | { result: failed, write: delete-claim|unassign|status, message }
 On an error: { error, message }, where error is no-backlog,
-several-backlogs (with projects: [{ title, url }]), gh-failed or not-found.
+several-backlogs (with projects: [{ title, url }]), backend-failed or not-found.
 
 Exit codes:
   0  a result, failed included: a failed write is a result to act on

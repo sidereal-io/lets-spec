@@ -96,10 +96,10 @@ test('a missing issue is not-found, and exits 1', async () => {
   assert.equal(t.json().error, 'not-found');
 });
 
-test('another failure of the read is gh-failed', async () => {
+test('another failure of the read is backend-failed', async () => {
   const t = backlogDeps([...LOOKUP_ONE, ['issue view 9', fail('HTTP 502: Bad Gateway')]]);
   assert.equal(await run(['item', '9'], t.deps), 1);
-  assert.deepEqual(t.json(), { error: 'gh-failed', message: 'HTTP 502: Bad Gateway' });
+  assert.deepEqual(t.json(), { error: 'backend-failed', message: 'HTTP 502: Bad Gateway' });
 });
 
 test('item writes nothing', async () => {
@@ -133,7 +133,7 @@ test('a blocker or sub-issue in another repository keeps its URL', async () => {
   assert.deepEqual(t.json().subIssues, [{ key: '8', label: 'acme/lib#8', title: 'lib story', url: other(8) }]);
 });
 
-test('a parent that cannot be read is gh-failed naming the parent, not not-found', async () => {
+test('a parent that cannot be read is backend-failed naming the parent, not not-found', async () => {
   const parentUrl = 'https://github.com/acme/private/issues/52';
   const t = backlogDeps(rows([
     ['issue view 136 ', json(issue(136, { parent: { number: 52, title: 'hidden', url: parentUrl, state: 'OPEN' } }))],
@@ -141,6 +141,6 @@ test('a parent that cannot be read is gh-failed naming the parent, not not-found
   ], [projectItem(136, { kind: 'Story' })]));
   assert.equal(await run(['item', '136'], t.deps), 1);
   const out = t.json();
-  assert.equal(out.error, 'gh-failed');
+  assert.equal(out.error, 'backend-failed');
   assert.ok(out.message.includes(parentUrl), out.message);
 });
