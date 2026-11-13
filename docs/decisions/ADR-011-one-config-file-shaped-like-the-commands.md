@@ -8,6 +8,8 @@ description: Architecture decision record (ADR) for keeping every lets setting i
 
 # ADR-011: lets has one config file, shaped like its commands
 
+> Narrowed by [ADR-026](ADR-026-project-settings-live-in-the-openspec-config.md): settings that belong to a repository, such as its backlog provider, live in a `lets:` block of `openspec/config.yaml`. This file keeps the settings that belong to a person.
+
 > Builds on [ADR-002](ADR-002-lets-owns-the-delegate-config.md): only `lets` reads the config. This record says where the file lives and how it is laid out.
 
 ## Context

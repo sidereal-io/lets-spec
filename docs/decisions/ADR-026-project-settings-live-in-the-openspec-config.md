@@ -8,7 +8,7 @@ description: Architecture decision record (ADR) for keeping settings that belong
 
 # ADR-026: A repository's own lets settings live in a `lets:` block of `openspec/config.yaml`
 
-> Builds on [ADR-011](ADR-011-one-config-file-shaped-like-the-commands.md), which keeps every setting that belongs to a person in one user file, `~/.config/lets/config.yaml`. This record covers settings that belong to a repository instead.
+> Builds on [ADR-011](ADR-011-one-config-file-shaped-like-the-commands.md), and narrows it. ADR-011 keeps all of lets's settings in one user file, `~/.config/lets/config.yaml`. That file now holds the settings that belong to a person. Settings that belong to a repository move to the place this record names. ADR-011's command-shaped layout applies to both.
 
 ## Context
 

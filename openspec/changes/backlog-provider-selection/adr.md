@@ -20,7 +20,8 @@ The other decisions can be recovered from the code:
 ## In-Force ADRs Reviewed
 
 - [ADR-021](../../../docs/decisions/ADR-021-where-an-outside-command-runs.md): backlog calls run in lets code through an adapter, with shared rules outside it. This change follows it. ADR-025 builds on it.
-- [ADR-011](../../../docs/decisions/ADR-011-one-config-file-shaped-like-the-commands.md) and [ADR-002](../../../docs/decisions/ADR-002-lets-owns-the-delegate-config.md): the user config. Unchanged. ADR-026 builds on ADR-011 for settings that belong to a repository.
+- [ADR-011](../../../docs/decisions/ADR-011-one-config-file-shaped-like-the-commands.md): the user config. ADR-026 narrows its one-file rule to settings that belong to a person, and ADR-011 now carries a note that says so. Its layout rule stands.
+- [ADR-002](../../../docs/decisions/ADR-002-lets-owns-the-delegate-config.md): only lets reads its config. Unchanged.
 - [ADR-017](../../../docs/decisions/ADR-017-lets-go-reads-where-a-run-stands-from-git-and-github.md): `lets-go` reads records from Git and GitHub. Unchanged, since pull request reads stay as `gh`.
 - [ADR-020](../../../docs/decisions/ADR-020-lets-go-is-the-only-runner.md): `lets-go` is the runner whose input rule changes. Unaffected.
 - [ADR-012](../../../docs/decisions/ADR-012-issue-comments-are-evidence.md), [ADR-013](../../../docs/decisions/ADR-013-the-reply-is-the-read-marker.md): issue comments. The thread read stays in the skill. Unaffected.

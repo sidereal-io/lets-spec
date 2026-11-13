@@ -48,13 +48,14 @@
    - `parseKey(text)`, which returns `{ key, label } | null` and calls no backend;
    - `create(io, cwd)`, which builds the adapter.
 
-   GitHub is the only entry. `commands.ts` takes the registry through its deps, so tests register a fake provider. `key` calls only `parseKey`, so it needs no Project (D10).
+   GitHub is the only entry. `commands.ts` takes the registry through its deps, so tests register a fake backlog provider. `key` calls only `parseKey`, so it needs no Project (D10). `item`, `claim` and `release` also run `parseKey` on their argument before they build the adapter: `null` is `not-found` with no backend call, and a key is passed on in its parsed form, so `#149` and `149` name the same issue. `--only` and `--exclude` run each key through `parseKey` too, and leave out one that gives `null`.
 
    *Alternative:* a `parseKey` method on `Adapter`. Rejected: building the GitHub adapter runs the Project lookup, so `key` would need a Project and a network call.
 
 2. **Reading the backlog provider.** `backlogProvider(text)` sits in `lets/src/backlog/config.ts`, next to `schemaOf`'s line rules (it reuses `withoutComment` and `unquote`, exported from `sync/config.ts`). It finds a top-level `lets:` line, then `backlog:` indented under it, then `provider:` indented under that, and returns the value or `null`.
    - The file is `openspec/config.yaml` at `git rev-parse --show-toplevel`, or `cwd` when that command fails, which matches how `gh` finds the repository.
-   - `null` means `github`.
+   - `null` means `github`, but only when the file has no top-level `lets:` line, or the `lets:` block holds no `backlog:` or no `provider:`.
+   - A top-level `lets:` line with a value on it (flow style), or a `provider:` line the reader cannot unquote, throws `BacklogError('unknown-backlog-provider')`, whose message says only block style is read. An explicit setting is never taken for absence.
    - A name not in the registry throws `BacklogError('unknown-backlog-provider')` before any backend call.
 
    *Alternative:* add a YAML parser dependency. Rejected: lets has no runtime dependencies for config, and #23's `lets:` block will need the same line reader for `flow` and `skills`.
@@ -62,13 +63,15 @@
 3. **Keys are opaque strings.**
    - In the types: `number: number` becomes `key: string` and `label: string` in `Candidate`, `Item`, `Ref` and `Related`. Every `Adapter` method takes `key: string`.
    - In `commands.ts`: `issueNumber` becomes `itemKey`, which rejects only an empty string. `issueList` splits on commas into keys.
-   - In the GitHub adapter: a key that is not `^[1-9][0-9]*$` throws `not-found` before any `gh` call. Its label is `#<n>`, or `owner/repo#<n>` for an item in another repository, taken from its URL.
+   - A key never holds a comma, so `--only` and `--exclude` keep comma lists. This is a rule on every backlog provider's key form: GitHub numbers, Jira and Linear `ABC-12`, and Beads `bd-a1b2` all keep it. A backlog provider whose keys could hold a comma would need repeated flags instead.
+   - In the GitHub adapter: `parseKey` accepts `^#?[1-9][0-9]*$` and drops the `#`. Its label is `#<n>`, or `owner/repo#<n>` for an item in another repository, taken from its URL.
 
    This is the costly-to-reverse decision; see the ADR step.
 
 4. **Ranking by creation time.**
    - `Candidate` gains `created: string`, an ISO 8601 time.
-   - `ready` sorts ties by `created`, then by `key` as a last, stable tie-break.
+   - `ready` sorts ties by `created`, with a stable sort, so equal times keep the order the adapter returned. It never compares keys (ADR-025).
+   - The GitHub adapter returns candidates in issue-number order, so equal `createdAt` values keep today's lowest-number order.
    - The GitHub adapter adds `createdAt` to the free-issue search it already runs (`--json number,createdAt`). Only free candidates can be ready, so no extra call is needed. A candidate that is not free gets `created: ''`, and it is filtered out before the sort.
 
    *Alternative:* a separate `gh issue list --json number,createdAt` over the Project items. Rejected: an extra call for issues that can never rank.
@@ -76,7 +79,7 @@
 5. **`backend-failed`.** `ErrorCode` drops `gh-failed` and gains `backend-failed` and `unknown-backlog-provider`. The GitHub adapter's messages stay `gh`'s own. The help text's first paragraph names the backlog provider in use, from the registry entry's description.
 
 6. **`lets-go` asks `lets backlog key`.**
-   - In *Read the request*, the "A number" bullet becomes: when what is left is one word, run `lets backlog key '<word>'`. A `key` makes it `<i>`; `null` makes it words.
+   - In *Read the request*, the "A number" bullet becomes: when what is left is one word, run `lets backlog key -- '<word>'`, with each `'` written as `'\''`, as the idea search already does. A `key` makes it `<i>`; `null` makes it words.
    - The command runs before the discovery query and the title search, and an error stops the run as *Backlog errors* says.
    - `lets-plan` takes `<i>` as a key from its caller and changes no rule.
 
@@ -87,7 +90,7 @@
 ## Risks / Trade-offs
 
 - [An agent reads `#<i>` literally and prints `#PROJ-12`] → The placeholder rule sits in the section every placeholder is defined in. A bats check asserts the rule is there. It matters only once a second backlog provider ships, and that story's live run will show it.
-- [The line reader misreads an unusual `lets:` block, such as flow style `lets: {backlog: {provider: jira}}`] → `backlogProvider` returns `null` for anything it cannot read as block style, so the result is GitHub, and a test pins that. The `lets:` documentation will show only block style.
+- [The line reader meets a `lets:` block it cannot read, such as flow style `lets: {backlog: {provider: jira}}`] → It stops with `unknown-backlog-provider` and runs no backend command, so a backlog provider set in another style never falls back to GitHub. A command test pins it.
 - [Renaming `number` to `key` misses a reader in the skills] → The bats checks search the `lets-go` and `lets-plan` prose for `.number` and `"number"` on `lets backlog` output, and the live run exercises `ready`, `item`, `claim` and `release`.
 - [`created: ''` for a candidate that is not free reaches the sort] → `ready` filters on `free` before it sorts, and a policy test pins it.
 - [`git rev-parse` adds a process to every command] → It is local and fast. The fallback to `cwd` keeps a checkout without git working.

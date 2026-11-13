@@ -22,7 +22,7 @@ Every backlog item is named by a `key`: a string in the backlog provider's own f
 
 - Easier: a new backlog provider brings its own key form, and the shared ranking, claim and release code works unchanged.
 - Easier: the skills never need to know a key's form. They pass `key` to commands and show `label` to people.
-- Easier: an argument the backlog provider cannot use is `not-found` from that provider, with one rule for every backlog provider.
+- Easier: an argument the backlog provider cannot use is `not-found` from that backlog provider, with one rule for every backlog provider.
 - Harder: lets cannot check a key's form before it asks the backlog provider, so a typo costs a lookup, or a call to its key parser.
 - Harder: every result carries two fields for one ID, and each caller must use the right one.
 - Harder: an order between items needs data each adapter must supply, such as a creation time, rather than coming free from the ID.
