@@ -3590,3 +3590,13 @@ EXPECTED
   [[ "$(skill_section lets-review-plan 'Find the author')" == *'(#run-the-review)'* ]] ||
     { echo 'author identification has no continuation'; false; }
 }
+
+@test "plan review effort is selected before execution" {
+  skill_says lets-review-plan '`low`'
+  skill_says lets-review-plan '`medium`'
+  skill_says lets-review-plan '`high`'
+  local preparation
+  preparation="$(skill_section lets-review-plan 'Run the review')"
+  [[ "$preparation" == *'Scale the effort'*'1. '* ]] ||
+    { echo 'effort selection follows execution preparation'; false; }
+}

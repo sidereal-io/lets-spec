@@ -71,6 +71,11 @@ Then [run the review](#run-the-review).
 
 ## Run the review
 
+Scale the effort to what the plan changes, not its length. Use `low` for a
+narrow fix, `medium` for one subsystem on known patterns, and `high` for new
+contracts, migrations or trust boundaries. When the plan has a `design.md`
+with a scrutiny tier, use that tier.
+
 In a `lets-go` step, return `needs-input` whenever this skill asks the user.
 
 1. Resolve vocabulary as below, then write the prompt to
@@ -157,11 +162,6 @@ Record the family that answered, and `independent: no` unless the subagent
 was another family and the tool's own output names it. Do not run the review
 in this session.
 
-Scale the effort to what the plan changes, not its length. Use `low` for a
-narrow fix, `medium` for one subsystem on known patterns, and `high` for new
-contracts, migrations or trust boundaries. When the plan has a `design.md`
-with a scrutiny tier, use that tier.
-
 This costs real tokens. Never loop it. Run again only when the plan or the
 question changed.
 
@@ -214,7 +214,7 @@ Add any checks the caller supplies.
 The plan is these files in `openspec/changes/<name>/`: brainstorm.md,
 proposal.md, specs/, design.md, adr.md and tasks.md. It also holds the
 records the change adds under `docs/decisions/`, which adr.md lists. Review
-them at one commit. Use design.md's scrutiny tier as the effort.
+them at one commit.
 
 Add these checks to the prompt:
 
