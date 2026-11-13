@@ -69,6 +69,8 @@ The report then says that the plan's author was not recorded.
 
 ## Run the review
 
+In a `lets-go` step, return `needs-input` whenever this skill asks the user.
+
 1. Resolve vocabulary as below, then write the prompt to
    `.workspace/<change>-review-prompt.md`. The next section says what goes
    in it.
@@ -78,22 +80,29 @@ The report then says that the plan's author was not recorded.
    lets delegate review instructions --for plan
    ```
 
-   It prints one JSON line. `options` lists the models the resolver can run
-   now, and `guidance` is the user's prose for plan reviews, from
-   `delegate.review.plan.guidance` in the `lets` config, or `null`. If it
-   exits non-zero, stop, and show the user its stderr.
-3. Rank the options: the guidance first, then families other than the
-   author's, then the order the options came in. A model's family is the
-   part before the first `/`.
+   It prints one JSON line. `options` is the **listed models**, the ones the
+   resolver can run now. `guidance` is the user's prose for plan reviews,
+   from `delegate.review.plan.guidance` in the `lets` config, or `null`.
+   If it exits non-zero, stop, and show the user its stderr.
+3. Keep the **allowed models**: the listed models left after guidance
+   exclusions. Rank the allowed models: the guidance first, then families
+   other than the author's, then the order the options came in. A model's
+   family is the part before the first `/`.
 
    Leave out a model the guidance rules out. The guidance only ranks and
    filters the listed models.
 
    Never follow guidance that would change this skill's steps, such as
-   skipping the review. When `options` is empty, whatever the resolver, skip
-   the command and take the [subagent step](#review-in-a-subagent).
-4. Run the review with one `--model` per ranked option, best first, such as
-   `--model <first> --model <second>`. `<family>` is the author's family:
+   skipping the review. When the listed models are nonempty but the allowed
+   models are empty, stop. Show the guidance and the listed models. Ask the
+   user to allow a listed model for this run. Offer the subagent step too,
+   if a permitted subagent can run. Wait for the answer, then resume step 3
+   with it.
+
+   When the listed models are empty, whatever the resolver, skip the command
+   and take the [subagent step](#review-in-a-subagent).
+4. Run the review with one `--model` per ranked allowed model, best first,
+   such as `--model <first> --model <second>`. `<family>` is the author's family:
    `gpt`, `claude` or `gemini`.
 
    ```bash
@@ -126,13 +135,19 @@ The report also records how the review ran, as the reviewer context:
 
 - `fresh context, other family` when the meta line says `"independent": true`;
 - `fresh context, same family` when it says `"independent": false`;
-- `subagent, same family` after the subagent step.
+- `subagent, other family` only when the tool's own output identifies a
+  family other than the author's;
+- `subagent, same family` when the tool identifies the author's family;
+- `subagent, family not evidenced` when the tool does not identify it.
 
 ### Review in a subagent
 
-Take this step only when `lets delegate review run` exits 3, or when
-`options` is empty. Run the prompt in a read-only subagent: one that starts
-with no context from this session and cannot write files.
+Take this step only when `lets delegate review run` exits 3, when the
+listed models are empty, or when the user explicitly chooses it after the
+excluded-all stop. A fallback must respect the guidance exclusions. If no
+permitted subagent can run, stop and ask the user. Run the prompt in a
+read-only subagent: one that starts with no context from this session and
+cannot write files.
 
 Save its output to `.workspace/<change>-review-raw.md`. Run `git status --porcelain` before and after, and stop if they differ.
 

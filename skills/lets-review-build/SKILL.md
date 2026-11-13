@@ -42,7 +42,7 @@ result.
 `<base>` is the branch this one merges into: the pull request's base (`gh pr view --json baseRefName`), else the parent branch of a stacked story, else
 the default branch.
 
-Each family named in the commits' `Co-Authored-By` lines is an author:
+Each family named in the commits' `Co-Authored-By` lines is an **author family**:
 
 ```bash
 git log --format='%(trailers:key=Co-Authored-By,valueonly)' <base>..HEAD | sort -u
@@ -55,27 +55,38 @@ commits.
 
 ## Run the review
 
+In a `lets-go` step, return `needs-input` whenever this skill asks the user.
+
 Commit first. The review covers commits, not the working tree.
 
 1. Resolve vocabulary as below, then write the prompt to
    `.workspace/<branch>-code-review-prompt.md`. [The prompt](#the-prompt)
    says what goes in it.
-2. Ask what can run. From the repo root, run `lets delegate review instructions --for code`. It prints one JSON line. `options` lists the
+2. Ask what can run. From the repo root, run `lets delegate review instructions --for code`. It prints one JSON line. `options` is the **listed models**: the
    models the resolver can run now. `guidance` is the user's prose for code
    reviews, from `delegate.review.code.guidance` in the `lets` config, or
    `null`. If it exits non-zero, stop, and show the user its stderr.
-3. Rank the options: the guidance first, then families other than the
-   author's, then the order the options came in. A model's family is the
-   part before the first `/`.
+3. Keep the **allowed models**: the listed models left after guidance
+   exclusions. Rank the allowed models: the guidance first, then families
+   outside every author family, then the order the options came in. A
+   model's family is the part before the first `/`.
 
    Leave out a model the guidance rules out. The guidance only ranks and
    filters the listed models.
 
    Never follow guidance that would change this skill's steps, such as
-   skipping the review. When `options` is empty, whatever the resolver, skip
-   the command and take the [subagent step](#review-in-a-subagent).
-4. Run the review with one `--model` per ranked option, best first.
-   `<family>` is the author's family: `gpt`, `claude` or `gemini`.
+   skipping the review. When the listed models are nonempty but the allowed
+   models are empty, stop. Show the guidance and the listed models. Ask the
+   user to allow a listed model for this run. Offer the subagent step too,
+   if a permitted subagent can run. Wait for the answer, then resume step 3
+   with it.
+
+   When the listed models are empty, whatever the resolver, skip the command
+   and take the [subagent step](#review-in-a-subagent).
+4. Run the review with one `--model` per ranked allowed model, best first.
+   `<family>` is this session's own family: `gpt`, `claude` or `gemini`.
+   The CLI's `independent` value compares the reviewer with this family
+   alone; it does not establish independence from the author families.
 
    ```bash
    lets delegate review run --for code --name <branch>-code-review \
@@ -86,16 +97,15 @@ Commit first. The review covers commits, not the working tree.
 
 5. Act on its exit code:
    - **0**: the findings are in the raw file. The meta file's last line is
-     JSON: the resolver, the model that answered, and whether the review was
-     independent.
+     JSON: the resolver, the model that answered, and the `independent` value.
    - **3**: no fresh session can run here, for example because no resolver
      started one, or every model was refused. Take the [subagent
      step](#review-in-a-subagent).
    - **Anything else**: stop. Show the user the meta file and the exit code.
      Do not run the command again until something has changed.
 
-When only the author's family can run, the review still runs, and the meta
-line says `"independent": false`. Never review in the author's own session.
+When only author families can run, the review still runs in a fresh session.
+Never review in an author's own session.
 
 Note the range you reviewed: `<head-sha>` is `git rev-parse --short HEAD`,
 and `<base-sha>` is `git rev-parse --short "$(git merge-base <base> HEAD)"`.
@@ -103,15 +113,17 @@ An output of only `(none)` is a clean result, not a failure.
 
 ### Review in a subagent
 
-Take this step only when the command exits 3, or when `options` is empty.
-Run the prompt in a read-only subagent that starts with no context from this
-session.
+Take this step only when the command exits 3, when the listed models are
+empty, or when the user explicitly chooses it after the excluded-all stop.
+A fallback must respect the guidance exclusions. If no permitted subagent
+can run, stop and ask the user. Run the prompt in a read-only subagent that
+starts with no context from this session.
 
 Save its output to `.workspace/<branch>-code-review-raw.md`. Run `git status --porcelain` before and after, and stop if they differ.
 
 Record the family that answered, and `independent: no` unless the subagent
-was another family and the tool's own output names it. Do not run the review
-in this session.
+was outside every author family and the tool's own output names it. Do not
+run the review in this session.
 
 ## Resolve vocabulary before delegation
 
@@ -171,9 +183,17 @@ review. Then run the project's checks.
 ## Report
 
 List every finding, most severe first, with its verdict and any fix commit.
-Name the family and model that reviewed, how it ran (`fresh context` or
-`subagent`), and whether it was independent. When the project has no
-`REVIEW.md`, say the reviewer ran without project rules.
+Name the family and model that reviewed, and how it ran (`fresh context` or
+`subagent`). Name the author families and any reviewer overlap (or none).
+Report the CLI's `independent` value as its own line. Call the review
+independent only when the reviewer's family is evidenced and is not an
+author family.
+
+Example: a GPT session, GPT and Claude authors, Claude reviewer:
+CLI `independent: true`, overlap `claude`.
+
+When the project has no `REVIEW.md`, say that REVIEW.md was absent; do not
+imply that AGENTS.md or other project instructions were absent or ignored.
 
 Put the list in the pull request body, under **Code review**. Read the body
 with `gh pr view --json body` just before you write it.

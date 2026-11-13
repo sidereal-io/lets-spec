@@ -520,14 +520,13 @@ fixture_file() {
 }
 
 @test "each review skill ranks by the guidance, then other families, then the order given" {
-  for skill in lets-review-build lets-review-plan; do
-    skill_says "$skill" "the guidance first, then families other than the author's, then the order the options came in"
-  done
+  skill_says lets-review-plan "the guidance first, then families other than the author's, then the order the options came in"
+  skill_says lets-review-build "the guidance first, then families outside every author family, then the order the options came in"
 }
 
 @test "each review skill takes the subagent step when there are no options" {
   for skill in lets-review-build lets-review-plan; do
-    skill_says "$skill" "When \`options\` is empty, whatever the resolver, skip the command and take the [subagent step]"
+    skill_says "$skill" "When the listed models are empty, whatever the resolver, skip the command and take the [subagent step]"
   done
 }
 
@@ -3410,6 +3409,17 @@ commit_maps() {
 }
 
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
+# #229 review-model-choice: keep this block together for sibling story rebases.
+@test "review model choice: policy anchors" {
+  for skill in lets-review-plan lets-review-build; do
+    skill_says "$skill" '**allowed models**'
+    skill_says "$skill" 'the allowed models are empty, stop'
+  done
+  skill_says lets-review-plan 'subagent, family not evidenced'
+  skill_says lets-review-build 'REVIEW.md was absent'
+  skill_does_not_say lets-review-plan '`subagent, same family` after the subagent step'
+  skill_does_not_say lets-review-build 'the reviewer ran without project rules'
+}
 
 @test "step reports: planning checks prerequisites before proposing" {
   local plan guard invoke
