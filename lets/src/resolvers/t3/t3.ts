@@ -5,13 +5,15 @@
 //
 // This speaks orchestration protocol 2, read on 2026-10-17 from the t3code
 // 0.1.0 server bundle (apps/server/dist/binCli-*.mjs) and its web client.
+// `thread.stop` was read on 2026-11-12 from the 0.1.7 server bundle's
+// OrchestrationV2Command.
 // Protocol types live in packages/contracts/src/orchestrationV2.ts of
 // https://github.com/pingdotgg/t3code. A t3 update can change any of this;
 // run the smoke test in the README after each one.
 //
 // What is private here, and why it stays:
-// - The WebSocket RPC and the `launchThread` and `thread.archive` calls are
-//   the UI's own, so they move only when the UI does.
+// - The WebSocket RPC and the `launchThread`, `thread.archive` and
+//   `thread.stop` calls are the UI's own, so they move only when the UI does.
 // - `server.getConfig` is the request the UI makes to fill its model
 //   picker, so it lists the models the composer offers. T3's
 //   model-manifest.json is not that list.
@@ -24,9 +26,9 @@
 import { randomUUID } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { configDir } from '../../config-dir.ts';
-import { exitCodeOf, Refused, SessionFailed, SpawnError } from '../kit/errors.ts';
+import { exitCodeOf, Refused, SessionFailed, SpawnError, TimeoutError } from '../kit/errors.ts';
 import { withoutEffort } from '../kit/families.ts';
-import type { Adapter, RunInput, StartInput } from '../kit/adapter.ts';
+import type { Adapter, RunInput, StartInput, StepInput } from '../kit/adapter.ts';
 import type { Db, Io } from '../kit/io.ts';
 import type { Handle, ModelString } from '../kit/adapter.ts';
 import { FAMILIES } from '../kit/families.ts';
@@ -38,6 +40,9 @@ export const ORCHESTRATION_PROTOCOL = 2;
 
 const POLL_MS = 5000;
 const REPLY_TIMEOUT_MS = 120_000;
+// How long a stop may take, so a T3 that hangs cannot hold a timed-out
+// command for REPLY_TIMEOUT_MS more.
+const STOP_TIMEOUT_MS = 10_000;
 // The whole catalogue request, from the token to the reply.
 const CATALOGUE_TIMEOUT_MS = 10_000;
 
@@ -182,17 +187,19 @@ export function findProject(db: Db, repoRoot: string): Project {
 
 type LaunchInput = {
   threadId: string; projectId: string; title: string; text: string; modelSelection: ModelSelection;
-  interactionMode: 'plan' | 'default'; branch: string | null; worktreePath: string | null; messageId?: string; commandId?: string;
+  branch: string | null; worktreePath: string | null; messageId?: string; commandId?: string;
 };
 
 // The `orchestration.launchThread` request, as the UI sends it for a new
 // thread: the thread's settings, its workspace on the current branch, and
-// the first message. The workspace is the project's root, or the linked
+// the first message. Every thread opens in default mode: in plan mode a
+// session can end on a plan instead of a result, and the tree check keeps a
+// review read-only (ADR-024). The workspace is the project's root, or the linked
 // worktree at worktreePath. The title is a seed; t3 generates a durable one
 // from the message. messageId and commandId are random unless given, so
 // tests can fix them.
 export function buildLaunch({
-  threadId, projectId, title, text, modelSelection, interactionMode, branch, worktreePath, messageId = randomUUID(), commandId = randomUUID(),
+  threadId, projectId, title, text, modelSelection, branch, worktreePath, messageId = randomUUID(), commandId = randomUUID(),
 }: LaunchInput) {
   const onBranch = branch === null ? {} : { branch };
   return {
@@ -204,7 +211,7 @@ export function buildLaunch({
     generateTitle: true,
     modelSelection,
     runtimeMode: 'full-access',
-    interactionMode,
+    interactionMode: 'default',
     workspaceStrategy: worktreePath === null
       ? { type: 'root', ...onBranch }
       : { type: 'existing_worktree', worktreePath, ...onBranch },
@@ -240,6 +247,33 @@ export function readRun(db: Db, threadId: string): Run | null {
     }
   }
   return { id: run.run_id, status: run.status, pendingRequests: pending, failure };
+}
+
+// True when the run holds a proposed plan, which T3 writes for a session
+// in plan mode. A review never needs one.
+export function hasProposedPlan(db: Db, runId: string): boolean {
+  const { plans } = db.prepare(`
+    select count(*) as plans from orchestration_v2_projection_turn_items
+    where run_id = ? and type = 'proposed_plan'`).get(runId) as { plans: number };
+  return plans > 0;
+}
+
+// The checkout T3 ran the thread in: the worktree it records, else its
+// project's root. null when T3 has no row for the thread, or its payload
+// does not parse.
+export function readCheckout(db: Db, threadId: string): string | null {
+  const row = db.prepare(`
+    select thread.payload_json, project.workspace_root from orchestration_v2_projection_threads as thread
+    left join projection_projects as project on project.project_id = thread.project_id
+    where thread.thread_id = ?`).get(threadId) as { payload_json: string; workspace_root: string | null } | undefined;
+  if (!row) return null;
+  let worktreePath: unknown;
+  try {
+    ({ worktreePath } = (JSON.parse(row.payload_json) ?? {}) as { worktreePath?: unknown });
+  } catch {
+    return null;
+  }
+  return typeof worktreePath === 'string' ? worktreePath : row.workspace_root;
 }
 
 // The run's newest assistant message, or null when it has none yet.
@@ -385,9 +419,10 @@ export async function readCatalogue(io: Io, origin: string): Promise<Catalogue> 
   }
 }
 
-// Send one orchestration command, such as `thread.archive`.
-export function dispatch(io: Io, server: Server, command: { threadId?: string; [field: string]: unknown }): Promise<unknown> {
-  return request(io, server, { tag: 'orchestration.dispatchCommand', payload: command, threadId: command.threadId });
+// Send one orchestration command, such as `thread.archive`, by the
+// deadline when there is one.
+export function dispatch(io: Io, server: Server, command: { threadId?: string; [field: string]: unknown }, deadline?: number): Promise<unknown> {
+  return request(io, server, { tag: 'orchestration.dispatchCommand', payload: command, threadId: command.threadId }, deadline);
 }
 
 // Create a thread and send its first message. The answer names the thread.
@@ -423,9 +458,9 @@ export function createAdapter(io: Io): Adapter {
     return runtime;
   }
 
-  // Launch a thread for the request. A read-only one is in plan mode; a null
-  // effort is a start's, which sends no effort option.
-  async function launchThread({ name, prompt, cwd, family, model }: StartInput, { readOnly, effort }: { readOnly: boolean; effort: Effort | null }): Promise<Handle> {
+  // Launch a thread for the request. A null effort is a start's, which
+  // sends no effort option.
+  async function launchThread({ name, prompt, cwd, family, model }: StartInput, { effort }: { effort: Effort | null }): Promise<Handle> {
     const { origin } = runningServer();
     // The main checkout, even when cwd is a linked worktree.
     const repoRoot = resolve(await git(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir']), '..');
@@ -447,7 +482,6 @@ export function createAdapter(io: Io): Adapter {
       title: name,
       text: prompt,
       modelSelection,
-      interactionMode: readOnly ? 'plan' : 'default',
       branch,
       worktreePath,
     }));
@@ -461,6 +495,16 @@ export function createAdapter(io: Io): Adapter {
     await dispatch(io, { origin, token: await readToken(io) }, { type: 'thread.archive', commandId: randomUUID(), threadId: handle.id });
   }
 
+  // Stop the thread's run, as T3 Code's Stop does, with every task it
+  // delegated.
+  async function stop(handle: Handle): Promise<void> {
+    const deadline = Date.now() + STOP_TIMEOUT_MS;
+    const { origin } = runningServer();
+    await dispatch(io, { origin, token: await readToken(io, Math.max(0, deadline - Date.now())) }, {
+      type: 'thread.stop', commandId: randomUUID(), threadId: handle.id, reason: 'lets delegate: the session ran past its time limit',
+    }, deadline);
+  }
+
   // Wait for the thread's run to end, and read its final message.
   async function waitForText(handle: Handle, timeoutMs: number): Promise<{ text: string }> {
     // Open the database fresh on each check: the server writes it, and a
@@ -468,7 +512,10 @@ export function createAdapter(io: Io): Adapter {
     const check = () => withDb((db) => {
       const run = readRun(db, handle.id);
       if (run === null) return undefined;
-      if (run.pendingRequests > 0 || run.status === 'waiting') throw new SessionFailed('the session stopped to ask');
+      // A question always leaves a pending request. A run with none can
+      // still read waiting for a moment, while T3 captures the checkpoint at
+      // the end of a turn, so it is polled again like any running one.
+      if (run.pendingRequests > 0) throw new SessionFailed('the session stopped to ask');
       // A run that failed before any message is a refusal, such as a model
       // the account cannot run. run then archives the thread.
       if (run.status === 'failed') {
@@ -477,6 +524,7 @@ export function createAdapter(io: Io): Adapter {
       }
       if (run.status === 'interrupted' || run.status === 'cancelled' || run.status === 'rolled_back') throw new SessionFailed(`run ${run.status.replace('_', ' ')}`);
       if (run.status !== 'completed') return undefined;
+      if (hasProposedPlan(db, run.id)) throw new SessionFailed('the session returned a plan, not a result');
       // A completed run with no message yet is one with none at all; the
       // resolver rejects the empty text. One still streaming will finish.
       const message = readFinalMessage(db, run.id);
@@ -485,6 +533,35 @@ export function createAdapter(io: Io): Adapter {
       return { text: message.text };
     });
     return pollUntil(check, { intervalMs: POLL_MS, timeoutMs, now: io.now, sleep: io.sleep });
+  }
+
+  // Launch a thread, wait for its final message, and add what done reads
+  // from the finished thread. A review and a step end in the same ways.
+  async function session<T>({ effort, ...input }: RunInput, timeoutMs: number, done: (handle: Handle) => T): Promise<{ handle: Handle; text: string } & T> {
+    // An error before the thread exists passes through: there is nothing
+    // to archive or name.
+    const handle = await launchThread(input, { effort });
+    try {
+      const { text } = await waitForText(handle, timeoutMs);
+      return { handle, text, ...done(handle) };
+    } catch (error) {
+      if (error instanceof Refused) {
+        // Nothing ran, so the thread goes, as finish with ok would do.
+        await archive(handle).catch((why: Error) => {
+          error.message += `; could not archive it: ${why.message}`;
+        });
+      }
+      // A thread left running past its limit could still write in the
+      // checkout. It is kept, so a person can see where it stopped.
+      if (error instanceof TimeoutError) {
+        await stop(handle).catch((why: Error) => {
+          error.message += `; could not stop it, so it may still be running: ${why.message}`;
+        });
+      }
+      // A kit error names the thread, so a person can find it.
+      if (error instanceof Error && exitCodeOf(error) !== null) error.message += ` (thread ${handle.id})`;
+      throw error;
+    }
   }
 
   return {
@@ -505,27 +582,19 @@ export function createAdapter(io: Io): Adapter {
       }
     },
 
-    async run({ effort, ...input }: RunInput, { timeoutMs }) {
-      // An error before the thread exists passes through: there is nothing
-      // to archive or name.
-      const handle = await launchThread(input, { readOnly: true, effort });
-      try {
-        return { handle, ...(await waitForText(handle, timeoutMs)) };
-      } catch (error) {
-        if (error instanceof Refused) {
-          // Nothing ran, so the thread goes, as finish with ok would do.
-          await archive(handle).catch((why: Error) => {
-            error.message += `; could not archive it: ${why.message}`;
-          });
-        }
-        // A kit error names the thread, so a person can find it.
-        if (error instanceof Error && exitCodeOf(error) !== null) error.message += ` (thread ${handle.id})`;
-        throw error;
-      }
+    async run(input: RunInput, { timeoutMs }) {
+      return session(input, timeoutMs, (handle) => ({
+        // Where T3 ran it, which need not be where it was asked to.
+        checkout: withDb((db) => readCheckout(db, handle.id)),
+      }));
+    },
+
+    async step(input: StepInput, { timeoutMs }) {
+      return session(input, timeoutMs, () => ({}));
     },
 
     async start(input: StartInput) {
-      return launchThread(input, { readOnly: false, effort: null });
+      return launchThread(input, { effort: null });
     },
 
     // Archives the thread on ok. A failure throws, and the resolver reports it.

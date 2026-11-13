@@ -5,7 +5,7 @@
 import type { Deps } from '../io.ts';
 import { readConfig } from './config.ts';
 import { EXIT, SessionFailed, SpawnError } from '../resolvers/kit/errors.ts';
-import { isTreeClean, repoRoot, treeStatus } from './git.ts';
+import { headCommit, isTreeClean, repoRoot, treeStatus } from './git.ts';
 import { guarded } from './guarded.ts';
 import { checkModels, finishSession, pick, withModels } from './lookup.ts';
 import { readPromptFile } from './prompt-file.ts';
@@ -37,7 +37,7 @@ async function review({ for: intent, name, promptFile, sourceFamily, effort, mod
 
   const adapter = await pick('run', { ...deps, config });
   const timeoutMs = (timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES[effort]) * 60000;
-  const { value: { handle, text }, model: sent } = await withModels(models, (model) =>
+  const { value: { handle, text, checkout }, model: sent } = await withModels(models, (model) =>
     adapter.run({ name: normalizeName(name), prompt, cwd, ...parseModel(model)!, effort }, { timeoutMs }));
   const { family, model } = parseModel(sent)!;
   const where = `${handle.kind} ${handle.id}`;
@@ -47,6 +47,9 @@ async function review({ for: intent, name, promptFile, sourceFamily, effort, mod
     await finish(false);
     throw new SessionFailed(`${adapter.name} gave an empty final message (${where})`);
   }
+
+  // Read after the session, so a commit it made shows.
+  const commit = checkout === null ? null : await headCommit(checkout, io);
 
   let clean;
   try {
@@ -67,6 +70,6 @@ async function review({ for: intent, name, promptFile, sourceFamily, effort, mod
   const durationSeconds = Math.round((io.now() - started) / 1000);
   const independent = family !== sourceFamily;
   // The model that ran, else the --model value, when it names only a family.
-  deps.stderr(`${JSON.stringify({ for: intent, resolver: adapter.name, family, model: model ?? sent, independent, handle, gitClean: true, durationSeconds })}\n`);
+  deps.stderr(`${JSON.stringify({ for: intent, resolver: adapter.name, family, model: model ?? sent, independent, handle, checkout, commit, gitClean: true, durationSeconds })}\n`);
   return EXIT.ok;
 }

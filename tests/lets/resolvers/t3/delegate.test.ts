@@ -9,10 +9,11 @@ import { run as handoff } from '../../../../lets/src/delegate/handoff.ts';
 import { run as review } from '../../../../lets/src/delegate/review.ts';
 import { run as step } from '../../../../lets/src/delegate/step.ts';
 import type { ReviewOptions } from '../../../../lets/src/delegate/review.ts';
+import type { StepOptions } from '../../../../lets/src/delegate/step.ts';
 import { parentPid } from '../../../../lets/src/resolvers/kit/io.ts';
 import type { Db, Io } from '../../../../lets/src/resolvers/kit/io.ts';
 import { createAdapter } from '../../../../lets/src/resolvers/t3/t3.ts';
-import { commandDeps } from '../../delegate/fixtures/command-deps.ts';
+import { commandDeps, HEAD } from '../../delegate/fixtures/command-deps.ts';
 import { fakeIo } from '../kit/fixtures/fake-io.ts';
 
 const ONLY_T3 = 'version: 3\ndelegate: { resolvers: [t3] }\n';
@@ -35,10 +36,11 @@ const ONLY_DISABLED = { providers: [provider('codex', ['gpt-6-luna'], { enabled:
 
 // The T3 server's WebSocket. It answers server.getConfig with config, or
 // never when config is SILENT, and any other request with thread T. It logs
-// each request in sent.
+// each request in sent, and shows it to onSend before it answers.
 const SILENT = Symbol('silent');
-type Sent = { tag: string; payload: { type?: string; threadId?: string; modelSelection?: { model: string } } }[];
-function t3Socket(sent: Sent, config: unknown): typeof globalThis.WebSocket {
+type Frame = { tag: string; payload: { type?: string; threadId?: string; modelSelection?: { model: string } } };
+type Sent = Frame[];
+function t3Socket(sent: Sent, config: unknown, onSend: (frame: Frame) => void = () => {}): typeof globalThis.WebSocket {
   return class {
     listeners: Record<string, ((event: unknown) => void)[]> = {};
     constructor() {
@@ -53,6 +55,7 @@ function t3Socket(sent: Sent, config: unknown): typeof globalThis.WebSocket {
     send(data: string) {
       const frame = JSON.parse(data);
       sent.push(frame);
+      onSend(frame);
       if (frame.tag === 'server.getConfig' && config === SILENT) return;
       const value = frame.tag === 'server.getConfig' ? config : { threadId: 'T' };
       queueMicrotask(() => this.emit('message', { data: JSON.stringify({ _tag: 'Exit', requestId: '1', exit: { _tag: 'Success', value } }) }));
@@ -225,15 +228,15 @@ type Answer = { stdout: string; stderr: string; code: number };
 const ok = (stdout: string): Answer => ({ stdout: `${stdout}\n`, stderr: '', code: 0 });
 
 // Commands run in a checkout of the repository whose main checkout is
-// /repo, on branch main, whose top level is top. git is answered by its
+// /repo, on branch, whose top level is top. git is answered by its
 // arguments; others answers every other command, in order.
-function inCheckout(others: Answer[], top = '/repo') {
+function inCheckout(others: Answer[], top = '/repo', branch = 'main') {
   return (cmd: string, args: string[]): Answer => {
     if (cmd !== 'git') return others.shift() ?? ok('');
     const asked = args.slice(2).join(' ');
     if (asked === 'rev-parse --path-format=absolute --git-common-dir') return ok('/repo/.git');
     if (asked === 'rev-parse --show-toplevel') return ok(top);
-    if (asked === 'branch --show-current') return ok('main');
+    if (asked === 'branch --show-current') return ok(branch);
     return { stdout: '', stderr: `no answer for git ${asked}`, code: 1 };
   };
 }
@@ -242,9 +245,13 @@ function inCheckout(others: Answer[], top = '/repo') {
 // It answers the catalogue request with config, and every other request
 // over the WebSocket with thread T. Each request is logged in sent. results
 // answers the commands other than git, in order. git answers from the
-// checkout whose top level is top.
-type Running = { projectRoot?: string; config?: unknown; fetch?: typeof globalThis.fetch; results?: Answer[]; top?: string };
-function runningT3({ projectRoot = '/repo', config = ONLY_DISABLED as unknown, fetch = ticketFetch, results = [], top }: Running = {}) {
+// checkout whose top level is top, on branch. onLaunch is called with db
+// and the launch's number, from 1, as T3 is asked for each thread.
+type Running = {
+  projectRoot?: string; config?: unknown; fetch?: typeof globalThis.fetch; results?: Answer[]; top?: string; branch?: string;
+  onLaunch?: (db: DatabaseSync, n: number) => void;
+};
+function runningT3({ projectRoot = '/repo', config = ONLY_DISABLED as unknown, fetch = ticketFetch, results = [], top, branch, onLaunch = () => {} }: Running = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec(SCHEMA);
   db.prepare(`insert into projection_projects (project_id, title, workspace_root, scripts_json, created_at, updated_at)
@@ -256,10 +263,12 @@ function runningT3({ projectRoot = '/repo', config = ONLY_DISABLED as unknown, f
     parentPid: (pid) => (CHAIN as Record<number, number>)[pid] ?? null,
     processAlive: (pid) => pid === 7,
     env: {},
-    results: inCheckout(results, top),
+    results: inCheckout(results, top, branch),
     openDb: () => ({ prepare: (sql: string) => db.prepare(sql), close() {} }) as Db,
     fetch,
-    WebSocket: t3Socket(sent, config),
+    WebSocket: t3Socket(sent, config, ({ tag }) => {
+      if (tag === 'orchestration.launchThread') onLaunch(db, launches(sent).length);
+    }),
   });
   return { db, sent, adapterIo, t: withT3(adapterIo) };
 }
@@ -277,6 +286,44 @@ test('a review T3 fails before any message is exit 3 with its failure, and archi
   assert.match(t.stderr(), /gpt-6-astra is not available \(thread T\)\n$/);
   assert.deepEqual(sent.map(({ payload }) => payload.type ?? 'launch'), ['launch', 'thread.archive']);
   assert.equal(sent[1].payload.threadId, 'T');
+});
+
+test('a review whose run returns a plan is exit 5 with nothing on stdout, and keeps the thread', async () => {
+  const { db, sent, t } = runningT3();
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'codex', 'completed', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_turn_items (turn_item_id, thread_id, run_id, ordinal, type, status, updated_at, payload_json)
+    values ('plan', 'T', 'run-1', 1, 'proposed_plan', 'completed', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_messages (message_id, thread_id, run_id, role, streaming, created_at, updated_at, payload_json)
+    values ('a1', 'T', 'run-1', 'assistant', 0, 'now', 'now', ?)`).run(JSON.stringify({ text: 'Here is my plan.' }));
+  assert.equal(await review(astraReview, t.deps), 5, t.stderr());
+  assert.equal(t.stdout(), '');
+  assert.match(t.stderr(), /the session returned a plan, not a result \(thread T\)\n$/);
+  assert.deepEqual(sent.map(({ payload }) => payload.type ?? 'launch'), ['launch']);
+});
+
+// A review whose run T3 completes with findings, in a thread T3 records in
+// worktreePath, or in the project's root when it is null. It is asked for
+// from the checkout whose top level is top.
+async function recordedReview(worktreePath: string | null, top: string) {
+  const { db, t } = runningT3({ top });
+  db.prepare(`insert into orchestration_v2_projection_threads (thread_id, project_id, title, default_provider, runtime_mode, interaction_mode, created_at, updated_at, payload_json)
+    values ('T', 'p1', 'x', 'codex', 'full-access', 'default', 'now', 'now', ?)`).run(JSON.stringify({ worktreePath, branch: 'fix-login' }));
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'codex', 'completed', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_messages (message_id, thread_id, run_id, role, streaming, created_at, updated_at, payload_json)
+    values ('a1', 'T', 'run-1', 'assistant', 0, 'now', 'now', ?)`).run(JSON.stringify({ text: 'FINDINGS' }));
+  assert.equal(await review(astraReview, t.deps), 0, t.stderr());
+  const { checkout, commit } = JSON.parse(t.stderr());
+  return { checkout, commit };
+}
+
+test('a review T3 runs in the worktree it was asked for names that worktree', async () => {
+  assert.deepEqual(await recordedReview('/w/fix-login', '/w/fix-login'), { checkout: '/w/fix-login', commit: HEAD });
+});
+
+test('a review T3 runs in the project\'s root instead names the root', async () => {
+  assert.deepEqual(await recordedReview(null, '/w/fix-login'), { checkout: '/repo', commit: HEAD });
 });
 
 test('a review in a repository T3 has no project for is exit 3, naming it, and creates no thread', async () => {
@@ -371,17 +418,125 @@ test('a bare-family handoff launches with the token the catalogue request issued
   assert.equal((adapterIo as ReturnType<typeof fakeIo>).calls.filter(([cmd]) => cmd === 't3').length, 1);
 });
 
-test('a step inside T3 Code opens no thread, and the default answers', async () => {
+// A step named build-x, on gpt/gpt-6-luna at effort high.
+const lunaStep: StepOptions = { for: 'build', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['gpt/gpt-6-luna'] };
+// A final message that ends with a step report holding yaml.
+const ending = (yaml: string) => `Prose.\n\n\`\`\`step-report\n${yaml}\`\`\`\n`;
+const DONE = ending('outcome: done\nevidence:\n  - commit 3f2a1c0\n');
+
+// Run n of thread T, which T3 completes with text as its final message.
+function completes(db: DatabaseSync, text: string, n = 1) {
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values (?, 'T', ?, 'codex', 'completed', 'now', '{}')`).run(`run-${n}`, n);
+  db.prepare(`insert into orchestration_v2_projection_messages (message_id, thread_id, run_id, role, streaming, created_at, updated_at, payload_json)
+    values (?, 'T', ?, 'assistant', 0, 'now', 'now', ?)`).run(`a${n}`, `run-${n}`, JSON.stringify({ text }));
+}
+// Run n of thread T, which T3 fails with failure before any message.
+function refuses(db: DatabaseSync, failure: string, n = 1) {
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values (?, 'T', ?, 'codex', 'failed', 'now', '{}')`).run(`run-${n}`, n);
+  db.prepare(`insert into orchestration_v2_projection_turn_items (turn_item_id, thread_id, run_id, ordinal, type, status, updated_at, payload_json)
+    values (?, 'T', ?, 1, 'error', 'failed', 'now', ?)`).run(`e${n}`, `run-${n}`, JSON.stringify({ failure: { message: failure } }));
+}
+const launchPayloads = (sent: Sent) => sent.filter(({ tag }) => tag === 'orchestration.launchThread').map(({ payload }) => payload as Record<string, unknown>);
+
+test('a step from a linked worktree runs in one default-mode thread there, and prints its done report', async () => {
+  const { db, sent, t } = runningT3({ top: '/w/feature', branch: 'feature' });
+  completes(db, DONE);
+  assert.equal(await step(lunaStep, t.deps), 0, t.stderr());
+  const [launch, ...others] = launchPayloads(sent);
+  assert.deepEqual(others, []);
+  assert.deepEqual(
+    { workspaceStrategy: launch.workspaceStrategy, interactionMode: launch.interactionMode, modelSelection: launch.modelSelection },
+    {
+      workspaceStrategy: { type: 'existing_worktree', worktreePath: '/w/feature', branch: 'feature' },
+      interactionMode: 'default',
+      modelSelection: { instanceId: 'codex', model: 'gpt-6-luna', options: [{ id: 'reasoningEffort', value: 'high' }] },
+    },
+  );
+  assert.equal(JSON.parse(t.stdout()).outcome, 'done');
+  const { resolver, family, model, handle } = JSON.parse(t.stderr());
+  assert.deepEqual({ resolver, family, model, kind: handle.kind }, { resolver: 't3', family: 'gpt', model: 'gpt-6-luna', kind: 'thread' });
+});
+
+test('a bare gemini step runs the catalogue\'s default without its effort', async () => {
+  const { db, sent, t } = runningT3({ config: GEMINI });
+  completes(db, DONE);
+  assert.equal(await step({ ...lunaStep, for: 'plan', effort: 'medium', models: ['gemini'] }, t.deps), 0, t.stderr());
+  assert.deepEqual(launches(sent), [{ instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] }]);
+});
+
+// What T3 was asked to do, in order: launch a thread, or the command's type.
+const asked = (sent: Sent) => sent.map(({ payload }) => payload.type ?? 'launch');
+
+test('a step whose report is done archives its thread', async () => {
+  const { db, sent, t } = runningT3();
+  completes(db, DONE);
+  assert.equal(await step(lunaStep, t.deps), 0, t.stderr());
+  assert.deepEqual(asked(sent), ['launch', 'thread.archive']);
+  assert.equal(sent[1].payload.threadId, 'T');
+});
+
+test('a step whose report is needs-input keeps its thread', async () => {
+  const { db, sent, t } = runningT3();
+  completes(db, ending('outcome: needs-input\nquestions:\n  - question: Which schema?\n'));
+  assert.equal(await step(lunaStep, t.deps), 0, t.stderr());
+  assert.equal(JSON.parse(t.stdout()).outcome, 'needs-input');
+  assert.deepEqual(asked(sent), ['launch']);
+});
+
+const CLAUDE = { providers: [provider('claudeAgent', [{ slug: 'claude-opus-5-5', isDefault: true }])] };
+
+test('a step whose first model T3 refuses archives that thread, and runs the next model', async () => {
+  const onLaunch = (db: DatabaseSync, n: number) => (n === 1 ? refuses(db, 'gpt-6-astra is not available', n) : completes(db, DONE, n));
+  const { sent, t } = runningT3({ config: CLAUDE, onLaunch });
+  assert.equal(await step({ ...lunaStep, models: ['gpt/gpt-6-astra', 'claude'] }, t.deps), 0, t.stderr());
+  assert.deepEqual(asked(sent.filter(({ tag }) => tag !== 'server.getConfig')), ['launch', 'thread.archive', 'launch', 'thread.archive']);
+  assert.equal(JSON.parse(t.stderr()).family, 'claude');
+});
+
+test('a step whose every model T3 refuses is exit 3, with T3\'s failure', async () => {
+  const { sent, t } = runningT3({ onLaunch: (db) => refuses(db, 'gpt-6-astra is not available') });
+  assert.equal(await step({ ...lunaStep, models: ['gpt/gpt-6-astra'] }, t.deps), 3);
+  assert.equal(t.stdout(), '');
+  assert.match(t.stderr(), /gpt-6-astra is not available/);
+  assert.deepEqual(asked(sent), ['launch', 'thread.archive']);
+});
+
+test('a step thread that stops to ask is a failed report naming the thread, and keeps it', async () => {
+  const { db, sent, t } = runningT3();
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'codex', 'waiting', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_runtime_requests (runtime_request_id, thread_id, node_id, kind, status, created_at, payload_json)
+    values ('rq1', 'T', 'n1', 'user_input', 'pending', 'now', '{}')`).run();
+  assert.equal(await step(lunaStep, t.deps), 0, t.stderr());
+  assert.deepEqual(JSON.parse(t.stdout()), { outcome: 'failed', reason: 'the session stopped to ask (thread T)' });
+  assert.equal(JSON.parse(t.stderr()).handle, null);
+  assert.deepEqual(asked(sent), ['launch']);
+});
+
+test('step instructions inside T3 Code list the catalogue\'s models', async () => {
+  const t = withT3(insideT3({ config: { providers: [provider('codex', ['gpt-6-luna'])] } }));
+  assert.equal(await instructions({ strategy: 'step', for: 'plan' }, t.deps), 0, t.stderr());
+  const { strategy, resolver, options } = JSON.parse(t.stdout());
+  assert.deepEqual({ strategy, resolver, options }, { strategy: 'step', resolver: 't3', options: ['gpt/gpt-6-luna'] });
+});
+
+test('a step outside T3 Code opens no thread, and the default answers', async () => {
   const sent: Sent = [];
-  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3, subagent] }\n', real: { t3: createAdapter(insideT3({ sent })) } });
-  assert.equal(await step({ for: 'build', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['claude'] }, t.deps), 3);
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3, subagent] }\n', real: { t3: createAdapter(io({ 100: 50, 50: 1 }, { sent })) } });
+  assert.equal(await step({ ...lunaStep, models: ['claude'] }, t.deps), 3);
   assert.deepEqual(sent, []);
   assert.ok(t.savedFile('.workspace/lets-delegate/build-x.prompt.md'), 'the default saved the prompt');
 });
 
-test('step instructions inside T3 Code decline when t3 is the only resolver', async () => {
-  const t = withT3(insideT3());
-  assert.equal(await instructions({ strategy: 'step', for: 'plan' }, t.deps), 2);
+test('a step still running at its time limit stops its thread, keeps it, and is exit 6', async () => {
+  const { db, sent, t } = runningT3();
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'codex', 'running', 'now', '{}')`).run();
+  assert.equal(await step({ ...lunaStep, timeoutMinutes: 0 }, t.deps), 6);
   assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), /every resolver declined/);
+  assert.match(t.stderr(), /no result after 0 ms \(thread T\)\n$/);
+  assert.deepEqual(asked(sent), ['launch', 'thread.stop']);
+  assert.equal(sent[1].payload.threadId, 'T');
 });

@@ -43,9 +43,12 @@ function addProject(db: DatabaseSync, { id = 'p1', title = 'lets-spec', root = '
   db.prepare(`insert into projection_projects (project_id, title, workspace_root, scripts_json, created_at, updated_at, default_model_selection_json)
     values (?, ?, ?, '[]', 'now', 'now', ?)`).run(id, title, root, selection);
 }
-function addThread(db: DatabaseSync, threadId: string) {
+// A thread of project p1. T3 records its worktree in the payload; a null
+// worktreePath is the project's root, and payload replaces the whole payload.
+function addThread(db: DatabaseSync, threadId: string, { worktreePath = undefined as string | null | undefined, payload = undefined as string | undefined } = {}) {
+  const json = payload ?? JSON.stringify(worktreePath === undefined ? {} : { worktreePath });
   db.prepare(`insert into orchestration_v2_projection_threads (thread_id, project_id, title, default_provider, runtime_mode, interaction_mode, created_at, updated_at, payload_json)
-    values (?, 'p1', 't', 'claudeAgent', 'full-access', 'plan', 'now', 'now', '{}')`).run(threadId);
+    values (?, 'p1', 't', 'claudeAgent', 'full-access', 'default', 'now', 'now', ?)`).run(threadId, json);
 }
 // Runs are numbered; the newest has the highest ordinal.
 function addRun(db: DatabaseSync, threadId: string, runId: string, ordinal: number, status: string) {
@@ -63,6 +66,13 @@ function addPendingRequest(db: DatabaseSync, threadId: string) {
 function addFailure(db: DatabaseSync, runId: string, message: string) {
   db.prepare(`insert into orchestration_v2_projection_turn_items (turn_item_id, thread_id, run_id, ordinal, type, status, updated_at, payload_json)
     values ('e1', 'T', ?, 1, 'error', 'failed', 'now', ?)`).run(runId, JSON.stringify({ failure: { class: 'provider', message } }));
+}
+
+// An item of the given type in the run, such as the proposed_plan a session
+// in plan mode ends with.
+function addTurnItem(db: DatabaseSync, runId: string, type: string, { id = 'i1', ordinal = 1 } = {}) {
+  db.prepare(`insert into orchestration_v2_projection_turn_items (turn_item_id, thread_id, run_id, ordinal, type, status, updated_at, payload_json)
+    values (?, 'T', ?, ?, ?, 'completed', 'now', '{}')`).run(id, runId, ordinal, type);
 }
 
 type Log = [string, unknown][];
@@ -285,7 +295,7 @@ test('findProject matches the workspace root, or names the known projects', () =
 test('buildLaunch has the shape the UI sends for a new thread, on the current branch', () => {
   const modelSelection = { instanceId: 'codex', model: 'gpt-6.1-sol', options: [{ id: 'reasoningEffort', value: 'high' }] };
   const input = buildLaunch({
-    threadId: 'T', projectId: 'P', title: 'x-plan-review', text: 'PROMPT', modelSelection, interactionMode: 'plan', branch: 'main', worktreePath: null, messageId: 'M', commandId: 'C',
+    threadId: 'T', projectId: 'P', title: 'x-plan-review', text: 'PROMPT', modelSelection, branch: 'main', worktreePath: null, messageId: 'M', commandId: 'C',
   });
   assert.deepEqual(input, {
     commandId: 'C',
@@ -296,13 +306,12 @@ test('buildLaunch has the shape the UI sends for a new thread, on the current br
     generateTitle: true,
     modelSelection,
     runtimeMode: 'full-access',
-    interactionMode: 'plan',
+    interactionMode: 'default',
     workspaceStrategy: { type: 'root', branch: 'main' },
     initialMessage: { messageId: 'M', text: 'PROMPT', attachments: [] },
   });
   // A detached HEAD has no branch, and the root strategy then has none either.
-  const plain = buildLaunch({ threadId: 'T', projectId: 'P', title: 't', text: 'x', modelSelection, interactionMode: 'default', branch: null, worktreePath: null });
-  assert.equal(plain.interactionMode, 'default');
+  const plain = buildLaunch({ threadId: 'T', projectId: 'P', title: 't', text: 'x', modelSelection, branch: null, worktreePath: null });
   assert.deepEqual(plain.workspaceStrategy, { type: 'root' });
   assert.match(plain.commandId, /^[0-9a-f-]{36}$/);
   assert.match(plain.initialMessage.messageId, /^[0-9a-f-]{36}$/);
@@ -311,7 +320,7 @@ test('buildLaunch has the shape the UI sends for a new thread, on the current br
 test('buildLaunch binds a linked worktree as an existing worktree, on its branch when it has one', () => {
   const modelSelection = { instanceId: 'codex', model: 'gpt-6-luna', options: [] };
   const input = (branch: string | null) => buildLaunch({
-    threadId: 'T', projectId: 'P', title: 't', text: 'x', modelSelection, interactionMode: 'plan', branch, worktreePath: '/w/fix-login',
+    threadId: 'T', projectId: 'P', title: 't', text: 'x', modelSelection, branch, worktreePath: '/w/fix-login',
   });
   assert.deepEqual(input('fix-login').workspaceStrategy, { type: 'existing_worktree', worktreePath: '/w/fix-login', branch: 'fix-login' });
   assert.deepEqual(input(null).workspaceStrategy, { type: 'existing_worktree', worktreePath: '/w/fix-login' });
@@ -365,7 +374,7 @@ test('run waits for the run to complete and the message to stop streaming', asyn
     () => db.exec("update orchestration_v2_projection_runs set status = 'completed'"),
     () => db.exec(`update orchestration_v2_projection_messages set payload_json = '{"text":"FINDINGS"}', streaming = 0`),
   ];
-  assert.deepEqual(await running(db, steps), { handle: HANDLE, text: 'FINDINGS' });
+  assert.deepEqual(await running(db, steps), { handle: HANDLE, text: 'FINDINGS', checkout: '/r' });
   assert.equal(steps.length, 0);
 });
 // A thread whose run failed before any assistant message.
@@ -399,13 +408,75 @@ test('run fails a run that failed after an assistant message, with its failure',
     (error) => error instanceof SessionFailed && !(error instanceof Refused) && error.message === 'quota exceeded (thread T)');
 });
 test('run fails when the session stops to ask', async () => {
-  for (const [status, pending] of [['waiting', false], ['running', true]] as const) {
+  for (const status of ['waiting', 'running']) {
     const db = database();
     addThread(db, 'T');
     addRun(db, 'T', 'run-1', 1, status);
-    if (pending) addPendingRequest(db, 'T');
+    addPendingRequest(db, 'T');
     await assert.rejects(running(db), (error) => error instanceof SessionFailed && error.message === 'the session stopped to ask (thread T)');
   }
+});
+test('run waits through a waiting run with no pending request', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'waiting');
+  addMessage(db, 'a1', 'run-1', 'FINDINGS', 0);
+  const steps = [() => db.exec("update orchestration_v2_projection_runs set status = 'completed'")];
+  assert.equal((await running(db, steps)).text, 'FINDINGS');
+  assert.equal(steps.length, 0);
+});
+// A thread whose completed run ends with a proposed plan, then a checkpoint,
+// and a final message.
+function plannedRun() {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'completed');
+  addTurnItem(db, 'run-1', 'proposed_plan', { id: 'plan', ordinal: 1 });
+  addTurnItem(db, 'run-1', 'checkpoint', { id: 'cp', ordinal: 2 });
+  addMessage(db, 'a1', 'run-1', 'Here is my plan.', 0);
+  return db;
+}
+test('run fails a completed run that holds a proposed plan, naming the thread', async () => {
+  await assert.rejects(running(plannedRun()),
+    (error) => error instanceof SessionFailed && !(error instanceof Refused) && error.message === 'the session returned a plan, not a result (thread T)');
+});
+test('run keeps the thread of a run that returned a plan', async () => {
+  const log: Log = [];
+  await assert.rejects(running(plannedRun(), [], { log }), SessionFailed);
+  assert.deepEqual(sentTypes(log), ['launch']);
+});
+test('run returns the final message of a completed run whose items hold no plan', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'completed');
+  addTurnItem(db, 'run-1', 'checkpoint');
+  addMessage(db, 'a1', 'run-1', 'FINDINGS', 0);
+  assert.equal((await running(db)).text, 'FINDINGS');
+});
+// The checkout run returns, when T3 records thread T as thread does, and
+// the review was asked for from the checkout whose top level is top.
+async function checkoutOf(thread: ((db: DatabaseSync) => void) | null, top = '/r') {
+  const db = database();
+  thread?.(db);
+  addRun(db, 'T', 'run-1', 1, 'completed');
+  addMessage(db, 'a1', 'run-1', 'FINDINGS', 0);
+  const io = launchingIo(db, [], { checkout: { top } });
+  return (await createAdapter(io).run(runInput, { timeoutMs: 60000 })).checkout;
+}
+test('run returns the worktree T3 records for the thread', async () => {
+  assert.equal(await checkoutOf((db) => addThread(db, 'T', { worktreePath: '/w/fix-login' }), '/w/fix-login'), '/w/fix-login');
+});
+test('run returns the project\'s root when T3 records the thread with no worktree', async () => {
+  assert.equal(await checkoutOf((db) => addThread(db, 'T', { worktreePath: null })), '/r');
+});
+test('run returns the checkout T3 records, not the one it asked for', async () => {
+  assert.equal(await checkoutOf((db) => addThread(db, 'T', { worktreePath: null }), '/w/fix-login'), '/r');
+});
+test('run returns no checkout when T3 has no row for the thread', async () => {
+  assert.equal(await checkoutOf(null), null);
+});
+test('run returns no checkout when the thread\'s payload does not parse', async () => {
+  assert.equal(await checkoutOf((db) => addThread(db, 'T', { payload: '{not json' })), null);
 });
 test('run fails on an interrupted, cancelled or rolled back run', async () => {
   for (const [status, reason] of [['interrupted', 'run interrupted'], ['cancelled', 'run cancelled'], ['rolled_back', 'run rolled back']]) {
@@ -422,18 +493,63 @@ test('run times out naming the thread, when the run does not end in time', async
   addRun(db, 'T', 'run-1', 1, 'running');
   await assert.rejects(running(db, [], { timeoutMs: 0 }), (error) => error instanceof TimeoutError && error.message === 'no result after 0 ms (thread T)');
 });
+test('run times out naming the thread, when the run stays waiting with no pending request', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'waiting');
+  await assert.rejects(running(db, [], { timeoutMs: 0 }), (error) => error instanceof TimeoutError && error.message === 'no result after 0 ms (thread T)');
+});
+test('a review still running at its time limit stops its thread, and keeps it', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'running');
+  const log: Log = [];
+  await assert.rejects(running(db, [], { timeoutMs: 0, log }), TimeoutError);
+  assert.deepEqual(sentTypes(log), ['launch', 'thread.stop']);
+  const { payload } = log.filter(([what]) => what === 'send')[1][1] as { payload: Record<string, unknown> };
+  assert.deepEqual({ ...payload, commandId: 'C' }, { type: 'thread.stop', commandId: 'C', threadId: 'T', reason: 'lets delegate: the session ran past its time limit' });
+});
+// A thread whose run is still going.
+function runningRun() {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'running');
+  return db;
+}
+test('a timed-out run whose stop T3 rejects still times out, saying the thread may still be running', async () => {
+  await assert.rejects(running(runningRun(), [], { timeoutMs: 0, statuses: [200, 401] }), (error) => error instanceof TimeoutError
+    && /^no result after 0 ms; could not stop it, so it may still be running: .+ \(thread T\)$/.test(error.message));
+});
+test('a timed-out run whose stop T3 does not answer still times out within 10 s, saying the thread may still be running', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const log: Log = [];
+  const io = { ...launchingIo(runningRun(), log), WebSocket: launchOnlyWebSocket(log) };
+  // Caught at once, so the rejection is never unhandled while time moves on.
+  let outcome: unknown;
+  createAdapter(io).run(runInput, { timeoutMs: 0 }).then(() => {
+    outcome = 'resolved';
+  }, (error: unknown) => {
+    outcome = error;
+  });
+  while (!sentTypes(log).includes('thread.stop')) await new Promise((resolve) => setImmediate(resolve));
+  t.mock.timers.tick(10_000);
+  for (let i = 0; i < 10; i++) await new Promise((resolve) => setImmediate(resolve));
+  assert.ok(outcome instanceof TimeoutError, 'the run gave up on the stop at 10 s');
+  assert.match(outcome.message,
+    /^no result after 0 ms; could not stop it, so it may still be running: no reply from t3 after 10 s; check T before running again \(thread T\)$/);
+});
 test('run returns a completed run with no message as an empty one; the resolver rejects it', async () => {
   const db = database();
   addThread(db, 'T');
   addRun(db, 'T', 'run-1', 1, 'completed');
-  assert.deepEqual(await running(db), { handle: HANDLE, text: '' });
+  assert.deepEqual(await running(db), { handle: HANDLE, text: '', checkout: '/r' });
 });
 test('run returns an empty final message as it is; the resolver rejects it', async () => {
   const db = database();
   addThread(db, 'T');
   addRun(db, 'T', 'run-1', 1, 'completed');
   addMessage(db, 'a1', 'run-1', '', 0);
-  assert.deepEqual(await running(db), { handle: HANDLE, text: '' });
+  assert.deepEqual(await running(db), { handle: HANDLE, text: '', checkout: '/r' });
 });
 
 const ISSUE = ['auth', 'session', 'issue', '--base-dir', '/home/u/.t3', '--ttl', '30d', '--label', 'lets-delegate', '--token-only'];
@@ -493,7 +609,7 @@ test('dispatch sends one request frame and returns the success value', async () 
 test('launch sends one launchThread request and returns the thread t3 names', async () => {
   const log: Log = [];
   const io = fakeIo({ env: {}, fetch: fakeFetch([200], []), WebSocket: fakeWebSocket(LAUNCHED, log) });
-  const input = buildLaunch({ threadId: 'T', projectId: 'P', title: 't', text: 'x', modelSelection: { instanceId: 'codex', model: 'm', options: [] }, interactionMode: 'plan', branch: null, worktreePath: null });
+  const input = buildLaunch({ threadId: 'T', projectId: 'P', title: 't', text: 'x', modelSelection: { instanceId: 'codex', model: 'm', options: [] }, branch: null, worktreePath: null });
   assert.deepEqual(await launch(io, { origin: ORIGIN, token: 'tok' }, input), { threadId: 'T' });
   assert.deepEqual(log[1], ['send', { _tag: 'Request', id: '1', tag: 'orchestration.launchThread', payload: input, headers: [] }]);
 });
@@ -557,6 +673,29 @@ test('no reply from t3 is an unknown outcome, not a refusal', async (t) => {
   t.mock.timers.tick(120_000);
   await assert.rejects(pending, (error) => error instanceof SpawnError && !(error instanceof Refused) && /no reply from t3/.test(error.message));
 });
+
+// A WebSocket that answers a launch with LAUNCHED, and never answers any
+// other request.
+function launchOnlyWebSocket(log: Log): typeof WebSocket {
+  return class {
+    listeners: Record<string, ((event: unknown) => void)[]> = {};
+    constructor() {
+      queueMicrotask(() => this.emit('open', {}));
+    }
+    addEventListener(type: string, listener: (event: unknown) => void) {
+      (this.listeners[type] ??= []).push(listener);
+    }
+    emit(type: string, event: unknown) {
+      for (const listener of this.listeners[type] ?? []) listener(event);
+    }
+    send(data: string) {
+      const frame = JSON.parse(data);
+      log.push(['send', frame]);
+      if (frame.tag === 'orchestration.launchThread') queueMicrotask(() => this.emit('message', { data: JSON.stringify(LAUNCHED) }));
+    }
+    close() {}
+  } as unknown as typeof WebSocket;
+}
 
 // A WebSocket that t3 refuses: it fails and closes without opening.
 function refusedWebSocket(): typeof WebSocket {
@@ -790,7 +929,7 @@ test('finish is refused when t3 is not running', async () => {
 
 const runInput: RunInput = { name: 'x-plan-review', prompt: 'PROMPT', cwd: '/r/sub', family: 'gpt', model: 'gpt-6.1-sol', effort: 'high' };
 
-test('run launches a plan-mode thread in the project for this repo, and the handle holds no token', async () => {
+test('run launches a default-mode thread in the project for this repo, and the handle holds no token', async () => {
   const db = database();
   addProject(db, { root: '/r' });
   const log: Log = [];
@@ -815,7 +954,7 @@ test('run launches a plan-mode thread in the project for this repo, and the hand
   // The handle names the thread t3 answered with, and holds no token.
   assert.deepEqual(handle, { kind: 'thread', id: 'T', origin: ORIGIN });
   assert.match(frame.payload.threadId, /^[0-9a-f-]{36}$/);
-  assert.equal(frame.payload.interactionMode, 'plan');
+  assert.equal(frame.payload.interactionMode, 'default');
   assert.equal(frame.payload.projectId, 'p1');
   assert.deepEqual(frame.payload.workspaceStrategy, { type: 'root', branch: 'main' });
   assert.equal(frame.payload.title, 'x-plan-review');

@@ -1,6 +1,6 @@
 // The real world, as the adapters see it. Tests pass fakes with the same
 // fields instead.
-import { execFile as nodeExecFile, spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { accessSync, chmodSync, constants, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { delimiter, join } from 'node:path';
@@ -9,6 +9,49 @@ import { DatabaseSync } from 'node:sqlite';
 // Where a resolver writes its working files, relative to the request's
 // folder: the repo root, whose .workspace/ git ignores.
 export const SCRATCH = '.workspace/lets-delegate';
+
+// How much of each output stream execFile keeps before it gives up.
+const MAX_BUFFER = 64 * 1024 * 1024;
+// How long a group stopped with SIGTERM has before it gets SIGKILL, how
+// long execFile then waits for it to end, and how often it checks.
+const KILL_GRACE_MS = 5000;
+const KILL_WAIT_MS = 1000;
+const GROUP_POLL_MS = 100;
+
+// Sends signal to every process in the group that pid leads. false when
+// the group is gone. EPERM means the group is there, but holds only
+// processes lets may not signal, so stopGroup can only wait it out.
+function signalGroup(pid: number, signal: NodeJS.Signals | 0): boolean {
+  try {
+    process.kill(-pid, signal);
+    return true;
+  } catch (error) {
+    const { code } = error as NodeJS.ErrnoException;
+    if (code === 'EPERM') return true;
+    if (code === 'ESRCH') return false;
+    throw error;
+  }
+}
+
+// Stops the group that pid leads: SIGTERM, then SIGKILL after
+// KILL_GRACE_MS. Calls done once the group is gone, or KILL_WAIT_MS after
+// SIGKILL, since a process can take a moment to end.
+function stopGroup(pid: number, done: () => void) {
+  const started = Date.now();
+  let killed: number | undefined;
+  if (!signalGroup(pid, 'SIGTERM')) return done();
+  const poll = setInterval(() => {
+    // Timed from SIGKILL, not from the start: a stalled tick must not skip it.
+    if (!signalGroup(pid, 0) || (killed !== undefined && Date.now() - killed >= KILL_WAIT_MS)) {
+      clearInterval(poll);
+      return done();
+    }
+    if (killed === undefined && Date.now() - started >= KILL_GRACE_MS) {
+      killed = Date.now();
+      signalGroup(pid, 'SIGKILL');
+    }
+  }, GROUP_POLL_MS);
+}
 
 // timedOut: the command ran past timeoutMs, and was stopped.
 export type ExecResult = { stdout: string; stderr: string; code: number; timedOut?: boolean };
@@ -60,26 +103,96 @@ export function parentPid(pid: number, sys: ProcessSys = { readFileSync, existsS
   return text && /^\d+$/.test(text) ? Number(text) : null;
 }
 
+// The groups of the commands execFile runs now. A command in a group of
+// its own no longer gets the terminal's Ctrl-C, so while any runs, lets
+// passes these signals on to every group, then ends by the signal itself.
+const running = new Set<number>();
+const FORWARDED: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGHUP'];
+
+function forward(signal: NodeJS.Signals) {
+  for (const pid of running) {
+    try {
+      process.kill(-pid, signal);
+    } catch (error) {
+      // One group must not keep the signal from the rest. A group can end
+      // before its command settles, while a process outside it holds the
+      // output open (ESRCH), or hold only processes lets may not signal
+      // (EPERM).
+      if (!['ESRCH', 'EPERM'].includes((error as NodeJS.ErrnoException).code!)) throw error;
+    }
+  }
+  stopForwarding();
+  process.kill(process.pid, signal);
+}
+
+function startRunning(pid: number) {
+  if (running.size === 0) for (const signal of FORWARDED) process.on(signal, forward);
+  running.add(pid);
+}
+
+function stopRunning(pid: number) {
+  if (running.delete(pid) && running.size === 0) stopForwarding();
+}
+
+function stopForwarding() {
+  for (const signal of FORWARDED) process.off(signal, forward);
+}
+
 export function realIo(): Io {
   return {
     // Resolves on any exit code, and on a timeout. Rejects only when the
-    // command cannot start.
+    // command cannot start, or its output passes MAX_BUFFER.
     execFile(cmd, args, { cwd, env, input, timeoutMs } = {}) {
       return new Promise((resolve, reject) => {
         let timedOut = false;
-        const child = nodeExecFile(cmd, args, { cwd, env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }, (error, stdout, stderr) => {
+        let settled = false;
+        let stopping = false;
+        let code: number | null = null;
+        const output = { stdout: '', stderr: '' };
+        // detached: the command leads a process group of its own, which a
+        // signal to the group reaches with every process it started.
+        const child = spawn(cmd, args, { cwd, env, detached: true });
+        // A command that cannot start has no pid, and only gets an error.
+        if (child.pid !== undefined) startRunning(child.pid);
+        const settle = (finish: () => void) => {
+          if (settled) return;
+          settled = true;
           clearTimeout(timer);
-          if (error && typeof error.code === 'string') return reject(new Error(`cannot run ${cmd}: ${error.message}`));
-          resolve({ stdout, stderr, code: error ? ((error.code as number | undefined) ?? 1) : 0, timedOut });
-        });
+          if (child.pid !== undefined) stopRunning(child.pid);
+          finish();
+        };
+        // A process outside the group can still hold the pipes, so stop
+        // reading them rather than wait for them to close.
+        const stop = (finish: () => void) => {
+          if (stopping) return;
+          stopping = true;
+          stopGroup(child.pid!, () => {
+            child.stdout.destroy();
+            child.stderr.destroy();
+            settle(finish);
+          });
+        };
+        for (const name of ['stdout', 'stderr'] as const) {
+          child[name].setEncoding('utf8');
+          child[name].on('data', (chunk: string) => {
+            if (output[name].length > MAX_BUFFER) return;
+            output[name] += chunk;
+            if (output[name].length > MAX_BUFFER) stop(() => reject(new Error(`cannot run ${cmd}: ${name} maxBuffer length exceeded`)));
+          });
+        }
+        child.on('error', (error) => settle(() => reject(new Error(`cannot run ${cmd}: ${error.message}`))));
+        child.on('exit', (exitCode) => { code = exitCode ?? 1; });
+        // Once the group is being stopped, only its end settles: the command
+        // can close its pipes while a process it started still runs.
+        child.on('close', (exitCode) => { if (!stopping) settle(() => resolve({ ...output, code: exitCode ?? 1, timedOut })); });
         // Do not leave the command running, and spending tokens, after we stop waiting.
         const timer = timeoutMs === undefined ? undefined : setTimeout(() => {
           timedOut = true;
-          child.kill();
+          stop(() => resolve({ ...output, code: code ?? 1, timedOut }));
         }, timeoutMs);
         // Close stdin after the input, so a command that reads it does not hang.
-        child.stdin!.on('error', () => {});
-        child.stdin!.end(input);
+        child.stdin.on('error', () => {});
+        child.stdin.end(input);
       });
     },
 

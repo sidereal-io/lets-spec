@@ -78,9 +78,12 @@ with a scrutiny tier, use that tier as `--effort`.
 
 In a `lets-go` step, return `needs-input` whenever this skill asks the user.
 
-1. Resolve vocabulary as below, then write the prompt to
-   `.workspace/<change>-review-prompt.md`. The next section says what goes
-   in it.
+1. Before you write the prompt, note `<checkout>`, the output of
+   `git rev-parse --show-toplevel`, and `<head>`, the output of
+   `git rev-parse HEAD`, on a clean tree. Note them now: a reviewer that
+   commits moves `HEAD`. Then resolve vocabulary as below, and write the
+   prompt to `.workspace/<change>-review-prompt.md`. The next section says
+   what goes in it.
 2. Ask what can run. From the repo root, run:
 
    ```bash
@@ -122,7 +125,9 @@ In a `lets-go` step, return `needs-input` whenever this skill asks the user.
 5. Act on its exit code:
    - **0**: the findings are in the raw file. The meta file's last line is
      JSON. It names what the review was for, the resolver, the family and
-     model that answered, and whether the review was independent.
+     model that answered, and whether the review was independent. Then
+     read on below this list: note the commit, and check what the review
+     read.
    - **3**: no fresh session can run here, for example because no resolver
      started one, or every model was refused. Take the [subagent
      step](#review-in-a-subagent).
@@ -134,8 +139,8 @@ next one each time a model is refused. When only the author's family can
 run, the review still runs, and the meta line says `"independent": false`.
 Never review in the author's own session.
 
-Note the commit you reviewed: `git rev-parse --short HEAD`, on a clean tree.
-The report records it, so a later session can tell whether the plan changed
+Note the commit you reviewed: the short form of the `<head>` you noted in
+step 1, `git rev-parse --short <head>`. The report records it, so a later session can tell whether the plan changed
 after the verdict.
 
 The report also records how the review ran, as the reviewer context:
@@ -146,6 +151,24 @@ The report also records how the review ran, as the reviewer context:
   family other than the author's;
 - `subagent, same family` when the tool identifies the author's family;
 - `subagent, family not evidenced` when the tool does not identify it.
+
+### Check what the review read
+
+A resolver can run the session in another checkout, and a reviewer can
+commit. Either way, the review read other code than yours. After exit 0,
+check that:
+
+- the meta line's `checkout` is `<checkout>` and its `commit` is `<head>`;
+- the raw file's last line is `Read: <checkout> <head>`.
+
+After the [subagent step](#review-in-a-subagent) there is no meta line, so
+check only its `Read:` line.
+
+When a value differs, is `null`, or the `Read:` line is missing, record no
+review. Show the user the meta file, when this run wrote one, and the
+`Read:` line, or say that it is missing. Then stop.
+
+When everything matches, go on to [Check the findings](#check-the-findings).
 
 ### Review in a subagent
 
@@ -160,7 +183,7 @@ Save its output to `.workspace/<change>-review-raw.md`. Run `git status --porcel
 
 Record the family that answered, and `independent: no` unless the subagent
 was another family and the tool's own output names it. Do not run the review
-in this session.
+in this session. Then [check what the review read](#check-what-the-review-read).
 
 This costs real tokens. Never loop it. Run again only when the plan or the
 question changed.
@@ -182,6 +205,12 @@ Before writing the prompt, resolve the installed
 [Plain language](../lets-shape/references/plain-language.md) reference to an
 absolute path. Put that path and its delegated-review criteria in the
 actual prompt. Keep the criteria when invoking a built-in review command.
+
+Start the prompt with `<checkout>`, the branch (`git branch --show-current`)
+and `<head>`, and tell the reviewer to read files only in `<checkout>`. End
+it by asking for a last line `Read: <absolute path> <full commit>`, as plain
+text with no backticks: what `git rev-parse --show-toplevel` and
+`git rev-parse HEAD` print in the checkout the reviewer read.
 
 Tell the reviewer which files hold the plan, which files it should check the
 plan against, and that it works read-only. Then give it this method:
