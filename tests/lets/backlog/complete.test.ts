@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/backlog/commands.ts';
 import type { Answer, Row } from './fixtures/fake-gh.ts';
+import { PROVIDERS } from '../../../lets/src/backlog/providers.ts';
 import { backlogDeps, fail, json, LOOKUP_ONE, ok, TIMED_OUT } from './fixtures/fake-gh.ts';
+import { fakeProvider, JIRA_CONFIG, jiraItem } from './fixtures/fake-provider.ts';
 
 const rows = ({ state = json({ state: 'OPEN' }) as Answer, close = ok('') as Answer } = {}): Row[] => [
   ...LOOKUP_ONE,
@@ -84,4 +86,14 @@ test('a close that times out returns failed, says it may have happened, and is n
   assert.equal(await run(['complete', '258'], t.deps), 0);
   assert.deepEqual(t.json(), { result: 'failed', message: 'timed out; the write may have happened' });
   assert.equal(t.calls().filter((args) => args[0] === 'issue' && args[1] === 'close').length, 1);
+});
+
+test('a backlog provider with Jira-style keys gets the key PROJ-12, and returns completed', async () => {
+  const jira = fakeProvider({ items: [jiraItem('PROJ-12')] });
+  const t = backlogDeps([], { config: JIRA_CONFIG });
+  assert.equal(await run(['complete', 'PROJ-12'], t.deps, { ...PROVIDERS, jira: jira.provider }), 0);
+  assert.deepEqual(t.json(), { result: 'completed' });
+  assert.deepEqual(jira.calls(), [['create'], ['complete', 'PROJ-12']]);
+  assert.equal(jira.item('PROJ-12')!.state, 'CLOSED');
+  assert.deepEqual(t.calls(), []);
 });
