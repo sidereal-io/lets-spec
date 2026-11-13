@@ -1,10 +1,12 @@
 // Deps for the lets backlog commands, with a fake gh. execFile answers each
 // gh call from a table: the first row whose key the call's arguments start
-// with, joined by spaces. A call no row answers fails the test. Each call is
-// recorded, so a test can assert the writes that were not made.
+// with, joined by spaces. A call no row answers fails the test. Each gh call
+// is recorded, so a test can assert the writes that were not made.
+// The user's lets config, CONFIG_FILE, holds config, when given. No other
+// program runs: a test that reaches one fails.
 //
 //   const t = backlogDeps([...LOOKUP_ONE, ['issue view 7', json({...})]]);
-//   await run('item', { issue: 7 }, t.deps);
+//   await run(['item', '7'], t.deps);
 //   t.json(), t.calls()
 import type { Deps, ExecOptions, ExecResult } from '../../../../lets/src/io.ts';
 import { commandDeps } from '../../delegate/fixtures/command-deps.ts';
@@ -24,11 +26,16 @@ export const TIMED_OUT: ExecResult = { stdout: '', stderr: '', code: 1, timedOut
 export const lookup = (projects: unknown[]): Row => ['api graphql', json({ repo: REPO, projects })];
 export const LOOKUP_ONE: Row[] = [lookup([PROJECT])];
 
-export function backlogDeps(rows: Row[]) {
+// Where the user's lets config is, for commandDeps' env and home folder.
+export const CONFIG_FILE = '/home/u/.config/lets/config.yaml';
+
+export function backlogDeps(rows: Row[], { config, files = {} }: { config?: string; files?: Record<string, string> } = {}) {
   const t = commandDeps();
+  if (config !== undefined) t.io.files.set(CONFIG_FILE, config);
+  for (const [path, text] of Object.entries(files)) t.io.files.set(path, text);
   const calls: [string[], ExecOptions][] = [];
   t.io.execFile = async (cmd, args, opts = {}) => {
-    if (cmd !== 'gh') throw new Error(`no program but gh runs here: ${cmd}`);
+    if (cmd !== 'gh') throw new Error(`no program but gh runs here: ${cmd} ${args.join(' ')}`);
     calls.push([args, opts]);
     const joined = args.join(' ');
     const row = rows.find(([key]) => joined.startsWith(key));

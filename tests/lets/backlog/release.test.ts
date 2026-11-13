@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/backlog/commands.ts';
 import type { Answer, Row } from './fixtures/fake-gh.ts';
+import { PROVIDERS } from '../../../lets/src/backlog/providers.ts';
 import { backlogDeps, fail, json, LOOKUP_ONE, ok, REPO } from './fixtures/fake-gh.ts';
+import { fakeProvider, JIRA_CONFIG, jiraItem } from './fixtures/fake-provider.ts';
 
 const URL_149 = `https://github.com/${REPO}/issues/149`;
 
@@ -74,4 +76,25 @@ test('release preserves another claim under the same login', async () => {
   assert.ok(t.ran('api repos/acme/app/issues/comments/1 --method DELETE'));
   assert.ok(!t.ran('issue edit'));
   assert.ok(!t.ran('project item-edit'));
+});
+
+test('release with a key GitHub does not use is not-found, and runs no gh command', async () => {
+  const t = backlogDeps(rows());
+  assert.equal(await run(['release', 'PROJ-12', '--claim', TOKEN], t.deps), 1);
+  assert.equal(t.json().error, 'not-found');
+  assert.deepEqual(t.calls(), []);
+});
+
+test('a backlog provider with Jira-style keys answers release PROJ-12 --claim <token>', async () => {
+  const jira = fakeProvider({ items: [jiraItem('PROJ-12')] });
+  const providers = { ...PROVIDERS, jira: jira.provider };
+  const claimed = backlogDeps([], { config: JIRA_CONFIG });
+  assert.equal(await run(['claim', 'PROJ-12'], claimed.deps, providers), 0);
+  const token = claimed.json().claim;
+  const t = backlogDeps([], { config: JIRA_CONFIG });
+  assert.equal(await run(['release', 'PROJ-12', '--claim', token], t.deps, providers), 0);
+  assert.deepEqual(t.json(), { result: 'released' });
+  assert.deepEqual(jira.item('PROJ-12')!.assignees, []);
+  assert.equal(jira.item('PROJ-12')!.status, 'Todo');
+  assert.deepEqual(t.calls(), []);
 });
