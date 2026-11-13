@@ -255,15 +255,19 @@ disagreement.
 
 ## Severity and verdict
 
-The verdict follows from the findings, never the other way round.
+The verdict follows from the findings, never the other way round. Do not
+change severity to fit a verdict.
 
 - **APPROVE**: no finding is open. The plan may proceed.
 - **APPROVE_WITH_CHANGES**: every open finding is fixed by a small,
   unambiguous edit that the review lists as a required change. The author
   applies each listed change, commits it, and names the commit in its
   rebuttal. The reviewer does not run again.
-- **REVISE**: a Critical finding is open and no listed change fixes it. Fix
-  the plan and run the full review again in a fresh context.
+- **REVISE**: a Critical or Moderate finding is open and no listed change
+  fixes it. Fix the plan and run the full review again in a fresh context.
+
+Suggestions alone do not require REVISE: apply a listed edit or decline
+with a one-line reason.
 
 An open Critical finding forbids APPROVE. A review that lists one and says
 APPROVE is itself invalid.

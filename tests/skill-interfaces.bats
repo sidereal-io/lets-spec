@@ -3611,3 +3611,9 @@ EXPECTED
   [[ "$common" != *'at least one substantive concern'* && "$openspec" == *'at least one substantive concern'* ]] ||
     { echo 'mandatory concerns must remain OpenSpec-only'; false; }
 }
+
+@test "plan review verdict covers unresolved Moderate findings" {
+  skill_says lets-review-plan 'Critical or Moderate'
+  skill_says lets-review-plan 'Suggestions alone'
+  skill_does_not_say lets-review-plan '**REVISE**: a Critical finding'
+}
