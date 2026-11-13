@@ -61,3 +61,10 @@ test('a provider the reader cannot unquote, or an empty one, is unknown-backlog-
   unknown('lets:\n  backlog:\n    provider: "jira\n', /provider/);
   unknown('lets:\n  backlog:\n    provider:\n', /provider/);
 });
+
+test('quoted keys name the same setting', () => {
+  assert.equal(backlogProvider('"lets":\n  backlog:\n    provider: jira\n'), 'jira');
+  assert.equal(backlogProvider("lets:\n  'backlog':\n    provider: jira\n"), 'jira');
+  assert.equal(backlogProvider('lets:\n  backlog:\n    "provider": jria\n'), 'jria');
+  unknown('"lets": {backlog: {provider: jira}}\n', /block style/);
+});

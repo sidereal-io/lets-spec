@@ -23,8 +23,10 @@ function parse(line: string) {
   const content = withoutComment(line);
   if (content.trim() === '') return null;
   const indent = content.length - content.trimStart().length;
-  const match = /^([^\s:#][^:]*):(?:\s(.*)|)$/.exec(content.trim());
-  return { indent, key: match?.[1].trim() ?? null, value: (match?.[2] ?? '').trim() };
+  // A key may be quoted, as YAML allows: "lets": is lets:.
+  const match = /^("[^"]*"|'[^']*'|[^\s:#"'][^:]*):(?:\s(.*)|)$/.exec(content.trim());
+  const key = match === null ? null : match[1].trim().replace(/^(["'])(.*)\1$/, '$2');
+  return { indent, key, value: (match?.[2] ?? '').trim() };
 }
 
 // The value of lets.backlog.provider, or null when the file has no top-level
