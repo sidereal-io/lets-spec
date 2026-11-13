@@ -231,6 +231,7 @@ Review again when any of these is true:
      `openspec/changes/archive/` and whose only changes outside
      `openspec/changes/` are merges into `openspec/specs/` that match its
      delta specs as they stood at `<head-sha>`.
+
    `git log --oneline <head-sha>..HEAD -- . ':(exclude)openspec/changes/'`
    lists the commits to check.
 4. The pull request's base no longer contains the reviewed base. Find the
