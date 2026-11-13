@@ -16,12 +16,14 @@ https://github.com/sidereal-io/lets-spec/issues/257
 | D7 | Does the error for a failed provider tool keep its GitHub name? | No. `gh-failed` becomes `backend-failed`, its message still the tool's own error. The help text names the selected provider. | User |
 | D8 | How do skills show an item to a person? | The adapter also returns `label`, as the provider writes IDs (`"#136"`, `"PROJ-12"`). Skills show `label` to people and pass `key` to commands. | User |
 | D9 | What proves the story is done? | Node tests with a fake provider using Jira-style keys through every command; config tests (unset, `github`, unknown, `lets:` without `provider`); the GitHub adapter's tests passing with only the field changes; a live `ready`, `item`, `claim` and `release` on `mstelz/test-repo-pls-ignore`; updated `lets-go` and `lets-plan` checks in `tests/skill-interfaces.bats`. | User |
+| D10 | How does `lets-go` tell that a request names an item, not an idea? | It asks the adapter: a new `lets backlog key <text>` returns `{ key, label }` when the text is one of the provider's IDs, or `{ key: null }`. GitHub takes `149` and `#149`. `lets-go` takes the request as an idea only when `key` is null. Raised after the first confirmation, from the `lets-go` spec's input rule. | User |
 
 ## Changes from the story
 
 - Split out: the adapter-supplied pull request reference and the `complete` step, to #258. They are one concern, how a merged pull request finishes its item, and completion needs a new point in `lets-go` after the user merges.
 - Added: `label` beside `key`, so GitHub output still reads `#136` (D8).
 - Added: ranking ties break by creation time instead of issue number (D4).
+- Added: `lets backlog key`, so `lets-go` recognizes a provider's IDs without knowing their format (D10).
 - Added: `gh-failed` is renamed `backend-failed`, and the help text stops naming GitHub (D7).
 
 Confirmed by user: yes
