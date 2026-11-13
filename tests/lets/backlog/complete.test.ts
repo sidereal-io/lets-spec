@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/backlog/commands.ts';
 import type { Answer, Row } from './fixtures/fake-gh.ts';
-import { backlogDeps, fail, json, LOOKUP_ONE, ok } from './fixtures/fake-gh.ts';
+import { backlogDeps, fail, json, LOOKUP_ONE, ok, TIMED_OUT } from './fixtures/fake-gh.ts';
 
 const rows = ({ state = json({ state: 'OPEN' }) as Answer, close = ok('') as Answer } = {}): Row[] => [
   ...LOOKUP_ONE,
@@ -64,4 +64,11 @@ test('complete with a key GitHub does not use is not-found, and runs no gh comma
   assert.equal(await run(['complete', 'PROJ-12'], t.deps), 1);
   assert.equal(t.json().error, 'not-found');
   assert.deepEqual(t.calls(), []);
+});
+
+test('a state read that times out is backend-failed, and closes nothing', async () => {
+  const t = backlogDeps(rows({ state: TIMED_OUT }));
+  assert.equal(await run(['complete', '258'], t.deps), 1);
+  assert.equal(t.json().error, 'backend-failed');
+  assert.ok(!t.ran('issue close'));
 });
