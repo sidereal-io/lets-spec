@@ -3410,6 +3410,30 @@ commit_maps() {
 
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
 # #229 review-model-choice: keep this block together for sibling story rebases.
+
+# Issue #233: authoring wording.
+@test "authoring wording: modified export retains the signed-out scenario" {
+  sed -n '/^## MODIFIED Requirements$/,/^## REMOVED Requirements$/p' "$repo/skills/lets-write-specs/SKILL.md" |
+    grep -qF '#### Scenario: Export while signed out'
+}
+
+@test "authoring wording: capability paths precede existing-requirement guidance" {
+  local file="$repo/skills/lets-write-specs/SKILL.md" paths existing preserve
+  paths="$(grep -nFx '## Choose the capability paths' "$file" | cut -d: -f1)"
+  existing="$(grep -nFx '## Changing an existing requirement' "$file" | cut -d: -f1)"
+  preserve="$(grep -nFx '### Preserve the requirement' "$file" | cut -d: -f1)"
+  [ -n "$paths" ]
+  [ "$paths" -lt "$existing" ]
+  [ "$existing" -lt "$preserve" ]
+}
+
+@test "authoring wording: ADR rewrite does not reaffirm superseded decisions" {
+  skill_does_not_say lets-write-adrs 'decision still stands'
+}
+
+@test "authoring wording: brainstorm does not assume a design artifact" {
+  skill_does_not_say lets-brainstorm 'The design explains the reasons'
+}
 @test "review model choice: policy anchors" {
   for skill in lets-review-plan lets-review-build; do
     skill_says "$skill" '**allowed models**'
