@@ -2,7 +2,7 @@
 
 ### Requirement: Plan verdicts cover unresolved findings
 
-Plan review SHALL use REVISE when any open Critical or Moderate finding has no listed small, unambiguous fix. It SHALL use APPROVE_WITH_CHANGES when every open finding has such a listed fix, and APPROVE when no finding is open. Suggestions alone SHALL NOT force REVISE: they can be fixed or declined with a reason. Severity SHALL NOT change merely to fit a verdict. Critical rebuttals SHALL retain file-and-line evidence; Moderate rebuttals SHALL retain a reason. Required changes SHALL retain fix commits and completion checks. Two consecutive REVISE verdicts SHALL stop for the user.
+Plan review SHALL use REVISE when any open Critical or Moderate finding has no listed small, unambiguous fix. It SHALL use APPROVE_WITH_CHANGES when every open finding has such a listed fix, and APPROVE when no finding is open. Suggestions alone SHALL NOT force REVISE: they can be fixed or declined with a reason. Existing rebuttal, fix-commit and two-REVISE rules SHALL be unchanged.
 
 #### Scenario: Moderate finding needs a design decision
 - **WHEN** a Moderate finding remains open without a listed small, unambiguous fix
@@ -23,10 +23,6 @@ Plan review SHALL use REVISE when any open Critical or Moderate finding has no l
 #### Scenario: Critical rebuttal lacks evidence
 - **WHEN** a Critical rebuttal lacks contradicting file-and-line evidence and no listed change fixes the finding
 - **THEN** the finding remains open, APPROVE is forbidden, and the verdict is REVISE
-
-#### Scenario: Consecutive revisions
-- **WHEN** two full review rounds return REVISE, including rounds driven only by Moderate findings
-- **THEN** the skill stops and asks the user
 
 ### Requirement: New plan reviews expose common preparation
 
