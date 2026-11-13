@@ -35,7 +35,14 @@ export type Selection = { name: string; provider: Provider; path: string; set: b
 // provider this release does not ship, before any backend command runs.
 export function selectProvider(deps: ConfigDeps, providers: Providers): Selection {
   const path = configPath(deps);
-  const text = deps.io.readFile(path);
+  let text: string | null;
+  try {
+    text = deps.io.readFile(path);
+  } catch (error) {
+    // A file that exists but cannot be read, such as a folder or one
+    // without read permission, is never taken for absence.
+    throw new BacklogError('unknown-backlog-provider', `The backlog provider cannot be read: ${path}: ${(error as Error).message}.`);
+  }
   let named: string | null = null;
   if (text !== null) {
     try {

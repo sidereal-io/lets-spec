@@ -147,3 +147,20 @@ test('the help text names the backlog provider in use', async () => {
   assert.match(t.stdout(), /backend-failed/);
   assert.match(t.stdout(), /unknown-backlog-provider/);
 });
+
+test('a lets config that cannot be read is unknown-backlog-provider, names the file, and runs no gh command', async () => {
+  for (const code of ['EACCES', 'EISDIR']) {
+    const t = backlogDeps([...LOOKUP_ONE, FIND]);
+    const readFile = t.deps.io.readFile;
+    t.deps.io.readFile = (path) => {
+      if (path === CONFIG_FILE) throw Object.assign(new Error(`${code}: cannot read ${path}`), { code });
+      return readFile(path);
+    };
+    assert.equal(await run(['find', 'x'], t.deps), 1, code);
+    const out = t.json();
+    assert.equal(out.error, 'unknown-backlog-provider', code);
+    assert.ok(out.message.includes(CONFIG_FILE), out.message);
+    assert.match(out.message, new RegExp(code));
+    assert.deepEqual(t.calls(), [], code);
+  }
+});
