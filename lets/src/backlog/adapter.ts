@@ -67,6 +67,10 @@ export type Adapter = {
   assignSelf(key: string): Promise<void>;
   unassignSelf(key: string): Promise<void>;
   setStatus(key: string, status: Status): Promise<void>;
+  // Mark the item done, in the backlog provider's own terms. When it is
+  // done already, write nothing. A failed read of whether it is done throws
+  // BacklogError; a failed write throws WriteFailed.
+  complete(key: string): Promise<void>;
 };
 
 // The backlog cannot answer. code is what lets backlog prints as error.

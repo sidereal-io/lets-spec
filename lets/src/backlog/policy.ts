@@ -1,5 +1,5 @@
 // The backlog rules every backend shares: what is ready, how it ranks, and
-// the claim and release sequences. Written once, here, outside the adapter.
+// the claim, release and complete sequences. Written once, here, outside the adapter.
 import { randomUUID } from 'node:crypto';
 import type { Adapter, Candidate, Item, Related } from './adapter.ts';
 import { BacklogError, WriteFailed } from './adapter.ts';
@@ -122,4 +122,18 @@ export async function release(adapter: Adapter, issue: string, token: string): P
   if (!others.some((c) => c.login === login)) writes.push(['unassign', () => adapter.unassignSelf(issue)]);
   if (others.length === 0) writes.push(['status', () => adapter.setStatus(issue, 'Todo')]);
   return inOrder('released', writes);
+}
+
+export type CompleteResult = { result: 'completed' } | { result: 'failed'; message: string };
+
+// Mark the item done. The adapter decides what done is, and writes nothing
+// when it is done already. There is one write, so a failure names none.
+export async function complete(adapter: Adapter, key: string): Promise<CompleteResult> {
+  try {
+    await adapter.complete(key);
+  } catch (error) {
+    if (!(error instanceof WriteFailed)) throw error;
+    return { result: 'failed', message: error.message };
+  }
+  return { result: 'completed' };
 }

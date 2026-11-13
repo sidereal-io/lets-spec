@@ -238,5 +238,13 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
       }
       await write(gh, ['project', 'item-edit', String(project.number), '--owner', project.owner, '--url', url, '--field', 'Status', '--value', status]);
     },
+
+    // Done is a closed issue. lets writes no Project field: the Project's
+    // own workflow moves Status when the issue closes.
+    async complete(issue) {
+      const { state } = await read(gh, ['issue', 'view', issue, '--json', 'state']) as { state: string };
+      if (state === 'CLOSED') return;
+      await write(gh, ['issue', 'close', issue, '--reason', 'completed']);
+    },
   };
 }
