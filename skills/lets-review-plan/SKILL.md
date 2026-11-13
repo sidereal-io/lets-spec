@@ -280,7 +280,8 @@ context, and a second run costs as much as the first.
   evidence). None is dropped in silence.
 - A rebuttal of a **Critical** finding must cite the file and line that
   contradicts it. Without that, the finding stays open.
-- A **Moderate** finding needs a reason, or it stays open.
+- A rebuttal of a **Moderate** finding needs a reason; without one, the
+  finding stays open.
 - A **Suggestion** may be declined with a one-line reason.
 
 ## Rounds
