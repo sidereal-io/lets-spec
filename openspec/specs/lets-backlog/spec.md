@@ -1,7 +1,7 @@
 # lets-backlog Specification
 
 ## Purpose
-`lets backlog` reads and claims work on the repository's backlog for the skills, so a skill never runs the backlog program's commands itself. The backlog program is GitHub: issues on the one Project linked to the repository.
+`lets backlog` reads and claims work on the repository's backlog for the skills, so a skill never runs the backlog provider's commands itself. The repository selects its backlog provider. GitHub, issues on the one Project linked to the repository, is the default, and the only one this release ships.
 
 ## Requirements
 
