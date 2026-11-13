@@ -19,7 +19,8 @@ export type FakeIo = Io & {
   removed: string[];
 };
 
-type Options = { results?: Result[]; files?: Record<string, string>; commands?: string[] } & Partial<Io>;
+type Answer = (cmd: string, args: string[], opts: ExecOptions) => ExecResult | Promise<ExecResult>;
+type Options = { results?: Result[] | Answer; files?: Record<string, string>; commands?: string[] } & Partial<Io>;
 
 export function fakeIo({ results = [], files = {}, commands = [], ...overrides }: Options = {}): FakeIo {
   const io: FakeIo = {
@@ -31,7 +32,7 @@ export function fakeIo({ results = [], files = {}, commands = [], ...overrides }
 
     async execFile(cmd, args, opts = {}) {
       io.calls.push([cmd, args, opts]);
-      const next = results.shift() ?? { stdout: '', stderr: '', code: 0 };
+      const next = typeof results === 'function' ? results : results.shift() ?? { stdout: '', stderr: '', code: 0 };
       return typeof next === 'function' ? next(cmd, args, opts) : next;
     },
     commandExists: (cmd) => commands.includes(cmd),

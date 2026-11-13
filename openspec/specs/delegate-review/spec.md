@@ -63,3 +63,110 @@ Plan review SHALL describe a fallback subagent's identified family consistently 
 #### Scenario: REVIEW.md is absent
 - **WHEN** a build review runs without a project REVIEW.md file
 - **THEN** its report names REVIEW.md as absent without claiming all project rules were missing
+
+### Requirement: Plan verdicts cover unresolved findings
+
+Plan review SHALL use REVISE when any open Critical or Moderate finding has no listed small, unambiguous fix. It SHALL use APPROVE_WITH_CHANGES when every open finding has such a listed fix, and APPROVE when no finding is open. Suggestions alone SHALL NOT force REVISE: they can be fixed or declined with a reason. Existing rebuttal, fix-commit and two-REVISE rules SHALL be unchanged.
+
+#### Scenario: Moderate finding needs a design decision
+- **WHEN** a Moderate finding remains open without a listed small, unambiguous fix
+- **THEN** the verdict is REVISE, even with no Critical findings, and the revised plan requires a fresh full review
+
+#### Scenario: All open findings have listed fixes
+- **WHEN** every open finding, including any Critical finding, has a listed small, unambiguous fix
+- **THEN** the verdict is APPROVE_WITH_CHANGES and completion requires each listed change's valid fix commit in the rebuttals without another review
+
+#### Scenario: No findings remain open
+- **WHEN** findings are absent, or each was rebutted under its severity rule or declined as a Suggestion
+- **THEN** the verdict is APPROVE
+
+#### Scenario: Only a Suggestion remains
+- **WHEN** a Suggestion has no listed small edit and no Critical or Moderate finding remains open
+- **THEN** the author can decline it with a one-line reason and complete the review without REVISE
+
+#### Scenario: Critical rebuttal lacks evidence
+- **WHEN** a Critical rebuttal lacks contradicting file-and-line evidence and no listed change fixes the finding
+- **THEN** the finding remains open, APPROVE is forbidden, and the verdict is REVISE
+
+### Requirement: New plan reviews expose common preparation
+
+Every new plan review SHALL reach author identification before model ranking and effort selection before either command or subagent review. Every review prompt SHALL request ranked findings labeled Critical, Moderate or Suggestion with a concern, scenario and what must be true. The mandatory request for a substantive concern and an unanticipated failure mode SHALL remain limited to OpenSpec changes.
+
+#### Scenario: First review of an OpenSpec change
+- **WHEN** the pull request has no Plan review section
+- **THEN** the new-review route identifies the author before ranking reviewers and chooses effort before execution
+
+#### Scenario: An earlier review requires a new round
+- **WHEN** Check an earlier review calls for a new full review round
+- **THEN** the round identifies the author before ranking and selects effort before execution
+
+#### Scenario: Standalone skill or ADR review
+- **WHEN** the user requests a standalone skill or ADR review
+- **THEN** it uses the same author, effort and finding-format preparation without acquiring OpenSpec-only mandatory concern generation
+
+#### Scenario: Subagent fallback
+- **WHEN** the command path cannot run and the skill uses the permitted subagent fallback
+- **THEN** the same previously selected effort applies
+
+### Requirement: Archive preserves a covering code review
+
+`lets-review-build`'s *Check an earlier review* SHALL not call a review
+stale for this change's archive commit when it moves the change folder into
+`openspec/changes/archive/` and its only changes outside `openspec/changes/`
+are merges into `openspec/specs/` that match its delta specs as they stood
+at `<head-sha>`.
+
+#### Scenario: Matching archive
+- **WHEN** this change's archive commit moves the change folder into the archive and only merges its delta specs as they stood at `<head-sha>` outside `openspec/changes/`
+- **THEN** no new review is required for that commit
+
+#### Scenario: Archive includes an unrelated file
+- **WHEN** an archive commit also changes a source file and is not a listed fix
+- **THEN** a new review is required
+
+#### Scenario: Spec merge differs from the reviewed delta
+- **WHEN** an archive commit merges spec text that differs from the delta specs at `<head-sha>`
+- **THEN** a new review is required
+
+### Requirement: The review record names the checkout and commit the session read
+When `lets delegate review run` exits 0, its JSON line on stderr SHALL hold `checkout` and `commit`, for every resolver that runs a review:
+- `checkout` SHALL be the absolute path of the top level of the git checkout the session ran in, as the resolver reports it.
+- `commit` SHALL be the full hash at that checkout's `HEAD`, read after the session ended.
+
+When `lets` cannot tell the checkout, or cannot read its `HEAD`, the field SHALL be `null`, and the command SHALL still exit 0 and print the final message.
+
+#### Scenario: A review through the cli resolver
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, the user runs `lets delegate review run --for code` with every required option in the checkout `/r`, and `/r`'s `HEAD` is `0123456789abcdef0123456789abcdef01234567` when the session ends
+- **THEN** the command exits 0, and its JSON line has `"checkout":"/r"` and `"commit":"0123456789abcdef0123456789abcdef01234567"`
+
+#### Scenario: A reviewer that commits
+- **WHEN** a resolver answers a review in `/r`, whose `HEAD` is `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` when the command starts, and the session makes the commit `bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb` and leaves the tree clean
+- **THEN** the command exits 0, and its JSON line has `"commit":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"`
+
+#### Scenario: The checkout's HEAD cannot be read
+- **WHEN** a resolver answers a review and reports the checkout `/gone`, where `git rev-parse HEAD` fails
+- **THEN** the command exits 0, prints the final message, and its JSON line has `"checkout":"/gone"` and `"commit":null`
+
+### Requirement: A review has time to finish
+`lets delegate review run` SHALL give the session 30 minutes at effort `low` and `medium`, and 45 minutes at effort `high`, unless `--timeout-minutes` gives another whole number of minutes. This SHALL hold for every resolver. When the session has not finished in that time, the command SHALL exit 6.
+
+#### Scenario: A medium review
+- **WHEN** the user runs `lets delegate review run --effort medium` with every other required option, and no `--timeout-minutes`
+- **THEN** the resolver is given 30 minutes
+
+#### Scenario: A low review
+- **WHEN** the user runs `lets delegate review run --effort low` with no `--timeout-minutes`
+- **THEN** the resolver is given 30 minutes
+
+#### Scenario: A high review
+- **WHEN** the user runs `lets delegate review run --effort high` with no `--timeout-minutes`
+- **THEN** the resolver is given 45 minutes
+
+#### Scenario: The user sets the limit
+- **WHEN** the user runs `lets delegate review run --effort medium --timeout-minutes 7`
+- **THEN** the resolver is given 7 minutes
+
+#### Scenario: The session runs past the limit
+- **WHEN** the user runs `lets delegate review run --effort medium` with no `--timeout-minutes`
+- **AND** the session has not finished after 30 minutes
+- **THEN** the command exits 6, stdout is empty, and stderr says that no result came in time

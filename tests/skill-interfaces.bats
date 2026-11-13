@@ -484,6 +484,18 @@ fixture_file() {
   done
 }
 
+@test "each review skill checks that the review read its own checkout and commit" {
+  for skill in lets-review-plan lets-review-build; do
+    skill_says "$skill" 'note `<checkout>`, the output of `git rev-parse --show-toplevel`, and `<head>`, the output of `git rev-parse HEAD`'
+    skill_says "$skill" 'tell the reviewer to read files only in `<checkout>`'
+    skill_says "$skill" 'Read: <absolute path> <full commit>'
+    skill_says "$skill" "the meta line's \`checkout\` is \`<checkout>\` and its \`commit\` is \`<head>\`"
+    skill_says "$skill" 'Read: <checkout> <head>'
+    skill_says "$skill" 'record no review'
+    skill_says "$skill" 'check only its `Read:` line'
+  done
+}
+
 @test "lets-review-plan starts from the change alone" {
   grep -qx '## Start' "$repo/skills/lets-review-plan/SKILL.md" || { echo "lets-review-plan has no Start"; false; }
   skill_says lets-review-plan "git log --format='%(trailers:key=Co-Authored-By,valueonly)'"
@@ -517,6 +529,13 @@ fixture_file() {
   skill_says lets-review-build '`openspec-verify-change` skill'
   skill_says lets-review-build '`openspec-archive-change` skill'
   skill_says lets-review-build 'gh pr ready'
+}
+
+@test "archive preserves code review only for matching spec merges" {
+  skill_says lets-review-build '`openspec/changes/archive/`'
+  skill_says lets-review-build 'only changes outside'
+  skill_says lets-review-build '`openspec/specs/`'
+  skill_says lets-review-build 'delta specs as they stood at `<head-sha>`'
 }
 
 @test "each review skill ranks by the guidance, then other families, then the order given" {
@@ -3579,3 +3598,58 @@ EXPECTED
   sed -n '/^### Link the blocked stories/,/^### Hand over/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'owner issue number'
 }
 # END shape-checkpoints (#231).
+
+@test "plan review routes new rounds through author identification" {
+  skill_says lets-review-plan '(#find-the-author)'
+  local retry
+  retry="$(skill_section lets-review-plan Start)"
+  retry="${retry#*When one}"
+  retry="${retry%%When none*}"
+  [[ "$retry" == *'(#find-the-author)'* ]] ||
+    { echo 'the new-round bullet skips author identification'; false; }
+  [[ "$(skill_section lets-review-plan Rounds)" == *'(#find-the-author)'* ]] ||
+    { echo 'REVISE skips author identification'; false; }
+  [[ "$(skill_section lets-review-plan 'Find the author')" == *'(#run-the-review)'* ]] ||
+    { echo 'author identification has no continuation'; false; }
+}
+
+@test "plan review effort is selected before execution" {
+  skill_says lets-review-plan '`low`'
+  skill_says lets-review-plan '`medium`'
+  skill_says lets-review-plan '`high`'
+  skill_says lets-review-plan 'as `--effort`'
+  skill_says lets-review-plan 'at the selected effort'
+  local preparation
+  preparation="$(skill_section lets-review-plan 'Run the review')"
+  [[ "$preparation" == *'Scale the effort'*'1. '* ]] ||
+    { echo 'effort selection follows execution preparation'; false; }
+}
+
+@test "plan review finding format applies to standalone reviews" {
+  local label
+  for label in Critical Moderate Suggestion; do
+    skill_says lets-review-plan "**$label**"
+  done
+  local common openspec
+  common="$(skill_section lets-review-plan 'The prompt')"
+  openspec="$(skill_section lets-review-plan 'For an OpenSpec change')"
+  [[ "$common" == *'**The concern**'*'**The scenario**'*'**What must be true**'* ]] ||
+    { echo 'standalone reviews lack the finding format'; false; }
+  [[ "$common" != *'substantive concern'* && "$openspec" == *'substantive concern'* ]] ||
+    { echo 'mandatory concerns must remain OpenSpec-only'; false; }
+}
+
+@test "plan review verdict covers unresolved Moderate findings" {
+  skill_says lets-review-plan 'Critical or Moderate'
+  skill_says lets-review-plan 'unlisted Suggestion'
+  skill_says lets-review-plan 'does not block APPROVE'
+  skill_does_not_say lets-review-plan '**REVISE**: a Critical finding'
+}
+
+@test "plan review rebuttals leave unsupported findings open" {
+  skill_does_not_say lets-review-plan 'the verdict is REVISE'
+  local rebuttals
+  rebuttals="$(skill_section lets-review-plan Rebuttals)"
+  [[ "$rebuttals" == *'**Critical**'*'stays open'*'**Moderate**'*'stays open'* ]] ||
+    { echo 'unresolved rebuttals do not follow the verdict rules'; false; }
+}

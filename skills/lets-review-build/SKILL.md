@@ -59,7 +59,10 @@ In a `lets-go` step, return `needs-input` whenever this skill asks the user.
 
 Commit first. The review covers commits, not the working tree.
 
-1. Resolve vocabulary as below, then write the prompt to
+1. Before you write the prompt, note `<checkout>`, the output of
+   `git rev-parse --show-toplevel`, and `<head>`, the output of
+   `git rev-parse HEAD`. Note them now: a reviewer that commits moves
+   `HEAD`. Then resolve vocabulary as below, and write the prompt to
    `.workspace/<branch>-code-review-prompt.md`. [The prompt](#the-prompt)
    says what goes in it.
 2. Ask what can run. From the repo root, run `lets delegate review instructions --for code`. It prints one JSON line. `options` is the **listed models**: the
@@ -98,6 +101,8 @@ Commit first. The review covers commits, not the working tree.
 5. Act on its exit code:
    - **0**: the findings are in the raw file. The meta file's last line is
      JSON: the resolver, the model that answered, and the `independent` value.
+     Then read on below this list: note the range, and check what the review
+     read.
    - **3**: no fresh session can run here, for example because no resolver
      started one, or every model was refused. Take the [subagent
      step](#review-in-a-subagent).
@@ -107,9 +112,28 @@ Commit first. The review covers commits, not the working tree.
 When only author families can run, the review still runs in a fresh session.
 Never review in an author's own session.
 
-Note the range you reviewed: `<head-sha>` is `git rev-parse --short HEAD`,
-and `<base-sha>` is `git rev-parse --short "$(git merge-base <base> HEAD)"`.
-An output of only `(none)` is a clean result, not a failure.
+Note the range you reviewed: `<head-sha>` is the short form of the `<head>`
+you noted in step 1, `git rev-parse --short <head>`, and `<base-sha>` is `git rev-parse --short "$(git merge-base <base> HEAD)"`.
+An answer of only `(none)`, then the `Read:` line, is a clean result, not a
+failure.
+
+### Check what the review read
+
+A resolver can run the session in another checkout, and a reviewer can
+commit. Either way, the review read other code than yours. After exit 0,
+check that:
+
+- the meta line's `checkout` is `<checkout>` and its `commit` is `<head>`;
+- the raw file's last line is `Read: <checkout> <head>`.
+
+After the [subagent step](#review-in-a-subagent) there is no meta line, so
+check only its `Read:` line.
+
+When a value differs, is `null`, or the `Read:` line is missing, record no
+review. Show the user the meta file, when this run wrote one, and the
+`Read:` line, or say that it is missing. Then stop.
+
+When everything matches, go on to [Act on the findings](#act-on-the-findings).
 
 ### Review in a subagent
 
@@ -123,7 +147,8 @@ Save its output to `.workspace/<branch>-code-review-raw.md`. Run `git status --p
 
 Record the family that answered, and `independent: no` unless the subagent
 was outside every author family and the tool's own output names it. Do not
-run the review in this session.
+run the review in this session. Then [check what the review
+read](#check-what-the-review-read).
 
 ## Resolve vocabulary before delegation
 
@@ -143,9 +168,18 @@ Before writing the prompt, resolve the installed
 absolute path. Put that path and its delegated-review criteria in the
 actual prompt. Keep the criteria when invoking a built-in review command.
 
-Any family can follow this prompt. Fill in `<base>`:
+Start the prompt with `<checkout>`, the branch (`git branch --show-current`)
+and `<head>`, and tell the reviewer to read files only in `<checkout>`. End
+it by asking for a last line `Read: <absolute path> <full commit>`, as plain
+text with no backticks: what `git rev-parse --show-toplevel` and
+`git rev-parse HEAD` print in the checkout the reviewer read.
+
+Any family can follow this prompt. Fill in `<checkout>`, `<branch>`, `<head>`
+and `<base>`:
 
 ```text
+Checkout: <checkout>. Branch: <branch>. HEAD: <head>.
+Read files only in <checkout>, and run every git command there.
 Review the changes in `git diff <base>...HEAD` for correctness bugs. Work read-only.
 If you have a built-in /code-review command, run it at effort high on <base>...HEAD, and answer with its findings.
 Apply the review rules in REVIEW.md if that file exists.
@@ -163,6 +197,8 @@ Check semantic consistency, explicit scoped meanings and capability-retirement c
 Investigate representation mappings; spelling or casing alone is not a finding.
 For each finding give the file, the line, the defect, and the concrete scenario where it bites, most severe first.
 If you find nothing, answer `(none)`.
+End your answer with one last line, as plain text with no backticks: Read: <absolute path> <full commit>
+Take the path and commit from `git rev-parse --show-toplevel` and `git rev-parse HEAD` in the checkout you read.
 ```
 
 ## Act on the findings
@@ -224,10 +260,16 @@ Review again when any of these is true:
    `Reviewed:` line.
 2. The reviewed head is no longer in the branch's history: `git merge-base --is-ancestor <head-sha> HEAD` fails. The branch was rebased or squashed
    after the review.
-3. A commit after `<head-sha>` changes files outside `openspec/changes/` and
-   is not a listed fix. `git log --oneline <head-sha>..HEAD -- . ':(exclude)openspec/changes/'` lists such commits. A listed fix counts
-   only when `git show <sha>` shows it touches nothing but what its finding
-   names.
+3. A commit after `<head-sha>` changes files outside `openspec/changes/`,
+   and `git show <sha>` shows it is neither of these:
+   - a listed fix that touches nothing but what its finding names;
+   - this change's archive commit, which moves the change folder into
+     `openspec/changes/archive/` and whose only changes outside
+     `openspec/changes/` are merges into `openspec/specs/` that match its
+     delta specs as they stood at `<head-sha>`.
+
+   `git log --oneline <head-sha>..HEAD -- . ':(exclude)openspec/changes/'`
+   lists the commits to check.
 4. The pull request's base no longer contains the reviewed base. Find the
    current base with `gh pr view --json baseRefName`, run `git fetch origin <current-base>`, then `git merge-base --is-ancestor <base-sha> origin/<current-base>`. When it fails, commits the reviewer saw as merged
    are now in the pull request, unreviewed.

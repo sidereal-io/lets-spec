@@ -8,7 +8,7 @@ config file.
 
 | Name | It answers | It needs | A review runs as | A handoff | A step |
 |---|---|---|---|---|---|
-| [`t3`](#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | Starts a new thread in the sidebar | Declines, so the next resolver answers |
+| [`t3`](#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | Starts a new thread in the sidebar | A new thread, archived when it is done |
 | [`cli`](#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers | A child process of that CLI, in its write mode |
 | [`subagent`](#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Gives back the prompt to start any agent with | Saves the prompt, and exits 3, so the caller runs the step in a subagent |
 
@@ -35,14 +35,66 @@ It counts as inside T3 Code only when the running T3 server started
 Code declines, even while T3 Code runs. If you also work in other
 terminals, list `cli` after it.
 
-It runs no step yet, so it declines every one and opens no thread.
+A session runs in the checkout you started it from. A session started
+from a linked worktree runs in that worktree, on its branch, as part of
+the main checkout's T3 project. From the main checkout, it runs in the project's
+own checkout. Either way, a detached HEAD gives the session no branch.
+
+A review opens in T3's default mode, not in plan mode, so the model works
+through to a result instead of stopping on a plan. It can run the tests.
+The tree check still keeps it read-only: a review that changes files
+outside `.workspace/` exits 7
+([ADR-024](decisions/ADR-024-the-tree-check-keeps-a-review-read-only.md)).
+A review whose run ends holding a proposed plan exits 5, and stderr says
+`the session returned a plan, not a result (thread <id>)`. The thread
+stays, so you can read it.
+
+A review also exits 5 when the session asks a question and waits for an
+answer. Stderr then says `the session stopped to ask (thread <id>)`. The
+thread stays, so you can answer it in T3 Code. A run that T3 shows as
+`waiting` for a moment, with no question, does not count: `t3` waits for
+it to end, up to the review's time limit.
+
+A review or a step still running at its time limit exits 6. `t3` first
+asks T3 Code to stop the thread, as its Stop button does, which also
+stops every task the thread delegated. The thread stays, so you can see
+where it stopped. When T3 Code rejects the stop, or does not accept it
+within 10 seconds, stderr says that `t3` could not stop the thread, so
+it may still be running.
+
+The review's JSON line on stderr names `checkout` and `commit`. `checkout`
+is where T3 records that the thread ran: its worktree, or else the
+project's root. It is not where `t3` asked for the thread, so a thread T3
+opened elsewhere shows up. `commit` is the full hash at that checkout's
+`HEAD` after the session. Each is `null` when `lets` cannot tell.
+
+### How a step runs
+
+A step opens a new thread in the same checkout as a review, in default
+mode with full access. The session can change files and run commands
+without asking you, as a `cli` step can. It gets its model and effort as
+a review does, and a time limit of 120 minutes unless `--timeout-minutes`
+says otherwise. `lets delegate step run` reads the
+[step report](#a-steps-report) from the thread's final message.
+
+- A `done` step's thread is archived.
+- Any other step keeps its thread, so you can read it. A thread that
+  stops to ask, ends on a proposed plan, or fails after the model has
+  answered gives a `failed` report at exit 0. Its `reason` names the
+  thread.
+- When T3 Code or your account says no before the model answers, `t3`
+  archives the thread and tries the next `--model`. When every model is
+  refused, the step exits 3.
+
+To run steps somewhere else inside T3 Code, list `cli` before `t3`.
 
 ### Which model runs
 
 The caller chooses the model, and `t3` runs exactly that one:
 
-- `lets delegate review instructions` and `handoff instructions` list
-  the models that T3 Code's model picker offers, as `<family>/<model>`.
+- `lets delegate review instructions`, `handoff instructions` and
+  `step instructions` list the models that T3 Code's model picker
+  offers, as `<family>/<model>`.
   `t3` asks the running T3 server for its live catalogue each time.
 - They list a provider only when it is enabled, its status is ready or
   warning, and T3 Code does not mark it unavailable. A provider in
@@ -52,7 +104,7 @@ The caller chooses the model, and `t3` runs exactly that one:
   custom model. They list each Gemini model once, without its effort.
 - When T3 Code gives no catalogue within 10 seconds, or refuses to, they
   list no models, say why on stderr, and still exit 0.
-- A review or a handoff runs the model that `--model` names. A bare
+- A review, a handoff or a step runs the model that `--model` names. A bare
   family, such as `claude`, runs that provider's default model in the
   catalogue. When you hid the default, it runs the first model you did
   not hide.
@@ -105,8 +157,20 @@ lets delegate review run --for code --name smoke-review --prompt-file .workspace
 Expect:
 
 1. `READY` on stdout.
-2. A JSON line on stderr with `"resolver":"t3"` and `"independent":true`.
+2. A JSON line on stderr with `"resolver":"t3"`, `"independent":true`, and
+   `"checkout"` set to the top level of the checkout you ran it from.
 3. An archived thread for the review.
+
+Then check that a step runs, and ends with its report:
+
+```sh
+printf 'Change no file. End your reply with this block, exactly:\n\n```step-report\noutcome: done\nevidence:\n  - smoke test\n```\n' > .workspace/s.md
+lets delegate step run --for build --name smoke-step --prompt-file .workspace/s.md \
+  --effort low --model gpt
+```
+
+Expect `"outcome":"done"` on stdout, a JSON line on stderr with
+`"resolver":"t3"`, and an archived thread for the step.
 
 Then check that `t3` still reads T3 Code's model catalogue:
 
@@ -117,7 +181,23 @@ lets delegate handoff instructions --for apply
 Its `options` should list the same models as the model picker in a new
 T3 thread. If they are empty, stderr says why.
 
-The review spends tokens. CI never runs it.
+Then check that a session from a linked worktree runs in that worktree.
+A handoff keeps its thread open, so you can look at it:
+
+```sh
+git worktree add ../smoke-worktree -b smoke-worktree
+cd ../smoke-worktree
+mkdir -p .workspace
+printf 'Reply with the single word READY and nothing else.\n' > .workspace/p.md
+lets delegate handoff run --for apply --name smoke-handoff \
+  --prompt-file .workspace/p.md --model gpt
+```
+
+The new thread should show the `smoke-worktree` folder and branch, not
+the main checkout. Then archive the thread, and remove the worktree with
+`git worktree remove ../smoke-worktree` and `git branch -D smoke-worktree`.
+
+The review and the step spend tokens. CI never runs them.
 
 ## `cli`
 
@@ -165,8 +245,16 @@ list. When the review succeeds, the session's files in
 `.workspace/lets-delegate/` are removed. When it fails, they stay, so you
 can read them.
 
-A review that runs past its time limit is stopped. Each failure has its
-own exit code:
+The review's JSON line on stderr names the repository the CLI ran in as
+`checkout`, and the full hash at its `HEAD` after the review as `commit`.
+
+When a review runs past its time limit, `lets` sends `SIGTERM` to the
+CLI and to every process the CLI started. Any that are still running 5
+seconds later get `SIGKILL`, and `lets` exits 6. `lets` cannot stop a
+process that moves itself out of the CLI's process group, such as a
+daemon. Ctrl-C reaches the CLI and every process it started.
+
+Each failure has its own exit code:
 
 | What happened | Exit |
 |---|---|

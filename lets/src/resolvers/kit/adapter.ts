@@ -12,7 +12,7 @@ export type Handle = { kind: string; id: string; [field: string]: unknown };
 export type ModelString = string;
 
 // How long a review may run, in minutes, for each effort.
-export const DEFAULT_TIMEOUT_MINUTES: Record<Effort, number> = { low: 15, medium: 15, high: 45 };
+export const DEFAULT_TIMEOUT_MINUTES: Record<Effort, number> = { low: 30, medium: 30, high: 45 };
 
 // A session's name: lowercase, kebab-case, a letter first, at most 32
 // characters.
@@ -42,10 +42,12 @@ export type Adapter = {
   // The models this harness can run now, in its own order. It never
   // chooses one: the caller does. warn adds a line to stderr.
   options(warn: (message: string) => void): Promise<ModelString[]>;
-  // Runs a read-only session and waits for its final message. Throws
-  // Refused when the harness says no before the model gives output, after
-  // cleaning up what it made. An error after the session exists names it.
-  run(input: RunInput, options: { timeoutMs: number }): Promise<{ handle: Handle; text: string }>;
+  // Runs a read-only session and waits for its final message. checkout is
+  // the top level of the checkout the session ran in, as the harness
+  // records it, or null when the resolver cannot tell. Throws Refused when
+  // the harness says no before the model gives output, after cleaning up
+  // what it made. An error after the session exists names it.
+  run(input: RunInput, options: { timeoutMs: number }): Promise<{ handle: Handle; text: string; checkout: string | null }>;
   // Starts an interactive session and returns its handle, or the
   // instructions a person needs when it starts none. Throws Refused when
   // the harness says no. Without it, the resolver declines every handoff.

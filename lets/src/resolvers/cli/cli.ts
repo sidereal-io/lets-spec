@@ -113,8 +113,9 @@ export function createAdapter(io: Io): Adapter {
       throw printed ? new SessionFailed(`${cmd} failed: ${why}`) : new Refused(`${cmd} refused: ${why}`);
     }
     // For a review, the kit turns an empty message, or a missing file, into
-    // a failed session. For a step, the report reader does.
-    return { handle: { kind: 'process', id: name }, text };
+    // a failed session. For a step, the report reader does. The CLI ran in
+    // cwd, the checkout's top level.
+    return { handle: { kind: 'process', id: name }, text, checkout: cwd };
   }
 
   return {

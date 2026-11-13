@@ -32,18 +32,18 @@ run costs a cross-model review.
 
 For an OpenSpec change on its branch, read the pull request's body with `gh pr view --json body`.
 
-- **No Plan review section:** [run the review](#run-the-review).
+- **No Plan review section:** [find the author](#find-the-author).
 - **A Plan review section:** follow [Check an earlier
   review](#check-an-earlier-review).
-  - When one of its rules calls for a new round, run one, as
-    [Rounds](#rounds) says.
+  - When one of its rules calls for a new round, [find the author](#find-the-author)
+    and run one, as [Rounds](#rounds) says.
   - When none does and the review is finished, say so, and stop.
   - When none does, but a required change has no fix commit that holds up,
     apply the change as [Severity and verdict](#severity-and-verdict) says.
     Name its commit in the rebuttals, and stop. The reviewer does not run
     again.
 
-For any other plan, run the review.
+For any other plan, [find the author](#find-the-author).
 
 ## Find the author
 
@@ -67,13 +67,23 @@ own family as the author's when nothing above answers. It usually runs in
 the same harness as the plan step, so its own family is its best estimate.
 The report then says that the plan's author was not recorded.
 
+Then [run the review](#run-the-review).
+
 ## Run the review
+
+Scale the effort to what the plan changes, not its length. Use `low` for a
+narrow fix, `medium` for one subsystem on known patterns, and `high` for new
+contracts, migrations or trust boundaries. When the plan has a `design.md`
+with a scrutiny tier, use that tier as `--effort`.
 
 In a `lets-go` step, return `needs-input` whenever this skill asks the user.
 
-1. Resolve vocabulary as below, then write the prompt to
-   `.workspace/<change>-review-prompt.md`. The next section says what goes
-   in it.
+1. Before you write the prompt, note `<checkout>`, the output of
+   `git rev-parse --show-toplevel`, and `<head>`, the output of
+   `git rev-parse HEAD`, on a clean tree. Note them now: a reviewer that
+   commits moves `HEAD`. Then resolve vocabulary as below, and write the
+   prompt to `.workspace/<change>-review-prompt.md`. The next section says
+   what goes in it.
 2. Ask what can run. From the repo root, run:
 
    ```bash
@@ -115,7 +125,9 @@ In a `lets-go` step, return `needs-input` whenever this skill asks the user.
 5. Act on its exit code:
    - **0**: the findings are in the raw file. The meta file's last line is
      JSON. It names what the review was for, the resolver, the family and
-     model that answered, and whether the review was independent.
+     model that answered, and whether the review was independent. Then
+     read on below this list: note the commit, and check what the review
+     read.
    - **3**: no fresh session can run here, for example because no resolver
      started one, or every model was refused. Take the [subagent
      step](#review-in-a-subagent).
@@ -127,8 +139,8 @@ next one each time a model is refused. When only the author's family can
 run, the review still runs, and the meta line says `"independent": false`.
 Never review in the author's own session.
 
-Note the commit you reviewed: `git rev-parse --short HEAD`, on a clean tree.
-The report records it, so a later session can tell whether the plan changed
+Note the commit you reviewed: the short form of the `<head>` you noted in
+step 1, `git rev-parse --short <head>`. The report records it, so a later session can tell whether the plan changed
 after the verdict.
 
 The report also records how the review ran, as the reviewer context:
@@ -140,12 +152,30 @@ The report also records how the review ran, as the reviewer context:
 - `subagent, same family` when the tool identifies the author's family;
 - `subagent, family not evidenced` when the tool does not identify it.
 
+### Check what the review read
+
+A resolver can run the session in another checkout, and a reviewer can
+commit. Either way, the review read other code than yours. After exit 0,
+check that:
+
+- the meta line's `checkout` is `<checkout>` and its `commit` is `<head>`;
+- the raw file's last line is `Read: <checkout> <head>`.
+
+After the [subagent step](#review-in-a-subagent) there is no meta line, so
+check only its `Read:` line.
+
+When a value differs, is `null`, or the `Read:` line is missing, record no
+review. Show the user the meta file, when this run wrote one, and the
+`Read:` line, or say that it is missing. Then stop.
+
+When everything matches, go on to [Check the findings](#check-the-findings).
+
 ### Review in a subagent
 
 Take this step only when `lets delegate review run` exits 3, when the
 listed models are empty, or when the user explicitly chooses it after the
 excluded-all stop. A fallback must respect the guidance exclusions. If no
-permitted subagent can run, stop and ask the user. Run the prompt in a
+permitted subagent can run, stop and ask the user. Run the prompt at the selected effort in a
 read-only subagent: one that starts with no context from this session and
 cannot write files.
 
@@ -153,12 +183,7 @@ Save its output to `.workspace/<change>-review-raw.md`. Run `git status --porcel
 
 Record the family that answered, and `independent: no` unless the subagent
 was another family and the tool's own output names it. Do not run the review
-in this session.
-
-Scale the effort to what the plan changes, not its length. Use `low` for a
-narrow fix, `medium` for one subsystem on known patterns, and `high` for new
-contracts, migrations or trust boundaries. When the plan has a `design.md`
-with a scrutiny tier, use that tier.
+in this session. Then [check what the review read](#check-what-the-review-read).
 
 This costs real tokens. Never loop it. Run again only when the plan or the
 question changed.
@@ -180,6 +205,12 @@ Before writing the prompt, resolve the installed
 [Plain language](../lets-shape/references/plain-language.md) reference to an
 absolute path. Put that path and its delegated-review criteria in the
 actual prompt. Keep the criteria when invoking a built-in review command.
+
+Start the prompt with `<checkout>`, the branch (`git branch --show-current`)
+and `<head>`, and tell the reviewer to read files only in `<checkout>`. End
+it by asking for a last line `Read: <absolute path> <full commit>`, as plain
+text with no backticks: what `git rev-parse --show-toplevel` and
+`git rev-parse HEAD` print in the checkout the reviewer read.
 
 Tell the reviewer which files hold the plan, which files it should check the
 plan against, and that it works read-only. Then give it this method:
@@ -207,12 +238,21 @@ Also have it check:
 
 Add any checks the caller supplies.
 
+Ask for findings ranked most severe first. Each finding gets a label,
+**Critical** (blocks acceptance), **Moderate**, or **Suggestion**, and three
+parts:
+
+- **The concern** — one line, stated as the defect.
+- **The scenario** — the concrete conditions where it bites, with file and
+  line.
+- **What must be true** for it not to matter.
+
 ### For an OpenSpec change
 
 The plan is these files in `openspec/changes/<name>/`: brainstorm.md,
 proposal.md, specs/, design.md, adr.md and tasks.md. It also holds the
 records the change adds under `docs/decisions/`, which adr.md lists. Review
-them at one commit. Use design.md's scrutiny tier as the effort.
+them at one commit.
 
 Add these checks to the prompt:
 
@@ -226,15 +266,6 @@ Add these checks to the prompt:
 - **Contradictions.** No design choice conflicts with a spec requirement.
 - **Tasks.** Each task names one behavior and a verify command the project
   has. Together, the tasks cover every scenario in the specs.
-
-Ask for findings ranked most severe first. Each finding gets a label,
-**Critical** (blocks acceptance), **Moderate**, or **Suggestion**, and three
-parts:
-
-- **The concern** — one line, stated as the defect.
-- **The scenario** — the concrete conditions where it bites, with file and
-  line.
-- **What must be true** for it not to matter.
 
 Ask for at least one substantive concern and one failure mode the author
 would not have listed alone.
@@ -253,15 +284,17 @@ disagreement.
 
 ## Severity and verdict
 
-The verdict follows from the findings, never the other way round.
+Findings set the verdict. Never change a severity to fit one.
 
 - **APPROVE**: no finding is open. The plan may proceed.
 - **APPROVE_WITH_CHANGES**: every open finding is fixed by a small,
   unambiguous edit that the review lists as a required change. The author
   applies each listed change, commits it, and names the commit in its
   rebuttal. The reviewer does not run again.
-- **REVISE**: a Critical finding is open and no listed change fixes it. Fix
-  the plan and run the full review again in a fresh context.
+- **REVISE**: a Critical or Moderate finding is open and no listed change
+  fixes it. Fix the plan and run the full review again in a fresh context.
+
+Decline an unlisted Suggestion with a reason; it does not block APPROVE.
 
 An open Critical finding forbids APPROVE. A review that lists one and says
 APPROVE is itself invalid.
@@ -275,9 +308,9 @@ context, and a second run costs as much as the first.
 - Every finding ends up **fixed** (cite the edit) or **rebutted** (cite the
   evidence). None is dropped in silence.
 - A rebuttal of a **Critical** finding must cite the file and line that
-  contradicts it. Without that, the finding stays open and the verdict is
-  REVISE.
-- A **Moderate** finding is rebutted with a reason.
+  contradicts it. Without that, the finding stays open.
+- A rebuttal of a **Moderate** finding needs a reason; without one, the
+  finding stays open.
 - A **Suggestion** may be declined with a one-line reason.
 
 ## Rounds
@@ -287,7 +320,8 @@ Carry forward a one-line summary of the prior round's verdict, so the
 history is auditable.
 
 - REVISE: revise the plan with the `openspec-update-change` skill and commit
-  it. Then run a new round in a fresh context.
+  it. Then [find the author](#find-the-author) and run a new round in a fresh
+  context.
 - APPROVE_WITH_CHANGES: apply the listed changes, name their commits in the
   rebuttals, and proceed. No new round.
 - After two REVISE verdicts in a row, stop and ask the user. Do not loop
