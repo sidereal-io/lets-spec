@@ -13,7 +13,7 @@ All tests go in `tests/lets/backlog/complete.test.ts` and drive `run()` with the
 
 ## 2. Integration [depends-on: 1]
 
-- [ ] 2.1 [easy] The whole suite, the type check and the OpenSpec validation pass (verify: deli -- pnpm test && mise run check)
+- [x] 2.1 [easy] The whole suite, the type check and the OpenSpec validation pass (verify: deli -- pnpm test && mise run check) (✓ deli -- pnpm test && mise run check passed)
 
 ## Deviations Ledger
 - 1.8: `lets --help` describes the backlog command in `lets/src/main.ts` too. Its line now also says it completes work and names `complete`, so it matches `lets backlog --help`.
