@@ -20,6 +20,14 @@ A delegation adapter that answers or declines delegation requests.
 
 The system or tool an adapter uses.
 
+## Backlog provider
+
+The backend that holds a repository's backlog, such as GitHub, Jira Cloud,
+Linear or Beads. A repository selects exactly one, with
+`lets.backlog.provider` in `openspec/config.yaml`; GitHub when unset. A
+backlog provider is a backend; not every backend is a backlog provider.
+Delegation backends, such as a harness, are not.
+
 ## Extension
 
 An added integration implemented by an adapter. The term does not imply
