@@ -16,7 +16,7 @@
 
 **Non-Goals:**
 - A second backlog provider, or settings beyond `provider` under `backlog`.
-- A repository setting for the backlog provider. A new story adds a file of lets's own in the repository, which wins over the user's config.
+- A repository setting for the backlog provider. #260 adds a file of lets's own in the repository, which wins over the user's config.
 - The pull request reference and completion (#258).
 - The `gh` calls `lets-go` keeps until #137: the comment thread read, `gh issue view <i> --json createdAt`, the in-progress parent query and the glossary-handoff body edit.
 - Rewriting every `#<i>` line in the `lets-go` spec (Decision 7).
@@ -59,7 +59,7 @@
    - lets never reads the backlog provider from `openspec/config.yaml`, and needs no repository root to find the setting.
 
    *Alternative:* a `lets:` block in `openspec/config.yaml`. Rejected: it is OpenSpec's file, and lets settings stay out of it, even though OpenSpec ignores keys it does not know.
-   *Alternative:* a file of lets's own in the repository, which a whole team shares. Deferred to a new story: it is a second config file and a precedence rule, and this change keeps to the setting's first home.
+   *Alternative:* a file of lets's own in the repository, which a whole team shares. Deferred to #260: it is a second config file and a precedence rule, and this change keeps to the setting's first home.
 
 3. **Keys are opaque strings.**
    - In the types: `number: number` becomes `key: string` and `label: string` in `Candidate`, `Item`, `Ref` and `Related`. Every `Adapter` method takes `key: string`.

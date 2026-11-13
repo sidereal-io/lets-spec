@@ -14,7 +14,7 @@
   - They show an item by its `label` and pass its `key` to commands.
   - `lets-go` asks `lets backlog key` whether a one-word request names an item (D8, D10).
 - The PR reference and the `complete` step are not part of this change; they are #258 (D1).
-- **Not in this change: a repository setting.** A repository cannot set its backlog provider yet. A new story adds a file of lets's own in the repository, which wins over the user's config (D12).
+- **Not in this change: a repository setting.** A repository cannot set its backlog provider yet. #260 adds a file of lets's own in the repository, which wins over the user's config (D12).
 
 ## Capabilities
 

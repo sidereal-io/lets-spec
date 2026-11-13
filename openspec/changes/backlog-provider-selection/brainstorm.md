@@ -18,7 +18,7 @@ https://github.com/sidereal-io/lets-spec/issues/257
 | D9 | What proves the story is done? | Node tests with a fake backlog provider using Jira-style keys through every command; config tests (no file, no `backlog:`, `github`, unknown, a `provider` that is not a string, a file lets cannot read); the GitHub adapter's tests passing with only the field changes; a live `ready`, `item`, `claim` and `release` on `mstelz/test-repo-pls-ignore`. No new `tests/skill-interfaces.bats` checks (D13). | User |
 | D10 | How does `lets-go` tell that a request names an item, not an idea? | It asks the adapter: a new `lets backlog key <text>` returns `{ key, label }` when the text is one of the backlog provider's IDs, or `{ key: null }`. GitHub takes `149` and `#149`. `lets-go` takes the request as an idea only when `key` is null. Raised after the first confirmation, from the `lets-go` spec's input rule. | User |
 | D11 | Where does the setting live: OpenSpec's `openspec/config.yaml`, or a file of lets's own? | Not in `openspec/config.yaml`: lets settings stay out of OpenSpec's file. For this change, only the user's lets config, `$XDG_CONFIG_HOME/lets/config.yaml` or `~/.config/lets/config.yaml`, at `backlog.provider`, as ADR-011 lays it out. Raised in the pull request after the code review. | User |
-| D12 | Can a repository set its backlog provider? | Not in this change. A repository setting, in a file of lets's own in the repository that wins over the user's config, is a new story. This change says that it is missing. | User |
+| D12 | Can a repository set its backlog provider? | Not in this change. A repository setting, in a file of lets's own in the repository that wins over the user's config, is #260, shaped one to one like the user's config. This change says that it is missing. | User |
 | D13 | Does this change add checks on the skills' prose to `tests/skill-interfaces.bats`? | No. The checks it added are dropped; the existing ones stay. | User |
 
 ## Changes from the story
@@ -28,6 +28,6 @@ https://github.com/sidereal-io/lets-spec/issues/257
 - Added: ranking ties break by creation time instead of issue number (D4).
 - Added: `lets backlog key`, so `lets-go` recognizes a backlog provider's IDs without knowing their format (D10).
 - Added: `gh-failed` is renamed `backend-failed`, and the help text stops naming GitHub (D7).
-- Changed after the code review: the setting moves from `openspec/config.yaml` to the user's lets config (D11), and the repository setting is split out to a new story (D12).
+- Changed after the code review: the setting moves from `openspec/config.yaml` to the user's lets config (D11), and the repository setting is split out to #260 (D12).
 
 Confirmed by user: yes
