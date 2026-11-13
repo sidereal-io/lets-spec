@@ -225,9 +225,14 @@ Review again when any of these is true:
 2. The reviewed head is no longer in the branch's history: `git merge-base --is-ancestor <head-sha> HEAD` fails. The branch was rebased or squashed
    after the review.
 3. A commit after `<head-sha>` changes files outside `openspec/changes/` and
-   is not a listed fix. `git log --oneline <head-sha>..HEAD -- . ':(exclude)openspec/changes/'` lists such commits. A listed fix counts
-   only when `git show <sha>` shows it touches nothing but what its finding
-   names.
+   meets neither exception below. List the commits with
+   `git log --oneline <head-sha>..HEAD -- . ':(exclude)openspec/changes/'`.
+   Use `git show <sha>` to check each exception:
+   - A listed fix touches nothing but what its finding names.
+   - An archive commit moves the change folder into
+     `openspec/changes/archive/`. Its only changes outside
+     `openspec/changes/` are merges into `openspec/specs/` that match this
+     change's reviewed delta specs.
 4. The pull request's base no longer contains the reviewed base. Find the
    current base with `gh pr view --json baseRefName`, run `git fetch origin <current-base>`, then `git merge-base --is-ancestor <base-sha> origin/<current-base>`. When it fails, commits the reviewer saw as merged
    are now in the pull request, unreviewed.

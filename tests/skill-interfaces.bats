@@ -519,6 +519,13 @@ fixture_file() {
   skill_says lets-review-build 'gh pr ready'
 }
 
+@test "archive preserves code review only for matching spec merges" {
+  skill_says lets-review-build '`openspec/changes/archive/`'
+  skill_says lets-review-build 'only changes outside'
+  skill_says lets-review-build '`openspec/specs/`'
+  skill_says lets-review-build 'reviewed delta specs'
+}
+
 @test "each review skill ranks by the guidance, then other families, then the order given" {
   skill_says lets-review-plan "the guidance first, then families other than the author's, then the order the options came in"
   skill_says lets-review-build "the guidance first, then families outside every author family, then the order the options came in"
