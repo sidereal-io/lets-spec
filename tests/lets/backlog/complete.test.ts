@@ -26,3 +26,25 @@ test('complete on a closed issue writes nothing, and returns completed', async (
   assert.deepEqual(t.json(), { result: 'completed' });
   assert.ok(!t.ran('issue close'));
 });
+
+test('complete writes no Project field', async () => {
+  const t = backlogDeps([...rows(), ['project item-edit', ok('')]]);
+  assert.equal(await run(['complete', '258'], t.deps), 0);
+  assert.ok(!t.ran('project item-edit'));
+});
+
+test('complete closes an assigned open Epic like any other item', async () => {
+  const t = backlogDeps([
+    ...LOOKUP_ONE,
+    ['issue view 52 --json state', json({ state: 'OPEN' })],
+    ['issue close 52', ok('')],
+    ['project item-edit', ok('')],
+  ]);
+  assert.equal(await run(['complete', '52'], t.deps), 0);
+  assert.deepEqual(t.json(), { result: 'completed' });
+  assert.ok(t.ran('issue close 52 --reason completed'));
+  // It reads no assignees and no Kind, and writes no Project field.
+  assert.ok(!t.ran('issue view 52 --json assignees'));
+  assert.ok(!t.ran('project item-list'));
+  assert.ok(!t.ran('project item-edit'));
+});
