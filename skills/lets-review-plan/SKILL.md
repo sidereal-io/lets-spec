@@ -281,9 +281,10 @@ context, and a second run costs as much as the first.
 - Every finding ends up **fixed** (cite the edit) or **rebutted** (cite the
   evidence). None is dropped in silence.
 - A rebuttal of a **Critical** finding must cite the file and line that
-  contradicts it. Without that, the finding stays open and the verdict is
-  REVISE.
-- A **Moderate** finding is rebutted with a reason.
+  contradicts it. Without that, the finding stays open; use REVISE when no
+  listed change fixes it.
+- A **Moderate** finding is rebutted with a reason. Otherwise it stays open
+  until fixed.
 - A **Suggestion** may be declined with a one-line reason.
 
 ## Rounds

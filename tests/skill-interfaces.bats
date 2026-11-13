@@ -3617,3 +3617,11 @@ EXPECTED
   skill_says lets-review-plan 'Suggestions alone'
   skill_does_not_say lets-review-plan '**REVISE**: a Critical finding'
 }
+
+@test "plan review rebuttals retain the listed-fix alternative" {
+  skill_does_not_say lets-review-plan 'stays open and the verdict is REVISE'
+  local rebuttals
+  rebuttals="$(skill_section lets-review-plan Rebuttals)"
+  [[ "$rebuttals" == *'no listed change'* && "$rebuttals" == *'**Moderate**'*'stays open'* ]] ||
+    { echo 'unresolved rebuttals do not follow the verdict rules'; false; }
+}
