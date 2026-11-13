@@ -18,7 +18,7 @@
 
 ## 4. Acceptance [depends-on: 3]
 
-- [ ] 4.1 [medium] Every project check passes: the Node tests, the type check, the bats tests, the flake and OpenSpec validation (verify: `deli -- pnpm test && deli -- nix flake check && mise run check`)
+- [x] 4.1 [medium] Every project check passes: the Node tests, the type check, the bats tests, the flake and OpenSpec validation (verify: `deli -- pnpm test && deli -- nix flake check && mise run check`) (✓ all three passed: 689 Node tests and every bats test, the flake, and `openspec validate --all --strict`)
 - [ ] 4.2 [medium] Live run in a clone of `mstelz/test-repo-pls-ignore` with this branch's `lets`: `key`, `ready`, `item`, `find`, `claim` and `release` return `key` and `label` against its real Project, and a claim and its release still assign and set Status. The results are recorded in the pull request (verify: `lets backlog item <claimed-issue>` in the clone shows `"key"`, `"label"`, `"status": "In Progress"` and the user in `assignees`)
 
 ## Deviations Ledger
