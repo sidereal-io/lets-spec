@@ -9,7 +9,7 @@ import type { Adapter } from './adapter.ts';
 import { BacklogError } from './adapter.ts';
 import type { Selection } from './config.ts';
 import { selectProvider } from './config.ts';
-import { claim, itemView, ready, release } from './policy.ts';
+import { claim, complete, itemView, ready, release } from './policy.ts';
 import type { Providers } from './providers.ts';
 import { PROVIDERS } from './providers.ts';
 
@@ -139,6 +139,12 @@ export async function run(argv: string[], deps: Pick<Deps, 'env' | 'io' | 'cwd' 
     .action((text: string, { claim: token }: { claim: string }) => {
       typed = text;
       work = (adapter, key) => release(adapter, key, token);
+    });
+  command('complete', 'mark the item done on the backlog')
+    .argument('<i>', 'the item\'s key, such as 136', itemKey)
+    .action((text: string) => {
+      typed = text;
+      work = (adapter, key) => complete(adapter, key);
     });
 
   try {
