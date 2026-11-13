@@ -523,7 +523,7 @@ fixture_file() {
   skill_says lets-review-build '`openspec/changes/archive/`'
   skill_says lets-review-build 'only changes outside'
   skill_says lets-review-build '`openspec/specs/`'
-  skill_says lets-review-build 'reviewed delta specs'
+  skill_says lets-review-build 'delta specs as they stood at `<head-sha>`'
 }
 
 @test "each review skill ranks by the guidance, then other families, then the order given" {

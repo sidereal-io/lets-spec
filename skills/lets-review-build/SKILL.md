@@ -232,7 +232,7 @@ Review again when any of these is true:
    - An archive commit moves the change folder into
      `openspec/changes/archive/`. Its only changes outside
      `openspec/changes/` are merges into `openspec/specs/` that match this
-     change's reviewed delta specs.
+     change's delta specs as they stood at `<head-sha>`.
 4. The pull request's base no longer contains the reviewed base. Find the
    current base with `gh pr view --json baseRefName`, run `git fetch origin <current-base>`, then `git merge-base --is-ancestor <base-sha> origin/<current-base>`. When it fails, commits the reviewer saw as merged
    are now in the pull request, unreviewed.
