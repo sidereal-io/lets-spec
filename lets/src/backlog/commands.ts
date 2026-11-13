@@ -21,6 +21,9 @@ stdout: one JSON object and a newline.
   item <i>           { key, label, title, body, url, state, kind, priority, size,
                        status, assignees, blockedBy, parent, subIssues }
   find <words...>    { issues: [{ key, label, title }] }
+  key <text>         { key, label } when the text is one of the backlog
+                     provider's keys, or { key: null, label: null }; it runs
+                     no backend command. Put -- before text that starts with -.
 An item's key names it in commands; its label is how the backlog writes it.
   claim <i>          { result: claimed, claim } | { result: taken, assignees }
                      | { result: failed, write: assign|claim|delete-claim|unassign|status, message, claim? }
@@ -79,6 +82,8 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
   }
   // The command's work, once its arguments parse. Its result is printed.
   let work: ((adapter: Adapter) => Promise<unknown>) | undefined;
+  // A command that needs only the backlog provider, not its adapter.
+  let answer: ((selection: Selection) => unknown) | undefined;
 
   const program = new Command('lets backlog')
     .description('Read and claim work on the repository\'s backlog. Each command prints one JSON object.')
@@ -104,6 +109,11 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
     .action((words: string[]) => {
       work = async (adapter) => ({ issues: await adapter.searchTitles(words.join(' ')) });
     });
+  command('key', 'say whether the text is one of the backlog provider\'s keys')
+    .argument('<text>', 'the text, such as 149; put -- before text that starts with -')
+    .action((text: string) => {
+      answer = ({ provider }) => provider.parseKey(text) ?? { key: null, label: null };
+    });
   command('claim', 'assign the issue to yourself and set it In Progress, when nobody has it')
     .argument('<i>', 'the issue number', issueNumber)
     .action((issue: string) => {
@@ -122,14 +132,14 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
     if (!(error instanceof CommanderError)) throw error;
     return error.exitCode === 0 ? 0 : 2;
   }
-  if (work === undefined) {
+  if (work === undefined && answer === undefined) {
     program.outputHelp({ error: true });
     return 2;
   }
 
   try {
     if (selection instanceof BacklogError) throw selection;
-    print(await work(await selection.provider.create(deps.io, deps.cwd)));
+    print(answer !== undefined ? answer(selection) : await work!(await selection.provider.create(deps.io, deps.cwd)));
     return 0;
   } catch (error) {
     if (!(error instanceof BacklogError)) throw error;

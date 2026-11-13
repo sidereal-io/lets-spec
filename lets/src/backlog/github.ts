@@ -40,6 +40,12 @@ export const FREE_LIMIT = '500';
 
 type Project = { number: number; title: string; url: string; owner: string };
 
+// A GitHub key: a whole number above zero, with or without its #.
+export function parseGithubKey(text: string): { key: string; label: string } | null {
+  const number = /^#?([1-9][0-9]*)$/.exec(text)?.[1];
+  return number === undefined ? null : { key: number, label: `#${number}` };
+}
+
 const NOT_FOUND = /could not resolve to an? (issue|issueorpullrequest)/i;
 
 type Gh = (args: string[], timeoutMs: number) => Promise<{ ok: true; stdout: string } | { ok: false; message: string; timedOut: boolean }>;

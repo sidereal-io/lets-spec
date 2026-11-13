@@ -58,3 +58,14 @@ test('--version and -V inside a lets backlog command are words, not the version 
   assert.equal(item.code, 2);
   assert.equal(item.stdout, '');
 });
+
+test('key reads text after -- as the text, and runs no gh command', async () => {
+  const gh = withFakeGh();
+  const { stdout, code } = await lets(gh.dir, 'backlog', 'key', '--', '--help');
+  assert.equal(code, 0);
+  assert.deepEqual(JSON.parse(stdout), { key: null, label: null });
+  const number = await lets(gh.dir, 'backlog', 'key', '#149');
+  assert.deepEqual(JSON.parse(number.stdout), { key: '149', label: '#149' });
+  // gh never ran, so it wrote no log.
+  assert.throws(() => gh.calls(), /ENOENT/);
+});
