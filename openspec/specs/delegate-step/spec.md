@@ -17,8 +17,8 @@ Says what `lets delegate step run` does: the kind of session it asks a resolver 
 - **THEN** `lets delegate step run` exits 0 and prints the report
 
 #### Scenario: A resolver that runs no step
-- **WHEN** the config lists `t3`, which runs no step, then `subagent`, and the user runs `lets delegate step run --for plan` with every required option
-- **THEN** `t3` is not asked for a session, and the default answers
+- **WHEN** the config lists a resolver that runs no step, then `subagent`, and the user runs `lets delegate step run --for plan` with every required option
+- **THEN** the first resolver is not asked for a session, and the default answers
 
 ### Requirement: The step's session ends its final message with a step report
 A step report SHALL be a fenced code block tagged `step-report`, holding one YAML mapping, at the end of the session's final message. The block SHALL open with a line of three or more backticks followed by `step-report`. It SHALL close with a line of at least as many backticks and nothing else, so a shorter fence inside the block does not close it. The mapping SHALL hold `outcome`, one of `done`, `needs-input` or `failed`. A `done` report SHALL hold `evidence`, a non-empty list of strings. A `needs-input` report SHALL hold `questions`, a non-empty list of mappings, each with a string `question` and an optional string `recommendation`. A `failed` report SHALL hold a string `reason`. `lets delegate step run` SHALL read the last such block in the final message. It SHALL ignore the text before the block and after it.
