@@ -11,7 +11,7 @@ names below unchanged.
 Title: `Epic: <capability>`
 
 ```markdown
-> Discovery status: in-progress — next phase: <personas | journey-map | moscow | stories>
+> Discovery status: in-progress — next phase: <personas | journey-map | moscow | stories | finalize>
 > Input: <file path, issue link, or "conversation, YYYY-MM-DD">
 > Map: <path>
 

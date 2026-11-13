@@ -3410,3 +3410,24 @@ commit_maps() {
     grep -qF 'openspec/discovery/' <<<"$line" || { echo "README names one map layout only: $line"; false; }
   done < <(tr -s '[:space:]' ' ' <"$repo/README.md" | sed 's/\. /.\n/g' | grep -F 'openspec/discovery.md')
 }
+
+# BEGIN shape-checkpoints (#231): shaping recovery contracts.
+@test "shape-checkpoints: finalize is a durable resume phase" {
+  grep -qF '| finalize>' "$repo/skills/lets-shape/templates/issue-template.md"
+  sed -n '/^### Phase 5: Stories/,/^### Phase 6/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'next phase: finalize'
+  sed -n '/^## Resume mode/,/^## Revision mode/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF '`finalize`'
+}
+
+@test "shape-checkpoints: stale links keep code-based status" {
+  sed -n '/^## Revision mode/,/^## Glossary handoff/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'keep that status'
+  ! sed -n '/^## Revision mode/,/^## Glossary handoff/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'unplanned'
+}
+
+@test "shape-checkpoints: size gates single-issue glossary writes" {
+  sed -n '/^## Shape one issue/,/^## Resume mode/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'step 6'
+}
+
+@test "shape-checkpoints: owner identifies the glossary issue" {
+  sed -n '/^### Link the blocked stories/,/^### Hand over/p' "$repo/skills/lets-shape/SKILL.md" | grep -qF 'owner issue number'
+}
+# END shape-checkpoints (#231).

@@ -305,11 +305,13 @@ Propose meaning and the narrowest scope covering actual uses, checking
 ancestor definitions and siblings. Order used by checkout and fulfillment
 belongs in their common scope; Checkout attempt used only by checkout stays
 local. Confirm meaning and scope with the user, then write the accepted
-entry immediately to its authoritative glossary. Subsequent packets use
-that agreed concept. Qualify conflicting local meanings rather than silently
-overriding shared ones; move newly shared definitions and update references
-without duplicate authoritative copies. A stale declared glossary path must
-be reported and resolved before dependent discussion continues.
+entry immediately to its authoritative glossary. In single-issue shaping,
+confirm and write only after [step 6](#shape-one-issue) sizing passes.
+Subsequent packets use that agreed concept. Qualify conflicting local
+meanings rather than silently overriding shared ones; move newly shared
+definitions and update references without duplicate authoritative copies.
+A stale declared glossary path must be reported and resolved before
+dependent discussion continues.
 
 ## Preserve glossary edits between sessions
 
@@ -373,9 +375,9 @@ checkpoint branch until the destination safely contains its definitions.
 **Checkpoint every phase.** Apply the glossary checkpoint procedure above
 whenever the phase changed definitions. When the user confirms a phase,
 write its result at once, and set the parent issue's status line to the next
-phase: `personas`, `journey-map`, `moscow`, then `stories`. A revision run
-that skips personas and the journey map goes from Ingest straight to
-`moscow`.
+phase: `personas`, `journey-map`, `moscow`, `stories`, then `finalize`. A
+revision run that skips personas and the journey map goes from Ingest
+straight to `moscow`.
 
 Personas and the journey map go in the run's map. Everything else goes in
 the parent issue.
@@ -545,6 +547,8 @@ For each issue:
    issue exists but a field is unset, set it on that issue. Do not create
    the issue again.
 
+When every story issue exists, set the status line to `next phase: finalize`.
+
 ### Phase 6: Finalize
 
 Take the run's map from the parent's `Map:` line, as [Read the parent's
@@ -582,7 +586,8 @@ issue's parent and what blocks it.
    a CI fix or a tidy-up. A Story is something a persona can do once it
    ships.
 3. **Read the code the issue names**, and search for more. Load shared,
-   ancestor and affected-scope vocabulary and develop definitions as above.
+   ancestor and affected-scope vocabulary and develop candidate meanings
+   as above. Keep them tentative until step 6.
    **Relevant code** lists what you find, or `new` when the story builds on
    nothing that exists.
 4. **Ask about each comment not labelled `read`**, in list order, one at a
@@ -600,7 +605,12 @@ issue's parent and what blocks it.
    one difference. Offer only the listed products, never a new one. When
    no listed product fits, use no map's names.
 6. **Size it** XS, S, M, L or XL. L or XL is too big for one change: say so,
-   offer a discovery run on it instead, and stop.
+   offer a discovery run on it instead, and stop. Then write no glossary
+   definition. If the user starts the discovery run, record the tentative
+   meanings in its parent issue when Ingest writes it. This stop creates no
+   issue and starts no discovery. Once sizing passes, agree each meaning and
+   scope with the user and write it as
+   [Develop the vocabulary](#develop-the-vocabulary) says.
 7. **Confirm, then write.** The issue is public, so show the user its title,
    body, Kind, Priority and Size, and get a yes. The body carries every
    fold, so one write covers them all. When the user confirms that an
@@ -636,7 +646,8 @@ picked one of several):
    parent issue and map already capture — and confirm with the user.
 3. **Continue from the recorded phase.** Do not re-litigate confirmed
    sections unless the user brings new information; then revisit and update
-   them.
+   them. When it says `finalize`, go straight to
+   [Phase 6: Finalize](#phase-6-finalize).
 
 ## Revision mode
 
@@ -658,11 +669,11 @@ map](#pick-the-map) says, so you read no thread and change no stage first.
 
      No output means no link is stale. Re-check each one's stage against the
      code, in the map that links it, and change nothing else in another
-     product's map. Then do one of:
+     product's map. Set its status by the [Journey map](#phase-3-journey-map)
+     definitions; open issues do not decide it. Then do one of:
      - the stage now works: upgrade it and drop the link;
      - an open issue now closes the gap: link that one instead;
-     - nothing open does: drop the link and leave the stage an unplanned
-       `gap`.
+     - nothing open does: drop the link and keep that status.
    - **Read the thread of each open issue the map links**, one issue at a
      time, in ascending number. Take the numbers from the map's `issues/<n>`
      links, and keep those the issue list shows as open. Finish each issue
@@ -766,8 +777,10 @@ Only when the user chose a documentation pull request:
 
 1. Ask the user before you add blockers. Then, on each other story that
    needs the unmerged definitions, run
-   `gh issue edit <dependent> --add-blocked-by <owner>`. Never put the
-   blocker only on the parent, and never use a "relates to" link.
+   `gh issue edit <dependent> --add-blocked-by <owner>`, where `<owner>` is
+   the owner issue number recorded in **Glossary handoff**, not the Project
+   owner login or the PR number. Never put the blocker only on the parent,
+   and never use a "relates to" link.
 2. If the user declines the links, make the dependent story's
    **Depends on** name the owner, the definitions it needs and the
    unresolved prerequisite. Do not call the story ready. Build's
