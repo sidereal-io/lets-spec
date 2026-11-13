@@ -13,7 +13,7 @@ Plan review SHALL use REVISE when any open Critical or Moderate finding has no l
 - **THEN** the verdict is APPROVE_WITH_CHANGES and completion requires each listed change's valid fix commit in the rebuttals without another review
 
 #### Scenario: No findings remain open
-- **WHEN** findings are absent or have been fixed or rebutted under their severity rules
+- **WHEN** findings are absent, or each was rebutted under its severity rule or declined as a Suggestion
 - **THEN** the verdict is APPROVE
 
 #### Scenario: Only a Suggestion remains
