@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/backlog/commands.ts';
 import type { Answer, Row } from './fixtures/fake-gh.ts';
-import { backlogDeps, json, LOOKUP_ONE, ok } from './fixtures/fake-gh.ts';
+import { backlogDeps, fail, json, LOOKUP_ONE, ok } from './fixtures/fake-gh.ts';
 
 const rows = ({ state = json({ state: 'OPEN' }) as Answer, close = ok('') as Answer } = {}): Row[] => [
   ...LOOKUP_ONE,
@@ -47,4 +47,21 @@ test('complete closes an assigned open Epic like any other item', async () => {
   assert.ok(!t.ran('issue view 52 --json assignees'));
   assert.ok(!t.ran('project item-list'));
   assert.ok(!t.ran('project item-edit'));
+});
+
+test('complete on an issue that does not exist is not-found', async () => {
+  const t = backlogDeps([
+    ...LOOKUP_ONE,
+    ['issue view 99999 --json state', fail('GraphQL: Could not resolve to an issue or pull request with the number of 99999. (repository.issue)')],
+  ]);
+  assert.equal(await run(['complete', '99999'], t.deps), 1);
+  assert.equal(t.json().error, 'not-found');
+  assert.ok(!t.ran('issue close'));
+});
+
+test('complete with a key GitHub does not use is not-found, and runs no gh command', async () => {
+  const t = backlogDeps(rows());
+  assert.equal(await run(['complete', 'PROJ-12'], t.deps), 1);
+  assert.equal(t.json().error, 'not-found');
+  assert.deepEqual(t.calls(), []);
 });
