@@ -15,7 +15,10 @@ to locate the work and verify completion.
 
 ## Size
 
-- **Five to twelve tasks.** Fewer, and the tasks hide too much. More, and the story was too big: say so, and name the slice to move to a new story, but do not split the story here. That decision belongs to the user and the brainstorm.
+- **Five to twelve tasks.** Fewer, and the tasks hide too much. More, and
+  the story is too big. Do not write or commit `tasks.md`. Report the count
+  and the slice to move to a new story, then wait. The user decides the split
+  in the brainstorm, and task planning runs again on the smaller story.
 - **One task is one red-green cycle:** one behavior, its failing test,
   then the code that makes the test pass. A task that needs "and" to
   describe is two tasks.
@@ -36,8 +39,15 @@ Put tags after the task number and before the description.
 | Tag | Means |
 |---|---|
 | `[easy]`, `[medium]`, `[complex]` | How hard the task is. The apply step may use it to choose who does the task. |
-| `[parallel]` | The task shares no files with its neighbours, so it can run beside them. |
+| `[parallel]` | The task shares no files with any other task that could run at the same time. |
 | `[depends-on: <section>]` | On a section heading: this section waits for that one. |
+
+Before you tag a task `[parallel]`, compare its files with every task that
+could run at the same time. That is the rest of its section, plus each
+section with no `depends-on` chain, direct or indirect, to or from its own.
+Sections that share only a prerequisite can run at the same time. If the
+first and third tasks share a file, neither is `[parallel]`, even when the
+second touches other files.
 
 ## Verification
 

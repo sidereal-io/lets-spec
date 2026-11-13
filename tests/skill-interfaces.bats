@@ -3411,6 +3411,25 @@ commit_maps() {
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
 # #229 review-model-choice: keep this block together for sibling story rebases.
 
+# task-limits (#232): size and concurrency guidance.
+@test "task-limits: size guidance names the output before waiting" {
+  local text
+  text="$(sed -n '/^## Size$/,/^## Order$/p' "$repo/skills/lets-write-tasks/SKILL.md" | tr -s '[:space:]' ' ')"
+  [[ "$text" == *'Do not write or commit `tasks.md`'* ]]
+  [[ "$text" == *'runs again'* ]]
+  [[ "$text" == *"then wait"* ]]
+}
+
+@test "task-limits: concurrency guidance covers nonadjacent tasks" {
+  local text
+  text="$(cat "$repo/skills/lets-write-tasks/SKILL.md")"
+  [[ "$text" == *'`depends-on` chain'* ]]
+  [[ "$text" == *'first and third'* ]]
+  [[ "$text" != *'neighbours'* ]]
+  grep -qF 'tasks in order, so it has no parallel tags.' "$repo/schemas/lets-minimal/schema.yaml"
+}
+# End task-limits (#232).
+
 # #234: setup guards and reusable PR review wording.
 @test "setup guards precede Project creation" {
   local text before
