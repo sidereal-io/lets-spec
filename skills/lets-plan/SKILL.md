@@ -22,7 +22,8 @@ artifact is still needed.
    `lets-go` starts an issue, and stop. Otherwise the branch is the
    change's name, `<name>`.
 3. The current branch is `<branch>` and the change name is `<name>`.
-   Take the issue number, `<i>`, and the route line from the caller.
+   Take the issue's key, `<i>`, and the route line from the caller.
+   The key is the one `lets backlog` prints, such as `149` on GitHub.
    The route line names the selected schema and explains the choice.
    When the caller gives no issue, search for it:
 
@@ -31,9 +32,9 @@ artifact is still needed.
    ```
 
    Of the `issues` it prints, keep the one whose title starts with
-   `<branch> — `. If none or several match, say that `lets-plan` needs
-   the issue number, and stop. When it prints an `error`, show the user
-   its `message`, and stop. For `no-backlog`, say to run the
+   `<branch> — `. Its `key` is `<i>`. If none or several match, say
+   that `lets-plan` needs the issue number, and stop. When it prints an
+   `error`, show the user its `message`, and stop. For `no-backlog`, say to run the
    `lets-setup-backlog` skill.
 
 ## Plan

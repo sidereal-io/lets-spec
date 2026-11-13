@@ -3713,3 +3713,8 @@ EXPECTED
     ! skill_text "$skill" | grep -qE 'lets backlog[^.]*(\.number|"number")' || { echo "$skill reads number from lets backlog"; false; }
   done
 }
+
+@test "lets-plan takes the issue's key from its caller" {
+  skill_says lets-plan 'Take the issue'"'"'s key, `<i>`, and the route line from the caller'
+  skill_says lets-plan 'lets backlog find <branch>'
+}
