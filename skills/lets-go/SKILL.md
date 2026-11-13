@@ -103,6 +103,7 @@ sets it.
 | `<slug>` | The first five words of the idea, as [The shape step's name](references/shape.md#the-shape-steps-name) makes them | [The shape step's name](references/shape.md#the-shape-steps-name) |
 | `<claim>` | The unique token of this session's claim | [Claim](#claim), from the command's `claim` field |
 | `<idea>` | The idea, in the user's words | [Read the request](#read-the-request) |
+| `<word>` | The one word left of the request, before `lets backlog key` says whether it names an issue | [Read the request](#read-the-request) |
 | `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs, or `shape` in [Run the shape step](#run-the-shape-step) |
 | `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
 | `<mode>` | The question mode, `ask` or `auto` | [Set the question mode](#set-the-question-mode), or [Run the shape step](#run-the-shape-step), before shape |
@@ -188,10 +189,26 @@ takes the question mode from its next source. On another branch, ask
 nothing about the word: words stop the run there.
 
 What is left is one of these:
-- **A number:** it holds `#<i>`, or is a bare number. It names the
-  issue.
+- **A number:** one word that is one of the backlog provider's item
+  keys, such as `#149` or `149` on GitHub, or `PROJ-12` on Jira. It
+  names the issue.
 - **Words:** anything else. They are an idea, kept word for word.
 - **Nothing.**
+
+When what is left is one word, ask `lets backlog key` whether it is one
+of the backlog provider's item keys. Pass the word as one argument in
+single quotes, after `--`, and write each `'` in it as `'\''`:
+
+```bash
+lets backlog key -- '<word>'
+# example
+lets backlog key -- 'can'\''t'
+```
+
+When it prints a `key`, the word names an issue, and that `key` is
+`<i>`. When `key` is `null`, the word is words, such as `refactor`.
+Ask it before the discovery query and the title search. On an error,
+act as [Backlog errors](#backlog-errors) says.
 
 Then find the issue, `<i>`, from the branch the run started on and what
 is left of the request:
@@ -231,12 +248,12 @@ lets backlog find <branch>
 ```
 
 Keep the `issues` whose title starts with `<branch> — `: these are the
-matches. When the user gave a number, it must be one of them. If it is
-not, say that the issue and the branch do not match, and stop. When
-they gave none, exactly one match is the issue. If none matches, say
-that `lets-go` runs on the default branch or on a change's branch, and
-needs the issue number on a change's branch. Stop. If several match,
-say that `lets-go` needs the issue number, and stop.
+matches. When the user gave a number, `<i>` must be the `key` of one
+of them. If it is not, say that the issue and the branch do not match,
+and stop. When they gave none, exactly one match is the issue. If none
+matches, say that `lets-go` runs on the default branch or on a change's
+branch, and needs the issue number on a change's branch. Stop. If
+several match, say that `lets-go` needs the issue number, and stop.
 
 Next: [Check the issue](#check-the-issue) when the entry table found
 `<i>`; [Start from an idea](#start-from-an-idea) for an idea on the

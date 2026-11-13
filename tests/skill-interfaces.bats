@@ -3653,3 +3653,33 @@ EXPECTED
   [[ "$rebuttals" == *'**Critical**'*'stays open'*'**Moderate**'*'stays open'* ]] ||
     { echo 'unresolved rebuttals do not follow the verdict rules'; false; }
 }
+
+# lets backlog names an item by its key, and shows it by its label. lets-go
+# asks the backlog provider whether one word is a key, and lets-plan takes
+# the key from its caller.
+
+@test "lets-go PROJ-12: lets-go asks lets backlog key whether one word names an item" {
+  local part phrase
+  part="$(part_section 'Read the request')"
+  for phrase in \
+    'When what is left is one word, ask `lets backlog key` whether it is one of the backlog provider'"'"'s item keys' \
+    'When it prints a `key`, the word names an issue, and that `key` is `<i>`' \
+    'such as `#149` or `149` on GitHub, or `PROJ-12` on Jira' \
+    'Ask it before the discovery query and the title search' \
+    'On an error, act as [Backlog errors](#backlog-errors) says'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Read the request does not say: $phrase"; false; }
+  done
+  skill_does_not_say lets-go 'or is a bare number'
+}
+
+@test "lets-go refactor: a word that is not a key is an idea" {
+  grep -qF 'When `key` is `null`, the word is words, such as `refactor`' <<<"$(part_section 'Read the request')" ||
+    { echo "Read the request does not take a word with no key as words"; false; }
+}
+
+@test "lets-go can't: lets-go passes the word to lets backlog key quoted, after --" {
+  skill_says lets-go "lets backlog key -- '<word>'"
+  skill_says lets-go "lets backlog key -- 'can'\\''t'"
+  grep -qF "Pass the word as one argument in single quotes, after \`--\`, and write each \`'\` in it as \`'\\''\`" <<<"$(part_section 'Read the request')" ||
+    { echo "Read the request does not say how to quote the word"; false; }
+}

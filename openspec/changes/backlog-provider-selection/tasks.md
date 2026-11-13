@@ -12,7 +12,7 @@
 
 ## 3. The skills use key and label [depends-on: 2]
 
-- [ ] 3.1 [complex] `lets-go`'s *Read the request* asks `lets backlog key -- '<word>'`, with the apostrophe rule, when the request is one word. A `key` is `<i>`, `null` makes it an idea, and an error stops the run as *Backlog errors* says. The bats checks cover `lets-go PROJ-12`, `lets-go refactor` and `lets-go can't` (verify: `deli -- bats tests/skill-interfaces.bats --filter 'lets-go'`)
+- [x] 3.1 [complex] `lets-go`'s *Read the request* asks `lets backlog key -- '<word>'`, with the apostrophe rule, when the request is one word. A `key` is `<i>`, `null` makes it an idea, and an error stops the run as *Backlog errors* says. The bats checks cover `lets-go PROJ-12`, `lets-go refactor` and `lets-go can't` (verify: `deli -- bats tests/skill-interfaces.bats --filter 'lets-go'`) (✓ `deli -- bats tests/skill-interfaces.bats --filter 'lets-go'` passed)
 - [ ] 3.2 [medium] `lets-go`'s `## Placeholders` section says that `#<i>`, `#<parent>` and `#<story>` show the item's `label` and that commands take its `key`. `<i>`'s row says key, not number. *Pick the first ready story* and `next` describe the rank as oldest first. *Backlog errors* names `backend-failed` (verify: `deli -- bats tests/skill-interfaces.bats --filter 'lets-go'`)
 - [ ] 3.3 [easy] `lets-plan` takes the issue's key from its caller and says so, keeping its `lets backlog find <branch>` rule (verify: `deli -- bats tests/skill-interfaces.bats --filter 'lets-plan'`)
 
