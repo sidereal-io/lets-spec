@@ -608,7 +608,10 @@ Each one returns its result to what ran it.
 ### Find the source of demand
 
 Parallel sessions share the backlog, so claim the issue before you
-create anything.
+create its change branch, OpenSpec artifacts or code. When shaping runs,
+it comes first and may create the issue, its parent and stories, and a
+glossary holding branch: see
+[What shape runs](references/shape.md#what-shape-runs).
 
 Each `lets backlog` command it runs acts on an error as
 [Backlog errors](#backlog-errors) says.
@@ -631,10 +634,14 @@ Take the first case that applies:
    for it. The result is `found` when that returns `resolved`, and
    `unresolved` when it returns `unresolved`.
 2. **The run has described work, but no issue.** Search open issue
-   titles for it, with the idea as one quoted argument:
+   titles for it. Pass only the idea, as one argument in single quotes,
+   so the shell passes `$`, quotes and backticks unchanged. Write an
+   apostrophe as `'\''`. The command limits the search to titles.
 
    ```bash
-   lets backlog find "<idea>"
+   lets backlog find '<idea>'
+   # example
+   lets backlog find 'fix user'\''s $HOME display'
    ```
 
    The result is `matches`, with the `issues` the search found, or

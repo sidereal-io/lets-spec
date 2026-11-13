@@ -854,7 +854,7 @@ review_build_start() {
   skill_says lets-go '--only'
   skill_says lets-go 'lets backlog item <i>'
   skill_says lets-go 'lets backlog find <branch>'
-  skill_says lets-go 'lets backlog find "<idea>"'
+  skill_says lets-go "lets backlog find '<idea>'"
   skill_does_not_say lets-go '<repo>'
   skill_does_not_say lets-go 'gh issue view <parent>'
   skill_does_not_say lets-go 'gh issue view <i> --json number,title,body,url,parent'
@@ -2466,7 +2466,7 @@ step_row() {
 }
 
 @test "lets-plan runs openspec-propose and reads the change state when it stops" {
-  skill_says lets-plan '`openspec-propose` skill'
+  skill_says lets-plan '`openspec-propose`'
   skill_says lets-plan 'openspec instructions apply --change <name> --json'
   skill_says lets-plan 'lets backlog find <branch>'
   skill_says lets-plan 'whose title starts with `<branch> — `'
@@ -3410,6 +3410,52 @@ commit_maps() {
 }
 
 # #215: session claim interfaces. Behavior is covered by the backlog tests.
+
+@test "step reports: planning checks prerequisites before proposing" {
+  local plan guard invoke
+  plan="$(sed -n '/^## Plan$/,/^## When propose stops$/p' "$repo/skills/lets-plan/SKILL.md" | tr -s '[:space:]' ' ')"
+  guard="${plan%%'stop:'*}"
+  invoke="${plan%%'`openspec-propose`'*}"
+  [ "$guard" != "$plan" ] && [ "$invoke" != "$plan" ]
+  [ "${#guard}" -lt "${#invoke}" ]
+  for token in '.openspec.yaml' 'Existing change' 'New change'; do
+    [[ "$plan" == *"$token"* ]]
+  done
+}
+
+@test "step reports: routing checks query output before the table" {
+  local text query guard table rows archive
+  text="$(tr -s '[:space:]' ' ' < "$repo/skills/lets-build/SKILL.md")"
+  query="${text%%'openspec instructions apply'*}"
+  guard="${text%%'If the command'*}"
+  table="${text%%'| The current branch |'*}"
+  [ "$guard" != "$text" ]
+  [ "${#query}" -lt "${#guard}" ] && [ "${#guard}" -lt "${#table}" ]
+  for token in 'JSON' 'retry' 'full output'; do
+    [[ "$text" == *"$token"* ]]
+  done
+  rows="$(grep '^| has a' "$repo/skills/lets-build/SKILL.md")"
+  archive="$(grep '^| has an archived folder' <<<"$rows")"
+  [ "$(tail -n 1 <<<"$rows")" = "$archive" ]
+  [[ "$archive" == *'pull request'* ]] && [[ "$archive" != *'ready for review'* ]]
+}
+
+@test "step reports: idea argument stays literal" {
+  local example expected
+  example="$BATS_TEST_TMPDIR/idea.sh"
+  sed -n "/^   lets backlog find 'fix /p" "$repo/skills/lets-go/SKILL.md" > "$example"
+  [ "$(wc -l < "$example")" -eq 1 ]
+  run bash -c 'lets() { printf "%s\n" "$#" "$@"; }; source "$1"' _ "$example"
+  [ "$status" -eq 0 ]
+  expected=$(cat <<'EXPECTED'
+3
+backlog
+find
+fix user's $HOME display
+EXPECTED
+)
+  [ "$output" = "$expected" ]
+}
 @test "claim-race: recovery names the session token" {
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(procedure_text 'Claim')"
   grep -qF 'lets backlog release <i> --claim <claim>' <<<"$(skill_section lets-go 'Recover from a failed import')"
