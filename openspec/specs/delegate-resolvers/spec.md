@@ -138,7 +138,7 @@ A visible model is one the user has not hidden in T3 Code. A custom model is alw
 - **THEN** the thread runs `gemini-3.8-flash`, with no effort option
 
 ### Requirement: The T3 resolver declines outside T3 Code
-When the process is not inside T3 Code, `t3` SHALL decline every review, handoff and their instructions, and SHALL start no session. It SHALL NOT look for any other harness. The next resolver in the chain answers, or the command exits 2 when none is left.
+When the process is not inside T3 Code, `t3` SHALL decline every review, handoff and step, and the instructions for each, and SHALL start no session. It SHALL NOT look for any other harness. The next resolver in the chain answers, or the command exits 2 when none is left.
 
 #### Scenario: Inside herdr
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, the user runs `lets delegate review run --for code` with every required option inside herdr, and no T3 server is its ancestor
@@ -147,6 +147,10 @@ When the process is not inside T3 Code, `t3` SHALL decline every review, handoff
 #### Scenario: While T3 Code runs elsewhere
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, the T3 server is running, and the user runs `lets delegate review instructions --for code` in a terminal that the server did not start
 - **THEN** it exits 2, stdout is empty, and stderr says every resolver declined
+
+#### Scenario: A step outside T3 Code
+- **WHEN** the config's `delegate.resolvers` is `[t3, subagent]`, no T3 server is the process's ancestor, and the user runs `lets delegate step run --for build` with every required option
+- **THEN** no thread is created, and the default answers
 
 ### Requirement: The cli resolver lists the models each CLI reports
 `cli` SHALL list its `options` family by family, in the order `gpt`, `claude`, `gemini`, for each family whose CLI is on `PATH`:
@@ -333,17 +337,6 @@ When `t3` refuses a model for a thread it started, it SHALL archive that thread 
 - **WHEN** `t3` needs a token for a `lets delegate` command, `XDG_CONFIG_HOME` is `/cfg`, `/cfg/lets/t3-token` does not exist, and `~/.config/lets/t3-token` holds `old`
 - **THEN** it issues a new token and writes it to `/cfg/lets/t3-token`, and does not use `old`
 
-### Requirement: The T3 resolver declines every step
-`t3` SHALL decline every step and the instructions for one, inside T3 Code or not, and SHALL open no thread for it. The next resolver in the chain answers, or the command exits 2 when none is left.
-
-#### Scenario: A step inside T3 Code
-- **WHEN** the config's `delegate.resolvers` is `[t3, subagent]`, the command runs inside T3 Code, and the user runs `lets delegate step run --for build` with every required option
-- **THEN** no thread is created, and the default answers
-
-#### Scenario: Step instructions inside T3 Code
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, the command runs inside T3 Code, and the user runs `lets delegate step instructions --for plan`
-- **THEN** it exits 2, stdout is empty, and stderr says every resolver declined
-
 ### Requirement: The cli resolver runs a step headless
 When `cli` answers `lets delegate step run`, it SHALL run the CLI of the `--model` family as a child process in the repository, in the mode that lets it write files and run commands without a prompt. That is `codex exec --dangerously-bypass-approvals-and-sandbox` for `gpt`, `claude -p --permission-mode bypassPermissions` for `claude`, or `agy --mode accept-edits --dangerously-skip-permissions` for `gemini`. It SHALL pass the prompt, the model, the effort and the time limit as it does for a review. It SHALL wait for the CLI's final message and hand it to `lets delegate step run` as the session's final message, so the step report is read from it. The process SHALL run without the session markers in its environment. The command's JSON line on stderr SHALL have the `--model` family as `family`, and a handle of kind `process`.
 
@@ -468,3 +461,124 @@ When `t3` answers `lets delegate review run`, the review's `checkout` SHALL be t
 #### Scenario: T3 runs the review in the project's root instead
 - **WHEN** the user runs `lets delegate review run --for code` that `t3` answers in the linked worktree `/w/fix-login`, and T3 records the thread with no worktree, in the project whose root is `/r`
 - **THEN** the JSON line on stderr has `"checkout":"/r"`
+
+### Requirement: A T3 review stops to ask only with a pending request
+When `t3` answers `lets delegate review run`, it SHALL treat the session as stopped to ask only when T3 holds a pending request for the thread. Then the command SHALL exit 5 at once, print nothing on stdout, and say `the session stopped to ask` on stderr, followed by the thread's id. A run that T3 shows as `waiting` with no pending request SHALL NOT end the review. `t3` SHALL keep waiting for that run to end, until the review's time limit.
+
+#### Scenario: The run shows waiting for a moment, then completes
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for code --model gpt/gpt-6-luna` with every required option inside T3 Code
+- **AND** T3 shows the thread's run as `waiting`, with no pending request, and then as completed with a final message and no proposed plan
+- **THEN** the command exits 0 and prints the final message
+
+#### Scenario: The session asks a question
+- **WHEN** the same review's run is `waiting` or running, and T3 holds a pending request for the thread
+- **THEN** the command exits 5, stdout is empty, and stderr says `the session stopped to ask (thread <id>)`
+
+#### Scenario: The run stays waiting
+- **WHEN** the same review's run stays `waiting`, with no pending request, past the review's time limit
+- **THEN** the command exits 6, stdout is empty, and stderr names the thread
+
+### Requirement: A timed-out cli session stops every process it started
+When a review or a step that `cli` answers runs past its time limit, `cli` SHALL stop the CLI and every process the CLI started that is still in the CLI's process group. It SHALL send them `SIGTERM`, and SHALL send `SIGKILL` 5 seconds later to any that is still running. The command SHALL exit 6 within 10 seconds of the time limit, even when a process outside the group still holds the CLI's output.
+
+#### Scenario: A step whose CLI started a child
+- **WHEN** `cli` answers a step with `--timeout-minutes 3`, and after 3 minutes the CLI and a child process it started are both still running
+- **THEN** neither the CLI nor the child is running when the command exits, the command exits 6, and stdout is empty
+
+#### Scenario: A review whose CLI started a child
+- **WHEN** `cli` answers a review, and after the review's time limit the CLI and a child process it started are both still running
+- **THEN** neither the CLI nor the child is running when `lets delegate review run` exits, and it exits 6
+
+#### Scenario: A child that ignores SIGTERM
+- **WHEN** `cli` answers a step, and the CLI's child ignores `SIGTERM` and is still running after the step's time limit
+- **THEN** the command exits 6 no sooner than 5 seconds and no later than 10 seconds after the time limit, and the child is no longer running when it exits
+
+#### Scenario: A process outside the group holds the output
+- **WHEN** `cli` answers a step, the CLI has started a process in a new session that holds the CLI's stdout open, and the CLI is still running after the step's time limit
+- **THEN** the command exits 6 within 10 seconds of the time limit
+
+### Requirement: A signal to lets reaches every process a cli session started
+While a review or a step that `cli` answers is running, when `lets` gets `SIGINT`, `SIGTERM` or `SIGHUP`, it SHALL send the same signal to the CLI and every process the CLI started that is still in the CLI's process group. Then `lets` SHALL end as that signal ends it when no session runs.
+
+#### Scenario: Ctrl-C during a step
+- **WHEN** `cli` answers a step, the CLI has started a child process, and `lets` gets `SIGINT`
+- **THEN** the CLI and the child each get `SIGINT`, and `lets` ends by `SIGINT`
+
+#### Scenario: lets is told to stop during a review
+- **WHEN** `cli` answers a review, the CLI has started a child process, and `lets` gets `SIGTERM`
+- **THEN** the CLI and the child each get `SIGTERM`, and `lets` ends by `SIGTERM`
+
+### Requirement: The T3 resolver runs a step in a T3 thread
+Inside T3 Code, when `t3` answers `lets delegate step run`, it SHALL open a new T3 thread for the step and wait for the thread's final message, which `lets delegate step run` reads the step report from. The thread SHALL:
+- run in the git checkout that holds the command's working directory. From a linked git worktree, it SHALL run in that worktree's top-level directory, on the worktree's current branch, and SHALL NOT run in the main checkout;
+- run in T3's default interaction mode, not plan mode, with full access, so the session can write files and run commands without a prompt;
+- run the `--model` as a review does: the model part sent to T3 unchanged, a bare family as the model `t3` would pick for a review, and `--effort` as T3's effort option, with no effort for a `gemini` model.
+
+The command's JSON line on stderr SHALL have a `handle` of kind `thread`.
+
+#### Scenario: A step from a linked worktree
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate step run --for build --name build-x --prompt-file p.md --effort high --model gpt/gpt-6-luna` inside T3 Code, in a linked worktree at `/w/feature` on branch `feature`
+- **AND** the thread's final message ends with a `done` step report
+- **THEN** T3 is asked for one new thread in the worktree `/w/feature`, on branch `feature`, in default mode, running `gpt-6-luna` with effort `high`
+- **AND** the command exits 0, stdout is one JSON line with `"outcome":"done"`, and the JSON line on stderr has `"resolver":"t3"`, `"family":"gpt"`, `"model":"gpt-6-luna"` and a `handle` of kind `thread`
+
+#### Scenario: A step from the main checkout
+- **WHEN** the same step runs from the main checkout of the repository that T3's project names
+- **THEN** T3 is asked for a thread in the project's own checkout, on its current branch
+
+#### Scenario: A gemini step
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate step run --for plan --effort medium --model gemini` with the other required options inside T3 Code, and the catalogue lists `antigravity` with a default of `gemini-3.8-flash-high`
+- **THEN** the thread runs `gemini-3.8-flash`, with no effort option
+
+### Requirement: A T3 step ends as a T3 review does
+When `t3` answers `lets delegate step run`, it SHALL tell a refusal, a stopped session and a final message apart as it does for a review:
+- T3 or the account saying no before any assistant message SHALL be a refusal. `t3` SHALL archive the thread, and the command SHALL try the next `--model`. When every `--model` is refused, it SHALL exit 3.
+- A session SHALL be a failed session when it stops to ask, ends with a proposed plan or fails after an assistant message. So SHALL a session whose run is interrupted, cancelled or rolled back. The command SHALL exit 0 and print a `failed` report whose `reason` names the thread. `t3` SHALL keep the thread.
+- A step whose report is `done` SHALL have its thread archived. A step whose report is `needs-input` or `failed` SHALL keep its thread, so a person can read it.
+
+#### Scenario: The model is refused, and the next one runs
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate step run --for build --model gpt/gpt-6-astra --model claude` with the other required options inside T3 Code
+- **AND** T3 fails the first thread's run with no assistant message, and the second thread's final message ends with a `done` step report
+- **THEN** the first thread is archived, the command exits 0, and the JSON line on stderr has `"family":"claude"`
+
+#### Scenario: Every model is refused
+- **WHEN** T3 fails the run of the only thread a step started, with no assistant message
+- **THEN** the thread is archived, the command exits 3, stdout is empty, and stderr holds T3's failure message
+
+#### Scenario: The session stops to ask
+- **WHEN** `t3` answers a step, and T3 holds a pending request for the thread
+- **THEN** the command exits 0, stdout is one JSON line with `"outcome":"failed"` and a `reason` that says `the session stopped to ask` and names the thread, the thread is not archived, and the record on stderr has `"handle":null`
+
+#### Scenario: A done step
+- **WHEN** a step thread's final message ends with a `done` step report
+- **THEN** the thread is archived
+
+#### Scenario: A step that needs input
+- **WHEN** a step thread's final message ends with a `needs-input` step report
+- **THEN** the command exits 0 with that report, and the thread is not archived
+
+### Requirement: A timed-out T3 session is stopped
+When a step or a review that `t3` answered is still running at its time limit, `t3` SHALL ask T3 to stop the thread, as T3 Code's Stop does, and SHALL keep the thread. The command SHALL then exit 6, print nothing on stdout, and name the thread on stderr. `t3` SHALL wait at most 10 seconds for T3 to accept the stop. When T3 rejects the stop or does not answer in time, the command SHALL still exit 6. Its stderr SHALL then say that the thread could not be stopped and may still be running.
+
+#### Scenario: The step runs too long
+- **WHEN** `t3` answers `lets delegate step run --timeout-minutes 3` with the other required options, and the thread's run has not ended after 3 minutes
+- **THEN** T3 is asked to stop that thread, the thread is not archived, the command exits 6, stdout is empty, and stderr names the thread
+
+#### Scenario: The stop fails
+- **WHEN** the same step times out, and T3 rejects the request to stop the thread
+- **THEN** the command exits 6, stdout is empty, and stderr names the thread and says it could not be stopped
+
+#### Scenario: T3 does not answer the stop
+- **WHEN** the same step times out, and T3 does not answer the request to stop the thread
+- **THEN** the command exits 6 no more than 10 seconds after the time limit, and stderr names the thread and says it could not be stopped
+
+#### Scenario: The review runs too long
+- **WHEN** `t3` answers `lets delegate review run --timeout-minutes 3` with the other required options, and the thread's run has not ended after 3 minutes
+- **THEN** T3 is asked to stop that thread, the thread is not archived, the command exits 6, and stdout is empty
+
+### Requirement: The T3 resolver lists the same models for a step as for a review
+Inside T3 Code, `lets delegate step instructions` SHALL answer with `resolver` `t3` and the same `options` as `lets delegate review instructions`.
+
+#### Scenario: Step instructions inside T3 Code
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, the command runs inside T3 Code, the catalogue lists `codex`, enabled and `ready`, with `gpt-6-luna`, and the user runs `lets delegate step instructions --for plan`
+- **THEN** it exits 0, and its JSON line has `"strategy":"step"`, `"resolver":"t3"` and `"options":["gpt/gpt-6-luna"]`

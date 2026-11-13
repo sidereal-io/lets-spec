@@ -5,13 +5,15 @@
 //
 // This speaks orchestration protocol 2, read on 2026-10-17 from the t3code
 // 0.1.0 server bundle (apps/server/dist/binCli-*.mjs) and its web client.
+// `thread.stop` was read on 2026-11-12 from the 0.1.7 server bundle's
+// OrchestrationV2Command.
 // Protocol types live in packages/contracts/src/orchestrationV2.ts of
 // https://github.com/pingdotgg/t3code. A t3 update can change any of this;
 // run the smoke test in the README after each one.
 //
 // What is private here, and why it stays:
-// - The WebSocket RPC and the `launchThread` and `thread.archive` calls are
-//   the UI's own, so they move only when the UI does.
+// - The WebSocket RPC and the `launchThread`, `thread.archive` and
+//   `thread.stop` calls are the UI's own, so they move only when the UI does.
 // - `server.getConfig` is the request the UI makes to fill its model
 //   picker, so it lists the models the composer offers. T3's
 //   model-manifest.json is not that list.
@@ -24,9 +26,9 @@
 import { randomUUID } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { configDir } from '../../config-dir.ts';
-import { exitCodeOf, Refused, SessionFailed, SpawnError } from '../kit/errors.ts';
+import { exitCodeOf, Refused, SessionFailed, SpawnError, TimeoutError } from '../kit/errors.ts';
 import { withoutEffort } from '../kit/families.ts';
-import type { Adapter, RunInput, StartInput } from '../kit/adapter.ts';
+import type { Adapter, RunInput, StartInput, StepInput } from '../kit/adapter.ts';
 import type { Db, Io } from '../kit/io.ts';
 import type { Handle, ModelString } from '../kit/adapter.ts';
 import { FAMILIES } from '../kit/families.ts';
@@ -38,6 +40,9 @@ export const ORCHESTRATION_PROTOCOL = 2;
 
 const POLL_MS = 5000;
 const REPLY_TIMEOUT_MS = 120_000;
+// How long a stop may take, so a T3 that hangs cannot hold a timed-out
+// command for REPLY_TIMEOUT_MS more.
+const STOP_TIMEOUT_MS = 10_000;
 // The whole catalogue request, from the token to the reply.
 const CATALOGUE_TIMEOUT_MS = 10_000;
 
@@ -414,9 +419,10 @@ export async function readCatalogue(io: Io, origin: string): Promise<Catalogue> 
   }
 }
 
-// Send one orchestration command, such as `thread.archive`.
-export function dispatch(io: Io, server: Server, command: { threadId?: string; [field: string]: unknown }): Promise<unknown> {
-  return request(io, server, { tag: 'orchestration.dispatchCommand', payload: command, threadId: command.threadId });
+// Send one orchestration command, such as `thread.archive`, by the
+// deadline when there is one.
+export function dispatch(io: Io, server: Server, command: { threadId?: string; [field: string]: unknown }, deadline?: number): Promise<unknown> {
+  return request(io, server, { tag: 'orchestration.dispatchCommand', payload: command, threadId: command.threadId }, deadline);
 }
 
 // Create a thread and send its first message. The answer names the thread.
@@ -489,6 +495,16 @@ export function createAdapter(io: Io): Adapter {
     await dispatch(io, { origin, token: await readToken(io) }, { type: 'thread.archive', commandId: randomUUID(), threadId: handle.id });
   }
 
+  // Stop the thread's run, as T3 Code's Stop does, with every task it
+  // delegated.
+  async function stop(handle: Handle): Promise<void> {
+    const deadline = Date.now() + STOP_TIMEOUT_MS;
+    const { origin } = runningServer();
+    await dispatch(io, { origin, token: await readToken(io, Math.max(0, deadline - Date.now())) }, {
+      type: 'thread.stop', commandId: randomUUID(), threadId: handle.id, reason: 'lets delegate: the session ran past its time limit',
+    }, deadline);
+  }
+
   // Wait for the thread's run to end, and read its final message.
   async function waitForText(handle: Handle, timeoutMs: number): Promise<{ text: string }> {
     // Open the database fresh on each check: the server writes it, and a
@@ -496,7 +512,10 @@ export function createAdapter(io: Io): Adapter {
     const check = () => withDb((db) => {
       const run = readRun(db, handle.id);
       if (run === null) return undefined;
-      if (run.pendingRequests > 0 || run.status === 'waiting') throw new SessionFailed('the session stopped to ask');
+      // A question always leaves a pending request. A run with none can
+      // still read waiting for a moment, while T3 captures the checkpoint at
+      // the end of a turn, so it is polled again like any running one.
+      if (run.pendingRequests > 0) throw new SessionFailed('the session stopped to ask');
       // A run that failed before any message is a refusal, such as a model
       // the account cannot run. run then archives the thread.
       if (run.status === 'failed') {
@@ -514,6 +533,35 @@ export function createAdapter(io: Io): Adapter {
       return { text: message.text };
     });
     return pollUntil(check, { intervalMs: POLL_MS, timeoutMs, now: io.now, sleep: io.sleep });
+  }
+
+  // Launch a thread, wait for its final message, and add what done reads
+  // from the finished thread. A review and a step end in the same ways.
+  async function session<T>({ effort, ...input }: RunInput, timeoutMs: number, done: (handle: Handle) => T): Promise<{ handle: Handle; text: string } & T> {
+    // An error before the thread exists passes through: there is nothing
+    // to archive or name.
+    const handle = await launchThread(input, { effort });
+    try {
+      const { text } = await waitForText(handle, timeoutMs);
+      return { handle, text, ...done(handle) };
+    } catch (error) {
+      if (error instanceof Refused) {
+        // Nothing ran, so the thread goes, as finish with ok would do.
+        await archive(handle).catch((why: Error) => {
+          error.message += `; could not archive it: ${why.message}`;
+        });
+      }
+      // A thread left running past its limit could still write in the
+      // checkout. It is kept, so a person can see where it stopped.
+      if (error instanceof TimeoutError) {
+        await stop(handle).catch((why: Error) => {
+          error.message += `; could not stop it, so it may still be running: ${why.message}`;
+        });
+      }
+      // A kit error names the thread, so a person can find it.
+      if (error instanceof Error && exitCodeOf(error) !== null) error.message += ` (thread ${handle.id})`;
+      throw error;
+    }
   }
 
   return {
@@ -534,25 +582,15 @@ export function createAdapter(io: Io): Adapter {
       }
     },
 
-    async run({ effort, ...input }: RunInput, { timeoutMs }) {
-      // An error before the thread exists passes through: there is nothing
-      // to archive or name.
-      const handle = await launchThread(input, { effort });
-      try {
-        const { text } = await waitForText(handle, timeoutMs);
+    async run(input: RunInput, { timeoutMs }) {
+      return session(input, timeoutMs, (handle) => ({
         // Where T3 ran it, which need not be where it was asked to.
-        return { handle, text, checkout: withDb((db) => readCheckout(db, handle.id)) };
-      } catch (error) {
-        if (error instanceof Refused) {
-          // Nothing ran, so the thread goes, as finish with ok would do.
-          await archive(handle).catch((why: Error) => {
-            error.message += `; could not archive it: ${why.message}`;
-          });
-        }
-        // A kit error names the thread, so a person can find it.
-        if (error instanceof Error && exitCodeOf(error) !== null) error.message += ` (thread ${handle.id})`;
-        throw error;
-      }
+        checkout: withDb((db) => readCheckout(db, handle.id)),
+      }));
+    },
+
+    async step(input: StepInput, { timeoutMs }) {
+      return session(input, timeoutMs, () => ({}));
     },
 
     async start(input: StartInput) {

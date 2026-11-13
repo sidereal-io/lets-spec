@@ -408,13 +408,22 @@ test('run fails a run that failed after an assistant message, with its failure',
     (error) => error instanceof SessionFailed && !(error instanceof Refused) && error.message === 'quota exceeded (thread T)');
 });
 test('run fails when the session stops to ask', async () => {
-  for (const [status, pending] of [['waiting', false], ['running', true]] as const) {
+  for (const status of ['waiting', 'running']) {
     const db = database();
     addThread(db, 'T');
     addRun(db, 'T', 'run-1', 1, status);
-    if (pending) addPendingRequest(db, 'T');
+    addPendingRequest(db, 'T');
     await assert.rejects(running(db), (error) => error instanceof SessionFailed && error.message === 'the session stopped to ask (thread T)');
   }
+});
+test('run waits through a waiting run with no pending request', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'waiting');
+  addMessage(db, 'a1', 'run-1', 'FINDINGS', 0);
+  const steps = [() => db.exec("update orchestration_v2_projection_runs set status = 'completed'")];
+  assert.equal((await running(db, steps)).text, 'FINDINGS');
+  assert.equal(steps.length, 0);
 });
 // A thread whose completed run ends with a proposed plan, then a checkpoint,
 // and a final message.
@@ -483,6 +492,51 @@ test('run times out naming the thread, when the run does not end in time', async
   addThread(db, 'T');
   addRun(db, 'T', 'run-1', 1, 'running');
   await assert.rejects(running(db, [], { timeoutMs: 0 }), (error) => error instanceof TimeoutError && error.message === 'no result after 0 ms (thread T)');
+});
+test('run times out naming the thread, when the run stays waiting with no pending request', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'waiting');
+  await assert.rejects(running(db, [], { timeoutMs: 0 }), (error) => error instanceof TimeoutError && error.message === 'no result after 0 ms (thread T)');
+});
+test('a review still running at its time limit stops its thread, and keeps it', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'running');
+  const log: Log = [];
+  await assert.rejects(running(db, [], { timeoutMs: 0, log }), TimeoutError);
+  assert.deepEqual(sentTypes(log), ['launch', 'thread.stop']);
+  const { payload } = log.filter(([what]) => what === 'send')[1][1] as { payload: Record<string, unknown> };
+  assert.deepEqual({ ...payload, commandId: 'C' }, { type: 'thread.stop', commandId: 'C', threadId: 'T', reason: 'lets delegate: the session ran past its time limit' });
+});
+// A thread whose run is still going.
+function runningRun() {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'running');
+  return db;
+}
+test('a timed-out run whose stop T3 rejects still times out, saying the thread may still be running', async () => {
+  await assert.rejects(running(runningRun(), [], { timeoutMs: 0, statuses: [200, 401] }), (error) => error instanceof TimeoutError
+    && /^no result after 0 ms; could not stop it, so it may still be running: .+ \(thread T\)$/.test(error.message));
+});
+test('a timed-out run whose stop T3 does not answer still times out within 10 s, saying the thread may still be running', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const log: Log = [];
+  const io = { ...launchingIo(runningRun(), log), WebSocket: launchOnlyWebSocket(log) };
+  // Caught at once, so the rejection is never unhandled while time moves on.
+  let outcome: unknown;
+  createAdapter(io).run(runInput, { timeoutMs: 0 }).then(() => {
+    outcome = 'resolved';
+  }, (error: unknown) => {
+    outcome = error;
+  });
+  while (!sentTypes(log).includes('thread.stop')) await new Promise((resolve) => setImmediate(resolve));
+  t.mock.timers.tick(10_000);
+  for (let i = 0; i < 10; i++) await new Promise((resolve) => setImmediate(resolve));
+  assert.ok(outcome instanceof TimeoutError, 'the run gave up on the stop at 10 s');
+  assert.match(outcome.message,
+    /^no result after 0 ms; could not stop it, so it may still be running: no reply from t3 after 10 s; check T before running again \(thread T\)$/);
 });
 test('run returns a completed run with no message as an empty one; the resolver rejects it', async () => {
   const db = database();
@@ -619,6 +673,29 @@ test('no reply from t3 is an unknown outcome, not a refusal', async (t) => {
   t.mock.timers.tick(120_000);
   await assert.rejects(pending, (error) => error instanceof SpawnError && !(error instanceof Refused) && /no reply from t3/.test(error.message));
 });
+
+// A WebSocket that answers a launch with LAUNCHED, and never answers any
+// other request.
+function launchOnlyWebSocket(log: Log): typeof WebSocket {
+  return class {
+    listeners: Record<string, ((event: unknown) => void)[]> = {};
+    constructor() {
+      queueMicrotask(() => this.emit('open', {}));
+    }
+    addEventListener(type: string, listener: (event: unknown) => void) {
+      (this.listeners[type] ??= []).push(listener);
+    }
+    emit(type: string, event: unknown) {
+      for (const listener of this.listeners[type] ?? []) listener(event);
+    }
+    send(data: string) {
+      const frame = JSON.parse(data);
+      log.push(['send', frame]);
+      if (frame.tag === 'orchestration.launchThread') queueMicrotask(() => this.emit('message', { data: JSON.stringify(LAUNCHED) }));
+    }
+    close() {}
+  } as unknown as typeof WebSocket;
+}
 
 // A WebSocket that t3 refuses: it fails and closes without opening.
 function refusedWebSocket(): typeof WebSocket {
