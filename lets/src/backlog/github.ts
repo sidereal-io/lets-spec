@@ -113,9 +113,9 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
   const urls = new Map<string, string>();
 
   // An issue's label: #<n>, or owner/repo#<n> for an issue in another
-  // repository, taken from its URL.
+  // repository, taken from its URL, on github.com or an Enterprise host.
   const labelOf = (number: number, url: unknown) => {
-    const other = typeof url === 'string' ? /^https:\/\/github\.com\/([^/]+\/[^/]+)\/issues\//.exec(url)?.[1] : undefined;
+    const other = typeof url === 'string' ? /^https?:\/\/[^/]+\/([^/]+\/[^/]+)\/issues\//.exec(url)?.[1] : undefined;
     return other !== undefined && other.toLowerCase() !== repo.toLowerCase() ? `${other}#${number}` : `#${number}`;
   };
   const named = (number: number, url: unknown) => ({ key: String(number), label: labelOf(number, url) });

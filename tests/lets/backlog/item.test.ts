@@ -185,3 +185,15 @@ test('a key the backlog provider does not use is not-found, and builds no adapte
   assert.equal(t.json().error, 'not-found');
   assert.deepEqual(jira.calls(), []);
 });
+
+test('a blocker in another repository on a GitHub Enterprise host is labelled with its repository', async () => {
+  const ghe = (repo: string, n: number) => `https://acme.ghe.com/${repo}/issues/${n}`;
+  const t = backlogDeps(rows([
+    ['issue view 52 ', json(issue(52, {
+      url: ghe(REPO, 52),
+      blockedBy: { nodes: [{ number: 7, title: 'lib fix', state: 'OPEN', url: ghe('acme/lib', 7) }, { number: 6, title: 'own fix', state: 'OPEN', url: ghe(REPO, 6) }], totalCount: 2 },
+    }))],
+  ], [projectItem(52, { kind: 'Epic' })]));
+  await run(['item', '52'], t.deps);
+  assert.deepEqual(t.json().blockedBy.map((b: { label: string }) => b.label), ['acme/lib#7', '#6']);
+});
