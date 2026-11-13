@@ -22,3 +22,11 @@
 - [x] 4.2 [medium] Live run in a clone of `mstelz/test-repo-pls-ignore` with this branch's `lets`: `key`, `ready`, `item`, `find`, `claim` and `release` return `key` and `label` against its real Project, and a claim and its release still assign and set Status. The results are recorded in the pull request (verify: `lets backlog item <claimed-issue>` in the clone shows `"key"`, `"label"`, `"status": "In Progress"` and the user in `assignees`) (✓ `lets backlog item 11` showed `"key": "11"`, `"label": "#11"`, `"status": "In Progress"` and `mstelz` after the claim, and Todo with no assignee after the release; recorded in https://github.com/sidereal-io/lets-spec/pull/259#issuecomment-6858850257)
 
 ## Deviations Ledger
+
+- 3.1: `lets-go`'s Placeholders table gains a `<word>` row, for the one
+  word that `lets backlog key -- '<word>'` checks. The placeholder check
+  needs a row for every placeholder, and the plan did not name it.
+- Code review: two fixes beyond the tasks. A quoted key in the `lets:`
+  block is read like an unquoted one (df4d5466). A label for an issue in
+  another repository is read from any GitHub host's URL, not only
+  `github.com` (ab3170a5).
