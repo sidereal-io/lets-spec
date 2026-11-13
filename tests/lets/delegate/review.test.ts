@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/review.ts';
 import type { ReviewOptions } from '../../../lets/src/delegate/review.ts';
 import { SessionFailed, SpawnError, TimeoutError } from '../../../lets/src/resolvers/kit/errors.ts';
-import { commandDeps, CONFIG } from './fixtures/command-deps.ts';
+import { commandDeps, CONFIG, HEAD } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<ReviewOptions> = {}): ReviewOptions =>
   ({ for: 'code', name: 'X Plan Review', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
@@ -25,9 +25,18 @@ test('a review prints the final message, then one metadata line on stderr', asyn
   assert.equal(t.stdout(), 'FINDINGS\n');
   assert.deepEqual(JSON.parse(t.stderr()), {
     for: 'code', resolver: 't3', family: 'gpt', model: 'gpt-6-luna', independent: true,
-    handle: { kind: 't3', id: 't3-1' }, gitClean: true, durationSeconds: 0,
+    handle: { kind: 't3', id: 't3-1' }, checkout: '/repo', commit: HEAD, gitClean: true, durationSeconds: 0,
   });
-  assert.deepEqual(Object.keys(JSON.parse(t.stderr())), ['for', 'resolver', 'family', 'model', 'independent', 'handle', 'gitClean', 'durationSeconds']);
+  assert.deepEqual(Object.keys(JSON.parse(t.stderr())),
+    ['for', 'resolver', 'family', 'model', 'independent', 'handle', 'checkout', 'commit', 'gitClean', 'durationSeconds']);
+});
+
+test('the metadata line names the checkout the resolver ran in, and the commit at its HEAD', async () => {
+  const t = withT3({ adapters: { t3: { run: { checkout: '/w/elsewhere' } } } });
+  assert.equal(await run(options(), t.deps), 0);
+  const { checkout, commit } = JSON.parse(t.stderr());
+  assert.deepEqual({ checkout, commit }, { checkout: '/w/elsewhere', commit: HEAD });
+  assert.ok(t.io.calls.some(([cmd, args, opts]) => cmd === 'git' && args.join(' ') === 'rev-parse HEAD' && opts.cwd === '/w/elsewhere'), 'HEAD was read in the checkout');
 });
 
 test('a code review\'s metadata line starts with for: code, and a plan review\'s with for: plan', async () => {
@@ -48,6 +57,28 @@ test('the adapter is asked to run the normalized name, the prompt, the family, t
   }]);
 });
 
+test('a resolver that cannot tell the checkout gives a null commit, and the review still succeeds', async () => {
+  const t = withT3({ adapters: { t3: { run: { checkout: null } } } });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.equal(t.stdout(), 'FINDINGS\n');
+  const { checkout, commit } = JSON.parse(t.stderr());
+  assert.deepEqual({ checkout, commit }, { checkout: null, commit: null });
+});
+
+test('a HEAD that cannot be read gives a null commit, and the review still succeeds', async () => {
+  const t = withT3({ adapters: { t3: { run: { checkout: '/gone' } } }, headFails: true });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.equal(t.stdout(), 'FINDINGS\n');
+  const { checkout, commit } = JSON.parse(t.stderr());
+  assert.deepEqual({ checkout, commit }, { checkout: '/gone', commit: null });
+});
+
+test('a session that commits gives the commit it made, not the one before it', async () => {
+  const t = withT3({ head: 'a'.repeat(40), headAfter: 'b'.repeat(40) });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.equal(JSON.parse(t.stderr()).commit, 'b'.repeat(40));
+});
+
 test('a bare family is asked for with no particular model', async () => {
   const t = withT3();
   await run(options({ models: ['claude'] }), t.deps);
@@ -59,9 +90,11 @@ test('the timeout is the one given, else the default by effort', async () => {
   const given = withT3();
   await run(options({ timeoutMinutes: 7 }), given.deps);
   assert.deepEqual(runs(given.adapterCalls)[0].options, { timeoutMs: 7 * 60000 });
-  const low = withT3();
-  await run(options({ effort: 'low' }), low.deps);
-  assert.deepEqual(runs(low.adapterCalls)[0].options, { timeoutMs: 15 * 60000 });
+  for (const effort of ['low', 'medium'] as const) {
+    const t = withT3();
+    await run(options({ effort }), t.deps);
+    assert.deepEqual(runs(t.adapterCalls)[0].options, { timeoutMs: 30 * 60000 }, effort);
+  }
 });
 
 test('a bad --model is exit 2, naming it, and no resolver is asked', async () => {

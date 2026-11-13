@@ -273,6 +273,16 @@ test('step run --help lists exit codes 0, 2, 3, 4 and 6, and says exit 0 carries
   assert.doesNotMatch(text, / [57] {1,2}the session/);
 });
 
+test('review run --help gives the 30-minute default, and 45 at effort high', async () => {
+  const text = (await lets('delegate', 'review', 'run', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /--timeout-minutes <minutes> .*\(default: 30, or 45 with --effort high\)/);
+});
+
+test('review run --help names checkout and commit on the JSON line', async () => {
+  const text = (await lets('delegate', 'review', 'run', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /handle, checkout, commit, gitClean and durationSeconds/);
+});
+
 test('step run --help gives the 120-minute default and --answers-file', async () => {
   const text = (await lets('delegate', 'step', 'run', '--help')).stdout.replace(/\s+/g, ' ');
   assert.match(text, /--timeout-minutes <minutes> .*default: 120/);

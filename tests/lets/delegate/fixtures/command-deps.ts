@@ -11,6 +11,10 @@
 //   gitBefore: what `git status -z` prints before the session
 //   gitAfter:  what it prints after; default gitBefore
 //   gitAfterFails: true when `git status` fails after the session
+//   head:      what `git rev-parse HEAD` prints; default HEAD
+//   headAfter: what it prints once the session has run, as after a session
+//              that made a commit; default head
+//   headFails: true when `git rev-parse HEAD` fails
 //   files:     the files there are; default the prompt file /repo/p.md
 //   config:    the text of the delegate config, CONFIG, when there is one
 import type { ResolverName } from '../../../../lets/src/delegate/config.ts';
@@ -23,12 +27,14 @@ import { fakeIo } from './fake-io.ts';
 
 export const PROMPT_FILE = '/repo/p.md';
 export const CONFIG = '/home/u/.config/lets/config.yaml';
+// The commit at HEAD, unless a test gives another.
+export const HEAD = '0123456789abcdef0123456789abcdef01234567';
 // The final message of a step that went well.
 export const DONE_REPORT = 'All done.\n\n```step-report\noutcome: done\nevidence:\n  - commit 3f2a1c0\n```\n';
 
 // How a fake resolver behaves. By default it detects, starts sessions,
 // runs steps, lists gpt/fake-model, and answers run with FINDINGS on handle
-// <name> <name>-1, start with handle <name> <name>-1, and step with a done
+// <name> <name>-1 in the checkout it was asked for, start with handle <name> <name>-1, and step with a done
 // report on handle <name> <name>-1.
 //   declines: detect() is false
 //   headless: it has no start
@@ -44,7 +50,7 @@ export type FakeResolver = {
   options?: string[];
   warnings?: string[];
   refuse?: string[];
-  run?: { text?: string; handle?: Handle } | Error;
+  run?: { text?: string; handle?: Handle; checkout?: string | null } | Error;
   start?: Handle | { instructions: string } | Error;
   steps?: boolean;
   step?: { text?: string; handle?: Handle } | Error;
@@ -75,8 +81,8 @@ export function fakeAdapter(name: ResolverName, behaviour: FakeResolver = {}): A
     },
     async run(input) {
       refuses(input);
-      const { text = 'FINDINGS', handle: made = handle } = answer(behaviour.run ?? {});
-      return { text, handle: made };
+      const { text = 'FINDINGS', handle: made = handle, checkout = input.cwd } = answer(behaviour.run ?? {});
+      return { text, handle: made, checkout };
     },
     ...(behaviour.headless ? {} : {
       async start(input: StartInput) {
@@ -141,17 +147,25 @@ type Options = {
   gitBefore?: string;
   gitAfter?: string;
   gitAfterFails?: boolean;
+  head?: string;
+  headAfter?: string;
+  headFails?: boolean;
   files?: Record<string, string>;
   config?: string;
 };
 
 export function commandDeps({
-  adapters = {}, real = {}, gitBefore = '', gitAfter = gitBefore, gitAfterFails = false, files = { [PROMPT_FILE]: 'PROMPT TEXT' }, config,
+  adapters = {}, real = {}, gitBefore = '', gitAfter = gitBefore, gitAfterFails = false, head = HEAD, headAfter = head, headFails = false, files = { [PROMPT_FILE]: 'PROMPT TEXT' }, config,
 }: Options = {}) {
   const io = fakeIo({ files: { ...files, ...(config === undefined ? {} : { [CONFIG]: config }) } });
+  const calls: AdapterCall[] = [];
   let statusCalls = 0;
   io.execFile = async (cmd, args, opts = {}) => {
     io.calls.push([cmd, args, opts]);
+    if (cmd === 'git' && args.join(' ') === 'rev-parse HEAD') {
+      if (headFails) return { stdout: 'HEAD\n', stderr: 'fatal: not a git repository', code: 128 };
+      return { stdout: `${calls.some(([, method]) => method === 'run') ? headAfter : head}\n`, stderr: '', code: 0 };
+    }
     if (cmd === 'git' && args[0] === 'rev-parse') return { stdout: '/repo\n', stderr: '', code: 0 };
     if (cmd === 'git') {
       if (statusCalls++ === 0) return { stdout: gitBefore, stderr: '', code: 0 };
@@ -162,7 +176,6 @@ export function commandDeps({
 
   // What the real subagent writes, by its path under /repo.
   const resolverIo = fakeResolverIo();
-  const calls: AdapterCall[] = [];
   const built = (name: ResolverName, fallback: () => Adapter) =>
     recorded(real[name] ?? (adapters[name] === undefined ? fallback() : fakeAdapter(name, adapters[name])), calls);
   const resolvers = {
