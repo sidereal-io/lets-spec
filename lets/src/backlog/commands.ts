@@ -4,16 +4,18 @@
 // and prints nothing on stdout. No process access here; everything comes
 // through deps.
 import { Command, CommanderError, InvalidArgumentError } from 'commander';
-import type { Deps, Io } from '../io.ts';
+import type { Deps } from '../io.ts';
 import type { Adapter } from './adapter.ts';
 import { BacklogError } from './adapter.ts';
-import { createGithub } from './github.ts';
+import type { Selection } from './config.ts';
+import { selectProvider } from './config.ts';
 import { claim, itemView, ready, release } from './policy.ts';
+import type { Providers } from './providers.ts';
+import { PROVIDERS } from './providers.ts';
 
-export const BACKLOG_HELP = `
-lets runs the backlog's commands itself: the backlog is the one open GitHub
-Project linked to this repository, and lets calls gh. Run it from the repo.
-
+// The help text, after a first paragraph that says which backlog provider
+// is in use.
+const HELP_BODY = `
 stdout: one JSON object and a newline.
   ready              { issues: [{ key, label, title, url, kind, priority, size }] }
   item <i>           { key, label, title, body, url, state, kind, priority, size,
@@ -26,12 +28,30 @@ An item's key names it in commands; its label is how the backlog writes it.
                      { result: released } | { result: not-found }
                      | { result: failed, write: delete-claim|unassign|status, message }
 On an error: { error, message }, where error is no-backlog,
-several-backlogs (with projects: [{ title, url }]), backend-failed or not-found.
+several-backlogs (with projects: [{ title, url }]), backend-failed, not-found
+or unknown-backlog-provider.
 
 Exit codes:
   0  a result, failed included: a failed write is a result to act on
   1  an error: the backlog cannot answer
   2  usage error`;
+
+const SETTING = 'lets.backlog.provider in openspec/config.yaml chooses the backlog provider; it is github when unset.';
+
+// The help text lets help backlog prints, outside a repository.
+export const BACKLOG_HELP = `
+lets runs the backlog's commands itself. ${SETTING} Run it from the repo.
+${HELP_BODY}`;
+
+function backlogHelp(selection: Selection | BacklogError) {
+  const line = selection instanceof BacklogError
+    ? `The backlog provider cannot be used: ${selection.message}`
+    : `The backlog provider is ${selection.name}: ${selection.provider.description}.`;
+  return `
+lets runs the backlog's commands itself. ${line}
+${SETTING} Run it from the repo.
+${HELP_BODY}`;
+}
 
 // An issue number: a whole number above zero, kept as the issue's key.
 function issueNumber(value: string): string {
@@ -44,17 +64,25 @@ function issueList(value: string): string[] {
   return value.split(',').map((part) => issueNumber(part.trim()));
 }
 
-type MakeAdapter = (io: Pick<Io, 'execFile'>, cwd: string) => Promise<Adapter>;
-
-// The exit code. argv is what follows lets backlog.
-export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'stderr'>, makeAdapter: MakeAdapter = createGithub): Promise<number> {
+// The exit code. argv is what follows lets backlog. providers lists the
+// backlog providers lets ships.
+export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'stderr'>, providers: Providers = PROVIDERS): Promise<number> {
   const print = (value: unknown) => deps.stdout(`${JSON.stringify(value)}\n`);
+  // Read before parsing, so the help can name it; an error waits until a
+  // command has parsed, so a usage error still exits 2.
+  let selection: Selection | BacklogError;
+  try {
+    selection = await selectProvider(deps.io, deps.cwd, providers);
+  } catch (error) {
+    if (!(error instanceof BacklogError)) throw error;
+    selection = error;
+  }
   // The command's work, once its arguments parse. Its result is printed.
   let work: ((adapter: Adapter) => Promise<unknown>) | undefined;
 
   const program = new Command('lets backlog')
     .description('Read and claim work on the repository\'s backlog. Each command prints one JSON object.')
-    .addHelpText('after', BACKLOG_HELP)
+    .addHelpText('after', backlogHelp(selection))
     .exitOverride()
     .configureOutput({ writeOut: deps.stdout, writeErr: deps.stderr });
   const command = (name: string, summary: string) => program.command(name).summary(summary).description(`${summary[0].toUpperCase()}${summary.slice(1)}.`).exitOverride().configureOutput({ writeOut: deps.stdout, writeErr: deps.stderr });
@@ -100,7 +128,8 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
   }
 
   try {
-    print(await work(await makeAdapter(deps.io, deps.cwd)));
+    if (selection instanceof BacklogError) throw selection;
+    print(await work(await selection.provider.create(deps.io, deps.cwd)));
     return 0;
   } catch (error) {
     if (!(error instanceof BacklogError)) throw error;

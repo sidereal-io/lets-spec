@@ -1,10 +1,12 @@
 // Deps for the lets backlog commands, with a fake gh. execFile answers each
 // gh call from a table: the first row whose key the call's arguments start
-// with, joined by spaces. A call no row answers fails the test. Each call is
-// recorded, so a test can assert the writes that were not made.
+// with, joined by spaces. A call no row answers fails the test. Each gh call
+// is recorded, so a test can assert the writes that were not made.
+// `git rev-parse --show-toplevel` answers root, or fails when root is null,
+// and openspec/config.yaml under it holds config, when given.
 //
 //   const t = backlogDeps([...LOOKUP_ONE, ['issue view 7', json({...})]]);
-//   await run('item', { issue: 7 }, t.deps);
+//   await run(['item', '7'], t.deps);
 //   t.json(), t.calls()
 import type { Deps, ExecOptions, ExecResult } from '../../../../lets/src/io.ts';
 import { commandDeps } from '../../delegate/fixtures/command-deps.ts';
@@ -24,11 +26,18 @@ export const TIMED_OUT: ExecResult = { stdout: '', stderr: '', code: 1, timedOut
 export const lookup = (projects: unknown[]): Row => ['api graphql', json({ repo: REPO, projects })];
 export const LOOKUP_ONE: Row[] = [lookup([PROJECT])];
 
-export function backlogDeps(rows: Row[]) {
+export const ROOT = '/repo';
+export const CONFIG_FILE = `${ROOT}/openspec/config.yaml`;
+
+export function backlogDeps(rows: Row[], { config, root = ROOT }: { config?: string; root?: string | null } = {}) {
   const t = commandDeps();
+  if (config !== undefined) t.io.files.set(`${root ?? t.deps.cwd}/openspec/config.yaml`, config);
   const calls: [string[], ExecOptions][] = [];
   t.io.execFile = async (cmd, args, opts = {}) => {
-    if (cmd !== 'gh') throw new Error(`no program but gh runs here: ${cmd}`);
+    if (cmd === 'git' && args.join(' ') === 'rev-parse --show-toplevel') {
+      return root === null ? { stdout: '', stderr: 'fatal: not a git repository', code: 128 } : ok(`${root}\n`);
+    }
+    if (cmd !== 'gh') throw new Error(`no program but gh and git rev-parse runs here: ${cmd} ${args.join(' ')}`);
     calls.push([args, opts]);
     const joined = args.join(' ');
     const row = rows.find(([key]) => joined.startsWith(key));

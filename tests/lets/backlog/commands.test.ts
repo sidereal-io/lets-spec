@@ -101,3 +101,49 @@ test('a usage error exits 2 and prints nothing on stdout', async () => {
     assert.deepEqual(t.calls(), [], args.join(' '));
   }
 });
+
+test('with no lets block in openspec/config.yaml, the backlog provider is GitHub', async () => {
+  for (const config of [undefined, 'schema: lets-standard\n', 'schema: lets-standard\nlets:\n  backlog:\n    other: x\n', 'lets:\n  backlog:\n    provider: github\n']) {
+    const t = backlogDeps([...LOOKUP_ONE, FIND], { config });
+    assert.equal(await run(['find', 'fix-typo'], t.deps), 0, String(config));
+    assert.deepEqual(t.json(), { issues: [] });
+  }
+});
+
+test('an unknown backlog provider is unknown-backlog-provider, names the value, the file and github, and runs no gh command', async () => {
+  const t = backlogDeps([...LOOKUP_ONE, FIND], { config: 'schema: lets-standard\nlets:\n  backlog:\n    provider: jria\n' });
+  assert.equal(await run(['item', '136'], t.deps), 1);
+  const out = t.json();
+  assert.equal(out.error, 'unknown-backlog-provider');
+  assert.match(out.message, /jria/);
+  assert.match(out.message, /openspec\/config\.yaml/);
+  assert.match(out.message, /github/);
+  assert.deepEqual(t.calls(), []);
+});
+
+test('a lets block in flow style is unknown-backlog-provider, and runs no gh command', async () => {
+  const t = backlogDeps([...LOOKUP_ONE, ['issue', json({})]], { config: 'lets: {backlog: {provider: jira}}\n' });
+  assert.equal(await run(['claim', '136'], t.deps), 1);
+  const out = t.json();
+  assert.equal(out.error, 'unknown-backlog-provider');
+  assert.match(out.message, /block style/);
+  assert.deepEqual(t.calls(), []);
+});
+
+test('the config is read at the repository root, or in cwd when git finds none', async () => {
+  const bad = 'lets:\n  backlog:\n    provider: jria\n';
+  const atRoot = backlogDeps([...LOOKUP_ONE, FIND], { config: bad, root: '/elsewhere/repo' });
+  assert.equal(await run(['find', 'x'], atRoot.deps), 1);
+  const inCwd = backlogDeps([...LOOKUP_ONE, FIND], { config: bad, root: null });
+  assert.equal(await run(['find', 'x'], inCwd.deps), 1);
+  assert.equal(inCwd.json().error, 'unknown-backlog-provider');
+});
+
+test('the help text names the backlog provider in use', async () => {
+  const t = backlogDeps([]);
+  assert.equal(await run(['--help'], t.deps), 0);
+  assert.match(t.stdout(), /backlog provider is github/i);
+  assert.doesNotMatch(t.stdout(), /gh-failed/);
+  assert.match(t.stdout(), /backend-failed/);
+  assert.match(t.stdout(), /unknown-backlog-provider/);
+});
