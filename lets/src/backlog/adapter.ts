@@ -2,11 +2,16 @@
 // and no more. An adapter returns data or throws. It never decides what is
 // ready, how work ranks, or whether a claim may go ahead: policy.ts does.
 
+// An item is named by its key, a string only its backlog provider reads,
+// and shown to a person by its label, as the backlog provider writes it.
+// lets never takes a key apart.
+
 // One item of this repository on the backlog, with its fields. It may be
 // closed. free: it is open, nobody is assigned to it, and no open issue
 // blocks it.
 export type Candidate = {
-  number: number;
+  key: string;
+  label: string;
   title: string;
   url: string;
   kind: string | null;
@@ -16,7 +21,7 @@ export type Candidate = {
   free: boolean;
 };
 
-export type Ref = { number: number; title: string };
+export type Ref = { key: string; label: string; title: string };
 // A related issue, which can sit in another repository: its URL names it.
 export type Related = Ref & { url: string };
 
@@ -24,7 +29,8 @@ export type Related = Ref & { url: string };
 // every field of an issue that is not on the backlog, is null. subIssues
 // holds every sub-issue, with its state: policy.ts keeps the open ones.
 export type Item = {
-  number: number;
+  key: string;
+  label: string;
   title: string;
   body: string;
   url: string;
@@ -47,18 +53,18 @@ export type Claim = { id: number; login: string; token: string };
 
 export type Adapter = {
   listCandidates(): Promise<Candidate[]>;
-  readItem(issue: number): Promise<Item>;
+  readItem(key: string): Promise<Item>;
   searchTitles(words: string): Promise<Ref[]>;
-  // The login of each user assigned to the issue.
-  assignees(issue: number): Promise<string[]>;
+  // The login of each user assigned to the item.
+  assignees(key: string): Promise<string[]>;
   signedInLogin(): Promise<string>;
-  claims(issue: number): Promise<Claim[]>;
+  claims(key: string): Promise<Claim[]>;
   // The writes. Each throws WriteFailed when the write fails or times out.
-  postClaim(issue: number, token: string): Promise<void>;
-  deleteClaim(issue: number, id: number): Promise<void>;
-  assignSelf(issue: number): Promise<void>;
-  unassignSelf(issue: number): Promise<void>;
-  setStatus(issue: number, status: Status): Promise<void>;
+  postClaim(key: string, token: string): Promise<void>;
+  deleteClaim(key: string, id: number): Promise<void>;
+  assignSelf(key: string): Promise<void>;
+  unassignSelf(key: string): Promise<void>;
+  setStatus(key: string, status: Status): Promise<void>;
 };
 
 // The backlog cannot answer. code is what lets backlog prints as error.

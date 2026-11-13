@@ -25,14 +25,14 @@ const rows = (items: Spec[], free: number[]): Row[] => [
   ['issue list --search is:open no:assignee -is:blocked', json(free.map((number) => ({ number })))],
 ];
 
-const numbers = (t: ReturnType<typeof backlogDeps>) => t.json().issues.map((i: { number: number }) => i.number);
+const keys = (t: ReturnType<typeof backlogDeps>) => t.json().issues.map((i: { key: string }) => i.key);
 
 test('ready ranks Must, Should, Could, then the lowest number', async () => {
   const t = backlogDeps(rows([
     { number: 160, priority: 'Should' }, { number: 120, priority: 'Must' }, { number: 110, priority: 'Should' }, { number: 105, priority: 'Could' },
   ], [160, 120, 110, 105]));
   assert.equal(await run(['ready'], t.deps), 0);
-  assert.deepEqual(numbers(t), [120, 110, 160, 105]);
+  assert.deepEqual(keys(t), ['120', '110', '160', '105']);
 });
 
 test('ready leaves out an assigned or blocked issue, a Wont, an Epic, and an issue not in Todo', async () => {
@@ -41,39 +41,39 @@ test('ready leaves out an assigned or blocked issue, a Wont, an Epic, and an iss
     { number: 153, status: 'In Progress' }, { number: 154, priority: null }, { number: 155 },
   ], [151, 152, 153, 154, 155]));
   await run(['ready'], t.deps);
-  assert.deepEqual(numbers(t), [155]);
+  assert.deepEqual(keys(t), ['155']);
 });
 
 test('ready never lists an issue from another repository on the Project', async () => {
   const t = backlogDeps(rows([{ number: 1, repo: 'acme/other' }, { number: 2 }], [1, 2]));
   await run(['ready'], t.deps);
-  assert.deepEqual(numbers(t), [2]);
+  assert.deepEqual(keys(t), ['2']);
 });
 
-test('each ready issue carries number, title, url, kind, priority and size', async () => {
+test('each ready issue carries key, label, title, url, kind, priority and size', async () => {
   const t = backlogDeps(rows([{ number: 7, kind: 'Bug', priority: 'Should', size: 'M' }], [7]));
   await run(['ready'], t.deps);
   assert.deepEqual(t.json(), {
-    issues: [{ number: 7, title: 'story-7 — outcome', url: `https://github.com/${REPO}/issues/7`, kind: 'Bug', priority: 'Should', size: 'M' }],
+    issues: [{ key: '7', label: '#7', title: 'story-7 — outcome', url: `https://github.com/${REPO}/issues/7`, kind: 'Bug', priority: 'Should', size: 'M' }],
   });
 });
 
 test('ready --only keeps only the issues named that are ready', async () => {
   const t = backlogDeps(rows([{ number: 120 }, { number: 191 }, { number: 192 }, { number: 193 }], [120, 191, 193]));
   await run(['ready', '--only', '191,192,193'], t.deps);
-  assert.deepEqual(numbers(t), [191, 193]);
+  assert.deepEqual(keys(t), ['191', '193']);
 });
 
 test('ready --exclude leaves out the issues named', async () => {
   const t = backlogDeps(rows([{ number: 149 }, { number: 150 }, { number: 151 }], [149, 150, 151]));
   await run(['ready', '--exclude', '149,151'], t.deps);
-  assert.deepEqual(numbers(t), [150]);
+  assert.deepEqual(keys(t), ['150']);
 });
 
 test('ready --only and --exclude together', async () => {
   const t = backlogDeps(rows([{ number: 191 }, { number: 192 }, { number: 193 }], [191, 192, 193]));
   await run(['ready', '--only', '191,192,193', '--exclude', '191'], t.deps);
-  assert.deepEqual(numbers(t), [192, 193]);
+  assert.deepEqual(keys(t), ['192', '193']);
 });
 
 test('nothing ready is an empty list, and exits 0', async () => {

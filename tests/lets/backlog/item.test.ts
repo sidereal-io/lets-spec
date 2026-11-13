@@ -36,11 +36,11 @@ test('item reads a shaped story with its Project fields, parent and blockers', a
   ]));
   assert.equal(await run(['item', '136'], t.deps), 0);
   assert.deepEqual(t.json(), {
-    number: 136, title: 'story-136 — outcome', body: 'body of 136', url: url(136), state: 'OPEN',
+    key: '136', label: '#136', title: 'story-136 — outcome', body: 'body of 136', url: url(136), state: 'OPEN',
     kind: 'Story', priority: 'Must', size: 'M', status: 'In Progress',
     assignees: [],
-    blockedBy: [{ number: 135, title: 'contract', state: 'CLOSED', url: url(135) }],
-    parent: { number: 52, title: 'backlog-providers — epic', url: url(52), body: '## Shared decisions\n- D1' },
+    blockedBy: [{ key: '135', label: '#135', title: 'contract', state: 'CLOSED', url: url(135) }],
+    parent: { key: '52', label: '#52', title: 'backlog-providers — epic', url: url(52), body: '## Shared decisions\n- D1' },
     subIssues: [],
   });
   assert.deepEqual(t.calls()[1], ['issue', 'view', '136', '--json', 'number,title,body,url,state,assignees,parent,blockedBy,subIssues']);
@@ -59,15 +59,15 @@ test('item returns an epic\'s open sub-issues only', async () => {
   const t = backlogDeps(rows([
     ['issue view 52 ', json(issue(52, {
       subIssues: { nodes: [
-        { number: 135, title: 'closed one', state: 'CLOSED' },
-        { number: 136, title: 'open one', state: 'OPEN' },
-        { number: 137, title: 'open two', state: 'OPEN' },
+        { number: 135, title: 'closed one', state: 'CLOSED', url: url(135) },
+        { number: 136, title: 'open one', state: 'OPEN', url: url(136) },
+        { number: 137, title: 'open two', state: 'OPEN', url: url(137) },
       ], totalCount: 3 },
     }))],
   ], [projectItem(52, { kind: 'Epic', priority: 'Must', status: 'Todo' })]));
   await run(['item', '52'], t.deps);
   assert.equal(t.json().kind, 'Epic');
-  assert.deepEqual(t.json().subIssues, [{ number: 136, title: 'open one' }, { number: 137, title: 'open two' }]);
+  assert.deepEqual(t.json().subIssues, [{ key: '136', label: '#136', title: 'open one', url: url(136) }, { key: '137', label: '#137', title: 'open two', url: url(137) }]);
 });
 
 test('an issue not on the Project has null for every Project field', async () => {
@@ -116,7 +116,7 @@ test('a parent in another repository is read by its URL', async () => {
     [`issue view ${parentUrl} `, json({ number: 52, title: 'other epic', body: 'their decisions' })],
   ], [projectItem(136, { kind: 'Story' })]));
   assert.equal(await run(['item', '136'], t.deps), 0);
-  assert.deepEqual(t.json().parent, { number: 52, title: 'other epic', url: parentUrl, body: 'their decisions' });
+  assert.deepEqual(t.json().parent, { key: '52', label: 'acme/other#52', title: 'other epic', url: parentUrl, body: 'their decisions' });
   assert.ok(!t.ran('issue view 52 '));
 });
 
@@ -129,8 +129,8 @@ test('a blocker or sub-issue in another repository keeps its URL', async () => {
     }))],
   ], [projectItem(52, { kind: 'Epic' })]));
   await run(['item', '52'], t.deps);
-  assert.deepEqual(t.json().blockedBy, [{ number: 7, title: 'lib fix', state: 'OPEN', url: other(7) }]);
-  assert.deepEqual(t.json().subIssues, [{ number: 8, title: 'lib story', url: other(8) }]);
+  assert.deepEqual(t.json().blockedBy, [{ key: '7', label: 'acme/lib#7', title: 'lib fix', state: 'OPEN', url: other(7) }]);
+  assert.deepEqual(t.json().subIssues, [{ key: '8', label: 'acme/lib#8', title: 'lib story', url: other(8) }]);
 });
 
 test('a parent that cannot be read is gh-failed naming the parent, not not-found', async () => {

@@ -8,17 +8,17 @@ import { BacklogError, WriteFailed } from './adapter.ts';
 // one.
 export const RANK = ['Must', 'Should', 'Could'] as const;
 
-export type ReadyIssue = Pick<Candidate, 'number' | 'title' | 'url' | 'kind' | 'priority' | 'size'>;
+export type ReadyIssue = Pick<Candidate, 'key' | 'label' | 'title' | 'url' | 'kind' | 'priority' | 'size'>;
 
 // The ready candidates, ranked Must, Should, Could, then lowest number.
 // only keeps the issues named; exclude leaves the issues named out.
-export function ready(candidates: Candidate[], { only, exclude = [] }: { only?: number[]; exclude?: number[] } = {}): ReadyIssue[] {
+export function ready(candidates: Candidate[], { only, exclude = [] }: { only?: string[]; exclude?: string[] } = {}): ReadyIssue[] {
   const rank = (priority: string | null) => RANK.indexOf(priority as (typeof RANK)[number]);
   return candidates
     .filter((c) => c.status === 'Todo' && c.kind !== 'Epic' && rank(c.priority) >= 0 && c.free)
-    .filter((c) => (only === undefined || only.includes(c.number)) && !exclude.includes(c.number))
-    .sort((a, b) => rank(a.priority) - rank(b.priority) || a.number - b.number)
-    .map(({ number, title, url, kind, priority, size }) => ({ number, title, url, kind, priority, size }));
+    .filter((c) => (only === undefined || only.includes(c.key)) && !exclude.includes(c.key))
+    .sort((a, b) => rank(a.priority) - rank(b.priority) || Number(a.key) - Number(b.key))
+    .map(({ key, label, title, url, kind, priority, size }) => ({ key, label, title, url, kind, priority, size }));
 }
 
 // An issue as lets backlog item prints it: only the open sub-issues, each
@@ -26,7 +26,7 @@ export function ready(candidates: Candidate[], { only, exclude = [] }: { only?: 
 export type ItemView = Omit<Item, 'subIssues'> & { subIssues: Related[] };
 
 export function itemView({ subIssues, ...rest }: Item): ItemView {
-  return { ...rest, subIssues: subIssues.filter((s) => s.state === 'OPEN').map(({ number, title, url }) => ({ number, title, url })) };
+  return { ...rest, subIssues: subIssues.filter((s) => s.state === 'OPEN').map(({ key, label, title, url }) => ({ key, label, title, url })) };
 }
 
 export type WriteResult<Done extends string, Write extends string> =
@@ -58,7 +58,7 @@ export type ClaimResult =
 
 // Elect before changing Status. Comment IDs distinguish concurrent sessions,
 // even when assigning @me twice changes the assignee list only once.
-export async function claim(adapter: Adapter, issue: number): Promise<ClaimResult> {
+export async function claim(adapter: Adapter, issue: string): Promise<ClaimResult> {
   const previous = new Set((await adapter.claims(issue)).map((c) => c.id));
   const assignees = await adapter.assignees(issue);
   if (assignees.length > 0) return { result: 'taken', assignees };
@@ -100,7 +100,7 @@ export async function claim(adapter: Adapter, issue: number): Promise<ClaimResul
 }
 
 // Release only the named session. A stale token never touches an assignment.
-export async function release(adapter: Adapter, issue: number, token: string): Promise<WriteResult<'released', 'delete-claim' | 'unassign' | 'status'> | { result: 'not-found' }> {
+export async function release(adapter: Adapter, issue: string, token: string): Promise<WriteResult<'released', 'delete-claim' | 'unassign' | 'status'> | { result: 'not-found' }> {
   const login = await adapter.signedInLogin();
   const claims = await adapter.claims(issue);
   const own = claims.find((c) => c.token === token && c.login === login);

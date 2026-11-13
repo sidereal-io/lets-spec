@@ -15,10 +15,11 @@ lets runs the backlog's commands itself: the backlog is the one open GitHub
 Project linked to this repository, and lets calls gh. Run it from the repo.
 
 stdout: one JSON object and a newline.
-  ready              { issues: [{ number, title, url, kind, priority, size }] }
-  item <i>           { number, title, body, url, state, kind, priority, size,
+  ready              { issues: [{ key, label, title, url, kind, priority, size }] }
+  item <i>           { key, label, title, body, url, state, kind, priority, size,
                        status, assignees, blockedBy, parent, subIssues }
-  find <words...>    { issues: [{ number, title }] }
+  find <words...>    { issues: [{ key, label, title }] }
+An item's key names it in commands; its label is how the backlog writes it.
   claim <i>          { result: claimed, claim } | { result: taken, assignees }
                      | { result: failed, write: assign|claim|delete-claim|unassign|status, message, claim? }
   release <i> --claim <token>
@@ -32,14 +33,14 @@ Exit codes:
   1  an error: the backlog cannot answer
   2  usage error`;
 
-// An issue number: a whole number above zero.
-function issueNumber(value: string): number {
+// An issue number: a whole number above zero, kept as the issue's key.
+function issueNumber(value: string): string {
   if (!/^[1-9][0-9]*$/.test(value)) throw new InvalidArgumentError('Give an issue number.');
-  return Number(value);
+  return value;
 }
 
 // A list of issue numbers, such as 191,192.
-function issueList(value: string): number[] {
+function issueList(value: string): string[] {
   return value.split(',').map((part) => issueNumber(part.trim()));
 }
 
@@ -61,12 +62,12 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
   command('ready', 'list the ready issues, best first')
     .option('--only <issues>', 'keep only these issues, such as 191,192', issueList)
     .option('--exclude <issues>', 'leave these issues out, such as 149', issueList)
-    .action(({ only, exclude }: { only?: number[]; exclude?: number[] }) => {
+    .action(({ only, exclude }: { only?: string[]; exclude?: string[] }) => {
       work = async (adapter) => ({ issues: ready(await adapter.listCandidates(), { only, exclude }) });
     });
   command('item', 'read one issue, with its Project fields')
     .argument('<i>', 'the issue number', issueNumber)
-    .action((issue: number) => {
+    .action((issue: string) => {
       work = async (adapter) => itemView(await adapter.readItem(issue));
     });
   command('find', 'search the open issues\' titles')
@@ -77,13 +78,13 @@ export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdou
     });
   command('claim', 'assign the issue to yourself and set it In Progress, when nobody has it')
     .argument('<i>', 'the issue number', issueNumber)
-    .action((issue: number) => {
+    .action((issue: string) => {
       work = (adapter) => claim(adapter, issue);
     });
   command('release', 'release the session identified by --claim')
     .argument('<i>', 'the issue number', issueNumber)
     .requiredOption('--claim <token>', 'the session token returned by claim')
-    .action((issue: number, { claim: token }: { claim: string }) => {
+    .action((issue: string, { claim: token }: { claim: string }) => {
       work = (adapter) => release(adapter, issue, token);
     });
 

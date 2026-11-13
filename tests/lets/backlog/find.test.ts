@@ -10,7 +10,10 @@ test('find returns the open issues whose titles match, unfiltered', async () => 
   ];
   const t = backlogDeps([...LOOKUP_ONE, ['issue list --state open --search', json(found)]]);
   assert.equal(await run(['find', 'github-backlog-build'], t.deps), 0);
-  assert.deepEqual(t.json(), { issues: found });
+  assert.deepEqual(t.json(), { issues: [
+    { key: '136', label: '#136', title: found[0].title },
+    { key: '236', label: '#236', title: found[1].title },
+  ] });
   assert.deepEqual(t.calls()[1], ['issue', 'list', '--state', 'open', '--search', 'github-backlog-build in:title', '--json', 'number,title']);
 });
 
