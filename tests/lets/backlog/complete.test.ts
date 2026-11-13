@@ -72,3 +72,16 @@ test('a state read that times out is backend-failed, and closes nothing', async 
   assert.equal(t.json().error, 'backend-failed');
   assert.ok(!t.ran('issue close'));
 });
+
+test('a close that fails returns failed with gh\'s error, and exits 0', async () => {
+  const t = backlogDeps(rows({ close: fail('GraphQL: Resource not accessible by integration (closeIssue)') }));
+  assert.equal(await run(['complete', '258'], t.deps), 0);
+  assert.deepEqual(t.json(), { result: 'failed', message: 'GraphQL: Resource not accessible by integration (closeIssue)' });
+});
+
+test('a close that times out returns failed, says it may have happened, and is not retried', async () => {
+  const t = backlogDeps(rows({ close: TIMED_OUT }));
+  assert.equal(await run(['complete', '258'], t.deps), 0);
+  assert.deepEqual(t.json(), { result: 'failed', message: 'timed out; the write may have happened' });
+  assert.equal(t.calls().filter((args) => args[0] === 'issue' && args[1] === 'close').length, 1);
+});
