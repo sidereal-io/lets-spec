@@ -3627,7 +3627,7 @@ EXPECTED
 }
 
 @test "plan review rebuttals leave unsupported findings open" {
-  skill_does_not_say lets-review-plan 'use REVISE'
+  skill_does_not_say lets-review-plan 'the verdict is REVISE'
   local rebuttals
   rebuttals="$(skill_section lets-review-plan Rebuttals)"
   [[ "$rebuttals" == *'**Critical**'*'stays open'*'**Moderate**'*'stays open'* ]] ||
