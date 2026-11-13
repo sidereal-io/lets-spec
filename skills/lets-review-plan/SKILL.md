@@ -266,8 +266,7 @@ change severity to fit a verdict.
 - **REVISE**: a Critical or Moderate finding is open and no listed change
   fixes it. Fix the plan and run the full review again in a fresh context.
 
-Suggestions alone do not require REVISE: apply a listed edit or decline
-with a one-line reason.
+Suggestions alone do not require REVISE.
 
 An open Critical finding forbids APPROVE. A review that lists one and says
 APPROVE is itself invalid.
