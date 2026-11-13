@@ -16,8 +16,7 @@ function race(logins: [string, string], releaseDuringCleanup = false) {
   const bothRead = new Promise<void>((resolve) => { open = resolve; });
   const sessions = logins.map((login, session) => {
     const t = commandDeps();
-    t.io.execFile = async (program, args) => {
-      if (program === 'git') return ok('/repo\n');
+    t.io.execFile = async (_cmd, args) => {
       const cmd = args.join(' ');
       if (cmd.startsWith('api graphql')) return json({ repo: REPO, projects: [PROJECT] });
       if (cmd === 'api user') return json({ login });

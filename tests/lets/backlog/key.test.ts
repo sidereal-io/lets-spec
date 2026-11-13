@@ -55,7 +55,7 @@ test('key asks the selected backlog provider, and builds no adapter', async () =
 });
 
 test('key with an unknown backlog provider is unknown-backlog-provider', async () => {
-  const t = backlogDeps([], { config: 'lets:\n  backlog:\n    provider: jria\n' });
+  const t = backlogDeps([], { config: 'version: 3\nbacklog:\n  provider: jria\n' });
   assert.equal(await run(['key', '149'], t.deps), 1);
   assert.equal(t.json().error, 'unknown-backlog-provider');
 });

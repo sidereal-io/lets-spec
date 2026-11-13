@@ -39,20 +39,24 @@ Exit codes:
   1  an error: the backlog cannot answer
   2  usage error`;
 
-const SETTING = 'lets.backlog.provider in openspec/config.yaml chooses the backlog provider; it is github when unset.';
+const SETTING = `backlog.provider in the lets config, $XDG_CONFIG_HOME/lets/config.yaml
+or ~/.config/lets/config.yaml, chooses the backlog provider; it is github
+when unset. A repository cannot set it yet.`;
 
-// The help text lets help backlog prints, outside a repository.
+// The help text lets help backlog prints.
 export const BACKLOG_HELP = `
-lets runs the backlog's commands itself. ${SETTING} Run it from the repo.
+lets runs the backlog's commands itself. Run it from the repo.
+${SETTING}
 ${HELP_BODY}`;
 
 function backlogHelp(selection: Selection | BacklogError) {
   const line = selection instanceof BacklogError
     ? `The backlog provider cannot be used: ${selection.message}`
-    : `The backlog provider is ${selection.name}: ${selection.provider.description}.`;
+    : `The backlog provider is ${selection.name}, ${selection.set ? `set in ${selection.path}` : 'the default'}: ${selection.provider.description}.`;
   return `
-lets runs the backlog's commands itself. ${line}
-${SETTING} Run it from the repo.
+lets runs the backlog's commands itself. Run it from the repo.
+${line}
+${SETTING}
 ${HELP_BODY}`;
 }
 
@@ -71,13 +75,13 @@ function keyList(value: string): string[] {
 
 // The exit code. argv is what follows lets backlog. providers lists the
 // backlog providers lets ships.
-export async function run(argv: string[], deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'stderr'>, providers: Providers = PROVIDERS): Promise<number> {
+export async function run(argv: string[], deps: Pick<Deps, 'env' | 'io' | 'cwd' | 'stdout' | 'stderr'>, providers: Providers = PROVIDERS): Promise<number> {
   const print = (value: unknown) => deps.stdout(`${JSON.stringify(value)}\n`);
   // Read before parsing, so the help can name it; an error waits until a
   // command has parsed, so a usage error still exits 2.
   let selection: Selection | BacklogError;
   try {
-    selection = await selectProvider(deps.io, deps.cwd, providers);
+    selection = selectProvider(deps, providers);
   } catch (error) {
     if (!(error instanceof BacklogError)) throw error;
     selection = error;

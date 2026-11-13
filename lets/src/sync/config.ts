@@ -15,7 +15,7 @@ export function schemaOf(text: string) {
   return null;
 }
 
-export function unquote(raw: string) {
+function unquote(raw: string) {
   const quote = raw[0];
   if (quote === '"' || quote === "'") {
     const end = raw.indexOf(quote, 1);
@@ -26,7 +26,7 @@ export function unquote(raw: string) {
 
 // A `#` starts a comment at the line's start or after a space, but not
 // inside a quoted value.
-export function withoutComment(line: string) {
+function withoutComment(line: string) {
   let quote: string | null = null;
   for (let i = 0; i < line.length; i++) {
     const char = line[i];

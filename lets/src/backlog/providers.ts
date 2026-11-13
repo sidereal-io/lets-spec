@@ -1,5 +1,5 @@
-// The backlog providers this release ships, by the name
-// lets.backlog.provider gives. Each builds its adapter. One place lists them;
+// The backlog providers this release ships, by the name backlog.provider
+// in the lets config gives. Each builds its adapter. One place lists them;
 // commands.ts takes the list through its arguments, so tests add a fake.
 import type { Io } from '../io.ts';
 import type { Adapter } from './adapter.ts';

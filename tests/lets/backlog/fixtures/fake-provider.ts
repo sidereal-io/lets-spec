@@ -11,7 +11,7 @@ import type { Adapter, Candidate, Claim, Item } from '../../../../lets/src/backl
 import { BacklogError } from '../../../../lets/src/backlog/adapter.ts';
 import type { Provider } from '../../../../lets/src/backlog/providers.ts';
 
-export const JIRA_CONFIG = 'schema: lets-standard\nlets:\n  backlog:\n    provider: jira\n';
+export const JIRA_CONFIG = 'version: 3\nbacklog:\n  provider: jira\n';
 export const JIRA_KEY = /^[A-Z][A-Z0-9]*-[1-9][0-9]*$/;
 export const LOGIN = 'octocat';
 

@@ -1,70 +1,37 @@
-// Reading lets.backlog.provider from openspec/config.yaml, line by line.
+// Reading backlog.provider from the user's lets config, which parseDocument
+// has checked.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { BacklogError } from '../../../lets/src/backlog/adapter.ts';
-import { backlogProvider } from '../../../lets/src/backlog/config.ts';
+import { backlogProviderFor } from '../../../lets/src/backlog/config.ts';
 
-const unknown = (text: string, pattern: RegExp) => assert.throws(() => backlogProvider(text), (error: unknown) => {
+const PATH = '/home/u/.config/lets/config.yaml';
+
+const unknown = (document: Record<string, unknown>, pattern: RegExp) => assert.throws(() => backlogProviderFor(document, PATH), (error: unknown) => {
   assert.ok(error instanceof BacklogError);
   assert.equal(error.code, 'unknown-backlog-provider');
+  assert.match(error.message, new RegExp(PATH.replaceAll('.', '\\.')));
   assert.match(error.message, pattern);
   return true;
 });
 
-test('no lets block is null', () => {
-  assert.equal(backlogProvider('schema: lets-standard\n'), null);
-  assert.equal(backlogProvider(''), null);
+test('no backlog section, or no provider, is null', () => {
+  assert.equal(backlogProviderFor({ version: 3 }, PATH), null);
+  assert.equal(backlogProviderFor({ version: 3, delegate: { resolvers: ['t3'] } }, PATH), null);
+  assert.equal(backlogProviderFor({ version: 3, backlog: null }, PATH), null);
+  assert.equal(backlogProviderFor({ version: 3, backlog: {} }, PATH), null);
+  assert.equal(backlogProviderFor({ version: 3, backlog: { provider: null } }, PATH), null);
 });
 
-test('a lets block that names the backlog provider gives its name', () => {
-  assert.equal(backlogProvider('schema: lets-standard\nlets:\n  backlog:\n    provider: github\n'), 'github');
-  assert.equal(backlogProvider('lets:\n    backlog:\n        provider: jira   # the team tracker\n'), 'jira');
-  assert.equal(backlogProvider('lets:\n  backlog:\n    provider: "linear"\n'), 'linear');
-  assert.equal(backlogProvider("lets:\r\n  backlog:\r\n    provider: 'beads'\r\n"), 'beads');
+test('backlog.provider gives its name', () => {
+  assert.equal(backlogProviderFor({ version: 3, backlog: { provider: 'github' } }, PATH), 'github');
+  assert.equal(backlogProviderFor({ version: 3, backlog: { provider: 'jira', other: 1 } }, PATH), 'jira');
 });
 
-test('other keys and comments around the setting are skipped', () => {
-  const text = [
-    'schema: lets-standard',
-    'lets:',
-    '  # where the work lives',
-    '  flow: standard',
-    '  skills:',
-    '    provider: not-this-one',
-    '',
-    '  backlog:',
-    '    other: x',
-    '    provider: jira',
-    'context: |',
-    '  provider: nor-this',
-  ].join('\n');
-  assert.equal(backlogProvider(text), 'jira');
-});
-
-test('a lets block with no backlog, or a backlog with no provider, is null', () => {
-  assert.equal(backlogProvider('lets:\n  flow: standard\n'), null);
-  assert.equal(backlogProvider('lets:\n  backlog:\n    other: x\n'), null);
-  assert.equal(backlogProvider('lets:\n'), null);
-});
-
-test('a provider outside lets.backlog is not read', () => {
-  assert.equal(backlogProvider('backlog:\n  provider: jira\nlets:\n  flow: standard\n'), null);
-  assert.equal(backlogProvider('lets:\n  backlog:\nother:\n    provider: jira\n'), null);
-});
-
-test('a lets block in flow style is unknown-backlog-provider, and says only block style is read', () => {
-  unknown('lets: {backlog: {provider: jira}}\n', /block style/);
-  unknown('lets:\n  backlog: {provider: jira}\n', /block style/);
-});
-
-test('a provider the reader cannot unquote, or an empty one, is unknown-backlog-provider', () => {
-  unknown('lets:\n  backlog:\n    provider: "jira\n', /provider/);
-  unknown('lets:\n  backlog:\n    provider:\n', /provider/);
-});
-
-test('quoted keys name the same setting', () => {
-  assert.equal(backlogProvider('"lets":\n  backlog:\n    provider: jira\n'), 'jira');
-  assert.equal(backlogProvider("lets:\n  'backlog':\n    provider: jira\n"), 'jira');
-  assert.equal(backlogProvider('lets:\n  backlog:\n    "provider": jria\n'), 'jria');
-  unknown('"lets": {backlog: {provider: jira}}\n', /block style/);
+test('a backlog that is not a mapping, or a provider that is not a string, is unknown-backlog-provider', () => {
+  unknown({ version: 3, backlog: 'jira' }, /backlog must be a mapping/);
+  unknown({ version: 3, backlog: ['jira'] }, /backlog must be a mapping/);
+  unknown({ version: 3, backlog: { provider: ['jira'] } }, /backlog\.provider must be a backlog provider's name/);
+  unknown({ version: 3, backlog: { provider: 7 } }, /backlog\.provider/);
+  unknown({ version: 3, backlog: { provider: '' } }, /backlog\.provider/);
 });

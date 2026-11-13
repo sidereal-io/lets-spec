@@ -2,8 +2,8 @@
 // gh call from a table: the first row whose key the call's arguments start
 // with, joined by spaces. A call no row answers fails the test. Each gh call
 // is recorded, so a test can assert the writes that were not made.
-// `git rev-parse --show-toplevel` answers root, or fails when root is null,
-// and openspec/config.yaml under it holds config, when given.
+// The user's lets config, CONFIG_FILE, holds config, when given. No other
+// program runs: a test that reaches one fails.
 //
 //   const t = backlogDeps([...LOOKUP_ONE, ['issue view 7', json({...})]]);
 //   await run(['item', '7'], t.deps);
@@ -26,18 +26,16 @@ export const TIMED_OUT: ExecResult = { stdout: '', stderr: '', code: 1, timedOut
 export const lookup = (projects: unknown[]): Row => ['api graphql', json({ repo: REPO, projects })];
 export const LOOKUP_ONE: Row[] = [lookup([PROJECT])];
 
-export const ROOT = '/repo';
-export const CONFIG_FILE = `${ROOT}/openspec/config.yaml`;
+// Where the user's lets config is, for commandDeps' env and home folder.
+export const CONFIG_FILE = '/home/u/.config/lets/config.yaml';
 
-export function backlogDeps(rows: Row[], { config, root = ROOT }: { config?: string; root?: string | null } = {}) {
+export function backlogDeps(rows: Row[], { config, files = {} }: { config?: string; files?: Record<string, string> } = {}) {
   const t = commandDeps();
-  if (config !== undefined) t.io.files.set(`${root ?? t.deps.cwd}/openspec/config.yaml`, config);
+  if (config !== undefined) t.io.files.set(CONFIG_FILE, config);
+  for (const [path, text] of Object.entries(files)) t.io.files.set(path, text);
   const calls: [string[], ExecOptions][] = [];
   t.io.execFile = async (cmd, args, opts = {}) => {
-    if (cmd === 'git' && args.join(' ') === 'rev-parse --show-toplevel') {
-      return root === null ? { stdout: '', stderr: 'fatal: not a git repository', code: 128 } : ok(`${root}\n`);
-    }
-    if (cmd !== 'gh') throw new Error(`no program but gh and git rev-parse runs here: ${cmd} ${args.join(' ')}`);
+    if (cmd !== 'gh') throw new Error(`no program but gh runs here: ${cmd} ${args.join(' ')}`);
     calls.push([args, opts]);
     const joined = args.join(' ');
     const row = rows.find(([key]) => joined.startsWith(key));
