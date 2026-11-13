@@ -36,6 +36,10 @@ Every new plan review SHALL reach author identification before model ranking and
 - **WHEN** the pull request has no Plan review section
 - **THEN** the new-review route identifies the author before ranking reviewers and chooses effort before execution
 
+#### Scenario: An earlier review requires a new round
+- **WHEN** Check an earlier review calls for a new full review round
+- **THEN** the round identifies the author before ranking and selects effort before execution
+
 #### Scenario: Standalone skill or ADR review
 - **WHEN** the user requests a standalone skill or ADR review
 - **THEN** it uses the same author, effort and finding-format preparation without acquiring OpenSpec-only mandatory concern generation

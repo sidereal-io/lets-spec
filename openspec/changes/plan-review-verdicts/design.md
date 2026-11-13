@@ -20,7 +20,7 @@ The source skill routes first reviews past author identification. Effort sits un
 
 ## Decisions
 
-1. Route both first-review entry points through Find the author, then continue to Run the review. Move effort selection to the start of Run the review, before discovery and either execution path.
+1. Route both first-review entry points and new rounds through Find the author, then continue to Run the review. Move effort selection to the start of Run the review, before discovery and either execution path.
 2. Move the existing ranked finding format into the common prompt section. Leave mandatory concern generation under For an OpenSpec change. Moving the text preserves its contract without repeating it.
 3. Extend REVISE to open Critical or Moderate findings without a listed fix. Keep APPROVE and APPROVE_WITH_CHANGES criteria and fix-commit checks. Explain Suggestion-only disposition using the existing right to decline. Keep severity independent of verdict choice.
 4. Align the unsupported Critical rebuttal with the listed-fix branch: it remains open and requires REVISE only when no listed change fixes it. Moderate findings remain open when neither fixed nor rebutted with a reason. Reuse existing round and completion rules rather than restating them.
