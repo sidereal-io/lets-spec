@@ -19,3 +19,10 @@ test('complete closes an open issue as completed, and returns completed', async 
     ['issue', 'close', '258', '--reason', 'completed'],
   ]);
 });
+
+test('complete on a closed issue writes nothing, and returns completed', async () => {
+  const t = backlogDeps(rows({ state: json({ state: 'CLOSED' }) }));
+  assert.equal(await run(['complete', '258'], t.deps), 0);
+  assert.deepEqual(t.json(), { result: 'completed' });
+  assert.ok(!t.ran('issue close'));
+});
