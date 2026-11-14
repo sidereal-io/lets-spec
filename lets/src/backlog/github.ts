@@ -8,7 +8,7 @@ import { BacklogError, WriteFailed } from './adapter.ts';
 export const CLAIM_MARKER = 'lets-go claimed this issue.';
 const CLAIM_BODY = /^lets-go claimed this issue\.\n\nToken: ([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\n?$/;
 
-// Every gh call has a finite timeout. A read past it is gh-failed; a write
+// Every gh call has a finite timeout. A read past it is backend-failed; a write
 // past it is WriteFailed, because it may still have happened.
 export const READ_TIMEOUT_MS = 60_000;
 export const WRITE_TIMEOUT_MS = 60_000;
@@ -40,6 +40,12 @@ export const FREE_LIMIT = '500';
 
 type Project = { number: number; title: string; url: string; owner: string };
 
+// A GitHub key: a whole number above zero, with or without its #.
+export function parseGithubKey(text: string): { key: string; label: string } | null {
+  const number = /^#?([1-9][0-9]*)$/.exec(text)?.[1];
+  return number === undefined ? null : { key: number, label: `#${number}` };
+}
+
 const NOT_FOUND = /could not resolve to an? (issue|issueorpullrequest)/i;
 
 type Gh = (args: string[], timeoutMs: number) => Promise<{ ok: true; stdout: string } | { ok: false; message: string; timedOut: boolean }>;
@@ -55,17 +61,17 @@ function ghRunner(io: Pick<Io, 'execFile'>, cwd: string): Gh {
   };
 }
 
-// A read: its JSON, or gh-failed. A missing issue is not-found.
+// A read: its JSON, or backend-failed. A missing issue is not-found.
 async function read(gh: Gh, args: string[]): Promise<unknown> {
   const result = await gh(args, READ_TIMEOUT_MS);
   if (!result.ok) {
     if (NOT_FOUND.test(result.message)) throw new BacklogError('not-found', result.message);
-    throw new BacklogError('gh-failed', result.message);
+    throw new BacklogError('backend-failed', result.message);
   }
   try {
     return JSON.parse(result.stdout);
   } catch {
-    throw new BacklogError('gh-failed', `gh ${args.slice(0, 2).join(' ')} printed something other than JSON: ${result.stdout.slice(0, 200)}`);
+    throw new BacklogError('backend-failed', `gh ${args.slice(0, 2).join(' ')} printed something other than JSON: ${result.stdout.slice(0, 200)}`);
   }
 }
 
@@ -104,7 +110,15 @@ async function findProject(gh: Gh): Promise<{ repo: string; project: Project }> 
 export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promise<Adapter> {
   const gh = ghRunner(io, cwd);
   const { repo, project } = await findProject(gh);
-  const urls = new Map<number, string>();
+  const urls = new Map<string, string>();
+
+  // An issue's label: #<n>, or owner/repo#<n> for an issue in another
+  // repository, taken from its URL, on github.com or an Enterprise host.
+  const labelOf = (number: number, url: unknown) => {
+    const other = typeof url === 'string' ? /^https?:\/\/[^/]+\/([^/]+\/[^/]+)\/issues\//.exec(url)?.[1] : undefined;
+    return other !== undefined && other.toLowerCase() !== repo.toLowerCase() ? `${other}#${number}` : `#${number}`;
+  };
+  const named = (number: number, url: unknown) => ({ key: String(number), label: labelOf(number, url) });
 
   // This repository's items on the Project.
   const projectItems = async () => {
@@ -118,10 +132,10 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
     status: text(item?.status),
   });
 
-  const urlOf = async (issue: number) => {
+  const urlOf = async (issue: string) => {
     const known = urls.get(issue);
     if (known !== undefined) return known;
-    const { url } = await read(gh, ['issue', 'view', String(issue), '--json', 'url']) as { url: string };
+    const { url } = await read(gh, ['issue', 'view', issue, '--json', 'url']) as { url: string };
     urls.set(issue, url);
     return url;
   };
@@ -129,18 +143,23 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
   return {
     async listCandidates() {
       const items = await projectItems();
-      const free = await read(gh, ['issue', 'list', '--search', 'is:open no:assignee -is:blocked', '--limit', FREE_LIMIT, '--json', 'number']) as { number: number }[];
-      const freeNumbers = new Set(free.map(({ number }) => number));
-      return items.map((item): Candidate => {
-        const content = item.content as { number: number; title: string; url: string };
-        return { number: content.number, title: content.title, url: content.url, ...fields(item), free: freeNumbers.has(content.number) };
-      });
+      // Only a free issue can be ready, so the search for them gives each
+      // one's creation time, with no other call.
+      const free = await read(gh, ['issue', 'list', '--search', 'is:open no:assignee -is:blocked', '--limit', FREE_LIMIT, '--json', 'number,createdAt']) as { number: number; createdAt: string }[];
+      const created = new Map(free.map(({ number, createdAt }) => [number, createdAt]));
+      // In issue-number order, so issues created at the same time rank
+      // lowest number first.
+      const contents = items.map((item) => ({ item, content: item.content as { number: number; title: string; url: string } }));
+      return contents.sort((a, b) => a.content.number - b.content.number).map(({ item, content }): Candidate => ({
+        ...named(content.number, content.url), title: content.title, url: content.url, ...fields(item),
+        free: created.has(content.number), created: created.get(content.number) ?? '',
+      }));
     },
 
     async readItem(issue) {
-      const raw = await read(gh, ['issue', 'view', String(issue), '--json', 'number,title,body,url,state,assignees,parent,blockedBy,subIssues']) as Record<string, unknown>;
+      const raw = await read(gh, ['issue', 'view', issue, '--json', 'number,title,body,url,state,assignees,parent,blockedBy,subIssues']) as Record<string, unknown>;
       const items = await projectItems();
-      const onProject = items.find((item) => (item.content as { number?: number }).number === issue);
+      const onProject = items.find((item) => String((item.content as { number?: number }).number) === issue);
       const parentRef = raw.parent as { number?: number; url?: string } | null | undefined;
       let parent: Item['parent'] = null;
       if (typeof parentRef?.number === 'number') {
@@ -152,32 +171,33 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
         } catch (error) {
           // The issue exists; only its parent could not be read.
           if (!(error instanceof BacklogError)) throw error;
-          throw new BacklogError('gh-failed', `could not read the parent ${which} of #${issue}: ${error.message}`);
+          throw new BacklogError('backend-failed', `could not read the parent ${which} of #${issue}: ${error.message}`);
         }
-        parent = { number: found.number, title: found.title, url: typeof parentRef.url === 'string' ? parentRef.url : '', body: found.body };
+        const url = typeof parentRef.url === 'string' ? parentRef.url : '';
+        parent = { ...named(found.number, url), title: found.title, url, body: found.body };
       }
       urls.set(issue, raw.url as string);
       return {
-        number: raw.number as number,
+        ...named(raw.number as number, raw.url),
         title: raw.title as string,
         body: raw.body as string,
         url: raw.url as string,
         state: raw.state as string,
         ...fields(onProject),
         assignees: nodes(raw.assignees).map((user) => user.login as string),
-        blockedBy: nodes(raw.blockedBy).map((b) => ({ number: b.number as number, title: b.title as string, state: b.state as string, url: b.url as string })),
+        blockedBy: nodes(raw.blockedBy).map((b) => ({ ...named(b.number as number, b.url), title: b.title as string, state: b.state as string, url: b.url as string })),
         parent,
-        subIssues: nodes(raw.subIssues).map((s) => ({ number: s.number as number, title: s.title as string, url: s.url as string, state: s.state as string })),
+        subIssues: nodes(raw.subIssues).map((s) => ({ ...named(s.number as number, s.url), title: s.title as string, url: s.url as string, state: s.state as string })),
       };
     },
 
     async searchTitles(words) {
-      const found = await read(gh, ['issue', 'list', '--state', 'open', '--search', `${words} in:title`, '--json', 'number,title']) as Ref[];
-      return found.map(({ number, title }) => ({ number, title }));
+      const found = await read(gh, ['issue', 'list', '--state', 'open', '--search', `${words} in:title`, '--json', 'number,title']) as { number: number; title: string }[];
+      return found.map(({ number, title }): Ref => ({ ...named(number, undefined), title }));
     },
 
     async assignees(issue) {
-      const { assignees, url } = await read(gh, ['issue', 'view', String(issue), '--json', 'assignees,url']) as { assignees: unknown; url: string };
+      const { assignees, url } = await read(gh, ['issue', 'view', issue, '--json', 'assignees,url']) as { assignees: unknown; url: string };
       urls.set(issue, url);
       return nodes(assignees).map((user) => user.login as string);
     },
@@ -192,7 +212,7 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
     async claims(issue) {
       // --slurp retains page boundaries; read every page before electing.
       const pages = await read(gh, ['api', `repos/${repo}/issues/${issue}/comments`, '--paginate', '--slurp']) as Record<string, unknown>[][];
-      if (!Array.isArray(pages) || !pages.every(Array.isArray)) throw new BacklogError('gh-failed', 'Invalid issue comment pages');
+      if (!Array.isArray(pages) || !pages.every(Array.isArray)) throw new BacklogError('backend-failed', 'Invalid issue comment pages');
       const claims: Claim[] = [];
       for (const c of pages.flat()) {
         const user = c.user as { login?: string; type?: string } | null;
@@ -206,8 +226,8 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
 
     deleteClaim: (_issue, id) => write(gh, ['api', `repos/${repo}/issues/comments/${id}`, '--method', 'DELETE']),
 
-    assignSelf: (issue) => write(gh, ['issue', 'edit', String(issue), '--add-assignee', '@me']),
-    unassignSelf: (issue) => write(gh, ['issue', 'edit', String(issue), '--remove-assignee', '@me']),
+    assignSelf: (issue) => write(gh, ['issue', 'edit', issue, '--add-assignee', '@me']),
+    unassignSelf: (issue) => write(gh, ['issue', 'edit', issue, '--remove-assignee', '@me']),
 
     async setStatus(issue, status: Status) {
       let url: string;

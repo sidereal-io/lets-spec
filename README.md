@@ -444,6 +444,8 @@ delegate:
       guidance: Prefer claude/claude-opus-5-5.
 go:
   questions: auto
+backlog:
+  provider: github
 ```
 
 `delegate.resolvers` is the chain. List the resolvers for your harnesses
@@ -464,6 +466,13 @@ uses it only to rank and leave out models. A value that is not a string makes `i
 mode, is `ask` or `auto`, and is optional. `lets-go` reads it through
 `lets go questions`. The `lets delegate` commands ignore `go`, and
 `lets go questions` ignores `delegate`.
+
+`backlog` holds the settings for `lets backlog`. `backlog.provider` names
+the backlog provider, the backend that holds the backlog. It is optional,
+and `github`, the only one this release ships, when unset. A name this
+release does not ship stops every `lets backlog` command with
+`unknown-backlog-provider`. A repository cannot set its backlog provider
+yet: it comes only from this file.
 
 Other keys are ignored, so a later `lets` can add settings beside these.
 

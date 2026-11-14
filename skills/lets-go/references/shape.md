@@ -87,9 +87,9 @@ of them in this run.
 1. Run the third case, `next`, of
    [Find the source of demand](../SKILL.md#find-the-source-of-demand),
    with one narrowing: the candidates are the stories the report named,
-   and no other issue. Pass their numbers to `lets backlog ready` with
+   and no other issue. Pass their keys to `lets backlog ready` with
    `--only`, as the section says. Rank as it does: Must, then Should,
-   then Could, then the lowest issue number. Run
+   then Could, then the oldest issue first. Run
    [Check the prerequisite](glossary-handoff.md#check-the-prerequisite)
    and [Confirm the packet](../SKILL.md#confirm-the-packet) on each
    candidate, in rank order. A ready story is one that `next` would
