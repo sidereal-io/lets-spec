@@ -69,3 +69,11 @@ test('key reads text after -- as the text, and runs no gh command', async () => 
   // gh never ran, so it wrote no log.
   assert.throws(() => gh.calls(), /ENOENT/);
 });
+
+test('lets backlog --help lists complete and its results, and says it reads, claims and completes work', async () => {
+  const gh = withFakeGh();
+  const { stdout, code } = await lets(gh.dir, 'backlog', '--help');
+  assert.equal(code, 0);
+  assert.match(stdout, /Read, claim and complete work/);
+  assert.match(stdout, /^ {2}complete <i> +\{ result: completed \} \| \{ result: failed, message \}$/m);
+});

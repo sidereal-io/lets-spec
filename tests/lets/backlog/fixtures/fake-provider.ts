@@ -48,6 +48,7 @@ export function fakeProvider({ items = [], candidates = [] }: { items?: Item[]; 
     async assignSelf(key) { calls.push(['assignSelf', key]); const item = find(key); if (!item.assignees.includes(LOGIN)) item.assignees.push(LOGIN); },
     async unassignSelf(key) { calls.push(['unassignSelf', key]); const item = find(key); item.assignees = item.assignees.filter((a) => a !== LOGIN); },
     async setStatus(key, status) { calls.push(['setStatus', key, status]); find(key).status = status; },
+    async complete(key) { calls.push(['complete', key]); find(key).state = 'CLOSED'; },
   };
   const provider: Provider = {
     description: 'a fake backlog provider with Jira-style keys',
