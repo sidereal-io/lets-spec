@@ -171,7 +171,7 @@ test('checkConfig drops a go key, even with a question mode lets does not know',
   assert.deepEqual(withDelegate('delegate:\n  resolvers: [t3]\ngo:\n  questions: loud\n'), { version: 3, delegate: { resolvers: ['t3'] } });
 });
 
-const questionsIn = (yaml: string) => questionModeFor(parseDocument(`version: 3\n${yaml}`, CONFIG), CONFIG);
+const questionsIn = (yaml: string) => questionModeFor(parseDocument(`version: 3\n${yaml}`, CONFIG), () => CONFIG);
 
 test('questionModeFor gives the question mode the config sets', () => {
   assert.equal(questionsIn('go:\n  questions: ask\n'), 'ask');

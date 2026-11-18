@@ -15,7 +15,7 @@ Tests drive each command's `run()` with `commandDeps`.
 
 ## 3. lets go questions reads both files [depends-on: 1]
 
-- [ ] 3.1 [easy] `lets go questions` prints `{"questions":"auto"}` when the user's lets config sets `ask` and `.lets/config.yaml` sets `auto`, prints `{"questions":"ask"}` when `.lets/config.yaml` has no `go`, and exits 2 with stderr naming `.lets/config.yaml`, `go.questions` and `loud` for a repository `go.questions: loud` (verify: deli -- node --test tests/lets/go/questions.test.ts)
+- [x] 3.1 [easy] `lets go questions` prints `{"questions":"auto"}` when the user's lets config sets `ask` and `.lets/config.yaml` sets `auto`, prints `{"questions":"ask"}` when `.lets/config.yaml` has no `go`, and exits 2 with stderr naming `.lets/config.yaml`, `go.questions` and `loud` for a repository `go.questions: loud` (verify: deli -- node --test tests/lets/go/questions.test.ts) (✓ deli -- node --test tests/lets/go/questions.test.ts passed)
 
 ## 4. lets backlog reads both files [depends-on: 1]
 

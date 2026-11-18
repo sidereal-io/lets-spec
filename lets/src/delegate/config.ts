@@ -135,10 +135,11 @@ export function guidanceFor(config: Config | null, strategy: Strategy, intent: I
 
 // The default question mode, from go.questions in a document parseDocument
 // checked, or null when go or go.questions is missing or null. Throws a
-// UsageError that names the file and the key when either has the wrong type
-// or value. Other keys under go are not checked.
-export function questionModeFor(document: Record<string, unknown>, path: string): QuestionMode | null {
-  const fail = (key: string, expected: string, value: unknown) => new UsageError(`${path}: ${key} must be ${expected}, got ${show(value)}.`);
+// UsageError that names the file fileOf gives for the key, and the key,
+// when either has the wrong type or value. Other keys under go are not
+// checked.
+export function questionModeFor(document: Record<string, unknown>, fileOf: FileOf): QuestionMode | null {
+  const fail = (key: string, expected: string, value: unknown) => new UsageError(`${fileOf(key)}: ${key} must be ${expected}, got ${show(value)}.`);
   const { go } = document;
   if (go === undefined || go === null) return null;
   if (!isObject(go)) throw fail('go', 'a mapping', go);
