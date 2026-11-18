@@ -373,3 +373,17 @@ test('go level is no longer a command', async () => {
   const { code } = await lets('go', 'level');
   assert.equal(code, 2);
 });
+
+test('delegate --help names the repository\'s lets config, and says its value wins, leaf by leaf', async () => {
+  const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /\$XDG_CONFIG_HOME\/lets\/config\.yaml/);
+  assert.match(text, /\.lets\/config\.yaml/);
+  assert.match(text, /repository's value wins, leaf by leaf/);
+});
+
+test('go questions --help names the repository\'s lets config, and says its value wins, leaf by leaf', async () => {
+  const text = (await lets('go', 'questions', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /\$XDG_CONFIG_HOME\/lets\/config\.yaml/);
+  assert.match(text, /\.lets\/config\.yaml/);
+  assert.match(text, /repository's value wins, leaf by leaf/);
+});

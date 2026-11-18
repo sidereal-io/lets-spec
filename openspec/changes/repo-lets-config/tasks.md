@@ -26,7 +26,7 @@ Tests drive `run()` with `backlogDeps` from `tests/lets/backlog/fixtures/fake-gh
 
 ## 5. Help and docs [depends-on: 2, 3, 4]
 
-- [ ] 5.1 [easy] `lets delegate --help` and `lets go questions --help` in `lets/src/main.ts` name both `config.yaml` and `.lets/config.yaml`, and say the repository's value wins, leaf by leaf (verify: deli -- node --test tests/lets/delegate/cli.test.ts tests/lets/go/questions.test.ts)
+- [x] 5.1 [easy] `lets delegate --help` and `lets go questions --help` in `lets/src/main.ts` name both `config.yaml` and `.lets/config.yaml`, and say the repository's value wins, leaf by leaf (verify: deli -- node --test tests/lets/delegate/cli.test.ts tests/lets/go/questions.test.ts) (✓ deli -- node --test tests/lets/delegate/cli.test.ts tests/lets/go/questions.test.ts passed)
 - [ ] 5.2 [easy] The README's *Set up delegation* section explains `.lets/config.yaml`: where it goes, that it takes the same keys and wins leaf by leaf, and to end a committed chain with `subagent`. The Purpose lines of `openspec/specs/delegate-config/spec.md` and `openspec/specs/lets-backlog/spec.md` name both files (verify: deli -- mise run check)
 
 ## 6. Integration [depends-on: 5]
