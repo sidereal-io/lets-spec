@@ -22,7 +22,7 @@ Tests drive each command's `run()` with `commandDeps`.
 Tests drive `run()` with `backlogDeps` from `tests/lets/backlog/fixtures/fake-gh.ts`.
 
 - [x] 4.1 [medium] `backlogDeps` answers `git rev-parse --show-toplevel` with `/repo` and takes a `repoConfig` option. `selectProvider` becomes async and reads `readLetsConfig`: a repository `backlog.provider: github` beats a user's `jria` with no error; a repository `jria` returns `unknown-backlog-provider`, exit 1, with a `message` naming `jria`, `.lets/config.yaml` and `github`, and runs no `gh`; a `.lets/config.yaml` with `version: 2` returns `unknown-backlog-provider` naming `.lets/config.yaml` (verify: deli -- node --test tests/lets/backlog/config.test.ts tests/lets/backlog/commands.test.ts) (✓ deli -- node --test tests/lets/backlog/config.test.ts tests/lets/backlog/commands.test.ts passed)
-- [ ] 4.2 [easy] `lets backlog --help` says the backlog provider is `github`, set in `.lets/config.yaml`, when the repository sets it, and its setting text names both files, says the repository's value wins, and no longer says a repository cannot set it (verify: deli -- node --test tests/lets/backlog/cli.test.ts)
+- [x] 4.2 [easy] `lets backlog --help` says the backlog provider is `github`, set in `.lets/config.yaml`, when the repository sets it, and its setting text names both files, says the repository's value wins, and no longer says a repository cannot set it (verify: deli -- node --test tests/lets/backlog/cli.test.ts) (✓ deli -- node --test tests/lets/backlog/cli.test.ts passed)
 
 ## 5. Help and docs [depends-on: 2, 3, 4]
 

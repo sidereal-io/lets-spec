@@ -40,9 +40,10 @@ Exit codes:
   1  an error: the backlog cannot answer
   2  usage error`;
 
-const SETTING = `backlog.provider in the lets config, $XDG_CONFIG_HOME/lets/config.yaml
-or ~/.config/lets/config.yaml, chooses the backlog provider; it is github
-when unset. A repository cannot set it yet.`;
+const SETTING = `backlog.provider chooses the backlog provider; it is github when unset.
+Two files may set it: the user's lets config, $XDG_CONFIG_HOME/lets/config.yaml
+or ~/.config/lets/config.yaml, and the repository's lets config,
+.lets/config.yaml at the repository root. The repository's value wins.`;
 
 // The help text lets help backlog prints.
 export const BACKLOG_HELP = `
