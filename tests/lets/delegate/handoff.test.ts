@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/handoff.ts';
 import { SessionFailed, SpawnError, TimeoutError } from '../../../lets/src/resolvers/kit/errors.ts';
-import { commandDeps, CONFIG, PROMPT_FILE } from './fixtures/command-deps.ts';
+import { commandDeps, CONFIG, PROMPT_FILE, REPO_CONFIG } from './fixtures/command-deps.ts';
 
 const options = { name: 'Fix Login', promptFile: 'p.md', models: ['claude'] };
 
@@ -157,4 +157,16 @@ test('a prompt file that cannot be read is exit 2, naming it', async () => {
   assert.equal(await run(options, t.deps), 2);
   assert.match(t.stderr(), /p\.md/);
   assert.deepEqual(t.adapterCalls(), []);
+});
+
+test('a handoff asks the repository\'s chain in place of the user\'s', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3, subagent] }\n', repoConfig: 'version: 3\ndelegate: { resolvers: [cli] }\n', adapters: { t3: {}, cli: {} } });
+  assert.equal(await run(options, t.deps), 0);
+  assert.equal(JSON.parse(t.stdout()).resolver, 'cli');
+});
+
+test('a bad resolver in the repository\'s lets config stops a handoff, naming that file', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [subagent] }\n', repoConfig: 'version: 3\ndelegate: { resolvers: [codex] }\n' });
+  assert.equal(await run(options, t.deps), 2);
+  assert.match(t.stderr(), new RegExp(`${REPO_CONFIG}.*codex`));
 });

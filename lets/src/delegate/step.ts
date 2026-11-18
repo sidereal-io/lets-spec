@@ -38,7 +38,7 @@ async function step({ for: intent, name, promptFile, effort, models, timeoutMinu
   const { io } = deps;
   const started = io.now();
   checkModels(models);
-  const config = readConfig(deps);
+  const { config } = await readConfig(deps);
   const written = readPromptFile(promptFile, deps);
   const prompt = answersFile === undefined ? written : withAnswers(written, readAnswersFile(answersFile, deps));
   const cwd = await repoRoot(deps.cwd, io);

@@ -17,7 +17,7 @@ export type InstructionsOptions = { strategy: Strategy; for: Intent };
 // 4 the outcome is unknown.
 export function run({ strategy, for: intent }: InstructionsOptions, deps: Deps): Promise<number> {
   return guarded(deps, async () => {
-    const config = readConfig(deps);
+    const { config } = await readConfig(deps);
     // Checked first, so a bad guidance asks no resolver.
     const guidance = guidanceFor(config, strategy, intent, configPath(deps));
     const adapter = await pick(STRATEGIES[strategy].verb, { ...deps, config });

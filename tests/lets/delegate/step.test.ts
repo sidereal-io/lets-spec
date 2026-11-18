@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/step.ts';
 import type { StepOptions } from '../../../lets/src/delegate/step.ts';
 import { SessionFailed, SpawnError, TimeoutError } from '../../../lets/src/resolvers/kit/errors.ts';
-import { commandDeps, CONFIG, PROMPT_FILE } from './fixtures/command-deps.ts';
+import { commandDeps, CONFIG, PROMPT_FILE, REPO_CONFIG } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<StepOptions> = {}): StepOptions =>
   ({ for: 'build', name: 'Build X', promptFile: 'p.md', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
@@ -201,7 +201,7 @@ test('a session past its time is exit 6', async () => {
 test('a step runs no git status, and files the session changed do not count', async () => {
   const t = withT3({ gitAfter: ' M lets/src/main.ts\0' });
   assert.equal(await run(options(), t.deps), 0);
-  assert.deepEqual(t.io.calls.map(([, args]) => (args as string[])[0]), ['rev-parse']);
+  assert.ok(t.io.calls.every(([, args]) => (args as string[])[0] === 'rev-parse'), JSON.stringify(t.io.calls));
 });
 
 // commandDeps with t3, the prompt file, and an answers file /repo/a.yaml
@@ -241,4 +241,16 @@ test('with no config, the default saves the composed prompt and is exit 3', asyn
   assert.ok(saved?.startsWith('Run plan on x\n') && saved.includes('Which schema?') && saved.includes('lets-minimal'), saved ?? 'no file');
   assert.match(t.stderr(), /no resolver.*subagent.*\.workspace\/lets-delegate\/plan-x\.prompt\.md/);
   assert.doesNotMatch(t.stderr(), /installed/);
+});
+
+test('a step asks the repository\'s chain in place of the user\'s', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3] }\n', repoConfig: 'version: 3\ndelegate: { resolvers: [cli] }\n', adapters: { t3: {}, cli: {} } });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.equal(JSON.parse(t.stderr()).resolver, 'cli');
+});
+
+test('a bad resolver in the repository\'s lets config stops a step, naming that file', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3] }\n', repoConfig: 'version: 3\ndelegate: { resolvers: [codex] }\n' });
+  assert.equal(await run(options(), t.deps), 2);
+  assert.match(t.stderr(), new RegExp(`${REPO_CONFIG}.*codex`));
 });

@@ -66,12 +66,13 @@ export async function readLetsConfig(deps: ConfigDeps & { cwd: string }): Promis
   return mergeDocuments({ path: userPath, document: user }, { path: repoPath ?? join(deps.cwd, REPO_CONFIG_PATH), document: repo });
 }
 
-// The config, or null when there is no file. Throws a UsageError that names
-// the file and the bad value when the file is not a valid config.
-export function readConfig(deps: ConfigDeps): Config | null {
-  const path = configPath(deps);
-  const text = deps.io.readFile(path);
-  return text === null ? null : parseConfig(text, path);
+// The delegate config in effect where cwd is, or null when there is
+// neither file, and the file each value came from. Throws a UsageError that
+// names the file and the bad value when either file, or the delegate
+// section in effect, is not valid.
+export async function readConfig(deps: ConfigDeps & { cwd: string }): Promise<{ config: Config | null; fileOf: FileOf }> {
+  const { document, fileOf } = await readLetsConfig(deps);
+  return { config: document === null ? null : checkConfig(document, fileOf), fileOf };
 }
 
 // The document in text, read from path, with every key as written. Throws a
@@ -90,18 +91,19 @@ export function parseDocument(text: string, path: string): Record<string, unknow
   return value;
 }
 
-// The config in text, read from path. Throws as readConfig does.
-export function parseConfig(text: string, path: string): Config {
-  const fail = (message: string) => new UsageError(`${path}: ${message}.`);
-  const value = parseDocument(text, path);
+// The delegate section of a document parseDocument checked, or of the two
+// files merged. Throws a UsageError that names the file fileOf gives for the
+// bad key, and the bad value.
+export function checkConfig(value: Record<string, unknown>, fileOf: FileOf): Config {
+  const fail = (key: string, message: string) => new UsageError(`${fileOf(key)}: ${message}.`);
   const delegate = value.delegate ?? {};
-  if (!isObject(delegate)) throw fail(`delegate must be a mapping, got ${show(delegate)}`);
+  if (!isObject(delegate)) throw fail('delegate', `delegate must be a mapping, got ${show(delegate)}`);
   const config: Config = { version: CONFIG_VERSION, delegate: {} };
   const { resolvers } = delegate;
   if (resolvers !== undefined && resolvers !== null) {
-    if (!Array.isArray(resolvers)) throw fail(`delegate.resolvers must be a list, got ${show(resolvers)}`);
+    if (!Array.isArray(resolvers)) throw fail('delegate.resolvers', `delegate.resolvers must be a list, got ${show(resolvers)}`);
     resolvers.forEach((entry: unknown, i: number) => {
-      if (!(RESOLVER_NAMES as readonly unknown[]).includes(entry)) throw fail(`delegate.resolvers[${i}] must be t3, cli or subagent, got ${show(entry)}`);
+      if (!(RESOLVER_NAMES as readonly unknown[]).includes(entry)) throw fail('delegate.resolvers', `delegate.resolvers[${i}] must be t3, cli or subagent, got ${show(entry)}`);
     });
     config.delegate.resolvers = resolvers;
   }

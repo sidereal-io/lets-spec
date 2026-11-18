@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/review.ts';
 import type { ReviewOptions } from '../../../lets/src/delegate/review.ts';
 import { SessionFailed, SpawnError, TimeoutError } from '../../../lets/src/resolvers/kit/errors.ts';
-import { commandDeps, CONFIG, HEAD } from './fixtures/command-deps.ts';
+import { commandDeps, CONFIG, HEAD, REPO_CONFIG } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<ReviewOptions> = {}): ReviewOptions =>
   ({ for: 'code', name: 'X Plan Review', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
@@ -269,4 +269,57 @@ test('a review runs no program but git, whatever the environment holds', async (
   t.deps.env = { ...process.env };
   assert.equal(await run(options(), t.deps), 0);
   assert.deepEqual([...new Set(t.io.calls.map(([cmd]) => cmd))], ['git']);
+});
+
+const asked = (calls: Calls) => calls('detect').map(([name]) => name);
+
+test('the repository\'s chain replaces the user\'s whole', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3, subagent] }\n', repoConfig: 'version: 3\ndelegate: { resolvers: [cli] }\n', adapters: { t3: {} } });
+  assert.equal(await run(options(), t.deps), 2);
+  assert.match(t.stderr(), /every resolver declined/);
+  assert.deepEqual(asked(t.adapterCalls), ['cli']);
+});
+
+test('a null chain in the repository\'s lets config keeps the user\'s chain', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [cli] }\n', repoConfig: 'version: 3\ndelegate: { resolvers: null }\n', adapters: { cli: {} } });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.equal(JSON.parse(t.stderr()).resolver, 'cli');
+});
+
+test('a bad user\'s chain that the repository replaces does not stop a review', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [codex] }\n', repoConfig: 'version: 3\ndelegate: { resolvers: [cli] }\n', adapters: { cli: {} } });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.equal(JSON.parse(t.stderr()).resolver, 'cli');
+});
+
+test('a bad resolver in the repository\'s lets config is exit 2, naming that file and not the user\'s', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [cli] }\n', repoConfig: 'version: 3\ndelegate: { resolvers: [codex] }\n' });
+  assert.equal(await run(options(), t.deps), 2);
+  assert.ok(t.stderr().includes(REPO_CONFIG), t.stderr());
+  assert.match(t.stderr(), /codex/);
+  assert.ok(!t.stderr().includes(CONFIG), t.stderr());
+});
+
+test('a repository\'s lets config with the old version is exit 2, naming it', async () => {
+  const t = commandDeps({ config: 'version: 3\n', repoConfig: 'version: 2\n' });
+  assert.equal(await run(options(), t.deps), 2);
+  assert.match(t.stderr(), new RegExp(`${REPO_CONFIG}.*version must be 3`));
+});
+
+test('a repository\'s lets config that is a folder is exit 2, naming it', async () => {
+  const t = commandDeps({ repoConfig: 'version: 3\n' });
+  const readFile = t.io.readFile;
+  t.io.readFile = (path) => {
+    if (path === REPO_CONFIG) throw Object.assign(new Error('EISDIR: illegal operation on a directory, read'), { code: 'EISDIR' });
+    return readFile(path);
+  };
+  assert.equal(await run(options(), t.deps), 2);
+  assert.ok(t.stderr().includes(REPO_CONFIG), t.stderr());
+});
+
+test('a review run from a subfolder reads the repository\'s lets config at the root', async () => {
+  const t = commandDeps({ repoConfig: 'version: 3\ndelegate: { resolvers: [cli] }\n', adapters: { cli: {} } });
+  t.deps.cwd = '/repo/docs';
+  assert.equal(await run(options({ promptFile: '../p.md' }), t.deps), 0);
+  assert.equal(JSON.parse(t.stderr()).resolver, 'cli');
 });

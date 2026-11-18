@@ -29,7 +29,7 @@ async function review({ for: intent, name, promptFile, sourceFamily, effort, mod
   const { io } = deps;
   const started = io.now();
   checkModels(models);
-  const config = readConfig(deps);
+  const { config } = await readConfig(deps);
   const prompt = readPromptFile(promptFile, deps);
   const cwd = await repoRoot(deps.cwd, io);
   // What is already uncommitted is the user's, not the session's.
