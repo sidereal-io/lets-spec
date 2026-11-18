@@ -23,10 +23,22 @@ The system or tool an adapter uses.
 ## Backlog provider
 
 The backend that holds a repository's backlog, such as GitHub, Jira Cloud,
-Linear or Beads. The user's lets config selects exactly one, with
-`backlog.provider`; GitHub when unset. A backlog provider is a backend;
-not every backend is a backlog provider. Delegation backends, such as a
-harness, are not.
+Linear or Beads. The repository's lets config or the user's lets config
+selects exactly one, with `backlog.provider`; the repository's wins, and
+GitHub when neither sets it. A backlog provider is a backend; not every
+backend is a backlog provider. Delegation backends, such as a harness,
+are not.
+
+## User's lets config
+
+The file of lets settings each person writes by hand on each machine:
+`$XDG_CONFIG_HOME/lets/config.yaml`, or `~/.config/lets/config.yaml`.
+
+## Repository's lets config
+
+The file of lets settings a repository commits, `.lets/config.yaml` at
+its root. It takes the same keys as the user's lets config, and each
+setting it holds wins over the user's, leaf by leaf.
 
 ## Extension
 
