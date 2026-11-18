@@ -32,7 +32,7 @@ Tests drive `run()` with `backlogDeps` from `tests/lets/backlog/fixtures/fake-gh
 ## 6. Integration [depends-on: 5]
 
 - [x] 6.1 [easy] The whole suite, the type check, the bats tests, the Nix checks and the OpenSpec validation pass (verify: deli -- pnpm test && deli -- nix flake check && mise run check) (✓ deli -- pnpm test && deli -- nix flake check && mise run check passed)
-- [ ] 6.2 [easy] Live check: in a new scratch Git repository under `.workspace/`, with `.lets/config.yaml` holding `version: 3` and `backlog.provider: github`, running `lets/bin/lets backlog --help` from this checkout, from inside the scratch repository, prints that the backlog provider is `github`, set in that `.lets/config.yaml` (verify: cd .workspace/repo-lets-config-live && ../../lets/bin/lets backlog --help | grep -F '.lets/config.yaml')
+- [x] 6.2 [easy] Live check: in a new scratch Git repository under `.workspace/`, with `.lets/config.yaml` holding `version: 3` and `backlog.provider: github`, running `lets/bin/lets backlog --help` from this checkout, from inside the scratch repository, prints that the backlog provider is `github`, set in that `.lets/config.yaml` (verify: cd .workspace/repo-lets-config-live && ../../lets/bin/lets backlog --help | grep -F '.lets/config.yaml') (✓ cd .workspace/repo-lets-config-live && ../../lets/bin/lets backlog --help | grep -F '.lets/config.yaml' passed)
 
 ## Deviations Ledger
 
