@@ -36,5 +36,5 @@ Tests drive `run()` with `backlogDeps` from `tests/lets/backlog/fixtures/fake-gh
 
 ## Deviations Ledger
 
-- 2.1: The *delegate-config* scenario *Outside a Git repository* names `lets delegate review run`, but `review run` has always needed a Git repository: it stops with exit 2 at `repoRoot` before it asks any resolver. The rule itself, that only the user's lets config applies outside a repository, is tested through `readLetsConfig` (task 1.2) and `lets delegate review instructions` (task 2.3), which needs no repository.
+- 2.1: The *delegate-config* scenario *Outside a Git repository* names `lets delegate review run`, but `review run` has always needed a Git repository: it stops with exit 2 at `repoRoot` before it asks any resolver. The rule itself, that only the user's lets config applies outside a repository, is tested through `readLetsConfig` (task 1.2) and `lets delegate review instructions` (task 2.3), which needs no repository. At verify, the scenario was reworded to use `lets delegate review instructions --for code`, which the task 2.3 test covers.
 - 2.1: The step test that checked a step runs no `git status` listed every Git call. It now checks that every Git call is a `rev-parse`, since reading the config adds one `git rev-parse --show-toplevel`, as design decision 4 says.

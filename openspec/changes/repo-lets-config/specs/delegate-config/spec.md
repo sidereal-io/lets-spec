@@ -70,8 +70,8 @@ The user's lets config SHALL be one YAML document at `$XDG_CONFIG_HOME/lets/conf
 - **THEN** it asks `cli`
 
 #### Scenario: Outside a Git repository
-- **WHEN** the folder the command runs in is not in a Git repository, and the user's lets config holds `version: 3` and `delegate.resolvers: [cli]`
-- **THEN** `lets delegate review run --for code` asks `cli`
+- **WHEN** the folder the command runs in is not in a Git repository, and the user's lets config holds `version: 3` and `delegate.review.code.guidance` `Prefer claude.`
+- **THEN** `lets delegate review instructions --for code` prints `"guidance":"Prefer claude."`
 
 #### Scenario: No repository's lets config
 - **WHEN** the repository has no `.lets/config.yaml`, and the user's lets config holds `version: 3` and `delegate.resolvers: [cli]`
