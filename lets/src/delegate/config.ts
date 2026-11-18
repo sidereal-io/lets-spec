@@ -113,14 +113,14 @@ export function checkConfig(value: Record<string, unknown>, fileOf: FileOf): Con
   return config;
 }
 
-// The user's guidance for an intent, from
-// delegate.<strategy>.<intent>.guidance, or null when there is no config or
-// any level is missing. Throws a UsageError that names the file and the
-// dotted key when a level has the wrong type. Other strategies' and other
+// The guidance for an intent, from delegate.<strategy>.<intent>.guidance,
+// or null when there is no config or any level is missing. Throws a
+// UsageError that names the file fileOf gives for the dotted key, and the
+// key, when a level has the wrong type. Other strategies' and other
 // intents' entries are not checked.
-export function guidanceFor(config: Config | null, strategy: Strategy, intent: Intent, path: string): string | null {
+export function guidanceFor(config: Config | null, strategy: Strategy, intent: Intent, fileOf: FileOf): string | null {
   const fail = (key: string, expected: string, value: unknown) =>
-    new UsageError(`${path}: ${key} must be ${expected}, got ${JSON.stringify(value) ?? String(value)}.`);
+    new UsageError(`${fileOf(key)}: ${key} must be ${expected}, got ${JSON.stringify(value) ?? String(value)}.`);
   const entry = config?.delegate[strategy];
   if (entry === undefined || entry === null) return null;
   if (!isObject(entry)) throw fail(`delegate.${strategy}`, 'a mapping', entry);
