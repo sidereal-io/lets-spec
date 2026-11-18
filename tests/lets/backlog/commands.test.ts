@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/backlog/commands.ts';
-import { backlogDeps, CONFIG_FILE, fail, json, lookup, LOOKUP_ONE, PROJECT, TIMED_OUT } from './fixtures/fake-gh.ts';
+import { backlogDeps, CONFIG_FILE, fail, REPO_CONFIG_FILE, json, lookup, LOOKUP_ONE, PROJECT, TIMED_OUT } from './fixtures/fake-gh.ts';
 
 const FIND: [string, ReturnType<typeof json>] = ['issue list --state open --search', json([])];
 
@@ -163,4 +163,30 @@ test('a lets config that cannot be read is unknown-backlog-provider, names the f
     assert.match(out.message, new RegExp(code));
     assert.deepEqual(t.calls(), [], code);
   }
+});
+
+test('the repository\'s backlog provider wins over the user\'s, with no error', async () => {
+  const t = backlogDeps([...LOOKUP_ONE, FIND], { config: 'version: 3\nbacklog:\n  provider: jria\n', repoConfig: 'version: 3\nbacklog:\n  provider: github\n' });
+  assert.equal(await run(['find', 'x'], t.deps), 0);
+  assert.deepEqual(t.json(), { issues: [] });
+});
+
+test('an unknown backlog provider in the repository\'s lets config names that file, and runs no gh command', async () => {
+  const t = backlogDeps([...LOOKUP_ONE, FIND], { config: 'version: 3\nbacklog:\n  provider: github\n', repoConfig: 'version: 3\nbacklog:\n  provider: jria\n' });
+  assert.equal(await run(['item', '136'], t.deps), 1);
+  const out = t.json();
+  assert.equal(out.error, 'unknown-backlog-provider');
+  for (const named of ['jria', REPO_CONFIG_FILE, 'github']) assert.ok(out.message.includes(named), out.message);
+  assert.ok(!out.message.includes(CONFIG_FILE), out.message);
+  assert.deepEqual(t.calls(), []);
+});
+
+test('a repository\'s lets config with the old version is unknown-backlog-provider, naming it', async () => {
+  const t = backlogDeps([...LOOKUP_ONE, FIND], { repoConfig: 'version: 2\nbacklog:\n  provider: github\n' });
+  assert.equal(await run(['ready'], t.deps), 1);
+  const out = t.json();
+  assert.equal(out.error, 'unknown-backlog-provider');
+  assert.ok(out.message.includes(REPO_CONFIG_FILE), out.message);
+  assert.match(out.message, /version/);
+  assert.deepEqual(t.calls(), []);
 });

@@ -82,7 +82,7 @@ export async function run(argv: string[], deps: Pick<Deps, 'env' | 'io' | 'cwd' 
   // command has parsed, so a usage error still exits 2.
   let selection: Selection | BacklogError;
   try {
-    selection = selectProvider(deps, providers);
+    selection = await selectProvider(deps, providers);
   } catch (error) {
     if (!(error instanceof BacklogError)) throw error;
     selection = error;
