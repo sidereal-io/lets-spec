@@ -304,3 +304,14 @@ test('readLetsConfig rejects a lets config that cannot be read, naming it', asyn
       (error) => error instanceof UsageError && error.message.includes(path) && /EISDIR/.test(error.message), path);
   }
 });
+
+test('fileOf names the repository\'s lets config for a mapping it set where a value is expected', () => {
+  const { fileOf } = merged(null, 'go:\n  questions: {}\n');
+  assert.equal(fileOf('go.questions'), REPO);
+  assert.equal(merged('go:\n  questions: ask\n', 'go:\n  questions: { a: 1 }\n').fileOf('go.questions'), REPO);
+});
+
+test('fileOf names the user\'s lets config for a value the user set under a mapping the repository merged into', () => {
+  const { fileOf } = merged('go:\n  questions: loud\n', 'go: {}\n');
+  assert.equal(fileOf('go.questions'), USER);
+});

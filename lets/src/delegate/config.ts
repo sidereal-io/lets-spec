@@ -164,11 +164,12 @@ export type LetsConfig = { document: Record<string, unknown> | null; fileOf: Fil
 // The user's lets config and the repository's, merged leaf by leaf, the
 // repository's value winning. Where both hold a mapping at a key, the two
 // merge key by key. Any other repository value replaces the user's whole.
-// A repository key that is null counts as absent. fileOf answers the
-// repository's path for a value that came from it, or for a key below a
-// value it replaced whole, and the user's path otherwise, even for a key
-// neither file sets.
+// A repository key that is null counts as absent. fileOf answers the file
+// that set the value in effect at the key, a mapping or any other value,
+// or at the nearest key above it that is not a mapping. It answers the
+// user's path for a key neither file sets.
 export function mergeDocuments(user: ConfigSource, repo: ConfigSource): LetsConfig {
+  // Each dotted key the repository's lets config set.
   const fromRepo = new Set<string>();
   const merge = (base: Record<string, unknown>, over: Record<string, unknown>, prefix: string) => {
     const out: Record<string, unknown> = {};
@@ -177,21 +178,27 @@ export function mergeDocuments(user: ConfigSource, repo: ConfigSource): LetsConf
     for (const [key, value] of Object.entries(over)) {
       if (value === null || value === undefined) continue;
       const at = `${prefix}${key}`;
+      fromRepo.add(at);
       if (isObject(value)) {
         const mine = Object.hasOwn(base, key) && isObject(base[key]) ? base[key] : {};
         set(key, merge(mine, value, `${at}.`));
       } else {
         set(key, value);
-        fromRepo.add(at);
       }
     }
     return out;
   };
   const document = user.document === null && repo.document === null ? null : merge(user.document ?? {}, repo.document ?? {}, '');
   const fileOf: FileOf = (key) => {
-    const parts = key.split('.');
-    for (let n = parts.length; n > 0; n--) if (fromRepo.has(parts.slice(0, n).join('.'))) return repo.path;
-    return user.path;
+    let node: unknown = document;
+    let at = '';
+    for (const part of key.split('.')) {
+      if (!isObject(node) || !Object.hasOwn(node, part)) return user.path;
+      at = at === '' ? part : `${at}.${part}`;
+      node = node[part];
+      if (!isObject(node)) break;
+    }
+    return fromRepo.has(at) ? repo.path : user.path;
   };
   return { document, fileOf };
 }

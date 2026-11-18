@@ -78,3 +78,9 @@ test('a bad question mode in the repository\'s lets config exits 2, naming that 
   assert.equal(t.stdout(), '');
   for (const named of [REPO_CONFIG, 'go.questions', 'loud']) assert.ok(t.stderr().includes(named), named);
 });
+
+test('a question mode that is a mapping in the repository\'s lets config exits 2, naming that file', async () => {
+  const t = commandDeps({ repoConfig: 'version: 3\ngo:\n  questions: {}\n' });
+  assert.equal(await run(t.deps), 2);
+  assert.ok(t.stderr().includes(REPO_CONFIG), t.stderr());
+});
