@@ -471,10 +471,44 @@ mode, is `ask` or `auto`, and is optional. `lets-go` reads it through
 the backlog provider, the backend that holds the backlog. It is optional,
 and `github`, the only one this release ships, when unset. A name this
 release does not ship stops every `lets backlog` command with
-`unknown-backlog-provider`. A repository cannot set its backlog provider
-yet: it comes only from this file.
+`unknown-backlog-provider`. A repository can set it for every contributor
+in its own lets config, which the next part explains.
 
 Other keys are ignored, so a later `lets` can add settings beside these.
+
+#### A repository's lets config
+
+A repository can commit its own lets config, `.lets/config.yaml` at the
+repository root, so every contributor and every clone gets the same
+settings. It takes the same keys as your lets config, and it also needs
+`version: 3`. `lets` finds the root with `git rev-parse --show-toplevel`,
+so it reads the file from any folder in the repository. Outside a Git
+repository, `lets` reads only your lets config.
+
+The repository's value wins, leaf by leaf. Mappings merge at every depth.
+Any other value, such as a string or the `delegate.resolvers` list,
+replaces yours whole; two lists are never joined. A key the repository's
+file leaves out, or sets to `null`, keeps your value. For example, this
+file sets the backlog provider and the code review guidance, and keeps
+your chain and your other guidance:
+
+```yaml
+version: 3
+backlog:
+  provider: github
+delegate:
+  review:
+    code:
+      guidance: Prefer a gpt model.
+```
+
+If a repository commits `delegate.resolvers`, end the list with
+`subagent`. A contributor may not have every resolver the list names, and
+without `subagent` a review that every resolver declines fails.
+
+A bad value stops the command as it would in your lets config, and the
+message names the file the value came from. `lets` never reads its
+settings from `openspec/config.yaml`.
 
 ### The resolvers
 
