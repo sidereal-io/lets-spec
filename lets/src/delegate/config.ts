@@ -169,9 +169,13 @@ export type LetsConfig = { document: Record<string, unknown> | null; fileOf: Fil
 // or at the nearest key above it that is not a mapping. It answers the
 // user's path for a key neither file sets.
 export function mergeDocuments(user: ConfigSource, repo: ConfigSource): LetsConfig {
-  // Each dotted key the repository's lets config set.
+  // Each dotted key the repository's lets config set, and those whose value
+  // it set whole, so every key below them is its too.
   const fromRepo = new Set<string>();
-  const merge = (base: Record<string, unknown>, over: Record<string, unknown>, prefix: string) => {
+  const wholeFromRepo = new Set<string>();
+  // over: the repository's mappings being merged, so a YAML alias that
+  // holds itself is taken whole, not merged again.
+  const merge = (base: Record<string, unknown>, over: Record<string, unknown>, prefix: string, open: Set<object>) => {
     const out: Record<string, unknown> = {};
     const set = (key: string, value: unknown) => Object.defineProperty(out, key, { value, enumerable: true, writable: true, configurable: true });
     for (const [key, value] of Object.entries(base)) set(key, value);
@@ -179,26 +183,31 @@ export function mergeDocuments(user: ConfigSource, repo: ConfigSource): LetsConf
       if (value === null || value === undefined) continue;
       const at = `${prefix}${key}`;
       fromRepo.add(at);
-      if (isObject(value)) {
-        const mine = Object.hasOwn(base, key) && isObject(base[key]) ? base[key] : {};
-        set(key, merge(mine, value, `${at}.`));
+      const mine = Object.hasOwn(base, key) ? base[key] : undefined;
+      if (isObject(value) && isObject(mine) && !open.has(value)) {
+        set(key, merge(mine, value, `${at}.`, new Set(open).add(value)));
       } else {
         set(key, value);
+        wholeFromRepo.add(at);
       }
     }
     return out;
   };
-  const document = user.document === null && repo.document === null ? null : merge(user.document ?? {}, repo.document ?? {}, '');
+  const document = user.document === null && repo.document === null
+    ? null
+    : merge(user.document ?? {}, repo.document ?? {}, '', new Set(repo.document === null ? [] : [repo.document]));
   const fileOf: FileOf = (key) => {
     let node: unknown = document;
     let at = '';
+    let underRepo = false;
     for (const part of key.split('.')) {
       if (!isObject(node) || !Object.hasOwn(node, part)) return user.path;
       at = at === '' ? part : `${at}.${part}`;
       node = node[part];
+      underRepo ||= wholeFromRepo.has(at);
       if (!isObject(node)) break;
     }
-    return fromRepo.has(at) ? repo.path : user.path;
+    return underRepo || fromRepo.has(at) ? repo.path : user.path;
   };
   return { document, fileOf };
 }

@@ -315,3 +315,14 @@ test('fileOf names the user\'s lets config for a value the user set under a mapp
   const { fileOf } = merged('go:\n  questions: loud\n', 'go: {}\n');
   assert.equal(fileOf('go.questions'), USER);
 });
+
+test('mergeDocuments keeps a recursive alias in the repository\'s lets config without looping', () => {
+  const { document, fileOf } = merged('go:\n  questions: auto\n', 'go:\n  questions: ask\nunused: &u { self: *u }\n');
+  assert.equal((document?.go as Record<string, unknown>).questions, 'ask');
+  assert.equal(fileOf('go.questions'), REPO);
+});
+
+test('mergeDocuments merges a recursive alias the user\'s lets config shares a key with, without looping', () => {
+  const { document } = merged('unused: &a { self: *a, x: 1 }\n', 'unused: &u { self: *u }\n');
+  assert.equal((document?.unused as Record<string, unknown>).x, 1);
+});
