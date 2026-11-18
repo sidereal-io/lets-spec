@@ -38,12 +38,12 @@ async function step({ for: intent, name, promptFile, effort, models, timeoutMinu
   const { io } = deps;
   const started = io.now();
   checkModels(models);
-  const { config } = await readConfig(deps);
+  const { config, fileOf } = await readConfig(deps);
   const written = readPromptFile(promptFile, deps);
   const prompt = answersFile === undefined ? written : withAnswers(written, readAnswersFile(answersFile, deps));
   const cwd = await repoRoot(deps.cwd, io);
 
-  const adapter = await pick('step', { ...deps, config });
+  const adapter = await pick('step', { ...deps, config, fileOf });
   const timeoutMs = (timeoutMinutes ?? STEP_TIMEOUT_MINUTES) * 60000;
   // A session the resolver reports failed is a failed report, not an exit
   // code, so the caller reads every outcome in one place. The resolver gives

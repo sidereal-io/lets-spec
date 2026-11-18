@@ -21,10 +21,10 @@ export type HandoffOptions = { name: string; promptFile: string; models: string[
 export function run({ name, promptFile, models }: HandoffOptions, deps: Deps): Promise<number> {
   return guarded(deps, async () => {
     checkModels(models);
-    const { config } = await readConfig(deps);
+    const { config, fileOf } = await readConfig(deps);
     const prompt = readPromptFile(promptFile, deps);
     const cwd = await repoRoot(deps.cwd, deps.io);
-    const adapter = await pick('start', { ...deps, config });
+    const adapter = await pick('start', { ...deps, config, fileOf });
     let started;
     try {
       ({ value: started } = await withModels(models, (model) =>

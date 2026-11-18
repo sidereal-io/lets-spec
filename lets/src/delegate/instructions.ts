@@ -17,10 +17,10 @@ export type InstructionsOptions = { strategy: Strategy; for: Intent };
 // 4 the outcome is unknown.
 export function run({ strategy, for: intent }: InstructionsOptions, deps: Deps): Promise<number> {
   return guarded(deps, async () => {
-    const { config } = await readConfig(deps);
+    const { config, fileOf } = await readConfig(deps);
     // Checked first, so a bad guidance asks no resolver.
     const guidance = guidanceFor(config, strategy, intent, configPath(deps));
-    const adapter = await pick(STRATEGIES[strategy].verb, { ...deps, config });
+    const adapter = await pick(STRATEGIES[strategy].verb, { ...deps, config, fileOf });
     const options = await inAdapter(() => adapter.options((message) => deps.stderr(`lets delegate: ${message}\n`)));
     deps.stdout(`${JSON.stringify({ strategy, for: intent, resolver: adapter.name, options, guidance })}\n`);
     return EXIT.ok;

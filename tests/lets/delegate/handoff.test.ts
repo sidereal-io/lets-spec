@@ -170,3 +170,16 @@ test('a bad resolver in the repository\'s lets config stops a handoff, naming th
   assert.equal(await run(options, t.deps), 2);
   assert.match(t.stderr(), new RegExp(`${REPO_CONFIG}.*codex`));
 });
+
+test('when the repository\'s chain declines, the message names the repository\'s lets config', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [subagent] }\n', repoConfig: 'version: 3\ndelegate: { resolvers: [] }\n' });
+  assert.equal(await run(options, t.deps), 2);
+  assert.match(t.stderr(), new RegExp(`every resolver declined.*${REPO_CONFIG}`));
+});
+
+test('when the user\'s chain declines, the message names the user\'s lets config', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [] }\n', repoConfig: 'version: 3\n' });
+  assert.equal(await run(options, t.deps), 2);
+  assert.match(t.stderr(), new RegExp(`every resolver declined.*${CONFIG}`));
+  assert.ok(!t.stderr().includes(REPO_CONFIG), t.stderr());
+});

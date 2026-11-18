@@ -29,13 +29,13 @@ async function review({ for: intent, name, promptFile, sourceFamily, effort, mod
   const { io } = deps;
   const started = io.now();
   checkModels(models);
-  const { config } = await readConfig(deps);
+  const { config, fileOf } = await readConfig(deps);
   const prompt = readPromptFile(promptFile, deps);
   const cwd = await repoRoot(deps.cwd, io);
   // What is already uncommitted is the user's, not the session's.
   const before = await treeStatus(cwd, io);
 
-  const adapter = await pick('run', { ...deps, config });
+  const adapter = await pick('run', { ...deps, config, fileOf });
   const timeoutMs = (timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES[effort]) * 60000;
   const { value: { handle, text, checkout }, model: sent } = await withModels(models, (model) =>
     adapter.run({ name: normalizeName(name), prompt, cwd, ...parseModel(model)!, effort }, { timeoutMs }));
