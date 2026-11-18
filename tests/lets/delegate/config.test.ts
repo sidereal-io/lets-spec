@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { configPath, guidanceFor, mergeDocuments, parseConfig, parseDocument, questionModeFor, readConfig } from '../../../lets/src/delegate/config.ts';
+import { configPath, guidanceFor, mergeDocuments, parseConfig, parseDocument, questionModeFor, readConfig, readLetsConfig } from '../../../lets/src/delegate/config.ts';
 import { UsageError } from '../../../lets/src/resolvers/kit/errors.ts';
+import { commandDeps } from './fixtures/command-deps.ts';
 import { fakeIo } from './fixtures/fake-io.ts';
 
 const HOME_CONFIG = '/home/u/.config/lets/config.yaml';
@@ -251,4 +252,54 @@ test('fileOf names the user\'s lets config for a value the user set, or that nei
   assert.equal(fileOf('delegate.review.plan.guidance'), USER);
   assert.equal(fileOf('go.questions'), USER);
   assert.equal(merged(null, null).fileOf('go.questions'), USER);
+});
+
+test('readLetsConfig reads the repository\'s lets config at the repository root, over the user\'s', async () => {
+  const t = commandDeps({ config: 'version: 3\ngo:\n  questions: ask\ndelegate:\n  resolvers: [t3]\n', repoConfig: 'version: 3\ngo:\n  questions: auto\n' });
+  const { document, fileOf } = await readLetsConfig(t.deps);
+  assert.deepEqual(document, { version: 3, go: { questions: 'auto' }, delegate: { resolvers: ['t3'] } });
+  assert.equal(fileOf('go.questions'), REPO);
+  assert.equal(fileOf('delegate.resolvers'), USER);
+});
+
+test('readLetsConfig asks git for the root of the folder it runs in', async () => {
+  const t = commandDeps({ repoConfig: 'version: 3\n' });
+  t.deps.cwd = '/repo/docs';
+  await readLetsConfig(t.deps);
+  assert.ok(t.io.calls.some(([cmd, args, opts]) => cmd === 'git' && args.join(' ') === 'rev-parse --show-toplevel' && opts.cwd === '/repo/docs'));
+});
+
+test('readLetsConfig reads only the user\'s lets config outside a Git repository', async () => {
+  const t = commandDeps({ config: 'version: 3\ngo:\n  questions: ask\n', repoConfig: 'version: 3\ngo:\n  questions: auto\n', notInRepo: true });
+  assert.deepEqual((await readLetsConfig(t.deps)).document, { version: 3, go: { questions: 'ask' } });
+});
+
+test('readLetsConfig reads only the user\'s lets config when the repository has none', async () => {
+  const t = commandDeps({ config: 'version: 3\ngo:\n  questions: ask\n' });
+  const { document, fileOf } = await readLetsConfig(t.deps);
+  assert.deepEqual(document, { version: 3, go: { questions: 'ask' } });
+  assert.equal(fileOf('go.questions'), USER);
+});
+
+test('readLetsConfig gives a null document when there is neither file', async () => {
+  assert.equal((await readLetsConfig(commandDeps().deps)).document, null);
+});
+
+test('readLetsConfig rejects a repository\'s lets config with the old version, naming it', async () => {
+  const t = commandDeps({ config: 'version: 3\n', repoConfig: 'version: 2\n' });
+  await assert.rejects(readLetsConfig(t.deps),
+    (error) => error instanceof UsageError && error.message.includes(REPO) && /version must be 3/.test(error.message));
+});
+
+test('readLetsConfig rejects a lets config that cannot be read, naming it', async () => {
+  for (const path of [REPO, USER]) {
+    const t = commandDeps({ config: 'version: 3\n', repoConfig: 'version: 3\n' });
+    const readFile = t.io.readFile;
+    t.io.readFile = (at) => {
+      if (at === path) throw Object.assign(new Error(`EISDIR: illegal operation on a directory, read`), { code: 'EISDIR' });
+      return readFile(at);
+    };
+    await assert.rejects(readLetsConfig(t.deps),
+      (error) => error instanceof UsageError && error.message.includes(path) && /EISDIR/.test(error.message), path);
+  }
 });

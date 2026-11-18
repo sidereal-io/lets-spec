@@ -16,7 +16,11 @@
 //              that made a commit; default head
 //   headFails: true when `git rev-parse HEAD` fails
 //   files:     the files there are; default the prompt file /repo/p.md
-//   config:    the text of the delegate config, CONFIG, when there is one
+//   config:    the text of the user's lets config, CONFIG, when there is one
+//   repoConfig: the text of the repository's lets config, REPO_CONFIG, when
+//              there is one
+//   notInRepo: true when `git rev-parse --show-toplevel` fails, as outside a
+//              Git repository
 import type { ResolverName } from '../../../../lets/src/delegate/config.ts';
 import type { Deps } from '../../../../lets/src/io.ts';
 import type { Adapter, Handle, RunInput, StartInput, StepInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
@@ -27,6 +31,7 @@ import { fakeIo } from './fake-io.ts';
 
 export const PROMPT_FILE = '/repo/p.md';
 export const CONFIG = '/home/u/.config/lets/config.yaml';
+export const REPO_CONFIG = '/repo/.lets/config.yaml';
 // The commit at HEAD, unless a test gives another.
 export const HEAD = '0123456789abcdef0123456789abcdef01234567';
 // The final message of a step that went well.
@@ -152,12 +157,14 @@ type Options = {
   headFails?: boolean;
   files?: Record<string, string>;
   config?: string;
+  repoConfig?: string;
+  notInRepo?: boolean;
 };
 
 export function commandDeps({
-  adapters = {}, real = {}, gitBefore = '', gitAfter = gitBefore, gitAfterFails = false, head = HEAD, headAfter = head, headFails = false, files = { [PROMPT_FILE]: 'PROMPT TEXT' }, config,
+  adapters = {}, real = {}, gitBefore = '', gitAfter = gitBefore, gitAfterFails = false, head = HEAD, headAfter = head, headFails = false, files = { [PROMPT_FILE]: 'PROMPT TEXT' }, config, repoConfig, notInRepo = false,
 }: Options = {}) {
-  const io = fakeIo({ files: { ...files, ...(config === undefined ? {} : { [CONFIG]: config }) } });
+  const io = fakeIo({ files: { ...files, ...(config === undefined ? {} : { [CONFIG]: config }), ...(repoConfig === undefined ? {} : { [REPO_CONFIG]: repoConfig }) } });
   const calls: AdapterCall[] = [];
   let statusCalls = 0;
   io.execFile = async (cmd, args, opts = {}) => {
@@ -166,6 +173,7 @@ export function commandDeps({
       if (headFails) return { stdout: 'HEAD\n', stderr: 'fatal: not a git repository', code: 128 };
       return { stdout: `${calls.some(([, method]) => method === 'run') ? headAfter : head}\n`, stderr: '', code: 0 };
     }
+    if (cmd === 'git' && args[0] === 'rev-parse' && notInRepo) return { stdout: '', stderr: 'fatal: not a git repository', code: 128 };
     if (cmd === 'git' && args[0] === 'rev-parse') return { stdout: '/repo\n', stderr: '', code: 0 };
     if (cmd === 'git') {
       if (statusCalls++ === 0) return { stdout: gitBefore, stderr: '', code: 0 };

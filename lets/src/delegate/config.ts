@@ -1,11 +1,14 @@
-// The user's delegate config: the chain, the resolvers lets asks, in order,
-// and the user's guidance for each kind of delegation.
-// The user writes it by hand, and lets is the only reader. Keys this lets
-// does not know are ignored, so a later lets can add one beside them.
+// The lets config: the user's lets config, merged with the repository's
+// lets config, .lets/config.yaml at the repository root, whose values win.
+// It holds the chain, the resolvers lets asks, in order, the guidance for
+// each kind of delegation, and the settings of lets go and lets backlog.
+// People write both files by hand, and lets is the only reader. Keys this
+// lets does not know are ignored, so a later lets can add one beside them.
 import { join } from 'node:path';
 import { parse } from 'yaml';
 import { configDir } from '../config-dir.ts';
 import type { Deps, Io } from '../io.ts';
+import { findRepoRoot } from './git.ts';
 import { UsageError } from '../resolvers/kit/errors.ts';
 import type { Intent, Strategy } from './strategies.ts';
 
@@ -32,6 +35,35 @@ export type ConfigDeps = { env: Deps['env']; io: Io };
 // config.yaml in the lets config folder.
 export function configPath({ env, io }: ConfigDeps): string {
   return join(configDir(env, io.homedir()), 'config.yaml');
+}
+
+// The repository's lets config, under the repository root.
+export const REPO_CONFIG_PATH = '.lets/config.yaml';
+
+// The lets config in effect where cwd is: the user's lets config, merged
+// with the repository's lets config when cwd is in a Git repository whose
+// root holds one. Each file is checked whole first, with parseDocument.
+// Throws a UsageError that names the file when one cannot be read or is
+// not a valid document.
+export async function readLetsConfig(deps: ConfigDeps & { cwd: string }): Promise<LetsConfig> {
+  const userPath = configPath(deps);
+  const root = await findRepoRoot(deps.cwd, deps.io);
+  const repoPath = root === null ? null : join(root, REPO_CONFIG_PATH);
+  const read = (path: string | null): Record<string, unknown> | null => {
+    if (path === null) return null;
+    let text: string | null;
+    try {
+      text = deps.io.readFile(path);
+    } catch (error) {
+      // A file that exists but cannot be read, such as a folder or one
+      // without read permission, is never taken for absence.
+      throw new UsageError(`${path}: cannot be read: ${(error as Error).message}.`);
+    }
+    return text === null ? null : parseDocument(text, path);
+  };
+  const user = read(userPath);
+  const repo = read(repoPath);
+  return mergeDocuments({ path: userPath, document: user }, { path: repoPath ?? join(deps.cwd, REPO_CONFIG_PATH), document: repo });
 }
 
 // The config, or null when there is no file. Throws a UsageError that names
