@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { configPath, guidanceFor, parseConfig, parseDocument, questionModeFor, readConfig } from '../../../lets/src/delegate/config.ts';
+import { configPath, guidanceFor, mergeDocuments, parseConfig, parseDocument, questionModeFor, readConfig } from '../../../lets/src/delegate/config.ts';
 import { UsageError } from '../../../lets/src/resolvers/kit/errors.ts';
 import { fakeIo } from './fixtures/fake-io.ts';
 
@@ -201,4 +201,54 @@ test('questionModeFor rejects a bad go or go.questions, naming the file and the 
     assert.throws(() => questionsIn(yaml),
       (error) => error instanceof UsageError && error.message.includes(CONFIG) && error.message.includes(named), yaml);
   }
+});
+
+const USER = '/home/u/.config/lets/config.yaml';
+const REPO = '/repo/.lets/config.yaml';
+// The two files merged, each document given as YAML text, or null for no file.
+const merged = (user: string | null, repo: string | null) => mergeDocuments(
+  { path: USER, document: user === null ? null : parseDocument(`version: 3\n${user}`, USER) },
+  { path: REPO, document: repo === null ? null : parseDocument(`version: 3\n${repo}`, REPO) },
+);
+
+test('mergeDocuments merges mappings key by key, at every depth', () => {
+  const { document } = merged('delegate:\n  review:\n    plan:\n      guidance: Prefer gpt.\n    code:\n      guidance: Prefer claude.\n',
+    'delegate:\n  review:\n    code:\n      guidance: Use gemini.\n');
+  assert.deepEqual(document, { version: 3, delegate: { review: { plan: { guidance: 'Prefer gpt.' }, code: { guidance: 'Use gemini.' } } } });
+});
+
+test('mergeDocuments lets a repository string, number or list replace the user\'s value whole', () => {
+  const { document } = merged('go:\n  questions: ask\nbacklog:\n  provider: jira\ndelegate:\n  resolvers: [t3, subagent]\n  review: { code: { guidance: x } }\n',
+    'go:\n  questions: auto\nbacklog: 7\ndelegate:\n  resolvers: [cli]\n  review: [a]\n');
+  assert.deepEqual(document, { version: 3, go: { questions: 'auto' }, backlog: 7, delegate: { resolvers: ['cli'], review: ['a'] } });
+});
+
+test('mergeDocuments keeps the user\'s value where the repository\'s key is null or absent', () => {
+  const { document } = merged('go:\n  questions: ask\ndelegate:\n  resolvers: [cli]\n', 'delegate:\n  resolvers: null\ngo: null\n');
+  assert.deepEqual(document, { version: 3, go: { questions: 'ask' }, delegate: { resolvers: ['cli'] } });
+});
+
+test('mergeDocuments gives the one document there is, or null for none', () => {
+  assert.deepEqual(merged('go:\n  questions: ask\n', null).document, { version: 3, go: { questions: 'ask' } });
+  assert.deepEqual(merged(null, 'go:\n  questions: auto\n').document, { version: 3, go: { questions: 'auto' } });
+  assert.equal(merged(null, null).document, null);
+});
+
+test('fileOf names the repository\'s lets config for a value that came from it', () => {
+  const { fileOf } = merged('delegate:\n  resolvers: [t3]\n', 'delegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: 42\n');
+  assert.equal(fileOf('delegate.resolvers'), REPO);
+  assert.equal(fileOf('delegate.review.code.guidance'), REPO);
+});
+
+test('fileOf names the repository\'s lets config below a value the repository replaced whole', () => {
+  const { fileOf } = merged('delegate:\n  review:\n    code:\n      guidance: x\n', 'delegate:\n  review: [a]\n');
+  assert.equal(fileOf('delegate.review.code.guidance'), REPO);
+});
+
+test('fileOf names the user\'s lets config for a value the user set, or that neither file sets', () => {
+  const { fileOf } = merged('delegate:\n  resolvers: [t3]\n', 'delegate:\n  review:\n    code:\n      guidance: x\n  resolvers: null\n');
+  assert.equal(fileOf('delegate.resolvers'), USER);
+  assert.equal(fileOf('delegate.review.plan.guidance'), USER);
+  assert.equal(fileOf('go.questions'), USER);
+  assert.equal(merged(null, null).fileOf('go.questions'), USER);
 });

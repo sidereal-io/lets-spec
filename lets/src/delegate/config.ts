@@ -114,6 +114,53 @@ export function questionModeFor(document: Record<string, unknown>, path: string)
   return questions as QuestionMode;
 }
 
+// One lets config file: where it is, and its document, as parseDocument
+// checked it, or null when there is no file.
+export type ConfigSource = { path: string; document: Record<string, unknown> | null };
+
+// The path of the file that holds the value in effect at a dotted key, such
+// as delegate.resolvers.
+export type FileOf = (key: string) => string;
+
+// The lets config in effect: the two files merged, or null when there is
+// neither, and the file each value came from.
+export type LetsConfig = { document: Record<string, unknown> | null; fileOf: FileOf };
+
+// The user's lets config and the repository's, merged leaf by leaf, the
+// repository's value winning. Where both hold a mapping at a key, the two
+// merge key by key. Any other repository value replaces the user's whole.
+// A repository key that is null counts as absent. fileOf answers the
+// repository's path for a value that came from it, or for a key below a
+// value it replaced whole, and the user's path otherwise, even for a key
+// neither file sets.
+export function mergeDocuments(user: ConfigSource, repo: ConfigSource): LetsConfig {
+  const fromRepo = new Set<string>();
+  const merge = (base: Record<string, unknown>, over: Record<string, unknown>, prefix: string) => {
+    const out: Record<string, unknown> = {};
+    const set = (key: string, value: unknown) => Object.defineProperty(out, key, { value, enumerable: true, writable: true, configurable: true });
+    for (const [key, value] of Object.entries(base)) set(key, value);
+    for (const [key, value] of Object.entries(over)) {
+      if (value === null || value === undefined) continue;
+      const at = `${prefix}${key}`;
+      if (isObject(value)) {
+        const mine = Object.hasOwn(base, key) && isObject(base[key]) ? base[key] : {};
+        set(key, merge(mine, value, `${at}.`));
+      } else {
+        set(key, value);
+        fromRepo.add(at);
+      }
+    }
+    return out;
+  };
+  const document = user.document === null && repo.document === null ? null : merge(user.document ?? {}, repo.document ?? {}, '');
+  const fileOf: FileOf = (key) => {
+    const parts = key.split('.');
+    for (let n = parts.length; n > 0; n--) if (fromRepo.has(parts.slice(0, n).join('.'))) return repo.path;
+    return user.path;
+  };
+  return { document, fileOf };
+}
+
 function show(value: unknown): string {
   return JSON.stringify(value) ?? String(value);
 }
