@@ -26,7 +26,7 @@ The release tarball SHALL ship an `openspec` command in `bin/`, beside `lets`. T
 ## MODIFIED Requirements
 
 ### Requirement: The OpenSpec CLI version warning works on every install
-`lets sync` SHALL compare the OpenSpec CLI on PATH with the version recorded in the `release.json` of the `lets` package that runs, whether that package comes from the Nix flake or the release tarball. On a tarball install, when the first `openspec` on `PATH` is the tarball's own `bin/openspec`, `lets sync` SHALL NOT run it and SHALL NOT warn. When the two versions differ, it SHALL warn. From the Nix flake, the warning SHALL be: `the OpenSpec CLI on PATH is <found>, but this release's openspec-* skills were generated from <pinned>. Pin the CLI to <pinned>.` From the release tarball, the warning SHALL be: `the OpenSpec CLI on PATH is <found>, but this release's openspec-* skills were generated from <pinned>. Remove the "npm:@fission-ai/openspec" line from mise.toml, or any other openspec that comes before this release's on PATH.` When they match, or when either version is unknown, it SHALL NOT warn.
+`lets sync` SHALL compare the OpenSpec CLI on PATH with the version recorded in the `release.json` of the `lets` package that runs, whether that package comes from the Nix flake or the release tarball. On a tarball install, when the first `openspec` on `PATH` is the tarball's own `bin/openspec`, `lets sync` SHALL NOT start the OpenSpec CLI through `npx`, so it downloads nothing, and SHALL NOT warn. When the two versions differ, it SHALL warn. From the Nix flake, the warning SHALL be: `the OpenSpec CLI on PATH is <found>, but this release's openspec-* skills were generated from <pinned>. Pin the CLI to <pinned>.` From the release tarball, the warning SHALL be: `the OpenSpec CLI on PATH is <found>, but this release's openspec-* skills were generated from <pinned>. Remove the "npm:@fission-ai/openspec" line from mise.toml, or any other openspec that comes before this release's on PATH.` When they match, or when either version is unknown, it SHALL NOT warn.
 
 #### Scenario: Nix install with a different CLI on PATH
 - **WHEN** `lets sync` runs from the flake's `lets` package, whose `release.json` records OpenSpec `1.2.3`, and `openspec --version` on PATH prints `1.4.0`
@@ -34,7 +34,7 @@ The release tarball SHALL ship an `openspec` command in `bin/`, beside `lets`. T
 
 #### Scenario: Tarball install with its own openspec first on PATH
 - **WHEN** `lets sync` runs from the release tarball, and the first `openspec` on `PATH` is the tarball's `bin/openspec`
-- **THEN** the output holds no OpenSpec CLI version warning, and `lets sync` does not run `openspec`
+- **THEN** the output holds no OpenSpec CLI version warning, and `lets sync` does not run `npx`
 
 #### Scenario: Tarball install with a different CLI first on PATH
 - **WHEN** `lets sync` runs from the release tarball, whose `release.json` records OpenSpec `1.2.3`, and the first `openspec` on `PATH` is another command, whose `openspec --version` prints `1.4.0`
