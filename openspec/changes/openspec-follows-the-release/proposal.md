@@ -15,8 +15,9 @@ the agents' questions together.
   input, output and exit code through. It turns off OpenSpec's check for a
   newer version, as the Nix wrapper does (D1). When `npx` is missing, it fails
   with a message that says so.
-- On a tarball install, `lets sync` skips the CLI version check when the
-  `openspec` first on `PATH` is that command, so it starts no download.
+- On a tarball install, when the `openspec` first on `PATH` is that command,
+  `lets sync` does not warn, and does not start the OpenSpec CLI through
+  `npx`, so it downloads nothing.
 - On a tarball install, when another `openspec` comes first on `PATH` and its
   version differs, the warning tells the user to remove the
   `npm:@fission-ai/openspec` line from `mise.toml` (D2). When the versions are
