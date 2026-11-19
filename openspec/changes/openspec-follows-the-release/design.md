@@ -89,8 +89,10 @@ the plan review can change.
 ### `lets sync` asks the launcher for its version through a probe variable
 
 `lets sync` runs `openspec --version` with `LETS_SPEC_OPENSPEC_PROBE=1` added
-to its environment. When the launcher sees that variable, it prints its
-written-in version and exits 0, before it looks for `npx`. Any other
+to its environment. When the launcher sees that variable and its only
+argument is `--version`, it prints its written-in version and exits 0,
+before it looks for `npx`. With any other arguments it ignores the
+variable. Any other
 `openspec` ignores the variable and prints its real version. So:
 
 - The launcher, reached directly or through a mise shim, answers the pinned
@@ -134,9 +136,10 @@ share one `release.json` today, so that needs two files to tell apart.
 - [A project keeps its `npm:@fission-ai/openspec` pin, and mise puts it first]
   → The warning names the line to remove (D2), unless the versions match
   (D3).
-- [Someone sets `LETS_SPEC_OPENSPEC_PROBE` in their shell, and `openspec`
-  stops working] → The `LETS_SPEC_` prefix keeps it out of the way. The
-  README does not document it, since only `lets` sets it.
+- [Someone sets `LETS_SPEC_OPENSPEC_PROBE` in their shell] → The launcher
+  answers the probe only for `openspec --version`, which prints the same
+  version `npx` would run, so every other command still works. The README
+  does not document it, since only `lets` sets it.
 
 ## Migration & Rollback
 
