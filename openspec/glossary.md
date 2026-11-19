@@ -105,3 +105,16 @@ How `lets-go` handles a step's questions. `ask` puts every question to
 the user, with the step's recommendation as the suggested answer. `auto`
 answers each question that has a recommendation, tells the user what it
 chose, and asks the user the rest.
+
+## Epic run
+
+A `lets-go` run given an epic. It shapes the epic when the epic has no
+stories, then builds each of its stories, through one story run each, and
+ends with one line per story. An epic run is not a step and not a
+discovery run.
+
+## Story run
+
+The part of an epic run that takes one story to a pull request ready for
+review, in a child `lets-go` session of its own. A story run is not a
+step: it runs the steps of its story.
