@@ -1,7 +1,7 @@
 # lets-backlog Specification
 
 ## Purpose
-`lets backlog` reads, claims and completes work on the repository's backlog for the skills, so a skill never runs the backlog provider's commands itself for what these commands cover. The user's lets config selects the backlog provider. GitHub, issues on the one Project linked to the repository, is the default, and the only one this release ships.
+`lets backlog` reads, claims and completes work on the repository's backlog for the skills, so a skill never runs the backlog provider's commands itself for what these commands cover. The lets config selects the backlog provider: the repository's lets config, `.lets/config.yaml`, when it sets one, and the user's lets config otherwise. GitHub, issues on the one Project linked to the repository, is the default, and the only one this release ships.
 
 ## Requirements
 
@@ -181,33 +181,6 @@ When a write of `claim` fails, the command SHALL stop at that write and return `
 - **WHEN** a loser has already deleted its comment and later releases its own token while the winner under the same login is active
 - **THEN** release returns `not-found` and changes neither the winner's comment nor its assignment nor Status
 
-### Requirement: The user's lets config selects the backlog provider
-Each `lets backlog` command SHALL read `backlog.provider` from the user's lets config, `$XDG_CONFIG_HOME/lets/config.yaml`, or `~/.config/lets/config.yaml` when `XDG_CONFIG_HOME` is unset or empty, and use that backlog provider. When the file, its `backlog` section, or `provider` is absent or null, the backlog provider SHALL be `github`. When `provider` names a backlog provider this release does not ship, the command SHALL return the error `unknown-backlog-provider` and exit 1, with a `message` that names the value, the file and each backlog provider the release ships, and SHALL run no backend command. When the file is not YAML, is not a mapping with `version: 3`, or holds a `backlog` that is not a mapping or a `provider` that is not a string, the command SHALL return `unknown-backlog-provider` too, with a `message` that names the file and what is wrong, and SHALL run no backend command. It SHALL never read the backlog provider from `openspec/config.yaml`. The help text SHALL name the backlog provider in use.
-
-#### Scenario: No config file
-- **WHEN** the user has no lets config, and runs `lets backlog ready`
-- **THEN** it reads the GitHub Project
-
-#### Scenario: No backlog section
-- **WHEN** the lets config holds `version: 3` and a `delegate` section, and no `backlog`
-- **THEN** `lets backlog ready` reads the GitHub Project
-
-#### Scenario: GitHub named
-- **WHEN** the lets config holds `backlog:` with `provider: github`
-- **THEN** `lets backlog ready` reads the GitHub Project
-
-#### Scenario: An unknown backlog provider
-- **WHEN** the lets config sets `backlog.provider` to `jria`, and a user runs `lets backlog item 136`
-- **THEN** stdout holds `"error": "unknown-backlog-provider"` with a `message` that names `jria`, the lets config file and `github`, no `gh` command runs, and the exit code is 1
-
-#### Scenario: A config lets cannot read
-- **WHEN** the lets config sets `backlog.provider` to `[jira]`, or the file is not YAML, and a user runs `lets backlog claim 136`
-- **THEN** stdout holds `"error": "unknown-backlog-provider"` with a `message` that names the file, no `gh` command runs, and the exit code is 1
-
-#### Scenario: openspec/config.yaml is not read
-- **WHEN** `openspec/config.yaml` holds `lets:` with `backlog:` and `provider: jria`, and the user has no lets config
-- **THEN** `lets backlog ready` reads the GitHub Project
-
 ### Requirement: key says whether text is one of the backlog provider's keys
 `lets backlog key <text>` SHALL return `key` and `label` when the text names an item in the backlog provider's own form, and `"key": null` and `"label": null` when it does not. It SHALL decide from the text alone, and SHALL run no backend command. Text after `--` SHALL be read as the text, even when it starts with `-`. With the GitHub backlog provider, a whole number above zero, with or without a leading `#`, SHALL give that number as `key` and `#` and the number as `label`.
 
@@ -276,3 +249,46 @@ When the write of `complete` fails, the command SHALL return `"result": "failed"
 #### Scenario: Closing times out
 - **WHEN** #258 is open, and closing it times out
 - **THEN** it returns `"result": "failed"` and `"message": "timed out; the write may have happened"`, tries to close #258 once, and the exit code is 0
+
+### Requirement: The lets config selects the backlog provider
+Each `lets backlog` command SHALL read `backlog.provider` from the `lets` config: the repository's lets config, `.lets/config.yaml` in the repository root, merged over the user's lets config, `$XDG_CONFIG_HOME/lets/config.yaml`, or `~/.config/lets/config.yaml` when `XDG_CONFIG_HOME` is unset or empty, as *delegate-config* says. It SHALL use the backlog provider in effect: the repository's value when it sets one, and the user's value otherwise. When neither file sets it, because a file, its `backlog` section, or `provider` is absent or null, the backlog provider SHALL be `github`. When `provider` names a backlog provider this release does not ship, the command SHALL return the error `unknown-backlog-provider` and exit 1, with a `message` that names the value, the file that set it and each backlog provider the release ships, and SHALL run no backend command. When either file cannot be read, is not YAML, or is not a mapping with `version: 3`, or the `backlog` in effect is not a mapping, or the `provider` in effect is not a string, the command SHALL return `unknown-backlog-provider` too, with a `message` that names the file that holds the fault and what is wrong, and SHALL run no backend command. It SHALL never read the backlog provider from `openspec/config.yaml`. The help text SHALL name the backlog provider in use, and the file that set it, or say it is the default.
+
+#### Scenario: No config file
+- **WHEN** the user has no lets config, the repository has no `.lets/config.yaml`, and the user runs `lets backlog ready`
+- **THEN** it reads the GitHub Project
+
+#### Scenario: No backlog section
+- **WHEN** the lets config holds `version: 3` and a `delegate` section, and no `backlog`
+- **THEN** `lets backlog ready` reads the GitHub Project
+
+#### Scenario: GitHub named
+- **WHEN** the lets config holds `backlog:` with `provider: github`
+- **THEN** `lets backlog ready` reads the GitHub Project
+
+#### Scenario: An unknown backlog provider
+- **WHEN** the user's lets config sets `backlog.provider` to `jria`, the repository has no `.lets/config.yaml`, and a user runs `lets backlog item 136`
+- **THEN** stdout holds `"error": "unknown-backlog-provider"` with a `message` that names `jria`, the user's lets config file and `github`, no `gh` command runs, and the exit code is 1
+
+#### Scenario: A config lets cannot read
+- **WHEN** the lets config sets `backlog.provider` to `[jira]`, or the file is not YAML, and a user runs `lets backlog claim 136`
+- **THEN** stdout holds `"error": "unknown-backlog-provider"` with a `message` that names the file, no `gh` command runs, and the exit code is 1
+
+#### Scenario: openspec/config.yaml is not read
+- **WHEN** `openspec/config.yaml` holds `lets:` with `backlog:` and `provider: jria`, the user has no lets config, and the repository has no `.lets/config.yaml`
+- **THEN** `lets backlog ready` reads the GitHub Project
+
+#### Scenario: The repository's backlog provider wins
+- **WHEN** the user's lets config sets `backlog.provider` to `jria`, and `.lets/config.yaml` holds `version: 3` and `backlog.provider: github`
+- **THEN** `lets backlog ready` reads the GitHub Project, and returns no error
+
+#### Scenario: An unknown backlog provider in the repository's lets config
+- **WHEN** the user's lets config sets `backlog.provider` to `github`, `.lets/config.yaml` sets it to `jria`, and a user runs `lets backlog item 136`
+- **THEN** stdout holds `"error": "unknown-backlog-provider"` with a `message` that names `jria`, `.lets/config.yaml` and `github`, no `gh` command runs, and the exit code is 1
+
+#### Scenario: A repository's lets config with the old version
+- **WHEN** `.lets/config.yaml` holds `version: 2`, and a user runs `lets backlog ready`
+- **THEN** stdout holds `"error": "unknown-backlog-provider"` with a `message` that names `.lets/config.yaml` and the version, no `gh` command runs, and the exit code is 1
+
+#### Scenario: The help names the file that set the provider
+- **WHEN** `.lets/config.yaml` holds `version: 3` and `backlog.provider: github`, and the user runs `lets backlog --help`
+- **THEN** the output says the backlog provider is `github`, set in `.lets/config.yaml`

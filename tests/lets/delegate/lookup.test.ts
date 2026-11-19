@@ -11,7 +11,7 @@ const listing = (...resolvers: ResolverName[]): Config => ({ version: 3, delegat
 // Lookup deps with these fake adapters, and this config.
 function lookup(adapters: Partial<Record<ResolverName, FakeResolver>>, config: Config | null) {
   const t = commandDeps({ adapters });
-  return { t, deps: { ...t.deps, config } };
+  return { t, deps: { ...t.deps, config, fileOf: () => CONFIG } };
 }
 const asked = (t: ReturnType<typeof commandDeps>) => t.adapterCalls('detect').map(([name]) => name);
 
@@ -128,4 +128,16 @@ test('an adapter whose detect throws is a SpawnError', async () => {
     throw new Error('no /proc');
   };
   await assert.rejects(pick('run', deps), (error) => error instanceof SpawnError && error.message === 'no /proc');
+});
+
+test('when every resolver declines, the message names the file fileOf gives for the chain', async () => {
+  const { deps } = lookup({}, listing());
+  const keys: string[] = [];
+  const fileOf = (key: string) => {
+    keys.push(key);
+    return '/r/.lets/config.yaml';
+  };
+  await assert.rejects(pick('run', { ...deps, fileOf }),
+    (error) => error instanceof UsageError && error.message.includes('/r/.lets/config.yaml') && !error.message.includes(CONFIG));
+  assert.deepEqual(keys, ['delegate.resolvers']);
 });

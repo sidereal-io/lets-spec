@@ -11,6 +11,17 @@ export async function repoRoot(cwd: string, io: Io): Promise<string> {
   return stdout.trim();
 }
 
+// How long lets waits for git to name the repository root.
+const ROOT_TIMEOUT_MS = 10000;
+
+// The root of the repo cwd is in, or null when git cannot say: cwd is not
+// in a repo, or git exits non-zero, cannot start or times out.
+export async function findRepoRoot(cwd: string, io: Io): Promise<string | null> {
+  const { stdout, code, timedOut } = await io.execFile('git', ['rev-parse', '--show-toplevel'], { cwd, timeoutMs: ROOT_TIMEOUT_MS });
+  const root = stdout.trim();
+  return code === 0 && !timedOut && root !== '' ? root : null;
+}
+
 // The full hash at HEAD in checkout, or null when git cannot read it, such
 // as a checkout that is gone.
 export async function headCommit(checkout: string, io: Io): Promise<string | null> {

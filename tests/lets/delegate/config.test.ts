@@ -1,16 +1,19 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { configPath, guidanceFor, parseConfig, parseDocument, questionModeFor, readConfig } from '../../../lets/src/delegate/config.ts';
+import { checkConfig, configPath, guidanceFor, mergeDocuments, parseDocument, questionModeFor, readConfig, readLetsConfig } from '../../../lets/src/delegate/config.ts';
 import { UsageError } from '../../../lets/src/resolvers/kit/errors.ts';
+import { commandDeps } from './fixtures/command-deps.ts';
 import { fakeIo } from './fixtures/fake-io.ts';
 
 const HOME_CONFIG = '/home/u/.config/lets/config.yaml';
 
-// The deps readConfig takes, with a config file holding text, when given.
+// The deps readConfig takes, outside any Git repository, with a user's lets
+// config holding text, when given.
+const configIn = async (deps: ReturnType<typeof depsWith>) => (await readConfig(deps)).config;
 function depsWith(text?: string, env: Record<string, string> = {}) {
   const path = env.XDG_CONFIG_HOME ? `${env.XDG_CONFIG_HOME}/lets/config.yaml` : HOME_CONFIG;
   const files: Record<string, string> = text === undefined ? {} : { [path]: text };
-  return { env, io: fakeIo({ files, homedir: () => '/home/u' }) };
+  return { env, cwd: '/repo', io: fakeIo({ files, homedir: () => '/home/u' }) };
 }
 
 test('the config file is under ~/.config when XDG_CONFIG_HOME is unset', () => {
@@ -21,82 +24,82 @@ test('the config file is under XDG_CONFIG_HOME when it is set', () => {
   assert.equal(configPath(depsWith(undefined, { XDG_CONFIG_HOME: '/tmp/cfg' })), '/tmp/cfg/lets/config.yaml');
 });
 
-test('no config file reads as null', () => {
-  assert.equal(readConfig(depsWith()), null);
+test('no config file reads as null', async () => {
+  assert.equal(await configIn(depsWith()), null);
 });
 
-test('a valid config reads as its chain of names, in order', () => {
+test('a valid config reads as its chain of names, in order', async () => {
   const text = 'version: 3\ndelegate:\n  resolvers:\n    - t3\n    - cli\n    - subagent\n';
-  assert.deepEqual(readConfig(depsWith(text)), { version: 3, delegate: { resolvers: ['t3', 'cli', 'subagent'] } });
+  assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: { resolvers: ['t3', 'cli', 'subagent'] } });
 });
 
-test('a config with no delegate key, or a null one, has no chain', () => {
+test('a config with no delegate key, or a null one, has no chain', async () => {
   for (const text of ['version: 3\n', 'version: 3\ndelegate:\n', 'version: 3\ndelegate: null\n']) {
-    assert.deepEqual(readConfig(depsWith(text)), { version: 3, delegate: {} }, text);
+    assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: {} }, text);
   }
 });
 
-test('a delegate key with no resolvers, or null ones, has no chain', () => {
+test('a delegate key with no resolvers, or null ones, has no chain', async () => {
   for (const text of ['version: 3\ndelegate: {}\n', 'version: 3\ndelegate:\n  resolvers:\n']) {
-    assert.deepEqual(readConfig(depsWith(text)), { version: 3, delegate: {} }, text);
+    assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: {} }, text);
   }
 });
 
-test('an entry that is not t3, cli or subagent names the file, the entry and the three names', () => {
+test('an entry that is not t3, cli or subagent names the file, the entry and the three names', async () => {
   for (const entry of ['/opt/r/old-resolver', 'codex', 'T3', '7']) {
-    assert.throws(() => readConfig(depsWith(`version: 3\ndelegate:\n  resolvers:\n    - t3\n    - ${entry}\n`)),
+    await assert.rejects(configIn(depsWith(`version: 3\ndelegate:\n  resolvers:\n    - t3\n    - ${entry}\n`)),
       (error) => error instanceof UsageError && error.message.includes(HOME_CONFIG) && error.message.includes('delegate.resolvers[1]')
         && error.message.includes(entry) && /t3, cli or subagent/.test(error.message), entry);
   }
 });
 
-test('an empty chain is a valid config', () => {
-  assert.deepEqual(readConfig(depsWith('version: 3\ndelegate: { resolvers: [] }\n')), { version: 3, delegate: { resolvers: [] } });
+test('an empty chain is a valid config', async () => {
+  assert.deepEqual(await configIn(depsWith('version: 3\ndelegate: { resolvers: [] }\n')), { version: 3, delegate: { resolvers: [] } });
 });
 
-test('a key this lets does not know is ignored, at the top level and under delegate', () => {
+test('a key this lets does not know is ignored, at the top level and under delegate', async () => {
   const text = 'version: 3\nsync: true\ndelegate:\n  resolvers: [subagent]\n  telemetry: true\n';
-  assert.deepEqual(readConfig(depsWith(text)), { version: 3, delegate: { resolvers: ['subagent'] } });
+  assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: { resolvers: ['subagent'] } });
 });
 
-test('review and handoff under delegate are kept as written, unchecked', () => {
+test('review and handoff under delegate are kept as written, unchecked', async () => {
   const text = 'version: 3\ndelegate:\n  resolvers: [subagent]\n  review:\n    code:\n      guidance: 42\n  handoff: apply\n';
-  assert.deepEqual(readConfig(depsWith(text)), { version: 3, delegate: { resolvers: ['subagent'], review: { code: { guidance: 42 } }, handoff: 'apply' } });
+  assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: { resolvers: ['subagent'], review: { code: { guidance: 42 } }, handoff: 'apply' } });
 });
 
-test('step under delegate is kept as written, unchecked', () => {
+test('step under delegate is kept as written, unchecked', async () => {
   const text = 'version: 3\ndelegate:\n  step:\n    build:\n      guidance: 42\n';
-  assert.deepEqual(readConfig(depsWith(text)), { version: 3, delegate: { step: { build: { guidance: 42 } } } });
+  assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: { step: { build: { guidance: 42 } } } });
 });
 
 const CONFIG = '/c/config.yaml';
-const withDelegate = (yaml: string) => parseConfig(`version: 3\n${yaml}`, CONFIG);
+const withDelegate = (yaml: string) => checkConfig(parseDocument(`version: 3\n${yaml}`, CONFIG), () => CONFIG);
 
 test('guidanceFor gives the guidance for the strategy and the intent', () => {
   const config = withDelegate('delegate:\n  review:\n    code:\n      guidance: Use the strongest gpt model.\n');
-  assert.equal(guidanceFor(config, 'review', 'code', CONFIG), 'Use the strongest gpt model.');
+  assert.equal(guidanceFor(config, 'review', 'code', () => CONFIG), 'Use the strongest gpt model.');
 });
 
 test('guidanceFor gives the guidance for a step', () => {
   const config = withDelegate('delegate:\n  step:\n    build:\n      guidance: Use claude/claude-opus-5-5.\n');
-  assert.equal(guidanceFor(config, 'step', 'build', CONFIG), 'Use claude/claude-opus-5-5.');
+  assert.equal(guidanceFor(config, 'step', 'build', () => CONFIG), 'Use claude/claude-opus-5-5.');
 });
 
 test('guidanceFor gives a step no guidance from handoff', () => {
   const config = withDelegate('delegate:\n  handoff:\n    apply:\n      guidance: Prefer claude.\n');
-  assert.equal(guidanceFor(config, 'step', 'build', CONFIG), null);
+  assert.equal(guidanceFor(config, 'step', 'build', () => CONFIG), null);
 });
 
 test('guidanceFor keeps a multi-line block whole', () => {
   const config = withDelegate('delegate:\n  handoff:\n    apply:\n      guidance: |\n        First line.\n        Second line.\n');
-  assert.equal(guidanceFor(config, 'handoff', 'apply', CONFIG), 'First line.\nSecond line.\n');
+  assert.equal(guidanceFor(config, 'handoff', 'apply', () => CONFIG), 'First line.\nSecond line.\n');
 });
 
 test('guidanceFor gives null when any level is missing', () => {
-  assert.equal(guidanceFor(null, 'review', 'code', CONFIG), null);
+  assert.equal(guidanceFor(null, 'review', 'code', () => CONFIG), null);
   for (const yaml of ['', 'delegate:\n', 'delegate:\n  review:\n', 'delegate:\n  handoff:\n    apply:\n      guidance: x\n',
     'delegate:\n  review:\n    plan:\n      guidance: x\n', 'delegate:\n  review:\n    code:\n      other: x\n', 'delegate:\n  review:\n    code: {}\n']) {
-    assert.equal(guidanceFor(withDelegate(yaml), 'review', 'code', CONFIG), null, yaml);
+    assert.equal(guidanceFor(withDelegate(yaml), 'review', 'code', () => CONFIG), null, yaml);
   }
 });
 
@@ -107,17 +110,17 @@ test('guidanceFor rejects a bad level, naming the file and the dotted key', () =
     ['delegate:\n  review:\n    code:\n      guidance: 42\n', 'delegate.review.code.guidance must be a string'],
   ];
   for (const [yaml, key] of cases) {
-    assert.throws(() => guidanceFor(withDelegate(yaml), 'review', 'code', CONFIG),
+    assert.throws(() => guidanceFor(withDelegate(yaml), 'review', 'code', () => CONFIG),
       (error) => error instanceof UsageError && error.message.includes(CONFIG) && error.message.includes(key), yaml);
   }
 });
 
 test('guidanceFor ignores a bad entry for another intent or the other strategy', () => {
-  assert.equal(guidanceFor(withDelegate('delegate:\n  review:\n    plan:\n      guidance: [a, b]\n'), 'review', 'code', CONFIG), null);
-  assert.equal(guidanceFor(withDelegate('delegate:\n  handoff: 42\n'), 'review', 'code', CONFIG), null);
+  assert.equal(guidanceFor(withDelegate('delegate:\n  review:\n    plan:\n      guidance: [a, b]\n'), 'review', 'code', () => CONFIG), null);
+  assert.equal(guidanceFor(withDelegate('delegate:\n  handoff: 42\n'), 'review', 'code', () => CONFIG), null);
 });
 
-test('an invalid config is a usage error that names the file and the bad value', () => {
+test('an invalid config is a usage error that names the file and the bad value', async () => {
   const cases: [string, string][] = [
     ['version: 3\ndelegate: { resolvers: [unclosed\n', 'not YAML'],
     ['- just\n- a list\n', 'mapping'],
@@ -133,18 +136,18 @@ test('an invalid config is a usage error that names the file and the bad value',
     ['version: 3\ndelegate:\n  resolvers:\n    - 7\n', '7'],
   ];
   for (const [text, named] of cases) {
-    assert.throws(() => readConfig(depsWith(text)),
+    await assert.rejects(configIn(depsWith(text)),
       (error) => error instanceof UsageError && error.message.includes(HOME_CONFIG) && error.message.includes(named), text);
   }
 });
 
-test('a config.json with no config.yaml is not read', () => {
-  const deps = { env: {}, io: fakeIo({ files: { '/home/u/.config/lets/config.json': '{"version":1}' } }) };
-  assert.equal(readConfig(deps), null);
+test('a config.json with no config.yaml is not read', async () => {
+  const deps = { env: {}, cwd: '/repo', io: fakeIo({ files: { '/home/u/.config/lets/config.json': '{"version":1}' } }) };
+  assert.equal(await configIn(deps), null);
 });
 
-test('a config that is not YAML says where the parser stopped, in one sentence', () => {
-  assert.throws(() => readConfig(depsWith('version: 3\ndelegate: { resolvers: [/x\n')),
+test('a config that is not YAML says where the parser stopped, in one sentence', async () => {
+  await assert.rejects(configIn(depsWith('version: 3\ndelegate: { resolvers: [/x\n')),
     (error) => error instanceof UsageError && /line 3, column 1\.$/.test(error.message));
 });
 
@@ -164,12 +167,11 @@ test('parseDocument rejects a document that is not a version 3 mapping, naming t
   }
 });
 
-test('parseConfig drops a go key, even with a question mode lets does not know', () => {
-  const text = 'version: 3\ndelegate:\n  resolvers: [t3]\ngo:\n  questions: loud\n';
-  assert.deepEqual(parseConfig(text, CONFIG), { version: 3, delegate: { resolvers: ['t3'] } });
+test('checkConfig drops a go key, even with a question mode lets does not know', () => {
+  assert.deepEqual(withDelegate('delegate:\n  resolvers: [t3]\ngo:\n  questions: loud\n'), { version: 3, delegate: { resolvers: ['t3'] } });
 });
 
-const questionsIn = (yaml: string) => questionModeFor(parseDocument(`version: 3\n${yaml}`, CONFIG), CONFIG);
+const questionsIn = (yaml: string) => questionModeFor(parseDocument(`version: 3\n${yaml}`, CONFIG), () => CONFIG);
 
 test('questionModeFor gives the question mode the config sets', () => {
   assert.equal(questionsIn('go:\n  questions: ask\n'), 'ask');
@@ -201,4 +203,126 @@ test('questionModeFor rejects a bad go or go.questions, naming the file and the 
     assert.throws(() => questionsIn(yaml),
       (error) => error instanceof UsageError && error.message.includes(CONFIG) && error.message.includes(named), yaml);
   }
+});
+
+const USER = '/home/u/.config/lets/config.yaml';
+const REPO = '/repo/.lets/config.yaml';
+// The two files merged, each document given as YAML text, or null for no file.
+const merged = (user: string | null, repo: string | null) => mergeDocuments(
+  { path: USER, document: user === null ? null : parseDocument(`version: 3\n${user}`, USER) },
+  { path: REPO, document: repo === null ? null : parseDocument(`version: 3\n${repo}`, REPO) },
+);
+
+test('mergeDocuments merges mappings key by key, at every depth', () => {
+  const { document } = merged('delegate:\n  review:\n    plan:\n      guidance: Prefer gpt.\n    code:\n      guidance: Prefer claude.\n',
+    'delegate:\n  review:\n    code:\n      guidance: Use gemini.\n');
+  assert.deepEqual(document, { version: 3, delegate: { review: { plan: { guidance: 'Prefer gpt.' }, code: { guidance: 'Use gemini.' } } } });
+});
+
+test('mergeDocuments lets a repository string, number or list replace the user\'s value whole', () => {
+  const { document } = merged('go:\n  questions: ask\nbacklog:\n  provider: jira\ndelegate:\n  resolvers: [t3, subagent]\n  review: { code: { guidance: x } }\n',
+    'go:\n  questions: auto\nbacklog: 7\ndelegate:\n  resolvers: [cli]\n  review: [a]\n');
+  assert.deepEqual(document, { version: 3, go: { questions: 'auto' }, backlog: 7, delegate: { resolvers: ['cli'], review: ['a'] } });
+});
+
+test('mergeDocuments keeps the user\'s value where the repository\'s key is null or absent', () => {
+  const { document } = merged('go:\n  questions: ask\ndelegate:\n  resolvers: [cli]\n', 'delegate:\n  resolvers: null\ngo: null\n');
+  assert.deepEqual(document, { version: 3, go: { questions: 'ask' }, delegate: { resolvers: ['cli'] } });
+});
+
+test('mergeDocuments gives the one document there is, or null for none', () => {
+  assert.deepEqual(merged('go:\n  questions: ask\n', null).document, { version: 3, go: { questions: 'ask' } });
+  assert.deepEqual(merged(null, 'go:\n  questions: auto\n').document, { version: 3, go: { questions: 'auto' } });
+  assert.equal(merged(null, null).document, null);
+});
+
+test('fileOf names the repository\'s lets config for a value that came from it', () => {
+  const { fileOf } = merged('delegate:\n  resolvers: [t3]\n', 'delegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: 42\n');
+  assert.equal(fileOf('delegate.resolvers'), REPO);
+  assert.equal(fileOf('delegate.review.code.guidance'), REPO);
+});
+
+test('fileOf names the repository\'s lets config below a value the repository replaced whole', () => {
+  const { fileOf } = merged('delegate:\n  review:\n    code:\n      guidance: x\n', 'delegate:\n  review: [a]\n');
+  assert.equal(fileOf('delegate.review.code.guidance'), REPO);
+});
+
+test('fileOf names the user\'s lets config for a value the user set, or that neither file sets', () => {
+  const { fileOf } = merged('delegate:\n  resolvers: [t3]\n', 'delegate:\n  review:\n    code:\n      guidance: x\n  resolvers: null\n');
+  assert.equal(fileOf('delegate.resolvers'), USER);
+  assert.equal(fileOf('delegate.review.plan.guidance'), USER);
+  assert.equal(fileOf('go.questions'), USER);
+  assert.equal(merged(null, null).fileOf('go.questions'), USER);
+});
+
+test('readLetsConfig reads the repository\'s lets config at the repository root, over the user\'s', async () => {
+  const t = commandDeps({ config: 'version: 3\ngo:\n  questions: ask\ndelegate:\n  resolvers: [t3]\n', repoConfig: 'version: 3\ngo:\n  questions: auto\n' });
+  const { document, fileOf } = await readLetsConfig(t.deps);
+  assert.deepEqual(document, { version: 3, go: { questions: 'auto' }, delegate: { resolvers: ['t3'] } });
+  assert.equal(fileOf('go.questions'), REPO);
+  assert.equal(fileOf('delegate.resolvers'), USER);
+});
+
+test('readLetsConfig asks git for the root of the folder it runs in', async () => {
+  const t = commandDeps({ repoConfig: 'version: 3\n' });
+  t.deps.cwd = '/repo/docs';
+  await readLetsConfig(t.deps);
+  assert.ok(t.io.calls.some(([cmd, args, opts]) => cmd === 'git' && args.join(' ') === 'rev-parse --show-toplevel' && opts.cwd === '/repo/docs'));
+});
+
+test('readLetsConfig reads only the user\'s lets config outside a Git repository', async () => {
+  const t = commandDeps({ config: 'version: 3\ngo:\n  questions: ask\n', repoConfig: 'version: 3\ngo:\n  questions: auto\n', notInRepo: true });
+  assert.deepEqual((await readLetsConfig(t.deps)).document, { version: 3, go: { questions: 'ask' } });
+});
+
+test('readLetsConfig reads only the user\'s lets config when the repository has none', async () => {
+  const t = commandDeps({ config: 'version: 3\ngo:\n  questions: ask\n' });
+  const { document, fileOf } = await readLetsConfig(t.deps);
+  assert.deepEqual(document, { version: 3, go: { questions: 'ask' } });
+  assert.equal(fileOf('go.questions'), USER);
+});
+
+test('readLetsConfig gives a null document when there is neither file', async () => {
+  assert.equal((await readLetsConfig(commandDeps().deps)).document, null);
+});
+
+test('readLetsConfig rejects a repository\'s lets config with the old version, naming it', async () => {
+  const t = commandDeps({ config: 'version: 3\n', repoConfig: 'version: 2\n' });
+  await assert.rejects(readLetsConfig(t.deps),
+    (error) => error instanceof UsageError && error.message.includes(REPO) && /version must be 3/.test(error.message));
+});
+
+test('readLetsConfig rejects a lets config that cannot be read, naming it', async () => {
+  for (const path of [REPO, USER]) {
+    const t = commandDeps({ config: 'version: 3\n', repoConfig: 'version: 3\n' });
+    const readFile = t.io.readFile;
+    t.io.readFile = (at) => {
+      if (at === path) throw Object.assign(new Error(`EISDIR: illegal operation on a directory, read`), { code: 'EISDIR' });
+      return readFile(at);
+    };
+    await assert.rejects(readLetsConfig(t.deps),
+      (error) => error instanceof UsageError && error.message.includes(path) && /EISDIR/.test(error.message), path);
+  }
+});
+
+test('fileOf names the repository\'s lets config for a mapping it set where a value is expected', () => {
+  const { fileOf } = merged(null, 'go:\n  questions: {}\n');
+  assert.equal(fileOf('go.questions'), REPO);
+  assert.equal(merged('go:\n  questions: ask\n', 'go:\n  questions: { a: 1 }\n').fileOf('go.questions'), REPO);
+});
+
+test('fileOf names the user\'s lets config for a value the user set under a mapping the repository merged into', () => {
+  const { fileOf } = merged('go:\n  questions: loud\n', 'go: {}\n');
+  assert.equal(fileOf('go.questions'), USER);
+});
+
+test('mergeDocuments keeps a recursive alias in the repository\'s lets config without looping', () => {
+  const { document, fileOf } = merged('go:\n  questions: auto\n', 'go:\n  questions: ask\nunused: &u { self: *u }\n');
+  assert.equal((document?.go as Record<string, unknown>).questions, 'ask');
+  assert.equal(fileOf('go.questions'), REPO);
+});
+
+test('mergeDocuments merges a recursive alias the user\'s lets config shares a key with, without looping', () => {
+  const { document } = merged('unused: &a { self: *a, x: 1 }\n', 'unused: &u { self: *u }\n');
+  assert.equal((document?.unused as Record<string, unknown>).x, 1);
 });

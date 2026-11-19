@@ -80,9 +80,13 @@ subagent, the default, starts none. lets asks each resolver your config
 lists under delegate.resolvers, in order, and stops at the first that does
 not decline. Nothing is run from PATH.
 
-The config is $XDG_CONFIG_HOME/lets/config.yaml, or
-~/.config/lets/config.yaml when XDG_CONFIG_HOME is unset or empty. You
-write it by hand:
+The config is two files, which take the same keys. The user's lets config
+is $XDG_CONFIG_HOME/lets/config.yaml, or ~/.config/lets/config.yaml when
+XDG_CONFIG_HOME is unset or empty. The repository's lets config is
+.lets/config.yaml at the repository root. The repository's value wins, leaf
+by leaf: mappings merge, and any other value, such as the delegate.resolvers
+list, replaces the user's whole. A null or absent key keeps the user's
+value. You write both by hand:
 
   version: 3
   delegate:
@@ -200,9 +204,11 @@ Exit codes:
   4  the outcome is unknown, such as no reply from the harness`;
 
 const GO_QUESTIONS_HELP = `
-Reads go.questions from the lets config: $XDG_CONFIG_HOME/lets/config.yaml,
-or ~/.config/lets/config.yaml when XDG_CONFIG_HOME is unset or empty.
-go.questions is ask or auto:
+Reads go.questions from the lets config, which is two files: the user's
+config.yaml, $XDG_CONFIG_HOME/lets/config.yaml, or ~/.config/lets/config.yaml
+when XDG_CONFIG_HOME is unset or empty, and the repository's
+.lets/config.yaml at the repository root. The repository's value wins, leaf
+by leaf. go.questions is ask or auto:
 
   version: 3
   go:

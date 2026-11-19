@@ -1,11 +1,10 @@
 // Which resolver answers a delegation: the first in the chain, the resolvers
-// the user's delegate config names, that does not decline. With no config,
+// the lets config in effect names, that does not decline. With no config,
 // or a config with no chain, the chain is the default, subagent. Every
 // resolver is built into lets, so nothing is run or looked up on PATH.
 import type { Adapter, Handle } from '../resolvers/kit/adapter.ts';
 import type { Deps } from '../io.ts';
-import { configPath } from './config.ts';
-import type { Config } from './config.ts';
+import type { Config, FileOf } from './config.ts';
 import { exitCodeOf, Refused, SpawnError, UsageError } from '../resolvers/kit/errors.ts';
 import { FAMILIES, parseModel } from '../resolvers/kit/families.ts';
 
@@ -13,8 +12,9 @@ import { FAMILIES, parseModel } from '../resolvers/kit/families.ts';
 // handoff, and one that may write files, and is waited for, for a step.
 export type Kind = 'run' | 'start' | 'step';
 
-// config: the user's delegate config, or null when there is none.
-export type LookupDeps = Pick<Deps, 'env' | 'io' | 'resolvers'> & { config: Config | null };
+// config: the delegate config in effect, or null when there is none.
+// fileOf: the file that holds each of its values.
+export type LookupDeps = Pick<Deps, 'env' | 'io' | 'resolvers'> & { config: Config | null; fileOf: FileOf };
 
 // The adapters to ask, in order.
 export function chain({ config, resolvers }: Pick<LookupDeps, 'config' | 'resolvers'>): Adapter[] {
@@ -30,7 +30,7 @@ export async function pick(kind: Kind, deps: LookupDeps): Promise<Adapter> {
     if (kind !== 'run' && adapter[kind] === undefined) continue;
     if (await inAdapter(async () => adapter.detect())) return adapter;
   }
-  throw new UsageError(`every resolver declined. ${configPath(deps)} lists the resolvers to ask; add subagent to fall back to a subagent.`);
+  throw new UsageError(`every resolver declined. ${deps.fileOf('delegate.resolvers')} lists the resolvers to ask; add subagent to fall back to a subagent.`);
 }
 
 // Throws a UsageError when models is empty, or naming the first that is not

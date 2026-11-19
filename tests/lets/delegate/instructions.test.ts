@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/instructions.ts';
-import { commandDeps, CONFIG } from './fixtures/command-deps.ts';
+import { commandDeps, CONFIG, REPO_CONFIG } from './fixtures/command-deps.ts';
 import type { FakeResolver } from './fixtures/command-deps.ts';
 
 const review = { strategy: 'review', for: 'code' } as const;
@@ -163,4 +163,27 @@ test('with no config, step instructions answer as the default with no options', 
   const t = commandDeps();
   assert.equal(await run({ strategy: 'step', for: 'build' }, t.deps), 0);
   assert.deepEqual(JSON.parse(t.stdout()), { strategy: 'step', for: 'build', resolver: 'subagent', options: [], guidance: null });
+});
+
+test('the repository\'s guidance for one intent wins, and the user\'s guidance for another stays', async () => {
+  const user = 'version: 3\ndelegate:\n  review:\n    plan:\n      guidance: Prefer gpt.\n    code:\n      guidance: Prefer claude.\n';
+  const repo = 'version: 3\ndelegate:\n  review:\n    code:\n      guidance: Use gemini.\n';
+  const code = commandDeps({ config: user, repoConfig: repo });
+  assert.equal(await run(review, code.deps), 0);
+  assert.equal(JSON.parse(code.stdout()).guidance, 'Use gemini.');
+  const plan = commandDeps({ config: user, repoConfig: repo });
+  assert.equal(await run({ strategy: 'review', for: 'plan' }, plan.deps), 0);
+  assert.equal(JSON.parse(plan.stdout()).guidance, 'Prefer gpt.');
+});
+
+test('malformed guidance in the repository\'s lets config is exit 2, naming that file and the key', async () => {
+  const t = commandDeps({ config: 'version: 3\n', repoConfig: 'version: 3\ndelegate:\n  review:\n    code:\n      guidance: 42\n' });
+  assert.equal(await run(review, t.deps), 2);
+  assert.match(t.stderr(), new RegExp(`${REPO_CONFIG}.*delegate\\.review\\.code\\.guidance`));
+});
+
+test('outside a Git repository, instructions read only the user\'s lets config', async () => {
+  const t = commandDeps({ config: 'version: 3\ndelegate:\n  review:\n    code:\n      guidance: Prefer claude.\n', repoConfig: 'version: 3\ndelegate:\n  review:\n    code:\n      guidance: Use gemini.\n', notInRepo: true });
+  assert.equal(await run(review, t.deps), 0);
+  assert.equal(JSON.parse(t.stdout()).guidance, 'Prefer claude.');
 });
