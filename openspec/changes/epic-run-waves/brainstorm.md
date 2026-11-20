@@ -23,4 +23,4 @@
 - Added: the command `lets backlog waves --only <keys>` (D8). The packet's Relevant code already names `lets/src/backlog/commands.ts`; the command gives placement Node tests and lets #286 reuse its output.
 - Added: the glossary entry *wave* (D2), committed on this branch on its own.
 
-Confirmed by user: no
+Confirmed by user: yes
