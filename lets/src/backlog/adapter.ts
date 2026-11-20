@@ -60,7 +60,9 @@ export type Status = 'Todo' | 'In Progress';
 export type Claim = { id: number; login: string; token: string };
 
 export type Adapter = {
-  listCandidates(): Promise<Candidate[]>;
+  // blocked: also read the open, unassigned items that open issues block,
+  // and give each its blockers. Without it, every blockers is null.
+  listCandidates(options?: { blocked?: boolean }): Promise<Candidate[]>;
   readItem(key: string): Promise<Item>;
   searchTitles(words: string): Promise<Ref[]>;
   // The login of each user assigned to the item.

@@ -141,18 +141,30 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
   };
 
   return {
-    async listCandidates() {
+    async listCandidates({ blocked = false } = {}) {
       const items = await projectItems();
       // Only a free issue can be ready, so the search for them gives each
       // one's creation time, with no other call.
       const free = await read(gh, ['issue', 'list', '--search', 'is:open no:assignee -is:blocked', '--limit', FREE_LIMIT, '--json', 'number,createdAt']) as { number: number; createdAt: string }[];
+      const unblocked = new Set(free.map(({ number }) => number));
       const created = new Map(free.map(({ number, createdAt }) => [number, createdAt]));
+      const blockers = new Map<number, string[] | null>();
+      if (blocked) {
+        const found = await read(gh, ['issue', 'list', '--search', 'is:open no:assignee is:blocked', '--limit', FREE_LIMIT, '--json', 'number,createdAt,blockedBy']) as { number: number; createdAt: string; blockedBy: unknown }[];
+        for (const { number, createdAt, blockedBy } of found) {
+          if (!created.has(number)) created.set(number, createdAt);
+          const open = nodes(blockedBy).filter((b) => b.state === 'OPEN').map((b) => named(b.number as number, b.url));
+          // A blocker in another repository can share a key with an issue
+          // here, so it must never count as met.
+          blockers.set(number, open.every(({ key, label }) => label === `#${key}`) ? open.map(({ key }) => key) : null);
+        }
+      }
       // In issue-number order, so issues created at the same time rank
       // lowest number first.
       const contents = items.map((item) => ({ item, content: item.content as { number: number; title: string; url: string } }));
       return contents.sort((a, b) => a.content.number - b.content.number).map(({ item, content }): Candidate => ({
         ...named(content.number, content.url), title: content.title, url: content.url, ...fields(item),
-        free: created.has(content.number), blockers: null, created: created.get(content.number) ?? '',
+        free: unblocked.has(content.number), blockers: blockers.get(content.number) ?? null, created: created.get(content.number) ?? '',
       }));
     },
 
