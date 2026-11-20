@@ -579,6 +579,20 @@ fails in CI until someone enters the dev shell on its branch and commits.
 2. Run `lets sync`.
 3. Commit `mise.toml` and `mise.lock` with what `lets sync` wrote.
 
+### Automate updates
+
+A GitHub Actions workflow can run those steps every week and open a pull
+request with the result. Save it as `.github/workflows/update-lets-spec.yml`:
+
+```yaml
+name: update Let's Spec
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # Mondays at 06:00 UTC
+  workflow_dispatch:
+```
+
 ## 🛠️ Development
 
 This section is for you if you want to work on Let's Spec itself.

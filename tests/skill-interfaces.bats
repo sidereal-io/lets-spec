@@ -3653,3 +3653,47 @@ EXPECTED
   [[ "$rebuttals" == *'**Critical**'*'stays open'*'**Moderate**'*'stays open'* ]] ||
     { echo 'unresolved rebuttals do not follow the verdict rules'; false; }
 }
+
+# readme_automate_updates: the README's Automate updates section, without
+# its heading.
+readme_automate_updates() {
+  awk '/^### Automate updates$/ { on = 1; next } on && /^##+ / { exit } on' "$repo/README.md"
+}
+
+# automate_updates_workflow: the workflow in the Automate updates section's
+# yaml code block.
+automate_updates_workflow() {
+  readme_automate_updates | awk '/^```yaml$/ { on = 1; next } on && /^```$/ { exit } on'
+}
+
+@test "Automate updates follows With mise in the README's Updating section" {
+  local headings
+  headings="$(awk '/^## 🔄 Updating$/ { on = 1; next } on && /^## / { exit } on && /^### /' "$repo/README.md")"
+  grep -A1 -xF '### With mise' <<<"$headings" | tail -n1 | grep -qxF '### Automate updates' ||
+    { echo "Updating's headings are: $headings"; false; }
+}
+
+@test "Automate updates holds exactly one yaml code block" {
+  local count
+  count="$(readme_automate_updates | grep -cxF '```yaml' || true)"
+  [ "$count" -eq 1 ] || { echo "Automate updates holds $count yaml code blocks"; false; }
+}
+
+@test "Automate updates' workflow is YAML that yq parses" {
+  automate_updates_workflow | yq -e '.' >/dev/null ||
+    { echo "yq cannot parse the workflow"; false; }
+}
+
+@test "Automate updates' workflow runs weekly, on Mondays at 06:00 UTC" {
+  local workflow
+  workflow="$(automate_updates_workflow)"
+  [ "$(yq '.on.schedule | length' <<<"$workflow")" = 1 ] ||
+    { echo "the workflow does not have exactly one schedule"; false; }
+  [ "$(yq '.on.schedule[0].cron' <<<"$workflow")" = '0 6 * * 1' ] ||
+    { echo "the schedule is not 0 6 * * 1"; false; }
+}
+
+@test "Automate updates' workflow can be run by hand" {
+  [ "$(automate_updates_workflow | yq '.on | has("workflow_dispatch")')" = true ] ||
+    { echo "the workflow has no workflow_dispatch trigger"; false; }
+}
