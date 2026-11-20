@@ -4,9 +4,12 @@ Read this file only in a story run's child session: a `lets-go`
 session whose request starts with
 `You run a story run of a lets-go epic run:`.
 
-An epic run has picked the story, claimed it, routed it and entered its
-branch. This session walks the story's steps on that branch, and ends
-with one step report, which the epic run reads. This session is not an
+An epic run has picked the story, claimed it, routed it and checked its
+branch out in a git worktree of its own, which the story prompt names.
+That worktree is this session's repository root: run every command
+from it, and write no file outside it. This session walks the story's
+steps on that branch, and ends with one step report, which the epic
+run reads. This session is not an
 epic run: where a part of `SKILL.md` says what happens in an epic run,
 that is for the epic run's own session, not for this one.
 

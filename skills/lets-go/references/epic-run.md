@@ -189,12 +189,7 @@ as for any picked issue.
    the dependents and the switch to the default branch. Start no child
    session again for the story in this run.
 
-   After a built or stacked line, go back to the default branch, so the
-   next story's branch is created off it:
-
-   ```bash
-   git switch <default>
-   ```
+   After a built or stacked line, go on to the next step.
 
    After a lost claim, the run comes back from
    [Enter the branch](../SKILL.md#enter-the-branch), which has settled
@@ -236,7 +231,9 @@ as for any picked issue.
    wave that are not settled yet, and no other issue. A story of a later
    wave is not a candidate while the current wave holds a story not
    settled yet, whatever its Priority. Pass the keys of the current
-   wave's stories as `--only`, and every settled story as `--exclude`.
+   wave's stories as `--only`, and every story settled or started in
+   this epic run as `--exclude`: a started story is claimed, and its
+   child runs.
    Pass every met story as `--met-blockers`. Pass every story not
    settled yet that has its change's branch as `--started`, as *Start
    the epic run* found it. `lets backlog ready` keeps those assigned to
@@ -248,11 +245,18 @@ as for any picked issue.
    lets backlog ready --only 280,281 --exclude 279 --met-blockers 279 --started 281
    ```
 
-   With no story settled, pass no `--exclude`. With no met story, pass
-   no `--met-blockers`. With no such story, pass no `--started`. A
-   story with its branch that is assigned to someone else is passed, but
-   not listed: it gets `not built, assigned to <login>`, below. When
-   every story is settled, the result
+   Once #280's child has started, the next pick is:
+
+   ```bash
+   lets backlog ready --only 280,281 --exclude 279,280 --met-blockers 279 --started 281
+   ```
+
+   With no story settled or started, pass no `--exclude`. With no met
+   story, pass no `--met-blockers`. With no such story, pass no
+   `--started`. A story with its branch that is assigned to someone
+   else is passed, but not listed: it gets
+   `not built, assigned to <login>`, below. When every story is settled
+   or started, the result
    is `nothing-ready`, and you run no command. Rank, check the
    prerequisite and confirm the packet of each candidate as `next` does.
    Rank the stories again for every pick: a story built in this run can
@@ -280,7 +284,9 @@ as for any picked issue.
      [Enter the branch](../SKILL.md#enter-the-branch) and
      [Set the question mode](../SKILL.md#set-the-question-mode) in this
      session, then [Start the story run](#start-the-story-run), which
-     runs the story's steps in a child session.
+     starts the story's steps in a child session, and comes back to
+     *Pick the next story*. The epic run picks the next story at once,
+     so the stories of one wave run at the same time.
    - **`nothing-ready`:** settle each story of the current wave not
      settled yet, in the epic's order, with its `not built` line, as
      [Settle a story](#settle-a-story) says. Its reason is one of
@@ -348,14 +354,18 @@ The reason says why, such as `in another repository`,
 
 [Run the epic](#run-the-epic) runs this part for the story it picked,
 once [Set the question mode](../SKILL.md#set-the-question-mode) has set
-`<mode>`, on the story's branch `<name>`. It runs the story's steps in a
-child `lets-go` session. The child shares this checkout, and this
-session waits for it, so the two never write at the same time.
+`<mode>`, with the story's branch `<name>` checked out in its worktree
+`<path>`. It starts the story's steps in a child `lets-go` session, in
+the background, and goes back to [Run the epic](#run-the-epic) without
+waiting for the child. The child works only in `<path>`, so the
+children of a wave never write in the same checkout. The epic run's own
+files for the story, its prompt, answers, report and meta files, stay
+in this checkout.
 
 1. **Write the story prompt.** Copy the frame below to
-   `.workspace/lets-go/<name>-story-prompt.md`, and fill in each
-   `<...>`. `<schema>`, `<route line>` and `<mode>` are the ones
-   [Enter the branch](../SKILL.md#enter-the-branch),
+   `.workspace/lets-go/<name>-story-prompt.md` in this checkout, and
+   fill in each `<...>`. `<schema>`, `<route line>` and `<mode>` are
+   the ones [Enter the branch](../SKILL.md#enter-the-branch),
    [Route](../SKILL.md#route) and
    [Set the question mode](../SKILL.md#set-the-question-mode) set for
    the story. For a stacked story only, put the `## Stack` section of
@@ -372,9 +382,11 @@ session waits for it, so the two never write at the same time.
    ## What to run
 
    Invoke the `lets-go` skill for this story run, and stop where it
-   stops. The epic run has already claimed #<i>, routed it and entered
-   the branch `<name>`. Claim nothing, route nothing, and stay on
-   `<name>`. Walk the step table, and run each step that is not done.
+   stops. The epic run has already claimed #<i>, routed it and checked
+   the branch `<name>` out in the worktree `<path>`, which is your
+   checkout and repository root. Claim nothing, route nothing, stay on
+   `<name>`, and work only in `<path>`. Walk the step table, and run
+   each step that is not done.
 
    ## Questions
 
@@ -393,17 +405,19 @@ session waits for it, so the two never write at the same time.
    ```
 
 2. **Clear the story's answers and rounds,** so that the story run
-   starts with no answers and no counted rounds. Do this only before
-   the story's first child session in this run, never when
+   starts with no answers and no counted rounds. The answers file is in
+   this checkout. The child keeps its rounds files in the worktree,
+   which matters for a worktree an earlier run kept. Do this only
+   before the story's first child session in this run, never when
    [Relay a story run's questions](#relay-a-story-runs-questions)
    starts the child again.
 
    ```bash
    rm -f .workspace/lets-go/<name>-story-answers.yaml \
-     .workspace/lets-go/<name>-plan-rounds.txt \
-     .workspace/lets-go/<name>-review-plan-rounds.txt \
-     .workspace/lets-go/<name>-build-rounds.txt \
-     .workspace/lets-go/<name>-review-build-rounds.txt
+     <path>/.workspace/lets-go/<name>-plan-rounds.txt \
+     <path>/.workspace/lets-go/<name>-review-plan-rounds.txt \
+     <path>/.workspace/lets-go/<name>-build-rounds.txt \
+     <path>/.workspace/lets-go/<name>-review-build-rounds.txt
    ```
 
 3. **Ask what can run.** From the repo root, run:
@@ -420,22 +434,39 @@ session waits for it, so the two never write at the same time.
    [Run a step](../SKILL.md#run-a-step) ranks a step's: the guidance
    first, then the order the options came in. When `options` is empty,
    pass your own family as the one model.
-4. **Run the child,** with one `--model` per ranked option, best first:
+4. **Start the child,** with one `--model` per ranked option, best
+   first:
 
    ```bash
-   lets delegate step run --for story --name <name>-story \
+   lets delegate step start --for story --name <name>-story \
+     --checkout <path> \
      --prompt-file .workspace/lets-go/<name>-story-prompt.md \
-     --effort high --model <first> --model <second> \
-     > .workspace/lets-go/<name>-story-report.json 2> .workspace/lets-go/<name>-story-meta.txt
+     --report-file .workspace/lets-go/<name>-story-report.json \
+     --meta-file .workspace/lets-go/<name>-story-meta.txt \
+     --effort high --model <first> --model <second>
+   ```
+
+   It starts the child in the background, prints one JSON line with the
+   child's name and process id, and returns at once. When the child
+   ends, its report is in the report file, and its record line or its
+   error in the meta file. If the command exits non-zero, show the user
+   its stderr, and stop, as
+   [A stop in an epic run](#a-stop-in-an-epic-run) says: the story's
+   reason is its stderr. Otherwise list the child as running:
+
+   ```bash
+   echo '<i> <name> running' >> .workspace/lets-go/epic-<parent>-children.txt
    ```
 
    A story run may take up to 600 minutes. The epic run prints none of
    the child's `Skipped`, `Done` or `Failed` lines: they stay in the
    child session, which is kept when it does not finish. The user sees
-   only the epic run's own lines: the `Picked` or `Resumed` line, the
-   `Stacks on` line, the questions it relays and their answers, and the
-   story's line.
-5. **Act on its exit code:**
+   only the epic run's own lines: the `Picked` or `Resumed` lines, the
+   `Stacks on` lines, the `Questions` lines, the questions it relays and
+   their answers, and the stories' lines.
+5. **Go back to [Run the epic](#run-the-epic),** which picks the next
+   story at once, without waiting for the child.
+6. **Once the child has ended, act on its exit code:**
    - **3:** no child session can start here. Print:
 
      ```text

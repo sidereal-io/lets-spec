@@ -254,13 +254,13 @@ says_exit_3() {
 
 # lets-go's terms.md copies the glossary word for word, and the glossary
 # names the steps as lets delegate step --for takes them, not as a command.
-@test "each lets delegate review, handoff or step the prose names is followed by instructions or run" {
-  run bash -c "$(declare -f prose); repo='$repo'; prose | grep -vF '/lets-go/references/terms.md' | xargs grep -ohE 'lets delegate (review|handoff|step)( [^ \`]+)?' | grep -vE 'lets delegate (review|handoff|step) (instructions|run)$'"
+@test "each lets delegate review, handoff or step the prose names is followed by instructions or run, or a step by start or wait" {
+  run bash -c "$(declare -f prose); repo='$repo'; prose | grep -vF '/lets-go/references/terms.md' | xargs grep -ohE 'lets delegate (review|handoff|step)( [^ \`]+)?' | grep -vE 'lets delegate ((review|handoff|step) (instructions|run)|step (start|wait))$'"
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
-@test "the docs name lets delegate review, handoff or step only with instructions or run" {
-  run bash -c "grep -ohE 'lets delegate (review|handoff|step)( [^ \`]+)?' '$repo/README.md' '$repo'/docs/*.md | grep -vE 'lets delegate (review|handoff|step) (instructions|run)$'"
+@test "the docs name lets delegate review, handoff or step only with instructions or run, or a step with start or wait" {
+  run bash -c "grep -ohE 'lets delegate (review|handoff|step)( [^ \`]+)?' '$repo/README.md' '$repo'/docs/*.md | grep -vE 'lets delegate ((review|handoff|step) (instructions|run)|step (start|wait))$'"
   [ "$status" -eq 1 ] || { echo "$output"; false; }
 }
 
@@ -2375,7 +2375,7 @@ epic_run_file() {
   part="$(part_section 'Run the epic')"
   for phrase in \
     'Run the third case, `next`, of [Find the source of demand](../SKILL.md#find-the-source-of-demand)' \
-    "Pass the keys of the current wave's stories as \`--only\`, and every settled story as \`--exclude\`" \
+    "Pass the keys of the current wave's stories as \`--only\`, and every story settled or started in this epic run as \`--exclude\`" \
     'lets backlog ready --only 280,281 --exclude 279' \
     'Rank the stories again for every pick'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
@@ -2481,12 +2481,9 @@ epic_run_file() {
     { echo "it said: $line"; false; }
 }
 
-@test "an epic run settles a built story with its pull request's URL, then switches to the default branch" {
-  local part
-  part="$(part_section 'Run the epic')"
+@test "an epic run settles a built story with its pull request's URL" {
   grep -qxF '#<story> <story-name>: <pr-url>' <<<"$(text_block_lines 'Settle a story' "$(epic_run_file)")" ||
     { echo "Settle a story has no text block with a built story's line"; false; }
-  grep -qF 'git switch <default>' <<<"$part" || { echo "Run the epic does not switch to the default branch"; false; }
 }
 
 @test "an epic run ends by printing every story's line" {
@@ -4441,8 +4438,8 @@ story_prompt_block() {
   for phrase in 'You run a story run of a lets-go epic run: #<i>, for the change <name>, under #<parent>.' \
     'Issue: #<i>, <issue-url>. Branch: <name>. Schema: <schema>. <route line>' \
     'The question mode is <mode>.' \
-    'The epic run has already claimed #<i>, routed it and entered the branch `<name>`' \
-    'Claim nothing, route nothing, and stay on `<name>`' \
+    'The epic run has already claimed #<i>, routed it and checked the branch `<name>` out in the worktree `<path>`' \
+    'Claim nothing, route nothing, stay on `<name>`, and work only in `<path>`' \
     'Invoke the `lets-go` skill' '## What to run' '## Questions' '## The report'; do
     grep -qF -- "$phrase" <<<"$block" || { echo "the story prompt does not say: $phrase"; false; }
   done
@@ -4462,7 +4459,7 @@ story_prompt_block() {
   local section phrase
   section="$(skill_section lets-go 'Start the story run')"
   section="$(sed 's/ \\ / /g' <<<"$section")"
-  for phrase in 'rm -f .workspace/lets-go/<name>-story-answers.yaml .workspace/lets-go/<name>-plan-rounds.txt .workspace/lets-go/<name>-review-plan-rounds.txt .workspace/lets-go/<name>-build-rounds.txt .workspace/lets-go/<name>-review-build-rounds.txt' \
+  for phrase in 'rm -f .workspace/lets-go/<name>-story-answers.yaml <path>/.workspace/lets-go/<name>-plan-rounds.txt <path>/.workspace/lets-go/<name>-review-plan-rounds.txt <path>/.workspace/lets-go/<name>-build-rounds.txt <path>/.workspace/lets-go/<name>-review-build-rounds.txt' \
     "Do this only before the story's first child session in this run"; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Start the story run does not say: $phrase"; false; }
   done
@@ -4473,8 +4470,8 @@ story_prompt_block() {
   section="$(skill_section lets-go 'Start the story run' | sed 's/ \\ / /g')"
   for phrase in 'lets delegate step instructions --for story' \
     'as [Run a step](../SKILL.md#run-a-step) ranks a step'"'"'s' \
-    'lets delegate step run --for story --name <name>-story --prompt-file .workspace/lets-go/<name>-story-prompt.md --effort high' \
-    '> .workspace/lets-go/<name>-story-report.json 2> .workspace/lets-go/<name>-story-meta.txt'; do
+    'lets delegate step start --for story --name <name>-story --checkout <path> --prompt-file .workspace/lets-go/<name>-story-prompt.md' \
+    '--report-file .workspace/lets-go/<name>-story-report.json --meta-file .workspace/lets-go/<name>-story-meta.txt --effort high'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Start the story run does not say: $phrase"; false; }
   done
 }
@@ -4812,4 +4809,47 @@ readme_step_returns() {
   done
   [[ "$section" == *'git worktree list --porcelain'*'git worktree add .workspace/lets-go/worktrees/<name> <name>'* ]] ||
     { echo "The story's worktree does not look for a worktree before it adds one"; false; }
+}
+
+@test "parallel: Start the story run starts the child in the background, in the story's worktree" {
+  local section phrase
+  section="$(skill_section lets-go 'Start the story run' | sed 's/ \\ / /g')"
+  for phrase in 'lets delegate step start --for story --name <name>-story --checkout <path> --prompt-file .workspace/lets-go/<name>-story-prompt.md --report-file .workspace/lets-go/<name>-story-report.json --meta-file .workspace/lets-go/<name>-story-meta.txt --effort high --model <first> --model <second>' \
+    "echo '<i> <name> running' >> .workspace/lets-go/epic-<parent>-children.txt" \
+    'without waiting for the child'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Start the story run does not say: $phrase"; false; }
+  done
+  ! grep -qF 'lets delegate step run --for story' <<<"$section" || { echo "Start the story run still waits for the child"; false; }
+  ! grep -qF 'git switch' <<<"$section" || { echo "Start the story run still switches"; false; }
+}
+
+@test "parallel: the story prompt names the worktree as the child's checkout" {
+  local block phrase
+  block="$(story_prompt_block)"
+  for phrase in 'checked the branch `<name>` out in the worktree `<path>`' 'work only in `<path>`'; do
+    grep -qF -- "$phrase" <<<"$block" || { echo "the story prompt does not say: $phrase"; false; }
+  done
+}
+
+@test "parallel: Start the story run clears the answers here and the rounds in the worktree" {
+  local section
+  section="$(skill_section lets-go 'Start the story run' | sed 's/ \\ / /g')"
+  grep -qF 'rm -f .workspace/lets-go/<name>-story-answers.yaml <path>/.workspace/lets-go/<name>-plan-rounds.txt <path>/.workspace/lets-go/<name>-review-plan-rounds.txt <path>/.workspace/lets-go/<name>-build-rounds.txt <path>/.workspace/lets-go/<name>-review-build-rounds.txt' <<<"$section" ||
+    { echo "Start the story run does not clear the answers file here and the rounds files in the worktree"; false; }
+}
+
+@test "parallel: Run the epic picks again at once, leaving out each story started in this run, and switches nothing" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in 'every story settled or started in this epic run as `--exclude`' \
+    'lets backlog ready --only 280,281 --exclude 279,280 --met-blockers 279' \
+    'picks the next story at once'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+  ! grep -qF 'git switch <default>' <<<"$part" || { echo "Run the epic still switches to the default branch"; false; }
+}
+
+@test "parallel: a story run's child takes the worktree as its repository root" {
+  sed -n '1,/^## /p' "$(story_run_file)" | tr -s '[:space:]' ' ' |
+    grep -qF "That worktree is this session's repository root" || { echo "references/story-run.md does not name the worktree as the root"; false; }
 }
