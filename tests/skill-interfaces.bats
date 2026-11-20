@@ -2326,6 +2326,29 @@ epic_run_file() {
     { echo "Run the epic does not stop on an empty epic"; false; }
 }
 
+@test "an epic run picks each story as next picks it" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    'Run the third case, `next`, of [Find the source of demand](../SKILL.md#find-the-source-of-demand)' \
+    "Pass the keys of the epic's stories in this repository as \`--only\`, and every settled story as \`--exclude\`" \
+    'lets backlog ready --only 279,280,281 --exclude 279' \
+    'Rank the stories again for every pick'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+  grep -qxF 'Picked #<i>: <title>, the next ready story under #<parent>.' <<<"$(text_block_lines 'Run the epic' "$(epic_run_file)")" ||
+    { echo "Run the epic has no text block with its Picked line"; false; }
+}
+
+@test "an epic run settles a sub-issue in another repository without passing it" {
+  local part
+  part="$(part_section 'Run the epic')"
+  grep -qF 'Never pass a sub-issue in another repository in `--only`' <<<"$part" ||
+    { echo "Run the epic does not keep other repositories out of --only"; false; }
+  grep -qF '`not built, in another repository`' <<<"$part" ||
+    { echo "Run the epic does not settle a sub-issue in another repository"; false; }
+}
+
 # long_lines <file>...: each line longer than 72 columns, as
 # <file>:<line>: <length>, the file under the skills folder. A column is one
 # code point: the count leaves out UTF-8 continuation bytes, so it holds in

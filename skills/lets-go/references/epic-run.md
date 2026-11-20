@@ -33,3 +33,56 @@ as for any picked issue.
    mkdir -p .workspace/lets-go
    : > .workspace/lets-go/epic-<parent>-lines.txt
    ```
+
+   Then settle each story whose `url` names another repository with
+   `not built, in another repository`, as
+   [Settle a story](#settle-a-story) says. Never pass a sub-issue in
+   another repository in `--only`: its key can name an issue of this
+   repository.
+2. **Pick the next story.** Run the third case, `next`, of
+   [Find the source of demand](../SKILL.md#find-the-source-of-demand),
+   with one narrowing: the candidates are the epic's stories that are in
+   this repository and not settled yet, and no other issue. Pass the
+   keys of the epic's stories in this repository as `--only`, and every
+   settled story as `--exclude`, such as
+   `lets backlog ready --only 279,280,281 --exclude 279`. With no story
+   settled, pass no `--exclude`. When every story is settled, the result
+   is `nothing-ready`, and you run no command. Rank, check the
+   prerequisite and confirm the packet of each candidate as `next` does.
+   Rank the stories again for every pick: a story built in this run can
+   change what is ready. On an error, act as
+   [Backlog errors](../SKILL.md#backlog-errors) says.
+3. On its result:
+   - **`picked`:** print:
+
+     ```text
+     Picked #<i>: <title>, the next ready story under #<parent>.
+     ```
+
+     That story is `<i>`, and `<story>` until it is settled. Go on from
+     the blocker read in [Check the issue](../SKILL.md#check-the-issue)
+     with it, as for an issue number. The story runs through
+     [Check the issue](../SKILL.md#check-the-issue),
+     [Route](../SKILL.md#route),
+     [Enter the branch](../SKILL.md#enter-the-branch),
+     [Set the question mode](../SKILL.md#set-the-question-mode) and
+     [Walk the step table](../SKILL.md#walk-the-step-table) in this
+     session. Each of its steps runs as
+     [Run a step](../SKILL.md#run-a-step) says. Start no other `lets-go`
+     session for the story.
+
+### Settle a story
+
+A story is settled once the epic run has given it its line. To settle a
+story, print its line, and append it to
+`.workspace/lets-go/epic-<parent>-lines.txt`. Print each line as the
+story settles, before the next `Picked` line. `<story-name>` is the part
+of the story's title before ` — `, or the whole title when it has none.
+
+A story that was not built gets this line:
+
+```text
+#<story> <story-name>: not built, <reason>
+```
+
+The reason says why, such as `in another repository`.
