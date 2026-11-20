@@ -21,6 +21,16 @@ test('a question without a recommendation has none', () => {
   assert.deepEqual(readReport(text), { outcome: 'needs-input', questions: [{ question: 'Which schema?' }] });
 });
 
+test('a question marked ask: true keeps the mark', () => {
+  const text = ending('outcome: needs-input\nquestions:\n  - question: Which schema?\n    recommendation: lets-minimal\n    ask: true\n');
+  assert.deepEqual(readReport(text), { outcome: 'needs-input', questions: [{ question: 'Which schema?', recommendation: 'lets-minimal', ask: true }] });
+});
+
+test('a question marked ask: false has no mark', () => {
+  const text = ending('outcome: needs-input\nquestions:\n  - question: Which schema?\n    ask: false\n');
+  assert.deepEqual(readReport(text), { outcome: 'needs-input', questions: [{ question: 'Which schema?' }] });
+});
+
 test('a needs-input report keeps its questions in order', () => {
   const text = ending('outcome: needs-input\nquestions:\n  - question: First?\n  - question: Second?\n    recommendation: yes\n');
   assert.deepEqual(readReport(text), { outcome: 'needs-input', questions: [{ question: 'First?' }, { question: 'Second?', recommendation: 'yes' }] });
@@ -70,6 +80,7 @@ const UNREADABLE: [string, string, string][] = [
   ['a question with no question', ending('outcome: needs-input\nquestions:\n  - recommendation: x\n'), 'question'],
   ['a question that is not a mapping', ending('outcome: needs-input\nquestions:\n  - Which?\n'), 'question'],
   ['a recommendation that is not text', ending('outcome: needs-input\nquestions:\n  - question: Which?\n    recommendation: [a]\n'), 'recommendation'],
+  ['an ask that is not a boolean', ending('outcome: needs-input\nquestions:\n  - question: Which?\n    ask: "yes"\n'), 'questions\\[0\\]\\.ask'],
   ['failed without a reason', ending('outcome: failed\n'), 'reason'],
 ];
 

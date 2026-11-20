@@ -162,8 +162,10 @@ lets-go session that walks one story's steps and ends with a step report.`;
 const STEP_HELP = `
 The session ends its final message with a step report: a fenced block
 tagged step-report, holding YAML. outcome is done, with evidence, a list of
-lines; needs-input, with questions, each with question and an optional
-recommendation; or failed, with reason.
+lines; needs-input, with questions, each with question, an optional
+recommendation and an optional ask: true, which marks a question to put to
+the user whatever the question mode; or failed, with reason. lets keeps
+"ask":true on the question it prints, and drops ask: false.
 
 stdout: the report as one JSON line, outcome first. lets adds date to a
 done report. A final message with no valid report is a failed report whose

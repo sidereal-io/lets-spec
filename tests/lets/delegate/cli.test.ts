@@ -307,6 +307,11 @@ test('step run --help gives the 120-minute default and --answers-file', async ()
   assert.match(text, /--answers-file <path>/);
 });
 
+test('step run --help names the optional ask on a question', async () => {
+  const text = (await lets('delegate', 'step', 'run', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /an optional ask: true/);
+});
+
 test('step run --help says a step has 120 minutes and a story 600', async () => {
   const text = (await lets('delegate', 'step', 'run', '--help')).stdout.replace(/\s+/g, ' ');
   assert.match(text, /--timeout-minutes <minutes> .*\(default: 120 for a step, 600 for a story\)/);

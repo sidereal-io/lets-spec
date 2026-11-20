@@ -91,6 +91,13 @@ test('a needs-input report is printed at exit 0, its questions in order', async 
   assert.deepEqual(report(t), { outcome: 'needs-input', questions: [{ question: 'Which schema?' }, { question: 'Split it?', recommendation: 'no' }] });
 });
 
+test('a question marked ask: true is printed with "ask":true, and one marked false with no ask', async () => {
+  const text = ending('outcome: needs-input\nquestions:\n  - question: Which schema?\n    ask: true\n  - question: Split it?\n    ask: false\n');
+  const t = withT3({ adapters: { t3: { step: { text } } } });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.deepEqual(report(t), { outcome: 'needs-input', questions: [{ question: 'Which schema?', ask: true }, { question: 'Split it?' }] });
+});
+
 test('a failed report from the session is printed at exit 0', async () => {
   const t = withT3({ adapters: { t3: { step: { text: ending('outcome: failed\nreason: tests fail on main\n') } } } });
   assert.equal(await run(options(), t.deps), 0);

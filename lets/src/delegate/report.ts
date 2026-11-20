@@ -4,8 +4,9 @@ import { parse } from 'yaml';
 import { UsageError } from '../resolvers/kit/errors.ts';
 
 // A question a step needs answered, with the answer it would pick, when it
-// has one.
-export type Question = { question: string; recommendation?: string };
+// has one. ask marks a question the caller asks the user whatever its
+// question mode; it is only ever true.
+export type Question = { question: string; recommendation?: string; ask?: true };
 
 // A failed report that lets wrote, because the session gave none it could
 // read, also holds the session's final message as message.
@@ -61,15 +62,21 @@ function checked(block: string | null): Report {
 }
 
 // One entry of a needs-input report's questions. A null recommendation is
-// none.
+// none, and ask: false is no mark.
 function question(entry: unknown, i: number): Question {
   if (!isObject(entry) || typeof entry.question !== 'string') {
     throw new Unreadable(`questions[${i}] must be a mapping with a question, a string`);
   }
-  const { recommendation } = entry;
-  if (recommendation === undefined || recommendation === null) return { question: entry.question };
-  if (typeof recommendation !== 'string') throw new Unreadable(`questions[${i}].recommendation must be a string`);
-  return { question: entry.question, recommendation };
+  const { recommendation, ask } = entry;
+  if (recommendation !== undefined && recommendation !== null && typeof recommendation !== 'string') {
+    throw new Unreadable(`questions[${i}].recommendation must be a string`);
+  }
+  if (ask !== undefined && typeof ask !== 'boolean') throw new Unreadable(`questions[${i}].ask must be true or false`);
+  return {
+    question: entry.question,
+    ...(typeof recommendation === 'string' && { recommendation }),
+    ...(ask === true && { ask }),
+  };
 }
 
 // A question from a needs-input report, and the user's answer to it.
