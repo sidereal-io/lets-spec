@@ -21,7 +21,7 @@ Every test goes in `tests/skill-interfaces.bats` and reads `skills/lets-go/`. Na
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [easy] The whole suite, the flake checks and the OpenSpec validation pass (verify: pnpm test && nix flake check && mise run check)
+- [x] 3.1 [easy] The whole suite, the flake checks and the OpenSpec validation pass (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test && nix flake check && mise run check passed)
 
 ## Deviations Ledger
 
