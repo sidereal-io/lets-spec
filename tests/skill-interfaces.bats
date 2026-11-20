@@ -4052,6 +4052,15 @@ step_prompt_file() {
   done
 }
 
+@test "the placeholders give the failed story of an epic run its own row, shown by its label" {
+  local section
+  section="$(skill_section lets-go 'Placeholders')"
+  grep -qF '| `<failed>` | The story whose run failed or stopped, as its key, in the line of a story that depends on it | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |' <<<"$section" ||
+    { echo "Placeholders has no row for <failed>"; false; }
+  grep -qF '`#<stopped-story>`, `#<failed>`,' <<<"$section" ||
+    { echo "Placeholders does not show #<failed> by its label"; false; }
+}
+
 @test "stack: Settle a story lists blockers on different branches among the reasons" {
   grep -qF '`blocked by #<a> and #<b>, on different branches`' <<<"$(skill_section lets-go 'Settle a story')" ||
     { echo "Settle a story does not list blockers on different branches among the reasons"; false; }
