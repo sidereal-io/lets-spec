@@ -621,9 +621,35 @@ of its own, `<path>`, even in a wave of one story, so the stories of a
 wave can run at the same time. The epic run's own checkout stays on
 `<default>` for the whole epic run. [Claim](#claim) creates the
 worktree of a story with no branch. For a story whose branch exists,
-here or on `origin`, create it:
+here or on `origin`, find or create it:
 
-1. When `origin` has the branch, fetch it, so that `git worktree add`
+1. Look for a worktree that has the branch checked out already. An
+   earlier epic run may have kept one, or the user may have made one:
+
+   ```bash
+   git worktree list --porcelain
+   ```
+
+   Each worktree is a group of lines, which starts with its
+   `worktree <path>` line. Find the group whose `branch` line is
+   `refs/heads/<name>`. When there is one, its path is `<path>`.
+   Check it for changes that are not committed, outside `.workspace/`:
+   staged, unstaged or untracked. Ignored files do not count.
+
+   ```bash
+   git -C <path> status --porcelain --untracked-files=all -- . ':(exclude).workspace'
+   ```
+
+   - **It prints nothing:** use that worktree for the story, and create
+     none. Go on to prepare it, below.
+   - **It prints a line:** say so, and stop, as
+     [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+     says: the story's reason is
+     `its worktree at <path> has changes that are not committed`.
+     Leave the worktree as it is, with its changes.
+
+   When there is none, go on to the next action.
+2. When `origin` has the branch, fetch it, so that `git worktree add`
    can create the local branch from `origin/<name>`. Then add the
    worktree. `<path>` is `.workspace/lets-go/worktrees/<name>`:
 

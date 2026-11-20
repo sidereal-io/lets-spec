@@ -4800,3 +4800,16 @@ readme_step_returns() {
   done
   grep -qxF '`<path>`' <<<"$(placeholder_rows | sed 's/^/`/; s/$/`/')" || { echo "the Placeholders table has no row for <path>"; false; }
 }
+
+@test "parallel: Enter the branch reuses a clean worktree that has the story's branch, and stops on one with changes" {
+  local section phrase
+  section="$(skill_section lets-go "The story's worktree")"
+  for phrase in 'git worktree list --porcelain' 'whose `branch` line is `refs/heads/<name>`' \
+    "git -C <path> status --porcelain --untracked-files=all -- . ':(exclude).workspace'" \
+    'use that worktree for the story, and create none' \
+    '`its worktree at <path> has changes that are not committed`' 'Leave the worktree as it is'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "The story's worktree does not say: $phrase"; false; }
+  done
+  [[ "$section" == *'git worktree list --porcelain'*'git worktree add .workspace/lets-go/worktrees/<name> <name>'* ]] ||
+    { echo "The story's worktree does not look for a worktree before it adds one"; false; }
+}
