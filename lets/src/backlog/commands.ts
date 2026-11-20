@@ -5,13 +5,14 @@
 // through deps.
 import { Command, CommanderError, InvalidArgumentError } from 'commander';
 import type { Deps } from '../io.ts';
-import type { Adapter } from './adapter.ts';
+import type { Adapter, Item } from './adapter.ts';
 import { BacklogError } from './adapter.ts';
 import type { Selection } from './config.ts';
 import { selectProvider } from './config.ts';
 import { claim, complete, itemView, ready, release } from './policy.ts';
 import type { Providers } from './providers.ts';
 import { PROVIDERS } from './providers.ts';
+import { placeWaves, relevantPaths } from './waves.ts';
 
 // The help text, after a first paragraph that says which backlog provider
 // is in use.
@@ -139,6 +140,29 @@ export async function run(argv: string[], deps: Pick<Deps, 'env' | 'io' | 'cwd' 
     .argument('<text>', 'the text, such as 149; put -- before text that starts with -')
     .action((text: string) => {
       answer = ({ provider }) => provider.parseKey(text) ?? { key: null, label: null };
+    });
+  command('waves', 'sort the named items into waves, after their blockers and overlapping paths')
+    .requiredOption('--only <keys>', 'the items to sort, in order, such as 283,285', keyList)
+    .action(({ only }: { only: string[] }) => {
+      work = async (adapter, _key, keys) => {
+        const named = [...new Set(only.map((text) => {
+          const [key] = keys([text]);
+          if (key === undefined) throw new BacklogError('not-found', `${text} is not a key of this backlog provider, so it names no item.`);
+          return key;
+        }))];
+        // One at a time, so the backend sees no burst of reads.
+        const items: Item[] = [];
+        for (const key of named) items.push(await adapter.readItem(key));
+        // A blocker counts only by its key and its label together: an issue
+        // in another repository can share a key with a named item.
+        const isNamed = ({ key, label }: { key: string; label: string }) => items.some((item) => item.key === key && item.label === label);
+        return {
+          waves: placeWaves(items.map(({ key, label, body, blockedBy }) => ({
+            key, label, paths: relevantPaths(body),
+            blockers: blockedBy.filter((b) => b.state === 'OPEN' && isNamed(b)).map((b) => b.key),
+          }))).map((stories) => ({ stories })),
+        };
+      };
     });
   command('claim', 'assign the issue to yourself and set it In Progress, when nobody has it')
     .argument('<i>', 'the item\'s key, such as 136', itemKey)

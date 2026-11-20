@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { run } from '../../../lets/src/backlog/commands.ts';
 import { overlap, placeWaves, relevantPaths } from '../../../lets/src/backlog/waves.ts';
+import type { Row } from './fixtures/fake-gh.ts';
+import { backlogDeps, fail, json, LOOKUP_ONE, REPO } from './fixtures/fake-gh.ts';
 
 // A packet body whose Relevant code list item is line.
 const packet = (line: string) => `## Context\n\n- **Outcome**: something\n${line}\n- **Not in scope**: \`other/file.ts\`\n`;
@@ -182,4 +185,98 @@ test('placeWaves gives an item behind a loop its first blocker in the loop', () 
   assert.deepEqual(placeWaves([item(7, ['a/seven.ts'], [8]), item(8, ['b/eight.ts'], [7]), item(9, ['c/nine.ts'], [8])]).at(-1), [
     waits(9, 8, 'blocked by #8, through a loop of blocked-by links'),
   ]);
+});
+
+const url = (n: number, repo = REPO) => `https://github.com/${repo}/issues/${n}`;
+// A blocker as gh issue view prints it, open unless said otherwise.
+const blocker = (n: number, { state = 'OPEN', repo = REPO } = {}) => ({ number: n, title: `story-${n}`, state, url: url(n, repo), repository: { nameWithOwner: repo } });
+// gh's answer to issue view <n>, for an issue whose Relevant code names paths.
+const view = (n: number, paths: string[], blockedBy: unknown[] = []): Row => [`issue view ${n} `, json({
+  number: n, title: `story-${n} — outcome`, url: url(n), state: 'OPEN', assignees: [], parent: null, subIssues: [], blockedBy,
+  body: `## Context\n\n- **Relevant code**: ${paths.length === 0 ? 'new' : paths.map((path) => `\`${path}\``).join(', ')} (*a section*)\n`,
+})];
+const backlog = (...views: Row[]) => backlogDeps([...LOOKUP_ONE, ...views, ['project item-list', json({ items: [], totalCount: 0 })]]);
+const keysOf = (out: { waves: { stories: { key: string }[] }[] }) => out.waves.map(({ stories }) => stories.map(({ key }) => key));
+
+test('waves prints two independent items in one wave', async () => {
+  const t = backlog(view(283, ['skills/lets-shape/SKILL.md']), view(285, ['lets/src/backlog/commands.ts']));
+  assert.equal(await run(['waves', '--only', '283,285'], t.deps), 0);
+  assert.equal(t.stdout(), '{"waves":[{"stories":[{"key":"283","label":"#283","waitsFor":null,"reason":null},{"key":"285","label":"#285","waitsFor":null,"reason":null}]}]}\n');
+});
+
+test('waves reads each named item once, in --only\'s order', async () => {
+  const t = backlog(view(283, ['a/one.ts']), view(285, ['b/two.ts']));
+  await run(['waves', '--only', '285,283,285'], t.deps);
+  assert.deepEqual(t.calls().filter((args) => args[1] === 'view').map((args) => args[2]), ['285', '283']);
+});
+
+test('waves holds a key named twice once', async () => {
+  const t = backlog(view(283, ['a/one.ts']));
+  await run(['waves', '--only', '283,283'], t.deps);
+  assert.deepEqual(keysOf(t.json()), [['283']]);
+});
+
+test('waves with no --only is a usage error', async () => {
+  const t = backlog();
+  assert.equal(await run(['waves'], t.deps), 2);
+  assert.equal(t.stdout(), '');
+});
+
+test('waves with an empty key is a usage error', async () => {
+  const t = backlog();
+  assert.equal(await run(['waves', '--only', '283,'], t.deps), 2);
+  assert.equal(t.stdout(), '');
+});
+
+test('waves on an item that does not exist is not-found', async () => {
+  const t = backlogDeps([
+    ...LOOKUP_ONE, view(283, ['a/one.ts']),
+    ['issue view 99999', fail('GraphQL: Could not resolve to an issue or pull request with the number of 99999. (repository.issue)')],
+    ['project item-list', json({ items: [], totalCount: 0 })],
+  ]);
+  assert.equal(await run(['waves', '--only', '283,99999'], t.deps), 1);
+  assert.equal(t.json().error, 'not-found');
+});
+
+test('waves on text that is not a key is not-found', async () => {
+  const t = backlog(view(283, ['a/one.ts']));
+  assert.equal(await run(['waves', '--only', '283,abc'], t.deps), 1);
+  assert.equal(t.json().error, 'not-found');
+});
+
+test('waves writes nothing', async () => {
+  const t = backlog(view(1, ['a/one.ts']), view(2, ['b/two.ts'], [blocker(1)]));
+  await run(['waves', '--only', '1,2'], t.deps);
+  assert.ok(t.calls().every((args) => ['api', 'issue view', 'project item-list'].some((read) => args.join(' ').startsWith(read))));
+});
+
+test('waves orders a chain of blockers', async () => {
+  const t = backlog(view(1, ['a/one.ts']), view(2, ['b/two.ts'], [blocker(1)]), view(3, ['c/three.ts'], [blocker(2)]));
+  await run(['waves', '--only', '1,2,3'], t.deps);
+  assert.deepEqual(keysOf(t.json()), [['1'], ['2'], ['3']]);
+  assert.deepEqual(t.json().waves[1].stories[0], { key: '2', label: '#2', waitsFor: { key: '1', label: '#1' }, reason: 'blocked by #1' });
+});
+
+test('waves orders nothing through an issue it does not name', async () => {
+  const t = backlog(view(1, ['a/one.ts']), view(3, ['c/three.ts'], [blocker(2)]));
+  await run(['waves', '--only', '1,3'], t.deps);
+  assert.deepEqual(keysOf(t.json()), [['1', '3']]);
+});
+
+test('waves does not count a closed blocker', async () => {
+  const t = backlog(view(1, ['a/one.ts']), view(2, ['b/two.ts'], [blocker(1, { state: 'CLOSED' })]));
+  await run(['waves', '--only', '1,2'], t.deps);
+  assert.deepEqual(keysOf(t.json()), [['1', '2']]);
+});
+
+test('waves does not count a blocker in another repository with the same number', async () => {
+  const t = backlog(view(7, ['a/seven.ts']), view(9, ['b/nine.ts'], [blocker(7, { repo: 'acme/lib' })]));
+  await run(['waves', '--only', '7,9'], t.deps);
+  assert.deepEqual(keysOf(t.json()), [['7', '9']]);
+});
+
+test('waves reads the paths from each item\'s Relevant code', async () => {
+  const t = backlog(view(283, ['skills/lets-go/references/shape.md']), view(287, ['skills/lets-go/references/shape.md']));
+  await run(['waves', '--only', '283,287'], t.deps);
+  assert.deepEqual(t.json().waves[1].stories[0].reason, 'both name skills/lets-go/references/shape.md');
 });
