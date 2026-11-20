@@ -65,8 +65,10 @@ export type Claim = { id: number; login: string; token: string };
 
 export type Adapter = {
   // blocked: also read the open, unassigned items that open issues block,
-  // and give each its blockers. Without it, every blockers is null.
-  listCandidates(options?: { blocked?: boolean }): Promise<Candidate[]>;
+  // and give each its blockers. started: also read the open items assigned
+  // to the signed-in user, mark each one mine, and give each its blockers.
+  // Without either, every blockers is null, and no item is mine.
+  listCandidates(options?: { blocked?: boolean; started?: boolean }): Promise<Candidate[]>;
   readItem(key: string): Promise<Item>;
   searchTitles(words: string): Promise<Ref[]>;
   // The login of each user assigned to the item.

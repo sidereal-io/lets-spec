@@ -111,10 +111,11 @@ export async function run(argv: string[], deps: Pick<Deps, 'env' | 'io' | 'cwd' 
     .option('--only <keys>', 'keep only these items, such as 191,192', keyList)
     .option('--exclude <keys>', 'leave these items out, such as 149', keyList)
     .option('--met-blockers <keys>', 'count these blockers as met, such as 279,280', keyList)
-    .action(({ only, exclude, metBlockers }: { only?: string[]; exclude?: string[]; metBlockers?: string[] }) => {
+    .option('--started <keys>', 'also list these items when they are assigned to you and Todo or In Progress, such as 281,282', keyList)
+    .action(({ only, exclude, metBlockers, started }: { only?: string[]; exclude?: string[]; metBlockers?: string[]; started?: string[] }) => {
       work = async (adapter, _key, keys) => ({
-        issues: ready(await adapter.listCandidates({ blocked: metBlockers !== undefined }), {
-          only: only && keys(only), exclude: exclude && keys(exclude), met: metBlockers && keys(metBlockers),
+        issues: ready(await adapter.listCandidates({ blocked: metBlockers !== undefined, started: started !== undefined }), {
+          only: only && keys(only), exclude: exclude && keys(exclude), met: metBlockers && keys(metBlockers), started: started && keys(started),
         }),
       });
     });
