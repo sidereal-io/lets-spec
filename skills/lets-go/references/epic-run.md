@@ -242,13 +242,19 @@ result.
 ## A stop in an epic run
 
 While an epic run is on a story, from its `Picked` line to its line, a
-stop ends the epic run at that story. This holds for every stop of the
-parts and procedures the story runs through, such as a failed step,
-records that disagree, a pull request that is merged or closed, or a
-`lets backlog` error, except the lost claim:
+stop ends only that story's run, not the epic run. This holds the same
+way for every stop of the parts and procedures the story runs through,
+such as a failed step, records that disagree, a pull request that is
+merged or closed, a stop of
+[Check the prerequisite](glossary-handoff.md#check-the-prerequisite),
+a failed claim write, a `lets backlog` error, or a `fetch-failed` from
+[Stack the story](#stack-the-story), except the lost claim:
 [Enter the branch](../SKILL.md#enter-the-branch) settles a lost story,
-and goes back to [Run the epic](#run-the-epic). The story is
-`<stopped-story>`.
+and goes back to [Run the epic](#run-the-epic). A stop between stories,
+such as a `lets backlog` error in a pick, still ends the epic run, as
+[Backlog errors](../SKILL.md#backlog-errors) says.
+
+On a stop in a story run, take these actions in order.
 
 1. Do what the stop says first, such as print the `Failed` line and the
    pull request's URL.
@@ -262,14 +268,26 @@ and goes back to [Run the epic](#run-the-epic). The story is
    #<story> <story-name>: stopped: <reason>
    ```
 
-3. Settle each story not settled yet, in the epic's order, with this
-   line. Here `#<story>` is the story not built, and `#<stopped-story>`
-   the story the epic run stopped at:
+   From here on, this story is `<failed>`.
+3. Check the checkout for changes that are not committed, outside
+   `.workspace/`: staged, unstaged or untracked. Ignored files do not
+   count.
+
+   ```bash
+   git status --porcelain --untracked-files=all -- . ':(exclude).workspace'
+   ```
+
+   When it prints any line, the epic run ends at this story, and
+   `<stopped-story>` is `<failed>`. Settle each story not settled yet,
+   in the epic's order, with this line, where `#<story>` is the story
+   not built:
 
    ```text
    #<story> <story-name>: not built, the epic run stopped at #<stopped-story>
    ```
 
-4. Print every line of `.workspace/lets-go/epic-<parent>-lines.txt`, in
-   order, as [End of the run](../SKILL.md#end-of-the-run) does, and
-   stop. The epic run does not go on past a stopped story.
+   Leave the changes as they are. Print every line of
+   `.workspace/lets-go/epic-<parent>-lines.txt`, in order, as
+   [End of the run](../SKILL.md#end-of-the-run) does, and stop.
+
+   When it prints nothing, go on to the next action.

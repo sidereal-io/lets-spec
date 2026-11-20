@@ -2434,6 +2434,26 @@ epic_run_file() {
     { echo "A stop in an epic run does not leave out the lost claim"; false; }
 }
 
+@test "an epic run's stop in a story run ends only that story's run" {
+  local section phrase
+  section="$(skill_section lets-go 'A stop in an epic run')"
+  for phrase in 'a stop ends only that story'"'"'s run, not the epic run' \
+    'a stop of [Check the prerequisite]' 'a failed claim write' '`fetch-failed` from [Stack the story](#stack-the-story)'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "A stop in an epic run does not say: $phrase"; false; }
+  done
+  ! grep -qF 'The epic run does not go on past a stopped story' <<<"$section" ||
+    { echo "A stop in an epic run still ends the epic run at every stop"; false; }
+}
+
+@test "an epic run's stop ends the epic run when the checkout has uncommitted changes" {
+  local section phrase
+  section="$(skill_section lets-go 'A stop in an epic run')"
+  for phrase in "git status --porcelain --untracked-files=all -- . ':(exclude).workspace'" \
+    'When it prints any line, the epic run ends at this story' 'Leave the changes as they are'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "A stop in an epic run does not say: $phrase"; false; }
+  done
+}
+
 # The sections of lets-go that hold a stop a story of an epic run can
 # reach, as <file>:<heading>.
 stop_sections=('SKILL.md:Backlog errors' 'SKILL.md:Check the issue' 'SKILL.md:Enter the branch'
