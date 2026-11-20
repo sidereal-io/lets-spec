@@ -2369,6 +2369,19 @@ epic_run_file() {
     { echo "End of the run does not print the epic run's lines"; false; }
 }
 
+@test "an epic run gives each story it could not build a reason, when nothing is ready" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    "**\`nothing-ready\`:** settle each story not settled yet, in the epic's order, with its \`not built\` line" \
+    'read why with `lets backlog item <story>`' \
+    '`blocked by #<blocker>`' '`assigned to <login>`' \
+    '`its packet is not complete`' '`its glossary prerequisite is unresolved`' \
+    'Then go to [End of the run](../SKILL.md#end-of-the-run)'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
 # long_lines <file>...: each line longer than 72 columns, as
 # <file>:<line>: <length>, the file under the skills folder. A column is one
 # code point: the count leaves out UTF-8 continuation bytes, so it holds in

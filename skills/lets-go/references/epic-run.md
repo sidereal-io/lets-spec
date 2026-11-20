@@ -87,6 +87,22 @@ as for any picked issue.
      session. Each of its steps runs as
      [Run a step](../SKILL.md#run-a-step) says. Start no other `lets-go`
      session for the story.
+   - **`nothing-ready`:** settle each story not settled yet, in the
+     epic's order, with its `not built` line, as
+     [Settle a story](#settle-a-story) says. Its reason is one of
+     these:
+     - For a candidate that `next` skipped, why it skipped it:
+       `its packet is not complete` or
+       `its glossary prerequisite is unresolved`.
+     - For a story that `lets backlog ready` did not list, read why
+       with `lets backlog item <story>`. On an error, act as
+       [Backlog errors](../SKILL.md#backlog-errors) says. The reason is
+       `blocked by #<blocker>`, naming each open issue in its
+       `blockedBy`; else `assigned to <login>`, naming each login in its
+       `assignees`; else its `status`, `kind` or `priority`, such as
+       `its Status is Done`.
+
+     Then go to [End of the run](../SKILL.md#end-of-the-run).
 
 ### Settle a story
 
@@ -109,4 +125,6 @@ A story that was not built gets this line:
 #<story> <story-name>: not built, <reason>
 ```
 
-The reason says why, such as `in another repository`.
+The reason says why, such as `in another repository`,
+`taken by <login>`, `blocked by #<blocker>`, `assigned to <login>` or
+`its packet is not complete`.

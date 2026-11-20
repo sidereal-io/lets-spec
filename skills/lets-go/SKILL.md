@@ -94,11 +94,11 @@ sets it.
 
 `lets backlog` names each item by its `key`, and shows it by its
 `label`: `149` and `#149` on GitHub. In anything shown to a person,
-`#<i>`, `#<parent>` and `#<story>` stand for the item's `label`: a
-printed line, a question, or text written in an issue. In a command,
-`<i>`, `<parent>` and `<story>` stand for its `key`. With the GitHub
-backlog provider, the label is `#` and the number, so each line reads
-as it always has.
+`#<i>`, `#<parent>`, `#<story>` and `#<blocker>` stand for the item's
+`label`: a printed line, a question, or text written in an issue. In a
+command, `<i>`, `<parent>` and `<story>` stand for its `key`. With the
+GitHub backlog provider, the label is `#` and the number, so each line
+reads as it always has.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
@@ -106,6 +106,8 @@ as it always has.
 | `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the `url` that `lets backlog item <i>` prints |
 | `<parent>` | A parent issue, as its key: an epic that discovery filed, a discovery in progress, or the epic of an epic run | The shape report's `epic` line, the discovery query in [Start from an idea](#start-from-an-idea), or, for an epic run, [Check the issue](#check-the-issue) before [Run the epic](#run-the-epic) |
 | `<story>` | One story, as its key: a story that a shape step's report names, or a story of an epic run | Each `story` line of the shape report, or [Run the epic](#run-the-epic), for the story it picks or settles |
+| `<blocker>` | An open issue that blocks a story, as its key | The story's `blockedBy`, from `lets backlog item <story>` in [Run the epic](#run-the-epic) |
+| `<login>` | The login of a person assigned to a story | The story's `assignees`, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](#run-the-epic) |
 | `<story-name>` | The part of a story's title before ` — `, or the whole title when it has none | [Run the epic](#run-the-epic), when it settles the story |
 | `<paths>` | The changed discovery maps, one path each | [Commit the discovery map](references/shape.md#commit-the-discovery-map), from its `git status` command |
 | `<pr-url>` | The URL of a story's pull request, in an epic run | [Run the epic](#run-the-epic), when it settles a built story |
