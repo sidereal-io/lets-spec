@@ -4598,3 +4598,35 @@ story_run_file() {
     grep -qF -- "$phrase" <<<"$section" || { echo "Run a step in a subagent does not say: $phrase"; false; }
   done
 }
+
+@test "story run: the child ends with a done report that names the pull request" {
+  local section
+  has_heading "$(story_run_file)" 'End the story run' || { echo "references/story-run.md has no heading: End the story run"; false; }
+  section="$(skill_section lets-go 'End the story run')"
+  grep -qF -- '- "pull request #<pr>: <pr-url>"' <<<"$section" ||
+    { echo "End the story run has no done report whose first evidence line names the pull request"; false; }
+  grep -qF '[End the story run](references/story-run.md#end-the-story-run)' <<<"$(next_line 'Walk the step table')" ||
+    { echo "Walk the step table's Next line does not name End the story run"; false; }
+}
+
+@test "story run: the child turns a failed step and every other stop into a failed report" {
+  local section phrase
+  section="$(skill_section lets-go 'End the story run')"
+  for phrase in 'a `failed` report whose reason is `failed at <step name>: ` followed by the step'"'"'s reason' \
+    'reason: "failed at build: tests fail on main"' 'reason: "stopped: <reason>"' \
+    'including a `done` report that its record does not bear out' \
+    'records that disagree, a pull request that is merged or closed, a settled question asked again'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "End the story run does not say: $phrase"; false; }
+  done
+  grep -qF "In a story run's child, print the \`Failed\` line, then end as [End the story run](references/story-run.md#end-the-story-run) says" \
+    <<<"$(part_section 'Read the report')" || { echo "Read the report does not end a child's failed step as a report"; false; }
+}
+
+@test "story run: the child prints no pull request URL or epic line, and runs none of A stop in an epic run" {
+  local section phrase
+  section="$(skill_section lets-go 'End the story run')"
+  for phrase in 'prints no pull request URL and no epic line in place of it' \
+    'Run none of [A stop in an epic run](epic-run.md#a-stop-in-an-epic-run)'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "End the story run does not say: $phrase"; false; }
+  done
+}

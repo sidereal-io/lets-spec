@@ -50,7 +50,8 @@ default branch and the current branch, `<branch>`.
    [Give the answers to the step](#give-the-answers-to-the-step) at the
    first row that is not done. When a step reports `needs-input`,
    [Pass the questions up](#pass-the-questions-up) instead of relaying
-   them.
+   them. When the walk ends, or stops, go on to
+   [End the story run](#end-the-story-run).
 
 ## Pass the questions up
 
@@ -121,3 +122,52 @@ questions, run no step, and end the session with this report:
 outcome: failed
 reason: "stopped: the answers match no question the <step name> step asked"
 ```
+
+## End the story run
+
+This session ends with one step report, which the epic run reads, and
+prints no pull request URL and no epic line in place of it. Run none of
+[A stop in an epic run](epic-run.md#a-stop-in-an-epic-run): the epic
+run settles the story from the report. The report is one of these:
+
+- **Every row done:** the walk ended with no row left, even when every
+  row was done before this session started and the walk printed only
+  `Skipped` lines. Read the pull request's number and URL as `<pr>` and
+  `<pr-url>`:
+
+  ```bash
+  gh pr view <name> --json number,url
+  ```
+
+  End with a `done` report whose first evidence line names the pull
+  request:
+
+  ```step-report
+  outcome: done
+  evidence:
+    - "pull request #<pr>: <pr-url>"
+  ```
+
+- **A failed step:** [Read the report](../SKILL.md#read-the-report)
+  ended the walk on a `failed` report, including a `done` report that
+  its record does not bear out. Print the step's `Failed` line, then
+  end with a `failed` report whose reason is `failed at <step name>: `
+  followed by the step's reason. `<step name>` is the step's name in
+  plain words, as its `Failed` line names it, such as `review build`.
+  For a build step that failed because the tests fail on main:
+
+  ```step-report
+  outcome: failed
+  reason: "failed at build: tests fail on main"
+  ```
+
+- **Any other stop of the walk:** such as records that disagree, a pull
+  request that is merged or closed, a settled question asked again, a
+  change state the walk does not know, or a `lets delegate step run`
+  exit code that stops the walk. End with this report, where the reason
+  is what the stop says:
+
+  ```step-report
+  outcome: failed
+  reason: "stopped: <reason>"
+  ```
