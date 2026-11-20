@@ -3,8 +3,8 @@
 ### Requirement: An epic run runs each story in a child session
 After *Set the question mode* has set `<mode>` for the story the epic run picked, on the story's branch `<name>`, `lets-go` SHALL run the story's run in a child `lets-go` session, in this order:
 
-1. Write the story prompt to `.workspace/lets-go/<name>-story-prompt.md`. Its first line SHALL be `You run a story run of a lets-go epic run: #<i>, for the change <name>, under #<parent>.` It SHALL name the issue and its URL, the branch `<name>`, `<schema>` and the route line, and SHALL say that the question mode is `<mode>`. It SHALL tell the child to invoke the `lets-go` skill, and to end with one step report. For a stacked story it SHALL hold the `## Stack` section that the story's step prompts hold, with the same `<blocker>`, `<blocker-branch>` and `<blocker-pr>`. The prompt of a story that is not stacked SHALL hold no `## Stack` section.
-2. Remove `.workspace/lets-go/<name>-story-answers.yaml` and each `.workspace/lets-go/<name>-<step>-rounds.txt`, so the story run starts with no answers and no counted rounds.
+1. Write the story prompt to `.workspace/lets-go/<name>-story-prompt.md`. Its first line SHALL be `You run a story run of a lets-go epic run: #<i>, for the change <name>, under #<parent>.` It SHALL name the issue and its URL, the branch `<name>`, `<schema>` and the route line, and SHALL say that the question mode is `<mode>`. It SHALL say that the epic run has already claimed the issue, routed it and entered the branch `<name>`, so the child claims nothing, routes nothing and stays on `<name>`. It SHALL tell the child to invoke the `lets-go` skill, and to end with one step report. For a stacked story it SHALL hold the `## Stack` section that the story's step prompts hold, with the same `<blocker>`, `<blocker-branch>` and `<blocker-pr>`. The prompt of a story that is not stacked SHALL hold no `## Stack` section.
+2. Remove `.workspace/lets-go/<name>-story-answers.yaml` and each `.workspace/lets-go/<name>-<step>-rounds.txt`, so the story run starts with no answers and no counted rounds. Do this only before the story's first child session in this run, never when relaying its questions.
 3. Run `lets delegate step instructions --for story`, and rank its `options` as *Run a step* ranks a step's: the guidance first, then the order the options came in. When `options` is empty, pass its own family as the one model.
 4. Run `lets delegate step run --for story --name <name>-story --prompt-file .workspace/lets-go/<name>-story-prompt.md --effort high`, with one `--model` per ranked option, best first, writing stdout to `.workspace/lets-go/<name>-story-report.json` and stderr to `.workspace/lets-go/<name>-story-meta.txt`.
 
@@ -12,7 +12,7 @@ While a child runs, the epic run SHALL print only its own lines: the `Picked` or
 
 #### Scenario: The story prompt
 - **WHEN** an epic run on #278 has entered the branch `story-run-child-sessions` for #284, on `lets-standard`, at the question mode `auto`, stacked on #282, whose pull request #293 is from `epic-run-resume`
-- **THEN** `.workspace/lets-go/story-run-child-sessions-story-prompt.md` starts with `You run a story run of a lets-go epic run: #284, for the change story-run-child-sessions, under #278.`, names `lets-standard` and the question mode `auto`, and holds a `## Stack` section with `--base epic-run-resume` and `Stacked on #293; merge that first.`
+- **THEN** `.workspace/lets-go/story-run-child-sessions-story-prompt.md` starts with `You run a story run of a lets-go epic run: #284, for the change story-run-child-sessions, under #278.`, names `lets-standard` and the question mode `auto`, says that the epic run has already claimed #284, routed it and entered the branch, and holds a `## Stack` section with `--base epic-run-resume` and `Stacked on #293; merge that first.`
 
 #### Scenario: A story that is not stacked
 - **WHEN** the epic run writes the story prompt for #279, which has no open blocker
@@ -109,7 +109,7 @@ When the child's report is `needs-input`, the epic run SHALL go through its ques
 - A question that holds `ask` true SHALL go to the user, with its `recommendation` as the suggested answer, whatever `<mode>` is, and its answer SHALL be written as the user gave it, with no marker. Before the first such question of a report, the epic run SHALL print `Questions: ask for the rest of this step, because it asked for input five times.`
 - Every other question SHALL go as `<mode>` says, as *Relay the questions* does: at `auto`, a question with a `recommendation` takes it as the answer, with the marker ` (lets-go accepted the step's recommendation; the user did not decide)`, and one without goes to the user; at `ask`, every question goes to the user.
 
-The epic run SHALL then write this report's pairs, in order, to `.workspace/lets-go/<name>-story-answers.yaml`, replacing what it held, and run the child again as *An epic run runs each story in a child session* says, with the same prompt file and `--answers-file .workspace/lets-go/<name>-story-answers.yaml`. It SHALL ask for the options again, and rank them again.
+The epic run SHALL then write this report's pairs, in order, to `.workspace/lets-go/<name>-story-answers.yaml`, replacing what it held, and run the child again with steps 3 and 4 of *An epic run runs each story in a child session*, with the same prompt file and `--answers-file .workspace/lets-go/<name>-story-answers.yaml`. It SHALL ask for the options again, and rank them again. It SHALL NOT write the story prompt again, and SHALL NOT remove the story's answers file or rounds files.
 
 #### Scenario: Auto with a recommendation
 - **WHEN** `<mode>` is `auto`, and the child's report asks `Which schema?` with the recommendation `lets-minimal`
@@ -123,12 +123,17 @@ The epic run SHALL then write this report's pairs, in order, to `.workspace/lets
 - **WHEN** the epic run relays a second `needs-input` report from the same story
 - **THEN** `.workspace/lets-go/<name>-story-answers.yaml` holds only the second report's pairs
 
+#### Scenario: A relay keeps the counted rounds
+- **WHEN** `.workspace/lets-go/<name>-plan-rounds.txt` holds two lines, and the epic run relays the child's `needs-input` report
+- **THEN** the epic run runs the child again with `--answers-file .workspace/lets-go/<name>-story-answers.yaml`, and `.workspace/lets-go/<name>-plan-rounds.txt` still holds its two lines
+
 ### Requirement: The epic run settles a story from its child's report
 When `lets delegate step run --for story` ends, the epic run SHALL settle the story, as *Settle a story* says, from its exit code and the report:
 
 - **Exit 0, `done`:** it SHALL read the pull request with `gh pr view <name> --json url,state,isDraft`. When the pull request is open and not a draft, it SHALL settle the story with its built line, or with its stacked line while the story is stacked. Otherwise the line SHALL be `stopped: the story run reported done, but <what the record holds>`, such as `the pull request is a draft` or `the branch has no pull request`.
 - **Exit 0, `failed`:** a reason that starts `failed at <step name>: ` or `stopped: ` SHALL be the text after the story's name in its line. Any other reason, including one that `lets` wrote because the child gave no valid report, SHALL give `stopped: <reason>`.
 - **Exit 2, 4 or 6:** the line SHALL be `stopped: <reason>`, where the reason is the error `lets delegate` printed on stderr. A child that did not finish in time is one.
+- **Exit 3:** nothing is settled from the child. The epic run SHALL go on as *With no child session, the epic run walks the story itself* says, and settle the story when that walk ends.
 
 Every line but a built or stacked line is a stop in a story run: after settling the story, the epic run SHALL go on as *A failure or a stop skips only the stories that depend on it* says, from its third action. The epic run SHALL NOT start the child again for that story in this run.
 
@@ -261,3 +266,25 @@ When the case returns `nothing-ready`, every story not yet settled SHALL get its
 #### Scenario: The child's part is in its file
 - **WHEN** the skill-interfaces test lists the headings of each file of `lets-go`
 - **THEN** `references/story-run.md` opens with a `#` title and a line that says a run reads it only in a story run's child session, and `SKILL.md` holds none of its headings
+
+### Requirement: Exit 3 runs the step in a subagent
+When `step run` exits 3, `lets-go` SHALL run the step in a subagent. The subagent SHALL start with no context from the `lets-go` session. It SHALL follow the saved prompt, work only in this repository, on the branch `<name>` or, for shape, on the default branch, and make only the changes that the step calls for. Its prompt SHALL be the file `lets` saved, `.workspace/lets-delegate/<session>.prompt.md`. `lets-go` SHALL read the last `step-report` block from the subagent's final message by the rules `lets` uses. The block opens with three or more backticks and `step-report`. It closes with at least as many backticks alone on a line. It holds one YAML mapping whose `outcome` is `done`, `needs-input` or `failed`. A `done` report holds `evidence`, a non-empty list of strings. A `needs-input` report holds `questions`, a non-empty list of mappings, each with a string `question`, an optional string `recommendation` and an optional boolean `ask`, by the rule `lets` uses: `ask: true` is kept, `ask: false` is dropped, and any other value breaks the report, which names `questions[<i>].ask`. A `failed` report holds a string `reason`. A final message that breaks any of these rules SHALL count as a `failed` report whose reason says what is missing or wrong. For a `done` report `lets-go` SHALL stamp the date itself, as the current time in ISO 8601 UTC. It SHALL write the report it read to `.workspace/lets-go/<session>-report.json`.
+
+#### Scenario: The subagent step
+- **WHEN** `step run --for build` exits 3 and its stderr names `.workspace/lets-delegate/lets-go-chore-build.prompt.md`
+- **THEN** `lets-go` runs a subagent with that prompt file, and reads the `step-report` block at the end of its final message
+
+#### Scenario: What the subagent may change
+- **WHEN** the skill-interfaces test reads *Run a step in a subagent*
+- **THEN** it says that the subagent follows the saved prompt, works only in this repository on the branch `<name>`, and makes only the changes that the step calls for, and it does not say `may write files`
+
+#### Scenario: A subagent with no block
+- **WHEN** the subagent's final message holds no `step-report` block
+- **THEN** `lets-go` treats the step as `failed`, with a reason that names `step-report`, and stops
+
+#### Scenario: A done report with no evidence
+- **WHEN** the subagent's block holds `outcome: done` and no `evidence`
+
+#### Scenario: A subagent's marked question
+- **WHEN** the subagent's block holds `outcome: needs-input` and one question with `ask: true`
+- **THEN** `.workspace/lets-go/<session>-report.json` holds that question with `"ask":true`
