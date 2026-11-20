@@ -298,8 +298,9 @@ session waits for it, so the two never write at the same time.
 
 2. **Clear the story's answers and rounds,** so that the story run
    starts with no answers and no counted rounds. Do this only before
-   the story's first child session in this run, never when the epic run
-   starts the child again with answers.
+   the story's first child session in this run, never when
+   [Relay a story run's questions](#relay-a-story-runs-questions)
+   starts the child again.
 
    ```bash
    rm -f .workspace/lets-go/<name>-story-answers.yaml \
@@ -353,8 +354,47 @@ session waits for it, so the two never write at the same time.
      saved prompt: a subagent cannot give each step a fresh session.
      When the walk ends, the run comes back to
      [Run the epic](#run-the-epic), which settles the story.
+   - **0, with a `needs-input` report:** go on to
+     [Relay a story run's questions](#relay-a-story-runs-questions).
    - **Any other:** go back to [Run the epic](#run-the-epic), which
      settles the story from the child's report.
+
+## Relay a story run's questions
+
+[Start the story run](#start-the-story-run) runs this part when the
+child's report is `needs-input`. The child answers no question itself.
+This session applies `<mode>` to each one, and starts the child again
+with the answers. The child gives them to the step that asked.
+
+1. Go through the report's questions, in its order:
+   - **A question whose `ask` is `true`:** the child's step has asked
+     for input five times already in this story run. Ask the user that
+     question, whatever `<mode>` is, with its `recommendation` as the
+     suggested answer. Write the answer as the user gave it, with no
+     marker. Before the first such question of the report, print the
+     `Questions` line that
+     [Relay the questions](../SKILL.md#relay-the-questions) prints from
+     a step's sixth `needs-input` report.
+   - **Any other question:** relay it as `<mode>` says, as
+     [Relay the questions](../SKILL.md#relay-the-questions) does. At
+     `auto`, a question with a `recommendation` takes it as the answer,
+     with the marker that section writes, and a question without one
+     goes to the user. At `ask`, every question goes to the user.
+2. Write this report's pairs, in order, to
+   `.workspace/lets-go/<name>-story-answers.yaml`, replacing what it
+   held, in the format
+   [Relay the questions](../SKILL.md#relay-the-questions) writes. The
+   file holds only the answers to the report the child just gave: the
+   child keeps the earlier answers in each step's own answers file.
+3. Run the child again. First ask what can run and rank the options
+   again, as [Start the story run](#start-the-story-run) does. Then run
+   its `lets delegate step run --for story` command, with the same
+   prompt file and
+   `--answers-file .workspace/lets-go/<name>-story-answers.yaml` added.
+   Write the story prompt only once: do not write it again here.
+   Remove neither the story's answers file nor its rounds files: the
+   child counts each step's rounds in its rounds files. Then act on the
+   exit code as [Start the story run](#start-the-story-run) says.
 
 ## Read a pull request's base
 

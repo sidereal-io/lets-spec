@@ -4424,3 +4424,44 @@ story_prompt_block() {
   overview_row 'Set the question mode' | grep -qF '[Start the story run](references/epic-run.md#start-the-story-run) in an epic run' ||
     { echo "the overview's row for Set the question mode does not name Start the story run"; false; }
 }
+
+@test "story run: a story run's needs-input report goes to Relay a story run's questions" {
+  has_heading "$(epic_run_file)" "Relay a story run's questions" ||
+    { echo "references/epic-run.md has no heading: Relay a story run's questions"; false; }
+  grep -qF "**0, with a \`needs-input\` report:** go on to [Relay a story run's questions](#relay-a-story-runs-questions)" \
+    <<<"$(skill_section lets-go 'Start the story run')" ||
+    { echo "Start the story run does not relay a needs-input report"; false; }
+}
+
+@test "story run: the epic run asks the user each question the child marked ask" {
+  local section phrase
+  section="$(skill_section lets-go "Relay a story run's questions")"
+  for phrase in '**A question whose `ask` is `true`:**' \
+    'Ask the user that question, whatever `<mode>` is, with its `recommendation` as the suggested answer' \
+    'Write the answer as the user gave it, with no marker' \
+    'Before the first such question of the report, print the `Questions` line that [Relay the questions](../SKILL.md#relay-the-questions) prints'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Relay a story run's questions does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the epic run relays every other question as its question mode says" {
+  local section phrase
+  section="$(skill_section lets-go "Relay a story run's questions")"
+  for phrase in '**Any other question:** relay it as `<mode>` says, as [Relay the questions](../SKILL.md#relay-the-questions) does' \
+    'At `auto`, a question with a `recommendation` takes it as the answer, with the marker' \
+    'At `ask`, every question goes to the user'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Relay a story run's questions does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: each relay replaces the story's answers file and runs the child again" {
+  local section phrase
+  section="$(skill_section lets-go "Relay a story run's questions")"
+  for phrase in "Write this report's pairs, in order, to \`.workspace/lets-go/<name>-story-answers.yaml\`, replacing what it held" \
+    'ask what can run and rank the options again' \
+    '`--answers-file .workspace/lets-go/<name>-story-answers.yaml`' \
+    'Write the story prompt only once' \
+    "Remove neither the story's answers file nor its rounds files"; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Relay a story run's questions does not say: $phrase"; false; }
+  done
+}
