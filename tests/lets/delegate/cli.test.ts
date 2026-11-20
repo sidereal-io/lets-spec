@@ -307,6 +307,12 @@ test('step run --help gives the 120-minute default and --answers-file', async ()
   assert.match(text, /--answers-file <path>/);
 });
 
+test('step run --help says a step has 120 minutes and a story 600', async () => {
+  const text = (await lets('delegate', 'step', 'run', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /--timeout-minutes <minutes> .*\(default: 120 for a step, 600 for a story\)/);
+  assert.match(text, /A step has 120 minutes and a story 600, unless --timeout-minutes says otherwise/);
+});
+
 test('step run takes no --source-family', async () => {
   const { code, stderr } = await lets(...STEP, '--source-family', 'claude');
   assert.equal(code, 2);

@@ -47,6 +47,18 @@ test('--timeout-minutes sets the step\'s time limit', async () => {
   assert.deepEqual(steps(t.adapterCalls)[0].options, { timeoutMs: 30 * 60000 });
 });
 
+test('a story run has 600 minutes', async () => {
+  const t = withT3();
+  await run(options({ for: 'story' }), t.deps);
+  assert.deepEqual(steps(t.adapterCalls)[0].options, { timeoutMs: 600 * 60000 });
+});
+
+test('--timeout-minutes sets a story run\'s time limit', async () => {
+  const t = withT3();
+  await run(options({ for: 'story', timeoutMinutes: 900 }), t.deps);
+  assert.deepEqual(steps(t.adapterCalls)[0].options, { timeoutMs: 900 * 60000 });
+});
+
 test('a done report is printed with the clock\'s date', async () => {
   const t = withT3();
   t.io.now = () => Date.parse('2026-11-04T09:30:00Z');

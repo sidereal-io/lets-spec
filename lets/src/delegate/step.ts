@@ -21,6 +21,8 @@ import type { StepStrategyIntent } from './strategies.ts';
 // How long a step may run, in minutes, at every effort. A step such as
 // build runs far longer than a review.
 export const STEP_TIMEOUT_MINUTES = 120;
+// How long a story run may take: it runs up to five steps in turn.
+export const STORY_TIMEOUT_MINUTES = 600;
 
 // for: the step, or story, recorded in the record line. models: each <family> or
 // <family>/<model>, best first, asked for one at a time until one is not
@@ -44,7 +46,7 @@ async function step({ for: intent, name, promptFile, effort, models, timeoutMinu
   const cwd = await repoRoot(deps.cwd, io);
 
   const adapter = await pick('step', { ...deps, config, fileOf });
-  const timeoutMs = (timeoutMinutes ?? STEP_TIMEOUT_MINUTES) * 60000;
+  const timeoutMs = (timeoutMinutes ?? (intent === 'story' ? STORY_TIMEOUT_MINUTES : STEP_TIMEOUT_MINUTES)) * 60000;
   // A session the resolver reports failed is a failed report, not an exit
   // code, so the caller reads every outcome in one place. The resolver gives
   // no handle for it, and keeps the session itself.

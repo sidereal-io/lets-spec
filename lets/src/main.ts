@@ -12,7 +12,7 @@ import { run as instructions } from './delegate/instructions.ts';
 import { EFFORTS, FAMILIES, parseModel } from './resolvers/kit/families.ts';
 import { run as review } from './delegate/review.ts';
 import type { ReviewOptions } from './delegate/review.ts';
-import { run as step, STEP_TIMEOUT_MINUTES } from './delegate/step.ts';
+import { run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './delegate/step.ts';
 import type { StepOptions } from './delegate/step.ts';
 import { STRATEGIES } from './delegate/strategies.ts';
 import { run as questions } from './go/questions.ts';
@@ -171,6 +171,9 @@ reason says what is wrong, and whose message holds the final message.
 stderr: one JSON line with for, resolver, family, model, handle and
 durationSeconds. handle is null when the session failed before it gave a
 final message.
+
+A step has ${STEP_TIMEOUT_MINUTES} minutes and a story ${STORY_TIMEOUT_MINUTES}, unless --timeout-minutes says
+otherwise.
 
 --answers-file resumes a step that reported needs-input: a YAML list of
 question and answer pairs, which lets appends to the prompt. Give the same
@@ -347,7 +350,7 @@ strategyCommand('step', 'run a step in a fresh session that may write files, and
   .requiredOption('--prompt-file <path>', 'the file that holds the prompt')
   .addOption(new Option('--effort <effort>', 'how hard the session thinks').choices(EFFORTS).makeOptionMandatory())
   .addOption(modelOption())
-  .option('--timeout-minutes <minutes>', `how long to wait (default: ${STEP_TIMEOUT_MINUTES})`, wholeMinutes)
+  .option('--timeout-minutes <minutes>', `how long to wait (default: ${STEP_TIMEOUT_MINUTES} for a step, ${STORY_TIMEOUT_MINUTES} for a story)`, wholeMinutes)
   .option('--answers-file <path>', 'the answers to the last report\'s questions, as a YAML list of question and answer pairs')
   .addHelpText('after', STEP_HELP)
   .action(async ({ model, ...options }: Omit<StepOptions, 'models'> & { model: string[] }) => {
