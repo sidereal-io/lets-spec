@@ -3785,6 +3785,18 @@ automate_updates_prose() {
     { echo "the section does not say the workflow relies on a committed mise.lock"; false; }
 }
 
+@test "Automate updates says the workflow needs the latest entry in mise.toml" {
+  [[ "$(automate_updates_prose)" == *'`"github:sidereal-io/lets-spec" = "latest"` in `mise.toml`'* ]] ||
+    { echo "the section does not say mise.toml must keep lets-spec at latest"; false; }
+}
+
+# Updating has a With mise heading of its own, so a bare "With mise" link
+# reads as that one, not the setup steps it points to.
+@test "Automate updates names Set it up when it links to its With mise steps" {
+  [[ "$(automate_updates_prose)" == *'[Set it up: With mise](#with-mise)'* ]] ||
+    { echo "the section's With mise link does not name Set it up"; false; }
+}
+
 @test "Automate updates says a run that changes nothing opens no pull request" {
   [[ "$(automate_updates_prose)" == *'A run that changes nothing opens no pull request'* ]] ||
     { echo "the section does not say a run that changes nothing opens no pull request"; false; }

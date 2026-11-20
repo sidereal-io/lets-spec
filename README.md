@@ -582,9 +582,12 @@ fails in CI until someone enters the dev shell on its branch and commits.
 ### Automate updates
 
 A GitHub Actions workflow can run those steps every week and open a pull
-request with the result. It relies on your project committing `mise.lock`,
-as [With mise](#with-mise) says: `mise upgrade` moves the pin there, and
-`mise.toml` stays the same. Save the workflow as
+request with the result. It relies on your project committing `mise.lock`
+and keeping `"github:sidereal-io/lets-spec" = "latest"` in `mise.toml`, as
+[Set it up: With mise](#with-mise) shows: `mise upgrade` moves the pin in
+`mise.lock`, and `mise.toml` stays the same. With an exact version in
+`mise.toml`, the pin never moves and the workflow opens no pull request.
+Save the workflow as
 `.github/workflows/update-lets-spec.yml`:
 
 ```yaml
