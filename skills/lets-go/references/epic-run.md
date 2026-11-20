@@ -291,3 +291,29 @@ On a stop in a story run, take these actions in order.
    [End of the run](../SKILL.md#end-of-the-run) does, and stop.
 
    When it prints nothing, go on to the next action.
+4. Find the stories that depend on `<failed>`, and settle them. For
+   each story of the epic, in this repository and not settled yet, run
+   `lets backlog item <story>`. Keep the `key` of each entry of its
+   `blockedBy` whose `state` is `OPEN` and whose `url` is the `url` of
+   a story of the epic in this repository. A blocker in another
+   repository can share its key with a story here, so a key alone never
+   makes a story a dependent.
+
+   Then mark the dependents, through any number of stories. A story not
+   settled yet is a dependent when one of its kept keys is `<failed>`
+   or a dependent. Repeat until no new story is marked. A link through
+   an issue outside the epic, or through a story settled before this
+   stop, makes no dependent.
+
+   Settle each dependent, in the epic's order, right after the line of
+   `<failed>`, with this line. It names `<failed>` itself, even when
+   the dependence goes through other stories:
+
+   ```text
+   #<story> <story-name>: not built, it depends on #<failed>, which did not finish
+   ```
+
+   With no dependent, settle no story here. A `lets backlog` error in
+   this action is a stop between stories, as
+   [Backlog errors](../SKILL.md#backlog-errors) says: it ends the epic
+   run.

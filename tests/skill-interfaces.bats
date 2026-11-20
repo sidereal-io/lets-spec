@@ -2445,6 +2445,23 @@ epic_run_file() {
     { echo "A stop in an epic run still ends the epic run at every stop"; false; }
 }
 
+@test "an epic run's stop skips the stories that depend on the failed story" {
+  local section action line='not built, it depends on #<failed>, which did not finish' phrase
+  section="$(skill_section lets-go 'A stop in an epic run')"
+  action="${section#*' 4. '}"
+  [ "$action" != "$section" ] || { echo "A stop in an epic run has no fourth action"; false; }
+  skill_says_once lets-go "$line"
+  grep -qxF "#<story> <story-name>: $line" <<<"$(text_block_lines 'A stop in an epic run' "$(epic_run_file)")" ||
+    { echo "A stop in an epic run has no text block with the dependent's line"; false; }
+  for phrase in 'run `lets backlog item <story>`' 'whose `state` is `OPEN`' \
+    'whose `url` is the `url` of a story of the epic in this repository' 'through any number of stories' \
+    "in the epic's order, right after the line of \`<failed>\`" 'a key alone never makes a story a dependent' \
+    'A link through an issue outside the epic, or through a story settled before this stop, makes no dependent' \
+    'is a stop between stories, as [Backlog errors](../SKILL.md#backlog-errors) says'; do
+    grep -qF -- "$phrase" <<<"$action" || { echo "the fourth action of A stop in an epic run does not say: $phrase"; false; }
+  done
+}
+
 @test "an epic run's stop ends the epic run when the checkout has uncommitted changes" {
   local section phrase
   section="$(skill_section lets-go 'A stop in an epic run')"
