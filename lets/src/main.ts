@@ -354,6 +354,8 @@ strategyCommand('step', 'run a step in a fresh session that may write files, and
   .addOption(modelOption())
   .option('--timeout-minutes <minutes>', `how long to wait (default: ${STEP_TIMEOUT_MINUTES} for a step, ${STORY_TIMEOUT_MINUTES} for a story)`, wholeMinutes)
   .option('--answers-file <path>', 'the answers to the last report\'s questions, as a YAML list of question and answer pairs')
+  // lets delegate step start gives it; a person never needs it.
+  .addOption(new Option('--exit-file <path>', 'where to record the exit code').hideHelp())
   .addHelpText('after', STEP_HELP)
   .action(async ({ model, ...options }: Omit<StepOptions, 'models'> & { model: string[] }) => {
     process.exitCode = await step({ ...options, models: model }, realDeps());

@@ -27,13 +27,21 @@ export const STORY_TIMEOUT_MINUTES = 600;
 // for: the step, or story, recorded in the record line. models: each <family> or
 // <family>/<model>, best first, asked for one at a time until one is not
 // refused. answersFile: the user's answers to the questions of the last
-// needs-input report, which lets appends to the prompt.
-export type StepOptions = { for: StepStrategyIntent; name: string; promptFile: string; effort: Effort; models: string[]; timeoutMinutes?: number; answersFile?: string };
+// needs-input report, which lets appends to the prompt. exitFile: where to
+// record the exit code once it is known, for lets delegate step wait; a
+// hidden option, which lets delegate step start gives.
+export type StepOptions = { for: StepStrategyIntent; name: string; promptFile: string; effort: Effort; models: string[]; timeoutMinutes?: number; answersFile?: string; exitFile?: string };
 
 // The exit code: 0 a report is on stdout, whatever its outcome, 2 usage,
 // 3 every model refused, 4 the outcome is unknown, 6 timeout.
-export function run(options: StepOptions, deps: Deps): Promise<number> {
-  return guarded(deps, () => step(options, deps));
+export async function run(options: StepOptions, deps: Deps): Promise<number> {
+  const code = await guarded(deps, () => step(options, deps));
+  // Written after stdout and stderr, so a reader that finds the exit file
+  // finds the whole report too.
+  if (options.exitFile !== undefined) {
+    deps.io.writeFile(resolve(deps.cwd, options.exitFile), `${JSON.stringify({ exit: code, endedAt: deps.io.now() })}\n`);
+  }
+  return code;
 }
 
 async function step({ for: intent, name, promptFile, effort, models, timeoutMinutes, answersFile }: StepOptions, deps: Deps) {

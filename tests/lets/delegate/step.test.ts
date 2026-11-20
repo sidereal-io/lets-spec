@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { run } from '../../../lets/src/delegate/step.ts';
 import type { StepOptions } from '../../../lets/src/delegate/step.ts';
 import { SessionFailed, SpawnError, TimeoutError } from '../../../lets/src/resolvers/kit/errors.ts';
@@ -272,4 +274,40 @@ test('a bad resolver in the repository\'s lets config stops a step, naming that 
   const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3] }\n', repoConfig: 'version: 3\ndelegate: { resolvers: [codex] }\n' });
   assert.equal(await run(options(), t.deps), 2);
   assert.match(t.stderr(), new RegExp(`${REPO_CONFIG}.*codex`));
+});
+
+// --exit-file: how a background step ended, for lets delegate step wait.
+const EXIT_FILE = '/repo/.workspace/lets-delegate/build-x.exit.json';
+
+test('--exit-file records exit 0 and the clock once a done report is printed', async () => {
+  const t = withT3();
+  t.io.now = () => 1700;
+  assert.equal(await run(options({ exitFile: EXIT_FILE }), t.deps), 0);
+  assert.equal(report(t).outcome, 'done');
+  assert.equal(t.io.files.get(EXIT_FILE), '{"exit":0,"endedAt":1700}\n');
+});
+
+test('--exit-file records exit 2 when the prompt file cannot be read', async () => {
+  const t = withT3({ files: {} });
+  assert.equal(await run(options({ exitFile: EXIT_FILE }), t.deps), 2);
+  assert.equal(t.io.files.get(EXIT_FILE), '{"exit":2,"endedAt":0}\n');
+});
+
+test('--exit-file is read from the working directory', async () => {
+  const t = withT3();
+  await run(options({ exitFile: 'e.json' }), t.deps);
+  assert.equal(t.io.files.get('/repo/e.json'), '{"exit":0,"endedAt":0}\n');
+});
+
+test('without --exit-file, no exit file is written', async () => {
+  const t = withT3();
+  await run(options(), t.deps);
+  assert.deepEqual([...t.io.files.keys()].filter((path) => path.endsWith('.exit.json')), []);
+});
+
+test('step run --help does not name --exit-file', async () => {
+  const entry = fileURLToPath(new URL('../../../lets/bin/lets', import.meta.url));
+  const help = execFileSync(process.execPath, [entry, 'delegate', 'step', 'run', '--help'], { encoding: 'utf8' });
+  assert.match(help, /--answers-file/);
+  assert.doesNotMatch(help, /exit-file/);
 });
