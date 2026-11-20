@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { overlap, relevantPaths } from '../../../lets/src/backlog/waves.ts';
+import { overlap, placeWaves, relevantPaths } from '../../../lets/src/backlog/waves.ts';
 
 // A packet body whose Relevant code list item is line.
 const packet = (line: string) => `## Context\n\n- **Outcome**: something\n${line}\n- **Not in scope**: \`other/file.ts\`\n`;
@@ -94,4 +94,92 @@ test('the reason names the item\'s first overlapping path, in its packet\'s orde
 
 test('a case difference makes two different paths', () => {
   assert.equal(overlap(named('#2', 'README.md'), named('#1', 'readme.md')), null);
+});
+
+// An item for placeWaves: its number, the paths it names, and the numbers
+// of its named blockers.
+const item = (n: number, paths: string[], blockers: number[] = []) => ({ key: String(n), label: `#${n}`, paths, blockers: blockers.map(String) });
+const first = (n: number) => ({ key: String(n), label: `#${n}`, waitsFor: null, reason: null });
+const waits = (n: number, other: number, reason: string) => ({ key: String(n), label: `#${n}`, waitsFor: { key: String(other), label: `#${other}` }, reason });
+
+test('placeWaves sorts the stories of an epic into waves', () => {
+  assert.deepEqual(placeWaves([
+    item(283, ['skills/lets-shape/SKILL.md', 'skills/lets-go/references/shape.md']),
+    item(285, ['lets/src/backlog/commands.ts']),
+    item(286, ['lets/src/delegate/step.ts'], [285]),
+    item(287, ['skills/lets-go/references/shape.md']),
+  ]), [
+    [first(283), first(285)],
+    [waits(286, 285, 'blocked by #285'), waits(287, 283, 'both name skills/lets-go/references/shape.md')],
+  ]);
+});
+
+test('placeWaves puts a blocker first when the order gives it later', () => {
+  assert.deepEqual(placeWaves([item(10, ['a/ten.ts'], [11]), item(11, ['b/eleven.ts'])]), [
+    [first(11)],
+    [waits(10, 11, 'blocked by #11')],
+  ]);
+});
+
+test('placeWaves puts an item in an earlier wave when it fits there', () => {
+  assert.deepEqual(placeWaves([item(1, ['README.md']), item(2, ['README.md']), item(3, ['lets/src/main.ts'])]), [
+    [first(1), first(3)],
+    [waits(2, 1, 'both name README.md')],
+  ]);
+});
+
+test('placeWaves gives an item whose packet names no path a wave of its own', () => {
+  assert.deepEqual(placeWaves([item(1, ['a/one.ts']), item(2, []), item(3, ['c/three.ts'])]), [
+    [first(1), first(3)],
+    [waits(2, 1, 'its packet names no Relevant code')],
+  ]);
+});
+
+test('placeWaves puts an item after one whose packet names no path', () => {
+  assert.deepEqual(placeWaves([item(1, []), item(2, ['b/two.ts'])]), [
+    [first(1)],
+    [waits(2, 1, '#1\'s packet names no Relevant code')],
+  ]);
+});
+
+test('placeWaves puts an item after a folder that holds its path', () => {
+  assert.deepEqual(placeWaves([item(5, ['lets/src/backlog/']), item(6, ['lets/src/backlog/commands.ts'])])[1], [
+    waits(6, 5, 'lets/src/backlog/ holds lets/src/backlog/commands.ts'),
+  ]);
+});
+
+test('placeWaves gives each item of a loop of blockers a wave of its own', () => {
+  assert.deepEqual(placeWaves([item(7, ['a/seven.ts'], [8]), item(8, ['b/eight.ts'], [7])]), [
+    [first(7)],
+    [waits(8, 7, 'blocked by #7, through a loop of blocked-by links')],
+  ]);
+});
+
+test('placeWaves puts a loop of blockers after the items it placed', () => {
+  assert.deepEqual(placeWaves([item(1, ['a/one.ts']), item(7, ['b/seven.ts'], [8]), item(8, ['c/eight.ts'], [7])]), [
+    [first(1)],
+    [waits(7, 8, 'blocked by #8, through a loop of blocked-by links')],
+    [waits(8, 7, 'blocked by #7, through a loop of blocked-by links')],
+  ]);
+});
+
+test('placeWaves orders each item of a chain after its blocker', () => {
+  assert.deepEqual(placeWaves([item(1, ['a/one.ts']), item(2, ['b/two.ts'], [1]), item(3, ['c/three.ts'], [2])]), [
+    [first(1)],
+    [waits(2, 1, 'blocked by #1')],
+    [waits(3, 2, 'blocked by #2')],
+  ]);
+});
+
+test('placeWaves keeps the given order within a wave', () => {
+  assert.deepEqual(placeWaves([item(10, ['a/ten.ts'], [12]), item(11, ['b/eleven.ts']), item(12, ['c/twelve.ts'])]).map((wave) => wave.map(({ key }) => key)), [
+    ['11', '12'],
+    ['10'],
+  ]);
+});
+
+test('placeWaves gives an item behind a loop its first blocker in the loop', () => {
+  assert.deepEqual(placeWaves([item(7, ['a/seven.ts'], [8]), item(8, ['b/eight.ts'], [7]), item(9, ['c/nine.ts'], [8])]).at(-1), [
+    waits(9, 8, 'blocked by #8, through a loop of blocked-by links'),
+  ]);
 });

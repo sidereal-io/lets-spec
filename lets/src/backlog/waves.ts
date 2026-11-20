@@ -55,3 +55,58 @@ export function overlap(item: Named, other: Named): string | null {
   }
   return null;
 }
+
+// An item to place: its key and label, the paths its packet names, and the
+// keys of its blockers among the items placed with it.
+export type WaveItem = Named & { key: string; blockers: string[] };
+
+// One story of a wave. A story in the first wave waits for nothing, so its
+// waitsFor and reason are null. Any other names the story it waits for, and
+// why, as the epic run prints it.
+export type WaveStory = { key: string; label: string; waitsFor: { key: string; label: string } | null; reason: string | null };
+
+// The items, in waves. Each round places the first item, in the given order,
+// whose blockers are all placed, in the earliest wave after its blockers'
+// that holds no item it overlaps. Items whose blockers form a loop, or
+// depend on one, can never be placed so; each gets a wave of its own at the
+// end. Within a wave the items keep the given order.
+export function placeWaves(items: WaveItem[]): WaveStory[][] {
+  const waves: WaveItem[][] = [];
+  const waveOf = new Map<string, number>();
+  const left = [...items];
+  for (;;) {
+    const next = left.findIndex(({ blockers }) => blockers.every((key) => waveOf.has(key)));
+    if (next === -1) break;
+    const [placing] = left.splice(next, 1);
+    let wave = Math.max(-1, ...placing.blockers.map((key) => waveOf.get(key)!)) + 1;
+    while (waves[wave]?.some((story) => overlap(placing, story) !== null)) wave += 1;
+    (waves[wave] ??= []).push(placing);
+    waveOf.set(placing.key, wave);
+  }
+  const order = new Map(items.map(({ key }, index) => [key, index]));
+  for (const wave of waves) wave.sort((a, b) => order.get(a.key)! - order.get(b.key)!);
+
+  const sorted = waves.map((wave, index) => wave.map((story) => storyIn(story, waves[index - 1])));
+  const looped = left.map((story) => {
+    if (sorted.length === 0 && story === left[0]) return { ...ref(story), waitsFor: null, reason: null };
+    const blocker = left.find(({ key }) => story.blockers.includes(key))!;
+    return { ...ref(story), waitsFor: ref(blocker), reason: `blocked by ${blocker.label}, through a loop of blocked-by links` };
+  });
+  return [...sorted, ...looped.map((story) => [story])];
+}
+
+const ref = ({ key, label }: { key: string; label: string }) => ({ key, label });
+
+// A placed story, with what it waits for in the wave before its own. That
+// wave holds its latest blocker, or else an item it overlaps, which pushed
+// it out of that wave.
+function storyIn(story: WaveItem, before: WaveItem[] | undefined): WaveStory {
+  if (before === undefined) return { ...ref(story), waitsFor: null, reason: null };
+  const blocker = before.find(({ key }) => story.blockers.includes(key));
+  if (blocker !== undefined) return { ...ref(story), waitsFor: ref(blocker), reason: `blocked by ${blocker.label}` };
+  for (const other of before) {
+    const reason = overlap(story, other);
+    if (reason !== null) return { ...ref(story), waitsFor: ref(other), reason };
+  }
+  throw new Error(`${story.label} is in a later wave with nothing to wait for`);
+}
