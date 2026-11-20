@@ -2279,16 +2279,21 @@ section_code_spans() {
     <<<"$(skill_section lets-go 'The step table')" || { echo "The step table does not give the --for names in code font"; false; }
 }
 
-# text_block_lines <name>: each line of a fenced text block in the section
-# of lets-go's SKILL.md with that heading, at any level, up to the next
-# heading, without its indent.
+# text_block_lines <name> [<file>]: each line of a fenced text block in the
+# section with that heading, at any level, up to the next heading, without
+# its indent. The file is lets-go's SKILL.md unless one is given.
 text_block_lines() {
   awk -v name="$1" "$fence_rules"'
     !code && /^#+ / { on = (substr($0, index($0, " ") + 1) == name); next }
     !on { next }
     code && fence == "" { block = 0; next }
     code && !block { block = 1; text = ($0 ~ /^ *```+text *$/); next }
-    code && text { line = $0; sub(/^ */, "", line); print line }' "$(lets_go_skill)"
+    code && text { line = $0; sub(/^ */, "", line); print line }' "${2:-$(lets_go_skill)}"
+}
+
+# epic_run_file: the path of lets-go's references/epic-run.md.
+epic_run_file() {
+  echo "${skills_dir:-$repo/skills}/lets-go/references/epic-run.md"
 }
 
 @test "lets-go gives a whole printed line in a text block" {
@@ -2299,6 +2304,26 @@ text_block_lines() {
     grep -qxF -- "$line" <<<"$(text_block_lines 'The step lines')" || wrong+=("The step lines have no text block with: $line")
   done
   [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; false; }
+}
+
+@test "an epic run takes its stories from the epic's open sub-issues" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    'Its stories are the open sub-issues that `lets backlog item <parent>` printed in [Check the issue](../SKILL.md#check-the-issue), in the order it printed them' \
+    'They stay the same set for the whole epic run' \
+    'Claim nothing on the epic, and create no branch for it' \
+    'write `.workspace/lets-go/epic-<parent>-lines.txt` afresh'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "an epic run with no open stories points to lets-shape in a text block" {
+  grep -qxF '#<parent> has no open stories. lets-go does not shape an empty epic yet: run the lets-shape skill on #<parent>.' \
+    <<<"$(text_block_lines 'Run the epic' "$(epic_run_file)")" ||
+    { echo "Run the epic has no text block with the empty epic's line"; false; }
+  grep -qF 'stop, claiming nothing and creating no branch' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not stop on an empty epic"; false; }
 }
 
 # long_lines <file>...: each line longer than 72 columns, as
