@@ -84,10 +84,11 @@ procedure ranks it.
 | [End of the run](#end-of-the-run) | Prints the pull request's URL, or each story's line in an epic run | this session | Nothing: the run is over | Always |
 
 Any part also stops when a `lets backlog` command returns an error, as
-[Backlog errors](#backlog-errors) says. In an epic run, any stop while
-the run is on a story also ends the epic run, as
+[Backlog errors](#backlog-errors) says. In an epic run, a stop while
+the run is on a story ends only its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
-says.
+says. A stop between stories, such as an error in a pick, still ends
+the epic run.
 
 ## Placeholders
 
@@ -164,9 +165,11 @@ reads stay as `gh` commands for now: the comment thread read of
 of [Start from an idea](#start-from-an-idea). Each `lets backlog`
 command prints one JSON object. When the object holds
 `error`, the backlog cannot answer. Stop: claim nothing more, and run no
-step. In an epic run, this stop also ends the epic run at its story, as
+step. In an epic run, while the run is on a story, this stop ends only
+its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
-says. Say what the error is:
+says. A stop between stories, such as an error in a pick, still ends
+the epic run. Say what the error is:
 
 - **`no-backlog`:** no Project is linked to the repository. Say to run
   the `lets-setup-backlog` skill.
@@ -302,8 +305,7 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
 
 ## Check the issue
 
-In an epic run, each stop in this part also ends the epic run at its
-story, as
+In an epic run, each stop in this part ends only its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
 says.
 
@@ -446,8 +448,7 @@ Next: [Enter the branch](#enter-the-branch).
 
 ## Enter the branch
 
-In an epic run, each stop in this part also ends the epic run at its
-story, as
+In an epic run, each stop in this part ends only its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
 says.
 
@@ -582,8 +583,7 @@ Next: [Walk the step table](#walk-the-step-table).
 
 ## Walk the step table
 
-In an epic run, each stop in this part also ends the epic run at its
-story, as
+In an epic run, each stop in this part ends only its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
 says.
 
@@ -1059,8 +1059,7 @@ as `--name idea-fix-letssync-quiet-output-shape`.
 
 ## Run a step
 
-In an epic run, each stop in this section also ends the epic run at its
-story, as
+In an epic run, each stop in this section ends only its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
 says.
 
@@ -1108,8 +1107,7 @@ says.
 
 ## Read the report
 
-In an epic run, each stop in this section also ends the epic run at its
-story, as
+In an epic run, each stop in this section ends only its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
 says.
 
@@ -1179,8 +1177,7 @@ start with no answers.
 
 ## Relay the questions
 
-In an epic run, each stop in this section also ends the epic run at its
-story, as
+In an epic run, each stop in this section ends only its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
 says.
 

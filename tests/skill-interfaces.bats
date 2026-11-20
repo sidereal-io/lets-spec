@@ -2544,6 +2544,24 @@ stop_links() {
   stop_links
 }
 
+@test "each section that links an epic run's stop rule says the stop ends only its story's run" {
+  local dir="$repo/skills/lets-go" entry name text overview
+  skill_does_not_say lets-go 'also ends the epic run'
+  for entry in "${stop_sections[@]}"; do
+    name="${entry#*:}"
+    text="$(awk -v name="$name" "$fence_rules"'
+      !code && /^##? / { on = (substr($0, index($0, " ") + 1) == name); next }
+      on' "$dir/${entry%%:*}" | tr -s '[:space:]' ' ')"
+    grep -qF "ends only its story's run, as [A stop in an epic run](" <<<"$text" ||
+      { echo "$name does not say the stop ends only its story's run"; false; }
+  done
+  overview="$(awk '/^## Placeholders$/ { exit } { print }' "$dir/SKILL.md" | awk 'BEGIN { RS = "" } /Any part also stops/' | tr -s '[:space:]' ' ')"
+  for text in "$overview" "$(skill_section lets-go 'Backlog errors')"; do
+    grep -qF "ends only its story's run" <<<"$text" && grep -qF 'such as an error in a pick, still ends the epic run' <<<"$text" ||
+      { echo "it does not say a stop between stories still ends the epic run: $text"; false; }
+  done
+}
+
 # long_lines <file>...: each line longer than 72 columns, as
 # <file>:<line>: <length>, the file under the skills folder. A column is one
 # code point: the count leaves out UTF-8 continuation bytes, so it holds in
