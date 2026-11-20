@@ -29,6 +29,13 @@ stdout: one JSON object and a newline.
   item <i>           { key, label, title, body, url, state, kind, priority, size,
                        status, assignees, blockedBy, parent, subIssues }
   find <words...>    { issues: [{ key, label, title }] }
+  waves --only <keys>
+                     { waves: [{ stories: [{ key, label, waitsFor, reason }] }] }
+                     sorts the items named, such as 283,285, into waves: an
+                     item waits for each of its open blockers named, and for
+                     an item whose Relevant code names an overlapping path.
+                     waitsFor is { key, label }; it and reason are null in
+                     the first wave.
   key <text>         { key, label } when the text is one of the backlog
                      provider's keys, or { key: null, label: null }; it runs
                      no backend command. Put -- before text that starts with -.
