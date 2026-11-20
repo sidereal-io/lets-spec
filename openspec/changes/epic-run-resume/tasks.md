@@ -21,7 +21,7 @@ Every test goes in `tests/skill-interfaces.bats` and reads `skills/lets-go/`. Na
 ## 3. Docs and integration [depends-on: 2]
 
 - [x] 3.1 [easy] The `lets-go` section of `README.md` says that running `lets-go` on the epic again goes on with its unfinished stories, and no longer says `If a story's step fails, the run stops at that story`. The test `the README says lets-go builds an epic's ready stories in turn` checks both (verify: bats tests/skill-interfaces.bats -f 'README') (✓ bats tests/skill-interfaces.bats -f 'README' passed, 10 of 10)
-- [ ] 3.2 [easy] The whole suite, the flake checks and the OpenSpec validation pass (verify: pnpm test && nix flake check && mise run check)
+- [x] 3.2 [easy] The whole suite, the flake checks and the OpenSpec validation pass (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test, nix flake check and mise run check passed)
 
 ## Deviations Ledger
 
