@@ -2462,6 +2462,19 @@ epic_run_file() {
   done
 }
 
+@test "an epic run's stop goes back to the default branch and picks again" {
+  local section action phrase
+  section="$(skill_section lets-go 'A stop in an epic run')"
+  action="${section#*' 5. '}"
+  [ "$action" != "$section" ] || { echo "A stop in an epic run has no fifth action"; false; }
+  for phrase in 'git switch <default>' 'go back to [Run the epic](#run-the-epic)' \
+    'every story settled in actions 2 and 4 is passed in `--exclude`' \
+    "When \`git switch\` fails, say Git's error, and end the epic run as the third action does" \
+    'retries no failed step' 'prints no count'; do
+    grep -qF -- "$phrase" <<<"$action" || { echo "the fifth action of A stop in an epic run does not say: $phrase"; false; }
+  done
+}
+
 @test "an epic run's stop ends the epic run when the checkout has uncommitted changes" {
   local section phrase
   section="$(skill_section lets-go 'A stop in an epic run')"

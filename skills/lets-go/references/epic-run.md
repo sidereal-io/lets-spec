@@ -317,3 +317,20 @@ On a stop in a story run, take these actions in order.
    this action is a stop between stories, as
    [Backlog errors](../SKILL.md#backlog-errors) says: it ends the epic
    run.
+5. Go back to the default branch, so the next story's branch is created
+   off it:
+
+   ```bash
+   git switch <default>
+   ```
+
+   When `git switch` fails, say Git's error, and end the epic run as
+   the third action does. Otherwise go back to
+   [Run the epic](#run-the-epic). Its *Pick the next story* runs next,
+   where every story settled in actions 2 and 4 is passed in
+   `--exclude`, so none of them is picked.
+
+The epic run retries no failed step: running `lets-go` again on the
+failed story's branch carries on, as for any run. The end of the epic
+run prints no count of built, failed or skipped stories: the lines are
+its summary.
