@@ -1302,7 +1302,7 @@ readme_lets_go() {
 
 # The parts of a lets-go run, in run order. Each is a ## heading of SKILL.md.
 lets_go_parts=('Read the settings' 'Read the request' 'Start from an idea' 'Check the issue' 'Run the shape step'
-  'Pick the first ready story' 'Route' 'Enter the branch' 'Set the question mode' 'Walk the step table' 'End of the run')
+  'Pick the first ready story' 'Run the epic' 'Route' 'Enter the branch' 'Set the question mode' 'Walk the step table' 'End of the run')
 
 # heading_anchor <heading>: the anchor GitHub makes from a heading's text.
 heading_anchor() {
@@ -1524,6 +1524,27 @@ skill_part() {
     has_heading "$repo/skills/lets-go/references/shape.md" "$part" ||
       { echo "references/shape.md has no heading: $part"; false; }
   done
+}
+
+# Only an epic run needs the epic run's steps, so a story run loads none.
+@test "an epic run's steps are in references/epic-run.md" {
+  local file="$repo/skills/lets-go/references/epic-run.md" text
+  text="$(skill_part 'Run the epic')"
+  grep -qF '](references/epic-run.md#run-the-epic)' <<<"$text" ||
+    { echo "Run the epic does not link its steps in references/epic-run.md"; false; }
+  ! grep -qE '^ *[0-9]+\. ' <<<"$text" || { echo "Run the epic still has steps in SKILL.md"; false; }
+  [ -f "$file" ] || { echo "lets-go has no references/epic-run.md"; false; }
+  head -1 "$file" | grep -qE '^# ' || { echo "references/epic-run.md does not open with a # title"; false; }
+  sed -n 3p "$file" | grep -qF 'only in an epic run' ||
+    { echo "references/epic-run.md does not say a run reads it only in an epic run: $(sed -n 3p "$file")"; false; }
+  has_heading "$file" 'Run the epic' || { echo "references/epic-run.md has no heading: Run the epic"; false; }
+}
+
+@test "an epic run's Next line goes back to Check the issue, or on to End of the run" {
+  local line
+  line="$(next_line 'Run the epic')"
+  grep -qF '](#check-the-issue)' <<<"$line" && grep -qF '](#end-of-the-run)' <<<"$line" ||
+    { echo "it said: $line"; false; }
 }
 
 # Most issues carry no glossary handoff, so they need not load its file.

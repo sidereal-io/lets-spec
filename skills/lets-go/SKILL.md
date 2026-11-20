@@ -50,9 +50,12 @@ Start at [Read the settings](#read-the-settings). The table below shows
 the route through the run; each linked part gives its detailed actions.
 A run goes through these parts, in this order.
 [Start from an idea](#start-from-an-idea),
-[Run the shape step](#run-the-shape-step) and
-[Pick the first ready story](#pick-the-first-ready-story) run only when
-the request or the [packet](references/terms.md#packet) needs them. Each
+[Run the shape step](#run-the-shape-step),
+[Pick the first ready story](#pick-the-first-ready-story) and
+[Run the epic](#run-the-epic) run only when the request or the
+[packet](references/terms.md#packet) needs them.
+[Run the epic](#run-the-epic) runs only in an epic run, when the run's
+issue is an epic. Each
 part runs in this session. A part is not a step, and has no step report.
 The shape step that [Run the shape step](#run-the-shape-step) runs is a
 step, and has a report.
@@ -73,6 +76,7 @@ procedure ranks it.
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; otherwise [Route](#route) | An open blocker with no branch; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic`, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
+| [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | The epic has no open stories |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
 | [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table) | Never |
@@ -360,6 +364,14 @@ Follow its steps in
 [the shape file](references/shape.md#pick-the-first-ready-story).
 
 Next: [Check the issue](#check-the-issue), with the story that is ready.
+
+## Run the epic
+
+Follow its steps in
+[the epic run file](references/epic-run.md#run-the-epic).
+
+Next: [Check the issue](#check-the-issue), with the story the epic run
+picked; [End of the run](#end-of-the-run) when no story is left.
 
 ## Route
 
