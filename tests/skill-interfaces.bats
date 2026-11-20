@@ -4557,3 +4557,44 @@ story_run_file() {
   grep -qF '[Take up the story run](story-run.md#take-up-the-story-run)' <<<"$(skill_section lets-go 'Write the prompt')" ||
     { echo "Write the prompt does not take a child's values from the story prompt"; false; }
 }
+
+@test "story run: the child answers no question, and passes each step's questions up" {
+  local section phrase
+  has_heading "$(story_run_file)" 'Pass the questions up' || { echo "references/story-run.md has no heading: Pass the questions up"; false; }
+  section="$(skill_section lets-go 'Pass the questions up')"
+  for phrase in 'answers none of its questions, at either question mode' \
+    'the settled-question check of [Relay the questions](../SKILL.md#relay-the-questions)' \
+    'Append one line to `.workspace/lets-go/<session>-rounds.txt`' \
+    'date -u +%Y-%m-%dT%H:%M:%SZ >> .workspace/lets-go/<session>-rounds.txt' \
+    "a \`needs-input\` report that holds the step's questions, in the step's order, each with the step's \`recommendation\` when it has one" \
+    "From the step's sixth round" 'ask: true'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Pass the questions up does not say: $phrase"; false; }
+  done
+  grep -qF 'In a story run'"'"'s child, [pass them up](references/story-run.md#pass-the-questions-up) instead' <<<"$(part_section 'Read the report')" ||
+    { echo "Read the report does not send a child's questions up"; false; }
+}
+
+@test "story run: the child gives the epic run's answers to the step that asked" {
+  local section phrase
+  has_heading "$(story_run_file)" 'Give the answers to the step' || { echo "references/story-run.md has no heading: Give the answers to the step"; false; }
+  section="$(skill_section lets-go 'Give the answers to the step')"
+  for phrase in 'When the story prompt ends with an `## Answers` section' \
+    'At the first row of the walk that is not done' '`.workspace/lets-go/<session>-report.json`' \
+    'append each pair of the `## Answers` section whose question is one of that report'"'"'s questions to `.workspace/lets-go/<session>-answers.yaml`' \
+    '`--answers-file .workspace/lets-go/<session>-answers.yaml`' \
+    'reason: "stopped: the answers match no question the <step name> step asked"'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Give the answers to the step does not say: $phrase"; false; }
+  done
+  grep -qF '[Give the answers to the step](#give-the-answers-to-the-step)' <<<"$(skill_section lets-go 'Take up the story run')" ||
+    { echo "Take up the story run does not link Give the answers to the step"; false; }
+}
+
+@test "story run: the subagent step keeps a question's ask mark by the rule lets uses" {
+  local section phrase
+  section="$(skill_section lets-go 'Run a step in a subagent')"
+  for phrase in 'may have a string `recommendation` and a boolean `ask`' \
+    '`ask: true` is kept, `ask: false` is dropped, and any other value breaks the report' '`questions[0].ask`' \
+    'keeping `"ask":true` on each question marked `ask: true`'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Run a step in a subagent does not say: $phrase"; false; }
+  done
+}

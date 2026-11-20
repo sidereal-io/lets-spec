@@ -125,7 +125,7 @@ it always has.
 | `<login>` | The login of a person assigned to a story | The story's `assignees`, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](#run-the-epic) |
 | `<stopped-story>` | The story an epic run stopped at, as its key, in the line of another story that was not built | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<failed>` | The story whose run failed or stopped, as its key, in the line of a story that depends on it | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
-| `<step name>` | A step's name in plain words, as its `Failed` line names it, such as `review build` | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), from the failed step |
+| `<step name>` | A step's name in plain words, as its `Failed` line names it, such as `review build` | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), from the failed step, or, in a story run's child, [Story run](references/story-run.md), from the step the walk is on |
 | `<story-name>` | The part of a story's title before ` — `, or the whole title when it has none | [Run the epic](#run-the-epic), when it settles the story |
 | `<paths>` | The changed discovery maps, one path each | [Commit the discovery map](references/shape.md#commit-the-discovery-map), from its `git status` command |
 | `<pr-base>` | The base branch of a story's pull request, its `baseRefName` | [Run the epic](#run-the-epic), from its `gh pr list` read, or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr view` read |
@@ -1202,7 +1202,10 @@ start with no answers.
     `the step reported done, but the change state is blocked` or
     `the step reported done, but the branch has no pull request`. Go on
     as for `failed`, below.
-- **`needs-input`**: [relay its questions](#relay-the-questions).
+- **`needs-input`**: [relay its questions](#relay-the-questions). In a
+  story run's child,
+  [pass them up](references/story-run.md#pass-the-questions-up)
+  instead.
 - **`failed`, for shape**: there is no branch yet. Print shape's
   `Failed` line, as [The step lines](#the-step-lines) says. Say to run
   `lets-shape` on the idea, or on `#<i>`, and name no branch. Stop.
