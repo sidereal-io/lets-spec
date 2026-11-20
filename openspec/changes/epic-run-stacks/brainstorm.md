@@ -25,4 +25,4 @@ https://github.com/sidereal-io/lets-spec/issues/280
 - Clarified: a story with several open blockers in the epic still stacks when one blocker's branch contains the others. Only blockers on different branches are reported, not built, as the packet's *out* scope says (D7).
 - Added: the stacked pull request names the pull request to merge first (D8), and the epic run's lines show each stack (D9).
 
-Confirmed by user: no
+Confirmed by user: yes
