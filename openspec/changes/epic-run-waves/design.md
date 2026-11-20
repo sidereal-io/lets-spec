@@ -117,12 +117,16 @@ The reason comes from the wave just before the item's own. When the
 item is in the first wave it could take, that wave held its latest
 blocker: `blocked by <label>`. Otherwise an overlap pushed it out of
 that wave, and the reason names the first story there it overlaps. This
-gives one reason per story, and the story it names is always in the
-wave just before.
+gives one reason per story, and for an item the sort placed, the story
+it names is always in the wave just before.
 
 Items left after the sort have blockers in a loop, or depend on one.
 GitHub does not stop a loop of blocked-by links. Each left item gets a
 wave of its own, at the end, so the command still returns every item.
+Its reason names its first left blocker, which can sit in a later wave:
+with `--only 1,7,8`, where #7 and #8 block each other, #7 in wave 2
+waits for #8 in wave 3. The line is still true, and neither story is
+ever built.
 None of them is ever ready, so they get their `not built, blocked by`
 lines when the epic run reaches their wave.
 

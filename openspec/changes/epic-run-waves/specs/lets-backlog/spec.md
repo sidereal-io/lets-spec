@@ -43,7 +43,7 @@ In `lets backlog waves`, a named item SHALL be another named item's blocker when
 - **THEN** wave 1 holds #7 and #9
 
 ### Requirement: waves reads an item's paths from its packet's Relevant code
-`lets backlog waves` SHALL read an item's paths from the `- **Relevant code**:` list item of its body: that line, and the indented lines that continue it. A path SHALL be a code span with no space in it that holds a `/`, or that ends in a file extension: a `.` followed by letters or digits, such as `README.md`. Every other code span, such as `ready --only` or `subIssues`, SHALL be ignored, and so SHALL all text outside code spans, such as section names in parentheses. Two paths SHALL overlap when they are the same once a trailing `/` is dropped, or when one, with a `/` after it, starts the other: one is a folder that holds the other. Two items SHALL overlap when any of their paths overlap. An item SHALL overlap every other item when its body has no **Relevant code** list item, or its **Relevant code** names no path, such as `new`.
+`lets backlog waves` SHALL read an item's paths from the `- **Relevant code**:` list item of its body: that line, and the indented lines that continue it. A path SHALL be a code span with no space in it that holds a `/`, or that ends in a file extension: a `.` followed by letters or digits, such as `README.md`. A leading `./` SHALL be dropped from a path, so `./README.md` and `README.md` are the same path. Every other code span, such as `ready --only` or `subIssues`, SHALL be ignored, and so SHALL all text outside code spans, such as section names in parentheses. Two paths SHALL overlap when they are the same once a trailing `/` is dropped, or when one, with a `/` after it, starts the other: one is a folder that holds the other. Two items SHALL overlap when any of their paths overlap. An item SHALL overlap every other item when its body has no **Relevant code** list item, or its **Relevant code** names no path, such as `new`.
 
 #### Scenario: Section names and other code spans are ignored
 - **WHEN** #279's body holds ``- **Relevant code**: `skills/lets-go/SKILL.md` (*Check the issue*), `lets/src/backlog/commands.ts` (`ready --only`, `subIssues`)``
@@ -72,12 +72,12 @@ In `lets backlog waves`, a named item SHALL be another named item's blocker when
 ### Requirement: waves places each item in the earliest wave it fits
 `lets backlog waves` SHALL place the items one at a time. Each time, it SHALL take the first item, in the order `--only` gives, that is not placed yet and whose blockers are all placed. It SHALL put that item in the earliest wave after every wave that holds one of its blockers. While the item overlaps a story already in that wave, it SHALL move the item to the next wave, and open a new wave after the last one when it needs to.
 
-A story in a later wave SHALL carry the story it waits for in the wave just before its own, and the reason:
+A story that this sort placed in a later wave SHALL carry the story it waits for in the wave just before its own, and the reason:
 
 - When that wave holds one of its blockers, `waitsFor` SHALL be the first such blocker in that wave, and `reason` SHALL be `blocked by <label>`, such as `blocked by #285`.
 - Otherwise `waitsFor` SHALL be the first story in that wave that the item overlaps. When the item names no path, `reason` SHALL be `its packet names no Relevant code`. When that story names no path, `reason` SHALL be `<label>'s packet names no Relevant code`. Otherwise take the item's first path, in its packet's order, that overlaps a path of that story, and the first such path of that story. When the two are the same, `reason` SHALL be `both name <path>`. When one holds the other, `reason` SHALL be `<folder> holds <path>`.
 
-When items are left that cannot be placed, because their blockers form a loop or depend on one, waves SHALL place them in the order `--only` gives, each in a new wave of its own after the last one. For each of these that is not in the first wave, `waitsFor` SHALL be its first blocker, in the order `--only` gives, that was left, and `reason` SHALL be `blocked by <label>, through a loop of blocked-by links`.
+When items are left that cannot be placed, because their blockers form a loop or depend on one, waves SHALL place them in the order `--only` gives, each in a new wave of its own after the last one. For each of these that is not in the first wave, `waitsFor` SHALL be its first blocker, in the order `--only` gives, that was left, and `reason` SHALL be `blocked by <label>, through a loop of blocked-by links`. That blocker can be in a later wave than the item's own.
 
 #### Scenario: The waves of an epic
 - **WHEN** a user runs `lets backlog waves --only 283,285,286,287`, #283's **Relevant code** names `skills/lets-shape/SKILL.md` and `skills/lets-go/references/shape.md`, #285's names `lets/src/backlog/commands.ts`, #286 is blocked by the open #285 and names `lets/src/delegate/step.ts`, and #287 names `skills/lets-go/references/shape.md`
@@ -106,3 +106,7 @@ When items are left that cannot be placed, because their blockers form a loop or
 #### Scenario: A loop of blockers
 - **WHEN** a user runs `lets backlog waves --only 7,8`, #7 is blocked by the open #8, #8 is blocked by the open #7, and they name no overlapping paths
 - **THEN** wave 1 holds #7, with `null` reasons, and wave 2 holds #8, waiting for #7 with `blocked by #7, through a loop of blocked-by links`
+
+#### Scenario: A loop after a placed item
+- **WHEN** a user runs `lets backlog waves --only 1,7,8`, #1 is not blocked, #7 is blocked by the open #8, #8 is blocked by the open #7, and no two of them name overlapping paths
+- **THEN** wave 1 holds #1, wave 2 holds #7, waiting for #8 with `blocked by #8, through a loop of blocked-by links`, and wave 3 holds #8, waiting for #7 with `blocked by #7, through a loop of blocked-by links`
