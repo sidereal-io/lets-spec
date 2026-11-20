@@ -582,7 +582,10 @@ fails in CI until someone enters the dev shell on its branch and commits.
 ### Automate updates
 
 A GitHub Actions workflow can run those steps every week and open a pull
-request with the result. Save it as `.github/workflows/update-lets-spec.yml`:
+request with the result. It relies on your project committing `mise.lock`,
+as [With mise](#with-mise) says: `mise upgrade` moves the pin there, and
+`mise.toml` stays the same. Save the workflow as
+`.github/workflows/update-lets-spec.yml`:
 
 ```yaml
 name: update Let's Spec
@@ -630,6 +633,14 @@ one up:
 If your organization does not want a token tied to one person, use a
 GitHub App token instead: create it in the workflow with
 `actions/create-github-app-token`, and pass it as `token`.
+
+Each run opens or updates one pull request with the new `mise.lock` and
+what `lets sync` wrote. A run that changes nothing opens no pull request.
+In the `ignored` skills mode, git ignores the copies, so the pull request
+holds only `mise.lock` and any rules or `.gitignore` change.
+
+The workflow does not check its own result. To catch an incomplete update,
+have your project's CI run `mise exec -- lets sync --check` on pull requests.
 
 ## 🛠️ Development
 

@@ -3779,3 +3779,23 @@ automate_updates_prose() {
   [[ "$(automate_updates_prose)" == *'GitHub App'*'`actions/create-github-app-token`'* ]] ||
     { echo "the section does not name actions/create-github-app-token for a GitHub App"; false; }
 }
+
+@test "Automate updates says the workflow relies on a committed mise.lock" {
+  [[ "$(automate_updates_prose)" == *'relies on your project committing `mise.lock`'* ]] ||
+    { echo "the section does not say the workflow relies on a committed mise.lock"; false; }
+}
+
+@test "Automate updates says a run that changes nothing opens no pull request" {
+  [[ "$(automate_updates_prose)" == *'A run that changes nothing opens no pull request'* ]] ||
+    { echo "the section does not say a run that changes nothing opens no pull request"; false; }
+}
+
+@test "Automate updates tells the project's CI to run lets sync --check on pull requests" {
+  [[ "$(automate_updates_prose)" == *'CI'*'run `mise exec -- lets sync --check` on pull requests'* ]] ||
+    { echo "the section does not tell CI to run mise exec -- lets sync --check on pull requests"; false; }
+}
+
+@test "Automate updates says what the pull request holds in the ignored skills mode" {
+  [[ "$(automate_updates_prose)" == *'`ignored` skills mode'*'only `mise.lock` and any rules or `.gitignore` change'* ]] ||
+    { echo "the section does not say what an ignored-mode pull request holds"; false; }
+}
