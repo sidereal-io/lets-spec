@@ -69,8 +69,8 @@ An epic run SHALL end with one line for every story the epic had when the run st
 - A story whose walk stopped for another reason: `#<story> <story-name>: stopped: <reason>`.
 
 #### Scenario: Two built, one blocked
-- **WHEN** an epic run on #278 builds #279 and then a story #290, and #280 is blocked by #279 throughout
-- **THEN** *End of the run* prints `#279 epic-run-skeleton: <pr-url>`, then `#290 <story-name>: <pr-url>`, then `#280 epic-run-stacks: not built, blocked by #279`
+- **WHEN** an epic run on #278 builds #279 and then a story #391, and #280 is blocked by #279 throughout
+- **THEN** *End of the run* prints `#279 epic-run-skeleton: <pr-url>`, then `#391 <story-name>: <pr-url>`, then `#280 epic-run-stacks: not built, blocked by #279`
 
 #### Scenario: An assigned story
 - **WHEN** #282 is assigned to `octocat` when the epic run starts
@@ -84,12 +84,12 @@ An epic run SHALL end with one line for every story the epic had when the run st
 While an epic run is on a story, from its pick to its line, a stop SHALL end the epic run at that story. This holds for a failed step, for records that disagree, for a pull request that is merged or closed, and for every other stop of the parts and procedures the story runs through, except the lost claim of *A lost claim drops the issue, and three lost claims stop the run*. `lets-go` SHALL first do what the stop says, such as print the `Failed` line and the pull request's URL. It SHALL then settle the story with `failed at <step name>: <reason>` for a failed step, or `stopped: <reason>` for any other stop. Each story the run had not settled SHALL get `not built, the epic run stopped at #<story>`, naming the story it stopped at, in the epic's order. `lets-go` SHALL then print every line, as *End of the run* does, and stop. Going on past a failure is #281.
 
 #### Scenario: A failed build
-- **WHEN** an epic run on #278 has built #279, and the build step of #290 reports `failed` with the reason `tests fail on main`
-- **THEN** `lets-go` prints `Failed build: tests fail on main`, then the lines `#279 epic-run-skeleton: <pr-url>`, `#290 <story-name>: failed at build: tests fail on main`, and `not built, the epic run stopped at #290` for each story not settled, and stops
+- **WHEN** an epic run on #278 has built #279, and the build step of #391 reports `failed` with the reason `tests fail on main`
+- **THEN** `lets-go` prints `Failed build: tests fail on main`, then the lines `#279 epic-run-skeleton: <pr-url>`, `#391 <story-name>: failed at build: tests fail on main`, and `not built, the epic run stopped at #391` for each story not settled, and stops
 
 #### Scenario: Records that disagree
-- **WHEN** the walk of #290 finds that the records disagree
-- **THEN** #290's line is `#290 <story-name>: stopped: ` followed by the disagreement, and the epic run picks no other story
+- **WHEN** the walk of #391 finds that the records disagree
+- **THEN** #391's line is `#391 <story-name>: stopped: ` followed by the disagreement, and the epic run picks no other story
 
 #### Scenario: The rule is written once
 - **WHEN** the skill-interfaces test reads `skills/lets-go/references/epic-run.md`
@@ -300,8 +300,8 @@ The review build step SHALL run the `lets-review-build` skill. On `lets-standard
 - **THEN** the third line starts `Done review plan: ` and the fourth starts `Done build: `
 
 #### Scenario: A finished story in an epic run
-- **WHEN** an epic run on #278 is building #279, and review build reports `done` for it with pull request #290 ready for review
-- **THEN** `lets-go` prints `#279 epic-run-skeleton: https://github.com/sidereal-io/lets-spec/pull/290`, switches to the default branch, and ranks the epic's stories again, and the run is not over
+- **WHEN** an epic run on #278 is building #279, and review build reports `done` for it with pull request #392 ready for review
+- **THEN** `lets-go` prints `#279 epic-run-skeleton: https://github.com/sidereal-io/lets-spec/pull/392`, switches to the default branch, and ranks the epic's stories again, and the run is not over
 
 #### Scenario: Every step was already done
 - **WHEN** Start finds the archive folder `openspec/changes/archive/2026-11-04-lets-go-chore`, and pull request #167 is ready for review with a `Code review` section
