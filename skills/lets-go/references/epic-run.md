@@ -39,7 +39,24 @@ as for any picked issue.
    [Settle a story](#settle-a-story) says. Never pass a sub-issue in
    another repository in `--only`: its key can name an issue of this
    repository.
-2. **Pick the next story.** Run the third case, `next`, of
+2. **Settle the story whose walk ended,** when the run comes back to
+   this part from
+   [Walk the step table](../SKILL.md#walk-the-step-table).
+   The story's pull request is ready for review. Read its URL as
+   `<pr-url>`, and settle the story with its built line, as
+   [Settle a story](#settle-a-story) says:
+
+   ```bash
+   gh pr view <name> --json url --jq .url
+   ```
+
+   Then go back to the default branch, so the next story's branch is
+   created off it:
+
+   ```bash
+   git switch <default>
+   ```
+3. **Pick the next story.** Run the third case, `next`, of
    [Find the source of demand](../SKILL.md#find-the-source-of-demand),
    with one narrowing: the candidates are the epic's stories that are in
    this repository and not settled yet, and no other issue. Pass the
@@ -52,7 +69,7 @@ as for any picked issue.
    Rank the stories again for every pick: a story built in this run can
    change what is ready. On an error, act as
    [Backlog errors](../SKILL.md#backlog-errors) says.
-3. On its result:
+4. On its result:
    - **`picked`:** print:
 
      ```text
@@ -78,6 +95,13 @@ story, print its line, and append it to
 `.workspace/lets-go/epic-<parent>-lines.txt`. Print each line as the
 story settles, before the next `Picked` line. `<story-name>` is the part
 of the story's title before ` — `, or the whole title when it has none.
+
+A story whose pull request is ready for review gets this line, with the
+pull request's URL:
+
+```text
+#<story> <story-name>: <pr-url>
+```
 
 A story that was not built gets this line:
 

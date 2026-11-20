@@ -80,8 +80,8 @@ procedure ranks it.
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
 | [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table) | Never |
-| [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run) | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
-| [End of the run](#end-of-the-run) | Prints the pull request's URL | this session | Nothing: the run is over | Always |
+| [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run); [Run the epic](#run-the-epic) in an epic run | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
+| [End of the run](#end-of-the-run) | Prints the pull request's URL, or each story's line in an epic run | this session | Nothing: the run is over | Always |
 
 Any part also stops when a `lets backlog` command returns an error, as
 [Backlog errors](#backlog-errors) says.
@@ -108,6 +108,7 @@ as it always has.
 | `<story>` | One story, as its key: a story that a shape step's report names, or a story of an epic run | Each `story` line of the shape report, or [Run the epic](#run-the-epic), for the story it picks or settles |
 | `<story-name>` | The part of a story's title before ` — `, or the whole title when it has none | [Run the epic](#run-the-epic), when it settles the story |
 | `<paths>` | The changed discovery maps, one path each | [Commit the discovery map](references/shape.md#commit-the-discovery-map), from its `git status` command |
+| `<pr-url>` | The URL of a story's pull request, in an epic run | [Run the epic](#run-the-epic), when it settles a built story |
 | `<pr>` | The number of the change's pull request | [Read the records](references/records.md#read-the-records), from the pull request's `number` |
 | `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | [Check the issue](#check-the-issue), from the blocker read's title. After a shape step, [Check the issue](#check-the-issue) sets it again from the shaped issue's title |
 | `<branch>` | The branch the run started on, when it is not the default branch | [Read the settings](#read-the-settings), from `git branch --show-current` |
@@ -625,7 +626,9 @@ Then settle the row:
   [read its report](#read-the-report). It checks a `done` report against
   the records, and says what to print and whether the walk goes on.
 
-Next: [End of the run](#end-of-the-run), when no row is left.
+Next: [End of the run](#end-of-the-run), when no row is left; in an
+epic run, [Run the epic](#run-the-epic) instead, which settles the
+story and picks the next one.
 
 ## End of the run
 
@@ -643,6 +646,11 @@ request: say that the branch has no pull request yet.
 ```bash
 gh pr view <name> --json url --jq .url
 ```
+
+In an epic run, print every line of
+`.workspace/lets-go/epic-<parent>-lines.txt`, in order, instead of a
+pull request's URL: [Run the epic](#run-the-epic) has settled every
+story, and each built story's line holds its pull request's URL.
 
 `lets-go` keeps no state of its own. Its files in `.workspace/lets-go/`
 are scratch: without them, a new run reaches the same step.

@@ -2349,6 +2349,26 @@ epic_run_file() {
     { echo "Run the epic does not settle a sub-issue in another repository"; false; }
 }
 
+@test "an epic run goes back to Run the epic after each story's walk" {
+  local line
+  line="$(next_line 'Walk the step table')"
+  grep -qF '](#end-of-the-run)' <<<"$line" && grep -qF 'in an epic run, [Run the epic](#run-the-epic)' <<<"$line" ||
+    { echo "it said: $line"; false; }
+}
+
+@test "an epic run settles a built story with its pull request's URL, then switches to the default branch" {
+  local part
+  part="$(part_section 'Run the epic')"
+  grep -qxF '#<story> <story-name>: <pr-url>' <<<"$(text_block_lines 'Settle a story' "$(epic_run_file)")" ||
+    { echo "Settle a story has no text block with a built story's line"; false; }
+  grep -qF 'git switch <default>' <<<"$part" || { echo "Run the epic does not switch to the default branch"; false; }
+}
+
+@test "an epic run ends by printing every story's line" {
+  grep -qF 'In an epic run, print every line of `.workspace/lets-go/epic-<parent>-lines.txt`' <<<"$(part_section 'End of the run')" ||
+    { echo "End of the run does not print the epic run's lines"; false; }
+}
+
 # long_lines <file>...: each line longer than 72 columns, as
 # <file>:<line>: <length>, the file under the skills folder. A column is one
 # code point: the count leaves out UTF-8 continuation bytes, so it holds in
