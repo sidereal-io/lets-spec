@@ -54,11 +54,12 @@ Behavior that only a live run shows, such as a whole epic run on #278, is outsid
 
 5. **The story lines live in a scratch file, `.workspace/lets-go/epic-<parent>-lines.txt`.** *Run the epic* writes the file afresh when the epic run starts, appends each line as the story settles, and prints that line. *End of the run* prints the file. An epic run can hold many long steps, and the file keeps the lines through a long session. It is scratch, like the other files in `.workspace/lets-go/`: no rule reads it to decide what to do, and resume (#282) reads Git and GitHub.
 
-6. **One rule says what a stop does in an epic run, in `references/epic-run.md`.** It applies to every stop of every part and procedure while a story is in progress, except the lost claim. `SKILL.md` links the rule once, beside the sentence after the overview that says any part stops on a `lets backlog` error. Each stop keeps its own text, so the existing requirements and tests stay as they are. *Alternative:* add an epic-run clause to each stop. That is about twenty clauses, and breaks "each rule is written once".
+6. **One rule says what a stop does in an epic run, under the heading *A stop in an epic run* in `references/epic-run.md`.** It applies to every stop of every part and procedure while a story is in progress, except the lost claim. The rule's text is written once. Each stop keeps its own text, so the existing requirements and tests stay as they are. The rule is linked where an agent meets a stop, as each `lets backlog` call links *Backlog errors*: one link in each section that holds a stop a story can reach, next to its stops. Those sections are *Check the issue*, *Enter the branch*, *Walk the step table*, *Run a step*, *Read the report* and *Relay the questions* in `SKILL.md`, and *Records that disagree* in `references/records.md`. The sentence after the overview that says any part stops on a `lets backlog` error links the rule too. A test checks that each of the seven sections has the link.
+   *Alternative:* add an epic-run clause to each stop. That is about twenty clauses, and breaks "each rule is written once". *Alternative:* a link at every single stop, about twenty. One link per section sits close enough to each stop, and keeps the sections readable. *Alternative:* link only from the overview. An agent that reaches a local `Stop.` deep in a story's steps may not hold the overview in mind, and end without settling the story lines (plan review round 1).
 
 7. **A lost claim in an epic run goes back to *Run the epic*.** In *Enter the branch*, the `taken` case gets an epic-run branch first: settle the story with `not built, taken by <login>` and go back to *Run the epic*, counting no lost claim. *Enter the branch*'s `Next:` line names *Run the epic* for that case (D8).
 
-8. **New placeholders, each with one meaning.** `<story-name>` (the part of a story's title before ` — `, or the whole title), `<pr-url>` (a story's pull request URL), `<login>` (an assignee's login) and `<step name>` (a step's name in plain words, such as `review build`). The rows for `<parent>` and `<story>` also say that *Run the epic* sets them. A blocker in a `not built` line is written `#<blocker>`, which needs one more row. The old `<n>` stays unused.
+8. **New placeholders, each with one meaning.** `<story-name>` (the part of a story's title before ` — `, or the whole title), `<pr-url>` (a story's pull request URL), `<login>` (an assignee's login) and `<step name>` (a step's name in plain words, such as `review build`). `<stopped-story>` (the story the epic run stopped at, in a `not built` line for another story). The rows for `<parent>` and `<story>` also say that *Run the epic* sets them. A blocker in a `not built` line is written `#<blocker>`, which needs one more row. The old `<n>` stays unused.
 
 9. **The new fixed lines go in `text` blocks in `references/epic-run.md`:**
 
@@ -71,7 +72,7 @@ Behavior that only a live run shows, such as a whole epic run on #278, is outsid
    #<story> <story-name>: stopped: <reason>
    ```
 
-   The reasons in a `not built` line, such as `blocked by #<blocker>` and `taken by <login>`, are listed beside the lines.
+   The reasons in a `not built` line, such as `blocked by #<blocker>`, `taken by <login>` and `the epic run stopped at #<stopped-story>`, are listed beside the lines. `<stopped-story>` and `<story>` are two placeholders because the line names two stories: `#<story>` is the story not built, and `#<stopped-story>` the story the run stopped at.
 
 10. **The question mode is set per story, by the existing part.** *Set the question mode* runs for each story and prints its line. The mode the user named for the epic run is its first source, so it holds for every story. Nothing changes in that part.
 
@@ -83,7 +84,7 @@ No decision here is costly to reverse: each is prose in one skill, and #280 to #
 
 ## Risks / Trade-offs
 
-- [An agent at a stop deep in a story's walk misses the epic-run rule, and stops without printing the lines] → The rule is linked from the overview, next to the backlog-error stop that every part already obeys. The scenarios of *A failure or a stop ends the epic run at that story* name a failed build and records that disagree.
+- [An agent at a stop deep in a story's walk misses the epic-run rule, and stops without printing the lines] → Each section that holds such a stop links the rule next to its stops, as each `lets backlog` call links *Backlog errors*, and a test checks every one of those links. A new stop added later in another section can still miss it; the test names the sections, so a change that adds one updates that list. The scenarios of *A failure or a stop ends the epic run at that story* name a failed build and records that disagree.
 - [The session's context fills up over many stories, because each story runs in this session] → Accepted for the skeleton: each step still runs in a fresh session, so this session holds only lines and reports. The lines file keeps the result. #284 moves each story run into a child session.
 - [A stale lines file from an earlier epic run mixes old lines into the new run] → *Run the epic* writes the file afresh when the epic run starts.
 - [The glossary describes behavior this change does not have] → The spec and `epic-run.md` say which parts are left to #283 and #284 (D4).
