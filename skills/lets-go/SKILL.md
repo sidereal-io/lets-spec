@@ -879,9 +879,11 @@ return to the part that ran it, with the result.
    [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
    returns `no-owned-edits`, and you read no file. Otherwise run
    [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
-   against the proposed base. When it returns `unresolved` or
-   `checkpoint-failed`, return that result now, with what it carries,
-   before you assign the issue.
+   against the proposed base, the branch the change's branch is
+   created from below: the default branch. For a stacked story, the
+   proposed base is `origin/<blocker-branch>`. When it returns
+   `unresolved` or `checkpoint-failed`, return that result now, with
+   what it carries, before you assign the issue.
 3. Claim the issue. On an error, act as
    [Backlog errors](#backlog-errors) says.
 
@@ -904,9 +906,20 @@ return to the part that ran it, with the result.
      the `write` that failed, its `message` and its `claim` token when
      present. Return it now, before you create a branch, and undo
      nothing.
-4. Create a branch with the change's name off the default branch. This
-   also fails when a local branch with the change's name appeared after
-   [Check the issue](#check-the-issue) looked. A branch that appeared
+4. Create a branch with the change's name off the default branch. For
+   a story that
+   [Stack the story](references/epic-run.md#stack-the-story) stacked,
+   create it off the blocker's branch instead, with no
+   upstream, so that a later plain `git push` never pushes to the
+   blocker's branch:
+
+   ```bash
+   git switch --no-track -c <name> origin/<blocker-branch>
+   ```
+
+   Creating the branch also fails when a local branch with the
+   change's name appeared after [Check the issue](#check-the-issue)
+   looked. A branch that appeared
    only on `origin` does not make it fail: the plan step's first push is
    then rejected, and that step fails. If creating the branch fails,
    release the claim. It releases only this session's claim:

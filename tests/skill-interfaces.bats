@@ -3957,3 +3957,17 @@ EXPECTED
   grep -qF 'or when [Stack the story](references/epic-run.md#stack-the-story) settled the story' <<<"$(next_line 'Check the issue')" ||
     { echo "the Next line of Check the issue does not name Run the epic after a settle"; false; }
 }
+
+@test "stack: Claim creates a stacked story's branch off its blocker's branch with no upstream" {
+  local claim
+  claim="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
+  grep -qF 'git switch --no-track -c <name> origin/<blocker-branch>' <<<"$claim" ||
+    { echo "Claim does not branch a stacked story off its blocker's branch"; false; }
+  grep -qF "Create a branch with the change's name off the default branch" <<<"$claim" ||
+    { echo "Claim no longer branches an unstacked story off the default branch"; false; }
+}
+
+@test "stack: Claim's proposed base for a stacked story is its blocker's branch" {
+  grep -qF 'For a stacked story, the proposed base is `origin/<blocker-branch>`' <<<"$(procedure_text 'Claim' | tr -s '[:space:]' ' ')" ||
+    { echo "Claim does not name a stacked story's proposed base"; false; }
+}
