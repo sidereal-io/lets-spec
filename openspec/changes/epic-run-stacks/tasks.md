@@ -22,7 +22,7 @@ Every test goes in `tests/skill-interfaces.bats` and reads `skills/lets-go/` or 
 ## 3. Docs and integration [depends-on: 2]
 
 - [x] 3.1 [easy] The `lets-go` section of `README.md` says that in an epic run a story blocked by another story of the epic stacks on that story's branch, and its pull request targets that branch; it no longer says `It leaves a blocked story out`. The test `the README says lets-go builds an epic's ready stories in turn` checks the new sentence (verify: bats tests/skill-interfaces.bats -f 'README') (✓ bats tests/skill-interfaces.bats -f 'README' passed)
-- [ ] 3.2 [easy] The whole suite, the flake checks and the OpenSpec validation pass (verify: pnpm test && nix flake check && mise run check)
+- [x] 3.2 [easy] The whole suite, the flake checks and the OpenSpec validation pass (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test && nix flake check && mise run check passed)
 
 ## Deviations Ledger
 
