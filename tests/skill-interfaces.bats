@@ -1286,6 +1286,16 @@ readme_lets_go() {
     { echo "the README still says review plan runs inside build"; false; }
 }
 
+@test "the README says lets-go builds an epic's ready stories in turn" {
+  local section phrase
+  section="$(readme_lets_go)"
+  for phrase in "Given an epic's number, \`lets-go\` builds each ready story of the epic in turn" \
+    'It leaves a blocked story out' 'ends with one line per story'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "the README's lets-go section does not say: $phrase"; false; }
+  done
+  ! grep -qF 'It never takes an epic' <<<"$section" || { echo "the README still says lets-go never takes an epic"; false; }
+}
+
 @test "lets-go runs review plan as a step of its own" {
   skill_says lets-go '--for review-plan'
   skill_says lets-go '--name <name>-review-plan'

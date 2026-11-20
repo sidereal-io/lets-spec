@@ -17,7 +17,7 @@ Every test goes in `tests/skill-interfaces.bats` and reads `skills/lets-go/`. Na
 
 ## 3. Docs and integration [depends-on: 2]
 
-- [ ] 3.1 [easy] The `lets-go` section of `README.md` says that `lets-go` with an epic's number builds each ready story of the epic in turn, leaves a blocked story out, and ends with one line per story. A test checks that the README says it (verify: bats tests/skill-interfaces.bats -f 'README')
+- [x] 3.1 [easy] The `lets-go` section of `README.md` says that `lets-go` with an epic's number builds each ready story of the epic in turn, leaves a blocked story out, and ends with one line per story. A test checks that the README says it (verify: bats tests/skill-interfaces.bats -f 'README') (✓ bats tests/skill-interfaces.bats -f 'README' passed; full suite 352/352)
 - [ ] 3.2 [easy] The whole suite, the flake checks and the OpenSpec validation pass (verify: pnpm test && nix flake check && mise run check)
 
 ## Deviations Ledger
