@@ -31,12 +31,16 @@ as for any picked issue.
    ```
 
    Then stop, claiming nothing and creating no branch. Otherwise,
-   write `.workspace/lets-go/epic-<parent>-lines.txt` afresh, empty, so
-   that no line of an earlier epic run mixes into this one:
+   write `.workspace/lets-go/epic-<parent>-lines.txt` afresh, empty,
+   and `.workspace/lets-go/epic-<parent>-children.txt` beside it, so
+   that nothing of an earlier epic run mixes into this one. The lines
+   file holds each story's line, and the children file each child this
+   run waits for, as [Wait for the wave](#wait-for-the-wave) says:
 
    ```bash
    mkdir -p .workspace/lets-go
    : > .workspace/lets-go/epic-<parent>-lines.txt
+   : > .workspace/lets-go/epic-<parent>-children.txt
    ```
 
    Then, before the first pick, read what an earlier epic run left of
@@ -138,10 +142,25 @@ as for any picked issue.
    Print the waves once in an epic run, even when there is only one
    wave. The wave lines are not story lines: append none of them to the
    lines file.
-2. **Settle the story whose walk ended,** when the run comes back to
-   this part from [Start the story run](#start-the-story-run), or from
+2. **Settle the story whose run ended,** when the run comes back to
+   this part from [Wait for the wave](#wait-for-the-wave), or from
    [Walk the step table](../SKILL.md#walk-the-step-table) after this
-   session walked the story's steps.
+   session walked the story's steps. `<path>` is the story's worktree.
+
+   Before you settle a story with its built or stacked line, remove its
+   worktree, and keep its branch: the pull request needs it. Remove only
+   a worktree under `.workspace/lets-go/worktrees/`, which the epic run
+   created. A worktree it reused from elsewhere stays as it is. Without
+   `--force`, Git refuses a worktree that holds files that are not
+   committed, so nothing is lost:
+
+   ```bash
+   git worktree remove <path>
+   ```
+
+   When it fails, keep the worktree, and end the story's line with
+   `; its worktree at <path> could not be removed: ` followed by Git's
+   error.
 
    After a walk in this session, the story's pull request is ready for
    review. Read its URL as `<pr-url>`, and settle the story with its
@@ -152,8 +171,8 @@ as for any picked issue.
    gh pr view <name> --json url --jq .url
    ```
 
-   After a child session, settle the story from the exit code of
-   `lets delegate step run --for story` and the report in
+   After a child session, settle the story from the exit code that
+   `lets delegate step wait` gave for its child, and the report in
    `.workspace/lets-go/<name>-story-report.json`:
 
    - **Exit 0, `done`:** check the child's word against the pull
@@ -179,8 +198,9 @@ as for any picked issue.
      A child that did not finish in time exits 6.
 
    Exit 3 is not settled here:
-   [Start the story run](#start-the-story-run) walks the story's steps
-   in this session, and the run comes back here when that walk ends.
+   [Wait for the wave](#wait-for-the-wave) keeps the story, walks its
+   steps in this session once no child runs, and the run comes back
+   here when that walk ends.
 
    Every line but a built or stacked line is a stop in a story run.
    Settle the story with it, as [Settle a story](#settle-a-story) says.
@@ -189,7 +209,8 @@ as for any picked issue.
    the dependents and the switch to the default branch. Start no child
    session again for the story in this run.
 
-   After a built or stacked line, go on to the next step.
+   After a built or stacked line, go back to
+   [Wait for the wave](#wait-for-the-wave).
 
    After a lost claim, the run comes back from
    [Enter the branch](../SKILL.md#enter-the-branch), which has settled
@@ -302,16 +323,25 @@ as for any picked issue.
        `assignees`; else its `status`, `kind` or `priority`, such as
        `its Status is Done`.
 
-     When a later wave holds a story not settled yet, go back to *Pick
-     the next story*, which picks from that wave. Otherwise go to
-     [End of the run](../SKILL.md#end-of-the-run).
+     A story whose child this run started is not settled by the pick:
+     give no `not built` line to a story that the children file lists.
+     Then go to [Wait for the wave](#wait-for-the-wave).
 
 ### Settle a story
 
 A story is settled once the epic run has given it its line. To settle a
 story, print its line, and append it to
 `.workspace/lets-go/epic-<parent>-lines.txt`. Print each line as the
-story settles, before the next `Picked` line. `<story-name>` is the part
+story settles, before the next `Picked` line. When the children file
+lists the story, remove the story's line from
+`.workspace/lets-go/epic-<parent>-children.txt`, so no wait names its
+child again:
+
+```bash
+grep -v '^<story> ' .workspace/lets-go/epic-<parent>-children.txt > .workspace/lets-go/epic-<parent>-children.new
+mv .workspace/lets-go/epic-<parent>-children.new .workspace/lets-go/epic-<parent>-children.txt
+```
+ `<story-name>` is the part
 of the story's title before ` — `, or the whole title when it has none.
 
 A story whose pull request is ready for review gets this line, with the
@@ -349,6 +379,90 @@ The reason says why, such as `in another repository`,
 `assigned to <login>`, `its packet is not complete`,
 `its pull request was closed: <pr-url>` or
 `it depends on #<failed>, which did not finish`.
+
+### Wait for the wave
+
+*Pick the next story* runs this once its pick has returned
+`nothing-ready`, and the stories it left are settled. It waits for the
+children [Start the story run](#start-the-story-run) started for the
+current wave, and acts on each one as it ends, one at a time.
+`.workspace/lets-go/epic-<parent>-children.txt` lists them, one line
+each: `<i> <name> running` while the child runs, and `<i> <name> walk`
+for a story whose child could not start, which this session walks.
+
+1. While the file lists a child as `running`, wait for the next one to
+   end: run
+   `lets delegate step wait --timeout-minutes 5 --name <name>-story`,
+   with one `--name <name>-story` for each child the file lists as
+   `running`, in the file's order, such as:
+
+   ```bash
+   lets delegate step wait --timeout-minutes 5 --name epic-run-stacks-story --name epic-run-failures-story
+   ```
+
+   The 5-minute limit makes the command return before an agent host
+   stops a long command. On a host that lets a command set its own time
+   limit, give the command more than 5 minutes, such as 6.
+
+   On exit 0, it prints one JSON line, `{"name","exit"}`: the child that
+   ended first, and the exit code its `lets delegate step run` gave.
+   The story whose `<name>-story` it names is `<i>` and `<story>` from
+   here on, and `<path>` is its worktree. Read its report in
+   `.workspace/lets-go/<name>-story-report.json`, and act on it:
+   - **Exit 0, with a `needs-input` report:** go to
+     [Relay a story run's questions](#relay-a-story-runs-questions).
+     It starts the child again, and comes back here. The other children
+     keep running meanwhile.
+   - **Exit 3:** no child session could start for the story. Keep it
+     for a walk in this session, and settle nothing: move its line to
+     the end of the file as `<i> <name> walk`, so the walks keep the
+     order the children ended in.
+
+     ```bash
+     grep -v '^<i> ' .workspace/lets-go/epic-<parent>-children.txt > .workspace/lets-go/epic-<parent>-children.new
+     echo '<i> <name> walk' >> .workspace/lets-go/epic-<parent>-children.new
+     mv .workspace/lets-go/epic-<parent>-children.new .workspace/lets-go/epic-<parent>-children.txt
+     ```
+
+   - **Any other:** go to *Settle the story whose run ended*, in
+     [Run the epic](#run-the-epic), which settles the story from its
+     report and meta file, and comes back here.
+
+   On any other exit of `lets delegate step wait` itself:
+   - **6:** run the same command again. No child ended in 5 minutes,
+     and each still runs. Settle nothing.
+   - **Any other:** the epic run cannot wait for its children. Say the
+     command's error, and name each child the file lists as `running`,
+     with its worktree: the children go on running, and their reports
+     stay in their report files. Print every line of
+     `.workspace/lets-go/epic-<parent>-lines.txt`, in order, as
+     [End of the run](../SKILL.md#end-of-the-run) does, and stop.
+2. Once no child runs, walk each story the file lists as `walk`, one at
+   a time, in the file's order. For each one, print:
+
+   ```text
+   No child session could start for #<i>, so this session walks its steps.
+   ```
+
+   Take the story's `<schema>`, `<route line>` and `<mode>`, and its
+   `## Stack` section when it has one, from its story prompt,
+   `.workspace/lets-go/<name>-story-prompt.md`, as
+   [Take up the story run](story-run.md#take-up-the-story-run) does.
+   Then walk the story's steps in this session, from
+   [Walk the step table](../SKILL.md#walk-the-step-table), with
+   `<path>` as the repository root: run each of the walk's commands
+   from `<path>`. Each step runs as
+   [Run a step](../SKILL.md#run-a-step) says: in a fresh session, or in
+   a subagent on that step's own exit 3. Run no subagent with the story
+   prompt, even when the meta file names a saved prompt: a subagent
+   cannot give each step a fresh session. When the walk ends, the run
+   goes to *Settle the story whose run ended*, in
+   [Run the epic](#run-the-epic), which settles the story and comes
+   back here.
+3. Once no child runs and the file lists no `walk` story, the current
+   wave is settled. When a later wave holds a story not settled yet,
+   go back to *Pick the next story*, which picks from that wave.
+   Otherwise go to [End of the run](../SKILL.md#end-of-the-run).
 
 ## Start the story run
 
@@ -466,25 +580,8 @@ in this checkout.
    their answers, and the stories' lines.
 5. **Go back to [Run the epic](#run-the-epic),** which picks the next
    story at once, without waiting for the child.
-6. **Once the child has ended, act on its exit code:**
-   - **3:** no child session can start here. Print:
-
-     ```text
-     No child session could start for #<i>, so this session walks its steps.
-     ```
-
-     Then walk the story's steps in this session, from
-     [Walk the step table](../SKILL.md#walk-the-step-table). Each step
-     runs as [Run a step](../SKILL.md#run-a-step) says: in a fresh
-     session, or in a subagent on that step's own exit 3. Run no
-     subagent with the story prompt, even when the meta file names a
-     saved prompt: a subagent cannot give each step a fresh session.
-     When the walk ends, the run comes back to
-     [Run the epic](#run-the-epic), which settles the story.
-   - **0, with a `needs-input` report:** go on to
-     [Relay a story run's questions](#relay-a-story-runs-questions).
-   - **Any other:** go back to [Run the epic](#run-the-epic), which
-     settles the story from the child's report.
+   [Wait for the wave](#wait-for-the-wave) acts on the child once it
+   ends.
 
 ## Relay a story run's questions
 

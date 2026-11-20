@@ -4479,12 +4479,12 @@ story_prompt_block() {
 @test "story run: with no child session, the epic run walks the story's steps itself" {
   local section phrase
   grep -qxF 'No child session could start for #<i>, so this session walks its steps.' \
-    <<<"$(text_block_lines 'Start the story run' "$(epic_run_file)")" ||
-    { echo "Start the story run has no text block with the line for exit 3"; false; }
-  section="$(skill_section lets-go 'Start the story run')"
+    <<<"$(text_block_lines 'Wait for the wave' "$(epic_run_file)")" ||
+    { echo "Wait for the wave has no text block with the line for exit 3"; false; }
+  section="$(skill_section lets-go 'Wait for the wave')"
   for phrase in 'walk the story'"'"'s steps in this session, from [Walk the step table](../SKILL.md#walk-the-step-table)' \
     'Run no subagent with the story prompt'; do
-    grep -qF -- "$phrase" <<<"$section" || { echo "Start the story run does not say: $phrase"; false; }
+    grep -qF -- "$phrase" <<<"$section" || { echo "Wait for the wave does not say: $phrase"; false; }
   done
 }
 
@@ -4515,9 +4515,9 @@ story_prompt_block() {
 @test "story run: a story run's needs-input report goes to Relay a story run's questions" {
   has_heading "$(epic_run_file)" "Relay a story run's questions" ||
     { echo "references/epic-run.md has no heading: Relay a story run's questions"; false; }
-  grep -qF "**0, with a \`needs-input\` report:** go on to [Relay a story run's questions](#relay-a-story-runs-questions)" \
-    <<<"$(skill_section lets-go 'Start the story run')" ||
-    { echo "Start the story run does not relay a needs-input report"; false; }
+  grep -qF "**Exit 0, with a \`needs-input\` report:** go to [Relay a story run's questions](#relay-a-story-runs-questions)" \
+    <<<"$(skill_section lets-go 'Wait for the wave')" ||
+    { echo "Wait for the wave does not relay a needs-input report"; false; }
 }
 
 @test "story run: the epic run asks the user each question the child marked ask" {
@@ -4852,4 +4852,50 @@ readme_step_returns() {
 @test "parallel: a story run's child takes the worktree as its repository root" {
   sed -n '1,/^## /p' "$(story_run_file)" | tr -s '[:space:]' ' ' |
     grep -qF "That worktree is this session's repository root" || { echo "references/story-run.md does not name the worktree as the root"; false; }
+}
+
+@test "parallel: Wait for the wave waits for the running children, five minutes at a time" {
+  local section phrase
+  has_heading "$(epic_run_file)" 'Wait for the wave' || { echo "references/epic-run.md has no heading: Wait for the wave"; false; }
+  section="$(skill_section lets-go 'Wait for the wave')"
+  for phrase in 'lets delegate step wait --timeout-minutes 5 --name <name>-story' \
+    'one `--name <name>-story` for each child the file lists as `running`' 'give the command more than 5 minutes' \
+    "**Exit 0, with a \`needs-input\` report:** go to [Relay a story run's questions](#relay-a-story-runs-questions)" \
+    '`<i> <name> walk`' '**6:** run the same command again' \
+    'name each child the file lists as `running`, with its worktree'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Wait for the wave does not say: $phrase"; false; }
+  done
+}
+
+@test "parallel: Wait for the wave walks each story with no child session once no child runs, then picks from the next wave" {
+  local section phrase
+  section="$(skill_section lets-go 'Wait for the wave')"
+  grep -qxF 'No child session could start for #<i>, so this session walks its steps.' <<<"$(text_block_lines 'Wait for the wave' "$(epic_run_file)")" ||
+    { echo "Wait for the wave has no text block with the line for exit 3"; false; }
+  for phrase in 'Once no child runs, walk each story the file lists as `walk`, one at a time' \
+    'with `<path>` as the repository root' 'Run no subagent with the story prompt' \
+    'go back to *Pick the next story*, which picks from that wave' 'Otherwise go to [End of the run](../SKILL.md#end-of-the-run)'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Wait for the wave does not say: $phrase"; false; }
+  done
+  grep -qF '**`nothing-ready`:**' <<<"$(part_section 'Run the epic')" &&
+    grep -qF 'Then go to [Wait for the wave](#wait-for-the-wave)' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not wait for the wave after nothing-ready"; false; }
+}
+
+@test "parallel: the children file is written afresh, and a settled story leaves it" {
+  local part
+  part="$(part_section 'Run the epic')"
+  grep -qF ': > .workspace/lets-go/epic-<parent>-children.txt' <<<"$part" || { echo "Start the epic run does not write the children file afresh"; false; }
+  grep -qF "remove the story's line from \`.workspace/lets-go/epic-<parent>-children.txt\`" <<<"$(skill_section lets-go 'Settle a story')" ||
+    { echo "Settle a story does not take the story out of the children file"; false; }
+}
+
+@test "parallel: a built story's worktree is removed before its line, and kept when that fails" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in 'git worktree remove <path>' 'Remove only a worktree under `.workspace/lets-go/worktrees/`' \
+    '`; its worktree at <path> could not be removed: ` followed by Git'"'"'s error' 'keep its branch'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+  ! grep -qF 'git worktree remove --force' <<<"$part" || { echo "Run the epic forces the removal"; false; }
 }
