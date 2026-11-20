@@ -43,7 +43,8 @@ as for any picked issue.
    this part from
    [Walk the step table](../SKILL.md#walk-the-step-table).
    The story's pull request is ready for review. Read its URL as
-   `<pr-url>`, and settle the story with its built line, as
+   `<pr-url>`, and settle the story with its built line, or, while the
+   story is stacked, with its stacked line, as
    [Settle a story](#settle-a-story) says:
 
    ```bash
@@ -148,6 +149,14 @@ pull request's URL:
 #<story> <story-name>: <pr-url>
 ```
 
+A built story that [Stack the story](#stack-the-story) stacked on
+`#<blocker>` gets this line instead. The lines then show the merge
+order: its pull request merges after its blocker's.
+
+```text
+#<story> <story-name>: <pr-url>, stacked on #<blocker>
+```
+
 A story that was not built gets this line:
 
 ```text
@@ -155,8 +164,9 @@ A story that was not built gets this line:
 ```
 
 The reason says why, such as `in another repository`,
-`taken by <login>`, `blocked by #<blocker>`, `assigned to <login>` or
-`its packet is not complete`.
+`taken by <login>`, `blocked by #<blocker>`,
+`blocked by #<a> and #<b>, on different branches`,
+`assigned to <login>` or `its packet is not complete`.
 
 ## Stack the story
 

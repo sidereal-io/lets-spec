@@ -4000,3 +4000,15 @@ step_prompt_file() {
       { echo "the $flow brainstorm does not follow the step prompt's Stack section"; false; }
   done
 }
+
+@test "stack: Settle a story gives a built stacked story its stacked line" {
+  grep -qxF '#<story> <story-name>: <pr-url>, stacked on #<blocker>' <<<"$(text_block_lines 'Settle a story' "$(epic_run_file)")" ||
+    { echo "Settle a story has no text block with a stacked story's line"; false; }
+  grep -qF 'while the story is stacked, with its stacked line' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not settle a stacked story with its stacked line"; false; }
+}
+
+@test "stack: Settle a story lists blockers on different branches among the reasons" {
+  grep -qF '`blocked by #<a> and #<b>, on different branches`' <<<"$(skill_section lets-go 'Settle a story')" ||
+    { echo "Settle a story does not list blockers on different branches among the reasons"; false; }
+}
