@@ -187,7 +187,7 @@ for the story. The open blockers are the entries of the story's
    ```
 
 2. When an open blocker is not met, settle the story, as
-   [Settle a story](#settle-a-story) says, with the reason
+   [Settle a story](#settle-a-story) says, with
    `not built, blocked by #<blocker>`, naming each open blocker that is
    not met. A blocker that is not one of the epic's stories is never
    met; name one in another repository by its `url`. Return `settled`.
@@ -211,7 +211,7 @@ for the story. The open blockers are the entries of the story's
    branches point at the same commit, the command succeeds both ways:
    the base is the first of them in the epic's order.
 5. When no open blocker's branch contains all the others, settle the
-   story with the reason
+   story with
    `not built, blocked by #<a> and #<b>, on different branches`, naming
    every open blocker. Name three or more as `#<a>, #<b> and #<c>`.
    Return `settled`.

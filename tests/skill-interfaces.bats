@@ -3921,6 +3921,13 @@ EXPECTED
   done
 }
 
+# Settle a story's line is `not built, <reason>`, so a reason that starts
+# with `not built` prints it twice.
+@test "stack: Stack the story gives no reason that starts with not built" {
+  ! tr -s '[:space:]' ' ' <<<"$(skill_section lets-go 'Stack the story')" | grep -qF 'the reason `not built' ||
+    { echo "Stack the story gives a reason that starts with not built"; false; }
+}
+
 @test "stack: Stack the story prints its Stacks on line in a text block" {
   grep -qxF 'Stacks on #<blocker>: <blocker-branch>, pull request #<blocker-pr>.' \
     <<<"$(text_block_lines 'Stack the story' "$(epic_run_file)")" ||
