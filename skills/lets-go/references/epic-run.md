@@ -92,6 +92,50 @@ as for any picked issue.
    The branches found here hold for the whole epic run. A branch created
    later belongs to a story this run claimed, and that story is settled
    before the next pick.
+
+   Last, sort the stories not settled yet into waves: sets of stories
+   that no blocked-by link joins, and whose packets name no overlapping
+   path under **Relevant code**. `<keys>` are the keys of the epic's
+   stories in this repository that are not settled yet, in the epic's
+   order, joined by commas, such as `283,285,286,287`:
+
+   ```bash
+   lets backlog waves --only <keys> > .workspace/lets-go/epic-<parent>-waves.json
+   ```
+
+   The command writes the file afresh, and the waves in it hold for the
+   whole epic run: *Pick the next story* reads it before each pick. On
+   exit 1, act as [Backlog errors](../SKILL.md#backlog-errors) says,
+   with the error the file holds. When every story is settled here, run
+   no `waves` command and print no waves.
+
+   Otherwise print the waves, from the file's `waves`, in order. First
+   print:
+
+   ```text
+   Waves for #<parent>:
+   ```
+
+   Then print each wave's line. `<wave>` is the wave's number,
+   counted from 1. `<wave-stories>` is the `label` of each of the
+   wave's stories, in the order the command gives, joined by `, `:
+
+   ```text
+   Wave <wave>: <wave-stories>
+   ```
+
+   After each wave's line but the first, print one line for each story
+   of that wave, in the same order. `#<other>` is the story's
+   `waitsFor` label, and `<reason>` is its `reason`, as the command
+   prints them:
+
+   ```text
+   #<story> waits for #<other>: <reason>.
+   ```
+
+   Print the waves once in an epic run, even when there is only one
+   wave. The wave lines are not story lines: append none of them to the
+   lines file.
 2. **Settle the story whose walk ended,** when the run comes back to
    this part from [Start the story run](#start-the-story-run), or from
    [Walk the step table](../SKILL.md#walk-the-step-table) after this

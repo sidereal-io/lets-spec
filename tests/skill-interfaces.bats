@@ -2374,6 +2374,61 @@ epic_run_file() {
     { echo "Run the epic has no text block with its Picked line"; false; }
 }
 
+@test "wave: an epic run sorts the stories not settled into waves before the first pick" {
+  local part start settle waves pick phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    'lets backlog waves --only <keys> > .workspace/lets-go/epic-<parent>-waves.json' \
+    "the keys of the epic's stories in this repository that are not settled yet, in the epic's order" \
+    'When every story is settled here, run no `waves` command and print no waves' \
+    'On exit 1, act as [Backlog errors](../SKILL.md#backlog-errors) says'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+  settle="${part%%and settle the stories it finished*}"
+  waves="${part%%lets backlog waves --only*}"
+  pick="${part%%'**Pick the next story.**'*}"
+  [ "${#settle}" -lt "${#waves}" ] && [ "${#waves}" -lt "${#pick}" ] ||
+    { echo "the waves command is not between settling the finished stories and Pick the next story"; false; }
+}
+
+@test "wave: an epic run prints its waves in text blocks" {
+  local lines line
+  lines="$(text_block_lines 'Run the epic' "$(epic_run_file)")"
+  for line in 'Waves for #<parent>:' 'Wave <wave>: <wave-stories>' '#<story> waits for #<other>: <reason>.'; do
+    grep -qxF -- "$line" <<<"$lines" || { echo "Run the epic has no text block with: $line"; false; }
+  done
+}
+
+@test "wave: lets-go holds each line of the waves step once" {
+  local line
+  for line in 'lets backlog waves --only' 'Waves for #<parent>:' '#<story> waits for #<other>: <reason>.'; do
+    skill_says_once lets-go "$line"
+  done
+}
+
+@test "wave: an epic run prints the waves once, even for one wave" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    "After each wave's line but the first, print one line for each story of that wave" \
+    "\`<wave-stories>\` is the \`label\` of each of the wave's stories, in the order the command gives, joined by \`, \`" \
+    'Print the waves once in an epic run, even when there is only one wave'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "wave: the placeholders give the waves their own rows" {
+  local rows placeholder
+  rows="$(placeholder_rows)"
+  for placeholder in '<keys>' '<wave>' '<wave-stories>' '<other>'; do
+    grep -qxF -- "$placeholder" <<<"$rows" || { echo "the Placeholders table has no row for $placeholder"; false; }
+  done
+  grep -F '| `<reason>` |' "$(lets_go_skill)" | grep -qF "in a wave's line" ||
+    { echo "the <reason> row does not name a wave's line"; false; }
+  grep -qF '`#<other>`' <<<"$(skill_section lets-go Placeholders)" ||
+    { echo "Placeholders does not show #<other> by its label"; false; }
+}
+
 @test "an epic run settles a sub-issue in another repository without passing it" {
   local part
   part="$(part_section 'Run the epic')"
