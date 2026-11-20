@@ -3935,3 +3935,25 @@ EXPECTED
     grep -qF -- "$phrase" <<<"$section" || { echo "Stack the story does not say: $phrase"; false; }
   done
 }
+
+@test "stack: Check the issue runs Stack the story only in an epic run" {
+  local part stack source
+  part="$(part_section 'Check the issue')"
+  grep -qF 'say which open issues block `#<i>`, and stop' <<<"$part" ||
+    { echo "Check the issue no longer stops on an open blocker with no branch"; false; }
+  grep -qF 'In an epic run, for the story the epic run picked, run [Stack the story](references/epic-run.md#stack-the-story) instead of stopping' <<<"$part" ||
+    { echo "Check the issue does not run Stack the story in an epic run"; false; }
+  grep -qF 'Outside an epic run, nothing stacks' <<<"$part" ||
+    { echo "Check the issue does not say that nothing stacks outside an epic run"; false; }
+  stack="${part%%"](references/epic-run.md#stack-the-story)"*}"
+  source="${part%%"[Find the source of demand](#find-the-source-of-demand) for \`<i>\`"*}"
+  [ "${#stack}" -lt "${#source}" ] ||
+    { echo "Check the issue finds the source of demand before it runs Stack the story"; false; }
+}
+
+@test "stack: Check the issue goes back to Run the epic when Stack the story settles the story" {
+  grep -qF '**`settled`:** go back to [Run the epic](#run-the-epic)' <<<"$(part_section 'Check the issue')" ||
+    { echo "Check the issue does not act on settled"; false; }
+  grep -qF 'or when [Stack the story](references/epic-run.md#stack-the-story) settled the story' <<<"$(next_line 'Check the issue')" ||
+    { echo "the Next line of Check the issue does not name Run the epic after a settle"; false; }
+}

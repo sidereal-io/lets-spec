@@ -73,7 +73,7 @@ procedure ranks it.
 | [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch | this session | [Read the request](#read-the-request) | `lets go questions` fails |
 | [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
-| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; [Run the epic](#run-the-epic) for an epic on the default branch; otherwise [Route](#route) | An open blocker with no branch; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run |
+| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; [Run the epic](#run-the-epic) for an epic on the default branch, or after [Stack the story](references/epic-run.md#stack-the-story) settles a story; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | The epic has no open stories |
@@ -336,6 +336,15 @@ says.
      by hand. Name the open blockers by number, and go on.
    - **It does not exist:** say which open issues block `#<i>`, and
      stop. The user stacks it on the blocker's branch by hand.
+     In an epic run, for the story the epic run picked, run
+     [Stack the story](references/epic-run.md#stack-the-story) instead
+     of stopping. On its result:
+     - **`stacked`:** go on, below. The story is stacked on the
+       `<blocker>` it carries.
+     - **`settled`:** go back to [Run the epic](#run-the-epic), which
+       picks again. Do not go on with the story.
+
+     Outside an epic run, nothing stacks.
 
    Either way, name a blocker in another repository by its `url`, not
    its number: a bare number means an issue of this repository.
@@ -380,7 +389,9 @@ says.
 Next: [Run the shape step](#run-the-shape-step) when
 [Confirm the packet](#confirm-the-packet) returned `needs-shape` and
 shape can run; [Run the epic](#run-the-epic) when it returned `epic` on
-the default branch; otherwise [Route](#route).
+the default branch, or when
+[Stack the story](references/epic-run.md#stack-the-story) settled the
+story; otherwise [Route](#route).
 
 ## Run the shape step
 
