@@ -164,7 +164,7 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
       const contents = items.map((item) => ({ item, content: item.content as { number: number; title: string; url: string } }));
       return contents.sort((a, b) => a.content.number - b.content.number).map(({ item, content }): Candidate => ({
         ...named(content.number, content.url), title: content.title, url: content.url, ...fields(item),
-        free: unblocked.has(content.number), blockers: blockers.get(content.number) ?? null, created: created.get(content.number) ?? '',
+        free: unblocked.has(content.number), mine: false, blockers: blockers.get(content.number) ?? null, created: created.get(content.number) ?? '',
       }));
     },
 

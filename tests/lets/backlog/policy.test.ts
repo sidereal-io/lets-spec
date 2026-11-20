@@ -20,7 +20,7 @@ test('item lists only the open sub-issues an adapter returns, without their stat
 });
 
 const candidate = (key: string, created: string, extra: Partial<Candidate> = {}): Candidate => ({
-  key, label: `#${key}`, title: key, url: `u${key}`, kind: 'Story', priority: 'Must', size: 'S', status: 'Todo', free: true, blockers: null, created, ...extra,
+  key, label: `#${key}`, title: key, url: `u${key}`, kind: 'Story', priority: 'Must', size: 'S', status: 'Todo', free: true, mine: false, blockers: null, created, ...extra,
 });
 
 test('ready ranks ties by creation time, oldest first', () => {
@@ -64,4 +64,44 @@ test('a met blocker does not skip the Status, Kind or Priority filters', () => {
 
 test('with no met list, a blocked candidate stays out', () => {
   assert.deepEqual(ready([blocked('280', ['279'])]), []);
+});
+
+const started = (key: string, extra: Partial<Candidate> = {}) => candidate(key, '2026-01-01T00:00:00Z', { free: false, mine: true, status: 'In Progress', blockers: [], ...extra });
+
+test('a started candidate of the signed-in user is listed', () => {
+  assert.deepEqual(ready([started('282')], { started: ['282'] }).map((c) => c.key), ['282']);
+});
+
+test('a started candidate ranks with the others', () => {
+  const view = ready([started('282', { priority: 'Should' }), candidate('283', '2026-02-01T00:00:00Z')], { started: ['282'] });
+  assert.deepEqual(view.map((c) => c.key), ['283', '282']);
+});
+
+test('a started candidate in Todo is listed', () => {
+  assert.deepEqual(ready([started('282', { status: 'Todo' })], { started: ['282'] }).map((c) => c.key), ['282']);
+});
+
+test('a mine candidate not named in started stays out', () => {
+  assert.deepEqual(ready([started('282')], { started: ['281'] }), []);
+});
+
+test('a started candidate with Status Done stays out', () => {
+  assert.deepEqual(ready([started('282', { status: 'Done' })], { started: ['282'] }), []);
+});
+
+test('a started candidate with null blockers stays out', () => {
+  assert.deepEqual(ready([started('282', { blockers: null })], { started: ['282'] }), []);
+});
+
+test('a started candidate with an open blocker is listed only when that blocker is met', () => {
+  assert.deepEqual(ready([started('282', { blockers: ['281'] })], { started: ['282'] }), []);
+  assert.deepEqual(ready([started('282', { blockers: ['281'] })], { started: ['282'], met: ['281'] }).map((c) => c.key), ['282']);
+});
+
+test('a started candidate still needs the Kind and Priority filters', () => {
+  assert.deepEqual(ready([started('290', { kind: 'Epic' }), started('291', { priority: 'Wont' })], { started: ['290', '291'] }), []);
+});
+
+test('a mine candidate never passes the unstarted path, even with no blocker', () => {
+  assert.deepEqual(ready([started('282', { status: 'Todo' })]), []);
 });

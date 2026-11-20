@@ -15,8 +15,10 @@ export type ReadyIssue = Pick<Candidate, 'key' | 'label' | 'title' | 'url' | 'ki
 // order: keys are never compared. only keeps the items named; exclude
 // leaves the items named out. met names blockers the caller counts as met:
 // a candidate whose every open blocker is named there passes the blocker
-// filter, and still needs every other one.
-export function ready(candidates: Candidate[], { only, exclude = [], met = [] }: { only?: string[]; exclude?: string[]; met?: string[] } = {}): ReadyIssue[] {
+// filter, and still needs every other one. started names the items the
+// caller has started: one of them assigned to the signed-in user may be In
+// Progress as well as Todo, and needs every other filter, blockers included.
+export function ready(candidates: Candidate[], { only, exclude = [], met = [], started = [] }: { only?: string[]; exclude?: string[]; met?: string[]; started?: string[] } = {}): ReadyIssue[] {
   const rank = (priority: string | null) => RANK.indexOf(priority as (typeof RANK)[number]);
   const time = ({ created }: Candidate) => {
     const parsed = Date.parse(created);
@@ -26,9 +28,13 @@ export function ready(candidates: Candidate[], { only, exclude = [], met = [] }:
     const [x, y] = [time(a), time(b)];
     return x < y ? -1 : x > y ? 1 : 0;
   };
-  const unblocked = (c: Candidate) => c.free || (c.blockers !== null && c.blockers.every((key) => met.includes(key)));
+  const allMet = (c: Candidate) => c.blockers !== null && c.blockers.every((key) => met.includes(key));
+  // An assigned item can carry blockers once it is mine, so the unstarted
+  // path must not read a non-null blockers as nobody assigned.
+  const unstarted = (c: Candidate) => !c.mine && c.status === 'Todo' && (c.free || allMet(c));
+  const resumed = (c: Candidate) => c.mine && started.includes(c.key) && (c.status === 'Todo' || c.status === 'In Progress') && allMet(c);
   return candidates
-    .filter((c) => c.status === 'Todo' && c.kind !== 'Epic' && rank(c.priority) >= 0 && unblocked(c))
+    .filter((c) => c.kind !== 'Epic' && rank(c.priority) >= 0 && (unstarted(c) || resumed(c)))
     .filter((c) => (only === undefined || only.includes(c.key)) && !exclude.includes(c.key))
     .sort((a, b) => rank(a.priority) - rank(b.priority) || older(a, b))
     .map(({ key, label, title, url, kind, priority, size }) => ({ key, label, title, url, kind, priority, size }));
