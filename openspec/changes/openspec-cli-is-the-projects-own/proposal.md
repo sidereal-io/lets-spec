@@ -6,10 +6,10 @@ Today each project must pin the OpenSpec CLI to the exact version in the release
 
 ## What Changes
 
-- **New:** `lets sync` checks that the OpenSpec CLI is installed. It is missing when `openspec --version` cannot start or exits non-zero (D7). `lets sync` then warns, says how to install it, and exits 0. `lets sync --check` fails, in both skills modes (D3, D8). The check runs even when the package has no `release.json` (D7).
+- **New:** `lets sync` checks that the OpenSpec CLI is installed. It is missing when `openspec --version`, run in the project's root, cannot start or exits non-zero (D7). `lets sync` then warns, says how to install it, and exits 0. `lets sync --check` fails, in both skills modes (D3, D8). The check runs even when the package has no `release.json` (D7).
 - **Changed:** the version warning fires only when the CLI is older than the `openspec` version in `release.json`, by semver precedence (D4, D9). It tells the user to upgrade, no longer to pin. An equal or newer CLI is silent, and so is a CLI whose version is unknown. `--check` does not fail on an older CLI (D4).
 - **Unchanged:** `lets sync` still copies the `openspec-*` skills from the release and never runs `openspec init` or `openspec update` (D2). This repository keeps its own OpenSpec pin and release build (D6).
-- **BREAKING for Nix projects:** the flake module's `packages` and the flake's `bundle` no longer include the OpenSpec CLI (D5). A Nix project adds `pkgs.openspec` from its own nixpkgs (D10). The flake keeps its `packages.openspec` output for its own build and checks.
+- **BREAKING for Nix projects:** the flake module's `packages` and the flake's `bundle` no longer include the OpenSpec CLI (D5). A Nix project adds `openspec` from a nixos-unstable input, since stable channels have none or an older one (D10). The flake keeps its `packages.openspec` output for its own build and checks.
 - **Docs:** the README (*Requirements*, *With Nix*, *With mise*, *Updating*, *Development*) and `docs/lets-sync.md` describe the new behavior and drop the pin and its bump step (D10, D12). The pull request description carries a *Breaking for Nix projects* section for the next release's notes (D12).
 - **Release notes:** the release workflow writes `OpenSpec CLI: <version> or later`, so nobody reads the version as a pin (D11).
 

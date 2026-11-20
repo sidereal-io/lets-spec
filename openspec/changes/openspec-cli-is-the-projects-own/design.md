@@ -3,8 +3,11 @@
 ## Context
 
 - `openspecVersionWarning` in `lets/src/sync/release.ts` reads the package's `release.json`, runs `openspec --version` with the release folder as its working directory, and returns a warning when the two versions differ. It returns `null` when `release.json` is absent or unreadable, when the command fails, or when no version is found. So today a missing CLI is silent.
+- `steps` in `lets/src/sync/main.ts` has the project's root, `root`, from `git rev-parse --show-toplevel`, before the `--check` branch.
+- mise's shims pick a tool by the working directory's mise config. The comment in the `mise-smoke` job of `.github/workflows/ci.yml` says so. The release folder has no mise config, so a shim run there falls back to the user's global tools, or to none.
 - `steps` in `lets/src/sync/main.ts` calls it only on a plain `lets sync`, after the other warnings. The `--check` branch returns earlier and never runs `openspec`.
 - `io.execFile` reports a command that cannot start (`ENOENT`, `EACCES`) as `code: null`, and a command that ran and failed as its exit code.
+- nixpkgs packages OpenSpec only recently: nixos-25.11 and older have no `openspec`, nixos-26.05 has 1.4.1, and nixos-unstable has 1.13.2, the version this release records.
 - The test fake in `tests/lets/sync/fixtures/fake-io.ts` treats `openspec` as unable to start unless a test passes `openspec`. Most tests in `tests/lets/sync/main.test.ts` pass none, and some assert that stderr is empty.
 - The `commands` flake check gets `openspec` on `PATH` only from `packages.default`, the `standard` bundle. Its bats tests and sample projects run `openspec` and `lets sync`. The `dist` check adds `packages.openspec` itself. The dev shell adds it too.
 - CI's `mise-smoke` job installs this repository's mise tools, including `"npm:@fission-ai/openspec" = "1.13.2"`, and fails when `lets sync` prints `OpenSpec CLI on PATH`.
@@ -19,7 +22,6 @@
 
 **Non-Goals:**
 
-- Changing where `openspec --version` runs. It keeps the release folder as its working directory.
 - Adding a semver library. The comparison needs about 20 lines.
 - Changing how the release build picks its OpenSpec version, or this repository's own mise pin (D6).
 - The README's *Automate updates* section.
@@ -38,12 +40,14 @@
 
 ### 1. One probe, two messages
 
-`release.ts` gets a probe that runs `openspec --version` and returns one of three results: missing (the command could not start, or exited non-zero), installed with a version, or installed with no version found. `steps` runs it before the `--check` branch, since both branches need it.
+`release.ts` gets a probe that runs `openspec --version` with the project's root as its working directory, and returns one of three results: missing (the command could not start, or exited non-zero), installed with a version, or installed with no version found. `steps` runs it once it has `root` and before the `--check` branch, since both branches need it.
+
+The probe runs in the project, not the release folder, because the project installs the CLI (D1). A mise shim there finds the project's own mise config. In the release folder it would find none, and the new check would report a CLI the project has as missing, and fail `--check`.
 
 - `--check` adds the missing-CLI failure line to its `failures`, so it exits 1 with the other failures.
 - Plain `lets sync` adds the missing-CLI problem to its `warnings`, or, when the CLI is installed, the older-CLI warning from `release.json`.
 
-`openspecVersionWarning` becomes a function of the probe's version and the package's `release.json`, and no longer runs the command. Alternative: keep one function that both runs the command and builds the message, and call it twice. Rejected: `--check` would run `openspec` for a message it then throws away, and the missing and older cases would be tangled in one `null`.
+`openspecVersionWarning` becomes a function of the probe's version and the package's `release.json`, and no longer runs the command. Alternative: keep one function that both runs the command and builds the message, and call it twice. Rejected: `--check` would run `openspec` for a message it then throws away, and the missing and older cases would be tangled in one `null`. Alternative: keep the release folder as the working directory. Rejected for the shim failure above.
 
 ### 2. A small semver comparison in `release.ts`
 
@@ -71,9 +75,9 @@ The three message texts are D8's, word for word. The release workflow writes `Op
 
 - *Requirements*: the OpenSpec CLI row says "The version the release was generated from, or later".
 - The line under the table says the flake supplies `gh` and Node, and that every project installs the OpenSpec CLI itself.
-- *With Nix*: the example adds `pkgs.openspec` beside `config.letsSpec.packages`, with the advice to update nixpkgs if `lets sync` says the CLI is older.
+- *With Nix*: the example adds a `nixpkgs-unstable` flake input, following `github:NixOS/nixpkgs/nixos-unstable`, and puts its `openspec` beside `config.letsSpec.packages` (D10). The text says why: stable channels have no `openspec`, or one older than the release's. It also says to update that input if `lets sync` says the CLI is older.
 - *With mise*: the example uses `"npm:@fission-ai/openspec" = "latest"`, and the paragraph drops the pin advice.
-- *Updating*: *With Nix* says to add an OpenSpec CLI if the dev shell has none. *With mise* drops the step that sets the CLI version.
+- *Updating*: *With Nix* says to add `openspec` from a nixos-unstable input, as *With Nix* shows, if the dev shell has none. *With mise* drops the step that sets the CLI version.
 - *Development*: the `nix/flake-module.nix` row no longer says it supplies the OpenSpec CLI. *Releases* says the notes name the oldest CLI the release supports.
 - `docs/lets-sync.md`: the warning list names the missing CLI and the older CLI, and the `--check` section names the missing-CLI failure.
 
@@ -84,13 +88,14 @@ lets-spec stops managing the version of the OpenSpec CLI in projects (D1, from #
 ## Risks / Trade-offs
 
 - [A Nix project upgrades and its dev shell has no `openspec`] → `lets sync` in its shell hook now says so, with an install hint. The README's *Updating → With Nix* section and the PR's *Breaking for Nix projects* section, copied into the release notes, say what to add.
-- [A project's nixpkgs has an older OpenSpec than the release's] → the older-CLI warning says which version to reach. The README says to update nixpkgs.
-- [`openspec --version` runs in the release folder, not the project, so a mise shim there may pick another version, or none] → `lets sync` normally runs from the `enter` hook with `mise activate`, or under `mise exec`. Both put the real tool folders on `PATH`, so no shim is involved. Moving the working directory is out of scope.
+- [A project takes `openspec` from a stable nixpkgs channel] → it gets no package, or 1.4.1, and the older-CLI warning. The README tells Nix projects to use a nixos-unstable input (D10), and the warning says which version to reach.
+- [nixos-unstable moves ahead of a project's lock, or lags the release's version for a while] → the project updates its input when `lets sync` warns. A newer CLI is silent (D4).
+- [`lets sync` runs with `PATH` holding only mise shims] → the probe runs in the project's root, so a shim reads the project's mise config and finds the project's CLI. Run in the release folder, it would find no config and report the CLI as missing.
 - [A newer CLI with older skills could still break one day] → #277 found that the interface only gained fields across 1.13.2 to 2.1.0. The warning still catches the risky direction, skills newer than the CLI.
 - [`--check` now runs `openspec` in CI] → It is one fast call. A CI job that runs `lets sync --check` without installing the CLI now fails, which is the point (D3).
 
 ## Migration & Rollback
 
 - **Mise projects:** may change their pin to `"latest"`, or keep an exact version. Nothing breaks either way.
-- **Nix projects:** add `pkgs.openspec` to their dev shell's `packages` after the upgrade. Until then, `lets sync` warns and `lets sync --check` fails.
+- **Nix projects:** add `openspec` from a nixos-unstable input to their dev shell's `packages` after the upgrade. Until then, `lets sync` warns and `lets sync --check` fails.
 - **Rollback:** revert the change. The previous release's flake puts the CLI back in the bundle, and its warning goes back to exact matching.
