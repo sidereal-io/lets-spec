@@ -3,7 +3,7 @@
 ### Requirement: An epic run settles the stories already ready, merged or closed
 When an epic run starts, before its first pick, `lets-go` SHALL read the pull requests of each story of the epic in this repository, in the epic's order. A story's pull requests are those whose head branch is the story's change's name and whose `isCrossRepository` is false. Of these, the story's pull request SHALL be the open one when there is one; otherwise the merged one; otherwise the closed one created last. `lets-go` SHALL then settle each story as follows, in the epic's order:
 
-- **Open and ready for review:** the built line, `#<story> <story-name>: <pr-url>`. When the pull request's base is the branch of another open story of the epic, the line SHALL end `, stacked on #<blocker>`, naming that story. When the base is neither the default branch nor an open story's branch, and it is the head branch of a merged pull request of this repository, the blocker has merged: `lets-go` SHALL run `gh pr edit <name> --base <default>`, rebase nothing, and give the plain built line. Any other base SHALL be left as it is, with the plain built line. `lets-go` SHALL run none of the story's steps, and the story SHALL count as met, as *An epic run counts a blocker as met when its story's pull request is ready* says.
+- **Open and ready for review:** the built line, `#<story> <story-name>: <pr-url>`. When the pull request's base is the branch of another open story of the epic, the line SHALL end `, stacked on #<blocker>`, naming that story. When the base is neither the default branch nor an open story's branch, and it is the head branch of a pull request of this repository that merged into the default branch, the blocker has merged: `lets-go` SHALL run `gh pr edit <name> --base <default>`, rebase nothing, and give the plain built line. Any other base SHALL be left as it is, with the plain built line. `lets-go` SHALL run none of the story's steps, and the story SHALL count as met, as *An epic run counts a blocker as met when its story's pull request is ready* says.
 - **Merged:** `#<story> <story-name>: merged, <pr-url>`.
 - **Closed without merging:** `#<story> <story-name>: not built, its pull request was closed: <pr-url>`.
 
@@ -18,7 +18,7 @@ A story whose pull request is an open draft, or that has no pull request, SHALL 
 - **THEN** #280's line is `#280 epic-run-stacks: <#291's url>, stacked on #279`
 
 #### Scenario: A ready story whose blocker has merged
-- **WHEN** an epic run starts, #280's pull request #291 is open and ready for review, its base is `epic-run-skeleton`, #279 is closed, and #290 from `epic-run-skeleton` has merged
+- **WHEN** an epic run starts, #280's pull request #291 is open and ready for review, its base is `epic-run-skeleton`, #279 is closed, and #290 from `epic-run-skeleton` has merged into the default branch
 - **THEN** `lets-go` runs `gh pr edit epic-run-stacks --base <default>`, rebases nothing, and #280's line is `#280 epic-run-stacks: <#291's url>`, with no `, stacked on`
 
 #### Scenario: A merged story
@@ -70,7 +70,7 @@ When the pick is a story passed in `--started`, `lets-go` SHALL print `Resumed #
 When the story the epic run picked is a started story with an open pull request, *Check the issue* SHALL decide its stack from that pull request's base, before the walk, and SHALL not run *Stack the story*:
 
 - The base is the branch of a met story, as *An epic run counts a blocker as met when its story's pull request is ready* says: the story SHALL stay stacked on that story, as `<blocker>`, with that story's branch and pull request. Its step prompts SHALL hold the `## Stack` section, as *A stacked story's pull request targets its blocker's branch* says, and its line SHALL end `, stacked on #<blocker>`.
-- The base is neither the default branch nor an open story's branch, and it is the head branch of a merged pull request of this repository: `lets-go` SHALL run `gh pr edit <name> --base <default>`, rebase nothing, and the story SHALL not be stacked. Its line SHALL have no `, stacked on`.
+- The base is neither the default branch nor an open story's branch, and it is the head branch of a pull request of this repository that merged into the default branch: `lets-go` SHALL run `gh pr edit <name> --base <default>`, rebase nothing, and the story SHALL not be stacked. Its line SHALL have no `, stacked on`.
 - Any other base SHALL be left as it is, and the story SHALL not be stacked.
 
 When the started story has no pull request and an open blocker, *An epic run stacks a story on its met blocker* SHALL decide its stack. Restacking a story after a lower pull request changes in review is out of scope.
@@ -80,7 +80,7 @@ When the started story has no pull request and an open blocker, *An epic run sta
 - **THEN** each step prompt of #281 holds a `## Stack` section naming #280, `epic-run-stacks` and #291, and #281's line ends `, stacked on #280`
 
 #### Scenario: A resumed story whose blocker has merged
-- **WHEN** the epic run resumes #281, whose draft pull request #292 has the base `epic-run-stacks`, #280 is closed, and #291 from `epic-run-stacks` has merged
+- **WHEN** the epic run resumes #281, whose draft pull request #292 has the base `epic-run-stacks`, #280 is closed, and #291 from `epic-run-stacks` has merged into the default branch
 - **THEN** `lets-go` runs `gh pr edit epic-run-failures --base <default>` before the walk, rebases nothing, no step prompt of #281 holds a `## Stack` section, and #281's line has no `, stacked on`
 
 #### Scenario: A resumed story on the default branch

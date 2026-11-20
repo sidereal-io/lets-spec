@@ -137,17 +137,21 @@ order, first match wins:
 1. The default branch: not stacked.
 2. The change's branch of an open story of the epic: stacked on that
    story.
-3. The head branch of a merged pull request of this repository,
-   read with
-   `gh pr list --head <base> --state merged --limit 100 --json number,isCrossRepository`:
-   the blocker has merged. Run `gh pr edit <name> --base <default>`. Not
+3. The head branch of a pull request of this repository that merged
+   into the default branch, read with
+   `gh pr list --head <pr-base> --state merged --limit 100 --json number,isCrossRepository,baseRefName`,
+   keeping the entries whose `isCrossRepository` is false and whose
+   `baseRefName` is `<default>`: the blocker has merged. Run `gh pr edit <name> --base <default>`. Not
    stacked.
 4. Anything else: leave it. Not stacked.
 
 The merged pull request stands in for "the blocker's issue is closed",
 because the run cannot see closed sub-issues. A blocker whose pull
 request merged into another story's branch still has an open issue, so
-rule 2 matches first, and it still stacks (D8).
+rule 2 matches first, and it still stacks (D8). A base whose pull
+request merged into a branch other than the default branch falls to
+rule 4: moving the base to the default branch would put commits that
+are not on it into the story's pull request.
 
 For a resumed story, rule 2 stacks the story only when that story is
 met, as the spec says. A draft or missing pull request on the base's
@@ -183,7 +187,10 @@ that reach `Resumed`, so "started in an earlier run" holds.
   *Read a pull request's base*, and a new procedure, *Take up a started
   story*, which *Check the issue* runs.
 - `SKILL.md`: *Check the issue* step 3 gains the epic-run case for a
-  story whose branch exists, linking *Take up a started story*. The
+  story whose branch exists, linking *Take up a started story*. The case
+  comes first in step 3 and runs whether or not the story has an open
+  blocker: a resumed story whose only blockers have closed still needs
+  its base read, so its pull request leaves a merged blocker's branch. The
   resume paragraph gains the epic case. The placeholders table gains
   `<pr-base>`, the base branch of a story's pull request.
 
