@@ -25,6 +25,40 @@ export function findRelease(env: Deps['env'], packageRoot: string, io: Io) {
 
 const VERSION = /\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?/;
 
+// -1, 0 or 1 as a is older than, the same as or newer than b, by semver
+// precedence. Both are versions VERSION matched.
+export function compareVersions(a: string, b: string) {
+  const [coreA, preA] = parts(a);
+  const [coreB, preB] = parts(b);
+  for (let i = 0; i < 3; i++) {
+    if (coreA[i] !== coreB[i]) return coreA[i] < coreB[i] ? -1 : 1;
+  }
+  if (preA.length === 0 || preB.length === 0) return Math.sign(preB.length - preA.length);
+  for (let i = 0; i < Math.min(preA.length, preB.length); i++) {
+    const order = compareIdentifiers(preA[i], preB[i]);
+    if (order !== 0) return order;
+  }
+  return Math.sign(preA.length - preB.length);
+}
+
+// The numeric core and the prerelease identifiers, without build metadata.
+function parts(version: string): [number[], string[]] {
+  const [withPre] = version.split('+');
+  const dash = withPre.indexOf('-');
+  const core = dash === -1 ? withPre : withPre.slice(0, dash);
+  const pre = dash === -1 ? [] : withPre.slice(dash + 1).split('.');
+  return [core.split('.').map(Number), pre];
+}
+
+// Numeric identifiers compare as numbers and sort before text ones.
+function compareIdentifiers(a: string, b: string) {
+  const numA = /^\d+$/.test(a);
+  const numB = /^\d+$/.test(b);
+  if (numA && numB) return Math.sign(Number(a) - Number(b));
+  if (numA !== numB) return numA ? -1 : 1;
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 // A warning when the OpenSpec CLI on PATH differs from the one that generated
 // the release's openspec-* skills, as the package's release.json records it.
 // Null when either version is unknown.
