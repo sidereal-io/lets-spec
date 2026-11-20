@@ -35,7 +35,7 @@ From then on, every command of the story that reads or writes its branch SHALL r
 ### Requirement: An epic run reuses a story's clean worktree
 Before it creates a worktree for a story whose branch exists, the epic run SHALL look for a worktree that already has the branch checked out, with `git worktree list --porcelain`: an entry whose `branch` line is `refs/heads/<name>`. An earlier epic run may have kept one, or the user may have made one. When one exists, its path is `<path>`, and the epic run SHALL check it for changes that are not committed, outside `.workspace/`, with `git -C <path> status --porcelain --untracked-files=all -- . ':(exclude).workspace'`:
 
-- **It prints nothing:** the epic run SHALL use that worktree for the story's run, and create none. It SHALL bring the branch up to date in it, as *Enter the branch* does.
+- **It prints nothing:** the epic run SHALL use that worktree for the story's run, and create none. It SHALL bring the branch up to date in it, as *Enter the branch* does, and run `lets sync` in it, as for a new worktree, when git ignores the project's lets-spec skills.
 - **It prints a line:** the epic run SHALL settle the story with `stopped: its worktree at <path> has changes that are not committed`, leave the worktree as it is, and go on with the other stories, as *A failure or a stop skips only the stories that depend on it* says.
 
 #### Scenario: A clean worktree kept by an earlier run
