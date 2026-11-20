@@ -2475,6 +2475,20 @@ epic_run_file() {
   done
 }
 
+@test "an epic run goes on to the pick when it comes back from a stop" {
+  grep -qF 'After a stop in a story run, the run comes back from [A stop in an epic run](#a-stop-in-an-epic-run), which has settled the story and its dependents, and switched to the default branch: go on to the next step.' \
+    <<<"$(part_section 'Run the epic')" || { echo "Run the epic has no case for coming back from a stop"; false; }
+}
+
+@test "the overview's Next names Run the epic when a stop ends a story's run" {
+  local part row
+  for part in 'Check the issue' 'Enter the branch' 'Walk the step table'; do
+    row="$(overview_row "$part" | awk -v head="| [$part](" 'index($0, head) == 1')"
+    grep -qF '](#run-the-epic)' <<<"$row" && grep -qF 'when a stop ends a story'"'"'s run' <<<"$row" ||
+      { echo "$part's row said: $row"; false; }
+  done
+}
+
 @test "an epic run's stop ends the epic run when the checkout has uncommitted changes" {
   local section phrase
   section="$(skill_section lets-go 'A stop in an epic run')"

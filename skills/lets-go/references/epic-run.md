@@ -61,6 +61,11 @@ as for any picked issue.
    After a lost claim, the run comes back from
    [Enter the branch](../SKILL.md#enter-the-branch), which has settled
    the story already: go on to the next step.
+
+   After a stop in a story run, the run comes back from
+   [A stop in an epic run](#a-stop-in-an-epic-run), which has settled
+   the story and its dependents, and switched to the default branch: go
+   on to the next step.
 3. **Pick the next story.** First find the met stories: the stories
    whose pull request is ready for review, so a story they block can
    stack on them. Read the open pull requests, and run this once, before
