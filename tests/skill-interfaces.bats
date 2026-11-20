@@ -3710,7 +3710,7 @@ automate_updates_workflow() {
 @test "Automate updates' workflow checks out, installs mise, upgrades, then syncs" {
   local steps expected
   steps="$(automate_updates_workflow | yq '.jobs[].steps[] | (.uses // .run)' | head -n4)"
-  expected="$(printf '%s\n' actions/checkout@v7 jdx/mise-action@v2 'mise upgrade' 'mise exec -- lets sync')"
+  expected="$(printf '%s\n' actions/checkout@v7 jdx/mise-action@v2 'mise upgrade github:sidereal-io/lets-spec npm:@fission-ai/openspec' 'mise exec -- lets sync')"
   [ "$steps" = "$expected" ] || { echo "the first steps are: $steps"; false; }
 }
 
@@ -3778,6 +3778,11 @@ automate_updates_prose() {
 @test "Automate updates names actions/create-github-app-token for a GitHub App token" {
   [[ "$(automate_updates_prose)" == *'GitHub App'*'`actions/create-github-app-token`'* ]] ||
     { echo "the section does not name actions/create-github-app-token for a GitHub App"; false; }
+}
+
+@test "Automate updates says it upgrades only Let's Spec and the OpenSpec CLI" {
+  [[ "$(automate_updates_prose)" == *"upgrades only Let's Spec and the OpenSpec CLI"* ]] ||
+    { echo "the section does not say the workflow upgrades only Let's Spec and the OpenSpec CLI"; false; }
 }
 
 @test "Automate updates says the workflow relies on a committed mise.lock" {
