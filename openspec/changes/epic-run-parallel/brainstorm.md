@@ -20,13 +20,13 @@
 | D10 | What does the epic run do for a story whose child session cannot start (exit 3)? | The story waits until the wave's running children end. Then the epic run walks its steps in its own session, inside the story's worktree, one story at a time. | Assumption |
 | D11 | On resume, what happens to a story whose branch is already checked out in a worktree? | The epic run uses that worktree when it has no uncommitted changes. Otherwise it settles the story with `stopped: its worktree at <path> has changes that are not committed`, and goes on. | Assumption |
 | D12 | In what order are the story lines printed? | In the order the stories settle, as today. A stacked line names its blocker, so the merge order stays clear. | Assumption |
-| D13 | Do the glossary entries *Story run* and *Wave* change? (Tentative until the user confirms.) | Yes. *Story run* gains that it runs in a git worktree of its own, which the epic run removes once the story is built. *Wave* becomes stories the epic run builds at the same time, starting the next wave once every story of this one is settled. | Assumption |
+| D13 | Do the glossary entries *Story run* and *Wave* change? | Yes. *Story run* gains that it runs in a git worktree of its own, which the epic run removes once the story is built. *Wave* becomes stories the epic run builds at the same time, starting the next wave once every story of this one is settled. | Assumption |
 
 ## Changes from the story
 
 - Added: `lets` commands to start a story run in the background and to wait for the next one to end (D7). The packet's Relevant code already names `lets/src/delegate/step.ts`.
 - Added: `lets sync` in each new worktree when the project ignores its skills (D5).
 - Changed: changes that are not committed now stop only their own story, not the whole epic run, and the epic run no longer switches back to the default branch after each story (D3, D9).
-- Added: edits to the glossary entries *Story run* and *Wave* (D13), committed on this branch as their own `docs:` commit once the user confirms them.
+- Added: edits to the glossary entries *Story run* and *Wave* (D13), committed on this branch as their own `docs:` commit.
 
-Confirmed by user: no
+Confirmed by user: yes
