@@ -96,17 +96,55 @@ as for any picked issue.
    this part from [Start the story run](#start-the-story-run), or from
    [Walk the step table](../SKILL.md#walk-the-step-table) after this
    session walked the story's steps.
-   The story's pull request is ready for review. Read its URL as
-   `<pr-url>`, and settle the story with its built line, or, while the
-   story is stacked, with its stacked line, as
-   [Settle a story](#settle-a-story) says:
+
+   After a walk in this session, the story's pull request is ready for
+   review. Read its URL as `<pr-url>`, and settle the story with its
+   built line, or, while the story is stacked, with its stacked line,
+   as [Settle a story](#settle-a-story) says:
 
    ```bash
    gh pr view <name> --json url --jq .url
    ```
 
-   Then go back to the default branch, so the next story's branch is
-   created off it:
+   After a child session, settle the story from the exit code of
+   `lets delegate step run --for story` and the report in
+   `.workspace/lets-go/<name>-story-report.json`:
+
+   - **Exit 0, `done`:** check the child's word against the pull
+     request's record:
+
+     ```bash
+     gh pr view <name> --json url,state,isDraft
+     ```
+
+     When its `state` is `OPEN` and its `isDraft` is `false`, its `url`
+     is `<pr-url>`. Settle the story with its built line, or, while the
+     story is stacked, with its stacked line. Otherwise the line is
+     `stopped: the story run reported done, but ` and what the record
+     holds, such as `the pull request is a draft`,
+     `the pull request is merged` or `the branch has no pull request`.
+   - **Exit 0, `failed`:** a `reason` that starts
+     `failed at <step name>: ` or `stopped: ` follows the story's name
+     as it is, such as `failed at build: tests fail on main`. Any
+     other reason, including one that `lets` wrote because the child
+     gave no valid report, gives `stopped: <reason>`.
+   - **Exit 2, 4 or 6:** the line is `stopped: <reason>`, where the
+     reason is the error in `.workspace/lets-go/<name>-story-meta.txt`.
+     A child that did not finish in time exits 6.
+
+   Exit 3 is not settled here:
+   [Start the story run](#start-the-story-run) walks the story's steps
+   in this session, and the run comes back here when that walk ends.
+
+   Every line but a built or stacked line is a stop in a story run.
+   Settle the story with it, as [Settle a story](#settle-a-story) says.
+   Then go on from the third action of
+   [A stop in an epic run](#a-stop-in-an-epic-run): the checkout check,
+   the dependents and the switch to the default branch. Start no child
+   session again for the story in this run.
+
+   After a built or stacked line, go back to the default branch, so the
+   next story's branch is created off it:
 
    ```bash
    git switch <default>

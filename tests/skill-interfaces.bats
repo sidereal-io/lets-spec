@@ -4465,3 +4465,34 @@ story_prompt_block() {
     grep -qF -- "$phrase" <<<"$section" || { echo "Relay a story run's questions does not say: $phrase"; false; }
   done
 }
+
+@test "story run: the epic run settles a done story run only on its pull request's record" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in '**Exit 0, `done`:**' 'gh pr view <name> --json url,state,isDraft' \
+    'When its `state` is `OPEN` and its `isDraft` is `false`' \
+    '`stopped: the story run reported done, but `' '`the pull request is a draft`' '`the branch has no pull request`'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the epic run settles a failed story run from its reason" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in '**Exit 0, `failed`:** a `reason` that starts `failed at <step name>: ` or `stopped: ` follows the story'"'"'s name as it is' \
+    'Any other reason, including one that `lets` wrote because the child gave no valid report, gives `stopped: <reason>`' \
+    '**Exit 2, 4 or 6:** the line is `stopped: <reason>`' '`.workspace/lets-go/<name>-story-meta.txt`' \
+    'Exit 3 is not settled here'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: a story run that did not build goes on from the third action of A stop in an epic run" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in 'Every line but a built or stacked line is a stop in a story run' \
+    'go on from the third action of [A stop in an epic run](#a-stop-in-an-epic-run)' \
+    'Start no child session again for the story in this run'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
