@@ -34,11 +34,55 @@ as for any picked issue.
    : > .workspace/lets-go/epic-<parent>-lines.txt
    ```
 
-   Then settle each story whose `url` names another repository with
-   `not built, in another repository`, as
-   [Settle a story](#settle-a-story) says. Never pass a sub-issue in
-   another repository in `--only`: its key can name an issue of this
-   repository.
+   Then, before the first pick, read what an earlier epic run left of
+   each story, in the epic's order, and settle the stories it finished,
+   as [Settle a story](#settle-a-story) says:
+
+   - **A story whose `url` names another repository:** settle it with
+     `not built, in another repository`. Never pass a sub-issue in
+     another repository in `--only`: its key can name an issue of this
+     repository.
+   - **Any other story:** look for its change's branch, here and on
+     `origin`, with the commands
+     [Check the issue](../SKILL.md#check-the-issue) uses.
+     `<story-name>` is the story's change name:
+
+     ```bash
+     git branch --list <story-name>
+     git ls-remote --heads origin refs/heads/<story-name>
+     ```
+
+     When either command prints a line, the story has its change's
+     branch. Keep that for *Pick the next story*, below. Then read the
+     story's pull requests:
+
+     ```bash
+     gh pr list --head <story-name> --state all --limit 100 --json number,url,state,isDraft,baseRefName,isCrossRepository,createdAt
+     ```
+
+     Drop each entry whose `isCrossRepository` is `true`: a pull
+     request from a fork can share the name. The story's pull request
+     is the entry whose `state` is `OPEN`; else the one whose `state` is
+     `MERGED`; else the `CLOSED` one with the latest `createdAt`. Its
+     `url` is `<pr-url>`. Settle the story by its pull request:
+     - **Open, and its `isDraft` is `false`:** the pull request is
+       ready for review. Settle the story with its built line. The
+       epic run runs none of its steps, and *Pick the next story* finds
+       it met.
+     - **Merged:** settle the story with its merged line. It is not
+       resumed.
+     - **Closed:** settle the story with
+       `not built, its pull request was closed: <pr-url>`. It is not
+       resumed.
+     - **An open draft, or no pull request:** settle nothing. The story
+       is not finished, and a pick can take it.
+
+   A story settled here that blocks another story leaves that story
+   blocked while its issue is open: the blocked story gets its own
+   `not built, blocked by #<blocker>` line when no candidate is left.
+   The branches found here hold for the whole epic run. A branch created
+   later belongs to a story this run claimed, and that story is settled
+   before the next pick.
 2. **Settle the story whose walk ended,** when the run comes back to
    this part from
    [Walk the step table](../SKILL.md#walk-the-step-table).
@@ -148,7 +192,8 @@ story settles, before the next `Picked` line. `<story-name>` is the part
 of the story's title before ` — `, or the whole title when it has none.
 
 A story whose pull request is ready for review gets this line, with the
-pull request's URL:
+pull request's URL. So does a story whose pull request was ready for
+review when the epic run started:
 
 ```text
 #<story> <story-name>: <pr-url>
@@ -162,6 +207,13 @@ order: its pull request merges after its blocker's.
 #<story> <story-name>: <pr-url>, stacked on #<blocker>
 ```
 
+A story whose pull request merged gets this line, with the merged pull
+request's URL:
+
+```text
+#<story> <story-name>: merged, <pr-url>
+```
+
 A story that was not built gets this line:
 
 ```text
@@ -171,7 +223,8 @@ A story that was not built gets this line:
 The reason says why, such as `in another repository`,
 `taken by <login>`, `blocked by #<blocker>`,
 `blocked by #<a> and #<b>, on different branches`,
-`assigned to <login>`, `its packet is not complete` or
+`assigned to <login>`, `its packet is not complete`,
+`its pull request was closed: <pr-url>` or
 `it depends on #<failed>, which did not finish`.
 
 ## Stack the story

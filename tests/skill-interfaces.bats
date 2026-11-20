@@ -4152,3 +4152,49 @@ step_prompt_file() {
   grep -qF '`it depends on #<failed>, which did not finish`' <<<"$(skill_section lets-go 'Settle a story')" ||
     { echo "Settle a story does not list a failed blocker among the reasons"; false; }
 }
+
+@test "resume: an epic run looks for each story's branch at the start" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in 'git branch --list <story-name>' 'git ls-remote --heads origin refs/heads/<story-name>' \
+    'before the first pick' "in the epic's order"; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: an epic run reads each story's pull request at the start" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in 'gh pr list --head <story-name> --state all --limit 100 --json number,url,state,isDraft,baseRefName,isCrossRepository,createdAt' \
+    'Drop each entry whose `isCrossRepository` is `true`' \
+    "The story's pull request is the entry whose \`state\` is \`OPEN\`; else the one whose \`state\` is \`MERGED\`; else the \`CLOSED\` one with the latest \`createdAt\`"; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: an epic run settles a story whose pull request is ready at the start" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in '**Open, and its `isDraft` is `false`:**' 'settle the story with its built line' 'runs none of its steps'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: an epic run settles a story whose pull request merged" {
+  grep -qxF '#<story> <story-name>: merged, <pr-url>' <<<"$(text_block_lines 'Settle a story' "$(epic_run_file)")" ||
+    { echo "Settle a story has no text block with a merged story's line"; false; }
+  grep -qF '**Merged:** settle the story with its merged line' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not settle a merged story at the start"; false; }
+}
+
+@test "resume: an epic run settles a story whose pull request was closed" {
+  grep -qF '`its pull request was closed: <pr-url>`' <<<"$(skill_section lets-go 'Settle a story')" ||
+    { echo "Settle a story does not list a closed pull request among the reasons"; false; }
+  grep -qF '**Closed:** settle the story with `not built, its pull request was closed: <pr-url>`' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not settle a story whose pull request was closed"; false; }
+}
+
+@test "resume: an epic run settles nothing at the start for a draft or a missing pull request" {
+  grep -qF '**An open draft, or no pull request:** settle nothing' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not leave a draft or a missing pull request unsettled"; false; }
+}
