@@ -591,6 +591,23 @@ on:
   schedule:
     - cron: "0 6 * * 1"   # Mondays at 06:00 UTC
   workflow_dispatch:
+
+# GITHUB_TOKEN only reads. The pull request is opened with UPDATE_TOKEN.
+permissions:
+  contents: read
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v2
+
+      - run: mise upgrade
+
+      # CI runs no mise activate, so the enter hook does not run lets sync.
+      - run: mise exec -- lets sync
 ```
 
 ## 🛠️ Development

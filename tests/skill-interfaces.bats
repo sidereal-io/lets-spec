@@ -3697,3 +3697,19 @@ automate_updates_workflow() {
   [ "$(automate_updates_workflow | yq '.on | has("workflow_dispatch")')" = true ] ||
     { echo "the workflow has no workflow_dispatch trigger"; false; }
 }
+
+@test "Automate updates' workflow has one job, on ubuntu-latest" {
+  local workflow
+  workflow="$(automate_updates_workflow)"
+  [ "$(yq '.jobs | length' <<<"$workflow")" = 1 ] ||
+    { echo "the workflow does not have exactly one job"; false; }
+  [ "$(yq '.jobs[].runs-on' <<<"$workflow")" = ubuntu-latest ] ||
+    { echo "the job does not run on ubuntu-latest"; false; }
+}
+
+@test "Automate updates' workflow checks out, installs mise, upgrades, then syncs" {
+  local steps expected
+  steps="$(automate_updates_workflow | yq '.jobs[].steps[] | (.uses // .run)' | head -n4)"
+  expected="$(printf '%s\n' actions/checkout@v7 jdx/mise-action@v2 'mise upgrade' 'mise exec -- lets sync')"
+  [ "$steps" = "$expected" ] || { echo "the first steps are: $steps"; false; }
+}
