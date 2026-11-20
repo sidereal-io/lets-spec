@@ -18,7 +18,7 @@
 
 ## 4. Docs and the whole check [depends-on: 3]
 
-- [ ] 4.1 [easy] `README.md`'s *What a step returns* names `--for story`, its 600 minutes and the optional `ask` on a question; its config example adds `step.story.guidance`; its epic paragraph says each story runs in a child `lets-go` session, and in the epic run's own session when no child can start. `docs/resolvers.md`'s *A step's report* names `ask` (verify: bats tests/skill-interfaces.bats -f 'README|resolver|epic')
+- [x] 4.1 [easy] `README.md`'s *What a step returns* names `--for story`, its 600 minutes and the optional `ask` on a question; its config example adds `step.story.guidance`; its epic paragraph says each story runs in a child `lets-go` session, and in the epic run's own session when no child can start. `docs/resolvers.md`'s *A step's report* names `ask` (verify: bats tests/skill-interfaces.bats -f 'README|resolver|epic') (✓ bats tests/skill-interfaces.bats -f 'README|resolver|epic' passed; the whole skill-interfaces.bats passed)
 - [ ] 4.2 [medium] The whole suite, the flake checks and the OpenSpec validation pass with every task above in place (verify: pnpm test && nix flake check && mise run check)
 
 ## Deviations Ledger

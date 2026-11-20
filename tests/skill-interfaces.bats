@@ -4630,3 +4630,36 @@ story_run_file() {
     grep -qF -- "$phrase" <<<"$section" || { echo "End the story run does not say: $phrase"; false; }
   done
 }
+
+# readme_step_returns: the README's What a step returns section, on one line.
+readme_step_returns() {
+  awk '/^### What a step returns$/ { on = 1; next } on && /^#/ { exit } on' "$repo/README.md" | tr -s '[:space:]' ' '
+}
+
+@test "story run: the README's What a step returns names the story intent, its 600 minutes and ask" {
+  local section phrase
+  section="$(readme_step_returns)"
+  for phrase in '`lets delegate step run --for story` runs a story run, not a step' '600 minutes' '`ask: true`'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "the README's What a step returns does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the README's config example gives the story intent guidance" {
+  awk '/^```yaml$/ { on = 1; text = ""; next } on && /^```$/ { on = 0; if (text ~ /\n  step:\n/) print text; next } on { text = text "\n" $0 }' \
+    "$repo/README.md" | grep -qE '^    story:$' || { echo "the README's config example has no step.story entry"; false; }
+  grep -qF '`step.story`' "$repo/README.md" || { echo "the README does not name step.story"; false; }
+}
+
+@test "story run: the README says an epic run builds each story in a child lets-go session" {
+  local section phrase
+  section="$(readme_lets_go)"
+  for phrase in 'each story runs in a child `lets-go` session' \
+    "in the epic run's own session when no child session can start"; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "the README's lets-go section does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the resolvers page's step report names ask" {
+  awk '/^## A step.s report$/ { on = 1; next } on && /^## / { exit } on' "$repo/docs/resolvers.md" | tr -s '[:space:]' ' ' |
+    grep -qF '`ask: true`' || { echo "docs/resolvers.md's A step's report does not name ask"; false; }
+}
