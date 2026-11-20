@@ -6,9 +6,10 @@
 In an epic run, an open blocker SHALL count as met only when all of these hold:
 
 - it is one of the epic's stories, in this repository;
-- its change's pull request is open and not a draft: it is ready for review.
+- its change's pull request is open and not a draft: it is ready for review;
+- that pull request's head branch is in this repository, not a fork: its branch is on `origin`.
 
-It SHALL not matter whether this epic run or an earlier one built the blocker. The blocker's change's name is the part of its title before ` — `, or the whole title when it has none. Its pull request is the open one whose head branch has that name. A blocker whose pull request is a draft, a blocker with no open pull request, and a blocker that is not one of the epic's stories SHALL not count as met. Before each pick, `lets-go` SHALL read the open pull requests once, with `gh pr list --state open --limit 1000 --json number,url,isDraft,headRefName`, and SHALL find the met stories from that one read. A met story's branch and pull request are the ones that read found: *An epic run stacks a story on its met blocker* uses them.
+It SHALL not matter whether this epic run or an earlier one built the blocker. The blocker's change's name is the part of its title before ` — `, or the whole title when it has none. Its pull request is the open one whose head branch has that name and whose `isCrossRepository` is false. A blocker whose pull request is a draft, a blocker whose only pull request with that head branch comes from a fork, a blocker with no open pull request, and a blocker that is not one of the epic's stories SHALL not count as met. Before each pick, `lets-go` SHALL read the open pull requests once, with `gh pr list --state open --limit 1000 --json number,url,isDraft,headRefName,isCrossRepository`, and SHALL find the met stories from that one read. A met story's branch and pull request are the ones that read found: *An epic run stacks a story on its met blocker* uses them.
 
 #### Scenario: A blocker built in this run
 - **WHEN** an epic run on #278 has built #279, whose pull request #290 from the branch `epic-run-skeleton` is open and ready for review, and #280's only open blocker is #279
@@ -20,6 +21,10 @@ It SHALL not matter whether this epic run or an earlier one built the blocker. T
 
 #### Scenario: A blocker whose pull request is a draft
 - **WHEN** #279's pull request is a draft, and #280's only open blocker is #279
+- **THEN** the pick passes no `--met-blockers 279`, and #280's line is `#280 epic-run-stacks: not built, blocked by #279`
+
+#### Scenario: A blocker whose pull request comes from a fork
+- **WHEN** #280's only open blocker is #279, and the only open pull request whose head branch is `epic-run-skeleton` comes from a fork, so its `isCrossRepository` is true
 - **THEN** the pick passes no `--met-blockers 279`, and #280's line is `#280 epic-run-stacks: not built, blocked by #279`
 
 #### Scenario: A blocker outside the epic
@@ -44,6 +49,10 @@ A settle in steps 1 and 3 SHALL claim nothing, count no lost claim and not end t
 - **WHEN** an epic run picks #281, whose open blockers are #279 and #280, both met, and `origin/epic-run-stacks` contains `origin/epic-run-skeleton`
 - **THEN** `lets-go` prints `Stacks on #280: epic-run-stacks, pull request #<pr>.`, and creates #281's branch off `origin/epic-run-stacks`
 
+#### Scenario: Two blockers on the same commit
+- **WHEN** an epic run picks #287, whose open blockers #284 and #285 are both met, the epic lists #284 before #285, and `origin/<#284's branch>` and `origin/<#285's branch>` point at the same commit
+- **THEN** `lets-go` stacks #287 on #284, and prints `Stacks on #284: <#284's branch>, pull request #<pr>.`
+
 #### Scenario: Two blockers on different branches
 - **WHEN** an epic run picks #286, whose open blockers #284 and #285 are both met, and neither one's branch contains the other's
 - **THEN** `lets-go` settles #286 with `#286 <story-name>: not built, blocked by #284 and #285, on different branches`, claims nothing, and picks again
@@ -57,7 +66,7 @@ A settle in steps 1 and 3 SHALL claim nothing, count no lost claim and not end t
 - **THEN** `lets-go` says #279 blocks #280, creates no branch, and claims nothing
 
 ### Requirement: A stacked story's pull request targets its blocker's branch
-When `lets-go` writes the prompt for a step of a stacked story, the prompt SHALL hold a `## Stack` section. It SHALL name the blocker, its branch and its pull request. It SHALL tell the step to open the story's draft pull request with `--base <blocker-branch>`, and to put the line `Stacked on #<blocker-pr>; merge that first.` beside `Closes #<i>` in its description. When the pull request exists with another base, the section SHALL tell the step to fix it with `gh pr edit <name> --base <blocker-branch>`. The prompt of a story that is not stacked SHALL hold no `## Stack` section. The brainstorm instruction of the `lets-standard` and `lets-minimal` schemas SHALL say to follow the prompt's `## Stack` section, when it has one, where it opens the draft pull request.
+When `lets-go` writes the prompt for a step of a stacked story, the prompt SHALL hold a `## Stack` section. It SHALL name the blocker, its branch and its pull request. It SHALL tell the step to open the story's draft pull request with `--base <blocker-branch>`, and to put the line `Stacked on #<blocker-pr>; merge that first.` on its own line after `Closes #<i>` in its description. When the pull request exists with another base, the section SHALL tell the step to fix it with `gh pr edit <name> --base <blocker-branch>`. The prompt of a story that is not stacked SHALL hold no `## Stack` section. The brainstorm instruction of the `lets-standard` and `lets-minimal` schemas SHALL say to follow the prompt's `## Stack` section, when it has one, where it opens the draft pull request.
 
 #### Scenario: The plan step of a stacked story
 - **WHEN** an epic run writes the prompt for the plan step of #280, stacked on #279, whose pull request #290 is from `epic-run-skeleton`

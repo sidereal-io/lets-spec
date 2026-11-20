@@ -21,7 +21,7 @@ hand.
   several met blockers, the story stacks on the one whose branch already
   contains every other blocker's branch (D7).
 - The stacked pull request's body says `Stacked on #<blocker-pr>; merge that first.`
-  beside `Closes #<i>` (D8).
+  on its own line after `Closes #<i>` (D8).
 - The epic run prints `Stacks on #<blocker>: <blocker-branch>, pull request #<blocker-pr>.`
   when it picks a stacked story, and a built stacked story's line ends
   with `, stacked on #<blocker>` (D9).

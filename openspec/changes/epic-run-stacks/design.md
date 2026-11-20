@@ -59,9 +59,11 @@ Other facts the approach relies on:
 - **Existing seams reused:** `tests/lets/backlog/ready.test.ts` drives
   `lets backlog ready` through `run([...], deps)` with the fake `gh` rows
   of `tests/lets/backlog/fixtures/fake-gh.ts`. It covers the
-  `--met-blockers` requirement. `tests/lets/backlog/policy.test.ts`
-  covers the filter in `ready()` directly when the command test cannot
-  reach a case, such as a blocker in another repository.
+  `--met-blockers` requirement, including a blocker in another
+  repository, which the fake `gh` row gives as a `blockedBy` node with
+  that repository's URL. `tests/lets/backlog/policy.test.ts` covers the
+  filter in `ready()` directly, on `Candidate` values, such as a
+  `null` `blockers`.
 
 ## Scrutiny Tier & Blast Radius
 
@@ -101,10 +103,17 @@ runs a second search,
 and gives each such candidate its open blockers. `Candidate` gains a
 field, such as `blockers: string[] | null`: the keys of the open
 blockers when every one is in this repository, and `null` when any is in
-another repository, so a foreign blocker is never met. `free` keeps its
-meaning. `ready()` keeps a candidate when it is `free`, or when its
-`blockers` is non-null and every key is in `met`; every other filter
-still applies.
+another repository, so a foreign blocker is never met. `blockers` is
+`null` for every candidate the second search did not return, such as
+an assigned or closed issue: `Candidate` has no assignee field, so
+`blockers` being non-null is what tells `ready()` that nobody is
+assigned. The second search's `createdAt` also fills that candidate's
+`created`, as the first search's does for a free one, so a stacked
+story ranks by creation time; the comment on `created` in `adapter.ts`
+then says it may be `''` only for a candidate that is neither free nor
+in the second search. `free` keeps its meaning. `ready()` keeps a
+candidate when it is `free`, or when its `blockers` is non-null and
+every key is in `met`; every other filter still applies.
 
 - *Alternative: one search without `-is:blocked`.* Changes the default
   call that `ready.test.ts` pins, and fetches blocked issues on every
@@ -117,10 +126,12 @@ field on its candidates.
 ### 3. Met stories come from one `gh pr list` per pick
 
 Before each `lets backlog ready`, the epic run runs
-`gh pr list --state open --limit 1000 --json number,url,isDraft,headRefName`.
+`gh pr list --state open --limit 1000 --json number,url,isDraft,headRefName,isCrossRepository`.
 A story of the epic, in this repository, is met when an entry's
-`headRefName` is the story's change name (title before ` — `) and
-`isDraft` is false. The epic run keeps each met story's branch and pull
+`headRefName` is the story's change name (title before ` — `),
+`isDraft` is false and `isCrossRepository` is false. A pull request from
+a fork can share the name, but its branch is not on `origin`, so
+*Stack the story* could not fetch it. The epic run keeps each met story's branch and pull
 request number for the stack decision.
 
 - *Alternative: `gh pr list --head <name>` per story.* Up to one call per
@@ -144,7 +155,11 @@ spec's four steps. Its results:
 
 The ancestry test is
 `git merge-base --is-ancestor origin/<other-branch> origin/<blocker-branch>`,
-after `git fetch origin <blocker-branch>` for each open blocker. Keeping
+after `git fetch origin <blocker-branch>` for each open blocker. The test
+passes both ways when two branches point at the same commit, so the
+first of them in the epic's order is the base. A failed fetch is a stop,
+as any other failed Git command in a story is: *A stop in an epic run*
+ends the epic run at that story. Keeping
 the steps in the reference matches the existing rule that epic-run steps
 live there and a story run loads none of them.
 
@@ -168,8 +183,8 @@ to the blocker's branch. *Claim* step 2 says the proposed base for
 This change is stacked on #<blocker>: its branch starts from
 `<blocker-branch>`, the branch of pull request #<blocker-pr>. Open the
 draft pull request with `--base <blocker-branch>`, and put the line
-`Stacked on #<blocker-pr>; merge that first.` beside `Closes #<i>` in
-its description. If the pull request exists with another base, fix it
+`Stacked on #<blocker-pr>; merge that first.` on its own line after
+`Closes #<i>` in its description. If the pull request exists with another base, fix it
 with `gh pr edit <name> --base <blocker-branch>`.
 ```
 
