@@ -24,4 +24,4 @@ https://github.com/sidereal-io/lets-spec/issues/281
 - Clarified: "stacked on it" means depending on it through "blocked by" links between the epic's stories, at any depth, not only a story already stacked on its branch. Dependents are not built yet when their blocker fails, so none has a branch (D4).
 - Clarified: the summary is the per-story lines, with a new `not built` reason for a skipped story, and no count line (D5, D7).
 
-Confirmed by user: no
+Confirmed by user: yes
