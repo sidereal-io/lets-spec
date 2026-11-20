@@ -2403,6 +2403,52 @@ epic_run_file() {
     { echo "A stop in an epic run does not leave out the lost claim"; false; }
 }
 
+# The sections of lets-go that hold a stop a story of an epic run can
+# reach, as <file>:<heading>.
+stop_sections=('SKILL.md:Backlog errors' 'SKILL.md:Check the issue' 'SKILL.md:Enter the branch'
+  'SKILL.md:Walk the step table' 'SKILL.md:Run a step' 'SKILL.md:Read the report' 'SKILL.md:Relay the questions'
+  'references/records.md:Records that disagree')
+
+# stop_links: each section in stop_sections, up to the next heading at level
+# two or above, links A stop in an epic run, and so does the paragraph after
+# the overview that says a part stops on a lets backlog error. Prints each
+# one that does not.
+stop_links() {
+  local dir="${skills_dir:-$repo/skills}/lets-go" entry name text wrong=()
+  for entry in "${stop_sections[@]}"; do
+    name="${entry#*:}"
+    text="$(awk -v name="$name" "$fence_rules"'
+      !code && /^##? / { on = (substr($0, index($0, " ") + 1) == name); next }
+      on' "$dir/${entry%%:*}" 2>/dev/null)"
+    grep -qF 'epic-run.md#a-stop-in-an-epic-run)' <<<"$text" || wrong+=("$name has no link to A stop in an epic run")
+  done
+  text="$(awk '/^## Placeholders$/ { exit } { print }' "$dir/SKILL.md" | awk 'BEGIN { RS = "" } /Any part also stops/')"
+  grep -qF 'epic-run.md#a-stop-in-an-epic-run)' <<<"$text" ||
+    wrong+=("the overview's sentence on lets backlog errors has no link to A stop in an epic run")
+  [ "${#wrong[@]}" -eq 0 ] || { printf '%s\n' "${wrong[@]}"; return 1; }
+}
+
+@test "the stop links check names a section that lacks the link" {
+  local link='[A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)' entry lines
+  lines=('# lets-go' '' "Any part also stops. $link")
+  lines+=('' '## Placeholders')
+  for entry in "${stop_sections[@]}"; do
+    [[ "$entry" == SKILL.md:* ]] || continue
+    lines+=('' "## ${entry#*:}" '' 'Stop.')
+    [ "${entry#*:}" = 'Run a step' ] || lines+=("$link")
+  done
+  fixture_file lets-go SKILL.md "${lines[@]}"
+  fixture_file lets-go references/records.md '# Records' '' '## Records that disagree' '' \
+    'Stop. [A stop in an epic run](epic-run.md#a-stop-in-an-epic-run)'
+  run stop_links
+  [ "$status" -eq 1 ] || { echo "it passed on Run a step with no link"; false; }
+  [ "$output" = 'Run a step has no link to A stop in an epic run' ] || { echo "it said: $output"; false; }
+}
+
+@test "an epic run's stop rule is linked from each section with a stop" {
+  stop_links
+}
+
 # long_lines <file>...: each line longer than 72 columns, as
 # <file>:<line>: <length>, the file under the skills folder. A column is one
 # code point: the count leaves out UTF-8 continuation bytes, so it holds in

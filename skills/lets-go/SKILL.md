@@ -84,7 +84,10 @@ procedure ranks it.
 | [End of the run](#end-of-the-run) | Prints the pull request's URL, or each story's line in an epic run | this session | Nothing: the run is over | Always |
 
 Any part also stops when a `lets backlog` command returns an error, as
-[Backlog errors](#backlog-errors) says.
+[Backlog errors](#backlog-errors) says. In an epic run, any stop while
+the run is on a story also ends the epic run, as
+[A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+says.
 
 ## Placeholders
 
@@ -153,7 +156,9 @@ reads stay as `gh` commands for now: the comment thread read of
 of [Start from an idea](#start-from-an-idea). Each `lets backlog`
 command prints one JSON object. When the object holds
 `error`, the backlog cannot answer. Stop: claim nothing more, and run no
-step. Say what the error is:
+step. In an epic run, this stop also ends the epic run at its story, as
+[A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+says. Say what the error is:
 
 - **`no-backlog`:** no Project is linked to the repository. Say to run
   the `lets-setup-backlog` skill.
@@ -289,6 +294,11 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
 
 ## Check the issue
 
+In an epic run, each stop in this part also ends the epic run at its
+story, as
+[A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+says.
+
 1. Read the blockers of `<i>`. On an error, act as
    [Backlog errors](#backlog-errors) says.
 
@@ -413,6 +423,11 @@ Next: [Enter the branch](#enter-the-branch).
 
 ## Enter the branch
 
+In an epic run, each stop in this part also ends the epic run at its
+story, as
+[A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+says.
+
 1. On the default branch, use what [Check the issue](#check-the-issue)
    found when it looked for the change's branch, here and on `origin`:
    - **Neither has it:** run [Claim](#claim), which creates the
@@ -536,6 +551,11 @@ user every question.
 Next: [Walk the step table](#walk-the-step-table).
 
 ## Walk the step table
+
+In an epic run, each stop in this part also ends the epic run at its
+story, as
+[A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+says.
 
 After [Set the question mode](#set-the-question-mode), on the branch
 `<name>`, read three records first, in this order:
@@ -996,6 +1016,11 @@ as `--name idea-fix-letssync-quiet-output-shape`.
 
 ## Run a step
 
+In an epic run, each stop in this section also ends the epic run at its
+story, as
+[A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+says.
+
 1. [Write the prompt](references/step-prompt.md#write-the-prompt).
 2. Ask what can run. From the repo root, run:
 
@@ -1039,6 +1064,11 @@ as `--name idea-fix-letssync-quiet-output-shape`.
      stop. Do not run the step again.
 
 ## Read the report
+
+In an epic run, each stop in this section also ends the epic run at its
+story, as
+[A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+says.
 
 Read `outcome` from `.workspace/lets-go/<session>-report.json`.
 
@@ -1105,6 +1135,11 @@ start with no answers.
   Never run a failed step again.
 
 ## Relay the questions
+
+In an epic run, each stop in this section also ends the epic run at its
+story, as
+[A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+says.
 
 The answers go in `.workspace/lets-go/<session>-answers.yaml`, one
 file per step.
