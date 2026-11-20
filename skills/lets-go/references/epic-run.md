@@ -3,9 +3,11 @@
 Read this file only in an epic run: a run of `lets-go` whose issue is
 an epic.
 
-An epic run builds the epic's stories one at a time, each to a pull
-request ready for review, and ends with one line per story. The epic
-run claims each story, routes it and enters its branch itself. A child
+An epic run first sorts its stories into waves and prints them, with
+why each story waits, then builds one story at a time, wave by wave,
+each to a pull request ready for review. It ends with one line per
+story. The epic run claims each story, routes it and enters its branch
+itself. A child
 `lets-go` session then walks the story's steps, so the epic run's
 context grows by a few lines per story. When no child session can
 start, the epic run walks the story's steps in its own session. An epic

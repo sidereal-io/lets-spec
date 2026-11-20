@@ -1269,6 +1269,16 @@ step_numbers() {
   step_numbers lets-go
 }
 
+@test "wave: the README says an epic run builds its stories wave by wave" {
+  local overview phrase
+  phrase='first sorts its stories into waves and prints them, with why each story waits, then builds one story at a time, wave by wave'
+  grep -qF -- "$phrase" <<<"$(readme_lets_go)" || { echo "the README's lets-go section does not say: $phrase"; false; }
+  overview="$(awk '/^## / { exit } NR > 1' "$(epic_run_file)" | tr -s '[:space:]' ' ')"
+  grep -qF -- "$phrase" <<<"$overview" || { echo "the overview of references/epic-run.md does not say: $phrase"; false; }
+  grep -F '| `lets/src/backlog/` |' "$repo/README.md" | grep -qF '`waves.ts`' ||
+    { echo "the README's layout table does not name waves.ts"; false; }
+}
+
 @test "the step number check skips a step number inside a code span" {
   fixture_file lets-go SKILL.md '# lets-go' '' 'Old skills said `step 3` here.'
   step_numbers lets-go
