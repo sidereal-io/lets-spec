@@ -94,7 +94,9 @@ they miss untracked files.
 
 For each story of the epic, in this repository and not settled yet, run
 `lets backlog item <story>` and keep the keys in its `blockedBy` whose
-`state` is `OPEN`. Then mark dependents to a fixed point: start with
+`state` is `OPEN` and whose `url` is the `url` of a story of the epic in
+this repository. A blocker in another repository can share its key with
+a story here, so a key alone never makes a story a dependent (ADR-025). Then mark dependents to a fixed point: start with
 `<failed>`; a story is a dependent when an open blocker of it is
 `<failed>` or a dependent; repeat until no new story is marked. Settle
 the dependents in the epic's order.
@@ -130,8 +132,9 @@ same case for a stop: the run comes back from *A stop in an epic run*,
 which has settled the story and its dependents and switched to the
 default branch. It goes on to step 3, the pick.
 
-The parts table's *Next* column for *Walk the step table* and *Enter the
-branch* adds *Run the epic* after a stop in an epic run.
+The parts table's *Next* column for *Check the issue*, *Walk the step
+table* and *Enter the branch* adds *Run the epic* after a stop in an
+epic run.
 
 ### D-G: The linking sentences say "ends only its story's run"
 

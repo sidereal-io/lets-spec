@@ -23,8 +23,9 @@ clear set, so the epic run can skip only those and build the rest.
 - Each skipped story is settled right after the failed story's line, in the
   epic's order, with
   `#<story> <story-name>: not built, it depends on #<failed>, which did not finish`.
-  The line names the failed or stopped story itself; several are named as
-  `#<a> and #<b>` (D5).
+  The line names the failed or stopped story itself (D5). Every dependent
+  settles at that stop, so a line never names two stories, and the
+  `#<a> and #<b>` form D5 allows does not arise (design D-D).
 - The failed or stopped story's own line is unchanged:
   `failed at <step name>: <reason>` or `stopped: <reason>` (D6).
 - The end of the run prints the per-story lines, as today, and no count
