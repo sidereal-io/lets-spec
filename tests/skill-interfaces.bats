@@ -3875,3 +3875,17 @@ EXPECTED
   [[ "$rebuttals" == *'**Critical**'*'stays open'*'**Moderate**'*'stays open'* ]] ||
     { echo 'unresolved rebuttals do not follow the verdict rules'; false; }
 }
+
+@test "stack: an epic run passes the met stories as --met-blockers" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    'gh pr list --state open --limit 1000 --json number,url,isDraft,headRefName,isCrossRepository' \
+    'run this once, before each pick' \
+    "is met when an entry's \`headRefName\` is the story's change name" \
+    "and that entry's \`isDraft\` and \`isCrossRepository\` are both \`false\`" \
+    'lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279' \
+    'With no met story, pass no `--met-blockers`'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}

@@ -60,14 +60,35 @@ as for any picked issue.
    After a lost claim, the run comes back from
    [Enter the branch](../SKILL.md#enter-the-branch), which has settled
    the story already: go on to the next step.
-3. **Pick the next story.** Run the third case, `next`, of
+3. **Pick the next story.** First find the met stories: the stories
+   whose pull request is ready for review, so a story they block can
+   stack on them. Read the open pull requests, and run this once, before
+   each pick:
+
+   ```bash
+   gh pr list --state open --limit 1000 --json number,url,isDraft,headRefName,isCrossRepository
+   ```
+
+   A story of the epic, in this repository, is met when an entry's
+   `headRefName` is the story's change name, and that entry's `isDraft`
+   and `isCrossRepository` are both `false`. Its change name is the
+   part of its title before ` — `, or the whole title when it has none.
+   A pull request from a fork can share the name, but its branch is not
+   on `origin`, so it is never met. Keep each met story's branch, its
+   `headRefName`, and its pull request's `number`:
+   [Stack the story](#stack-the-story) uses them. It does not matter
+   whether this epic run or an earlier one built the story.
+
+   Run the third case, `next`, of
    [Find the source of demand](../SKILL.md#find-the-source-of-demand),
    with one narrowing: the candidates are the epic's stories that are in
    this repository and not settled yet, and no other issue. Pass the
    keys of the epic's stories in this repository as `--only`, and every
-   settled story as `--exclude`, such as
-   `lets backlog ready --only 279,280,281 --exclude 279`. With no story
-   settled, pass no `--exclude`. When every story is settled, the result
+   settled story as `--exclude`. Pass every met story as
+   `--met-blockers`, such as
+   `lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279`.
+   With no story settled, pass no `--exclude`. With no met story, pass
+   no `--met-blockers`. When every story is settled, the result
    is `nothing-ready`, and you run no command. Rank, check the
    prerequisite and confirm the packet of each candidate as `next` does.
    Rank the stories again for every pick: a story built in this run can
