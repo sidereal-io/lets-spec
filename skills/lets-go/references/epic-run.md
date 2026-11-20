@@ -221,19 +221,29 @@ as for any picked issue.
    [Stack the story](#stack-the-story) uses them. It does not matter
    whether this epic run or an earlier one built the story.
 
+   Before each pick, read
+   `.workspace/lets-go/epic-<parent>-waves.json`, which *Start the epic
+   run* wrote. The current wave is the first of its `waves` that holds a
+   story not settled yet. A wave can have no such
+   story before its turn, such as when each of its stories depends on a
+   story that stopped: skip it.
+
    Run the third case, `next`, of
    [Find the source of demand](../SKILL.md#find-the-source-of-demand),
-   with one narrowing: the candidates are the epic's stories that are in
-   this repository and not settled yet, and no other issue. Pass the
-   keys of the epic's stories in this repository as `--only`, and every
-   settled story as `--exclude`. Pass every met story as
-   `--met-blockers`. Pass every story not settled yet that has its
-   change's branch as `--started`, as *Start the epic run* found it.
-   `lets backlog ready` keeps those assigned to the signed-in user, and
-   ranks them with the others, such as:
+   with one narrowing: the candidates are the stories of the current
+   wave that are not settled yet, and no other issue. A story of a later
+   wave is not a candidate while the current wave holds a story not
+   settled yet, whatever its Priority. Pass the keys of the current
+   wave's stories as `--only`, and every settled story as `--exclude`.
+   Pass every met story as `--met-blockers`. Pass every story not
+   settled yet that has its change's branch as `--started`, as *Start
+   the epic run* found it. `lets backlog ready` keeps those assigned to
+   the signed-in user, and ranks them with the others. With the waves
+   `Wave 1: #279` and `Wave 2: #280, #281`, once #279 is settled, the
+   pick is:
 
    ```bash
-   lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279 --started 281
+   lets backlog ready --only 280,281 --exclude 279 --met-blockers 279 --started 281
    ```
 
    With no story settled, pass no `--exclude`. With no met story, pass

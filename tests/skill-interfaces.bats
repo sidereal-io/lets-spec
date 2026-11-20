@@ -2365,8 +2365,8 @@ epic_run_file() {
   part="$(part_section 'Run the epic')"
   for phrase in \
     'Run the third case, `next`, of [Find the source of demand](../SKILL.md#find-the-source-of-demand)' \
-    "Pass the keys of the epic's stories in this repository as \`--only\`, and every settled story as \`--exclude\`" \
-    'lets backlog ready --only 279,280,281 --exclude 279' \
+    "Pass the keys of the current wave's stories as \`--only\`, and every settled story as \`--exclude\`" \
+    'lets backlog ready --only 280,281 --exclude 279' \
     'Rank the stories again for every pick'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
@@ -2415,6 +2415,20 @@ epic_run_file() {
     'Print the waves once in an epic run, even when there is only one wave'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
+}
+
+@test "wave: an epic run picks only from the current wave" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    'Before each pick, read `.workspace/lets-go/epic-<parent>-waves.json`' \
+    'The current wave is the first of its `waves` that holds a story not settled yet' \
+    'the candidates are the stories of the current wave that are not settled yet, and no other issue' \
+    'A story of a later wave is not a candidate while the current wave holds a story not settled yet, whatever its Priority'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+  skill_does_not_say lets-go "Pass the keys of the epic's stories in this repository as \`--only\`"
+  skill_does_not_say lets-go 'lets backlog ready --only 279,280,281'
 }
 
 @test "wave: the placeholders give the waves their own rows" {
@@ -4027,7 +4041,7 @@ EXPECTED
     'run this once, before each pick' \
     "is met when an entry's \`headRefName\` is the story's change name" \
     "and that entry's \`isDraft\` and \`isCrossRepository\` are both \`false\`" \
-    'lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279' \
+    'lets backlog ready --only 280,281 --exclude 279 --met-blockers 279' \
     'With no met story, pass no `--met-blockers`'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
@@ -4307,7 +4321,7 @@ step_prompt_file() {
   local part phrase
   part="$(part_section 'Run the epic')"
   for phrase in "every story not settled yet that has its change's branch as \`--started\`" \
-    'lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279 --started 281' \
+    'lets backlog ready --only 280,281 --exclude 279 --met-blockers 279 --started 281' \
     'With no such story, pass no `--started`'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
