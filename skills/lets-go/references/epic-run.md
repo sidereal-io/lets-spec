@@ -4,9 +4,12 @@ Read this file only in an epic run: a run of `lets-go` whose issue is
 an epic.
 
 An epic run builds the epic's stories one at a time, each to a pull
-request ready for review, and ends with one line per story. In this
-version, each story's parts and steps run in the epic run's own session,
-not in a child session, and an epic with no open stories is not shaped.
+request ready for review, and ends with one line per story. The epic
+run claims each story, routes it and enters its branch itself. A child
+`lets-go` session then walks the story's steps, so the epic run's
+context grows by a few lines per story. When no child session can
+start, the epic run walks the story's steps in its own session. An epic
+with no open stories is not shaped yet.
 
 ## Run the epic
 
@@ -90,8 +93,9 @@ as for any picked issue.
    later belongs to a story this run claimed, and that story is settled
    before the next pick.
 2. **Settle the story whose walk ended,** when the run comes back to
-   this part from
-   [Walk the step table](../SKILL.md#walk-the-step-table).
+   this part from [Start the story run](#start-the-story-run), or from
+   [Walk the step table](../SKILL.md#walk-the-step-table) after this
+   session walked the story's steps.
    The story's pull request is ready for review. Read its URL as
    `<pr-url>`, and settle the story with its built line, or, while the
    story is stacked, with its stacked line, as
@@ -179,12 +183,10 @@ as for any picked issue.
      with it, as for an issue number. The story runs through
      [Check the issue](../SKILL.md#check-the-issue),
      [Route](../SKILL.md#route),
-     [Enter the branch](../SKILL.md#enter-the-branch),
-     [Set the question mode](../SKILL.md#set-the-question-mode) and
-     [Walk the step table](../SKILL.md#walk-the-step-table) in this
-     session. Each of its steps runs as
-     [Run a step](../SKILL.md#run-a-step) says. Start no other `lets-go`
-     session for the story.
+     [Enter the branch](../SKILL.md#enter-the-branch) and
+     [Set the question mode](../SKILL.md#set-the-question-mode) in this
+     session, then [Start the story run](#start-the-story-run), which
+     runs the story's steps in a child session.
    - **`nothing-ready`:** settle each story not settled yet, in the
      epic's order, with its `not built` line, as
      [Settle a story](#settle-a-story) says. Its reason is one of
@@ -245,6 +247,114 @@ The reason says why, such as `in another repository`,
 `assigned to <login>`, `its packet is not complete`,
 `its pull request was closed: <pr-url>` or
 `it depends on #<failed>, which did not finish`.
+
+## Start the story run
+
+[Run the epic](#run-the-epic) runs this part for the story it picked,
+once [Set the question mode](../SKILL.md#set-the-question-mode) has set
+`<mode>`, on the story's branch `<name>`. It runs the story's steps in a
+child `lets-go` session. The child shares this checkout, and this
+session waits for it, so the two never write at the same time.
+
+1. **Write the story prompt.** Copy the frame below to
+   `.workspace/lets-go/<name>-story-prompt.md`, and fill in each
+   `<...>`. `<schema>`, `<route line>` and `<mode>` are the ones
+   [Enter the branch](../SKILL.md#enter-the-branch),
+   [Route](../SKILL.md#route) and
+   [Set the question mode](../SKILL.md#set-the-question-mode) set for
+   the story. For a stacked story only, put the `## Stack` section of
+   [Write the prompt](step-prompt.md#write-the-prompt) between
+   `## What to run` and `## Questions`, filled with the same
+   `<blocker>`, `<blocker-branch>` and `<blocker-pr>` as the story's
+   step prompts. The prompt of a story that is not stacked holds no
+   `## Stack` section.
+
+   ```text
+   You run a story run of a lets-go epic run: #<i>, for the change <name>, under #<parent>.
+   Issue: #<i>, <issue-url>. Branch: <name>. Schema: <schema>. <route line>
+
+   ## What to run
+
+   Invoke the `lets-go` skill for this story run, and stop where it
+   stops. The epic run has already claimed #<i>, routed it and entered
+   the branch `<name>`. Claim nothing, route nothing, and stay on
+   `<name>`. Walk the step table, and run each step that is not done.
+
+   ## Questions
+
+   The question mode is <mode>. The epic run applies it, so answer no
+   step's question yourself, at either mode. Pass each question up in
+   your report, with the step's recommendation. Never ask the user in
+   this session: nobody here can answer.
+
+   ## The report
+
+   End your final message with one step report: a fenced block tagged
+   step-report, holding one YAML mapping, as lets-go says for a story
+   run's child. Its outcome is done, with the pull request as its first
+   evidence line; needs-input, with the step's questions; or failed,
+   with the reason.
+   ```
+
+2. **Clear the story's answers and rounds,** so that the story run
+   starts with no answers and no counted rounds. Do this only before
+   the story's first child session in this run, never when the epic run
+   starts the child again with answers.
+
+   ```bash
+   rm -f .workspace/lets-go/<name>-story-answers.yaml \
+     .workspace/lets-go/<name>-plan-rounds.txt \
+     .workspace/lets-go/<name>-review-plan-rounds.txt \
+     .workspace/lets-go/<name>-build-rounds.txt \
+     .workspace/lets-go/<name>-review-build-rounds.txt
+   ```
+
+3. **Ask what can run.** From the repo root, run:
+
+   ```bash
+   lets delegate step instructions --for story
+   ```
+
+   It prints one JSON line, as for a step. Its `guidance` comes from
+   `delegate.step.story.guidance` in the `lets` config. If it exits
+   non-zero, show the user its stderr, and stop, as
+   [A stop in an epic run](#a-stop-in-an-epic-run) says: the story's
+   reason is its stderr. Rank its `options` as
+   [Run a step](../SKILL.md#run-a-step) ranks a step's: the guidance
+   first, then the order the options came in. When `options` is empty,
+   pass your own family as the one model.
+4. **Run the child,** with one `--model` per ranked option, best first:
+
+   ```bash
+   lets delegate step run --for story --name <name>-story \
+     --prompt-file .workspace/lets-go/<name>-story-prompt.md \
+     --effort high --model <first> --model <second> \
+     > .workspace/lets-go/<name>-story-report.json 2> .workspace/lets-go/<name>-story-meta.txt
+   ```
+
+   A story run may take up to 600 minutes. The epic run prints none of
+   the child's `Skipped`, `Done` or `Failed` lines: they stay in the
+   child session, which is kept when it does not finish. The user sees
+   only the epic run's own lines: the `Picked` or `Resumed` line, the
+   `Stacks on` line, the questions it relays and their answers, and the
+   story's line.
+5. **Act on its exit code:**
+   - **3:** no child session can start here. Print:
+
+     ```text
+     No child session could start for #<i>, so this session walks its steps.
+     ```
+
+     Then walk the story's steps in this session, from
+     [Walk the step table](../SKILL.md#walk-the-step-table). Each step
+     runs as [Run a step](../SKILL.md#run-a-step) says: in a fresh
+     session, or in a subagent on that step's own exit 3. Run no
+     subagent with the story prompt, even when the meta file names a
+     saved prompt: a subagent cannot give each step a fresh session.
+     When the walk ends, the run comes back to
+     [Run the epic](#run-the-epic), which settles the story.
+   - **Any other:** go back to [Run the epic](#run-the-epic), which
+     settles the story from the child's report.
 
 ## Read a pull request's base
 
