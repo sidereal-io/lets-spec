@@ -25,4 +25,4 @@ https://github.com/sidereal-io/lets-spec/issues/284
 
 None. The story stands as written. D4 settles the packet's open question on how far delegation can nest.
 
-Confirmed by user: no
+Confirmed by user: yes
