@@ -85,8 +85,12 @@ as for any picked issue.
    this repository and not settled yet, and no other issue. Pass the
    keys of the epic's stories in this repository as `--only`, and every
    settled story as `--exclude`. Pass every met story as
-   `--met-blockers`, such as
-   `lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279`.
+   `--met-blockers`, such as:
+
+   ```bash
+   lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279
+   ```
+
    With no story settled, pass no `--exclude`. With no met story, pass
    no `--met-blockers`. When every story is settled, the result
    is `nothing-ready`, and you run no command. Rank, check the
@@ -153,6 +157,77 @@ A story that was not built gets this line:
 The reason says why, such as `in another repository`,
 `taken by <login>`, `blocked by #<blocker>`, `assigned to <login>` or
 `its packet is not complete`.
+
+## Stack the story
+
+[Check the issue](../SKILL.md#check-the-issue) runs this procedure in
+an epic run, for the story the epic run picked, when the story has an
+open blocker and no change's branch, here or on `origin`. It decides
+whether the story stacks on a blocker's branch, before
+[Find the source of demand](../SKILL.md#find-the-source-of-demand) runs
+for the story. The open blockers are the entries of the story's
+`blockedBy`, from the blocker read, whose `state` is `OPEN`.
+
+1. Read the open pull requests again, and find the met stories as
+   *Pick the next story*, in [Run the epic](#run-the-epic), does. A
+   blocker's pull request can have become a draft since the pick.
+
+   ```bash
+   gh pr list --state open --limit 1000 --json number,url,isDraft,headRefName,isCrossRepository
+   ```
+
+2. When an open blocker is not met, settle the story, as
+   [Settle a story](#settle-a-story) says, with the reason
+   `not built, blocked by #<blocker>`, naming each open blocker that is
+   not met. A blocker that is not one of the epic's stories is never
+   met; name one in another repository by its `url`. Return `settled`.
+3. Otherwise every open blocker is met, and its branch is
+   `<blocker-branch>`. Fetch each one's branch:
+
+   ```bash
+   git fetch origin <blocker-branch>
+   ```
+
+   A failed fetch is a stop, as
+   [A stop in an epic run](#a-stop-in-an-epic-run) says.
+4. Find the base: the open blocker whose branch contains every other
+   open blocker's branch. For each other open blocker, with its branch
+   as `<other-branch>`, this command succeeds:
+
+   ```bash
+   git merge-base --is-ancestor origin/<other-branch> origin/<blocker-branch>
+   ```
+
+   With one open blocker, that blocker is the base. When two blockers'
+   branches point at the same commit, the command succeeds both ways:
+   the base is the first of them in the epic's order.
+5. When no open blocker's branch contains all the others, settle the
+   story with the reason
+   `not built, blocked by #<a> and #<b>, on different branches`, naming
+   every open blocker. Name three or more as `#<a>, #<b> and #<c>`.
+   Return `settled`.
+6. With a base, `<blocker>` is the base, `<blocker-branch>` its branch
+   and `<blocker-pr>` the number of its pull request. Print:
+
+   ```text
+   Stacks on #<blocker>: <blocker-branch>, pull request #<blocker-pr>.
+   ```
+
+   The story is stacked on `#<blocker>` until it is settled. Return
+   `stacked`.
+
+It returns one of these results:
+
+- `stacked`: the story stacks on the base. It carries `<blocker>`,
+  `<blocker-branch>` and `<blocker-pr>`.
+  [Claim](../SKILL.md#claim) creates the story's branch off
+  `origin/<blocker-branch>`.
+- `settled`: the story has its `not built` line. A settle here claims
+  nothing, counts no lost claim and does not end the epic run.
+
+Return to [Check the issue](../SKILL.md#check-the-issue), with the
+result. On `settled`, it does not go on with the story. Go back to
+[Run the epic](#run-the-epic), which picks again.
 
 ## A stop in an epic run
 

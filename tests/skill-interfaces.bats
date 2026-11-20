@@ -3889,3 +3889,49 @@ EXPECTED
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
 }
+
+@test "stack: Stack the story settles a story whose open blocker is not met" {
+  local section phrase
+  section="$(skill_section lets-go 'Stack the story')"
+  [ -n "$section" ] || { echo "lets-go has no section Stack the story"; false; }
+  has_heading "$(epic_run_file)" 'Stack the story' || { echo "references/epic-run.md has no heading: Stack the story"; false; }
+  for phrase in 'When an open blocker is not met' '`not built, blocked by #<blocker>`' 'Return `settled`'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Stack the story does not say: $phrase"; false; }
+  done
+}
+
+@test "stack: Stack the story takes as base the blocker whose branch contains the others" {
+  local section phrase
+  section="$(skill_section lets-go 'Stack the story')"
+  for phrase in 'git fetch origin <blocker-branch>' \
+    'git merge-base --is-ancestor origin/<other-branch> origin/<blocker-branch>' \
+    'With one open blocker, that blocker is the base' \
+    "the base is the first of them in the epic's order"; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Stack the story does not say: $phrase"; false; }
+  done
+}
+
+@test "stack: Stack the story settles blockers on different branches" {
+  local section phrase
+  section="$(skill_section lets-go 'Stack the story')"
+  for phrase in '`not built, blocked by #<a> and #<b>, on different branches`' '`#<a>, #<b> and #<c>`'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Stack the story does not say: $phrase"; false; }
+  done
+}
+
+@test "stack: Stack the story prints its Stacks on line in a text block" {
+  grep -qxF 'Stacks on #<blocker>: <blocker-branch>, pull request #<blocker-pr>.' \
+    <<<"$(text_block_lines 'Stack the story' "$(epic_run_file)")" ||
+    { echo "Stack the story has no text block with the Stacks on line"; false; }
+  grep -qF 'Return `stacked`' <<<"$(skill_section lets-go 'Stack the story')" ||
+    { echo "Stack the story does not return stacked"; false; }
+}
+
+@test "stack: a settle in Stack the story claims nothing and goes back to Run the epic" {
+  local section phrase
+  section="$(skill_section lets-go 'Stack the story')"
+  for phrase in 'claims nothing, counts no lost claim and does not end the epic run' \
+    'Go back to [Run the epic](#run-the-epic)'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Stack the story does not say: $phrase"; false; }
+  done
+}
