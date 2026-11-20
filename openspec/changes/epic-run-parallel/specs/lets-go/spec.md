@@ -68,7 +68,7 @@ When a story's run stops or fails, the epic run SHALL keep its worktree as it is
 - **THEN** #391's line is `#391 <story-name>: stopped: ` followed by the reason, with no worktree ending
 
 ### Requirement: An epic run waits for the children of a wave
-Once the pick of the current wave returns `nothing-ready`, and the stories it left are settled, the epic run SHALL wait for the children it started for that wave. While one or more children run, it SHALL run `lets delegate step wait`, with one `--name <name>-story` for each child that runs, and act on the child it names, from the exit code it gives and the report in that story's report file:
+Once the pick of the current wave returns `nothing-ready`, and the stories it left are settled, the epic run SHALL wait for the children it started for that wave. While one or more children run, it SHALL run `lets delegate step wait`, with `--timeout-minutes 5` and one `--name <name>-story` for each child that runs, so that the wait returns before an agent host stops a long command, and act on the child it names, from the exit code it gives and the report in that story's report file:
 
 - **`needs-input`:** relay the questions, as *The epic run relays a story run's questions* says, and start that child again.
 - **Exit 3:** keep the story for later, as *With no child session, the epic run walks the story itself* says.
@@ -80,19 +80,19 @@ Once no child of the wave runs, the epic run SHALL walk each story kept for late
 
 #### Scenario: Two children of a wave
 - **WHEN** the epic run has started the children of #280 and #281, and the pick returns `nothing-ready`
-- **THEN** the epic run runs `lets delegate step wait --name epic-run-stacks-story --name epic-run-failures-story`
+- **THEN** the epic run runs `lets delegate step wait --timeout-minutes 5 --name epic-run-stacks-story --name epic-run-failures-story`
 
 #### Scenario: One child ends first
 - **WHEN** `lets delegate step wait` names `epic-run-failures-story` with exit 0, and #281's report is `done` with its pull request ready for review
-- **THEN** the epic run settles #281, then runs `lets delegate step wait --name epic-run-stacks-story`
+- **THEN** the epic run settles #281, then runs `lets delegate step wait --timeout-minutes 5 --name epic-run-stacks-story`
 
 #### Scenario: The next wave waits for the whole wave
 - **WHEN** the waves are `Wave 1: #280, #281` and `Wave 2: #282`, and #281 has settled while #280's child still runs
 - **THEN** the epic run runs no `lets backlog ready --only 282` until #280 has settled
 
 #### Scenario: A wait that passes its limit
-- **WHEN** `lets delegate step wait --name epic-run-stacks-story` exits 6
-- **THEN** the epic run runs `lets delegate step wait --name epic-run-stacks-story` again, and settles nothing
+- **WHEN** `lets delegate step wait --timeout-minutes 5 --name epic-run-stacks-story` exits 6
+- **THEN** the epic run runs `lets delegate step wait --timeout-minutes 5 --name epic-run-stacks-story` again, and settles nothing
 
 ## MODIFIED Requirements
 

@@ -96,9 +96,13 @@ working directory, and writes a run record to
 `{ name, pid, checkout, reportFile, metaFile, exitFile, startedAt }`. It
 then starts a detached process: the same Node binary and `lets` entry
 that is running (`process.execPath`, `process.execArgv` and
-`process.argv[1]`), with the arguments of `delegate step run` and the
-same options, plus `--exit-file .workspace/lets-delegate/<name>.exit.json`.
-The process runs with the checkout's root as its working directory, its
+`process.argv[1]`), with the arguments of `delegate step run`, the
+options it was given that `step run` takes, and
+`--exit-file <root>/.workspace/lets-delegate/<name>.exit.json`, where
+`<root>` is the repository root `step start` ran in. Every path among
+them is absolute, because the process runs in another directory.
+`--checkout`, `--report-file` and `--meta-file` are not passed on:
+`step run` does not take them, and would exit 2. The process runs with the checkout's root as its working directory, its
 stdout opened on the report file and its stderr on the meta file. Then
 `step start` prints `{"name","pid"}` and exits.
 
@@ -199,7 +203,11 @@ by later waits, in the order they ended (D8, D-C).
 The children that run, and those kept for a walk, are listed in
 `.workspace/lets-go/epic-<parent>-children.txt`, one line per story,
 `<i> <name> running` or `<i> <name> walk`, so the loop survives a long
-session as the lines file does.
+session as the lines file does. *Start the epic run* writes it afresh,
+empty, beside the lines file. Exit 3 turns a story's `running` into
+`walk`. A story leaves the file once it is settled, so the wait never
+names it again. A child that starts again after a relay keeps its
+`running` line.
 
 ### D-H. A stop between stories waits for the running children
 
@@ -243,8 +251,9 @@ management in `lets`, not in the skill, is what ADR-021 already says.
   story's branch carries on.
 - [An agent host kills a foreground command after a few minutes, such as
   Claude Code's Bash tool at 10 minutes] → `step start` returns at once.
-  The skill can pass `--timeout-minutes` to `step wait`, which exits 6,
-  and runs it again with the same names.
+  The skill passes `--timeout-minutes 5` to `step wait`, which exits 6,
+  and runs it again with the same names. On a host that lets a command
+  set its own time limit, the skill gives the wait more than 5 minutes.
 - [A child from an earlier epic run still runs in a worktree the new run
   would reuse] → `step start` exits 2 for a name that still runs, so the
   story stops with that error instead of a second child writing in the

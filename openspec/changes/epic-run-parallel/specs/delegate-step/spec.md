@@ -7,6 +7,10 @@
 - **WHEN** the user runs `lets delegate step start --for story --name Fix X --checkout .workspace/lets-go/worktrees/fix-x --prompt-file p.md --report-file r.json --meta-file m.txt --effort high --model gpt/gpt-6-luna`
 - **THEN** the command exits 0 at once, prints one JSON line starting `{"name":"fix-x","pid":`, and the resolver is asked for a `step` session named `fix-x` whose working directory is the root of `.workspace/lets-go/worktrees/fix-x`
 
+#### Scenario: Paths for a step in a worktree
+- **WHEN** the user runs `lets delegate step start --for story --name Fix X --checkout .workspace/lets-go/worktrees/fix-x --prompt-file p.md --report-file r.json --meta-file m.txt --model gpt/gpt-6-luna` in the repository root `/repo`
+- **THEN** the background `lets delegate step run` is given `--prompt-file /repo/p.md` and `--exit-file /repo/.workspace/lets-delegate/fix-x.exit.json`, and none of `--checkout`, `--report-file` and `--meta-file`
+
 #### Scenario: The report once the step ends
 - **WHEN** a step started with `--report-file r.json --meta-file m.txt` ends with a `done` report
 - **THEN** `r.json` holds one JSON line starting `{"outcome":"done",`, and `m.txt` holds the record line that `lets delegate step run` prints on stderr
@@ -24,11 +28,11 @@
 - **THEN** the output names `--checkout`, `--report-file` and `--meta-file`, lists exit codes 0 and 2, and says that `lets delegate step wait` tells when the step ends
 
 ### Requirement: step start refuses a name that is still running
-`lets delegate step start` SHALL exit 2, and start nothing, when a background step that it started with the same normalized `--name`, from the same repository root, has not ended yet. Its stderr SHALL name the step. Once that step has ended, `step start` SHALL accept the name again, and the new run SHALL replace the old one.
+`lets delegate step start` SHALL exit 2, and start nothing, when a background step that it started with the same normalized `--name`, from the same repository root, has not ended yet. Its stderr SHALL name the step and the id of the process that runs it, so the user can find or stop that process. Once that step has ended, `step start` SHALL accept the name again, and the new run SHALL replace the old one.
 
 #### Scenario: A name that runs
 - **WHEN** a background step named `fix-x-story` runs, and the user runs `lets delegate step start --name fix-x-story` again
-- **THEN** the command exits 2, stderr names `fix-x-story`, and no second process starts
+- **THEN** the command exits 2, stderr names `fix-x-story` and the id of its running process, and no second process starts
 
 #### Scenario: A name that has ended
 - **WHEN** the background step named `fix-x-story` has ended with a `needs-input` report, and the user runs `lets delegate step start --name fix-x-story --answers-file a.yaml` with the other options
