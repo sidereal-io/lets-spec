@@ -17,11 +17,12 @@
 | D7 | What is a stacked story's base when its blocker has merged, and when its blocker is still open? | A blocker whose issue is closed stacks nothing. A story nobody has started branches off the default branch. A started story whose pull request targets the merged blocker's branch gets `gh pr edit <name> --base <default>` before its walk, with no rebase and no `, stacked on`. A started story whose pull request targets an open, met story stays stacked: its step prompts hold `## Stack`, and its line ends `, stacked on #<blocker>`. Restacking after review stays out of scope. | Assumption |
 | D8 | Does a blocker whose pull request merged into another story's branch, so its issue is still open, still block its dependents? | Yes, as `lets backlog ready` does today: the dependents get `not built, blocked by #<blocker>`. The base rule of D7 applies once the blocker's issue is closed, because until then its work is not on the default branch. | Assumption |
 | D9 | A started story has a branch but no pull request, and its open blocker's pull request is ready for review. Is it stacked, and on which branch? | Stacked on the base that *Stack the story* finds: the open blocker whose branch contains the others. Its step prompts hold `## Stack`, so the plan step opens the pull request on that branch. When no blocker's branch contains the others, it gets `not built, blocked by #<a> and #<b>, on different branches`. | Assumption |
+| D10 | A story's pull request is ready for review, and its base is the branch of a blocker whose issue has closed. D2 settles it with no walk; D7 changes a base only before a walk. What happens to its base and line? | D7's rule applies when the story is settled at the start: `gh pr edit <name> --base <default>`, with no rebase, and the plain built line `#<story> <story-name>: <pr-url>`, with no `, stacked on`. Otherwise the user would merge a ready pull request into a branch that has already merged. | Assumption |
 
 ## Changes from the story
 
 - **Clarified:** a started story is one assigned to the signed-in user with its change's branch here or on `origin` (D1). The story said "the stories this user claimed in an earlier run"; a claim on GitHub alone cannot be told from a hand assignment.
-- **Added:** a `Resumed` line for a started story (D6), and lines for a story whose pull request is ready, merged or closed (D2, D3), which the story's scope named as "report stories already ready, merged or closed".
+- **Added:** a `Resumed` line for a started story (D6), and lines for a story whose pull request is ready, merged or closed (D2, D3, D10), which the story's scope named as "report stories already ready, merged or closed".
 - **Cut:** closed sub-issues get no line (D4). Showing them would mean changing `lets backlog item` to print closed sub-issues.
 
-Confirmed by user: no
+Confirmed by user: yes
