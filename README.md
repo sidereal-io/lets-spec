@@ -275,17 +275,23 @@ An open blocker stops a run until the change's branch exists. Once you
 have stacked the branch by hand, `lets-go` names the open blockers and
 goes on.
 
-Given an epic's number, `lets-go` builds each ready story of the epic in
-turn, on the default branch: it claims and builds one story to a pull
-request ready for review, then picks the next. An epic run first sorts
-its stories into waves and prints them, with why each story waits, then
-builds one story at a time, wave by wave. A wave holds stories that no
-blocked-by link joins and whose packets name no overlapping path under
-**Relevant code**. The epic run claims the
-story and enters its branch, then each story runs in a child `lets-go`
-session, which walks its steps, so the epic run's own context stays
-small. A story runs in the epic run's own session when no child session
-can start. A story blocked by
+Given an epic's number, `lets-go` builds each ready story of the epic to
+a pull request ready for review, from the default branch. An epic run
+first sorts its stories into waves and prints them, with why each story
+waits. A wave holds stories that no blocked-by link joins and whose
+packets name no overlapping path under **Relevant code**. The epic run
+then builds the stories of one wave at the same time, each in a git
+worktree of its own, and starts the next wave once every story of this
+one is settled. It claims each story and creates its worktree under
+`.workspace/lets-go/worktrees/`, while its own checkout stays on the
+default branch. Then each story runs in a child `lets-go` session, in
+the background, which walks its steps, so the epic run's own context
+stays small. The epic run puts the children's questions to you one
+report at a time, each marked with its story, such as `#286:`. A story
+runs in the epic run's own session when no child session can start,
+once the wave's other children have ended. A built story's worktree is
+removed; a story that stops or fails keeps its worktree, and its line
+says where. A story blocked by
 another story of the epic stacks on that story's branch, and its pull
 request targets that branch, once the blocker's pull request is ready
 for review. Merge the blocker's pull request first. The run ends with
@@ -447,6 +453,15 @@ shows the block.
 epic run starts a child `lets-go` session that walks one story's steps,
 and ends with one step report. It has 600 minutes unless
 `--timeout-minutes` says otherwise.
+
+An epic run starts each story run in the background with
+`lets delegate step start`, which takes the options of `step run` and
+returns at once. `--checkout` names the worktree the session runs in,
+and `--report-file` and `--meta-file` take what `step run` would print
+on stdout and stderr. `lets delegate step wait`, with one
+`--name <name>` per step, waits until the next of those steps ends, and
+prints its name and exit code. [Run a step in the background](docs/resolvers.md#run-a-step-in-the-background)
+says more.
 
 ### Set up delegation
 

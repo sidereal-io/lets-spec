@@ -4,13 +4,16 @@ Read this file only in an epic run: a run of `lets-go` whose issue is
 an epic.
 
 An epic run first sorts its stories into waves and prints them, with
-why each story waits, then builds one story at a time, wave by wave,
-each to a pull request ready for review. It ends with one line per
-story. The epic run claims each story, routes it and enters its branch
-itself. A child
-`lets-go` session then walks the story's steps, so the epic run's
-context grows by a few lines per story. When no child session can
-start, the epic run walks the story's steps in its own session. An epic
+why each story waits. It then builds the stories of one wave at the
+same time, each in a git worktree of its own, and starts the next wave
+once every story of this one is settled. Each story ends at a pull
+request ready for review, and the epic run ends with one line per
+story. The epic run claims each story, routes it and creates its
+worktree itself, and its own checkout stays on the default branch. A
+child `lets-go` session then walks the story's steps in its worktree,
+in the background, so the epic run's context grows by a few lines per
+story. When no child session can start, the epic run walks the story's
+steps in its own session, once the wave's children have ended. An epic
 with no open stories is not shaped yet.
 
 ## Run the epic

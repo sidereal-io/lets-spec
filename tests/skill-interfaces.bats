@@ -1271,7 +1271,7 @@ step_numbers() {
 
 @test "wave: the README says an epic run builds its stories wave by wave" {
   local overview phrase
-  phrase='first sorts its stories into waves and prints them, with why each story waits, then builds one story at a time, wave by wave'
+  phrase='first sorts its stories into waves and prints them, with why each story waits'
   grep -qF -- "$phrase" <<<"$(readme_lets_go)" || { echo "the README's lets-go section does not say: $phrase"; false; }
   overview="$(awk '/^## / { exit } NR > 1' "$(epic_run_file)" | tr -s '[:space:]' ' ')"
   grep -qF -- "$phrase" <<<"$overview" || { echo "the overview of references/epic-run.md does not say: $phrase"; false; }
@@ -1296,10 +1296,10 @@ readme_lets_go() {
     { echo "the README still says review plan runs inside build"; false; }
 }
 
-@test "the README says lets-go builds an epic's ready stories in turn" {
+@test "the README says lets-go builds an epic's ready stories" {
   local section phrase
   section="$(readme_lets_go)"
-  for phrase in "Given an epic's number, \`lets-go\` builds each ready story of the epic in turn" \
+  for phrase in "Given an epic's number, \`lets-go\` builds each ready story of the epic to a pull request ready for review" \
     "A story blocked by another story of the epic stacks on that story's branch, and its pull request targets that branch" \
     'ends with one line per story' \
     'Running `lets-go` on the epic again goes on with its unfinished stories'; do
@@ -4921,6 +4921,20 @@ readme_step_returns() {
   for text in "$(skill_section lets-go 'A stop in an epic run')" "$(skill_section lets-go 'Backlog errors')"; do
     for phrase in 'start no other story' 'wait for each child that runs, and settle its story'; do
       grep -qF -- "$phrase" <<<"$text" || { echo "it does not say: $phrase: $text"; false; }
+    done
+  done
+}
+
+@test "parallel: the README, the epic run's overview and lets-go's overview say a wave's stories run at the same time" {
+  local phrase='builds the stories of one wave at the same time, each in a git worktree of its own, and starts the next wave once every story of this one is settled' text
+  grep -qF -- "$phrase" <<<"$(readme_lets_go)" || { echo "the README's lets-go section does not say: $phrase"; false; }
+  grep -qF -- "$phrase" <<<"$(awk '/^## / { exit } NR > 1' "$(epic_run_file)" | tr -s '[:space:]' ' ')" ||
+    { echo "the overview of references/epic-run.md does not say: $phrase"; false; }
+  grep -qF -- "$phrase" <<<"$(awk '/^## The run at a glance$/ { on = 1; next } on && /^## / { exit } on' "$(lets_go_skill)" | tr -s '[:space:]' ' ')" ||
+    { echo "lets-go's The run at a glance does not say: $phrase"; false; }
+  for text in "$(readme_step_returns)" "$(tr -s '[:space:]' ' ' <"$repo/docs/resolvers.md")"; do
+    for phrase in '`lets delegate step start`' '`lets delegate step wait`' '`--report-file`' '`--checkout`'; do
+      grep -qF -- "$phrase" <<<"$text" || { echo "it does not name $phrase: ${text:0:80}"; false; }
     done
   done
 }
