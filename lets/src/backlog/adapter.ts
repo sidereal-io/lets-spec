@@ -8,8 +8,13 @@
 
 // One item of this repository on the backlog, with its fields. It may be
 // closed. free: it is open, nobody is assigned to it, and no open issue
-// blocks it. created: when it was created, in ISO 8601; it may be '' for an
-// item that is not free, which can never be ready.
+// blocks it. blockers: for an open, unassigned item that open issues block,
+// the keys of those blockers. It is null when any blocker is in another
+// repository, so that one is never met, and null for every item the
+// adapter's blocked search did not return, such as an assigned one: a
+// non-null blockers is what says nobody is assigned. created: when it was
+// created, in ISO 8601; it may be '' only for an item that is neither free
+// nor in the blocked search, which can never be ready.
 export type Candidate = {
   key: string;
   label: string;
@@ -20,6 +25,7 @@ export type Candidate = {
   size: string | null;
   status: string | null;
   free: boolean;
+  blockers: string[] | null;
   created: string;
 };
 

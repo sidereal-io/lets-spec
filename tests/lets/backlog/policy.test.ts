@@ -20,7 +20,7 @@ test('item lists only the open sub-issues an adapter returns, without their stat
 });
 
 const candidate = (key: string, created: string, extra: Partial<Candidate> = {}): Candidate => ({
-  key, label: `#${key}`, title: key, url: `u${key}`, kind: 'Story', priority: 'Must', size: 'S', status: 'Todo', free: true, created, ...extra,
+  key, label: `#${key}`, title: key, url: `u${key}`, kind: 'Story', priority: 'Must', size: 'S', status: 'Todo', free: true, blockers: null, created, ...extra,
 });
 
 test('ready ranks ties by creation time, oldest first', () => {
@@ -37,4 +37,31 @@ test('ready keeps the adapter\'s order for equal times, and never compares keys'
 test('a candidate that is not free never reaches the sort, even with no creation time', () => {
   const view = ready([candidate('5', '', { free: false }), candidate('6', '2026-01-01T00:00:00Z')]);
   assert.deepEqual(view.map((c) => c.key), ['6']);
+});
+
+const blocked = (key: string, blockers: string[] | null, extra: Partial<Candidate> = {}) => candidate(key, '2026-01-01T00:00:00Z', { free: false, blockers, ...extra });
+
+test('a candidate whose every open blocker is met passes the blocker filter', () => {
+  assert.deepEqual(ready([blocked('280', ['279'])], { met: ['279'] }).map((c) => c.key), ['280']);
+});
+
+test('a candidate with one open blocker not met stays out', () => {
+  assert.deepEqual(ready([blocked('281', ['279', '280'])], { met: ['279'] }), []);
+});
+
+test('a candidate with null blockers never passes, whatever is met', () => {
+  assert.deepEqual(ready([blocked('283', null)], { met: ['279'] }), []);
+});
+
+test('a met blocker does not skip the Status, Kind or Priority filters', () => {
+  const view = ready([
+    blocked('290', ['279'], { status: 'In Progress' }),
+    blocked('291', ['279'], { kind: 'Epic' }),
+    blocked('292', ['279'], { priority: 'Wont' }),
+  ], { met: ['279'] });
+  assert.deepEqual(view, []);
+});
+
+test('with no met list, a blocked candidate stays out', () => {
+  assert.deepEqual(ready([blocked('280', ['279'])]), []);
 });

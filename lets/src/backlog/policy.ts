@@ -13,8 +13,10 @@ export type ReadyIssue = Pick<Candidate, 'key' | 'label' | 'title' | 'url' | 'ki
 // The ready candidates, ranked Must, Should, Could, then oldest first. The
 // sort is stable, so items created at the same time keep the adapter's
 // order: keys are never compared. only keeps the items named; exclude
-// leaves the items named out.
-export function ready(candidates: Candidate[], { only, exclude = [] }: { only?: string[]; exclude?: string[] } = {}): ReadyIssue[] {
+// leaves the items named out. met names blockers the caller counts as met:
+// a candidate whose every open blocker is named there passes the blocker
+// filter, and still needs every other one.
+export function ready(candidates: Candidate[], { only, exclude = [], met = [] }: { only?: string[]; exclude?: string[]; met?: string[] } = {}): ReadyIssue[] {
   const rank = (priority: string | null) => RANK.indexOf(priority as (typeof RANK)[number]);
   const time = ({ created }: Candidate) => {
     const parsed = Date.parse(created);
@@ -24,8 +26,9 @@ export function ready(candidates: Candidate[], { only, exclude = [] }: { only?: 
     const [x, y] = [time(a), time(b)];
     return x < y ? -1 : x > y ? 1 : 0;
   };
+  const unblocked = (c: Candidate) => c.free || (c.blockers !== null && c.blockers.every((key) => met.includes(key)));
   return candidates
-    .filter((c) => c.status === 'Todo' && c.kind !== 'Epic' && rank(c.priority) >= 0 && c.free)
+    .filter((c) => c.status === 'Todo' && c.kind !== 'Epic' && rank(c.priority) >= 0 && unblocked(c))
     .filter((c) => (only === undefined || only.includes(c.key)) && !exclude.includes(c.key))
     .sort((a, b) => rank(a.priority) - rank(b.priority) || older(a, b))
     .map(({ key, label, title, url, kind, priority, size }) => ({ key, label, title, url, kind, priority, size }));
