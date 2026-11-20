@@ -27,7 +27,7 @@ None.
 
 ## Impact
 
-- **Skill:** `skills/lets-go/SKILL.md` (*Check the issue*, *Enter the branch*, *Walk the step table*, *End of the run*, *Run a step*, *Read the report*, *Relay the questions*, the overview and the Placeholders table), *Records that disagree* in `skills/lets-go/references/records.md`, and a new reference file, `skills/lets-go/references/epic-run.md`, for what only an epic run needs.
+- **Skill:** `skills/lets-go/SKILL.md` (*Backlog errors*, *Check the issue*, *Enter the branch*, *Walk the step table*, *End of the run*, *Run a step*, *Read the report*, *Relay the questions*, the overview and the Placeholders table), *Records that disagree* in `skills/lets-go/references/records.md`, and a new reference file, `skills/lets-go/references/epic-run.md`, for what only an epic run needs.
 - **Tests:** `tests/skill-interfaces.bats`, whose checks read the parts, the reference files, the placeholders and the fixed lines of `lets-go`.
 - **Docs:** the `lets-go` section of `README.md`.
 - **Code:** none. `lets backlog item` already prints an epic's open sub-issues, and `lets backlog ready` already takes `--only` and `--exclude`.

@@ -83,11 +83,11 @@ An epic run SHALL end with one line for every story the epic had when the run st
 ### Requirement: A failure or a stop ends the epic run at that story
 While an epic run is on a story, from its pick to its line, a stop SHALL end the epic run at that story. This holds for a failed step, for records that disagree, for a pull request that is merged or closed, and for every other stop of the parts and procedures the story runs through, except the lost claim of *A lost claim drops the issue, and three lost claims stop the run*. `lets-go` SHALL first do what the stop says, such as print the `Failed` line and the pull request's URL. It SHALL then settle the story with `failed at <step name>: <reason>` for a failed step, or `stopped: <reason>` for any other stop. Each story the run had not settled SHALL get `not built, the epic run stopped at #<stopped-story>`, in the epic's order. `<stopped-story>` is the story the epic run stopped at, and is a different placeholder from `<story>`, the story the line is for. `lets-go` SHALL then print every line, as *End of the run* does, and stop. Going on past a failure is #281.
 
-The rule's text SHALL appear once, under the heading *A stop in an epic run* in `references/epic-run.md`. Each stop keeps its own text. Each section that holds a stop a story can reach SHALL link the rule, next to its stops, as each `lets backlog` call links *Backlog errors*: *Check the issue*, *Enter the branch*, *Walk the step table*, *Run a step*, *Read the report* and *Relay the questions* in `SKILL.md`, and *Records that disagree* in `references/records.md`. The sentence after the overview that says any part stops on a `lets backlog` error SHALL link the rule too.
+The rule's text SHALL appear once, under the heading *A stop in an epic run* in `references/epic-run.md`. Each stop keeps its own text. Each section that holds a stop a story can reach SHALL link the rule, next to its stops, as each `lets backlog` call links *Backlog errors*: *Backlog errors*, *Check the issue*, *Enter the branch*, *Walk the step table*, *Run a step*, *Read the report* and *Relay the questions* in `SKILL.md`, and *Records that disagree* in `references/records.md`. The sentence after the overview that says any part stops on a `lets backlog` error SHALL link the rule too.
 
 #### Scenario: A failed build
 - **WHEN** an epic run on #278 has built #279, and the build step of #391 reports `failed` with the reason `tests fail on main`
-- **THEN** `lets-go` prints `Failed build: tests fail on main`, then the lines `#279 epic-run-skeleton: <pr-url>`, `#391 <story-name>: failed at build: tests fail on main`, and, for each story not settled, a line such as `#280 epic-run-stacks: not built, the epic run stopped at #391`, and stops
+- **THEN** `lets-go` prints `Failed build: tests fail on main`, names the branch and says that running `lets-go` again on it carries on, and prints #391's pull request URL or says it has none, as *Read the report* says. It then prints the lines `#279 epic-run-skeleton: <pr-url>`, `#391 <story-name>: failed at build: tests fail on main`, and, for each story not settled, a line such as `#280 epic-run-stacks: not built, the epic run stopped at #391`, and stops
 
 #### Scenario: Records that disagree
 - **WHEN** the walk of #391 finds that the records disagree
@@ -99,7 +99,7 @@ The rule's text SHALL appear once, under the heading *A stop in an epic run* in 
 
 #### Scenario: Each section with a stop links the rule
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and `skills/lets-go/references/records.md`
-- **THEN** it finds a link to `epic-run.md#a-stop-in-an-epic-run` in the overview's sentence on `lets backlog` errors, in each of *Check the issue*, *Enter the branch*, *Walk the step table*, *Run a step*, *Read the report* and *Relay the questions*, and in *Records that disagree*
+- **THEN** it finds a link to `epic-run.md#a-stop-in-an-epic-run` in the overview's sentence on `lets backlog` errors, in each of *Backlog errors*, *Check the issue*, *Enter the branch*, *Walk the step table*, *Run a step*, *Read the report* and *Relay the questions*, and in *Records that disagree*
 
 #### Scenario: A section with a stop that does not link the rule
 - **WHEN** a skills folder holds a `lets-go` whose *Run a step* has no link to `epic-run.md#a-stop-in-an-epic-run`
