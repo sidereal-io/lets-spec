@@ -227,10 +227,12 @@ that worktree.
 
 ### D-J. A durable record
 
-D-A to D-D fix a new contract, `lets delegate step start` and
-`step wait`, and the shape of every epic run: a worktree per story.
-Both are costly to reverse once other skills or users call them. The ADR
-step records them as one ADR that builds on ADR-027.
+D-D fixes the shape of every epic run: a worktree per story, and a
+checkout that never leaves the default branch. Reversing it would bring
+back the shared checkout's limits: one story at a time, and a stop on
+uncommitted changes. The ADR step records it as one ADR that builds on
+ADR-027. D-A to D-C need no record of their own: putting process
+management in `lets`, not in the skill, is what ADR-021 already says.
 
 ## Risks / Trade-offs
 
