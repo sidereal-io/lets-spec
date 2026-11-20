@@ -4147,3 +4147,8 @@ step_prompt_file() {
   grep -qF '`blocked by #<a> and #<b>, on different branches`' <<<"$(skill_section lets-go 'Settle a story')" ||
     { echo "Settle a story does not list blockers on different branches among the reasons"; false; }
 }
+
+@test "an epic run's Settle a story lists a failed blocker among the reasons" {
+  grep -qF '`it depends on #<failed>, which did not finish`' <<<"$(skill_section lets-go 'Settle a story')" ||
+    { echo "Settle a story does not list a failed blocker among the reasons"; false; }
+}

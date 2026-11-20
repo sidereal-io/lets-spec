@@ -171,7 +171,8 @@ A story that was not built gets this line:
 The reason says why, such as `in another repository`,
 `taken by <login>`, `blocked by #<blocker>`,
 `blocked by #<a> and #<b>, on different branches`,
-`assigned to <login>` or `its packet is not complete`.
+`assigned to <login>`, `its packet is not complete` or
+`it depends on #<failed>, which did not finish`.
 
 ## Stack the story
 
