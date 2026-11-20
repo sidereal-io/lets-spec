@@ -159,6 +159,18 @@ test('handoff guidance does not reach a step', async () => {
   assert.equal(JSON.parse(t.stdout()).guidance, null);
 });
 
+test('the guidance for the story intent comes from delegate.step.story', async () => {
+  const t = withT3('step:\n  story:\n    guidance: Prefer claude.\n  build:\n    guidance: Use gpt.\n');
+  assert.equal(await run({ strategy: 'step', for: 'story' }, t.deps), 0);
+  assert.equal(JSON.parse(t.stdout()).guidance, 'Prefer claude.');
+});
+
+test('step guidance does not reach the story intent', async () => {
+  const t = withT3('step:\n  build:\n    guidance: Use gpt.\n');
+  assert.equal(await run({ strategy: 'step', for: 'story' }, t.deps), 0);
+  assert.equal(JSON.parse(t.stdout()).guidance, null);
+});
+
 test('with no config, step instructions answer as the default with no options', async () => {
   const t = commandDeps();
   assert.equal(await run({ strategy: 'step', for: 'build' }, t.deps), 0);

@@ -156,7 +156,8 @@ Exit codes:
 
 const STEP_STRATEGY_HELP = `
 The intents are the five steps: shape, plan, review-plan, build and
-review-build.`;
+review-build. The intent story runs a story run, not a step: a child
+lets-go session that walks one story's steps and ends with a step report.`;
 
 const STEP_HELP = `
 The session ends its final message with a step report: a fenced block

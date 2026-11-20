@@ -255,10 +255,28 @@ test('step --help names the five steps', async () => {
   assert.match(text, /shape, plan, review-plan, build and review-build/);
 });
 
-test('step run and step instructions take the five steps as intents', async () => {
+test('step --help says story runs a story run, not a step', async () => {
+  const text = (await lets('delegate', 'step', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /story runs a story run, not a step/);
+});
+
+test('step run and step instructions take the five steps and story as intents', async () => {
   for (const argv of [['delegate', 'step', 'run', '--help'], ['delegate', 'step', 'instructions', '--help']]) {
-    assert.match((await lets(...argv)).stdout.replace(/\s+/g, ' '), /choices: "shape", "plan", "review-plan", "build", "review-build"/, argv.join(' '));
+    assert.match((await lets(...argv)).stdout.replace(/\s+/g, ' '), /choices: "shape", "plan", "review-plan", "build", "review-build", "story"/, argv.join(' '));
   }
+});
+
+test('with no config, step instructions --for story prints one JSON line for story', async () => {
+  const { code, stdout } = await letsIn(repo(), 'delegate', 'step', 'instructions', '--for', 'story');
+  assert.equal(code, 0);
+  assert.deepEqual(JSON.parse(stdout), { strategy: 'step', for: 'story', resolver: 'subagent', options: [], guidance: null });
+});
+
+test('the story intent under review is a usage error that names --for', async () => {
+  const { code, stdout, stderr } = await letsIn(repo(), 'delegate', 'review', 'instructions', '--for', 'story');
+  assert.equal(code, 2);
+  assert.equal(stdout, '');
+  assert.match(stderr, /--for/);
 });
 
 test('step run --help lists exit codes 0, 2, 3, 4 and 6, and says exit 0 carries a report whatever its outcome', async () => {
