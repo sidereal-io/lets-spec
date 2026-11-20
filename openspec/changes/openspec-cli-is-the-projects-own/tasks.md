@@ -1,0 +1,30 @@
+<!-- Plain language: Each task must make sense to an agent and reviewer without the planning conversation. Name an observable outcome, its location when needed, and how to verify it. Preserve checkbox syntax and tags. -->
+
+The spec is `specs/lets-sync/spec.md` in this change; the message texts there are exact. design.md says where each piece goes.
+
+## 1. lets sync's OpenSpec check
+
+- [ ] 1.1 [medium] A version comparison in `lets/src/sync/release.ts` orders two versions by semver precedence: major, minor and patch as numbers (`1.2.9` older than `1.2.10`), a prerelease older than its release (`1.2.3-beta.1` older than `1.2.3`), prerelease identifiers compared as semver says, and build metadata ignored (`1.2.3+nix` equal to `1.2.3`). Unit-tested in `tests/lets/sync/release.test.ts`. (verify: node --test tests/lets/sync/release.test.ts)
+- [ ] 1.2 [medium] `openspecVersionWarning` takes the CLI's version instead of running `openspec`, and returns `the OpenSpec CLI on PATH is <found>, older than <pinned>, which this release's openspec-* skills were generated from. Upgrade it to <pinned> or later.` only when that version is older than `release.json`'s. It returns `null` for an equal, newer or unknown version, and when `release.json` is absent or unreadable. The old "Pin the CLI" tests change to match. (verify: node --test tests/lets/sync/release.test.ts)
+- [ ] 1.3 [medium] Plain `lets sync` runs `openspec --version` once, and lists `the OpenSpec CLI is not on PATH, and the openspec-* skills need it. Install it, for example with mise: "npm:@fission-ai/openspec" = "latest".` under its problems heading when the command cannot start or exits non-zero, still exiting 0, with or without `release.json`. A CLI that exits 0 with no version gets neither message. `setup` in `tests/lets/sync/main.test.ts` defaults to an installed CLI, so tests about other things keep an empty stderr. (verify: node --test tests/lets/sync/main.test.ts)
+- [ ] 1.4 [medium] `lets sync --check` prints `lets-spec: the OpenSpec CLI is not on PATH. Install it, for example with mise: "npm:@fission-ai/openspec" = "latest".` and exits 1 when the CLI is missing, in both the committed and the ignored skills mode. It exits 0 with an older CLI in an otherwise up-to-date project. (verify: node --test tests/lets/sync/main.test.ts)
+
+## 2. The flake stops supplying the CLI [depends-on: 1]
+
+- [ ] 2.1 [medium] The flake's `bundle` in `flake.nix` no longer includes `openspec`, and the `commands` check adds `(packagesFor pkgs).openspec` to its `nativeBuildInputs`. That check proves, with the packaged `lets`: a fake `openspec` printing `0.0.1` gives the older-CLI warning; a fake printing `999.0.0` gives no `OpenSpec CLI` message; a fake that exits 1 gives the missing-CLI problem from `lets sync` and exit 1 from `lets sync --check`. (verify: nix build --no-link ".#checks.$(nix eval --impure --raw --expr builtins.currentSystem).commands")
+- [ ] 2.2 [easy] The `flake-module` check fails if any package in the module's `config.letsSpec.packages` holds `bin/openspec`. The comments and the `packages` option's description in `nix/flake-module.nix` no longer say the module supplies the OpenSpec CLI. (verify: nix build --no-link ".#checks.$(nix eval --impure --raw --expr builtins.currentSystem).flake-module")
+
+## 3. CI, release notes and docs [depends-on: 1]
+
+- [ ] 3.1 [parallel] [easy] The `mise-smoke` job in `.github/workflows/ci.yml` fails when `lets sync` prints any `OpenSpec CLI` message, the missing-CLI problem as well as the older-CLI warning, and its error names which. (verify: grep -qF 'grep -q "OpenSpec CLI"' .github/workflows/ci.yml)
+- [ ] 3.2 [parallel] [easy] The release workflow in `.github/workflows/release.yml` writes the notes line `OpenSpec CLI: <version> or later`. (verify: grep -qF 'OpenSpec CLI: $openspec or later' .github/workflows/release.yml)
+- [ ] 3.3 [parallel] [medium] `README.md` follows design.md decision 5: *Requirements* says the release's version or later, and that every project installs the CLI; *With Nix* adds `pkgs.openspec` beside `config.letsSpec.packages`, with the advice to update nixpkgs if `lets sync` says it is older; *With mise* uses `"npm:@fission-ai/openspec" = "latest"` with no pin advice; *Updating* drops the step that sets the CLI version, and *With Nix* there says to add a CLI; *Development* and *Releases* no longer say the module supplies the CLI or that the notes give a version to pin. (verify: ! grep -nE 'release notes name|Pin the CLI|openspec" = "[0-9]' README.md)
+- [ ] 3.4 [parallel] [easy] `docs/lets-sync.md` lists the missing CLI and the older CLI among `lets sync`'s warnings, in place of a CLI that differs, and names the missing-CLI failure among the `--check` failures. (verify: grep -qF 'not on PATH' docs/lets-sync.md)
+
+## 4. Integration [depends-on: 2, 3]
+
+- [ ] 4.1 [easy] All three project checks pass, and no file outside this repository's own `mise.toml`, `flake.nix`'s release build and the archived changes still tells a project to pin the OpenSpec CLI or copy its version from the release notes. (verify: pnpm test && nix flake check && mise run check)
+
+## Deviations Ledger
+
+<!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
