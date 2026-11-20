@@ -141,14 +141,20 @@ as for any picked issue.
    this repository and not settled yet, and no other issue. Pass the
    keys of the epic's stories in this repository as `--only`, and every
    settled story as `--exclude`. Pass every met story as
-   `--met-blockers`, such as:
+   `--met-blockers`. Pass every story not settled yet that has its
+   change's branch as `--started`, as *Start the epic run* found it.
+   `lets backlog ready` keeps those assigned to the signed-in user, and
+   ranks them with the others, such as:
 
    ```bash
-   lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279
+   lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279 --started 281
    ```
 
    With no story settled, pass no `--exclude`. With no met story, pass
-   no `--met-blockers`. When every story is settled, the result
+   no `--met-blockers`. With no such story, pass no `--started`. A
+   story with its branch that is assigned to someone else is passed, but
+   not listed: it gets `not built, assigned to <login>`, below. When
+   every story is settled, the result
    is `nothing-ready`, and you run no command. Rank, check the
    prerequisite and confirm the packet of each candidate as `next` does.
    Rank the stories again for every pick: a story built in this run can
@@ -159,6 +165,13 @@ as for any picked issue.
 
      ```text
      Picked #<i>: <title>, the next ready story under #<parent>.
+     ```
+
+     When `<i>` was passed in `--started`, print this line instead of
+     the `Picked` line. Its branch exists, so an earlier run started it:
+
+     ```text
+     Resumed #<i>: <title>, started in an earlier run, under #<parent>.
      ```
 
      That story is `<i>`, and `<story>` until it is settled. Go on from

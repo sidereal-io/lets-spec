@@ -4243,3 +4243,20 @@ step_prompt_file() {
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
 }
+
+@test "resume: an epic run passes the started stories as --started" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in "every story not settled yet that has its change's branch as \`--started\`" \
+    'lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279 --started 281' \
+    'With no such story, pass no `--started`'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: an epic run prints the Resumed line for a story passed in --started" {
+  grep -qxF 'Resumed #<i>: <title>, started in an earlier run, under #<parent>.' <<<"$(text_block_lines 'Run the epic' "$(epic_run_file)")" ||
+    { echo "Run the epic has no text block with its Resumed line"; false; }
+  grep -qF 'When `<i>` was passed in `--started`, print this line instead of the `Picked` line' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not say when it prints the Resumed line"; false; }
+}
