@@ -1958,6 +1958,30 @@ procedure_stops() {
   done
 }
 
+@test "an epic run checks only the epic's blockers and Kind first" {
+  local part
+  part="$(part_section 'Check the issue')"
+  grep -qF "an epic has no change's branch, so look for none" <<<"$part" ||
+    { echo "Check the issue still looks for an epic's branch"; false; }
+  grep -qF 'Skip [Find the source of demand](#find-the-source-of-demand) for an epic' <<<"$part" ||
+    { echo "Check the issue still finds the source of demand for an epic"; false; }
+  grep -qF 'does not run on the epic' <<<"$part" ||
+    { echo "Check the issue does not say Check the prerequisite skips the epic"; false; }
+}
+
+@test "an epic run starts only on the default branch" {
+  local part epic
+  part="$(part_section 'Check the issue')"
+  epic="${part#*'**`epic`:**'}"
+  grep -qF 'go to [Run the epic](#run-the-epic)' <<<"$epic" ||
+    { echo "the epic case does not go to Run the epic"; false; }
+  grep -qF 'say that an epic run needs the default branch, and stop' <<<"$epic" ||
+    { echo "the epic case does not stop on a change's branch"; false; }
+  grep -qF '](#run-the-epic)' <<<"$(next_line 'Check the issue')" ||
+    { echo "Check the issue's Next line does not name Run the epic"; false; }
+  skill_does_not_say lets-go 'an epic is built through its stories'
+}
+
 @test "Check the issue says the change has started on its branch" {
   grep -qF 'the change has started on `<name>`' <<<"$(part_section 'Check the issue')" ||
     { echo "Check the issue does not say the change has started"; false; }

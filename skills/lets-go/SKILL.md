@@ -73,7 +73,7 @@ procedure ranks it.
 | [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch | this session | [Read the request](#read-the-request) | `lets go questions` fails |
 | [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
-| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; otherwise [Route](#route) | An open blocker with no branch; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic`, or `needs-shape` when shape cannot run |
+| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; [Run the epic](#run-the-epic) for an epic on the default branch; otherwise [Route](#route) | An open blocker with no branch; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | The epic has no open stories |
@@ -294,7 +294,10 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
    `title` too. Keep the whole result: the packet check below reads it.
    `<name>` is the change's name, which [Claim](#claim) takes from the
    title. On a change's branch, it is `<branch>`.
-2. Look for the change's branch, here and on `origin`, every time:
+2. When the result's `kind` is `Epic`, an epic has no change's branch,
+   so look for none: go on to the blocker decision, as for an issue
+   with no branch. Otherwise look for the change's branch, here and on
+   `origin`, every time:
 
    ```bash
    git branch --list <name>
@@ -314,8 +317,14 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
 
    Either way, name a blocker in another repository by its `url`, not
    its number: a bare number means an issue of this repository.
-4. Run [Find the source of demand](#find-the-source-of-demand) for
-   `<i>`. Its first case runs
+4. Skip [Find the source of demand](#find-the-source-of-demand) for an
+   epic, so
+   [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite)
+   does not run on the epic: each story's own check runs when the epic
+   run ranks it. Go on to [Confirm the packet](#confirm-the-packet),
+   below. For any other issue, run
+   [Find the source of demand](#find-the-source-of-demand) for `<i>`.
+   Its first case runs
    [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite)
    for the issue. On its result:
    - **`found`:** go on to [Confirm the packet](#confirm-the-packet),
@@ -338,16 +347,18 @@ the same work; otherwise [Run the shape step](#run-the-shape-step).
      started on `<name>`. Say why the packet needs shaping, as the
      result carries it, and show nothing of what a comment says. Say to
      run the `lets-shape` skill on `#<i>`, and stop.
-   - **`epic`:** say that an epic is built through its stories, list the
-     open sub-issues the result carries, and stop. List a sub-issue in
-     another repository by its `url`.
+   - **`epic`:** on the default branch, go to
+     [Run the epic](#run-the-epic) with `<i>` as `<parent>`, and the
+     open sub-issues the result carries. On a change's branch, say that
+     an epic run needs the default branch, and stop.
 6. When [Confirm the packet](#confirm-the-packet) returns `complete`,
    shape is done. Print shape's line, as
    [The step lines](#the-step-lines) says.
 
 Next: [Run the shape step](#run-the-shape-step) when
 [Confirm the packet](#confirm-the-packet) returned `needs-shape` and
-shape can run; otherwise [Route](#route).
+shape can run; [Run the epic](#run-the-epic) when it returned `epic` on
+the default branch; otherwise [Route](#route).
 
 ## Run the shape step
 
