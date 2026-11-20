@@ -42,7 +42,7 @@
 
 `release.ts` gets a probe that runs `openspec --version` with the project's root as its working directory, and returns one of three results: missing (the command could not start, or exited non-zero), installed with a version, or installed with no version found. `steps` runs it once it has `root` and before the `--check` branch, since both branches need it.
 
-The probe runs in the project, not the release folder, because the project installs the CLI (D1). A mise shim there finds the project's own mise config. In the release folder it would find none, and the new check would report a CLI the project has as missing, and fail `--check`.
+The probe runs in the project, not the release folder, because the project installs the CLI (D1, D13). A mise shim there finds the project's own mise config. In the release folder it would find none, and the new check would report a CLI the project has as missing, and fail `--check`.
 
 - `--check` adds the missing-CLI failure line to its `failures`, so it exits 1 with the other failures.
 - Plain `lets sync` adds the missing-CLI problem to its `warnings`, or, when the CLI is installed, the older-CLI warning from `release.json`.
@@ -75,7 +75,7 @@ The three message texts are D8's, word for word. The release workflow writes `Op
 
 - *Requirements*: the OpenSpec CLI row says "The version the release was generated from, or later".
 - The line under the table says the flake supplies `gh` and Node, and that every project installs the OpenSpec CLI itself.
-- *With Nix*: the example adds a `nixpkgs-unstable` flake input, following `github:NixOS/nixpkgs/nixos-unstable`, and puts its `openspec` beside `config.letsSpec.packages` (D10). The text says why: stable channels have no `openspec`, or one older than the release's. It also says to update that input if `lets sync` says the CLI is older.
+- *With Nix*: the example adds a `nixpkgs-unstable` flake input, `github:NixOS/nixpkgs/nixos-unstable`. The flake-parts example takes `inputs'` in `perSystem`'s arguments and puts `inputs'.nixpkgs-unstable.legacyPackages.openspec` beside `config.letsSpec.packages` (D10). The *Without flake-parts* paragraph says to add `nixpkgs-unstable.legacyPackages.${system}.openspec` beside `lets-spec.packages.${system}.<flow>`. The text says why: stable channels have no `openspec`, or one older than the release's. It also says to update that input if `lets sync` says the CLI is older.
 - *With mise*: the example uses `"npm:@fission-ai/openspec" = "latest"`, and the paragraph drops the pin advice.
 - *Updating*: *With Nix* says to add `openspec` from a nixos-unstable input, as *With Nix* shows, if the dev shell has none. *With mise* drops the step that sets the CLI version.
 - *Development*: the `nix/flake-module.nix` row no longer says it supplies the OpenSpec CLI. *Releases* says the notes name the oldest CLI the release supports.

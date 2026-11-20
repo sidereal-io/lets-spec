@@ -21,6 +21,7 @@ https://github.com/sidereal-io/lets-spec/issues/273
 | D10 | What does the README tell Nix projects to add? | `openspec` from a nixos-unstable input, such as a `nixpkgs-unstable` flake input, beside `config.letsSpec.packages`. The *With Nix* and *Updating → With Nix* sections both say so. Stable channels do not work: nixos-25.11 and older have no `openspec` package, and nixos-26.05 has 1.4.1, older than the release's 1.13.2. The flake keeps its `packages.openspec` output for its own build and checks, without documenting it for projects. This keeps D1, D5 and ADR-027. lets-go accepted the plan review's recommendation; the user did not decide. | Assumption |
 | D11 | What does the release workflow's notes line say? | `OpenSpec CLI: <version> or later`, in place of `OpenSpec CLI: <version>`, so nobody reads it as a pin. | Assumption |
 | D12 | How do Nix projects learn of the breaking change? | The README's *Updating → With Nix* says to add an OpenSpec CLI. The pull request description has a *Breaking for Nix projects* section, for whoever cuts the next release to copy into its notes. | Assumption |
+| D13 | Where does `lets sync` run `openspec --version`? | With the project's root as its working directory, not the release folder. A mise shim picks a tool by the working directory's mise config, and the release folder has none, so there an installed CLI could count as missing and fail `--check`. lets-go accepted the plan review's recommendation; the user did not decide. | Assumption |
 
 ## Changes from the story
 

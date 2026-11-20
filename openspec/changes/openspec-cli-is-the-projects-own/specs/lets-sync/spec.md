@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: lets sync reports a missing OpenSpec CLI
-`lets sync` SHALL treat the OpenSpec CLI as missing when `openspec --version` cannot start or exits non-zero. It SHALL run this check whether or not the `lets` package has a `release.json`, and in both skills modes.
+`lets sync` SHALL treat the OpenSpec CLI as missing when `openspec --version` cannot start or exits non-zero. It SHALL run `openspec --version` with the project's root as its working directory. It SHALL run this check whether or not the `lets` package has a `release.json`, and in both skills modes.
 
 When the CLI is missing, `lets sync` SHALL list this problem on stderr, under its `lets-spec: <n> problem(s) to fix:` heading, and SHALL still exit 0:
 
@@ -17,6 +17,10 @@ A CLI whose `openspec --version` exits 0 SHALL NOT count as missing, even when i
 - **WHEN** `lets sync` runs in a git project and no `openspec` command is on PATH
 - **THEN** stderr holds `the OpenSpec CLI is not on PATH, and the openspec-* skills need it. Install it, for example with mise: "npm:@fission-ai/openspec" = "latest".` under the `lets-spec: <n> problem(s) to fix:` heading
 - **AND** `lets sync` exits 0
+
+#### Scenario: The check runs in the project's root
+- **WHEN** `lets sync` runs in a subdirectory of a git project
+- **THEN** `openspec --version` runs with the project's root, as `git rev-parse --show-toplevel` prints it, as its working directory
 
 #### Scenario: openspec on PATH exits non-zero
 - **WHEN** `lets sync` runs and `openspec --version` on PATH exits 1, as a broken mise shim does
