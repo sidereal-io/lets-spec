@@ -4033,6 +4033,17 @@ step_prompt_file() {
     { echo "Run the epic does not settle a stacked story with its stacked line"; false; }
 }
 
+@test "stack: the placeholders show each blocker in the different-branches line by its label" {
+  local section placeholder
+  section="$(skill_section lets-go 'Placeholders')"
+  grep -qF '`#<a>`, `#<b>` and `#<c>` stand for the item'"'"'s `label`' <<<"$section" ||
+    { echo "Placeholders does not show #<a>, #<b> and #<c> by their label"; false; }
+  for placeholder in a b c; do
+    grep -qE "[|] \`<$placeholder>\` [|] [^|]*, as its key" <<<"$section" ||
+      { echo "Placeholders does not give <$placeholder> as its key"; false; }
+  done
+}
+
 @test "stack: Settle a story lists blockers on different branches among the reasons" {
   grep -qF '`blocked by #<a> and #<b>, on different branches`' <<<"$(skill_section lets-go 'Settle a story')" ||
     { echo "Settle a story does not list blockers on different branches among the reasons"; false; }

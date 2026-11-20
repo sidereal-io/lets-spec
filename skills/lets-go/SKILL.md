@@ -97,11 +97,12 @@ sets it.
 
 `lets backlog` names each item by its `key`, and shows it by its
 `label`: `149` and `#149` on GitHub. In anything shown to a person,
-`#<i>`, `#<parent>`, `#<story>`, `#<blocker>` and `#<stopped-story>`
-stand for the item's `label`: a printed line, a question, or text
-written in an issue. In a command, `<i>`, `<parent>` and `<story>`
-stand for its `key`. With the GitHub backlog provider, the label is `#`
-and the number, so each line reads as it always has.
+`#<i>`, `#<parent>`, `#<story>`, `#<blocker>`, `#<stopped-story>`,
+`#<a>`, `#<b>` and `#<c>` stand for the item's `label`: a printed line,
+a question, or text written in an issue. In a command, `<i>`,
+`<parent>` and `<story>` stand for its `key`. With the GitHub backlog
+provider, the label is `#` and the number, so each line reads as it
+always has.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
@@ -113,9 +114,9 @@ and the number, so each line reads as it always has.
 | `<blocker-branch>` | A met blocker's branch, the `headRefName` of its pull request. For a stacked story, the branch it stacks on | [Stack the story](references/epic-run.md#stack-the-story), from the `gh pr list` read |
 | `<blocker-pr>` | The number of a stacked story's blocker's pull request | [Stack the story](references/epic-run.md#stack-the-story), from the `gh pr list` read |
 | `<other-branch>` | The branch of another open blocker of the same story, which the base's branch must contain | [Stack the story](references/epic-run.md#stack-the-story) |
-| `<a>` | The first open blocker of a story whose blockers' branches no one branch contains, in the line that names them all | [Stack the story](references/epic-run.md#stack-the-story) |
-| `<b>` | The second such open blocker, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
-| `<c>` | The third such open blocker, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
+| `<a>` | The first open blocker of a story whose blockers' branches no one branch contains, as its key. The line that names them all shows it | [Stack the story](references/epic-run.md#stack-the-story) |
+| `<b>` | The second such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
+| `<c>` | The third such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<login>` | The login of a person assigned to a story | The story's `assignees`, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](#run-the-epic) |
 | `<stopped-story>` | The story an epic run stopped at, as its key, in the line of another story that was not built | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<step name>` | A step's name in plain words, as its `Failed` line names it, such as `review build` | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), from the failed step |
