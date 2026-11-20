@@ -23,7 +23,7 @@ The spec is `specs/lets-sync/spec.md` in this change; the message texts there ar
 
 ## 4. Integration [depends-on: 2, 3]
 
-- [ ] 4.1 [easy] All three project checks pass, and no file outside this repository's own `mise.toml`, `flake.nix`'s release build and the archived changes still tells a project to pin the OpenSpec CLI or copy its version from the release notes. (verify: pnpm test && nix flake check && mise run check)
+- [x] 4.1 [easy] All three project checks pass, and no file outside this repository's own `mise.toml`, `flake.nix`'s release build and the archived changes still tells a project to pin the OpenSpec CLI or copy its version from the release notes. (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test && nix flake check && mise run check passed)
 
 ## Deviations Ledger
 
