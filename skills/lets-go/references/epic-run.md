@@ -66,9 +66,15 @@ as for any picked issue.
      `MERGED`; else the `CLOSED` one with the latest `createdAt`. Its
      `url` is `<pr-url>`. Settle the story by its pull request:
      - **Open, and its `isDraft` is `false`:** the pull request is
-       ready for review. Settle the story with its built line. The
-       epic run runs none of its steps, and *Pick the next story* finds
-       it met.
+       ready for review. `<pr-base>` is its `baseRefName`: run
+       [Read a pull request's base](#read-a-pull-requests-base) for the
+       story. On `on-story`, settle the story with its stacked line,
+       naming the `<blocker>` it carries. On `not-stacked`, settle it
+       with its built line. On `edit-failed`, say which pull request's
+       base could not be moved, with gh's error, and settle the story
+       with `stopped: <reason>`, where the reason is gh's error.
+       Either way, the epic run runs none of its steps, and *Pick the
+       next story* finds it met while its pull request stays ready.
      - **Merged:** settle the story with its merged line. It is not
        resumed.
      - **Closed:** settle the story with
@@ -226,6 +232,60 @@ The reason says why, such as `in another repository`,
 `assigned to <login>`, `its packet is not complete`,
 `its pull request was closed: <pr-url>` or
 `it depends on #<failed>, which did not finish`.
+
+## Read a pull request's base
+
+[Run the epic](#run-the-epic) runs this procedure at the start, for each
+story whose pull request is ready for review.
+When a later step of the epic run resumes a story with an open pull
+request, it runs it too. It says whether the pull request
+stacks the story on another story, and moves the pull request off the
+branch of a blocker that has merged. `<story>` is the story,
+`<story-name>` its change name, and `<pr-base>` its pull request's
+`baseRefName`. Apply the first of these rules that matches:
+
+1. **`<pr-base>` is `<default>`:** the story is not stacked. Return
+   `not-stacked`.
+2. **`<pr-base>` is the change name of an open story of the epic,**
+   other than `<story>`: the pull request stacks the story on that
+   story. `<blocker>` is that story, and `<blocker-branch>` is
+   `<pr-base>`. Return `on-story`. A blocker whose pull request merged
+   into another story's branch matches here, because its issue is still
+   open: its work is not on the default branch yet.
+3. **`<pr-base>` is the head branch of a pull request of this
+   repository that merged into the default branch:** read the merged
+   pull requests from that branch:
+
+   ```bash
+   gh pr list --head <pr-base> --state merged --limit 100 --json number,isCrossRepository,baseRefName
+   ```
+
+   The rule matches when an entry is one whose `isCrossRepository` is
+   `false` and whose `baseRefName` is `<default>`. When none is, go on
+   to the next rule. When one is, the blocker has merged: move the pull
+   request to the default branch. Rebase nothing: only the pull
+   request's target changes.
+
+   ```bash
+   gh pr edit <story-name> --base <default>
+   ```
+
+   When the edit fails, return `edit-failed`. Otherwise the story is
+   not stacked: return `not-stacked`.
+4. **Anything else:** leave the base as it is, and return
+   `not-stacked`. A base whose pull request merged into a branch other
+   than the default branch is one: moving the pull request to the
+   default branch would add commits that are not on it.
+
+It returns one of these results:
+
+- `on-story`: the pull request's base is the branch of another open
+  story of the epic. It carries `<blocker>` and `<blocker-branch>`.
+- `not-stacked`: the story is not stacked on another story.
+- `edit-failed`: the pull request's base could not be moved. It carries
+  gh's error.
+
+Return to the part or procedure that ran it, with the result.
 
 ## Stack the story
 

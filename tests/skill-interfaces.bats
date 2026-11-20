@@ -4198,3 +4198,48 @@ step_prompt_file() {
   grep -qF '**An open draft, or no pull request:** settle nothing' <<<"$(part_section 'Run the epic')" ||
     { echo "Run the epic does not leave a draft or a missing pull request unsettled"; false; }
 }
+
+@test "resume: Read a pull request's base applies its four rules in order" {
+  local text rule last=0 at
+  has_heading "$(epic_run_file)" "Read a pull request's base" || { echo "references/epic-run.md has no heading: Read a pull request's base"; false; }
+  text="$(procedure_text "Read a pull request's base" | tr -s '[:space:]' ' ')"
+  for rule in '`<pr-base>` is `<default>`' \
+    "\`<pr-base>\` is the change name of an open story of the epic" \
+    'gh pr list --head <pr-base> --state merged --limit 100 --json number,isCrossRepository,baseRefName' \
+    'Anything else'; do
+    grep -qF -- "$rule" <<<"$text" || { echo "Read a pull request's base does not say: $rule"; false; }
+    at="${text%%"$rule"*}"
+    [ "${#at}" -gt "$last" ] || { echo "Read a pull request's base does not apply this rule after the one before: $rule"; false; }
+    last="${#at}"
+  done
+}
+
+@test "resume: Read a pull request's base moves a merged blocker's pull request to the default branch, with no rebase" {
+  local text phrase
+  text="$(procedure_text "Read a pull request's base" | tr -s '[:space:]' ' ')"
+  for phrase in 'whose `isCrossRepository` is `false` and whose `baseRefName` is `<default>`' \
+    'gh pr edit <story-name> --base <default>' 'Rebase nothing' 'return `edit-failed`'; do
+    grep -qF -- "$phrase" <<<"$text" || { echo "Read a pull request's base does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: Read a pull request's base returns its results, and says no stop" {
+  local text result
+  text="$(procedure_text "Read a pull request's base")"
+  for result in on-story not-stacked edit-failed; do
+    grep -qF -- "- \`$result\`:" <<<"$text" || { echo "Read a pull request's base does not list: $result"; false; }
+  done
+  grep -qF 'Return to the part or procedure that ran it, with the result.' <<<"$(tr -s '[:space:]' ' ' <<<"$text")" ||
+    { echo "Read a pull request's base does not return to the part that ran it"; false; }
+  procedure_stops "Read a pull request's base"
+}
+
+@test "resume: an epic run reads each ready pull request's base at the start" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in "run [Read a pull request's base](#read-a-pull-requests-base)" \
+    'On `on-story`, settle the story with its stacked line' \
+    'On `not-stacked`, settle it with its built line'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
