@@ -357,12 +357,21 @@
                 packages = config.letsSpec.packages;
                 shellHook = config.letsSpec.shellHook;
               };
+              legacyPackages.letsSpecPackages = config.letsSpec.packages;
             };
           };
           shell = consumer.devShells.${system}.default;
           hook = pkgs.writeText "shell-hook" shell.shellHook;
+          modulePackages = lib.concatMapStringsSep " " toString consumer.legacyPackages.${system}.letsSpecPackages;
         in pkgs.runCommand "flake-module-check" { nativeBuildInputs = [ pkgs.git ]; } ''
           export HOME="$TMPDIR"
+          # The project installs the OpenSpec CLI, so the module must not.
+          for package in ${modulePackages}; do
+            if [ -e "$package/bin/openspec" ]; then
+              echo "The module's packages supply the OpenSpec CLI: $package/bin/openspec" >&2
+              exit 1
+            fi
+          done
           lets="$(grep -o '/nix/store/[^ "'"'"';]*/bin/lets' ${hook} | head -n 1)"
           # The module wraps lets to pass on the skills mode.
           if ! grep -q "LETS_SPEC_SKILLS.*ignored" "$lets"; then
