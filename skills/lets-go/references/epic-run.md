@@ -205,9 +205,9 @@ as for any picked issue.
    Every line but a built or stacked line is a stop in a story run.
    Settle the story with it, as [Settle a story](#settle-a-story) says.
    Then go on from the third action of
-   [A stop in an epic run](#a-stop-in-an-epic-run): the checkout check,
-   the dependents and the switch to the default branch. Start no child
-   session again for the story in this run.
+   [A stop in an epic run](#a-stop-in-an-epic-run): the dependents, and
+   the way back to [Wait for the wave](#wait-for-the-wave). Start no
+   child session again for the story in this run.
 
    After a built or stacked line, go back to
    [Wait for the wave](#wait-for-the-wave).
@@ -218,8 +218,7 @@ as for any picked issue.
 
    After a stop in a story run, the run comes back from
    [A stop in an epic run](#a-stop-in-an-epic-run), which has settled
-   the story and its dependents, and switched to the default branch: go
-   on to the next step.
+   the story and its dependents, and says where the run goes on.
 3. **Pick the next story.** First find the met stories: the stories
    whose pull request is ready for review, so a story they block can
    stack on them. Read the open pull requests, and run this once, before
@@ -850,13 +849,19 @@ such as a failed step, records that disagree, a pull request that is
 merged or closed, a stop of
 [Check the prerequisite](glossary-handoff.md#check-the-prerequisite),
 a failed claim write, a `lets backlog` error, a `fetch-failed` from
-[Stack the story](#stack-the-story), or an `edit-failed` or
+[Stack the story](#stack-the-story), an `edit-failed` or
 `read-failed` from [Take up a started story](#take-up-a-started-story),
-except the lost claim:
+or a worktree that cannot be created or that has changes that are not
+committed, except the lost claim:
 [Enter the branch](../SKILL.md#enter-the-branch) settles a lost story,
 and goes back to [Run the epic](#run-the-epic). A stop between stories,
 such as a `lets backlog` error in a pick, still ends the epic run, as
-[Backlog errors](../SKILL.md#backlog-errors) says.
+[Backlog errors](../SKILL.md#backlog-errors) says. When children of the
+wave run at that stop, first start no other story, and walk none: wait
+for each child that runs, and settle its story, as
+[Wait for the wave](#wait-for-the-wave) says. Ending at once would
+leave the children with nobody to answer their questions or read their
+reports.
 
 On a stop in a story run, take these actions in order.
 
@@ -872,30 +877,16 @@ On a stop in a story run, take these actions in order.
    #<story> <story-name>: stopped: <reason>
    ```
 
+   When the story's worktree exists, end its line with
+   `; its worktree is at <path>`. Leave the worktree as it is, with any
+   changes that are not committed: they are in the story's own
+   worktree, and stop no other story. A story whose run stopped before
+   its worktree existed, such as on a failed claim write, has no such
+   ending. Nor has a story stopped because its worktree has changes
+   that are not committed: its reason names the worktree.
+
    From here on, this story is `<failed>`.
-3. Check the checkout for changes that are not committed, outside
-   `.workspace/`: staged, unstaged or untracked. Ignored files do not
-   count.
-
-   ```bash
-   git status --porcelain --untracked-files=all -- . ':(exclude).workspace'
-   ```
-
-   When it prints any line, the epic run ends at this story, and
-   `<stopped-story>` is `<failed>`. Settle each story not settled yet,
-   in the epic's order, with this line, where `#<story>` is the story
-   not built:
-
-   ```text
-   #<story> <story-name>: not built, the epic run stopped at #<stopped-story>
-   ```
-
-   Leave the changes as they are. Print every line of
-   `.workspace/lets-go/epic-<parent>-lines.txt`, in order, as
-   [End of the run](../SKILL.md#end-of-the-run) does, and stop.
-
-   When it prints nothing, go on to the next action.
-4. Find the stories that depend on `<failed>`, and settle them. For
+3. Find the stories that depend on `<failed>`, and settle them. For
    each story of the epic, in this repository and not settled yet, run
    `lets backlog item <story>`. Keep the `key` of each entry of its
    `blockedBy` whose `state` is `OPEN` and whose `url` is the `url` of
@@ -921,18 +912,13 @@ On a stop in a story run, take these actions in order.
    this action is a stop between stories, as
    [Backlog errors](../SKILL.md#backlog-errors) says: it ends the epic
    run.
-5. Go back to the default branch, so the next story's branch is created
-   off it:
-
-   ```bash
-   git switch <default>
-   ```
-
-   When `git switch` fails, say Git's error, and end the epic run as
-   the third action does. Otherwise go back to
-   [Run the epic](#run-the-epic). Its *Pick the next story* runs next,
-   where every story settled in actions 2 and 4 is passed in
-   `--exclude`, so none of them is picked.
+4. Go back to where the epic run was: *Pick the next story*, in
+   [Run the epic](#run-the-epic), when the stop came before the story's
+   child started, or [Wait for the wave](#wait-for-the-wave) when it
+   came from a child's report or a walk in this session. Every story
+   settled in actions 2 and 3 is passed in `--exclude` of the next
+   pick, so none of them is picked. Run no `git switch`: the epic run's
+   checkout stays on `<default>`.
 
 The epic run retries no failed step: running `lets-go` again on the
 failed story's branch carries on, as for any run. The end of the epic

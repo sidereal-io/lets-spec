@@ -2506,7 +2506,7 @@ epic_run_file() {
 @test "an epic run's stop rule is written once, in A stop in an epic run" {
   local section line
   section="$(skill_section lets-go 'A stop in an epic run')"
-  for line in 'not built, the epic run stopped at #<stopped-story>' 'failed at <step name>: <reason>'; do
+  for line in 'failed at <step name>: <reason>'; do
     skill_says_once lets-go "$line"
     grep -qF -- "$line" <<<"$section" || { echo "A stop in an epic run does not say: $line"; false; }
   done
@@ -2516,8 +2516,7 @@ epic_run_file() {
 @test "an epic run settles a stopped story in a text block" {
   local lines line
   lines="$(text_block_lines 'A stop in an epic run' "$(epic_run_file)")"
-  for line in '#<story> <story-name>: failed at <step name>: <reason>' '#<story> <story-name>: stopped: <reason>' \
-    '#<story> <story-name>: not built, the epic run stopped at #<stopped-story>'; do
+  for line in '#<story> <story-name>: failed at <step name>: <reason>' '#<story> <story-name>: stopped: <reason>'; do
     grep -qxF -- "$line" <<<"$lines" || { echo "A stop in an epic run has no text block with: $line"; false; }
   done
   grep -qF 'except the lost claim' <<<"$(skill_section lets-go 'A stop in an epic run')" ||
@@ -2538,8 +2537,9 @@ epic_run_file() {
 @test "an epic run's stop skips the stories that depend on the failed story" {
   local section action line='not built, it depends on #<failed>, which did not finish' phrase
   section="$(skill_section lets-go 'A stop in an epic run')"
-  action="${section#*' 4. '}"
-  [ "$action" != "$section" ] || { echo "A stop in an epic run has no fourth action"; false; }
+  action="${section#*' 3. '}"
+  action="${action%%' 4. '*}"
+  [ "$action" != "$section" ] || { echo "A stop in an epic run has no third action"; false; }
   skill_says_once lets-go "$line"
   grep -qxF "#<story> <story-name>: $line" <<<"$(text_block_lines 'A stop in an epic run' "$(epic_run_file)")" ||
     { echo "A stop in an epic run has no text block with the dependent's line"; false; }
@@ -2548,25 +2548,12 @@ epic_run_file() {
     "in the epic's order, right after the line of \`<failed>\`" 'a key alone never makes a story a dependent' \
     'A link through an issue outside the epic, or through a story settled before this stop, makes no dependent' \
     'is a stop between stories, as [Backlog errors](../SKILL.md#backlog-errors) says'; do
-    grep -qF -- "$phrase" <<<"$action" || { echo "the fourth action of A stop in an epic run does not say: $phrase"; false; }
-  done
-}
-
-@test "an epic run's stop goes back to the default branch and picks again" {
-  local section action phrase
-  section="$(skill_section lets-go 'A stop in an epic run')"
-  action="${section#*' 5. '}"
-  [ "$action" != "$section" ] || { echo "A stop in an epic run has no fifth action"; false; }
-  for phrase in 'git switch <default>' 'go back to [Run the epic](#run-the-epic)' \
-    'every story settled in actions 2 and 4 is passed in `--exclude`' \
-    "When \`git switch\` fails, say Git's error, and end the epic run as the third action does" \
-    'retries no failed step' 'prints no count'; do
-    grep -qF -- "$phrase" <<<"$action" || { echo "the fifth action of A stop in an epic run does not say: $phrase"; false; }
+    grep -qF -- "$phrase" <<<"$action" || { echo "the third action of A stop in an epic run does not say: $phrase"; false; }
   done
 }
 
 @test "an epic run goes on to the pick when it comes back from a stop" {
-  grep -qF 'After a stop in a story run, the run comes back from [A stop in an epic run](#a-stop-in-an-epic-run), which has settled the story and its dependents, and switched to the default branch: go on to the next step.' \
+  grep -qF 'After a stop in a story run, the run comes back from [A stop in an epic run](#a-stop-in-an-epic-run), which has settled the story and its dependents, and says where the run goes on.' \
     <<<"$(part_section 'Run the epic')" || { echo "Run the epic has no case for coming back from a stop"; false; }
 }
 
@@ -2576,15 +2563,6 @@ epic_run_file() {
     row="$(overview_row "$part" | awk -v head="| [$part](" 'index($0, head) == 1')"
     grep -qF '](#run-the-epic)' <<<"$row" && grep -qF 'when a stop ends a story'"'"'s run' <<<"$row" ||
       { echo "$part's row said: $row"; false; }
-  done
-}
-
-@test "an epic run's stop ends the epic run when the checkout has uncommitted changes" {
-  local section phrase
-  section="$(skill_section lets-go 'A stop in an epic run')"
-  for phrase in "git status --porcelain --untracked-files=all -- . ':(exclude).workspace'" \
-    'When it prints any line, the epic run ends at this story' 'Leave the changes as they are'; do
-    grep -qF -- "$phrase" <<<"$section" || { echo "A stop in an epic run does not say: $phrase"; false; }
   done
 }
 
@@ -4230,7 +4208,7 @@ step_prompt_file() {
   section="$(skill_section lets-go 'Placeholders')"
   grep -qF '| `<failed>` | The story whose run failed or stopped, as its key, in the line of a story that depends on it | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |' <<<"$section" ||
     { echo "Placeholders has no row for <failed>"; false; }
-  grep -qF '`#<stopped-story>`, `#<failed>`,' <<<"$section" ||
+  grep -qF '`#<blocker>`, `#<failed>`,' <<<"$section" ||
     { echo "Placeholders does not show #<failed> by its label"; false; }
 }
 
@@ -4911,4 +4889,38 @@ readme_step_returns() {
     grep -qF -- "$phrase" <<<"$section" || { echo "Relay a story run's questions does not say: $phrase"; false; }
   done
   ! grep -qF 'lets delegate step run --for story' "$(epic_run_file)" || { echo "references/epic-run.md still runs a story run in the foreground"; false; }
+}
+
+@test "parallel: a stop in an epic run keeps the story's worktree, and ends no other story" {
+  local section phrase
+  section="$(skill_section lets-go 'A stop in an epic run')"
+  for phrase in '`; its worktree is at <path>`' 'Leave the worktree as it is' \
+    'a worktree that cannot be created or that has changes that are not committed'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "A stop in an epic run does not say: $phrase"; false; }
+  done
+  for phrase in 'the epic run stopped at' '<stopped-story>' 'git switch <default>' 'the epic run ends at this story'; do
+    skill_does_not_say lets-go "$phrase"
+  done
+  ! grep -qF "git status --porcelain --untracked-files=all -- . ':(exclude).workspace'" <<<"$section" ||
+    { echo "A stop in an epic run still checks the epic run's checkout"; false; }
+}
+
+@test "parallel: after a stop, the epic run goes back to the pick or to the wait" {
+  local section action phrase
+  section="$(skill_section lets-go 'A stop in an epic run')"
+  action="${section#*' 4. '}"
+  [ "$action" != "$section" ] || { echo "A stop in an epic run has no fourth action"; false; }
+  for phrase in 'Go back to where the epic run was' '*Pick the next story*' '[Wait for the wave](#wait-for-the-wave)' \
+    'Every story settled in actions 2 and 3 is passed in `--exclude`' 'retries no failed step' 'prints no count'; do
+    grep -qF -- "$phrase" <<<"$action" || { echo "the fourth action of A stop in an epic run does not say: $phrase"; false; }
+  done
+}
+
+@test "parallel: a stop between stories while children run waits for each child, then stops" {
+  local text phrase
+  for text in "$(skill_section lets-go 'A stop in an epic run')" "$(skill_section lets-go 'Backlog errors')"; do
+    for phrase in 'start no other story' 'wait for each child that runs, and settle its story'; do
+      grep -qF -- "$phrase" <<<"$text" || { echo "it does not say: $phrase: $text"; false; }
+    done
+  done
 }

@@ -102,8 +102,8 @@ sets it.
 
 `lets backlog` names each item by its `key`, and shows it by its
 `label`: `149` and `#149` on GitHub. In anything shown to a person,
-`#<i>`, `#<parent>`, `#<story>`, `#<blocker>`, `#<stopped-story>`,
-`#<failed>`, `#<other>`, `#<a>`, `#<b>` and `#<c>` stand for the item's
+`#<i>`, `#<parent>`, `#<story>`, `#<blocker>`, `#<failed>`,
+`#<other>`, `#<a>`, `#<b>` and `#<c>` stand for the item's
 `label`: a printed line, a question, or text written in an issue. In a
 command, `<i>`, `<parent>` and `<story>` stand for its `key`. With the
 GitHub backlog provider, the label is `#` and the number, so each line
@@ -127,7 +127,6 @@ reads as it always has.
 | `<wave-stories>` | The `label` of each story of a wave, in the order `lets backlog waves` gives, joined by `, ` | [Run the epic](#run-the-epic), from the wave's `stories` in the waves file |
 | `<other>` | The story that a story of an epic run waits for, in the wave before its own, as its key | [Run the epic](#run-the-epic), from the story's `waitsFor` in the waves file |
 | `<login>` | The login of a person assigned to a story | The story's `assignees`, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](#run-the-epic) |
-| `<stopped-story>` | The story an epic run stopped at, as its key, in the line of another story that was not built | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<failed>` | The story whose run failed or stopped, as its key, in the line of a story that depends on it | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<step name>` | A step's name in plain words, as its `Failed` line names it, such as `review build` | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), from the failed step, or, in a story run's child, [Story run](references/story-run.md), from the step the walk is on |
 | `<story-name>` | The part of a story's title before ` — `, or the whole title when it has none | [Run the epic](#run-the-epic), when it settles the story |
@@ -179,7 +178,11 @@ step. In an epic run, while the run is on a story, this stop ends only
 its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
 says. A stop between stories, such as an error in a pick, still ends
-the epic run. Say what the error is:
+the epic run. When children of the wave run at that stop, first start
+no other story, and walk none: wait for each child that runs, and
+settle its story, as
+[Wait for the wave](references/epic-run.md#wait-for-the-wave) says.
+Say what the error is:
 
 - **`no-backlog`:** no Project is linked to the repository. Say to run
   the `lets-setup-backlog` skill.
