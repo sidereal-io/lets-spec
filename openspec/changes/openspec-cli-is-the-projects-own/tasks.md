@@ -11,7 +11,7 @@ The spec is `specs/lets-sync/spec.md` in this change; the message texts there ar
 
 ## 2. The flake stops supplying the CLI [depends-on: 1]
 
-- [ ] 2.1 [medium] The flake's `bundle` in `flake.nix` no longer includes `openspec`, and the `commands` check adds `(packagesFor pkgs).openspec` to its `nativeBuildInputs`. That check proves, with the packaged `lets`: a fake `openspec` printing `0.0.1` gives the older-CLI warning; a fake printing `999.0.0` gives no `OpenSpec CLI` message; a fake that exits 1 gives the missing-CLI problem from `lets sync` and exit 1 from `lets sync --check`. (verify: nix build --no-link ".#checks.$(nix eval --impure --raw --expr builtins.currentSystem).commands")
+- [x] 2.1 [medium] The flake's `bundle` in `flake.nix` no longer includes `openspec`, and the `commands` check adds `(packagesFor pkgs).openspec` to its `nativeBuildInputs`. That check proves, with the packaged `lets`: a fake `openspec` printing `0.0.1` gives the older-CLI warning; a fake printing `999.0.0` gives no `OpenSpec CLI` message; a fake that exits 1 gives the missing-CLI problem from `lets sync` and exit 1 from `lets sync --check`. (verify: nix build --no-link ".#checks.$(nix eval --impure --raw --expr builtins.currentSystem).commands") (✓ nix build --no-link ".#checks.$(nix eval --impure --raw --expr builtins.currentSystem).commands" passed)
 - [ ] 2.2 [easy] The `flake-module` check fails if any package in the module's `config.letsSpec.packages` holds `bin/openspec`. The comments and the `packages` option's description in `nix/flake-module.nix` no longer say the module supplies the OpenSpec CLI. (verify: nix build --no-link ".#checks.$(nix eval --impure --raw --expr builtins.currentSystem).flake-module")
 
 ## 3. CI, release notes and docs [depends-on: 1]
