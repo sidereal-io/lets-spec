@@ -3713,3 +3713,26 @@ automate_updates_workflow() {
   expected="$(printf '%s\n' actions/checkout@v7 jdx/mise-action@v2 'mise upgrade' 'mise exec -- lets sync')"
   [ "$steps" = "$expected" ] || { echo "the first steps are: $steps"; false; }
 }
+
+@test "Automate updates' workflow ends by opening a pull request with UPDATE_TOKEN" {
+  local last
+  last="$(automate_updates_workflow | yq -o=json '.jobs[].steps[-1]')"
+  [ "$(yq '.uses' <<<"$last")" = peter-evans/create-pull-request@v8 ] ||
+    { echo "the last step is not peter-evans/create-pull-request@v8: $last"; false; }
+  [ "$(yq '.with.token' <<<"$last")" = '${{ secrets.UPDATE_TOKEN }}' ] ||
+    { echo "the pull request is not opened with secrets.UPDATE_TOKEN: $last"; false; }
+}
+
+@test "Automate updates' pull request comes from the branch chore/update-lets-spec" {
+  [ "$(automate_updates_workflow | yq '.jobs[].steps[-1].with.branch')" = chore/update-lets-spec ] ||
+    { echo "the branch is not chore/update-lets-spec"; false; }
+}
+
+@test "Automate updates' pull request title matches its commit message, chore: update Let's Spec" {
+  local with
+  with="$(automate_updates_workflow | yq -o=json '.jobs[].steps[-1].with')"
+  [ "$(yq '.title' <<<"$with")" = "chore: update Let's Spec" ] ||
+    { echo "the title is not chore: update Let's Spec: $with"; false; }
+  [ "$(yq '.commit-message' <<<"$with")" = "chore: update Let's Spec" ] ||
+    { echo "the commit message is not chore: update Let's Spec: $with"; false; }
+}

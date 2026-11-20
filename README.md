@@ -608,6 +608,14 @@ jobs:
 
       # CI runs no mise activate, so the enter hook does not run lets sync.
       - run: mise exec -- lets sync
+
+      # Opens or updates the pull request only when a file changed.
+      - uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.UPDATE_TOKEN }}
+          branch: chore/update-lets-spec
+          title: "chore: update Let's Spec"
+          commit-message: "chore: update Let's Spec"
 ```
 
 ## 🛠️ Development
