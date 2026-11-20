@@ -80,7 +80,7 @@ async function step({ for: intent, name, promptFile, effort, models, timeoutMinu
 }
 
 // The pairs in answersFile, taken from the working directory.
-function readAnswersFile(answersFile: string, { cwd, io }: Pick<Deps, 'cwd' | 'io'>) {
+export function readAnswersFile(answersFile: string, { cwd, io }: Pick<Deps, 'cwd' | 'io'>) {
   const text = io.readFile(resolve(cwd, answersFile));
   if (text === null) throw new UsageError(`cannot read --answers-file ${answersFile}`);
   return readAnswers(text, answersFile);
