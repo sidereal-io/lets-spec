@@ -898,6 +898,25 @@ review_build_start() {
     { echo "Enter the branch does not stop after the third lost claim"; false; }
 }
 
+@test "an epic run settles a lost story and goes back to Run the epic" {
+  local part taken
+  part="$(part_section 'Enter the branch')"
+  taken="${part#*'**`taken`:**'}"
+  grep -qF 'In an epic run, settle the story with `not built, taken by <login>`' <<<"$taken" ||
+    { echo "the taken case does not settle a lost story of an epic run first"; false; }
+  grep -qF 'Count no lost claim, and go back to [Run the epic](#run-the-epic)' <<<"$taken" ||
+    { echo "the taken case does not go back to Run the epic"; false; }
+}
+
+@test "the third lost claim stops only outside an epic run" {
+  grep -qF 'This stop applies outside an epic run only' <<<"$(part_section 'Enter the branch')" ||
+    { echo "Enter the branch does not limit the third lost claim's stop"; false; }
+  grep -qF 'in an epic run, [Run the epic](#run-the-epic) after a lost claim' <<<"$(next_line 'Enter the branch')" ||
+    { echo "it said: $(next_line 'Enter the branch')"; false; }
+  grep -qF '[Run the epic](#run-the-epic) after a lost claim in an epic run' <<<"$(overview_row 'Enter the branch')" ||
+    { echo "Enter the branch's row said: $(overview_row 'Enter the branch')"; false; }
+}
+
 @test "Enter the branch goes back to the part that picked after a lost claim" {
   local line
   line="$(next_line 'Enter the branch')"

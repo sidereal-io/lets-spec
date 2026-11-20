@@ -78,7 +78,7 @@ procedure ranks it.
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | The epic has no open stories |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time; the import returns `import-failed`; or the branch has diverged |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time outside an epic run; the import returns `import-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table) | Never |
 | [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run); [Run the epic](#run-the-epic) in an epic run | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL, or each story's line in an epic run | this session | Nothing: the run is over | Always |
@@ -447,12 +447,19 @@ says.
      [commit the discovery map](references/shape.md#commit-the-discovery-map).
      A run with no shape step has no map to commit, and reads no part of
      `references/shape.md`.
-   - **`taken`:** when the user named `<i>` or confirmed it, say who has
-     it, and stop. Otherwise `next` or
+   - **`taken`:** In an epic run, settle the story with
+     `not built, taken by <login>`, naming each assignee the result
+     carries, as
+     [Settle a story](references/epic-run.md#settle-a-story) says.
+     Count no lost claim, and go back to [Run the epic](#run-the-epic),
+     which picks again. Otherwise, when the user named `<i>` or
+     confirmed it, say who has it, and stop. Otherwise `next` or
      [Pick the first ready story](#pick-the-first-ready-story) picked
      it: count the lost claim. After the third lost claim in this run,
      say that other sessions keep taking the picked issues, and to run
-     `lets-go` again. Stop, claiming nothing. Before that, go back to
+     `lets-go` again. Stop, claiming nothing. This stop applies outside
+     an epic run only: an epic run's stories are a fixed set, so it
+     always ends. Before that, go back to
      the part that picked: [Read the request](#read-the-request) for
      `next`, or
      [Pick the first ready story](#pick-the-first-ready-story). Keep the
@@ -516,7 +523,7 @@ says.
 Next: [Set the question mode](#set-the-question-mode);
 [Read the request](#read-the-request) or
 [Pick the first ready story](#pick-the-first-ready-story) after a lost
-claim.
+claim; in an epic run, [Run the epic](#run-the-epic) after a lost claim.
 
 ## Set the question mode
 
