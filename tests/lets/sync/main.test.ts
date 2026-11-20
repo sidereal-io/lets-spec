@@ -14,14 +14,19 @@ const releaseFiles = {
   [`${RELEASE}/fragments/AGENTS.md`]: 'rules\n',
 };
 
-type Setup = { env?: Record<string, string>; files?: Record<string, string>; toplevel?: string | null };
+type Setup = {
+  env?: Record<string, string>; files?: Record<string, string>; toplevel?: string | null; cwd?: string;
+  openspec?: string | { code: number } | null;
+};
 
-function setup({ env = { WORKFLOW_RELEASE: RELEASE }, files = releaseFiles, toplevel = null }: Setup = {}) {
-  const io = fakeIo({ files, toplevel });
+// An installed OpenSpec CLI by default, so tests about other things see no
+// CLI problem.
+function setup({ env = { WORKFLOW_RELEASE: RELEASE }, files = releaseFiles, toplevel = null, cwd = '/project', openspec = '1.2.3\n' }: Setup = {}) {
+  const io = fakeIo({ files, toplevel, openspec });
   const out: string[] = [];
   const err: string[] = [];
   const deps = {
-    env, cwd: '/project', packageRoot: '/pkg', io,
+    env, cwd, packageRoot: '/pkg', io,
     // sync asks no resolver.
     resolvers: {} as Deps['resolvers'],
     stdout: (text: string) => out.push(text),
@@ -100,6 +105,40 @@ test('a WORKFLOW_RELEASE outside the package still warns from the package releas
   t.io.execFile = async (cmd, args, opts) => (cmd === 'openspec' ? { stdout: '1.1.0\n', stderr: '', code: 0 } : original(cmd, args, opts));
   assert.equal(await run({ check: false }, t.deps), 0);
   assert.ok(t.stderr().includes("- the OpenSpec CLI on PATH is 1.1.0, older than 1.2.3, which this release's openspec-* skills were generated from. Upgrade it to 1.2.3 or later."));
+});
+
+const MISSING = 'the OpenSpec CLI is not on PATH, and the openspec-* skills need it. Install it, for example with mise: "npm:@fission-ai/openspec" = "latest".';
+const RELEASE_JSON = { '/pkg/release.json': JSON.stringify({ version: '0.1.0', openspec: '1.2.3', commit: 'abc' }) };
+
+test('no openspec on PATH is a problem to fix', async () => {
+  const t = setup({ toplevel: '/project', openspec: null });
+  assert.equal(await run({ check: false }, t.deps), 0);
+  assert.equal(t.stderr(), `lets-spec: 1 problem(s) to fix:\n- ${MISSING}\n`);
+});
+
+test('no openspec on PATH is a problem to fix with a release.json', async () => {
+  const t = setup({ files: { ...releaseFiles, ...RELEASE_JSON }, toplevel: '/project', openspec: null });
+  assert.equal(await run({ check: false }, t.deps), 0);
+  assert.equal(t.stderr(), `lets-spec: 1 problem(s) to fix:\n- ${MISSING}\n`);
+});
+
+test('an openspec that exits non-zero counts as missing', async () => {
+  const t = setup({ files: { ...releaseFiles, ...RELEASE_JSON }, toplevel: '/project', openspec: { code: 1 } });
+  assert.equal(await run({ check: false }, t.deps), 0);
+  assert.equal(t.stderr(), `lets-spec: 1 problem(s) to fix:\n- ${MISSING}\n`);
+});
+
+test('openspec --version runs once, in the project root', async () => {
+  const t = setup({ toplevel: '/project', cwd: '/project/sub/dir' });
+  await run({ check: false }, t.deps);
+  const calls = t.io.calls.filter(([cmd]) => cmd === 'openspec');
+  assert.deepEqual(calls, [['openspec', ['--version'], { cwd: '/project' }]]);
+});
+
+test('an openspec that prints no version gets no CLI message', async () => {
+  const t = setup({ files: { ...releaseFiles, ...RELEASE_JSON }, toplevel: '/project', openspec: '' });
+  assert.equal(await run({ check: false }, t.deps), 0);
+  assert.equal(t.stderr(), '');
 });
 
 test('an empty LETS_SPEC_SKILLS means the default, committed', () => {

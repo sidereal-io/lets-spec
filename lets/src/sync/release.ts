@@ -59,6 +59,18 @@ function compareIdentifiers(a: string, b: string) {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+export const OPENSPEC_MISSING = 'the OpenSpec CLI is not on PATH, and the openspec-* skills need it. Install it, for example with mise: "npm:@fission-ai/openspec" = "latest".';
+
+// Whether the OpenSpec CLI is installed, and its version when it prints one.
+// It runs in the project's root because the project installs the CLI: a mise
+// shim picks its tool by the working directory's mise config, and the release
+// folder has none.
+export async function probeOpenspec(root: string, io: Io) {
+  const result = await io.execFile('openspec', ['--version'], { cwd: root });
+  if (result.code !== 0) return { installed: false, version: null };
+  return { installed: true, version: result.stdout.match(VERSION)?.[0] ?? null };
+}
+
 // A warning when the OpenSpec CLI's version is older than the one that
 // generated the release's openspec-* skills, as the package's release.json
 // records it. Null when either version is unknown.

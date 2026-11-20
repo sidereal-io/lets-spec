@@ -7,7 +7,7 @@ import { checkConfig } from './config.ts';
 import { UsageError } from './errors.ts';
 import { checkClaude, createInitFiles, linkClaude } from './init.ts';
 import { isManaged, releasePaths } from './managed.ts';
-import { AGENTS, defaultSchema, findRelease, openspecVersionWarning, requireRelease } from './release.ts';
+import { AGENTS, defaultSchema, findRelease, OPENSPEC_MISSING, openspecVersionWarning, probeOpenspec, requireRelease } from './release.ts';
 import { checkSkills, syncSkills } from './skills.ts';
 
 const CONFIG = 'openspec/config.yaml';
@@ -55,6 +55,7 @@ async function steps(check: boolean, deps: Deps) {
   }
   const root = git.stdout.trim();
   const mode = skillsMode(deps.env);
+  const openspec = await probeOpenspec(root, io);
 
   const agentsPath = join(root, AGENTS);
   const rulesBlock = renderBlock(RULES, io.readFile(join(release, 'fragments', AGENTS))!);
@@ -126,10 +127,12 @@ async function steps(check: boolean, deps: Deps) {
 
   warnings.push(...checkClaude({ root, io }));
   warnings.push(...checkConfig({ io, configPath: join(root, CONFIG), schemaName }).map((line) => line.replace(join(root, CONFIG), CONFIG)));
-  const probe = await io.execFile('openspec', ['--version'], { cwd: release });
-  const version = probe.code === 0 ? probe.stdout.match(/\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?/)?.[0] ?? null : null;
-  const versionWarning = openspecVersionWarning({ packageRoot: deps.packageRoot, version, io });
-  if (versionWarning !== null) warnings.push(versionWarning);
+  if (!openspec.installed) {
+    warnings.push(OPENSPEC_MISSING);
+  } else {
+    const versionWarning = openspecVersionWarning({ packageRoot: deps.packageRoot, version: openspec.version, io });
+    if (versionWarning !== null) warnings.push(versionWarning);
+  }
 
   if (warnings.length > 0) {
     deps.stderr(`lets-spec: ${warnings.length} problem(s) to fix:\n${warnings.map((line) => `- ${line}\n`).join('')}`);
