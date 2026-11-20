@@ -221,3 +221,43 @@ When the case returns `nothing-ready`, every story not yet settled SHALL get its
 #### Scenario: No child session
 - **WHEN** the epic run builds #279, and `lets delegate step run --for story` exits 3
 - **THEN** the epic run walks #279's step table in its own session, and runs each step as *Run a step* says, as *With no child session, the epic run walks the story itself* says
+
+### Requirement: lets-go keeps what only some runs need in reference files
+`skills/lets-go/references/` SHALL hold these eight files. Each SHALL open with a `#` title and one line that says when a run reads it.
+
+| File | What it holds |
+|---|---|
+| `epic-run.md` | The steps of *Run the epic*: how an epic run starts, picks each story, records each story's line and ends |
+| `glossary-handoff.md` | *Glossary preflight*, with *Check the prerequisite*, *Check the checkpoint* and *What the preflight returns*, and *Import the glossary checkpoint*, with *Import the commits* and *Recover from a failed import* |
+| `shape.md` | The steps of *Start from an idea*, *Run the shape step* and *Pick the first ready story*, *Commit the discovery map*, the `<shape-name>` and `<slug>` rules of *The change's name*, and *What shape runs* |
+| `story-run.md` | A story run's child session: how the child takes what the story prompt gives, walks the step table, passes its steps' questions up, and ends with one step report |
+| `step-prompt.md` | *Write the prompt*: the rules that fill the frame, and the frame as one fenced block that the agent copies to `.workspace/lets-go/<session>-prompt.md` and fills |
+| `records.md` | *Read the records* and *Records that disagree* |
+| `subagent.md` | *Run a step in a subagent* |
+| `terms.md` | The glossary's entries for the terms `lets-go` uses, as *lets-go carries the glossary's entries for its own terms* says |
+
+`SKILL.md` SHALL hold no heading of a section in this table, except the four parts. *Start from an idea*, *Run the shape step*, *Pick the first ready story* and *Run the epic* SHALL each keep, in `SKILL.md`, its `##` heading, its row in the overview, a sentence that links its steps in its reference file, and its `Next:` line. `shape.md` SHALL hold the steps of the three shape parts, and `epic-run.md` the steps of *Run the epic*, each under a heading with the part's name. Every link to a moved section SHALL name the file that holds it. The moved text SHALL keep its words, except for heading levels, links that now cross files, and what *lets-go reads the glossary file only for a story with a glossary handoff* and *Exit 3 runs the step in a subagent* change.
+
+#### Scenario: The moved sections are in their files
+- **WHEN** the skill-interfaces test lists the headings of each file of `lets-go`
+- **THEN** it finds *Records that disagree* and *Read the records* in `references/records.md`, *Run a step in a subagent* in `references/subagent.md`, *Write the prompt* in `references/step-prompt.md`, *What shape runs* and *Commit the discovery map* in `references/shape.md`, and *Glossary preflight* and *Import the glossary checkpoint* in `references/glossary-handoff.md`, and none of them in `SKILL.md`
+
+#### Scenario: A part whose steps moved
+- **WHEN** the skill-interfaces test reads the *Run the shape step* section of `SKILL.md`
+- **THEN** it links `references/shape.md#run-the-shape-step`, its last paragraph starts `Next:`, and `references/shape.md` has a heading `Run the shape step`
+
+#### Scenario: The epic run's steps are in their file
+- **WHEN** the skill-interfaces test reads the *Run the epic* section of `SKILL.md`
+- **THEN** it links `references/epic-run.md#run-the-epic`, its last paragraph starts `Next:`, `references/epic-run.md` has a heading `Run the epic`, and `references/epic-run.md` opens with a `#` title and a line that says a run reads it only in an epic run
+
+#### Scenario: The prompt frame is one block to copy
+- **WHEN** the skill-interfaces test reads `references/step-prompt.md`
+- **THEN** one fenced block holds `## What to run`, `## Questions` and `## The report`, and the text before it names `.workspace/lets-go/<session>-prompt.md`
+
+#### Scenario: A section left behind
+- **WHEN** a skills folder holds `lets-go/SKILL.md` with a heading `Records that disagree`
+- **THEN** the check fails, and its output names `Records that disagree`
+
+#### Scenario: The child's part is in its file
+- **WHEN** the skill-interfaces test lists the headings of each file of `lets-go`
+- **THEN** `references/story-run.md` opens with a `#` title and a line that says a run reads it only in a story run's child session, and `SKILL.md` holds none of its headings
