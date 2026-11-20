@@ -29,6 +29,10 @@ depends on where you run it, and on why the last run stopped:
 - **On the default branch, with the issue number:** it finds the
   change's branch, here or on `origin`, switches to it, and goes on the
   same way. It does not claim the issue again.
+- **On the default branch, with an epic's number:** it starts the epic
+  run again. It gives each story whose pull request is ready, merged or
+  closed its line, resumes each story this user started, and builds the
+  rest.
 - **On the default branch, with nothing:** it does not resume. It picks
   the next ready issue, and a claimed issue is never ready. To resume,
   give the issue number, or run it on the change's branch.
