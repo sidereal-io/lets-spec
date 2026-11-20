@@ -3971,3 +3971,32 @@ EXPECTED
   grep -qF 'For a stacked story, the proposed base is `origin/<blocker-branch>`' <<<"$(procedure_text 'Claim' | tr -s '[:space:]' ' ')" ||
     { echo "Claim does not name a stacked story's proposed base"; false; }
 }
+
+# step_prompt_file: the path of lets-go's references/step-prompt.md.
+step_prompt_file() {
+  echo "${skills_dir:-$repo/skills}/lets-go/references/step-prompt.md"
+}
+
+@test "stack: the step prompt's Stack section opens the pull request on the blocker's branch" {
+  local block phrase
+  block="$(text_block_lines 'Write the prompt' "$(step_prompt_file)" | tr -s '[:space:]' ' ')"
+  for phrase in '## Stack' 'This change is stacked on #<blocker>' '`--base <blocker-branch>`' \
+    '`Stacked on #<blocker-pr>; merge that first.`' 'after `Closes #<i>`' '`gh pr edit <name> --base <blocker-branch>`'; do
+    grep -qF -- "$phrase" <<<"$block" || { echo "the step prompt's Stack section does not say: $phrase"; false; }
+  done
+}
+
+@test "stack: the step prompt holds the Stack section only for a stacked story" {
+  grep -qF 'For a stacked story only, put this section between `## What to run` and `## Writing`' \
+    <<<"$(skill_section lets-go 'Write the prompt')" ||
+    { echo "Write the prompt does not say where the Stack section goes, and for which story"; false; }
+}
+
+@test "stack: each schema's brainstorm follows the step prompt's Stack section" {
+  local flow
+  for flow in standard minimal; do
+    grep -qF 'When the step prompt has a `## Stack` section, follow it where you open the draft pull request.' \
+      <<<"$(schema_step "$flow" brainstorm)" ||
+      { echo "the $flow brainstorm does not follow the step prompt's Stack section"; false; }
+  done
+}
