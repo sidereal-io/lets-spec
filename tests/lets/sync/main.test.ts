@@ -141,6 +141,41 @@ test('an openspec that prints no version gets no CLI message', async () => {
   assert.equal(t.stderr(), '');
 });
 
+const CHECK_MISSING = 'lets-spec: the OpenSpec CLI is not on PATH. Install it, for example with mise: "npm:@fission-ai/openspec" = "latest".';
+
+// A project that lets sync has just brought up to date. checkStderr is what
+// later runs print.
+async function upToDate(options: Setup) {
+  const t = setup({ toplevel: '/project', ...options });
+  await run({ check: false }, t.deps);
+  const synced = t.stderr().length;
+  return { ...t, checkStderr: () => t.stderr().slice(synced) };
+}
+
+test('check fails on a missing openspec in the committed mode', async () => {
+  const t = await upToDate({ openspec: null });
+  assert.equal(await run({ check: true }, t.deps), 1);
+  assert.equal(t.checkStderr(), `${CHECK_MISSING}\n`);
+});
+
+test('check fails on a missing openspec in the ignored mode', async () => {
+  const t = await upToDate({ env: { WORKFLOW_RELEASE: RELEASE, LETS_SPEC_SKILLS: 'ignored' }, openspec: null });
+  assert.equal(await run({ check: true }, t.deps), 1);
+  assert.equal(t.checkStderr(), `${CHECK_MISSING}\n`);
+});
+
+test('check passes with an installed openspec', async () => {
+  const t = await upToDate({});
+  assert.equal(await run({ check: true }, t.deps), 0);
+  assert.equal(t.checkStderr(), '');
+});
+
+test('check passes with an openspec older than release.json', async () => {
+  const t = await upToDate({ files: { ...releaseFiles, ...RELEASE_JSON }, openspec: '1.1.0\n' });
+  assert.equal(await run({ check: true }, t.deps), 0);
+  assert.equal(t.checkStderr(), '');
+});
+
 test('an empty LETS_SPEC_SKILLS means the default, committed', () => {
   assert.equal(skillsMode({ LETS_SPEC_SKILLS: '' }), 'committed');
 });

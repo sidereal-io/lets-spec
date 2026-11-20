@@ -7,7 +7,7 @@ import { checkConfig } from './config.ts';
 import { UsageError } from './errors.ts';
 import { checkClaude, createInitFiles, linkClaude } from './init.ts';
 import { isManaged, releasePaths } from './managed.ts';
-import { AGENTS, defaultSchema, findRelease, OPENSPEC_MISSING, openspecVersionWarning, probeOpenspec, requireRelease } from './release.ts';
+import { AGENTS, defaultSchema, findRelease, OPENSPEC_MISSING, OPENSPEC_MISSING_CHECK, openspecVersionWarning, probeOpenspec, requireRelease } from './release.ts';
 import { checkSkills, syncSkills } from './skills.ts';
 
 const CONFIG = 'openspec/config.yaml';
@@ -73,6 +73,7 @@ async function steps(check: boolean, deps: Deps) {
     } else if (gitignoreState !== 'current') {
       failures.push(`lets-spec: ${GITIGNORE} has no current lets-spec skills block. Run lets sync, then commit ${GITIGNORE}.`);
     }
+    if (!openspec.installed) failures.push(OPENSPEC_MISSING_CHECK);
     for (const line of failures) deps.stderr(`${line}\n`);
     return failures.length > 0 ? 1 : 0;
   }

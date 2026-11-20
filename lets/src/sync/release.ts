@@ -60,6 +60,7 @@ function compareIdentifiers(a: string, b: string) {
 }
 
 export const OPENSPEC_MISSING = 'the OpenSpec CLI is not on PATH, and the openspec-* skills need it. Install it, for example with mise: "npm:@fission-ai/openspec" = "latest".';
+export const OPENSPEC_MISSING_CHECK = 'lets-spec: the OpenSpec CLI is not on PATH. Install it, for example with mise: "npm:@fission-ai/openspec" = "latest".';
 
 // Whether the OpenSpec CLI is installed, and its version when it prints one.
 // It runs in the project's root because the project installs the CLI: a mise
