@@ -4260,3 +4260,74 @@ step_prompt_file() {
   grep -qF 'When `<i>` was passed in `--started`, print this line instead of the `Picked` line' <<<"$(part_section 'Run the epic')" ||
     { echo "Run the epic does not say when it prints the Resumed line"; false; }
 }
+
+@test "resume: Take up a started story reads the story's pull request" {
+  local text phrase
+  has_heading "$(epic_run_file)" 'Take up a started story' || { echo "references/epic-run.md has no heading: Take up a started story"; false; }
+  text="$(procedure_text 'Take up a started story' | tr -s '[:space:]' ' ')"
+  for phrase in 'gh pr view <name> --json number,state,baseRefName' \
+    "Run [Read a pull request's base](#read-a-pull-requests-base) for the story" \
+    'Run no [Stack the story](#stack-the-story)'; do
+    grep -qF -- "$phrase" <<<"$text" || { echo "Take up a started story does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: Take up a started story stacks a story only on a met story" {
+  local text phrase
+  text="$(procedure_text 'Take up a started story' | tr -s '[:space:]' ' ')"
+  for phrase in 'gh pr list --state open --limit 1000 --json number,url,isDraft,headRefName,isCrossRepository' \
+    'When the `<blocker>` it carries is met' '`<blocker-pr>` is the number of its pull request' \
+    'Otherwise leave the base as it is, and return `not-stacked`'; do
+    grep -qF -- "$phrase" <<<"$text" || { echo "Take up a started story does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: Take up a started story runs Stack the story for a story with no pull request and an open blocker" {
+  local text
+  text="$(procedure_text 'Take up a started story' | tr -s '[:space:]' ' ')"
+  grep -qF 'With no open pull request and an open blocker, run [Stack the story](#stack-the-story)' <<<"$text" ||
+    { echo "Take up a started story does not run Stack the story"; false; }
+  grep -qF '[Take up a started story](#take-up-a-started-story) runs it too, for a story whose change'"'"'s branch exists and has no pull request' \
+    <<<"$(skill_section lets-go 'Stack the story')" || { echo "Stack the story does not say Take up a started story runs it"; false; }
+  grep -qF 'For such a story, [Claim](../SKILL.md#claim) does not run' <<<"$(skill_section lets-go 'Stack the story')" ||
+    { echo "Stack the story does not say Claim does not run for a story whose branch exists"; false; }
+}
+
+@test "resume: Take up a started story returns its results to Check the issue, and says no stop" {
+  local text result
+  text="$(procedure_text 'Take up a started story')"
+  for result in stacked not-stacked settled fetch-failed edit-failed read-failed; do
+    grep -qF -- "- \`$result\`:" <<<"$text" || { echo "Take up a started story does not list: $result"; false; }
+  done
+  tr -s '[:space:]' ' ' <<<"$text" | grep -qF 'Return to [Check the issue](../SKILL.md#check-the-issue), with the result.' ||
+    { echo "Take up a started story does not return to Check the issue"; false; }
+  procedure_stops 'Take up a started story'
+}
+
+@test "resume: Check the issue takes up a started story before the open-blocker condition" {
+  local part take blocker
+  part="$(part_section 'Check the issue')"
+  grep -qF 'In an epic run, for the story the epic run picked, when its change'"'"'s branch exists, here or on `origin`, first run [Take up a started story](references/epic-run.md#take-up-a-started-story)' <<<"$part" ||
+    { echo "Check the issue does not run Take up a started story"; false; }
+  grep -qF 'whether or not the story has an open blocker' <<<"$part" ||
+    { echo "Check the issue does not run Take up a started story whatever the blockers"; false; }
+  take="${part%%"](references/epic-run.md#take-up-a-started-story)"*}"
+  blocker="${part%%'A blocker whose `state` is `OPEN` is open. When one is'*}"
+  [ "${#take}" -lt "${#blocker}" ] || { echo "Check the issue takes up a started story under the open-blocker condition"; false; }
+}
+
+@test "resume: Check the issue stops when a started story's base cannot be moved" {
+  local part phrase
+  part="$(part_section 'Check the issue')"
+  for phrase in '**`edit-failed`:** say which pull request'"'"'s base could not be moved, with gh'"'"'s error, and stop, as [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) says' \
+    '**`read-failed`:** say that the story'"'"'s pull request could not be read, with gh'"'"'s error, and stop, as [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) says' \
+    '**`not-stacked`:** go on, below'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: the step prompt's Stack section is for a story Take up a started story stacked too" {
+  grep -qF 'A story is stacked when [Stack the story](epic-run.md#stack-the-story) or [Take up a started story](epic-run.md#take-up-a-started-story) returned `stacked` for it' \
+    <<<"$(skill_section lets-go 'Write the prompt')" ||
+    { echo "Write the prompt does not hold the Stack section for a resumed stacked story"; false; }
+}

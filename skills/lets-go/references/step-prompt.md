@@ -46,10 +46,11 @@ frame. The step has none of this session's conversation.
 For a stacked story only, put this section between `## What to run` and
 `## Writing`, in the prompt of every step of the story, so that a step
 resumed after `needs-input` still sees it. A story is stacked when
-[Stack the story](epic-run.md#stack-the-story) returned `stacked` for
-it. `<blocker>`, `<blocker-branch>` and `<blocker-pr>` are the ones it
-carries. The prompt of a story that is not stacked holds no `## Stack`
-section.
+[Stack the story](epic-run.md#stack-the-story) or
+[Take up a started story](epic-run.md#take-up-a-started-story)
+returned `stacked` for it. `<blocker>`, `<blocker-branch>` and
+`<blocker-pr>` are the ones it carries. The prompt of a story that is
+not stacked holds no `## Stack` section.
 
 ```text
 ## Stack

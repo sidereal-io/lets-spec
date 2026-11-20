@@ -250,8 +250,8 @@ The reason says why, such as `in another repository`,
 
 [Run the epic](#run-the-epic) runs this procedure at the start, for each
 story whose pull request is ready for review.
-When a later step of the epic run resumes a story with an open pull
-request, it runs it too. It says whether the pull request
+[Take up a started story](#take-up-a-started-story) runs it for a
+resumed story's open pull request. It says whether the pull request
 stacks the story on another story, and moves the pull request off the
 branch of a blocker that has merged. `<story>` is the story,
 `<story-name>` its change name, and `<pr-base>` its pull request's
@@ -300,12 +300,81 @@ It returns one of these results:
 
 Return to the part or procedure that ran it, with the result.
 
+## Take up a started story
+
+[Check the issue](../SKILL.md#check-the-issue) runs this procedure in
+an epic run, for the story the epic run picked, when its change's branch
+exists, here or on `origin`, whether or not the story has an open
+blocker. It decides the story's stack from what an earlier run left,
+before
+[Find the source of demand](../SKILL.md#find-the-source-of-demand)
+runs for the story. The story is `<i>` and `<story>`, and `<name>` is
+its change name. The open blockers are the entries of the story's
+`blockedBy`, from the blocker read, whose `state` is `OPEN`.
+
+1. Read the story's pull request:
+
+   ```bash
+   gh pr view <name> --json number,state,baseRefName
+   ```
+
+   When gh says that no pull request is found for the branch, the story
+   has none. When the command fails for another reason, return
+   `read-failed`.
+2. With an open pull request, one whose `state` is `OPEN`, take the
+   story's stack from it. `<pr-base>` is its `baseRefName`. Run no
+   [Stack the story](#stack-the-story): the branch holds commits made on
+   that base, and another blocker's branch may not contain them. Run
+   [Read a pull request's base](#read-a-pull-requests-base) for the
+   story, and act on its result:
+   - **`on-story`:** read the open pull requests, and find the met
+     stories as *Pick the next story*, in
+     [Run the epic](#run-the-epic), does:
+
+     ```bash
+     gh pr list --state open --limit 1000 --json number,url,isDraft,headRefName,isCrossRepository
+     ```
+
+     When the `<blocker>` it carries is met, the story stays stacked on
+     it, with `<blocker-branch>`. `<blocker-pr>` is the number of its
+     pull request. Return `stacked`. Otherwise leave the base as it is,
+     and return `not-stacked`.
+   - **`not-stacked`:** return `not-stacked`.
+   - **`edit-failed`:** return `edit-failed`.
+3. With no open pull request and an open blocker, run
+   [Stack the story](#stack-the-story), and return its result.
+4. With no open pull request and no open blocker, return
+   `not-stacked`.
+
+It returns one of these results:
+
+- `stacked`: the story stacks on `<blocker>`. It carries `<blocker>`,
+  `<blocker-branch>` and `<blocker-pr>`. Its step prompts hold the
+  `## Stack` section, and its line ends `, stacked on #<blocker>`.
+- `not-stacked`: the story is not stacked. When its pull request's base
+  was a merged blocker's branch, the base is now `<default>`.
+- `settled`: [Stack the story](#stack-the-story) settled the story.
+- `fetch-failed`: [Stack the story](#stack-the-story) could not fetch a
+  blocker's branch. It carries `<blocker-branch>` and Git's error.
+- `edit-failed`: the pull request's base could not be moved. It carries
+  gh's error.
+- `read-failed`: the story's pull request could not be read. It carries
+  gh's error.
+
+Return to [Check the issue](../SKILL.md#check-the-issue), with the
+result.
+
 ## Stack the story
 
 [Check the issue](../SKILL.md#check-the-issue) runs this procedure in
 an epic run, for the story the epic run picked, when the story has an
-open blocker and no change's branch, here or on `origin`. It decides
-whether the story stacks on a blocker's branch, before
+open blocker and no change's branch, here or on `origin`.
+[Take up a started story](#take-up-a-started-story) runs it too, for a
+story whose change's branch exists and has no pull request. For such a
+story, [Claim](../SKILL.md#claim) does not run: the step prompts'
+`## Stack` section has the plan step open its pull request on
+`<blocker-branch>`. It decides whether the story stacks on a blocker's
+branch, before
 [Find the source of demand](../SKILL.md#find-the-source-of-demand) runs
 for the story. The open blockers are the entries of the story's
 `blockedBy`, from the blocker read, whose `state` is `OPEN`.
@@ -360,7 +429,7 @@ for the story. The open blockers are the entries of the story's
 It returns one of these results:
 
 - `stacked`: the story stacks on the base. It carries `<blocker>`,
-  `<blocker-branch>` and `<blocker-pr>`.
+  `<blocker-branch>` and `<blocker-pr>`. For a story with no branch,
   [Claim](../SKILL.md#claim) creates the story's branch off
   `origin/<blocker-branch>`.
 - `settled`: the story has its `not built` line. A settle here claims
@@ -379,8 +448,10 @@ way for every stop of the parts and procedures the story runs through,
 such as a failed step, records that disagree, a pull request that is
 merged or closed, a stop of
 [Check the prerequisite](glossary-handoff.md#check-the-prerequisite),
-a failed claim write, a `lets backlog` error, or a `fetch-failed` from
-[Stack the story](#stack-the-story), except the lost claim:
+a failed claim write, a `lets backlog` error, a `fetch-failed` from
+[Stack the story](#stack-the-story), or an `edit-failed` or
+`read-failed` from [Take up a started story](#take-up-a-started-story),
+except the lost claim:
 [Enter the branch](../SKILL.md#enter-the-branch) settles a lost story,
 and goes back to [Run the epic](#run-the-epic). A stop between stories,
 such as a `lets backlog` error in a pick, still ends the epic run, as
