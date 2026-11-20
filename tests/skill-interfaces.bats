@@ -3992,6 +3992,14 @@ EXPECTED
     { echo "Claim no longer branches an unstacked story off the default branch"; false; }
 }
 
+# Check the issue runs Check the prerequisite before Claim, so the check
+# says what the proposed base is.
+@test "stack: Check the prerequisite names a stacked story's proposed base" {
+  grep -qF 'or `origin/<blocker-branch>` for a story that [Stack the story](epic-run.md#stack-the-story) stacked' \
+    <<<"$(skill_section lets-go 'Check the prerequisite')" ||
+    { echo "Check the prerequisite does not name a stacked story's proposed base"; false; }
+}
+
 @test "stack: Claim's proposed base for a stacked story is its blocker's branch" {
   grep -qF 'For a stacked story, the proposed base is `origin/<blocker-branch>`' <<<"$(procedure_text 'Claim' | tr -s '[:space:]' ' ')" ||
     { echo "Claim does not name a stacked story's proposed base"; false; }
