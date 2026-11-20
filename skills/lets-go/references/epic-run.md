@@ -279,8 +279,8 @@ as for any picked issue.
      [Set the question mode](../SKILL.md#set-the-question-mode) in this
      session, then [Start the story run](#start-the-story-run), which
      runs the story's steps in a child session.
-   - **`nothing-ready`:** settle each story not settled yet, in the
-     epic's order, with its `not built` line, as
+   - **`nothing-ready`:** settle each story of the current wave not
+     settled yet, in the epic's order, with its `not built` line, as
      [Settle a story](#settle-a-story) says. Its reason is one of
      these:
      - For a candidate that `next` skipped, why it skipped it:
@@ -294,7 +294,9 @@ as for any picked issue.
        `assignees`; else its `status`, `kind` or `priority`, such as
        `its Status is Done`.
 
-     Then go to [End of the run](../SKILL.md#end-of-the-run).
+     When a later wave holds a story not settled yet, go back to *Pick
+     the next story*, which picks from that wave. Otherwise go to
+     [End of the run](../SKILL.md#end-of-the-run).
 
 ### Settle a story
 

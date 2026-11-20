@@ -2431,6 +2431,18 @@ epic_run_file() {
   skill_does_not_say lets-go 'lets backlog ready --only 279,280,281'
 }
 
+@test "wave: an epic run settles only the current wave when nothing is ready" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    "**\`nothing-ready\`:** settle each story of the current wave not settled yet, in the epic's order, with its \`not built\` line" \
+    'When a later wave holds a story not settled yet, go back to *Pick the next story*' \
+    'Otherwise go to [End of the run](../SKILL.md#end-of-the-run)'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+  skill_does_not_say lets-go "**\`nothing-ready\`:** settle each story not settled yet"
+}
+
 @test "wave: the placeholders give the waves their own rows" {
   local rows placeholder
   rows="$(placeholder_rows)"
@@ -2476,11 +2488,10 @@ epic_run_file() {
   local part phrase
   part="$(part_section 'Run the epic')"
   for phrase in \
-    "**\`nothing-ready\`:** settle each story not settled yet, in the epic's order, with its \`not built\` line" \
+    "**\`nothing-ready\`:** settle each story of the current wave not settled yet, in the epic's order, with its \`not built\` line" \
     'read why with `lets backlog item <story>`' \
     '`blocked by #<blocker>`' '`assigned to <login>`' \
-    '`its packet is not complete`' '`its glossary prerequisite is unresolved`' \
-    'Then go to [End of the run](../SKILL.md#end-of-the-run)'; do
+    '`its packet is not complete`' '`its glossary prerequisite is unresolved`'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
 }
