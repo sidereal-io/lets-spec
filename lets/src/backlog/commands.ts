@@ -21,6 +21,10 @@ stdout: one JSON object and a newline.
   ready [--met-blockers <keys>]
                      also lists an issue whose every open blocker is named,
                      such as 279,280: those blockers count as met.
+  ready [--started <keys>]
+                     also lists an issue named, such as 281,282, that is
+                     assigned to you and in Todo or In Progress; it still
+                     needs every other filter, its blockers included.
   item <i>           { key, label, title, body, url, state, kind, priority, size,
                        status, assignees, blockedBy, parent, subIssues }
   find <words...>    { issues: [{ key, label, title }] }
