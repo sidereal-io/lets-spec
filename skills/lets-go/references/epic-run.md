@@ -56,6 +56,10 @@ as for any picked issue.
    ```bash
    git switch <default>
    ```
+
+   After a lost claim, the run comes back from
+   [Enter the branch](../SKILL.md#enter-the-branch), which has settled
+   the story already: go on to the next step.
 3. **Pick the next story.** Run the third case, `next`, of
    [Find the source of demand](../SKILL.md#find-the-source-of-demand),
    with one narrowing: the candidates are the epic's stories that are in
