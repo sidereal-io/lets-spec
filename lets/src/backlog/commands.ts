@@ -18,6 +18,9 @@ import { PROVIDERS } from './providers.ts';
 const HELP_BODY = `
 stdout: one JSON object and a newline.
   ready              { issues: [{ key, label, title, url, kind, priority, size }] }
+  ready [--met-blockers <keys>]
+                     also lists an issue whose every open blocker is named,
+                     such as 279,280: those blockers count as met.
   item <i>           { key, label, title, body, url, state, kind, priority, size,
                        status, assignees, blockedBy, parent, subIssues }
   find <words...>    { issues: [{ key, label, title }] }

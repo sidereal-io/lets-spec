@@ -190,3 +190,15 @@ test('a repository\'s lets config with the old version is unknown-backlog-provid
   assert.match(out.message, /version/);
   assert.deepEqual(t.calls(), []);
 });
+
+test('lets backlog ready --help names --met-blockers with an example', async () => {
+  const t = backlogDeps([]);
+  assert.equal(await run(['ready', '--help'], t.deps), 0);
+  assert.match(t.stdout(), /--met-blockers <keys>.*279,280/);
+});
+
+test('the command list names ready --met-blockers with an example', async () => {
+  const t = backlogDeps([]);
+  await run(['--help'], t.deps);
+  assert.match(t.stdout(), /ready \[--met-blockers <keys>\][^]*?such as 279,280/);
+});
