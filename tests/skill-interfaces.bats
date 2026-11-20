@@ -4162,7 +4162,7 @@ EXPECTED
 @test "stack: Claim creates a stacked story's branch off its blocker's branch with no upstream" {
   local claim
   claim="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
-  grep -qF 'git switch --no-track -c <name> origin/<blocker-branch>' <<<"$claim" ||
+  grep -qF 'git worktree add --no-track -b <name> .workspace/lets-go/worktrees/<name> origin/<blocker-branch>' <<<"$claim" ||
     { echo "Claim does not branch a stacked story off its blocker's branch"; false; }
   grep -qF "Create a branch with the change's name off the default branch" <<<"$claim" ||
     { echo "Claim no longer branches an unstacked story off the default branch"; false; }
@@ -4752,4 +4752,51 @@ readme_step_returns() {
 @test "story run: the resolvers page's step report names ask" {
   awk '/^## A step.s report$/ { on = 1; next } on && /^## / { exit } on' "$repo/docs/resolvers.md" | tr -s '[:space:]' ' ' |
     grep -qF '`ask: true`' || { echo "docs/resolvers.md's A step's report does not name ask"; false; }
+}
+
+# parallel: an epic run builds the stories of one wave at the same time,
+# each in a git worktree of its own.
+
+@test "parallel: Claim creates an epic run story's branch and its worktree together" {
+  local claim phrase
+  claim="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
+  for phrase in 'git worktree add -b <name> .workspace/lets-go/worktrees/<name> <default>' \
+    'git worktree add --no-track -b <name> .workspace/lets-go/worktrees/<name> origin/<blocker-branch>' \
+    "Create a branch with the change's name off the default branch"; do
+    grep -qF -- "$phrase" <<<"$claim" || { echo "Claim does not say: $phrase"; false; }
+  done
+  ! grep -qF 'git switch --no-track -c' <<<"$claim" || { echo "Claim still switches the epic run's checkout to a stacked story's branch"; false; }
+  grep -qF 'The result is then `branch-failed`' <<<"$claim" || { echo "Claim no longer returns branch-failed"; false; }
+}
+
+@test "parallel: Enter the branch checks a started story's branch out in a new worktree" {
+  local part phrase
+  part="$(part_section 'Enter the branch')"
+  for phrase in 'git worktree add .workspace/lets-go/worktrees/<name> <name>' \
+    "the epic run's own checkout stays on \`<default>\`" \
+    "say Git's error, and stop, as [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) says"; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Enter the branch does not say: $phrase"; false; }
+  done
+  [[ "$part" == *'git fetch origin <name>'*'git worktree add .workspace/lets-go/worktrees/<name> <name>'* ]] ||
+    { echo "Enter the branch does not fetch the branch before it adds the worktree"; false; }
+}
+
+@test "parallel: Enter the branch runs lets sync in the worktree when git ignores the skills" {
+  local part phrase
+  part="$(part_section 'Enter the branch')"
+  for phrase in 'git check-ignore -q .agents/skills/lets-go' 'cd <path> && lets sync' \
+    '`stopped: lets sync failed in its worktree: ` followed by its error' 'Prepare nothing else in the worktree'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Enter the branch does not say: $phrase"; false; }
+  done
+}
+
+@test "parallel: the fast-forward, the import and the schema read run in the story's worktree" {
+  local part phrase
+  part="$(part_section 'Enter the branch')"
+  for phrase in 'git -C <path> merge --ff-only origin/<name>' \
+    'Then run the import in `<path>`, each Git command with `git -C <path>`' \
+    'read these files under `<path>`'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Enter the branch does not say: $phrase"; false; }
+  done
+  grep -qxF '`<path>`' <<<"$(placeholder_rows | sed 's/^/`/; s/$/`/')" || { echo "the Placeholders table has no row for <path>"; false; }
 }
