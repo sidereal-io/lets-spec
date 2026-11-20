@@ -3736,3 +3736,46 @@ automate_updates_workflow() {
   [ "$(yq '.commit-message' <<<"$with")" = "chore: update Let's Spec" ] ||
     { echo "the commit message is not chore: update Let's Spec: $with"; false; }
 }
+
+# automate_updates_prose: the Automate updates section without its code
+# block, on one line.
+automate_updates_prose() {
+  readme_automate_updates | awk '/^```/ { code = !code; next } !code' | tr -s '[:space:]' ' '
+}
+
+@test "Automate updates says a pull request opened with GITHUB_TOKEN would start no CI" {
+  local prose
+  prose="$(automate_updates_prose)"
+  [[ "$prose" == *'`GITHUB_TOKEN` starts no workflows'* ]] ||
+    { echo "the section does not say GITHUB_TOKEN starts no workflows"; false; }
+  [[ "$prose" == *'CI would not run'* ]] ||
+    { echo "the section does not say CI would not run"; false; }
+}
+
+@test "Automate updates' token is fine-grained, for the project's repository only" {
+  local prose
+  prose="$(automate_updates_prose)"
+  [[ "$prose" == *'fine-grained personal access token'* ]] ||
+    { echo "the section names no fine-grained personal access token"; false; }
+  [[ "$prose" == *"reach only your project's repository"* ]] ||
+    { echo "the section does not limit the token to the project's repository"; false; }
+}
+
+@test "Automate updates' token may write contents and pull requests" {
+  local prose
+  prose="$(automate_updates_prose)"
+  [[ "$prose" == *'Contents: Read and write'* ]] ||
+    { echo "the section does not name Contents: Read and write"; false; }
+  [[ "$prose" == *'Pull requests: Read and write'* ]] ||
+    { echo "the section does not name Pull requests: Read and write"; false; }
+}
+
+@test "Automate updates stores the token as the repository secret UPDATE_TOKEN" {
+  [[ "$(automate_updates_prose)" == *'repository secret `UPDATE_TOKEN`'* ]] ||
+    { echo "the section does not name the repository secret UPDATE_TOKEN"; false; }
+}
+
+@test "Automate updates names actions/create-github-app-token for a GitHub App token" {
+  [[ "$(automate_updates_prose)" == *'GitHub App'*'`actions/create-github-app-token`'* ]] ||
+    { echo "the section does not name actions/create-github-app-token for a GitHub App"; false; }
+}

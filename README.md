@@ -618,6 +618,19 @@ jobs:
           commit-message: "chore: update Let's Spec"
 ```
 
+The workflow needs a token of its own. A pull request opened with
+`GITHUB_TOKEN` starts no workflows, so your CI would not run on it. To set
+one up:
+
+1. Create a fine-grained personal access token that can reach only your
+   project's repository, with these repository permissions:
+   Contents: Read and write, and Pull requests: Read and write.
+2. Store it as the repository secret `UPDATE_TOKEN`.
+
+If your organization does not want a token tied to one person, use a
+GitHub App token instead: create it in the workflow with
+`actions/create-github-app-token`, and pass it as `token`.
+
 ## 🛠️ Development
 
 This section is for you if you want to work on Let's Spec itself.
