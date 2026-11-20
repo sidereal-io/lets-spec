@@ -610,7 +610,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: jdx/mise-action@v2
+      # Keeps the token for mise upgrade, which would otherwise call GitHub's
+      # API unauthenticated and can hit its rate limit.
+      - uses: jdx/mise-action@v5
+        with:
+          persist_github_token: true
 
       # Only these two, so the pull request holds no other tool's update.
       - run: mise upgrade github:sidereal-io/lets-spec npm:@fission-ai/openspec

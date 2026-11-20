@@ -3710,8 +3710,13 @@ automate_updates_workflow() {
 @test "Automate updates' workflow checks out, installs mise, upgrades, then syncs" {
   local steps expected
   steps="$(automate_updates_workflow | yq '.jobs[].steps[] | (.uses // .run)' | head -n4)"
-  expected="$(printf '%s\n' actions/checkout@v7 jdx/mise-action@v2 'mise upgrade github:sidereal-io/lets-spec npm:@fission-ai/openspec' 'mise exec -- lets sync')"
+  expected="$(printf '%s\n' actions/checkout@v7 jdx/mise-action@v5 'mise upgrade github:sidereal-io/lets-spec npm:@fission-ai/openspec' 'mise exec -- lets sync')"
   [ "$steps" = "$expected" ] || { echo "the first steps are: $steps"; false; }
+}
+
+@test "Automate updates' workflow keeps the token after mise-action for mise upgrade" {
+  [ "$(automate_updates_workflow | yq '.jobs[].steps[1].with.persist_github_token')" = true ] ||
+    { echo "jdx/mise-action does not set persist_github_token: true"; false; }
 }
 
 @test "Automate updates' workflow ends by opening a pull request with UPDATE_TOKEN" {
