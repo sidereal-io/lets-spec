@@ -1291,9 +1291,12 @@ readme_lets_go() {
   section="$(readme_lets_go)"
   for phrase in "Given an epic's number, \`lets-go\` builds each ready story of the epic in turn" \
     "A story blocked by another story of the epic stacks on that story's branch, and its pull request targets that branch" \
-    'ends with one line per story'; do
+    'ends with one line per story' \
+    'Running `lets-go` on the epic again goes on with its unfinished stories'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "the README's lets-go section does not say: $phrase"; false; }
   done
+  ! grep -qF "If a story's step fails, the run stops at that story" <<<"$section" ||
+    { echo "the README still says a failed step stops the epic run"; false; }
   ! grep -qF 'It never takes an epic' <<<"$section" || { echo "the README still says lets-go never takes an epic"; false; }
   ! grep -qF 'It leaves a blocked story out' <<<"$section" || { echo "the README still says lets-go leaves a blocked story out"; false; }
 }

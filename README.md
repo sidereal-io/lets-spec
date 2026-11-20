@@ -282,8 +282,12 @@ another story of the epic stacks on that story's branch, and its pull
 request targets that branch, once the blocker's pull request is ready
 for review. Merge the blocker's pull request first. The run ends with
 one line per story: the pull request's URL for each story it built, or
-why it did not build one, such as `not built, blocked by #279`. If a story's step fails, the run stops at
-that story. An epic with no open stories is not shaped yet: run
+why it did not build one, such as `not built, blocked by #279`. A
+story whose step fails stops only that story, and the stories that
+depend on it are not built. Running `lets-go` on the epic again goes on
+with its unfinished stories: it lists the stories whose pull request is
+ready, merged or closed, resumes the stories you started, and builds
+the rest. An epic with no open stories is not shaped yet: run
 `lets-shape` on it first.
 
 Chores and most XS or S stories use the `lets-minimal` schema;
