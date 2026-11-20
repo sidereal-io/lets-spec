@@ -343,6 +343,10 @@ says.
        `<blocker>` it carries.
      - **`settled`:** go back to [Run the epic](#run-the-epic), which
        picks again. Do not go on with the story.
+     - **`fetch-failed`:** say which branch could not be fetched, with
+       Git's error, and stop, as
+       [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+       says.
 
      Outside an epic run, nothing stacks.
 

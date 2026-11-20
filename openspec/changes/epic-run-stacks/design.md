@@ -152,6 +152,11 @@ spec's four steps. Its results:
   step 4.
 - `settled`: the story got its `not built` line. Go back to
   *Run the epic*, which picks again, as a lost claim does.
+- `fetch-failed`: carries `<blocker-branch>` and Git's error.
+  *Check the issue* stops, as the next paragraph says.
+
+*Stack the story* is a procedure, so it says no stop and names no next
+part: *Check the issue* acts on each result.
 
 The ancestry test is
 `git merge-base --is-ancestor origin/<other-branch> origin/<blocker-branch>`,

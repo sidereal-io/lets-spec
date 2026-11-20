@@ -198,8 +198,7 @@ for the story. The open blockers are the entries of the story's
    git fetch origin <blocker-branch>
    ```
 
-   A failed fetch is a stop, as
-   [A stop in an epic run](#a-stop-in-an-epic-run) says.
+   When a fetch fails, return `fetch-failed`.
 4. Find the base: the open blocker whose branch contains every other
    open blocker's branch. For each other open blocker, with its branch
    as `<other-branch>`, this command succeeds:
@@ -234,10 +233,11 @@ It returns one of these results:
   `origin/<blocker-branch>`.
 - `settled`: the story has its `not built` line. A settle here claims
   nothing, counts no lost claim and does not end the epic run.
+- `fetch-failed`: a blocker's branch could not be fetched. It carries
+  `<blocker-branch>` and Git's error.
 
 Return to [Check the issue](../SKILL.md#check-the-issue), with the
-result. On `settled`, it does not go on with the story. Go back to
-[Run the epic](#run-the-epic), which picks again.
+result.
 
 ## A stop in an epic run
 

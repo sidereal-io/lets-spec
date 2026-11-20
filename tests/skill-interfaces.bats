@@ -3929,13 +3929,29 @@ EXPECTED
     { echo "Stack the story does not return stacked"; false; }
 }
 
-@test "stack: a settle in Stack the story claims nothing and goes back to Run the epic" {
-  local section phrase
-  section="$(skill_section lets-go 'Stack the story')"
-  for phrase in 'claims nothing, counts no lost claim and does not end the epic run' \
-    'Go back to [Run the epic](#run-the-epic)'; do
-    grep -qF -- "$phrase" <<<"$section" || { echo "Stack the story does not say: $phrase"; false; }
+@test "stack: a settle in Stack the story claims nothing" {
+  grep -qF 'claims nothing, counts no lost claim and does not end the epic run' \
+    <<<"$(skill_section lets-go 'Stack the story')" ||
+    { echo "Stack the story does not say that a settle claims nothing"; false; }
+}
+
+# Stack the story is a procedure: it returns to Check the issue, which
+# decides, so it says no stop and names no next part.
+@test "stack: Stack the story returns its results to Check the issue, and says no stop" {
+  local text result
+  text="$(procedure_text 'Stack the story')"
+  for result in stacked settled fetch-failed; do
+    grep -qF -- "- \`$result\`:" <<<"$text" || { echo "Stack the story does not list: $result"; false; }
   done
+  tr -s '[:space:]' ' ' <<<"$text" | grep -qF 'Return to [Check the issue](../SKILL.md#check-the-issue), with the result.' ||
+    { echo "Stack the story does not return to Check the issue"; false; }
+  ! grep -qiF 'go back to [Run the epic]' <<<"$text" || { echo "Stack the story names Run the epic as the next part"; false; }
+  procedure_stops 'Stack the story'
+}
+
+@test "stack: Check the issue stops when Stack the story cannot fetch a blocker's branch" {
+  grep -qF '**`fetch-failed`:** say which branch could not be fetched' <<<"$(part_section 'Check the issue')" ||
+    { echo "Check the issue does not act on fetch-failed"; false; }
 }
 
 @test "stack: Check the issue runs Stack the story only in an epic run" {
