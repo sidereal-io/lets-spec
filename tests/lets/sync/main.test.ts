@@ -78,18 +78,18 @@ test('inside a git repo a valid run exits 0 quietly', async () => {
   assert.equal(t.stderr(), '');
 });
 
-test('a CLI version that differs from release.json is a warning in the footer', async () => {
+test('a CLI older than release.json is a warning in the footer', async () => {
   const release = '/pkg/releases/standard';
   const files: Record<string, string> = {};
   for (const [path, text] of Object.entries(releaseFiles)) files[path.replace(RELEASE, release)] = text;
   files['/pkg/release.json'] = JSON.stringify({ version: '0.1.0', openspec: '1.2.3', commit: 'abc' });
   const t = setup({ env: {}, files, toplevel: '/project' });
   const original = t.io.execFile;
-  t.io.execFile = async (cmd, args, opts) => (cmd === 'openspec' ? { stdout: '1.4.0\n', stderr: '', code: 0 } : original(cmd, args, opts));
+  t.io.execFile = async (cmd, args, opts) => (cmd === 'openspec' ? { stdout: '1.1.0\n', stderr: '', code: 0 } : original(cmd, args, opts));
   t.io.dirs.add(release);
   assert.equal(await run({ check: false }, t.deps), 0);
   assert.ok(t.stderr().includes('problem(s) to fix:'));
-  assert.ok(t.stderr().includes('- the OpenSpec CLI on PATH is 1.4.0, but this release'));
+  assert.ok(t.stderr().includes('- the OpenSpec CLI on PATH is 1.1.0, older than 1.2.3'));
 });
 
 test('a WORKFLOW_RELEASE outside the package still warns from the package release.json', async () => {
@@ -97,9 +97,9 @@ test('a WORKFLOW_RELEASE outside the package still warns from the package releas
   files['/pkg/release.json'] = JSON.stringify({ version: '0.1.0', openspec: '1.2.3', commit: 'abc' });
   const t = setup({ files, toplevel: '/project' });
   const original = t.io.execFile;
-  t.io.execFile = async (cmd, args, opts) => (cmd === 'openspec' ? { stdout: '1.4.0\n', stderr: '', code: 0 } : original(cmd, args, opts));
+  t.io.execFile = async (cmd, args, opts) => (cmd === 'openspec' ? { stdout: '1.1.0\n', stderr: '', code: 0 } : original(cmd, args, opts));
   assert.equal(await run({ check: false }, t.deps), 0);
-  assert.ok(t.stderr().includes("- the OpenSpec CLI on PATH is 1.4.0, but this release's openspec-* skills were generated from 1.2.3. Pin the CLI to 1.2.3."));
+  assert.ok(t.stderr().includes("- the OpenSpec CLI on PATH is 1.1.0, older than 1.2.3, which this release's openspec-* skills were generated from. Upgrade it to 1.2.3 or later."));
 });
 
 test('an empty LETS_SPEC_SKILLS means the default, committed', () => {

@@ -126,7 +126,9 @@ async function steps(check: boolean, deps: Deps) {
 
   warnings.push(...checkClaude({ root, io }));
   warnings.push(...checkConfig({ io, configPath: join(root, CONFIG), schemaName }).map((line) => line.replace(join(root, CONFIG), CONFIG)));
-  const versionWarning = await openspecVersionWarning({ packageRoot: deps.packageRoot, release, io });
+  const probe = await io.execFile('openspec', ['--version'], { cwd: release });
+  const version = probe.code === 0 ? probe.stdout.match(/\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?/)?.[0] ?? null : null;
+  const versionWarning = openspecVersionWarning({ packageRoot: deps.packageRoot, version, io });
   if (versionWarning !== null) warnings.push(versionWarning);
 
   if (warnings.length > 0) {

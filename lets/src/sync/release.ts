@@ -59,24 +59,20 @@ function compareIdentifiers(a: string, b: string) {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-// A warning when the OpenSpec CLI on PATH differs from the one that generated
-// the release's openspec-* skills, as the package's release.json records it.
-// Null when either version is unknown.
-export async function openspecVersionWarning({ packageRoot, release, io }: { packageRoot: string; release: string; io: Io }) {
+// A warning when the OpenSpec CLI's version is older than the one that
+// generated the release's openspec-* skills, as the package's release.json
+// records it. Null when either version is unknown.
+export function openspecVersionWarning({ packageRoot, version, io }: { packageRoot: string; version: string | null; io: Io }) {
   const text = io.readFile(join(packageRoot, 'release.json'));
-  if (text === null) return null;
+  if (text === null || version === null) return null;
   let pinned;
   try {
     pinned = String(JSON.parse(text)?.openspec ?? '').match(VERSION)?.[0];
   } catch {
     return null;
   }
-  if (pinned === undefined) return null;
-  const result = await io.execFile('openspec', ['--version'], { cwd: release });
-  if (result.code !== 0) return null;
-  const found = result.stdout.match(VERSION)?.[0];
-  if (found === undefined || found === pinned) return null;
-  return `the OpenSpec CLI on PATH is ${found}, but this release's openspec-* skills were generated from ${pinned}. Pin the CLI to ${pinned}.`;
+  if (pinned === undefined || compareVersions(version, pinned) >= 0) return null;
+  return `the OpenSpec CLI on PATH is ${version}, older than ${pinned}, which this release's openspec-* skills were generated from. Upgrade it to ${pinned} or later.`;
 }
 
 // Fail unless the folder holds a release of lets-spec.
