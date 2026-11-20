@@ -7,7 +7,7 @@
 // through deps.
 import { dirname, join, resolve } from 'node:path';
 import type { Deps, Io } from '../io.ts';
-import { SpawnError, UsageError } from '../resolvers/kit/errors.ts';
+import { EXIT, SpawnError, TimeoutError, UsageError } from '../resolvers/kit/errors.ts';
 import { normalizeName } from '../resolvers/kit/adapter.ts';
 import { repoRoot } from './git.ts';
 import { guarded } from './guarded.ts';
@@ -68,6 +68,72 @@ async function startStep(options: StartOptions, deps: Deps): Promise<number> {
   io.writeFile(runFile, `${JSON.stringify(record)}\n`);
   deps.stdout(`${JSON.stringify({ name, pid })}\n`);
   return 0;
+}
+
+// names: the steps to wait for, as step start was given them.
+// timeoutMinutes: how long to wait; with none, as long as it takes.
+export type WaitOptions = { names: string[]; timeoutMinutes?: number };
+
+// How often step wait looks at the run files.
+const POLL_MS = 2000;
+const KILLED = 'lets delegate: the background step ended without an exit code\n';
+
+// The exit code: 0 a step has ended, and stdout names it, 2 usage, 6 none
+// ended in time.
+export function wait(options: WaitOptions, deps: Deps): Promise<number> {
+  return guarded(deps, () => waitForStep(options, deps));
+}
+
+async function waitForStep({ names, timeoutMinutes }: WaitOptions, deps: Deps): Promise<number> {
+  const { io } = deps;
+  if (names.length === 0) throw new UsageError('give --name at least once.');
+  const root = await repoRoot(deps.cwd, io);
+  const runs = names.map((given) => {
+    const run = readRun(runFiles(root, normalizeName(given)).runFile, io);
+    if (run === null) throw new UsageError(`no background step named ${given} was started here.`);
+    return run;
+  });
+  const deadline = timeoutMinutes === undefined ? Infinity : io.now() + timeoutMinutes * 60000;
+  for (;;) {
+    const ended = runs.map((run) => ({ run, end: endOf(run, io) })).filter(({ end }) => end !== null);
+    if (ended.length > 0) {
+      const { run, end } = ended.reduce((first, next) => (next.end!.endedAt < first.end!.endedAt ? next : first));
+      deps.stdout(`${JSON.stringify({ name: run.name, exit: end!.exit })}\n`);
+      return EXIT.ok;
+    }
+    const left = deadline - io.now();
+    if (left <= 0) throw new TimeoutError(`none of ${runs.map(({ name }) => name).join(', ')} ended in ${timeoutMinutes} minutes; each still runs.`);
+    await io.sleep(Math.min(POLL_MS, left));
+  }
+}
+
+// How run ended, or null while it runs. A process that is gone with no exit
+// file was killed, or crashed: it counts as exit 4, ended now, with a line in
+// its meta file that says so. An exit file records that, so it is said once.
+function endOf(run: RunRecord, io: Io): { exit: number; endedAt: number } | null {
+  const recorded = readExit(run.exitFile, io);
+  if (recorded !== null) return recorded;
+  if (io.isAlive(run.pid)) return null;
+  // The process may have written its exit file just before it ended.
+  const late = readExit(run.exitFile, io);
+  if (late !== null) return late;
+  const end = { exit: EXIT.spawn, endedAt: io.now() };
+  io.writeFile(run.metaFile, `${io.readFile(run.metaFile) ?? ''}${KILLED}`);
+  io.writeFile(run.exitFile, `${JSON.stringify(end)}\n`);
+  return end;
+}
+
+// The exit file at path, or null when there is none yet.
+function readExit(path: string, io: Io): { exit: number; endedAt: number } | null {
+  const text = io.readFile(path);
+  if (text === null) return null;
+  try {
+    const { exit, endedAt } = JSON.parse(text);
+    return typeof exit === 'number' && typeof endedAt === 'number' ? { exit, endedAt } : null;
+  } catch {
+    // A file step run is still writing.
+    return null;
+  }
 }
 
 // Where the run of the step name, started from root, is kept.
