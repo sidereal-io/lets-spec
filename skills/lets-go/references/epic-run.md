@@ -128,3 +128,38 @@ A story that was not built gets this line:
 The reason says why, such as `in another repository`,
 `taken by <login>`, `blocked by #<blocker>`, `assigned to <login>` or
 `its packet is not complete`.
+
+## A stop in an epic run
+
+While an epic run is on a story, from its `Picked` line to its line, a
+stop ends the epic run at that story. This holds for every stop of the
+parts and procedures the story runs through, such as a failed step,
+records that disagree, a pull request that is merged or closed, or a
+`lets backlog` error, except the lost claim:
+[Enter the branch](../SKILL.md#enter-the-branch) settles a lost story,
+and goes back to [Run the epic](#run-the-epic). The story is
+`<stopped-story>`.
+
+1. Do what the stop says first, such as print the `Failed` line and the
+   pull request's URL.
+2. Settle the story, as [Settle a story](#settle-a-story) says. For a
+   failed step, `<step name>` is the step's name in plain words, as its
+   `Failed` line names it, such as `review build`. For any other stop,
+   the reason is what the stop said:
+
+   ```text
+   #<story> <story-name>: failed at <step name>: <reason>
+   #<story> <story-name>: stopped: <reason>
+   ```
+
+3. Settle each story not settled yet, in the epic's order, with this
+   line. Here `#<story>` is the story not built, and `#<stopped-story>`
+   the story the epic run stopped at:
+
+   ```text
+   #<story> <story-name>: not built, the epic run stopped at #<stopped-story>
+   ```
+
+4. Print every line of `.workspace/lets-go/epic-<parent>-lines.txt`, in
+   order, as [End of the run](../SKILL.md#end-of-the-run) does, and
+   stop. The epic run does not go on past a stopped story.

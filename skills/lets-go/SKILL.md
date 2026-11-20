@@ -94,11 +94,11 @@ sets it.
 
 `lets backlog` names each item by its `key`, and shows it by its
 `label`: `149` and `#149` on GitHub. In anything shown to a person,
-`#<i>`, `#<parent>`, `#<story>` and `#<blocker>` stand for the item's
-`label`: a printed line, a question, or text written in an issue. In a
-command, `<i>`, `<parent>` and `<story>` stand for its `key`. With the
-GitHub backlog provider, the label is `#` and the number, so each line
-reads as it always has.
+`#<i>`, `#<parent>`, `#<story>`, `#<blocker>` and `#<stopped-story>`
+stand for the item's `label`: a printed line, a question, or text
+written in an issue. In a command, `<i>`, `<parent>` and `<story>`
+stand for its `key`. With the GitHub backlog provider, the label is `#`
+and the number, so each line reads as it always has.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
@@ -108,6 +108,8 @@ reads as it always has.
 | `<story>` | One story, as its key: a story that a shape step's report names, or a story of an epic run | Each `story` line of the shape report, or [Run the epic](#run-the-epic), for the story it picks or settles |
 | `<blocker>` | An open issue that blocks a story, as its key | The story's `blockedBy`, from `lets backlog item <story>` in [Run the epic](#run-the-epic) |
 | `<login>` | The login of a person assigned to a story | The story's `assignees`, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](#run-the-epic) |
+| `<stopped-story>` | The story an epic run stopped at, as its key, in the line of another story that was not built | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
+| `<step name>` | A step's name in plain words, as its `Failed` line names it, such as `review build` | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), from the failed step |
 | `<story-name>` | The part of a story's title before ` — `, or the whole title when it has none | [Run the epic](#run-the-epic), when it settles the story |
 | `<paths>` | The changed discovery maps, one path each | [Commit the discovery map](references/shape.md#commit-the-discovery-map), from its `git status` command |
 | `<pr-url>` | The URL of a story's pull request, in an epic run | [Run the epic](#run-the-epic), when it settles a built story |

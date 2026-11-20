@@ -2382,6 +2382,27 @@ epic_run_file() {
   done
 }
 
+@test "an epic run's stop rule is written once, in A stop in an epic run" {
+  local section line
+  section="$(skill_section lets-go 'A stop in an epic run')"
+  for line in 'not built, the epic run stopped at #<stopped-story>' 'failed at <step name>: <reason>'; do
+    skill_says_once lets-go "$line"
+    grep -qF -- "$line" <<<"$section" || { echo "A stop in an epic run does not say: $line"; false; }
+  done
+  has_heading "$(epic_run_file)" 'A stop in an epic run' || { echo "references/epic-run.md has no heading: A stop in an epic run"; false; }
+}
+
+@test "an epic run settles a stopped story in a text block" {
+  local lines line
+  lines="$(text_block_lines 'A stop in an epic run' "$(epic_run_file)")"
+  for line in '#<story> <story-name>: failed at <step name>: <reason>' '#<story> <story-name>: stopped: <reason>' \
+    '#<story> <story-name>: not built, the epic run stopped at #<stopped-story>'; do
+    grep -qxF -- "$line" <<<"$lines" || { echo "A stop in an epic run has no text block with: $line"; false; }
+  done
+  grep -qF 'except the lost claim' <<<"$(skill_section lets-go 'A stop in an epic run')" ||
+    { echo "A stop in an epic run does not leave out the lost claim"; false; }
+}
+
 # long_lines <file>...: each line longer than 72 columns, as
 # <file>:<line>: <length>, the file under the skills folder. A column is one
 # code point: the count leaves out UTF-8 continuation bytes, so it holds in
