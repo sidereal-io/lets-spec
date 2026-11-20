@@ -11,7 +11,9 @@ If the folder is missing, create it first:
 [Enter the branch](../SKILL.md#enter-the-branch),
 [Set the question mode](../SKILL.md#set-the-question-mode) and
 [Route](../SKILL.md#route) set. For shape, `<mode>` is the one
-[Run the shape step](../SKILL.md#run-the-shape-step) set. Under
+[Run the shape step](../SKILL.md#run-the-shape-step) set. In a story
+run's child, they are the ones the story prompt gives, as
+[Take up the story run](story-run.md#take-up-the-story-run) says. Under
 `## What to run`, put this sentence. `<skill>` is the skill in the
 step's row of [The step table](../SKILL.md#the-step-table):
 
@@ -48,8 +50,10 @@ For a stacked story only, put this section between `## What to run` and
 resumed after `needs-input` still sees it. A story is stacked when
 [Stack the story](epic-run.md#stack-the-story) or
 [Take up a started story](epic-run.md#take-up-a-started-story)
-returned `stacked` for it. `<blocker>`, `<blocker-branch>` and
-`<blocker-pr>` are the ones it carries. The prompt of a story that is
+returned `stacked` for it, or, in a story run's child, when the story
+prompt holds a `## Stack` section. `<blocker>`, `<blocker-branch>` and
+`<blocker-pr>` are the ones it carries, or the ones the story prompt's
+section names. The prompt of a story that is
 not stacked holds no `## Stack` section.
 
 ```text

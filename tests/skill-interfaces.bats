@@ -4496,3 +4496,64 @@ story_prompt_block() {
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
 }
+
+# story_run_file: the path of lets-go's references/story-run.md.
+story_run_file() {
+  echo "${skills_dir:-$repo/skills}/lets-go/references/story-run.md"
+}
+
+@test "story run: lets-go keeps eight reference files, each opening with a title and when to read it" {
+  local dir="$repo/skills/lets-go/references" files file
+  files="$(cd "$dir" && printf '%s\n' *.md)"
+  [ "$files" = "$(printf '%s\n' epic-run.md glossary-handoff.md records.md shape.md step-prompt.md story-run.md subagent.md terms.md)" ] ||
+    { echo "lets-go's reference files are: $(tr '\n' ' ' <<<"$files")"; false; }
+  for file in $files; do
+    head -1 "$dir/$file" | grep -qE '^# ' || { echo "references/$file does not open with a # title"; false; }
+    sed -n 3p "$dir/$file" | grep -qE '^Read this file ' || { echo "references/$file does not say when a run reads it"; false; }
+  done
+}
+
+@test "story run: the child's part is in references/story-run.md, which a run reads only in a child session" {
+  local file request
+  file="$(story_run_file)"
+  [ -f "$file" ] || { echo "lets-go has no references/story-run.md"; false; }
+  sed -n 3,4p "$file" | tr -s '[:space:]' ' ' | grep -qF "only in a story run's child session" ||
+    { echo "references/story-run.md does not say a run reads it only in a story run's child session"; false; }
+  has_heading "$file" 'Take up the story run' || { echo "references/story-run.md has no heading: Take up the story run"; false; }
+  ! has_heading "$(lets_go_skill)" 'Take up the story run' || { echo "SKILL.md has the heading: Take up the story run"; false; }
+  request="$(part_section 'Read the request')"
+  grep -qF 'When the request starts with `You run a story run of a lets-go epic run:`, this session is a story run'"'"'s child: go to [Take up the story run](references/story-run.md#take-up-the-story-run)' <<<"$request" ||
+    { echo "Read the request does not send a story prompt to references/story-run.md"; false; }
+}
+
+@test "story run: the child takes the story prompt's values, and checks its branch first" {
+  local section phrase
+  section="$(skill_section lets-go 'Take up the story run')"
+  for phrase in '`<i>`, `<name>` and `<parent>`' '`<issue-url>`, `<schema>` and `<route line>`' '`<mode>`' \
+    '`## Stack` section' 'git branch --show-current' \
+    'reason: "stopped: the story run is on <branch>, not <name>"'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Take up the story run does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the child claims, routes and switches nothing" {
+  local section part
+  section="$(skill_section lets-go 'Take up the story run')"
+  for part in check-the-issue route enter-the-branch claim set-the-question-mode; do
+    grep -qF "](../SKILL.md#$part)" <<<"$section" || { echo "Take up the story run does not name the part it skips: $part"; false; }
+  done
+  grep -qF 'Run none of' <<<"$section" || { echo "Take up the story run does not say it runs none of them"; false; }
+  ! grep -qE 'lets backlog claim|git switch' <<<"$section" || { echo "Take up the story run claims or switches"; false; }
+}
+
+@test "story run: the child walks the step table with the story prompt's mode and stack" {
+  local section phrase
+  section="$(skill_section lets-go 'Take up the story run')"
+  for phrase in 'Walk [The step table](../SKILL.md#the-step-table) from its top row on the branch `<name>`, as [Walk the step table](../SKILL.md#walk-the-step-table) says' \
+    'as [Run a step](../SKILL.md#run-a-step) says' \
+    "Each step's prompt holds \`<mode>\` from the story prompt, and the story prompt's \`## Stack\` section when it has one"; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Take up the story run does not say: $phrase"; false; }
+  done
+  grep -qF '[Take up the story run](story-run.md#take-up-the-story-run)' <<<"$(skill_section lets-go 'Write the prompt')" ||
+    { echo "Write the prompt does not take a child's values from the story prompt"; false; }
+}
