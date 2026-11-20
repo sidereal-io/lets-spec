@@ -42,9 +42,9 @@ With the GitHub backlog provider, each command except `key` SHALL use the open P
 - Kind is not Epic.
 - Priority is Must, Should or Could.
 - Nobody is assigned.
-- No open issue blocks it.
+- No open issue blocks it, other than the issues `--met-blockers <key>,<key>` names.
 
-It SHALL rank them Must, then Should, then Could, then by creation time, oldest first. Each issue SHALL carry `key`, `label`, `title`, `url`, `kind`, `priority` and `size`. `--only <key>,<key>` SHALL keep only the issues named. `--exclude <key>,<key>` SHALL leave out the issues named. A key in `--only` or `--exclude` that names no ready issue SHALL be ignored. An issue from another repository on the same Project SHALL never be listed.
+It SHALL rank them Must, then Should, then Could, then by creation time, oldest first. Each issue SHALL carry `key`, `label`, `title`, `url`, `kind`, `priority` and `size`. `--only <key>,<key>` SHALL keep only the issues named. `--exclude <key>,<key>` SHALL leave out the issues named. `--met-blockers` SHALL count each issue it names as a met blocker: an issue whose every open blocker is named there passes the blocker filter, and still needs every other filter. A blocker in another repository SHALL never count as named: its key can name an issue of this repository. A key in `--only`, `--exclude` or `--met-blockers` that names no ready issue, or no blocker, SHALL be ignored. Without `--met-blockers`, an issue with an open blocker SHALL never be listed. An issue from another repository on the same Project SHALL never be listed.
 
 #### Scenario: Rank
 - **WHEN** the ready issues are #160 Should, #120 Must and #110 Should, each created in the order of its number
@@ -73,6 +73,22 @@ It SHALL rank them Must, then Should, then Could, then by creation time, oldest 
 #### Scenario: Keys that are not numbers in --only
 - **WHEN** a user runs `lets backlog ready --only PROJ-9,PROJ-12`, and `PROJ-3` is also ready
 - **THEN** `issues` holds only those of `PROJ-9` and `PROJ-12` that are ready
+
+#### Scenario: A blocker named as met
+- **WHEN** #280 is Todo, Must and unassigned, its only open blocker is #279, and a user runs `lets backlog ready --met-blockers 279`
+- **THEN** `issues` holds #280
+
+#### Scenario: One open blocker not named
+- **WHEN** #281 is Todo, Must and unassigned, its open blockers are #279 and #280, and a user runs `lets backlog ready --met-blockers 279`
+- **THEN** `issues` does not hold #281
+
+#### Scenario: A met blocker does not skip the other filters
+- **WHEN** #282's only open blocker is #279, #282 is assigned to `octocat`, and a user runs `lets backlog ready --met-blockers 279`
+- **THEN** `issues` does not hold #282
+
+#### Scenario: A blocker in another repository is never met
+- **WHEN** #283's only open blocker is `other-org/tools#279`, and a user runs `lets backlog ready --met-blockers 279`
+- **THEN** `issues` does not hold #283
 
 ### Requirement: item reads one issue with its Project fields
 `lets backlog item <key>` SHALL return the issue's `key`, `label`, `title`, `body`, `url` and `state`, and its Project fields `kind`, `priority`, `size` and `status`. A field that is unset, or an issue that is not on the Project, SHALL give `null` for each field it lacks. It SHALL return `assignees`, the login of each assigned user. It SHALL return `blockedBy`, each blocker's `key`, `label`, `title`, `state` and `url`. It SHALL return `parent` as `null`, or with the parent's `key`, `label`, `title`, `url` and `body`. It SHALL return `subIssues`, each open sub-issue's `key`, `label`, `title` and `url`. A related issue can sit in another repository, where its `key` alone names another issue, so its `url` names it, and its `label` names its repository. A parent that cannot be read SHALL return the error `backend-failed`, whose message names the parent, never `not-found`. An issue that does not exist SHALL return the error `not-found`.
