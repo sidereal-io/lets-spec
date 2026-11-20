@@ -12,6 +12,8 @@ import { run as instructions } from './delegate/instructions.ts';
 import { EFFORTS, FAMILIES, parseModel } from './resolvers/kit/families.ts';
 import { run as review } from './delegate/review.ts';
 import type { ReviewOptions } from './delegate/review.ts';
+import { start as stepStart, wait as stepWait } from './delegate/background.ts';
+import type { StartOptions } from './delegate/background.ts';
 import { run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './delegate/step.ts';
 import type { StepOptions } from './delegate/step.ts';
 import { STRATEGIES } from './delegate/strategies.ts';
@@ -196,6 +198,46 @@ Exit codes:
      resolver failed in a way it could not report
   6  the session did not finish in time`;
 
+const STEP_START_HELP = `
+Starts lets delegate step run with the same options in the background, and
+returns at once. The step runs in the repository root of --checkout, or of
+the working directory when there is no --checkout. Its stdout, the step
+report, goes to --report-file, and its stderr, the record line, to
+--meta-file. Relative paths are read from the working directory.
+
+stdout: one JSON line, { name, pid }: the normalized --name, and the id of
+the background process.
+
+lets delegate step wait --name <name> tells when the step ends, and gives
+the exit code lets delegate step run ended with. A name cannot start again
+while its step runs.
+
+Exit codes:
+  0  the step has started
+  2  usage error, such as a missing option, a file that cannot be read, or
+     a name whose step still runs. stderr names it. Nothing starts.
+  4  the background process could not start`;
+
+const STEP_WAIT_HELP = `
+Waits until one of the background steps that --name names has ended. Give
+--name once for each step, as lets delegate step start was given it, from
+the same repository root.
+
+stdout: one JSON line, { name, exit }: the step that ended first, and the
+exit code lets delegate step run ended with. At exit 0, the step's report
+is in the report file lets delegate step start was given, and the meta
+file holds its record line. At any other code, the meta file says why. A
+step whose process ended without an exit code, such as one that was
+killed, counts as exit 4.
+
+With no --timeout-minutes, it waits as long as it takes.
+
+Exit codes:
+  0  a step has ended, and stdout names it
+  2  usage error, such as no --name, or a name that lets delegate step start
+     did not start here. stderr names it.
+  6  none of the steps ended within --timeout-minutes. Each still runs.`;
+
 const INSTRUCTIONS_HELP = `
 stdout: one JSON line with strategy, for, resolver, options and guidance.
 resolver and options come from the first resolver that does not decline
@@ -342,23 +384,52 @@ strategyCommand('handoff', 'start a fresh, interactive session and return at onc
     process.exitCode = await handoff({ ...options, models: model }, realDeps());
   });
 
-strategyCommand('step', 'run a step in a fresh session that may write files, and read its step report')
-  .addHelpText('after', STEP_STRATEGY_HELP)
-  .command('run')
-  .summary('run the step')
-  .description('Run a prompt in a fresh session that may write files, on the first model --model names that is not refused, wait for its final message, and print its step report.')
+// The options of step run, which step start takes too.
+const stepRunOptions = (command: Command) => command
   .addOption(forOption('step'))
   .requiredOption('--name <name>', 'a label for the session, normalized to lowercase kebab-case')
   .requiredOption('--prompt-file <path>', 'the file that holds the prompt')
   .addOption(new Option('--effort <effort>', 'how hard the session thinks').choices(EFFORTS).makeOptionMandatory())
   .addOption(modelOption())
   .option('--timeout-minutes <minutes>', `how long to wait (default: ${STEP_TIMEOUT_MINUTES} for a step, ${STORY_TIMEOUT_MINUTES} for a story)`, wholeMinutes)
-  .option('--answers-file <path>', 'the answers to the last report\'s questions, as a YAML list of question and answer pairs')
+  .option('--answers-file <path>', 'the answers to the last report\'s questions, as a YAML list of question and answer pairs');
+
+const stepCommand = strategyCommand('step', 'run a step in a fresh session that may write files, and read its step report')
+  .addHelpText('after', STEP_STRATEGY_HELP);
+
+stepRunOptions(stepCommand
+  .command('run')
+  .summary('run the step')
+  .description('Run a prompt in a fresh session that may write files, on the first model --model names that is not refused, wait for its final message, and print its step report.'))
   // lets delegate step start gives it; a person never needs it.
   .addOption(new Option('--exit-file <path>', 'where to record the exit code').hideHelp())
   .addHelpText('after', STEP_HELP)
   .action(async ({ model, ...options }: Omit<StepOptions, 'models'> & { model: string[] }) => {
     process.exitCode = await step({ ...options, models: model }, realDeps());
+  });
+
+stepRunOptions(stepCommand
+  .command('start')
+  .summary('run the step in the background, and return at once')
+  .description('Run lets delegate step run in the background, with the same options, and return at once.'))
+  .option('--checkout <path>', 'the checkout to run the step in (default: the working directory\'s)')
+  .requiredOption('--report-file <path>', 'the file that takes the step\'s report, its stdout')
+  .requiredOption('--meta-file <path>', 'the file that takes the step\'s record line, its stderr')
+  .addHelpText('after', STEP_START_HELP)
+  .action(async ({ model, ...options }: Omit<StartOptions, 'models'> & { model: string[] }) => {
+    process.exitCode = await stepStart({ ...options, models: model }, realDeps());
+  });
+
+stepCommand
+  .command('wait')
+  .summary('wait for the next background step to end')
+  .description('Wait until the next of the background steps --name names ends, and say which one it was.')
+  .addOption(new Option('--name <name>', 'a background step lets delegate step start started; repeat it for each step')
+    .argParser((value: string, previous: string[] = []) => [...previous, value]).makeOptionMandatory())
+  .option('--timeout-minutes <minutes>', 'how long to wait (default: no limit)', wholeMinutes)
+  .addHelpText('after', STEP_WAIT_HELP)
+  .action(async ({ name, timeoutMinutes }: { name: string[]; timeoutMinutes?: number }) => {
+    process.exitCode = await stepWait({ names: name, timeoutMinutes }, realDeps());
   });
 
 program

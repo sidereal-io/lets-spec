@@ -416,3 +416,56 @@ test('go questions --help names the repository\'s lets config, and says its valu
   assert.match(text, /\.lets\/config\.yaml/);
   assert.match(text, /repository's value wins, leaf by leaf/);
 });
+
+// lets delegate step start and step wait
+const START = ['delegate', 'step', 'start', '--for', 'plan', '--name', 'plan-x', '--prompt-file', 'p.md', '--report-file', 'out/r.json', '--meta-file', 'out/m.txt', '--effort', 'high', '--model', 'claude'];
+
+test('step --help names start and wait', async () => {
+  const { stdout } = await lets('delegate', 'step', '--help');
+  assert.match(stdout, /^ {2}start\b/m);
+  assert.match(stdout, /^ {2}wait\b/m);
+});
+
+test('step start --help names its three options and exit codes 0 and 2, and says step wait tells when the step ends', async () => {
+  const { code, stdout } = await lets('delegate', 'step', 'start', '--help');
+  assert.equal(code, 0);
+  const text = stdout.replace(/\s+/g, ' ');
+  for (const flag of ['--checkout', '--report-file', '--meta-file', '--answers-file']) assert.match(text, new RegExp(flag), flag);
+  assert.match(text, /0 the step has started/);
+  assert.match(text, /2 usage error/);
+  assert.match(text, /lets delegate step wait --name <name> tells when the step ends/);
+  assert.doesNotMatch(text, /exit-file/);
+});
+
+test('step wait --help lists exit codes 0, 2 and 6, and says the report is in the report file step start was given', async () => {
+  const { code, stdout } = await lets('delegate', 'step', 'wait', '--help');
+  assert.equal(code, 0);
+  const text = stdout.replace(/\s+/g, ' ');
+  assert.match(text, /0 a step has ended, and stdout names it/);
+  assert.match(text, /2 usage error/);
+  assert.match(text, /6 none of the steps ended within --timeout-minutes/);
+  assert.match(text, /the step's report is in the report file lets delegate step start was given/);
+});
+
+test('step start without --report-file is a usage error that names it, and starts nothing', async () => {
+  const r = repo();
+  const at = START.indexOf('--report-file');
+  const { code, stdout, stderr } = await letsIn(r, ...START.slice(0, at), ...START.slice(at + 2));
+  assert.equal(code, 2);
+  assert.equal(stdout, '');
+  assert.match(stderr, /--report-file/);
+  assert.throws(() => readFileSync(join(r.cwd, '.workspace/lets-delegate/plan-x.run.json')));
+});
+
+test('with only subagent, step start returns at once, and step wait names the step with exit 3', async () => {
+  const r = repo();
+  const started = await letsIn(r, ...START);
+  assert.equal(started.code, 0, started.stderr);
+  assert.match(started.stdout, /^\{"name":"plan-x","pid":\d+\}\n$/);
+  const waited = await letsIn(r, 'delegate', 'step', 'wait', '--name', 'plan-x', '--timeout-minutes', '1');
+  assert.equal(waited.code, 0, waited.stderr);
+  assert.equal(waited.stdout, '{"name":"plan-x","exit":3}\n');
+  assert.equal(readFileSync(join(r.cwd, 'out/r.json'), 'utf8'), '');
+  assert.match(readFileSync(join(r.cwd, 'out/m.txt'), 'utf8'), /\.workspace\/lets-delegate\/plan-x\.prompt\.md/);
+  assert.equal(readFileSync(join(r.cwd, '.workspace/lets-delegate/plan-x.prompt.md'), 'utf8'), 'PROMPT');
+});
