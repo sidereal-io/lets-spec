@@ -4899,3 +4899,16 @@ readme_step_returns() {
   done
   ! grep -qF 'git worktree remove --force' <<<"$part" || { echo "Run the epic forces the removal"; false; }
 }
+
+@test "parallel: the epic run relays one child's report at a time, while the others run" {
+  local section phrase
+  section="$(skill_section lets-go "Relay a story run's questions" | sed 's/ \\ / /g')"
+  for phrase in 'one report at a time, in the order `lets delegate step wait` names the children' \
+    'The other children keep running' 'put `#<i>: ` before it, such as `#286: Which schema?`' \
+    'without the `#<i>: ` before them' \
+    'lets delegate step start --for story --name <name>-story --checkout <path> --prompt-file .workspace/lets-go/<name>-story-prompt.md --report-file .workspace/lets-go/<name>-story-report.json --meta-file .workspace/lets-go/<name>-story-meta.txt --answers-file .workspace/lets-go/<name>-story-answers.yaml' \
+    'go back to [Wait for the wave](#wait-for-the-wave)' 'keeps its `running` line'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Relay a story run's questions does not say: $phrase"; false; }
+  done
+  ! grep -qF 'lets delegate step run --for story' "$(epic_run_file)" || { echo "references/epic-run.md still runs a story run in the foreground"; false; }
+}

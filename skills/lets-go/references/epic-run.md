@@ -585,12 +585,23 @@ in this checkout.
 
 ## Relay a story run's questions
 
-[Start the story run](#start-the-story-run) runs this part when the
-child's report is `needs-input`. The child answers no question itself.
-This session applies `<mode>` to each one, and starts the child again
-with the answers. The child gives them to the step that asked.
+[Wait for the wave](#wait-for-the-wave) runs this part when a child's
+report is `needs-input`. The child answers no question itself. This
+session applies `<mode>` to each one, and starts the child again with
+the answers. The child gives them to the step that asked. `<mode>` is
+the story's, as its story prompt,
+`.workspace/lets-go/<name>-story-prompt.md`, says.
 
-1. Go through the report's questions, in its order:
+Relay one report at a time, in the order `lets delegate step wait`
+names the children: finish this report, and start its child again,
+before you act on another child's report. The other children keep
+running meanwhile, and a child that ends meanwhile is named by a later
+wait.
+
+1. Go through the report's questions, in its order. Several stories can
+   ask at once, so each time you ask the user a question, or say how
+   you answered it, put `#<i>: ` before it, such as
+   `#286: Which schema?`.
    - **A question whose `ask` is `true`:** the child's step has asked
      for input five times already in this story run. Ask the user that
      question, whatever `<mode>` is, with its `recommendation` as the
@@ -610,15 +621,31 @@ with the answers. The child gives them to the step that asked.
    [Relay the questions](../SKILL.md#relay-the-questions) writes. The
    file holds only the answers to the report the child just gave: the
    child keeps the earlier answers in each step's own answers file.
-3. Run the child again. First ask what can run and rank the options
-   again, as [Start the story run](#start-the-story-run) does. Then run
-   its `lets delegate step run --for story` command, with the same
-   prompt file and
-   `--answers-file .workspace/lets-go/<name>-story-answers.yaml` added.
+   Write the child's questions as the child gave them, without the
+   `#<i>: ` before them.
+3. Start the child again. First ask what can run and rank the options
+   again, as [Start the story run](#start-the-story-run) does. Then
+   start it with the same prompt file and
+   `--answers-file .workspace/lets-go/<name>-story-answers.yaml` added:
+
+   ```bash
+   lets delegate step start --for story --name <name>-story \
+     --checkout <path> \
+     --prompt-file .workspace/lets-go/<name>-story-prompt.md \
+     --report-file .workspace/lets-go/<name>-story-report.json \
+     --meta-file .workspace/lets-go/<name>-story-meta.txt \
+     --answers-file .workspace/lets-go/<name>-story-answers.yaml \
+     --effort high --model <first> --model <second>
+   ```
+
    Write the story prompt only once: do not write it again here.
    Remove neither the story's answers file nor its rounds files: the
-   child counts each step's rounds in its rounds files. Then act on the
-   exit code as [Start the story run](#start-the-story-run) says.
+   child counts each step's rounds in its rounds files. If the command
+   exits non-zero, show the user its stderr, and stop, as
+   [A stop in an epic run](#a-stop-in-an-epic-run) says: the story's
+   reason is its stderr. Otherwise the story keeps its `running` line
+   in the children file. Then go back to
+   [Wait for the wave](#wait-for-the-wave).
 
 ## Read a pull request's base
 
