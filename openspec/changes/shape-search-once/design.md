@@ -62,6 +62,7 @@ Why this signal works:
 - A finished discovery reported `done`, so *Read the report* removed the answers file.
 - Finalize runs only after the user confirmed the Phase 5 story table in an earlier round, so a stop during Finalize always leaves at least one pair.
 - `lets-go` reads only its own file. It does not interpret the answers, so it copies none of `lets-shape`'s rules. `lets-shape` still decides, from the same answers, whether to finish Finalize.
+- It keeps [ADR-017](../../../docs/decisions/ADR-017-lets-go-reads-where-a-run-stands-from-git-and-github.md), which says `lets-go` keeps no state of its own outside `.workspace/`. The answers file is not new state: [ADR-023](../../../docs/decisions/ADR-023-a-step-asks-through-its-report.md) already puts a resumed step's answers there, and `lets-shape` cannot finish Finalize without them. Without the file, the run behaves as it does today: it stops on the dirty maps, or runs the title search. It never skips work that is not done.
 
 Alternatives:
 
