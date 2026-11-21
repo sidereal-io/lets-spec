@@ -276,12 +276,12 @@ set `go.questions`, because there is no Kind yet. After it, the run goes on as
 for an issue number. An idea too large for one issue runs discovery, once you say yes. The
 shape step runs `lets-shape`'s discovery one phase per round, and you
 confirm each phase. Discovery files a parent issue and its stories. The
-run then picks the first ready story, as it picks the next issue, and
-builds it. The discovery map, `openspec/discovery.md`, or each
-product's map under `openspec/discovery/` in a repository with several
-products, is committed on that story's branch, so it reaches the default branch with
-that story's pull request. When no story is ready, the run says why, and
-stops.
+run then goes on as an epic run on the parent, as for an epic's number
+below, and builds every story under it. The discovery map,
+`openspec/discovery.md`, or each product's map under
+`openspec/discovery/` in a repository with several products, is
+committed on the first story the epic run claims, so it reaches the
+default branch with that story's pull request.
 
 An open blocker stops a run until the change's branch exists. Once you
 have stacked the branch by hand, `lets-go` names the open blockers and

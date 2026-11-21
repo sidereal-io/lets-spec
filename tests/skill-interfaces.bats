@@ -870,6 +870,11 @@ review_build_start() {
   skill_says lets-go 'lets backlog ready'
   skill_says lets-go 'lets backlog ready --exclude 149'
   skill_says lets-go '--only'
+  # Only an epic run narrows the pick, so next keeps no rule for a shape report's stories.
+  grep -qF 'An epic run narrows the candidates to the current wave with `--only`' <<<"$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')" ||
+    { echo "Find the source of demand does not leave --only to the epic run"; false; }
+  skill_does_not_say lets-go "a shape report's stories"
+  skill_does_not_say lets-go 'with the same `--only` as the first pick'
   skill_says lets-go 'lets backlog item <i>'
   skill_says lets-go 'lets backlog find <branch>'
   skill_says lets-go "lets backlog find '<idea>'"
@@ -922,17 +927,25 @@ review_build_start() {
 }
 
 @test "Enter the branch goes back to the part that picked after a lost claim" {
-  local line
+  local line part
   line="$(next_line 'Enter the branch')"
-  grep -qF '](#read-the-request)' <<<"$line" && grep -qF '](#pick-the-first-ready-story)' <<<"$line" ||
-    { echo "it said: $line"; false; }
+  grep -qF '[Read the request](#read-the-request) after a lost claim' <<<"$line" || { echo "it said: $line"; false; }
+  ! grep -qF '](#pick-the-first-ready-story)' <<<"$line" || { echo "it still goes back to Pick the first ready story: $line"; false; }
+  part="$(part_section 'Enter the branch')"
+  grep -qF 'Otherwise `next` picked it: count the lost claim.' <<<"$part" ||
+    { echo "the taken case does not say that next picked the issue"; false; }
+  grep -qF 'go back to [Read the request](#read-the-request), which runs `next` again.' <<<"$part" ||
+    { echo "the taken case does not go back to Read the request"; false; }
+  ! grep -qF 'Pick the first ready story' <<<"$part" || { echo "the taken case still names Pick the first ready story"; false; }
 }
 
-@test "Pick the first ready story prints Done shape once after a lost claim" {
-  grep -qF 'when this run has not printed it yet' <<<"$(skill_section lets-go 'The step lines')" ||
+@test "Done shape prints once per run" {
+  local lines
+  lines="$(skill_section lets-go 'The step lines')"
+  grep -qF 'when this run has not printed it yet' <<<"$lines" ||
     { echo "The step lines print Done shape again after a lost claim"; false; }
-  grep -qF '](../SKILL.md#the-step-lines)' <<<"$(part_section 'Pick the first ready story')" ||
-    { echo "Pick the first ready story does not link The step lines"; false; }
+  ! grep -qF 'Pick the first ready story' <<<"$lines" ||
+    { echo "The step lines still name Pick the first ready story as a place that prints Done shape"; false; }
 }
 
 @test "lets-go sends a failed step back to lets-go" {
@@ -1034,7 +1047,10 @@ review_build_start() {
   skill_says lets-go 'holds another idea'
   skill_says lets-go 'epic #<parent>: <title>'
   skill_says lets-go 'story #<story>: <title>'
-  skill_says lets-go 'Picked #<i>: <title>, the first ready story under #<parent>.'
+  # Every shaped parent goes on as an epic run, so no part picks one story under it.
+  skill_does_not_say lets-go 'the first ready story under'
+  ! skill_has_section lets-go 'Pick the first ready story' >/dev/null ||
+    { echo "lets-go still has a heading: Pick the first ready story"; false; }
   skill_says lets-go 'docs: the discovery map from #<parent>'
   skill_says lets-go 'Discovery status: in-progress'
   skill_says lets-go "gh issue list --state open --limit 500 --search '\"Input:\" in:body' --json number,title,body"
@@ -1052,6 +1068,12 @@ review_build_start() {
   # A large idea now runs discovery, so the README must not send it away.
   ! tr -s '[:space:]' ' ' < "$repo/README.md" | grep -qF -- 'An idea too large for one issue stops the run' ||
     { echo "README.md still says a large idea stops the run"; false; }
+  # Discovery's parent goes on as an epic run, which builds every story.
+  skill_does_not_say lets-go 'the first ready story it files'
+  ! tr -s '[:space:]' ' ' < "$repo/README.md" | grep -qF -- 'picks the first ready story' ||
+    { echo "README.md still says a large idea's run picks the first ready story"; false; }
+  tr -s '[:space:]' ' ' < "$repo/README.md" | grep -qF -- 'The run then goes on as an epic run on the parent, as for an epic'"'"'s number below, and builds every story under it.' ||
+    { echo "README.md does not say a large idea's run builds every story"; false; }
 }
 
 @test "lets-go finds an input's discovery after a stop during Finalize" {
@@ -1060,8 +1082,20 @@ review_build_start() {
   # Finalize removes the status line, so lets-go's own answers file is what shows an earlier round.
   for phrase in 'has no status line' '`.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least one pair' \
     '`.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea' \
-    "A kept parent in neither state is not this input's discovery: for example, an open epic whose discovery finished" \
+    "A kept parent in none of these states is not this input's discovery: for example, an open epic whose discovery finished" \
     'When the input is an issue `#<i>` that is itself in that list, keep it too, whatever its `Input:` line names.'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Find the input's discovery does not say: $phrase"; false; }
+  done
+  # An epic filed from an idea or a split issue holds that input's answers, not its own.
+  section="$(procedure_text "Find the input's discovery" | tr -s '[:space:]' ' ')"
+  for phrase in \
+    '**It is the input itself, has no status line, and an earlier shape round of the input its `Input:` line names left answers.**' \
+    'This is the case when the input is an issue `#<i>` kept because it is itself in that list, and its `Input:` line names another input' \
+    'An `Input:` line that holds an issue, as `#` and its number or as its URL, names that issue; any other text names an idea, word for word.' \
+    'Make its `<shape-name>`, as [The shape step'"'"'s name](#the-shape-steps-name) says: `issue-` and that issue'"'"'s number, such as `issue-180`, or `idea-<slug>` for the idea.' \
+    'The epic is this input'"'"'s discovery when `.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least one pair, and, for an idea, `.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea.' \
+    'Read no other file, and run no other query, for this state' \
+    'Return each discovery with its *shape input*, the input whose shape round resumes it: the named input for a discovery found in the third state, and this input for every other one.'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Find the input's discovery does not say: $phrase"; false; }
   done
   # A finished epic can match that way too, so one issue that is not the parent keeps its maps out of the branch.
@@ -1088,7 +1122,10 @@ review_build_start() {
   ! grep -qF 'parent issue that says `Discovery status: in-progress`, and whose' <<<"$shape" ||
     { echo "the dirty-map check still restates the in-progress match"; false; }
   # A run that stops before Claim leaves the maps while the lookup still finds the discovery.
-  stop="$(part_section 'Pick the first ready story')"
+  stop="$(skill_section lets-go "Name the maps' edits")"
+  [ -n "$stop" ] || { echo "references/shape.md has no section Name the maps' edits"; false; }
+  grep -qF 'A run that stops after discovery and before [Claim](../SKILL.md#claim)' <<<"$stop" ||
+    { echo "Name the maps' edits does not hold the stop note"; false; }
   grep -qF "still takes the parent as this input's discovery" <<<"$stop" ||
     { echo "the stop note does not use Find the input's discovery"; false; }
   ! grep -qF 'While the parent still says `Discovery status: in-progress`' <<<"$stop" ||
@@ -1400,7 +1437,7 @@ readme_lets_go() {
 
 # The parts of a lets-go run, in run order. Each is a ## heading of SKILL.md.
 lets_go_parts=('Read the settings' 'Read the request' 'Start from an idea' 'Check the issue' 'Run the shape step'
-  'Pick the first ready story' 'Run the epic' 'Route' 'Enter the branch' 'Set the question mode' 'Walk the step table' 'End of the run')
+  'Run the epic' 'Route' 'Enter the branch' 'Set the question mode' 'Walk the step table' 'End of the run')
 
 # heading_anchor <heading>: the anchor GitHub makes from a heading's text.
 heading_anchor() {
@@ -1614,7 +1651,7 @@ skill_part() {
 # its place in the run, and its Next: line, in SKILL.md.
 @test "each part whose steps moved links them in references/shape.md" {
   local part text
-  for part in 'Start from an idea' 'Run the shape step' 'Pick the first ready story'; do
+  for part in 'Start from an idea' 'Run the shape step'; do
     text="$(skill_part "$part")"
     grep -qF "](references/shape.md#$(heading_anchor "$part"))" <<<"$text" ||
       { echo "$part does not link its steps in references/shape.md"; false; }
@@ -1875,7 +1912,7 @@ overview_row() {
 }
 
 @test "the overview's Next for Enter the branch names both ways back after a lost claim" {
-  overview_row 'Enter the branch' | grep -qF '[Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim' ||
+  overview_row 'Enter the branch' | grep -qF '[Read the request](#read-the-request) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run' ||
     { echo "it said: $(overview_row 'Enter the branch')"; false; }
 }
 
@@ -2111,8 +2148,7 @@ procedure_stops() {
   declare -A results=(
     ['Read the request']='picked nothing-ready'
     ['Start from an idea']='matches no-match'
-    ['Check the issue']='found unresolved'
-    ['Pick the first ready story']='picked nothing-ready')
+    ['Check the issue']='found unresolved')
   for part in "${!results[@]}"; do
     for result in ${results[$part]}; do
       grep -qF -- "**\`$result\`:**" <<<"$(part_section "$part")" || { echo "$part does not act on: $result"; false; }
@@ -2425,7 +2461,7 @@ epic_run_file() {
 @test "an epic run shapes an empty epic first" {
   local check phrase
   check="$(part_section 'Check the issue')"
-  [ "$(grep -oF 'name the maps'"'"' edits, as [Pick the first ready story](references/shape.md#pick-the-first-ready-story) says' <<<"$check" | wc -l)" -ge 2 ] ||
+  [ "$(grep -oF 'name the maps'"'"' edits, as [Name the maps'"'"' edits](references/shape.md#name-the-maps-edits) says' <<<"$check" | wc -l)" -ge 2 ] ||
     { echo "Check the issue does not name the maps' edits on both stops after a shape step"; false; }
   for phrase in \
     '**An empty epic:** `subIssues` and `closedSubIssues` are both empty.' \
@@ -2457,11 +2493,68 @@ epic_run_file() {
   for phrase in \
     '**An epic with a stopped discovery:** run [Find the input'"'"'s discovery](references/shape.md#find-the-inputs-discovery) for `#<i>`.' \
     'say that a discovery of `#<i>` is in progress at each `#<parent>` it found' \
-    'When no shape step has run in this run, [run the shape step](#run-the-shape-step) for `#<i>`: its round resumes the discovery, or finishes its Finalize.' \
-    'When one has, say to run the `lets-shape` skill on `#<i>`, and stop.' \
+    'When no shape step has run in this run, [run the shape step](#run-the-shape-step) for the *shape input* that the lookup returned with the discovery: its round resumes the discovery, or finishes its Finalize.' \
+    'When a shape step has run in this run, say to run the `lets-shape` skill on `#<i>`, and stop.' \
     'When it finds none, go on to the next item.'; do
     grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
   done
+}
+
+@test "an epic run finishes a stopped Finalize through the input its Input line names" {
+  local check shape phrase
+  check="$(part_section 'Check the issue')"
+  for phrase in \
+    'The shape input is `#<i>`, or the idea or the issue that the epic'"'"'s `Input:` line names, when the lookup found that input'"'"'s answers.' \
+    'When the lookup returns several discoveries with different shape inputs, run the shape step for `#<i>`: `lets-shape` asks which one.'; do
+    grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+  shape="$(part_section 'Run the shape step')"
+  for phrase in \
+    'For an epic whose stopped discovery [Check the issue](../SKILL.md#check-the-issue) found, it is the shape input that [Find the input'"'"'s discovery](#find-the-inputs-discovery) returned' \
+    '**An idea:** run the step as for an idea, with the idea from the `Input:` line as `<idea>`.' \
+    'That sets its `<shape-name>`, the idea form of the prompt in [Write the prompt](step-prompt.md#write-the-prompt), and the check below that the answers file is this idea'"'"'s.' \
+    '**Another issue:** run the step as for an issue, with that issue in place of `#<i>`' \
+    'its `<shape-name>` is `issue-` and that issue'"'"'s number' \
+    'A `done` report names the epic and its stories, so the run goes back to [Check the issue](../SKILL.md#check-the-issue) with the epic.' \
+    'The URL is the one the `Input:` line holds, or else the epic'"'"'s `<issue-url>` with that issue'"'"'s number in place of the epic'"'"'s.'; do
+    grep -qF -- "$phrase" <<<"$shape" || { echo "Run the shape step does not say: $phrase"; false; }
+  done
+  grep -qF -- 'For the issue that an epic'"'"'s `Input:` line names, as [Run the shape step](#run-the-shape-step) says, use that issue'"'"'s number in place of `<i>`.' \
+    <<<"$(skill_section lets-go "The shape step's name")" ||
+    { echo "The shape step's name does not name the issue an Input line names"; false; }
+}
+
+@test "an epic's shape round removes the answers of the input its Input line names" {
+  local report phrase
+  # Left behind, those answers make the lookup back in Check the issue find the discovery again.
+  report="$(part_section 'Read the report')"
+  for phrase in \
+    'On `done` or `failed`, when the step ran for an epic `#<i>` whose `Input:` line names another input, remove that input'"'"'s answers file too, under its own `<shape-name>`.' \
+    'For an idea, remove it only when `.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea.' \
+    'On `needs-input`, remove neither file: the next round needs them.'; do
+    grep -qF -- "$phrase" <<<"$report" || { echo "Read the report does not say: $phrase"; false; }
+  done
+  # Without the condition, an agent could delete a needs-input round's answers.
+  ! grep -qF -- 'The epic'"'"'s round finished that input'"'"'s discovery.' <<<"$report" ||
+    { echo "Read the report still says the epic's round finished that input's discovery"; false; }
+  grep -qF -- 'once the step reports `done` or `failed`, removes that input'"'"'s answers file, the one the step used; for an epic whose `Input:` line names another input, that input'"'"'s too;' <<<"$(part_section 'Run the shape step')" ||
+    { echo "Run the shape step does not name the named input's answers file and when it goes"; false; }
+}
+
+@test "a done epic report removes the epic's own answers, whatever input the step ran for" {
+  local report
+  # A stopped lets-go #<parent> round leaves them, and the lookup back in Check the issue would find them.
+  report="$(part_section 'Read the report')"
+  grep -qF -- 'On `done` with an `epic #<parent>` line, also remove `.workspace/lets-go/issue-<parent>-shape-answers.yaml`, whatever input the step ran for.' <<<"$report" ||
+    { echo "Read the report does not remove the epic's own answers file"; false; }
+  grep -qF -- 'on `done` for an epic, the epic'"'"'s own, under `issue-<parent>`.' <<<"$(part_section 'Run the shape step')" ||
+    { echo "Run the shape step does not name the epic's own answers file"; false; }
+}
+
+@test "the lookup takes the answers changed last when an epic is in the second and third states" {
+  # Two rounds of one discovery, under two inputs, can both leave answers.
+  grep -qF -- 'When a parent is in both the second and the third state, take the state whose answers file changed last, and only that one.' <<<"$(part_section "Find the input's discovery")" ||
+    { echo "Find the input's discovery does not settle a parent in both states"; false; }
 }
 
 @test "an epic that became one story finishes its stopped discovery before it builds" {
@@ -2476,10 +2569,18 @@ epic_run_file() {
 }
 
 @test "the shaped epic goes back to Check the issue" {
-  local shape check lines row phrase
+  local shape check lines line row phrase
   shape="$(part_section 'Run the shape step')"
-  grep -qF '**A parent and its stories, when the parent is the run'"'"'s issue `<i>`:** discovery shaped the run'"'"'s epic in place. Go on from the blocker read in [Check the issue](../SKILL.md#check-the-issue) with `<i>`, not to [Pick the first ready story](../SKILL.md#pick-the-first-ready-story).' <<<"$shape" ||
-    { echo "Run the shape step does not send the run's shaped epic back to Check the issue"; false; }
+  grep -qF '**A parent and its stories:** the parent is `<i>`. Go on from the blocker read in [Check the issue](../SKILL.md#check-the-issue) with it. That read finds the parent'"'"'s new open stories, and its `epic` case starts the epic run on them.' <<<"$shape" ||
+    { echo "Run the shape step does not send every shaped parent back to Check the issue"; false; }
+  for phrase in 'when the parent is the run'"'"'s issue' '**Any other parent and its stories:**'; do
+    ! grep -qF -- "$phrase" <<<"$shape" || { echo "Run the shape step still has the case: $phrase"; false; }
+  done
+  # The part's own Next line, in SKILL.md: shape.md's steps follow it in next_line.
+  line="$(awk '/^## Run the shape step$/ { on = 1; next } /^## / { on = 0 } on' "$(lets_go_skill)" |
+    tr -s '[:space:]' ' ' | sed 's/^.*Next: /Next: /; s/ $//')"
+  [ "$line" = 'Next: [Check the issue](#check-the-issue), with the issue or the parent the step shaped.' ] ||
+    { echo "Run the shape step's Next line said: $line"; false; }
   check="$(part_section 'Check the issue')"
   grep -qF 'When a shape step reported `done` in this run, and the run has not printed the `Done shape` line, print it first, as [The step lines](#the-step-lines) says.' <<<"$check" ||
     { echo "the epic case does not print Done shape before Run the epic"; false; }
@@ -2487,8 +2588,8 @@ epic_run_file() {
   grep -qF '[Check the issue](#check-the-issue) prints it, for one issue, or before [Run the epic](#run-the-epic) for the epic it shaped' <<<"$lines" ||
     { echo "The step lines do not name the epic case as a place that prints Done shape"; false; }
   row="$(grep -F '| [Run the shape step](#run-the-shape-step) |' "$(lets_go_skill)")"
-  grep -qF "[Check the issue](#check-the-issue) for one issue, or for a parent that is the run's issue; [Pick the first ready story](#pick-the-first-ready-story) for any other parent and its stories" <<<"$row" ||
-    { echo "the part table's Next for Run the shape step does not name the route back"; false; }
+  [ "$(awk -F ' \\| ' '{ print $4 }' <<<"$row")" = '[Check the issue](#check-the-issue)' ] ||
+    { echo "the part table's Next for Run the shape step does not name only Check the issue: $row"; false; }
   row="$(grep -F '| [Check the issue](#check-the-issue) |' "$(lets_go_skill)")"
   for phrase in \
     '[Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run' \
@@ -3980,7 +4081,8 @@ map_epic_run() {
     'or a story it claimed stopped before its map commit' \
     'Run the status command of [Commit the map in an epic run](shape.md#commit-the-map-in-an-epic-run) in the epic run'"'"'s own checkout.' \
     'name each one, and say that they hold the discovery'"'"'s edits, uncommitted on the default branch' \
-    'Say to commit or discard them before the next run'; do
+    'Say to commit or discard them before the next run' \
+    'This is what [Name the maps'"'"' edits](shape.md#name-the-maps-edits) says'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Report the maps' edits does not say: $phrase"; false; }
   done
   [ "$(grep -cF "](#report-the-maps-edits)" "$(epic_run_file)")" -ge 2 ] ||
@@ -5429,7 +5531,7 @@ readme_step_returns() {
 
 # BEGIN shape-step (#264): lets-shape owns the shape step's rules.
 @test "shape-step: the shape report lists the stories in the order they were created" {
-  tr '\n' ' ' <"$(step_prompt_file)" | grep -qF 'with a `story #<story>: <title>` line for each story, in the order you created them.' ||
+  tr '\n' ' ' <"$(step_prompt_file)" | grep -qF 'with a `story #<story>: <title>` line for each story, in the order discovery created them.' ||
     { echo "the step prompt does not order the story lines"; false; }
 }
 

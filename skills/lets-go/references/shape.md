@@ -21,7 +21,7 @@ input is an idea, or an issue `#<i>`.
    `#<i>` that is itself in that list, keep it too, whatever its
    `Input:` line names. An epic that discovery shaped in place names
    itself, and an epic that an idea's discovery filed names the idea.
-3. A kept parent is this input's discovery in either of two states:
+3. A kept parent is this input's discovery in any of three states:
    - **It says `Discovery status: in-progress`.** The discovery stopped
      between rounds, or before [Claim](../SKILL.md#claim).
    - **It has no status line, and an earlier shape round of this input
@@ -33,11 +33,40 @@ input is an idea, or an issue `#<i>`.
      status line before it asks its own questions, and
      [Read the report](../SKILL.md#read-the-report) removes the answers
      file only when shape reports `done` or `failed`.
+   - **It is the input itself, has no status line, and an earlier shape
+     round of the input its `Input:` line names left answers.** This is
+     the case when the input is an issue `#<i>` kept because it is
+     itself in that list, and its `Input:` line names another input: an
+     epic that discovery filed from an idea, or from another issue that
+     it split. Stopping during Finalize leaves the answers under that
+     named input's `<shape-name>`, not under `issue-<i>`. Take the
+     named input. An `Input:` line that holds an issue, as `#` and its
+     number or as its URL, names that issue; any other text names an
+     idea, word for word. Make its `<shape-name>`, as
+     [The shape step's name](#the-shape-steps-name) says: `issue-` and
+     that issue's number, such as `issue-180`, or `idea-<slug>` for the
+     idea. The epic is this input's discovery when
+     `.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least
+     one pair, and, for an idea,
+     `.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea.
+     Read no other file, and run no other query, for this state: the
+     parent list already holds the `Input:` line. The answers file
+     exists only on the machine where that round ran, so on another
+     machine this state finds nothing.
 
-   A kept parent in neither state is not this input's discovery: for
-   example, an open epic whose discovery finished.
+   When a parent is in both the second and the third state, take the
+   state whose answers file changed last, and only that one. Rounds of
+   one discovery under two inputs can each leave answers, and the round
+   that stopped last is the one to resume: its answers hold what
+   Finalize needs.
+
+   A kept parent in none of these states is not this input's discovery:
+   for example, an open epic whose discovery finished.
 
 Return to the part that ran it, with each discovery it found, or none.
+Return each discovery with its *shape input*, the input whose shape
+round resumes it: the named input for a discovery found in the third
+state, and this input for every other one.
 
 ## Start from an idea
 
@@ -72,6 +101,30 @@ discovery instead, which files a parent issue and its stories. It runs
 on the default branch, before any branch or change exists, and at most
 once per run. [Check the issue](../SKILL.md#check-the-issue) decides
 when it runs.
+
+The step's input is the idea, or the issue `#<i>`. For an epic whose
+stopped discovery [Check the issue](../SKILL.md#check-the-issue) found,
+it is the shape input that
+[Find the input's discovery](#find-the-inputs-discovery) returned,
+which can be the idea or the issue that the epic's `Input:` line names:
+
+- **An idea:** run the step as for an idea, with the idea from the
+  `Input:` line as `<idea>`. That sets its `<shape-name>`, the idea form
+  of the prompt in [Write the prompt](step-prompt.md#write-the-prompt),
+  and the check below that the answers file is this idea's.
+- **Another issue:** run the step as for an issue, with that issue in
+  place of `#<i>`: its `<shape-name>` is `issue-` and that issue's
+  number, and the issue form of the prompt names that issue's number
+  and URL. The URL is the one the `Input:` line holds, or else the
+  epic's `<issue-url>` with that issue's number in place of the epic's.
+
+[Read the report](../SKILL.md#read-the-report) then, once the step
+reports `done` or `failed`, removes that input's answers file, the one
+the step used; for an epic whose `Input:` line names another input,
+that input's too; and, on `done` for an epic, the epic's own, under
+`issue-<parent>`. A `done` report names the epic and its stories, so
+the run goes back to [Check the issue](../SKILL.md#check-the-issue) with
+the epic.
 
 1. Check the discovery maps:
 
@@ -122,53 +175,12 @@ when it runs.
    - **One issue:** that issue is `<i>`. Go on from the blocker read in
      [Check the issue](../SKILL.md#check-the-issue) with it, as for an
      issue number.
-   - **A parent and its stories, when the parent is the run's issue
-     `<i>`:** discovery shaped the run's epic in place. Go on from the
+   - **A parent and its stories:** the parent is `<i>`. Go on from the
      blocker read in [Check the issue](../SKILL.md#check-the-issue) with
-     `<i>`, not to
-     [Pick the first ready story](../SKILL.md#pick-the-first-ready-story).
-     That read finds the epic's new stories, and its `epic` case starts
-     the epic run on them.
-   - **Any other parent and its stories:**
-     [pick the first ready story](../SKILL.md#pick-the-first-ready-story).
+     it. That read finds the parent's new open stories, and its `epic`
+     case starts the epic run on them.
 
-## Pick the first ready story
-
-Discovery filed a parent issue, `#<parent>`, and its stories. Build one
-of them in this run.
-
-1. Run the third case, `next`, of
-   [Find the source of demand](../SKILL.md#find-the-source-of-demand),
-   with one narrowing: the candidates are the stories the report named,
-   and no other issue. Pass their keys to `lets backlog ready` with
-   `--only`, as the section says. Rank as it does: Must, then Should,
-   then Could, then the oldest issue first. Run
-   [Check the prerequisite](glossary-handoff.md#check-the-prerequisite)
-   and [Confirm the packet](../SKILL.md#confirm-the-packet) on each
-   candidate, in rank order. A ready story is one that `next` would
-   take.
-2. On its result:
-   - **`picked`:** print:
-
-     ```text
-     Picked #<i>: <title>, the first ready story under #<parent>.
-     ```
-
-     That story is `<i>`. Go on from the blocker read in
-     [Check the issue](../SKILL.md#check-the-issue) with it, as for an
-     issue number.
-   - **`nothing-ready`:** print the `Done shape` line, as
-     [The step lines](../SKILL.md#the-step-lines) says. Say
-     that no story under `#<parent>` is
-     ready. Name each story, and why it was left out, as the result
-     carries it: for example, its blocker, its assignee, an unresolved
-     prerequisite, or a packet that is not complete. For a story that
-     `lets backlog ready` did not list, read why with
-     `lets backlog item <story>`: the `assignees` it names, an open
-     issue in its `blockedBy`, or its `status`, `kind` or `priority`.
-     On an error, act as [Backlog errors](../SKILL.md#backlog-errors)
-     says. Say to run `lets-go` with a story's number once it is ready.
-     Then stop. Claim nothing, and create no branch.
+### Name the maps' edits
 
 A run that stops after discovery and before [Claim](../SKILL.md#claim),
 for any reason, leaves the maps' edits on the default branch. When the
@@ -296,7 +308,10 @@ Return to the part that ran it.
 `<name>` is the change's name. Shape runs before there is one, so it
 has a name of its own, `<shape-name>`, from what it shapes:
 
-- **An issue:** `issue-<i>`, such as `issue-180`.
+- **An issue:** `issue-<i>`, such as `issue-180`. For the issue that
+  an epic's `Input:` line names, as
+  [Run the shape step](#run-the-shape-step) says, use that issue's
+  number in place of `<i>`.
 - **An idea:** `idea-<slug>`. To make `<slug>`, split the idea on white
   space. Lower-case each word, and keep only its letters and digits.
   Drop a word left empty. Join the first five words with hyphens, or all

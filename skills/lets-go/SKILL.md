@@ -12,8 +12,9 @@ this session. Then each [step](references/terms.md#step) runs in a
 fresh session: shape when the issue needs it, then plan, review plan,
 build and review build. `lets-minimal` skips review plan. An idea too
 large for one issue runs discovery in the shape step, and the run builds
-the first ready story it files. A step never asks the user: it ends with
-a [step report](references/terms.md#step-report). This session answers
+every story discovery files, as an epic run on the parent. A step never
+asks the user: it ends with a
+[step report](references/terms.md#step-report). This session answers
 the step's questions or asks the user, as the
 [question mode](references/terms.md#question-mode) says.
 "You" is the agent that runs this skill, and "the user" is the person
@@ -54,8 +55,7 @@ Start at [Read the settings](#read-the-settings). The table below shows
 the route through the run; each linked part gives its detailed actions.
 A run goes through these parts, in this order.
 [Start from an idea](#start-from-an-idea),
-[Run the shape step](#run-the-shape-step),
-[Pick the first ready story](#pick-the-first-ready-story) and
+[Run the shape step](#run-the-shape-step) and
 [Run the epic](#run-the-epic) run only when the request or the
 [packet](references/terms.md#packet) needs them.
 [Run the epic](#run-the-epic) runs only in an epic run, when the run's
@@ -80,11 +80,10 @@ procedure ranks it.
 | [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea; [Take up the story run](references/story-run.md#take-up-the-story-run) in a story run's child | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run; [Run the epic](#run-the-epic) for any other epic on the default branch, after [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run; or the epic is a finished epic, or an epic with no stories after shaping, or its discovery stopped when shape cannot run |
-| [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue, or for a parent that is the run's issue; [Pick the first ready story](#pick-the-first-ready-story) for any other parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
-| [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
+| [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, waits for the children of a wave, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | `lets delegate step wait` fails, so the epic run cannot wait for its children |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema. In an epic run, it checks the branch out in the story's own worktree instead | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run, or when a stop ends a story's run | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time outside an epic run; the import returns `import-failed`; the epic-run map commit returns `commit-failed` or `restore-failed`; or the branch has diverged |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema. In an epic run, it checks the branch out in the story's own worktree instead | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run, or when a stop ends a story's run | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time outside an epic run; the import returns `import-failed`; the epic-run map commit returns `commit-failed` or `restore-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table); [Start the story run](references/epic-run.md#start-the-story-run) in an epic run | Never |
 | [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run); [Run the epic](#run-the-epic) in an epic run, also when a stop ends a story's run; [End the story run](references/story-run.md#end-the-story-run) in a story run's child, also when the walk stops | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL, or each story's line in an epic run | this session | Nothing: the run is over | Always |
@@ -113,7 +112,7 @@ reads as it always has.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
-| `<i>` | The run's issue, as its key: the key the user named, the issue `next`, [Pick the first ready story](#pick-the-first-ready-story) or [Run the epic](#run-the-epic) picked, or the issue a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
+| `<i>` | The run's issue, as its key: the key the user named, the issue `next` or [Run the epic](#run-the-epic) picked, or the issue or parent a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
 | `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the `url` that `lets backlog item <i>` prints |
 | `<parent>` | A parent issue, as its key: an epic that discovery filed, a discovery in progress, or the epic of an epic run | The shape report's `epic` line, [Find the input's discovery](references/shape.md#find-the-inputs-discovery), or, for an epic run, [Check the issue](#check-the-issue) before [Run the epic](#run-the-epic) |
 | `<story>` | One story, as its key: a story that a shape step's report names, or a story of an epic run | Each `story` line of the shape report, or [Run the epic](#run-the-epic), for the story it picks or settles |
@@ -147,7 +146,7 @@ reads as it always has.
 | `<shape-name>` | The shape step's name: `issue-<i>` or `idea-<slug>` | [The shape step's name](references/shape.md#the-shape-steps-name) |
 | `<slug>` | The first five words of the idea, as [The shape step's name](references/shape.md#the-shape-steps-name) makes them | [The shape step's name](references/shape.md#the-shape-steps-name) |
 | `<claim>` | The unique token of this session's claim | [Claim](#claim), from the command's `claim` field |
-| `<idea>` | The idea, in the user's words | [Read the request](#read-the-request) |
+| `<idea>` | The idea, in the user's words | [Read the request](#read-the-request), or, for an epic's stopped discovery, the epic's `Input:` line in [Run the shape step](#run-the-shape-step) |
 | `<word>` | The one word left of the request, before `lets backlog key` says whether it names an issue | [Read the request](#read-the-request) |
 | `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs, or `shape` in [Run the shape step](#run-the-shape-step) |
 | `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
@@ -459,7 +458,7 @@ says.
         `#<i>` has no stories after shaping, say to run the `lets-shape`
         skill on `#<i>`, and stop. Before you stop,
         name the maps' edits, as
-        [Pick the first ready story](references/shape.md#pick-the-first-ready-story)
+        [Name the maps' edits](references/shape.md#name-the-maps-edits)
         says for a run that stops after discovery and before
         [Claim](#claim).
      2. **A finished epic:** `subIssues` is empty, and
@@ -478,11 +477,18 @@ says.
         filed some stories, so the epic is only half shaped. When it
         finds one or more, say that a discovery of `#<i>` is in progress
         at each `#<parent>` it found. When no shape step has run in this
-        run, [run the shape step](#run-the-shape-step) for `#<i>`: its
-        round resumes the discovery, or finishes its Finalize. When one
-        has, say to run the `lets-shape` skill on `#<i>`, and stop.
-        Before you stop, name the maps' edits, as
-        [Pick the first ready story](references/shape.md#pick-the-first-ready-story)
+        run, [run the shape step](#run-the-shape-step) for the *shape
+        input* that the lookup returned with the discovery: its round
+        resumes the discovery, or finishes its Finalize.
+        The shape input is `#<i>`, or the idea or the issue that the
+        epic's `Input:` line names, when the lookup found that input's
+        answers. When the lookup returns several discoveries with
+        different shape inputs, run the shape step for `#<i>`:
+        `lets-shape` asks which one.
+        When a shape step has run in this run, say to run the
+        `lets-shape` skill on `#<i>`, and stop. Before you stop, name
+        the maps' edits, as
+        [Name the maps' edits](references/shape.md#name-the-maps-edits)
         says for a run that stops after discovery and before
         [Claim](#claim).
         When it finds none, go on to the next item.
@@ -510,17 +516,8 @@ did; otherwise [Route](#route).
 Follow its steps in
 [the shape file](references/shape.md#run-the-shape-step).
 
-Next: [Check the issue](#check-the-issue) when shape shaped one issue,
-or shaped the run's epic in place;
-[Pick the first ready story](#pick-the-first-ready-story) when it filed
-any other parent and its stories.
-
-## Pick the first ready story
-
-Follow its steps in
-[the shape file](references/shape.md#pick-the-first-ready-story).
-
-Next: [Check the issue](#check-the-issue), with the story that is ready.
+Next: [Check the issue](#check-the-issue), with the issue or the parent
+the step shaped.
 
 ## Run the epic
 
@@ -609,17 +606,14 @@ says.
      [Settle a story](references/epic-run.md#settle-a-story) says.
      Count no lost claim, and go back to [Run the epic](#run-the-epic),
      which picks again. Otherwise, when the user named `<i>` or
-     confirmed it, say who has it, and stop. Otherwise `next` or
-     [Pick the first ready story](#pick-the-first-ready-story) picked
-     it: count the lost claim. After the third lost claim in this run,
+     confirmed it, say who has it, and stop. Otherwise `next` picked it:
+     count the lost claim. After the third lost claim in this run,
      say that other sessions keep taking the picked issues, and to run
      `lets-go` again. Stop, claiming nothing. This stop applies outside
      an epic run only: an epic run's stories are a fixed set, so it
      always ends. Before that, go back to
-     the part that picked: [Read the request](#read-the-request) for
-     `next`, or
-     [Pick the first ready story](#pick-the-first-ready-story). Keep the
-     lines printed for the lost issue.
+     [Read the request](#read-the-request), which runs `next` again.
+     Keep the lines printed for the lost issue.
    - **`unresolved`:** report the owner or the definitions it carries,
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
@@ -684,9 +678,8 @@ says.
    run, read these files under `<path>`.
 
 Next: [Set the question mode](#set-the-question-mode);
-[Read the request](#read-the-request) or
-[Pick the first ready story](#pick-the-first-ready-story) after a lost
-claim; in an epic run, [Run the epic](#run-the-epic) after a lost claim.
+[Read the request](#read-the-request) after a lost claim; in an epic
+run, [Run the epic](#run-the-epic) after a lost claim.
 
 ### The story's worktree
 
@@ -990,13 +983,12 @@ Take the first case that applies:
    Should or Could. Nobody is assigned to it, and no open issue blocks
    it. A Wont is never a candidate. The `issues` it prints are the
    candidates, ranked Must, then Should, then Could, then the oldest
-   issue first. When the run picks among a shape report's stories,
-   pass their keys with `--only`, such as
-   `lets backlog ready --only 191,192,193`. After a lost claim, leave
-   out every issue lost in this run: each one for which [Claim](#claim)
-   returned `taken`. Pass their keys with `--exclude`, such as
-   `lets backlog ready --exclude 149`, with the same `--only` as the
-   first pick.
+   issue first. An epic run narrows the candidates to the current
+   wave with `--only`, as *Pick the next story* in
+   [Run the epic](#run-the-epic) says. After a lost claim outside an
+   epic run, leave out every issue lost in this run: each one for which
+   [Claim](#claim) returned `taken`. Pass their keys with `--exclude`,
+   such as `lets backlog ready --exclude 149`.
 
    Check each candidate in rank order, with its key as `<i>` while
    you check it. Run
@@ -1270,14 +1262,12 @@ Shape's line prints at most once for an issue. Print `Done shape` after
 a shape step reported `done`, once per run, when this run has not
 printed it yet: [Check the issue](#check-the-issue) prints it, for
 one issue, or before [Run the epic](#run-the-epic) for the epic it
-shaped, or
-[Pick the first ready story](#pick-the-first-ready-story) when no story
-is ready, or [Run the shape step](#run-the-shape-step) when it stops on
+shaped, or [Run the shape step](#run-the-shape-step) when it stops on
 the discovery maps' edits. Print `Skipped shape` once for each issue
 whose packet [Check the issue](#check-the-issue) finds complete, and
 only when no
-shape step ran in this run. So a story picked after a lost claim in a
-discovery run prints neither.
+shape step ran in this run. So a story that an epic run picks after
+its shape step prints neither, even after a lost claim.
 
 ### The change's name
 
@@ -1363,6 +1353,23 @@ Once shape reports `done` or `failed`, remove
 `.workspace/lets-go/<shape-name>-shape-answers.yaml`. Nothing resumes a
 finished shape. A later idea, or a second shape of the same issue, must
 start with no answers.
+
+On `done` or `failed`, when the step ran for an epic `#<i>` whose
+`Input:` line names another input, remove that input's answers file
+too, under its own `<shape-name>`. For an idea, remove it only when
+`.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea. A
+stopped round of that input leaves its answers, and
+[Find the input's discovery](references/shape.md#find-the-inputs-discovery)
+would find them when the run goes back to
+[Check the issue](#check-the-issue), and stop the run. On
+`needs-input`, remove neither file: the next round needs them.
+
+On `done` with an `epic #<parent>` line, also remove
+`.workspace/lets-go/issue-<parent>-shape-answers.yaml`, whatever input
+the step ran for. The discovery of `#<parent>` has finished, but a
+stopped round of `lets-go #<parent>` may have left answers there, and
+the lookup back in [Check the issue](#check-the-issue) would find them
+and stop the run.
 
 - **`done`**: after shape, go on as
   [Run the shape step](#run-the-shape-step) says. After any other step,

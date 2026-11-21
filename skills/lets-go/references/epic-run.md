@@ -517,7 +517,7 @@ in the epic run's own checkout. When it lists a path, name each one,
 and say that they hold the discovery's edits, uncommitted on the
 default branch. Say to commit or discard them before the next run,
 because the next run stops on them. This is what
-[Pick the first ready story](shape.md#pick-the-first-ready-story) says
+[Name the maps' edits](shape.md#name-the-maps-edits) says
 for a run that stops after discovery and before
 [Claim](../SKILL.md#claim): the discovery has finished, so no later run
 resumes it.
