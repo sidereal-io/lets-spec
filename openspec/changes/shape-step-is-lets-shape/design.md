@@ -93,7 +93,9 @@ Item 1 runs one query for both resume cases:
 gh issue list --state open --limit 500 --search '"Input:" in:body' --json number,title,body
 ```
 
-Keep each issue whose `Input:` line names this input. The parent's
+Keep each issue whose `Input:` line names this input, and the named
+issue itself when it is in that list, so `lets-shape #<parent>` resumes
+the parent it names. The parent's
 status line then picks the case: in-progress goes to *Resume mode*; no
 status line, with the story table confirmed in the answers, goes to
 *Phase 6: Finalize*. Drop a parent in neither state, such as an open
@@ -142,8 +144,10 @@ started.
 ### 3. *Resume mode* settles confirmed phases
 
 *Resume mode* step 2 gains one rule: when the answers confirmed phases
-of this parent, skip the restatement's confirmation, and go to the
-recorded next phase. Step 3's rule against re-asking confirmed sections
+of this parent, or confirmed the restatement, skip the restatement's
+confirmation, and go to the recorded next phase. Otherwise, including
+answers that settle only other questions, it asks for that
+confirmation as before. Step 3's rule against re-asking confirmed sections
 already covers the rest. Finalize needs no change of its own:
 *Locate the discovery* item 1 sends the round there, and Finalize's
 questions come after its status line removal, so the answers settle

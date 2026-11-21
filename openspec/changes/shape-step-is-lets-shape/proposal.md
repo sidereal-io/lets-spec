@@ -23,11 +23,11 @@ can follow the same pattern.
   `lets-go` alone knows (D1, D4).
 - `lets-shape`'s *Locate the discovery* picks its mode in a new order
   (D2):
-  1. An open parent whose `Input:` line names this input: *Resume mode*
-     if it is in progress, or finish Finalize if it has no status line
+  1. An open parent that is this input, or whose `Input:` line names
+     it: *Resume mode* if it is in progress, or finish Finalize if it has no status line
      and the `## Answers` section confirmed its Phase 5 story table.
-  2. The `## Answers` section says yes to the discovery question:
-     discovery from Ingest.
+  2. The `## Answers` section already answers the discovery question:
+     discovery from Ingest on yes, and a stop on anything else.
   3. An input that plainly holds a large idea: the discovery question,
      at once, before any interview (D11).
   4. Any other idea or issue: *Shape one issue*, where sizing decides.
