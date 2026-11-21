@@ -43,7 +43,10 @@ Changes are created later, one at a time, by `lets-go`.
 vision file, a GitHub issue, pasted text, or just conversation. Read it.
 Never create, edit or restate it in a file. The run records what it decides
 in its parent issue: the confirmed scope, the priorities and the Won't
-calls.
+calls. The one exception is an empty epic: an epic with no sub-issues,
+open or closed. It is its own parent, so Ingest rewrites its body, and
+keeps the old body word for word in `## Original description`, as
+[Phase 1: Ingest](#phase-1-ingest) says.
 
 **This is a stance with a light structure.** The phases below give the
 conversation a shape. They are not a script. Revisit an earlier phase when
@@ -484,6 +487,14 @@ file is missing, so a resumed run always finds it.
 Title it `Epic: <capability>`, create it with `gh issue create --title "Epic: <capability>" --body-file <file> --project "<project title>"`, then
 set its Kind to `Epic` with `item-edit`. Phase 5 may turn it into a single
 story.
+
+When the input is an empty epic, as
+[Locate the discovery](#locate-the-discovery) found, the epic is the
+parent. Write the parent template into the epic's own body with
+`gh issue edit <epic> --body-file <file>`, once the user confirms the
+text. Create no issue, keep the title, and set no Kind: the epic has
+one. The `Input:` line is `Input: #<epic>`, naming the epic itself. End the body with `## Original description`, holding the epic's old body word for word, so the input loses none of its text. When the old body was empty, leave the section out. **Scope** still restates the input in your
+own words. Every later phase treats the epic as it treats any parent.
 
 When the input is an issue, fetch its thread again, even when the first
 fetch found nothing to ask about. Ask about each comment that is new or

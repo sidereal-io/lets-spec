@@ -5120,6 +5120,29 @@ readme_step_returns() {
     { echo "the path list is not in order: $items"; false; }
 }
 
+@test "shape-step: lets-shape writes an empty epic's parent into the epic" {
+  local ingest stance template
+  ingest="$(skill_section lets-shape 'Phase 1: Ingest')"
+  grep -qF 'gh issue edit <epic> --body-file <file>' <<<"$ingest" ||
+    { echo "Ingest does not write the parent into the empty epic"; false; }
+  grep -qF 'Create no issue, keep the title, and set no Kind' <<<"$ingest" ||
+    { echo "Ingest files a second parent, retitles the epic or sets its Kind"; false; }
+  grep -qF 'The `Input:` line is `Input: #<epic>`' <<<"$ingest" ||
+    { echo "Ingest does not name the epic in its own Input line"; false; }
+  grep -qF 'End the body with `## Original description`, holding the epic'"'"'s old body word for word' <<<"$ingest" ||
+    { echo "Ingest does not keep the epic's old body"; false; }
+  grep -qF 'When the old body was empty, leave the section out.' <<<"$ingest" ||
+    { echo "Ingest writes an empty Original description"; false; }
+  stance="$(sed -n '/^\*\*The input is read-only\.\*\*/,/^$/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
+  grep -qF 'The one exception is an empty epic' <<<"$stance" ||
+    { echo "the read-only stance does not name the empty epic"; false; }
+  template="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-shape/templates/issue-template.md")"
+  grep -qF '## Original description' <<<"$template" ||
+    { echo "the parent template does not show the Original description section"; false; }
+  grep -qF 'only when the parent is an empty epic' <<<"$template" ||
+    { echo "the template does not say when Original description appears"; false; }
+}
+
 @test "shape-step: lets-shape asks about discovery, and runs it only on yes" {
   local section shape
   section="$(skill_section lets-shape 'Ask about discovery')"
