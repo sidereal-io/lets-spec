@@ -425,9 +425,16 @@ says.
    - **`unresolved`:** report the unresolved owner or checkpoint it
      carries, and stop, even on a stacked branch.
 5. Run [Confirm the packet](#confirm-the-packet). On its result:
-   - **`complete`:** go on to the shape line, below. For a Story with a
-     parent, the result carries the parent's **Shared decisions**:
-     [Route](#route) needs them.
+   - **`complete`:** check one case first. When the body has an
+     `Input:` line that names `#<i>` itself, the issue is an epic that
+     discovery shaped in place into this one story. That discovery may
+     have stopped before it finished: run
+     [Find the input's discovery](references/shape.md#find-the-inputs-discovery)
+     for `#<i>`. When it finds `#<i>`, act on the result as on
+     `needs-shape`, below, with the reason that its discovery of `#<i>`
+     is in progress. Otherwise, go on to the shape line, below. For a
+     Story with a parent, the result carries the parent's **Shared
+     decisions**: [Route](#route) needs them.
    - **`needs-shape`:** [run the shape step](#run-the-shape-step) for
      `#<i>` when all of these hold:
      - the user named `<i>`, or said in

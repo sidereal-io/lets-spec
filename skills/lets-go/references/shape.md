@@ -84,7 +84,7 @@ when it runs.
    take this input's discovery from
    [Find the input's discovery](#find-the-inputs-discovery). For an
    idea, use what [Start from an idea](#start-from-an-idea) found. For
-   an epic whose stopped discovery
+   an epic, or the one story an epic became, whose stopped discovery
    [Check the issue](../SKILL.md#check-the-issue) found, use what it
    found. For any other issue `#<i>`, run the lookup now.
    - **There is one or more:** the edits are that discovery's confirmed

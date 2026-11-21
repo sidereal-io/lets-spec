@@ -2458,6 +2458,17 @@ epic_run_file() {
   done
 }
 
+@test "an epic that became one story finishes its stopped discovery before it builds" {
+  local check phrase
+  check="$(part_section 'Check the issue')"
+  for phrase in \
+    'When the body has an `Input:` line that names `#<i>` itself, the issue is an epic that discovery shaped in place into this one story.' \
+    'run [Find the input'"'"'s discovery](references/shape.md#find-the-inputs-discovery) for `#<i>`' \
+    'When it finds `#<i>`, act on the result as on `needs-shape`, below, with the reason that its discovery of `#<i>` is in progress.'; do
+    grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+}
+
 @test "the shaped epic goes back to Check the issue" {
   local shape check lines row phrase
   shape="$(part_section 'Run the shape step')"
