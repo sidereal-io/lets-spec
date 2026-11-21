@@ -5056,6 +5056,8 @@ readme_step_returns() {
     { echo "Locate the discovery does not finish Finalize"; false; }
   grep -qF 'Drop a parent in neither state' <<<"$section" ||
     { echo "Locate the discovery matches a finished epic"; false; }
+  grep -qF 'ask the user which one, as a confirmation question with no recommendation' <<<"$section" ||
+    { echo "the question about which parent can carry a recommendation"; false; }
   grep -qF 'When the input is an issue `#<i>` that is itself in that list, it is a parent: keep it too.' <<<"$section" ||
     { echo "Locate the discovery does not resume the parent the user named"; false; }
   grep -qF 'never resume or finish a parent whose `Input:` line names another input, unless the input is that parent' <<<"$section" ||
@@ -5094,7 +5096,7 @@ readme_step_returns() {
   section="$(skill_section lets-shape 'Resume mode')"
   grep -qF 'When [the answers](#locate-the-discovery) confirmed phases of this parent, or confirmed this restatement, that work is settled: skip this confirmation, and go straight to the recorded next phase.' <<<"$section" ||
     { echo "Resume mode asks to confirm its restatement after the answers settled it"; false; }
-  grep -qF 'Otherwise, confirm the restatement with the user' <<<"$section" ||
+  grep -qF 'Otherwise, confirm the restatement with the user, as a confirmation question with no recommendation.' <<<"$section" ||
     { echo "Resume mode skips the confirmation when the answers settled nothing"; false; }
   ! grep -qF 'With no answers, confirm the restatement' <<<"$section" ||
     { echo "Resume mode leaves answers that settled nothing to a guess"; false; }

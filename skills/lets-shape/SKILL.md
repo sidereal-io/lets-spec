@@ -201,8 +201,8 @@ At the start:
 
       Drop a parent in neither state, such as an open epic whose
       discovery finished. When several parents are left, list them and
-      ask the user which one, as a confirmation question. Never pick one
-      yourself. When none is left, go on to the next item. Start no
+      ask the user which one, as a confirmation question with no
+      recommendation. Never pick one yourself. When none is left, go on to the next item. Start no
       second discovery for an input that already has a parent.
    2. **The answers already answer the discovery question.** Follow
       [Ask about discovery](#ask-about-discovery) with that answer, and ask
@@ -711,7 +711,8 @@ picked one of several):
    parent issue and map already capture. When [the answers](#locate-the-discovery)
    confirmed phases of this parent, or confirmed this restatement, that
    work is settled: skip this confirmation, and go straight to the
-   recorded next phase. Otherwise, confirm the restatement with the user.
+   recorded next phase. Otherwise, confirm the restatement with the user,
+   as a confirmation question with no recommendation.
 3. **Continue from the recorded phase.** Do not re-litigate confirmed
    sections unless the user brings new information; then revisit and update
    them. When it says `finalize`, go straight to
