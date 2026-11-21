@@ -2454,6 +2454,28 @@ epic_run_file() {
   done
 }
 
+@test "the shaped epic goes back to Check the issue" {
+  local shape check lines row phrase
+  shape="$(part_section 'Run the shape step')"
+  grep -qF '**A parent and its stories, when the parent is the run'"'"'s issue `<i>`:** discovery shaped the run'"'"'s epic in place. Go on from the blocker read in [Check the issue](../SKILL.md#check-the-issue) with `<i>`, not to [Pick the first ready story](../SKILL.md#pick-the-first-ready-story).' <<<"$shape" ||
+    { echo "Run the shape step does not send the run's shaped epic back to Check the issue"; false; }
+  check="$(part_section 'Check the issue')"
+  grep -qF 'When a shape step reported `done` in this run, and the run has not printed the `Done shape` line, print it first, as [The step lines](#the-step-lines) says.' <<<"$check" ||
+    { echo "the epic case does not print Done shape before Run the epic"; false; }
+  lines="$(skill_section lets-go 'The step lines')"
+  grep -qF '[Check the issue](#check-the-issue) prints it, for one issue, or before [Run the epic](#run-the-epic) for the epic it shaped' <<<"$lines" ||
+    { echo "The step lines do not name the epic case as a place that prints Done shape"; false; }
+  row="$(grep -F '| [Run the shape step](#run-the-shape-step) |' "$(lets_go_skill)")"
+  grep -qF "[Check the issue](#check-the-issue) for one issue, or for a parent that is the run's issue; [Pick the first ready story](#pick-the-first-ready-story) for any other parent and its stories" <<<"$row" ||
+    { echo "the part table's Next for Run the shape step does not name the route back"; false; }
+  row="$(grep -F '| [Check the issue](#check-the-issue) |' "$(lets_go_skill)")"
+  for phrase in \
+    '[Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run' \
+    'a finished epic, or an epic with no stories after shaping'; do
+    grep -qF -- "$phrase" <<<"$row" || { echo "the part table's row for Check the issue does not say: $phrase"; false; }
+  done
+}
+
 @test "an epic run picks each story as next picks it" {
   local part phrase
   part="$(part_section 'Run the epic')"
