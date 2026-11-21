@@ -3808,8 +3808,10 @@ commit_maps() {
   skill_does_not_say lets-go 'with a clean tree, except `openspec/discovery.md` when discovery ran'
 }
 
-@test "discovery maps: shape prompt makes the product and move questions confirmation questions" {
-  skill_says lets-go 'The question about which product an idea belongs to, and the question that moves the map for a second product, are confirmation questions too: give them no recommendation.'
+@test "discovery maps: lets-shape makes the product and move questions confirmation questions" {
+  skill_says lets-shape 'The question about which product an idea belongs to, and the question that moves the map for a second product, are confirmation questions, with no recommendation'
+  skill_section lets-shape 'The phases' | grep -qF 'The two product questions are confirmation questions too, as [Pick the map](#pick-the-map) says.' ||
+    { echo "The phases does not link Pick the map for the product questions"; false; }
 }
 
 @test "discovery maps: docs explain one map per product in a monorepo" {
@@ -5095,4 +5097,15 @@ readme_step_returns() {
   skill_section lets-shape 'Shape one issue' |
     grep -qF 'When the input says open issues were already searched and none is the same work, skip the search, and create the issue in step 7.' ||
     { echo "Shape one issue searches again after its caller searched"; false; }
+}
+
+@test "shape-step: lets-shape names its confirmation questions" {
+  local section
+  section="$(skill_section lets-shape 'The phases')"
+  grep -qF '**Confirmation questions carry no recommendation**, whoever runs this skill' <<<"$section" ||
+    { echo "The phases does not say confirmation questions carry no recommendation"; false; }
+  grep -qF "each phase's confirmation, including the parent issue's text at Ingest and [Resume mode](#resume-mode)'s restatement; the Phase 5 story table; and the packet confirmation in **Confirm, then write**" <<<"$section" ||
+    { echo "The phases does not list the confirmation questions"; false; }
+  skill_section lets-shape 'Shape one issue' | grep -qF 'This is a confirmation question, with no recommendation.' ||
+    { echo "Confirm, then write does not say it is a confirmation question"; false; }
 }

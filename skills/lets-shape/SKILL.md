@@ -420,6 +420,14 @@ checkpoint branch until the destination safely contains its definitions.
 
 ## The phases
 
+**Confirmation questions carry no recommendation**, whoever runs this
+skill. The user decides each of them: each phase's confirmation, including
+the parent issue's text at Ingest and [Resume mode](#resume-mode)'s
+restatement; the Phase 5 story table; and the packet confirmation in
+**Confirm, then write**, in [Shape one issue](#shape-one-issue). The two
+product questions are confirmation questions too, as
+[Pick the map](#pick-the-map) says.
+
 **Checkpoint every phase.** Apply the glossary checkpoint procedure above
 whenever the phase changed definitions. When the user confirms a phase,
 write its result at once, and set the parent issue's status line to the next
@@ -664,7 +672,8 @@ issue's parent and what blocks it.
    scope with the user and write it as
    [Develop the vocabulary](#develop-the-vocabulary) says.
 7. **Confirm, then write.** The issue is public, so show the user its title,
-   body, Kind, Priority and Size, and get a yes. The body carries every
+   body, Kind, Priority and Size, and get a yes. This is a confirmation
+   question, with no recommendation. The body carries every
    fold, so one write covers them all. When the user confirms that an
    existing packet stands unchanged, write nothing and leave its Project
    fields as they are. Otherwise write the packet, retaining any existing
