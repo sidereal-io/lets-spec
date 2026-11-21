@@ -4290,8 +4290,10 @@ step_prompt_file() {
 @test "resume: Take up a started story runs Stack the story for a story with no pull request and an open blocker" {
   local text
   text="$(procedure_text 'Take up a started story' | tr -s '[:space:]' ' ')"
-  grep -qF 'With no open pull request and an open blocker, run [Stack the story](#stack-the-story)' <<<"$text" ||
+  grep -qF 'With no pull request and an open blocker, run [Stack the story](#stack-the-story)' <<<"$text" ||
     { echo "Take up a started story does not run Stack the story"; false; }
+  grep -qF 'With a pull request whose `state` is `MERGED` or `CLOSED`, return `not-stacked`' <<<"$text" ||
+    { echo "Take up a started story does not leave a merged or closed pull request to the walk"; false; }
   grep -qF '[Take up a started story](#take-up-a-started-story) runs it too, for a story whose change'"'"'s branch exists and has no pull request' \
     <<<"$(skill_section lets-go 'Stack the story')" || { echo "Stack the story does not say Take up a started story runs it"; false; }
   grep -qF 'For such a story, [Claim](../SKILL.md#claim) does not run' <<<"$(skill_section lets-go 'Stack the story')" ||

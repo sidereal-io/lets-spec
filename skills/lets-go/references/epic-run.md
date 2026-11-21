@@ -352,10 +352,14 @@ its change name. The open blockers are the entries of the story's
      and return `not-stacked`.
    - **`not-stacked`:** return `not-stacked`.
    - **`edit-failed`:** return `edit-failed`.
-3. With no open pull request and an open blocker, run
+3. With a pull request whose `state` is `MERGED` or `CLOSED`, return
+   `not-stacked`, and run no [Stack the story](#stack-the-story): it is
+   for a branch with no pull request.
+   [Walk the step table](../SKILL.md#walk-the-step-table) reads the
+   pull request again, and acts on its state as for any run.
+4. With no pull request and an open blocker, run
    [Stack the story](#stack-the-story), and return its result.
-4. With no open pull request and no open blocker, return
-   `not-stacked`.
+5. With no pull request and no open blocker, return `not-stacked`.
 
 It returns one of these results:
 

@@ -73,7 +73,7 @@ When the story the epic run picked is a started story with an open pull request,
 - Otherwise, the base is the branch of a met story, as *An epic run counts a blocker as met when its story's pull request is ready* says: the story SHALL stay stacked on that story, as `<blocker>`, with that story's branch and pull request. Its step prompts SHALL hold the `## Stack` section, as *A stacked story's pull request targets its blocker's branch* says, and its line SHALL end `, stacked on #<blocker>`.
 - Any other base SHALL be left as it is, and the story SHALL not be stacked.
 
-When the started story has no pull request and an open blocker, *An epic run stacks a story on its met blocker* SHALL decide its stack. Restacking a story after a lower pull request changes in review is out of scope.
+When the started story has no pull request and an open blocker, *An epic run stacks a story on its met blocker* SHALL decide its stack. When its pull request merged or was closed during the epic run, the story SHALL not be stacked, and *Walk the step table* SHALL act on the pull request's state as for any run. Restacking a story after a lower pull request changes in review is out of scope.
 
 #### Scenario: A resumed story stacked on an open story
 - **WHEN** the epic run resumes #281, whose draft pull request #292 has the base `epic-run-stacks`, and #280's pull request #291 from `epic-run-stacks` is open and ready for review
