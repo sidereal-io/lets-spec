@@ -2436,6 +2436,20 @@ epic_run_file() {
   has_heading "$(epic_run_file)" 'A stop in an epic run' || { echo "references/epic-run.md has no heading: A stop in an epic run"; false; }
 }
 
+@test "resume: an epic run's wording covers a resumed story and a ready one" {
+  local phrase
+  for phrase in 'A story settled here as merged or closed that blocks another story' \
+    'Settle the story with its `stopped` line, as [A stop in an epic run](#a-stop-in-an-epic-run) writes it'; do
+    grep -qF -- "$phrase" <<<"$(part_section 'Run the epic')" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+  for phrase in 'before the next `Picked` or `Resumed` line' 'A built story stacked on `#<blocker>` gets this line instead' \
+    'gets the line that [A stop in an epic run](#a-stop-in-an-epic-run) gives it'; do
+    grep -qF -- "$phrase" <<<"$(skill_section lets-go 'Settle a story' | tr -s '[:space:]' ' ')" || { echo "Settle a story does not say: $phrase"; false; }
+  done
+  grep -qF 'from its `Picked` or `Resumed` line to its line' <<<"$(skill_section lets-go 'A stop in an epic run' | tr -s '[:space:]' ' ')" ||
+    { echo "A stop in an epic run does not cover a resumed story"; false; }
+}
+
 @test "an epic run settles a stopped story in a text block" {
   local lines line
   lines="$(text_block_lines 'A stop in an epic run' "$(epic_run_file)")"

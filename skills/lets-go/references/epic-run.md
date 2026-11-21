@@ -72,8 +72,10 @@ as for any picked issue.
        story. On `on-story`, settle the story with its stacked line,
        naming the `<blocker>` it carries. On `not-stacked`, settle it
        with its built line. On `edit-failed`, say which pull request's
-       base could not be moved, with gh's error, and settle the story
-       with `stopped: <reason>`, where the reason is gh's error.
+       base could not be moved, with gh's error. Settle the story with
+       its `stopped` line, as
+       [A stop in an epic run](#a-stop-in-an-epic-run) writes it, where
+       the reason is gh's error.
        Either way, the epic run runs none of its steps, and *Pick the
        next story* finds it met while its pull request stays ready.
      - **Merged:** settle the story with its merged line. It is not
@@ -84,9 +86,10 @@ as for any picked issue.
      - **An open draft, or no pull request:** settle nothing. The story
        is not finished, and a pick can take it.
 
-   A story settled here that blocks another story leaves that story
-   blocked while its issue is open: the blocked story gets its own
-   `not built, blocked by #<blocker>` line when no candidate is left.
+   A story settled here as merged or closed that blocks another story
+   leaves that story blocked while its issue is open: the blocked story
+   gets its own `not built, blocked by #<blocker>` line when no
+   candidate is left.
    The branches found here hold for the whole epic run. A branch created
    later belongs to a story this run claimed, and that story is settled
    before the next pick.
@@ -216,8 +219,9 @@ as for any picked issue.
 A story is settled once the epic run has given it its line. To settle a
 story, print its line, and append it to
 `.workspace/lets-go/epic-<parent>-lines.txt`. Print each line as the
-story settles, before the next `Picked` line. `<story-name>` is the part
-of the story's title before ` — `, or the whole title when it has none.
+story settles, before the next `Picked` or `Resumed` line.
+`<story-name>` is the part of the story's title before ` — `, or the
+whole title when it has none.
 
 A story whose pull request is ready for review gets this line, with the
 pull request's URL. So does a story whose pull request was ready for
@@ -227,9 +231,12 @@ review when the epic run started:
 #<story> <story-name>: <pr-url>
 ```
 
-A built story that [Stack the story](#stack-the-story) stacked on
-`#<blocker>` gets this line instead. The lines then show the merge
-order: its pull request merges after its blocker's.
+A built story stacked on `#<blocker>` gets this line instead, whether
+[Stack the story](#stack-the-story),
+[Take up a started story](#take-up-a-started-story) or
+[Read a pull request's base](#read-a-pull-requests-base) found the
+stack. The lines then show the merge order: its pull request merges
+after its blocker's.
 
 ```text
 #<story> <story-name>: <pr-url>, stacked on #<blocker>
@@ -254,6 +261,10 @@ The reason says why, such as `in another repository`,
 `assigned to <login>`, `its packet is not complete`,
 `its pull request was closed: <pr-url>` or
 `it depends on #<failed>, which did not finish`.
+
+A story whose walk stopped, or whose step failed, gets the line that
+[A stop in an epic run](#a-stop-in-an-epic-run) gives it, with no
+`not built`.
 
 ## Read a pull request's base
 
@@ -465,11 +476,11 @@ result.
 
 ## A stop in an epic run
 
-While an epic run is on a story, from its `Picked` line to its line, a
-stop ends only that story's run, not the epic run. This holds the same
-way for every stop of the parts and procedures the story runs through,
-such as a failed step, records that disagree, a pull request that is
-merged or closed, a stop of
+While an epic run is on a story, from its `Picked` or `Resumed` line
+to its line, a stop ends only that story's run, not the epic run. This
+holds the same way for every stop of the parts and procedures the story
+runs through, such as a failed step, records that disagree, a pull
+request that is merged or closed, a stop of
 [Check the prerequisite](glossary-handoff.md#check-the-prerequisite),
 a failed claim write, a `lets backlog` error, a `fetch-failed` from
 [Stack the story](#stack-the-story), or an `edit-failed` or
