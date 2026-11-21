@@ -180,17 +180,47 @@ At the start:
    terms.
 3. Find the Project, as in [The Project](#the-project). The map's links need
    the owner and the name from its `repo`.
-4. Pick the mode, first match wins:
-   - **The user brings one bug, chore or small story, or names one issue to
-     shape on its own**: [Shape one issue](#shape-one-issue). An issue that
-     holds a large idea is the input to a discovery run instead. If you
-     cannot tell which the user means, ask.
-   - **An open parent issue says `Discovery status: in-progress`** (`gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`): [Resume mode](#resume-mode). If
-     more than one does, list them and ask the user which to resume, or
-     whether to start a new run. Never pick one yourself.
-   - **`<root.path>/openspec/discovery.md` does not exist**: run every
-     phase.
-   - **Otherwise**: [Revision mode](#revision-mode).
+4. Pick the path. The input is what the user, or the skill that runs this
+   one, brings: an idea in words, a file, or an issue `#<i>`. The answers
+   are those this run already has: the ones the user gave in this session,
+   or the `## Answers` section of a resumed step. The first of these that
+   matches wins:
+   1. **An open parent issue's `Input:` line names this input.** List the
+      parents with `gh issue list --state open --limit 500 --search '"Input:" in:body' --json number,title,body`,
+      and keep each whose `Input:` line names this input: `#<i>` or the
+      issue's URL for an issue, the path for a file, or the idea word for
+      word. Then look at each one's status line:
+      - It says `Discovery status: in-progress`: run
+        [Resume mode](#resume-mode) on it.
+      - It has no status line, and the answers confirmed its Phase 5 story
+        table: Finalize has started on it, because Finalize removes the
+        status line before it asks its own questions. Finish
+        [Phase 6: Finalize](#phase-6-finalize) on it, from where the
+        answers leave off, including the glossary handoff.
+
+      Drop a parent in neither state, such as an open epic whose
+      discovery finished. When several parents are left, list them and
+      ask the user which one, as a confirmation question. Never pick one
+      yourself. When none is left, go on to the next item. Start no
+      second discovery for an input that already has a parent.
+   2. **The answers say yes to the discovery question.** Run discovery
+      from [Phase 1: Ingest](#phase-1-ingest) with this input.
+   3. **The input plainly holds a large idea**, such as a PRD or a
+      vision. [Ask about discovery](#ask-about-discovery) before any other
+      question.
+   4. **Any other input**, such as one bug, chore or small story, or an
+      issue to shape: [Shape one issue](#shape-one-issue). Its sizing
+      decides whether the work is too large for one issue.
+   5. **No input.** When an open parent issue says
+      `Discovery status: in-progress` (`gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`),
+      run [Resume mode](#resume-mode) on it. If more than one does, list
+      them and ask the user which to resume, or whether to start a new
+      run. Never pick one yourself. When none does, run every phase if
+      `<root.path>/openspec/discovery.md` does not exist, and
+      [Revision mode](#revision-mode) if it does.
+
+   When the user brings an input, never resume or finish a parent whose
+   `Input:` line names another input.
 
 If any of these fails, stop and show the error. Never write the map anywhere
 but the resolved root.

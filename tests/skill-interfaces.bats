@@ -5031,3 +5031,23 @@ readme_step_returns() {
     { echo "The story's worktree does not give Git's error as the reason"; false; }
   ! grep -qF -- 'reason is `stopped: `' <<<"$section" || { echo "The story's worktree puts stopped: in a reason"; false; }
 }
+
+# BEGIN shape-step (#264): lets-shape owns the shape step's rules.
+@test "shape-step: lets-shape picks its path from its input, first match wins" {
+  local section items
+  section="$(skill_section lets-shape 'Locate the discovery')"
+  grep -qF 'The answers are those this run already has: the ones the user gave in this session, or the `## Answers` section of a resumed step.' <<<"$section" ||
+    { echo "Locate the discovery does not define the answers"; false; }
+  grep -qF "gh issue list --state open --limit 500 --search '\"Input:\" in:body' --json number,title,body" <<<"$section" ||
+    { echo "Locate the discovery does not list the parents by their Input line"; false; }
+  grep -qF 'and the answers confirmed its Phase 5 story table' <<<"$section" ||
+    { echo "Locate the discovery does not finish Finalize"; false; }
+  grep -qF 'Drop a parent in neither state' <<<"$section" ||
+    { echo "Locate the discovery matches a finished epic"; false; }
+  ! grep -qF 'An issue that holds a large idea is the input to a discovery run instead.' <<<"$section" ||
+    { echo "Locate the discovery still sends a large issue away in its first item"; false; }
+  items="$(sed -n '/^## Locate the discovery/,/^## /p' "$repo/skills/lets-shape/SKILL.md" | grep -oE '^   [1-5]\. \*\*[^*]+\*\*')"
+  [ "$(sed 's/^ *[0-9]\. //' <<<"$items" | tr '\n' '|')" = \
+    "**An open parent issue's \`Input:\` line names this input.**|**The answers say yes to the discovery question.**|**The input plainly holds a large idea**|**Any other input**|**No input.**|" ] ||
+    { echo "the path list is not in order: $items"; false; }
+}
