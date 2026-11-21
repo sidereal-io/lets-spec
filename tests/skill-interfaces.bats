@@ -1036,6 +1036,8 @@ review_build_start() {
   skill_says lets-go "gh issue list --state open --limit 500 --search '\"Input:\" in:body' --json number,title,body"
   # The in-progress-only query misses a parent once Finalize has removed its status line.
   skill_does_not_say lets-go "gh issue list --state open --search '\"Discovery status: in-progress\" in:body' --json number,title,body"
+  skill_does_not_say lets-go 'the in-progress parent query'
+  skill_does_not_say lets-go 'the discovery query in [Start from an idea]'
   skill_says lets-go 'the edits are that discovery'"'"'s confirmed phases'
   # lets-shape owns its discovery rules, so lets-go keeps no copy of them.
   for phrase in '#153 adds' '#154 adds' '`lets-go` needs an issue number, and stop' \
