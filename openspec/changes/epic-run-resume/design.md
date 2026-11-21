@@ -135,25 +135,28 @@ gains one section, *Read a pull request's base*, that both use. In this
 order, first match wins:
 
 1. The default branch: not stacked.
-2. The change's branch of an open story of the epic: stacked on that
-   story.
-3. The head branch of a pull request of this repository that merged
+2. The head branch of a pull request of this repository that merged
    into the default branch, read with
    `gh pr list --head <pr-base> --state merged --limit 100 --json number,isCrossRepository,baseRefName`,
    keeping the entries whose `isCrossRepository` is false and whose
    `baseRefName` is `<default>`: the blocker has merged. Run `gh pr edit <name> --base <default>`. Not
    stacked.
+3. The change's branch of an open story of the epic, in this
+   repository: stacked on that story.
 4. Anything else: leave it. Not stacked.
 
 The merged pull request stands in for "the blocker's issue is closed",
-because the run cannot see closed sub-issues. A blocker whose pull
-request merged into another story's branch still has an open issue, so
-rule 2 matches first, and it still stacks (D8). A base whose pull
+because the run cannot see closed sub-issues. It comes before the open
+story's branch because the epic's stories are the set read at the start:
+a blocker whose pull request merges during the epic run is still in that
+set, but its work is on the default branch. A blocker whose pull
+request merged into another story's branch still has an open issue, and
+rule 2 does not match it, so rule 3 does, and it still stacks (D8). A base whose pull
 request merged into a branch other than the default branch falls to
 rule 4: moving the base to the default branch would put commits that
 are not on it into the story's pull request.
 
-For a resumed story, rule 2 stacks the story only when that story is
+For a resumed story, rule 3 stacks the story only when that story is
 met, as the spec says. A draft or missing pull request on the base's
 story leaves the base alone, and the story is not stacked.
 

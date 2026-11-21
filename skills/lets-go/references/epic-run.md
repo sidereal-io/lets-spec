@@ -259,13 +259,7 @@ branch of a blocker that has merged. `<story>` is the story,
 
 1. **`<pr-base>` is `<default>`:** the story is not stacked. Return
    `not-stacked`.
-2. **`<pr-base>` is the change name of an open story of the epic,**
-   other than `<story>`: the pull request stacks the story on that
-   story. `<blocker>` is that story, and `<blocker-branch>` is
-   `<pr-base>`. Return `on-story`. A blocker whose pull request merged
-   into another story's branch matches here, because its issue is still
-   open: its work is not on the default branch yet.
-3. **`<pr-base>` is the head branch of a pull request of this
+2. **`<pr-base>` is the head branch of a pull request of this
    repository that merged into the default branch:** read the merged
    pull requests from that branch:
 
@@ -285,6 +279,17 @@ branch of a blocker that has merged. `<story>` is the story,
 
    When the edit fails, return `edit-failed`. Otherwise the story is
    not stacked: return `not-stacked`.
+
+   This rule comes before the next one because the epic's stories are
+   the set read at the start: a blocker whose pull request merged
+   during the epic run is still one of them, but its work is on the
+   default branch.
+3. **`<pr-base>` is the change name of an open story of the epic, in
+   this repository,** other than `<story>`: the pull request stacks the
+   story on that story. `<blocker>` is that story, and
+   `<blocker-branch>` is `<pr-base>`. Return `on-story`. A blocker whose
+   pull request merged into another story's branch matches here, because
+   its issue is still open: its work is not on the default branch yet.
 4. **Anything else:** leave the base as it is, and return
    `not-stacked`. A base whose pull request merged into a branch other
    than the default branch is one: moving the pull request to the

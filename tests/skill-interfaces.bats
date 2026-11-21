@@ -4208,8 +4208,8 @@ step_prompt_file() {
   has_heading "$(epic_run_file)" "Read a pull request's base" || { echo "references/epic-run.md has no heading: Read a pull request's base"; false; }
   text="$(procedure_text "Read a pull request's base" | tr -s '[:space:]' ' ')"
   for rule in '`<pr-base>` is `<default>`' \
-    "\`<pr-base>\` is the change name of an open story of the epic" \
     'gh pr list --head <pr-base> --state merged --limit 100 --json number,isCrossRepository,baseRefName' \
+    "\`<pr-base>\` is the change name of an open story of the epic, in this repository" \
     'Anything else'; do
     grep -qF -- "$rule" <<<"$text" || { echo "Read a pull request's base does not say: $rule"; false; }
     at="${text%%"$rule"*}"
