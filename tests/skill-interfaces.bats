@@ -5141,6 +5141,8 @@ readme_step_returns() {
     { echo "the parent template does not show the Original description section"; false; }
   grep -qF 'only when the parent is an empty epic' <<<"$template" ||
     { echo "the template does not say when Original description appears"; false; }
+  skill_section lets-shape 'Phase 5: Stories' | grep -qF 'Keep an `## Original description` section too, as the last section of the body.' ||
+    { echo "Phase 5 drops the Original description when the epic becomes one story"; false; }
 }
 
 @test "shape-step: lets-shape asks about discovery, and runs it only on yes" {

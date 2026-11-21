@@ -76,7 +76,8 @@ Title: `<kebab-story-name> — <one-line outcome>`
 
 When the run fits one story, the parent issue takes this shape instead, keeping the
 status line, input reference and `Map:` line above the outcome. The status line
-stays until the run finalizes; the `Input:` and `Map:` lines stay for good.
+stays until the run finalizes; the `Input:` and `Map:` lines stay for good. So does
+an `## Original description` section, at the end of the body.
 
 ## Bug issue
 

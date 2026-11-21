@@ -602,7 +602,8 @@ splitting), and resolve with the user before finalizing.
   with the story template. Then set Kind `Story`, its Priority, its Size and
   Status `Todo`, with four `item-edit` commands. Keep the status line, input
   reference, `Map:` line and complete **Glossary handoff** recovery record
-  when replacing the body. Won't calls go in its Scope `out`.
+  when replacing the body. Keep an `## Original description` section too,
+  as the last section of the body. Won't calls go in its Scope `out`.
 - **More than one story.** The stories are sub-issues of the parent.
 
 **Checkpoint:** Issues are public, so show the new and changed issues as a
