@@ -26,7 +26,7 @@ None.
 
 ## Impact
 
-- `skills/lets-go/references/shape.md`: *Start from an idea* step 1 and *Run the shape step* step 1.
+- `skills/lets-go/references/shape.md`: *Start from an idea* step 1, *Run the shape step* step 1 and its one-issue result, and the stop note after *Pick the first ready story*.
 - `skills/lets-go/SKILL.md`: only if a line there names the old query or the in-progress-only match.
 - `tests/skill-interfaces.bats`: the checks that name the old query assert the new lookup, including the Finalize case (D6).
 - `openspec/specs/lets-go/spec.md`, through this change's delta.
