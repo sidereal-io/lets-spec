@@ -54,6 +54,12 @@ input is an idea, or an issue `#<i>`.
      exists only on the machine where that round ran, so on another
      machine this state finds nothing.
 
+   When a parent is in both the second and the third state, take the
+   state whose answers file changed last, and only that one. Rounds of
+   one discovery under two inputs can each leave answers, and the round
+   that stopped last is the one to resume: its answers hold what
+   Finalize needs.
+
    A kept parent in none of these states is not this input's discovery:
    for example, an open epic whose discovery finished.
 

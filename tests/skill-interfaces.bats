@@ -2551,6 +2551,12 @@ epic_run_file() {
     { echo "Run the shape step does not name the epic's own answers file"; false; }
 }
 
+@test "the lookup takes the answers changed last when an epic is in the second and third states" {
+  # Two rounds of one discovery, under two inputs, can both leave answers.
+  grep -qF -- 'When a parent is in both the second and the third state, take the state whose answers file changed last, and only that one.' <<<"$(part_section "Find the input's discovery")" ||
+    { echo "Find the input's discovery does not settle a parent in both states"; false; }
+}
+
 @test "an epic that became one story finishes its stopped discovery before it builds" {
   local check phrase
   check="$(part_section 'Check the issue')"
