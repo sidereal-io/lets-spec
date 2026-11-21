@@ -4609,7 +4609,10 @@ story_run_file() {
     'At the first row of the walk that is not done' '`.workspace/lets-go/<session>-report.json`' \
     'append each pair of the `## Answers` section whose question is one of that report'"'"'s questions to `.workspace/lets-go/<session>-answers.yaml`' \
     '`--answers-file .workspace/lets-go/<session>-answers.yaml`' \
-    'reason: "stopped: the answers match no question the <step name> step asked"'; do
+    'reason: "stopped: the answers match no question the <step name> step asked"' \
+    'Check it before you write anything' \
+    "in place of that row's **Not done** action" \
+    'Then [read its report](../SKILL.md#read-the-report)'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Give the answers to the step does not say: $phrase"; false; }
   done
   grep -qF '[Give the answers to the step](#give-the-answers-to-the-step)' <<<"$(skill_section lets-go 'Take up the story run')" ||
