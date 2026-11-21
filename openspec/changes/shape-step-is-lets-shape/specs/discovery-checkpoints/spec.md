@@ -52,11 +52,15 @@ A parent whose `Input:` line names another input SHALL NOT be resumed or finishe
 
 ### Requirement: A resumed round settles what the answers confirmed
 
-When `lets-shape` resumes a parent and the answers confirmed phases of it, those phases SHALL be settled. *Resume mode* SHALL NOT ask the user to confirm its restatement of where discovery stopped, and SHALL go straight to the parent's recorded next phase. It SHALL NOT ask a confirmed phase's questions again unless the user brings new information. With no answers, *Resume mode* SHALL restate where discovery stopped and ask the user to confirm it, as before.
+When `lets-shape` resumes a parent and the answers confirmed phases of it, or confirmed its restatement of where discovery stopped, that work SHALL be settled. *Resume mode* SHALL NOT ask the user to confirm its restatement of where discovery stopped, and SHALL go straight to the parent's recorded next phase. It SHALL NOT ask a confirmed phase's questions again unless the user brings new information. Otherwise, including when the answers settle only other questions, such as which product the parent belongs to, *Resume mode* SHALL restate where discovery stopped and ask the user to confirm it, as before.
 
 #### Scenario: Resume with answers
 - **WHEN** a resumed step's `## Answers` section confirmed Ingest, Personas and the Journey map, and the parent says `next phase: moscow`
 - **THEN** `lets-shape`'s next questions are MoSCoW's, and none of them asks to confirm the restatement
+
+#### Scenario: Resume with answers that confirm no phase
+- **WHEN** a resumed step's `## Answers` section holds only the product that the parent `#200` belongs to, and `#200` says `next phase: journey-map`
+- **THEN** `lets-shape` restates where discovery stopped and asks the user to confirm it before the Journey map
 
 #### Scenario: Resume without answers
 - **WHEN** a user runs `lets-shape` in a fresh session, and the one open parent says `next phase: moscow`

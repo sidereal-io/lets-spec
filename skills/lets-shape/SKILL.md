@@ -709,9 +709,9 @@ picked one of several):
    already present are confirmed work.
 2. **Restate where discovery stopped** — a one-paragraph summary of what the
    parent issue and map already capture. When [the answers](#locate-the-discovery)
-   confirmed phases of this parent, those phases are settled: skip this
-   confirmation, and go straight to the recorded next phase. With no
-   answers, confirm the restatement with the user.
+   confirmed phases of this parent, or confirmed this restatement, that
+   work is settled: skip this confirmation, and go straight to the
+   recorded next phase. Otherwise, confirm the restatement with the user.
 3. **Continue from the recorded phase.** Do not re-litigate confirmed
    sections unless the user brings new information; then revisit and update
    them. When it says `finalize`, go straight to
