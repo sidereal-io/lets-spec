@@ -206,7 +206,7 @@ as for any picked issue.
        reason. Read the signed-in user's login once:
 
        ```bash
-       gh api user --jq .login
+       gh auth status --active --json hosts --jq '.hosts[][].login'
        ```
 
      Then go to [End of the run](../SKILL.md#end-of-the-run).

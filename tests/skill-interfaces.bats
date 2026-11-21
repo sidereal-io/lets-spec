@@ -2421,7 +2421,7 @@ epic_run_file() {
   part="$(part_section 'Run the epic')"
   for phrase in 'naming each open issue in its `blockedBy` that is not a met story' \
     'For a story passed in `--started`, `lets backlog ready` keeps one assigned to the signed-in user, so that assignee is no reason' \
-    'gh api user --jq .login'; do
+    "gh auth status --active --json hosts --jq '.hosts[][].login'"; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
 }
