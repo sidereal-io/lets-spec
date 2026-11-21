@@ -3,16 +3,31 @@
 Read this file when the run starts from an idea, runs the shape step,
 or commits the discovery map.
 
-## Start from an idea
+## Find the input's discovery
 
-1. Look for a discovery of this idea that an earlier run started. Use
-   `lets-shape`'s own query:
+An earlier run may have started a discovery of this input and stopped.
+This lookup finds it, so the run resumes that discovery instead of
+searching issue titles or stopping on the discovery maps' edits. The
+input is an idea, or an issue `#<i>`.
+
+1. List the open parent issues with `lets-shape`'s own query:
 
    ```bash
-   gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body
+   gh issue list --state open --limit 500 --search '"Input:" in:body' --json number,title,body
    ```
 
-   When a parent's `Input:` line holds the idea word for word, say that
+2. Keep each parent whose `Input:` line names this input: the idea word
+   for word, or `#<i>` or the issue's URL.
+3. A kept parent that says `Discovery status: in-progress` is this
+   input's discovery.
+
+Return to the part that ran it, with each discovery it found, or none.
+
+## Start from an idea
+
+1. Look for a discovery of this idea that an earlier run started, as
+   [Find the input's discovery](#find-the-inputs-discovery) says.
+   When it finds one, say that
    a discovery of this idea is in progress at `#<parent>`. Skip the
    search below, and
    [run the shape step](../SKILL.md#run-the-shape-step) for the idea:
@@ -52,7 +67,8 @@ when it runs.
    parent issue that says `Discovery status: in-progress`, and whose
    `Input:` line names this input, the idea's words or `#<i>`. For an
    idea, use what [Start from an idea](#start-from-an-idea) found. For
-   an issue, run the query in [Start from an idea](#start-from-an-idea).
+   an issue, run the query in
+   [Find the input's discovery](#find-the-inputs-discovery).
    - **There is one:** the edits are that discovery's confirmed phases.
      Go on: the step resumes it, and its map commit takes them.
    - **There is none:** say that the maps have uncommitted edits, name
