@@ -3,7 +3,7 @@
 ### Requirement: An epic run settles the stories already ready, merged or closed
 When an epic run starts, before its first pick, `lets-go` SHALL read the pull requests of each story of the epic in this repository, in the epic's order. A story's pull requests are those whose head branch is the story's change's name and whose `isCrossRepository` is false. Of these, the story's pull request SHALL be the open one when there is one; otherwise the merged one; otherwise the closed one created last. `lets-go` SHALL then settle each story as follows, in the epic's order:
 
-- **Open and ready for review:** the built line, `#<story> <story-name>: <pr-url>`. When the pull request's base is the branch of another open story of the epic, the line SHALL end `, stacked on #<blocker>`, naming that story. When the base is neither the default branch nor an open story's branch, and it is the head branch of a pull request of this repository that merged into the default branch, the blocker has merged: `lets-go` SHALL run `gh pr edit <name> --base <default>`, rebase nothing, and give the plain built line. Any other base SHALL be left as it is, with the plain built line. `lets-go` SHALL run none of the story's steps, and the story SHALL count as met, as *An epic run counts a blocker as met when its story's pull request is ready* says.
+- **Open and ready for review:** the built line, `#<story> <story-name>: <pr-url>`. When the pull request's base is not the default branch, and it is the head branch of a pull request of this repository that merged into the default branch, the blocker has merged: `lets-go` SHALL run `gh pr edit <story-pr> --base <default>`, by the pull request's number, rebase nothing, and give the plain built line. This holds even when the merged pull request's story is still one of the epic's stories. Otherwise, when the base is the branch of another open story of the epic in this repository, the line SHALL end `, stacked on #<blocker>`, naming that story. Any other base SHALL be left as it is, with the plain built line. `lets-go` SHALL run none of the story's steps, and the story SHALL count as met, as *An epic run counts a blocker as met when its story's pull request is ready* says.
 - **Merged:** `#<story> <story-name>: merged, <pr-url>`.
 - **Closed without merging:** `#<story> <story-name>: not built, its pull request was closed: <pr-url>`.
 
@@ -19,7 +19,7 @@ A story whose pull request is an open draft, or that has no pull request, SHALL 
 
 #### Scenario: A ready story whose blocker has merged
 - **WHEN** an epic run starts, #280's pull request #291 is open and ready for review, its base is `epic-run-skeleton`, #279 is closed, and #290 from `epic-run-skeleton` has merged into the default branch
-- **THEN** `lets-go` runs `gh pr edit epic-run-stacks --base <default>`, rebases nothing, and #280's line is `#280 epic-run-stacks: <#291's url>`, with no `, stacked on`
+- **THEN** `lets-go` runs `gh pr edit 291 --base <default>`, rebases nothing, and #280's line is `#280 epic-run-stacks: <#291's url>`, with no `, stacked on`
 
 #### Scenario: A merged story
 - **WHEN** an epic run starts, #279 is open, and its pull request #290 has merged into the branch `epic-run-base`
@@ -67,13 +67,13 @@ When the pick is a story passed in `--started`, `lets-go` SHALL print `Resumed #
 - **THEN** the pick passes #285 in `--started`, `lets backlog ready` does not list it, and #285's line is `#285 <story-name>: not built, assigned to hubot`
 
 ### Requirement: A resumed story's pull request sets its stack
-When the story the epic run picked is a started story with an open pull request, *Check the issue* SHALL decide its stack from that pull request's base, before the walk, and SHALL not run *Stack the story*:
+When the story the epic run picked is a started story with an open pull request, *Check the issue* SHALL decide its stack from that pull request's base, before the walk, and SHALL not run *Stack the story*. The story's pull request SHALL be chosen as at the start of the epic run, from `gh pr list --head <name> --state all`, with every pull request from a fork dropped:
 
-- The base is the branch of a met story, as *An epic run counts a blocker as met when its story's pull request is ready* says: the story SHALL stay stacked on that story, as `<blocker>`, with that story's branch and pull request. Its step prompts SHALL hold the `## Stack` section, as *A stacked story's pull request targets its blocker's branch* says, and its line SHALL end `, stacked on #<blocker>`.
-- The base is neither the default branch nor an open story's branch, and it is the head branch of a pull request of this repository that merged into the default branch: `lets-go` SHALL run `gh pr edit <name> --base <default>`, rebase nothing, and the story SHALL not be stacked. Its line SHALL have no `, stacked on`.
+- The base is not the default branch, and it is the head branch of a pull request of this repository that merged into the default branch: `lets-go` SHALL run `gh pr edit <story-pr> --base <default>`, by the pull request's number, rebase nothing, and the story SHALL not be stacked. Its line SHALL have no `, stacked on`. This holds even when the merged pull request's story is still one of the epic's stories, because it merged during the epic run.
+- Otherwise, the base is the branch of a met story, as *An epic run counts a blocker as met when its story's pull request is ready* says: the story SHALL stay stacked on that story, as `<blocker>`, with that story's branch and pull request. Its step prompts SHALL hold the `## Stack` section, as *A stacked story's pull request targets its blocker's branch* says, and its line SHALL end `, stacked on #<blocker>`.
 - Any other base SHALL be left as it is, and the story SHALL not be stacked.
 
-When the started story has no pull request and an open blocker, *An epic run stacks a story on its met blocker* SHALL decide its stack. Restacking a story after a lower pull request changes in review is out of scope.
+When the started story has no pull request and an open blocker, *An epic run stacks a story on its met blocker* SHALL decide its stack. When its pull request merged or was closed during the epic run, the story SHALL not be stacked, and *Walk the step table* SHALL act on the pull request's state as for any run. Restacking a story after a lower pull request changes in review is out of scope.
 
 #### Scenario: A resumed story stacked on an open story
 - **WHEN** the epic run resumes #281, whose draft pull request #292 has the base `epic-run-stacks`, and #280's pull request #291 from `epic-run-stacks` is open and ready for review
@@ -81,7 +81,11 @@ When the started story has no pull request and an open blocker, *An epic run sta
 
 #### Scenario: A resumed story whose blocker has merged
 - **WHEN** the epic run resumes #281, whose draft pull request #292 has the base `epic-run-stacks`, #280 is closed, and #291 from `epic-run-stacks` has merged into the default branch
-- **THEN** `lets-go` runs `gh pr edit epic-run-failures --base <default>` before the walk, rebases nothing, no step prompt of #281 holds a `## Stack` section, and #281's line has no `, stacked on`
+- **THEN** `lets-go` runs `gh pr edit 292 --base <default>` before the walk, rebases nothing, no step prompt of #281 holds a `## Stack` section, and #281's line has no `, stacked on`
+
+#### Scenario: A resumed story whose blocker merged during the epic run
+- **WHEN** the epic run started with #280 open and its pull request #291 from `epic-run-stacks` ready for review, #291 then merged into the default branch while the run built another story, and the run resumes #281, whose draft pull request #292 has the base `epic-run-stacks`
+- **THEN** `lets-go` runs `gh pr edit 292 --base <default>` before the walk, and no step prompt of #281 holds a `## Stack` section
 
 #### Scenario: A resumed story on the default branch
 - **WHEN** the epic run resumes #282, whose draft pull request has the default branch as its base
@@ -125,7 +129,7 @@ An epic run SHALL end with one line for every story the epic had when the run st
 
 - A built story: `#<story> <story-name>: <pr-url>`, the URL of its pull request. A built story that the epic run stacked on a blocker SHALL end its line with `, stacked on #<blocker>`, such as `#280 epic-run-stacks: <pr-url>, stacked on #279`. The lines then show the merge order: a stacked story's pull request merges after its blocker's. A story whose pull request was ready for review when the run started gets this line too, as *An epic run settles the stories already ready, merged or closed* says.
 - A merged story: `#<story> <story-name>: merged, <pr-url>`, the URL of its merged pull request.
-- A story not built: `#<story> <story-name>: not built, <reason>`. The reason SHALL say why, such as `blocked by #279`, `blocked by #284 and #285, on different branches`, `assigned to octocat`, `taken by octocat`, `its packet is not complete`, `its glossary prerequisite is unresolved`, `in another repository`, `its pull request was closed: <pr-url>`, `it depends on #391, which did not finish` or `the epic run stopped at #391`. For a story `lets backlog ready` did not list, `lets-go` SHALL read why with `lets backlog item <story>`, as *Pick the first ready story* does: an open blocker, an assignee, or its Status, Kind or Priority.
+- A story not built: `#<story> <story-name>: not built, <reason>`. The reason SHALL say why, such as `blocked by #279`, `blocked by #284 and #285, on different branches`, `assigned to octocat`, `taken by octocat`, `its packet is not complete`, `its glossary prerequisite is unresolved`, `in another repository`, `its pull request was closed: <pr-url>`, `it depends on #391, which did not finish` or `the epic run stopped at #391`. For a story `lets backlog ready` did not list, `lets-go` SHALL read why with `lets backlog item <story>`, as *Pick the first ready story* does: an open blocker that is not met, an assignee, or its Status, Kind or Priority. For a story passed in `--started`, the signed-in user as an assignee SHALL not be the reason, because `lets backlog ready` keeps such a story.
 - A story whose step failed: `#<story> <story-name>: failed at <step name>: <reason>`, with the step's name in plain words, as its `Failed` line names it.
 - A story whose walk stopped for another reason: `#<story> <story-name>: stopped: <reason>`.
 
@@ -140,6 +144,10 @@ An epic run SHALL end with one line for every story the epic had when the run st
 #### Scenario: An assigned story
 - **WHEN** #282 is assigned to `octocat` when the epic run starts, and its change's branch exists nowhere
 - **THEN** its line is `#282 epic-run-resume: not built, assigned to octocat`
+
+#### Scenario: A started story left out for its Status
+- **WHEN** #282 is assigned to the signed-in user `octocat`, its branch `epic-run-resume` exists, it has no open blocker, its Status is Done, and nothing is ready
+- **THEN** its line is `#282 epic-run-resume: not built, its Status is Done`, not `assigned to octocat`
 
 #### Scenario: Each line prints as the story settles
 - **WHEN** the epic run settles #279 with its pull request URL, and goes on to pick another story

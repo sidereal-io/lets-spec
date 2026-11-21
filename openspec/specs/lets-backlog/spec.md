@@ -44,7 +44,7 @@ With the GitHub backlog provider, each command except `key` SHALL use the open P
 - Nobody is assigned.
 - No open issue blocks it, other than the issues `--met-blockers <key>,<key>` names.
 
-It SHALL rank them Must, then Should, then Could, then by creation time, oldest first. Each issue SHALL carry `key`, `label`, `title`, `url`, `kind`, `priority` and `size`. `--only <key>,<key>` SHALL keep only the issues named. `--exclude <key>,<key>` SHALL leave out the issues named. `--met-blockers` SHALL count each issue it names as a met blocker: an issue whose every open blocker is named there passes the blocker filter, and still needs every other filter. A blocker in another repository SHALL never count as named: its key can name an issue of this repository. A key in `--only`, `--exclude` or `--met-blockers` that names no ready issue, or no blocker, SHALL be ignored. Without `--met-blockers`, an issue with an open blocker SHALL never be listed. An issue from another repository on the same Project SHALL never be listed.
+It SHALL rank them Must, then Should, then Could, then by creation time, oldest first. Each issue SHALL carry `key`, `label`, `title`, `url`, `kind`, `priority` and `size`. `--only <key>,<key>` SHALL keep only the issues named. `--exclude <key>,<key>` SHALL leave out the issues named. `--met-blockers` SHALL count each issue it names as a met blocker: an issue whose every open blocker is named there passes the blocker filter, and still needs every other filter. A blocker in another repository SHALL never count as named: its key can name an issue of this repository. `--started <key>,<key>` SHALL name issues the caller has started: an issue it names that is assigned to the signed-in user SHALL pass the Status filter when its Status is Todo or In Progress, and SHALL pass the assignee filter, whoever else is assigned. It still needs every other filter, the blocker filter included, and ranks with the other issues. An issue `--started` names that is not assigned to the signed-in user SHALL get no exception. A key in `--only`, `--exclude`, `--met-blockers` or `--started` that names no ready issue, no blocker, or no issue assigned to the signed-in user, SHALL be ignored. Without `--met-blockers`, an issue with an open blocker SHALL never be listed. An issue from another repository on the same Project SHALL never be listed.
 
 #### Scenario: Rank
 - **WHEN** the ready issues are #160 Should, #120 Must and #110 Should, each created in the order of its number
@@ -89,6 +89,26 @@ It SHALL rank them Must, then Should, then Could, then by creation time, oldest 
 #### Scenario: A blocker in another repository is never met
 - **WHEN** #283's only open blocker is `other-org/tools#279`, and a user runs `lets backlog ready --met-blockers 279`
 - **THEN** `issues` does not hold #283
+
+#### Scenario: A started issue of the signed-in user
+- **WHEN** the signed-in user is `octocat`, #282 is Should, In Progress, assigned to `octocat` and has no open blocker, #283 is Must, Todo and unassigned, and a user runs `lets backlog ready --started 282`
+- **THEN** `issues` lists `283`, then `282`
+
+#### Scenario: A started issue assigned to someone else
+- **WHEN** the signed-in user is `octocat`, #285 is In Progress and assigned only to `hubot`, and a user runs `lets backlog ready --started 285`
+- **THEN** `issues` does not hold #285
+
+#### Scenario: A started issue with an open blocker
+- **WHEN** #282 is In Progress, assigned to the signed-in user, and its only open blocker is #281
+- **THEN** `lets backlog ready --started 282` does not hold #282, and `lets backlog ready --started 282 --met-blockers 281` does
+
+#### Scenario: A started issue that is Done
+- **WHEN** #282 is open, assigned to the signed-in user, and its Status is Done
+- **THEN** `lets backlog ready --started 282` does not hold #282
+
+#### Scenario: An assigned issue not named
+- **WHEN** #282 is In Progress and assigned to the signed-in user, and a user runs `lets backlog ready` with no `--started`
+- **THEN** `issues` does not hold #282
 
 ### Requirement: item reads one issue with its Project fields
 `lets backlog item <key>` SHALL return the issue's `key`, `label`, `title`, `body`, `url` and `state`, and its Project fields `kind`, `priority`, `size` and `status`. A field that is unset, or an issue that is not on the Project, SHALL give `null` for each field it lacks. It SHALL return `assignees`, the login of each assigned user. It SHALL return `blockedBy`, each blocker's `key`, `label`, `title`, `state` and `url`. It SHALL return `parent` as `null`, or with the parent's `key`, `label`, `title`, `url` and `body`. It SHALL return `subIssues`, each open sub-issue's `key`, `label`, `title` and `url`. A related issue can sit in another repository, where its `key` alone names another issue, so its `url` names it, and its `label` names its repository. A parent that cannot be read SHALL return the error `backend-failed`, whose message names the parent, never `not-found`. An issue that does not exist SHALL return the error `not-found`.
