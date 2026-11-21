@@ -125,7 +125,7 @@ reads as it always has.
 | `<keys>` | The keys of the stories an epic run sorts into waves, in the epic's order, joined by commas, such as `283,285` | [Run the epic](#run-the-epic), from the stories not settled when it starts |
 | `<wave>` | A wave's number in an epic run, counted from 1 | [Run the epic](#run-the-epic), from the order of the waves file's `waves` |
 | `<wave-stories>` | The `label` of each story of a wave, in the order `lets backlog waves` gives, joined by `, ` | [Run the epic](#run-the-epic), from the wave's `stories` in the waves file |
-| `<other>` | The story that a story of an epic run waits for, in the wave before its own, as its key | [Run the epic](#run-the-epic), from the story's `waitsFor` in the waves file |
+| `<other>` | The story that a story of an epic run waits for, as its key | [Run the epic](#run-the-epic), from the story's `waitsFor` in the waves file |
 | `<login>` | The login of a person assigned to a story | The story's `assignees`, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](#run-the-epic) |
 | `<stopped-story>` | The story an epic run stopped at, as its key, in the line of another story that was not built | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<failed>` | The story whose run failed or stopped, as its key, in the line of a story that depends on it | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
