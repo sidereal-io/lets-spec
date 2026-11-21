@@ -5070,3 +5070,12 @@ readme_step_returns() {
   ! grep -qF 'offer a discovery run on it instead, and stop' <<<"$shape" ||
     { echo "Shape one issue still offers discovery and stops"; false; }
 }
+
+@test "shape-step: resume mode settles confirmed phases" {
+  local section
+  section="$(skill_section lets-shape 'Resume mode')"
+  grep -qF 'When [the answers](#locate-the-discovery) confirmed phases of this parent, those phases are settled: skip this confirmation, and go straight to the recorded next phase.' <<<"$section" ||
+    { echo "Resume mode asks to confirm its restatement after the answers settled it"; false; }
+  grep -qF 'With no answers, confirm the restatement with the user.' <<<"$section" ||
+    { echo "Resume mode skips the confirmation with no answers"; false; }
+}
