@@ -5109,3 +5109,9 @@ readme_step_returns() {
   skill_section lets-shape 'Shape one issue' | grep -qF 'This is a confirmation question, with no recommendation.' ||
     { echo "Confirm, then write does not say it is a confirmation question"; false; }
 }
+
+@test "shape-step: lets-shape recommends the glossary owner" {
+  skill_section lets-shape 'Ask who carries the edits' |
+    grep -qF 'Recommend the pull request of the first story in dependency order. For one story, that is its own pull request.' ||
+    { echo "Ask who carries the edits recommends no owner"; false; }
+}

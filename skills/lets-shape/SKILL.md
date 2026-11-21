@@ -788,8 +788,10 @@ person shaping with you.
 
 ### Ask who carries the edits
 
-1. Ask the user which pull request carries the edits. Do not ask again
-   whether the meanings are accepted.
+1. Ask the user which pull request carries the edits. Recommend the pull
+   request of the first story in dependency order. For one story, that is
+   its own pull request. Do not ask again whether the meanings are
+   accepted.
    - For one story, offer its build branch and pull request, or a
      documentation pull request if the user stops after shaping. Create
      that pull request only if the user chooses it.
