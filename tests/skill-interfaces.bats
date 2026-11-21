@@ -2416,6 +2416,16 @@ epic_run_file() {
   done
 }
 
+@test "resume: an epic run's not-built reason skips a met blocker and the signed-in user on a started story" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in 'naming each open issue in its `blockedBy` that is not a met story' \
+    'For a story passed in `--started`, `lets backlog ready` keeps one assigned to the signed-in user, so that assignee is no reason' \
+    'gh api user --jq .login'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
 @test "an epic run's stop rule is written once, in A stop in an epic run" {
   local section line
   section="$(skill_section lets-go 'A stop in an epic run')"

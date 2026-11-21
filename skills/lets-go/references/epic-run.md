@@ -197,9 +197,17 @@ as for any picked issue.
        with `lets backlog item <story>`. On an error, act as
        [Backlog errors](../SKILL.md#backlog-errors) says. The reason is
        `blocked by #<blocker>`, naming each open issue in its
-       `blockedBy`; else `assigned to <login>`, naming each login in its
-       `assignees`; else its `status`, `kind` or `priority`, such as
-       `its Status is Done`.
+       `blockedBy` that is not a met story; else `assigned to <login>`,
+       naming each login in its `assignees`; else its `status`, `kind`
+       or `priority`, such as `its Status is Done`.
+       For a story passed in `--started`, `lets backlog ready` keeps one
+       assigned to the signed-in user, so that assignee is no reason:
+       name only the other logins, and with none, go on to the next
+       reason. Read the signed-in user's login once:
+
+       ```bash
+       gh api user --jq .login
+       ```
 
      Then go to [End of the run](../SKILL.md#end-of-the-run).
 

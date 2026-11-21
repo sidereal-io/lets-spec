@@ -129,7 +129,7 @@ An epic run SHALL end with one line for every story the epic had when the run st
 
 - A built story: `#<story> <story-name>: <pr-url>`, the URL of its pull request. A built story that the epic run stacked on a blocker SHALL end its line with `, stacked on #<blocker>`, such as `#280 epic-run-stacks: <pr-url>, stacked on #279`. The lines then show the merge order: a stacked story's pull request merges after its blocker's. A story whose pull request was ready for review when the run started gets this line too, as *An epic run settles the stories already ready, merged or closed* says.
 - A merged story: `#<story> <story-name>: merged, <pr-url>`, the URL of its merged pull request.
-- A story not built: `#<story> <story-name>: not built, <reason>`. The reason SHALL say why, such as `blocked by #279`, `blocked by #284 and #285, on different branches`, `assigned to octocat`, `taken by octocat`, `its packet is not complete`, `its glossary prerequisite is unresolved`, `in another repository`, `its pull request was closed: <pr-url>`, `it depends on #391, which did not finish` or `the epic run stopped at #391`. For a story `lets backlog ready` did not list, `lets-go` SHALL read why with `lets backlog item <story>`, as *Pick the first ready story* does: an open blocker, an assignee, or its Status, Kind or Priority.
+- A story not built: `#<story> <story-name>: not built, <reason>`. The reason SHALL say why, such as `blocked by #279`, `blocked by #284 and #285, on different branches`, `assigned to octocat`, `taken by octocat`, `its packet is not complete`, `its glossary prerequisite is unresolved`, `in another repository`, `its pull request was closed: <pr-url>`, `it depends on #391, which did not finish` or `the epic run stopped at #391`. For a story `lets backlog ready` did not list, `lets-go` SHALL read why with `lets backlog item <story>`, as *Pick the first ready story* does: an open blocker that is not met, an assignee, or its Status, Kind or Priority. For a story passed in `--started`, the signed-in user as an assignee SHALL not be the reason, because `lets backlog ready` keeps such a story.
 - A story whose step failed: `#<story> <story-name>: failed at <step name>: <reason>`, with the step's name in plain words, as its `Failed` line names it.
 - A story whose walk stopped for another reason: `#<story> <story-name>: stopped: <reason>`.
 
@@ -144,6 +144,10 @@ An epic run SHALL end with one line for every story the epic had when the run st
 #### Scenario: An assigned story
 - **WHEN** #282 is assigned to `octocat` when the epic run starts, and its change's branch exists nowhere
 - **THEN** its line is `#282 epic-run-resume: not built, assigned to octocat`
+
+#### Scenario: A started story left out for its Status
+- **WHEN** #282 is assigned to the signed-in user `octocat`, its branch `epic-run-resume` exists, it has no open blocker, its Status is Done, and nothing is ready
+- **THEN** its line is `#282 epic-run-resume: not built, its Status is Done`, not `assigned to octocat`
 
 #### Scenario: Each line prints as the story settles
 - **WHEN** the epic run settles #279 with its pull request URL, and goes on to pick another story
