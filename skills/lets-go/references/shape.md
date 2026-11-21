@@ -105,7 +105,12 @@ when it runs.
    [Read the report](../SKILL.md#read-the-report) says what it shaped:
    - **One issue:** that issue is `<i>`. Go on from the blocker read in
      [Check the issue](../SKILL.md#check-the-issue) with it, as for an
-     issue number.
+     issue number. One exception: when the check of the discovery maps
+     above went on only because a parent with no status line was this
+     input's discovery, and `<i>` is not that parent, the maps' edits
+     may be another discovery's. Name each path that check listed, say
+     to commit or discard them, and stop before
+     [Claim](../SKILL.md#claim).
    - **A parent and its stories:**
      [pick the first ready story](../SKILL.md#pick-the-first-ready-story).
 

@@ -1051,12 +1051,17 @@ review_build_start() {
 }
 
 @test "lets-go finds an input's discovery after a stop during Finalize" {
-  local section phrase
+  local section shape phrase
   section="$(skill_section lets-go "Find the input's discovery")"
   # Finalize removes the status line, so lets-go's own answers file is what shows an earlier round.
   for phrase in 'has no status line' '`.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least one pair' \
     '`.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea' 'an open epic whose discovery finished'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Find the input's discovery does not say: $phrase"; false; }
+  done
+  # A finished epic can match that way too, so one issue that is not the parent keeps its maps out of the branch.
+  shape="$(part_section 'Run the shape step')"
+  for phrase in 'not that parent' 'stop before [Claim]'; do
+    grep -qF -- "$phrase" <<<"$shape" || { echo "Run the shape step does not say: $phrase"; false; }
   done
 }
 
