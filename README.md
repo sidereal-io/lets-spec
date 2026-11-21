@@ -630,6 +630,79 @@ fails in CI until someone enters the dev shell on its branch and commits.
 2. Run `lets sync`.
 3. Commit `mise.toml` and `mise.lock` with what `lets sync` wrote.
 
+### Automate updates
+
+A GitHub Actions workflow can run those steps every week and open a pull
+request with the result. It upgrades only Let's Spec and the OpenSpec CLI,
+so the pull request holds no other tool's update. It relies on your project
+committing `mise.lock` and keeping `"github:sidereal-io/lets-spec" = "latest"`
+in `mise.toml`, as [Set it up: With mise](#with-mise) shows: `mise upgrade`
+moves the pins in `mise.lock`, and `mise.toml` stays the same. With an exact
+version in `mise.toml`, the pin never moves and the workflow opens no pull
+request.
+Save the workflow as
+`.github/workflows/update-lets-spec.yml`:
+
+```yaml
+name: update Let's Spec
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # Mondays at 06:00 UTC
+  workflow_dispatch:
+
+# GITHUB_TOKEN only reads. The pull request is opened with UPDATE_TOKEN.
+permissions:
+  contents: read
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Keeps the token for mise upgrade, which would otherwise call GitHub's
+      # API unauthenticated and can hit its rate limit.
+      - uses: jdx/mise-action@v5
+        with:
+          persist_github_token: true
+
+      # Only these two, so the pull request holds no other tool's update.
+      - run: mise upgrade github:sidereal-io/lets-spec npm:@fission-ai/openspec
+
+      # CI runs no mise activate, so the enter hook does not run lets sync.
+      - run: mise exec -- lets sync
+
+      # Opens or updates the pull request only when a file changed.
+      - uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.UPDATE_TOKEN }}
+          branch: chore/update-lets-spec
+          title: "chore: update Let's Spec"
+          commit-message: "chore: update Let's Spec"
+```
+
+The workflow needs a token of its own. A pull request opened with
+`GITHUB_TOKEN` starts no workflows, so your CI would not run on it. To set
+one up:
+
+1. Create a fine-grained personal access token that can reach only your
+   project's repository, with these repository permissions:
+   Contents: Read and write, and Pull requests: Read and write.
+2. Store it as the repository secret `UPDATE_TOKEN`.
+
+If your organization does not want a token tied to one person, use a
+GitHub App token instead: create it in the workflow with
+`actions/create-github-app-token`, and pass it as `token`.
+
+Each run opens or updates one pull request with the new `mise.lock` and
+what `lets sync` wrote. A run that changes nothing opens no pull request.
+In the `ignored` skills mode, git ignores the copies, so the pull request
+holds only `mise.lock` and any rules or `.gitignore` change.
+
+The workflow does not check its own result. To catch an incomplete update,
+have your project's CI run `mise exec -- lets sync --check` on pull requests.
+
 ## 🛠️ Development
 
 This section is for you if you want to work on Let's Spec itself.

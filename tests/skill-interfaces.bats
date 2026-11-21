@@ -4286,6 +4286,174 @@ EXPECTED
     { echo 'unresolved rebuttals do not follow the verdict rules'; false; }
 }
 
+# readme_automate_updates: the README's Automate updates section, without
+# its heading.
+readme_automate_updates() {
+  awk '/^### Automate updates$/ { on = 1; next } on && /^##+ / { exit } on' "$repo/README.md"
+}
+
+# automate_updates_workflow: the workflow in the Automate updates section's
+# yaml code block.
+automate_updates_workflow() {
+  readme_automate_updates | awk '/^```yaml$/ { on = 1; next } on && /^```$/ { exit } on'
+}
+
+@test "Automate updates follows With mise in the README's Updating section" {
+  local headings
+  headings="$(awk '/^## 🔄 Updating$/ { on = 1; next } on && /^## / { exit } on && /^### /' "$repo/README.md")"
+  grep -A1 -xF '### With mise' <<<"$headings" | tail -n1 | grep -qxF '### Automate updates' ||
+    { echo "Updating's headings are: $headings"; false; }
+}
+
+@test "Automate updates holds exactly one yaml code block" {
+  local count
+  count="$(readme_automate_updates | grep -cxF '```yaml' || true)"
+  [ "$count" -eq 1 ] || { echo "Automate updates holds $count yaml code blocks"; false; }
+}
+
+@test "Automate updates' workflow is YAML that yq parses" {
+  automate_updates_workflow | yq -e '.' >/dev/null ||
+    { echo "yq cannot parse the workflow"; false; }
+}
+
+@test "Automate updates' workflow runs weekly, on Mondays at 06:00 UTC" {
+  local workflow
+  workflow="$(automate_updates_workflow)"
+  [ "$(yq '.on.schedule | length' <<<"$workflow")" = 1 ] ||
+    { echo "the workflow does not have exactly one schedule"; false; }
+  [ "$(yq '.on.schedule[0].cron' <<<"$workflow")" = '0 6 * * 1' ] ||
+    { echo "the schedule is not 0 6 * * 1"; false; }
+}
+
+@test "Automate updates' workflow can be run by hand" {
+  [ "$(automate_updates_workflow | yq '.on | has("workflow_dispatch")')" = true ] ||
+    { echo "the workflow has no workflow_dispatch trigger"; false; }
+}
+
+@test "Automate updates' workflow has one job, on ubuntu-latest" {
+  local workflow
+  workflow="$(automate_updates_workflow)"
+  [ "$(yq '.jobs | length' <<<"$workflow")" = 1 ] ||
+    { echo "the workflow does not have exactly one job"; false; }
+  [ "$(yq '.jobs[].runs-on' <<<"$workflow")" = ubuntu-latest ] ||
+    { echo "the job does not run on ubuntu-latest"; false; }
+}
+
+@test "Automate updates' workflow checks out, installs mise, upgrades, then syncs" {
+  local steps expected
+  steps="$(automate_updates_workflow | yq '.jobs[].steps[] | (.uses // .run)' | head -n4)"
+  expected="$(printf '%s\n' actions/checkout@v7 jdx/mise-action@v5 'mise upgrade github:sidereal-io/lets-spec npm:@fission-ai/openspec' 'mise exec -- lets sync')"
+  [ "$steps" = "$expected" ] || { echo "the first steps are: $steps"; false; }
+}
+
+@test "Automate updates' workflow keeps the token after mise-action for mise upgrade" {
+  [ "$(automate_updates_workflow | yq '.jobs[].steps[1].with.persist_github_token')" = true ] ||
+    { echo "jdx/mise-action does not set persist_github_token: true"; false; }
+}
+
+@test "Automate updates' workflow ends by opening a pull request with UPDATE_TOKEN" {
+  local last
+  last="$(automate_updates_workflow | yq -o=json '.jobs[].steps[-1]')"
+  [ "$(yq '.uses' <<<"$last")" = peter-evans/create-pull-request@v8 ] ||
+    { echo "the last step is not peter-evans/create-pull-request@v8: $last"; false; }
+  [ "$(yq '.with.token' <<<"$last")" = '${{ secrets.UPDATE_TOKEN }}' ] ||
+    { echo "the pull request is not opened with secrets.UPDATE_TOKEN: $last"; false; }
+}
+
+@test "Automate updates' pull request comes from the branch chore/update-lets-spec" {
+  [ "$(automate_updates_workflow | yq '.jobs[].steps[-1].with.branch')" = chore/update-lets-spec ] ||
+    { echo "the branch is not chore/update-lets-spec"; false; }
+}
+
+@test "Automate updates' pull request title matches its commit message, chore: update Let's Spec" {
+  local with
+  with="$(automate_updates_workflow | yq -o=json '.jobs[].steps[-1].with')"
+  [ "$(yq '.title' <<<"$with")" = "chore: update Let's Spec" ] ||
+    { echo "the title is not chore: update Let's Spec: $with"; false; }
+  [ "$(yq '.commit-message' <<<"$with")" = "chore: update Let's Spec" ] ||
+    { echo "the commit message is not chore: update Let's Spec: $with"; false; }
+}
+
+# automate_updates_prose: the Automate updates section without its code
+# block, on one line.
+automate_updates_prose() {
+  readme_automate_updates | awk '/^```/ { code = !code; next } !code' | tr -s '[:space:]' ' '
+}
+
+@test "Automate updates says a pull request opened with GITHUB_TOKEN would start no CI" {
+  local prose
+  prose="$(automate_updates_prose)"
+  [[ "$prose" == *'`GITHUB_TOKEN` starts no workflows'* ]] ||
+    { echo "the section does not say GITHUB_TOKEN starts no workflows"; false; }
+  [[ "$prose" == *'CI would not run'* ]] ||
+    { echo "the section does not say CI would not run"; false; }
+}
+
+@test "Automate updates' token is fine-grained, for the project's repository only" {
+  local prose
+  prose="$(automate_updates_prose)"
+  [[ "$prose" == *'fine-grained personal access token'* ]] ||
+    { echo "the section names no fine-grained personal access token"; false; }
+  [[ "$prose" == *"reach only your project's repository"* ]] ||
+    { echo "the section does not limit the token to the project's repository"; false; }
+}
+
+@test "Automate updates' token may write contents and pull requests" {
+  local prose
+  prose="$(automate_updates_prose)"
+  [[ "$prose" == *'Contents: Read and write'* ]] ||
+    { echo "the section does not name Contents: Read and write"; false; }
+  [[ "$prose" == *'Pull requests: Read and write'* ]] ||
+    { echo "the section does not name Pull requests: Read and write"; false; }
+}
+
+@test "Automate updates stores the token as the repository secret UPDATE_TOKEN" {
+  [[ "$(automate_updates_prose)" == *'repository secret `UPDATE_TOKEN`'* ]] ||
+    { echo "the section does not name the repository secret UPDATE_TOKEN"; false; }
+}
+
+@test "Automate updates names actions/create-github-app-token for a GitHub App token" {
+  [[ "$(automate_updates_prose)" == *'GitHub App'*'`actions/create-github-app-token`'* ]] ||
+    { echo "the section does not name actions/create-github-app-token for a GitHub App"; false; }
+}
+
+@test "Automate updates says it upgrades only Let's Spec and the OpenSpec CLI" {
+  [[ "$(automate_updates_prose)" == *"upgrades only Let's Spec and the OpenSpec CLI"* ]] ||
+    { echo "the section does not say the workflow upgrades only Let's Spec and the OpenSpec CLI"; false; }
+}
+
+@test "Automate updates says the workflow relies on a committed mise.lock" {
+  [[ "$(automate_updates_prose)" == *'relies on your project committing `mise.lock`'* ]] ||
+    { echo "the section does not say the workflow relies on a committed mise.lock"; false; }
+}
+
+@test "Automate updates says the workflow needs the latest entry in mise.toml" {
+  [[ "$(automate_updates_prose)" == *'`"github:sidereal-io/lets-spec" = "latest"` in `mise.toml`'* ]] ||
+    { echo "the section does not say mise.toml must keep lets-spec at latest"; false; }
+}
+
+# Updating has a With mise heading of its own, so a bare "With mise" link
+# reads as that one, not the setup steps it points to.
+@test "Automate updates names Set it up when it links to its With mise steps" {
+  [[ "$(automate_updates_prose)" == *'[Set it up: With mise](#with-mise)'* ]] ||
+    { echo "the section's With mise link does not name Set it up"; false; }
+}
+
+@test "Automate updates says a run that changes nothing opens no pull request" {
+  [[ "$(automate_updates_prose)" == *'A run that changes nothing opens no pull request'* ]] ||
+    { echo "the section does not say a run that changes nothing opens no pull request"; false; }
+}
+
+@test "Automate updates tells the project's CI to run lets sync --check on pull requests" {
+  [[ "$(automate_updates_prose)" == *'CI'*'run `mise exec -- lets sync --check` on pull requests'* ]] ||
+    { echo "the section does not tell CI to run mise exec -- lets sync --check on pull requests"; false; }
+}
+
+@test "Automate updates says what the pull request holds in the ignored skills mode" {
+  [[ "$(automate_updates_prose)" == *'`ignored` skills mode'*'only `mise.lock` and any rules or `.gitignore` change'* ]] ||
+    { echo "the section does not say what an ignored-mode pull request holds"; false; }
+}
+
 @test "stack: an epic run passes the met stories as --met-blockers" {
   local part phrase
   part="$(part_section 'Run the epic')"
