@@ -2492,7 +2492,7 @@ epic_run_file() {
     '**An epic with a stopped discovery:** run [Find the input'"'"'s discovery](references/shape.md#find-the-inputs-discovery) for `#<i>`.' \
     'say that a discovery of `#<i>` is in progress at each `#<parent>` it found' \
     'When no shape step has run in this run, [run the shape step](#run-the-shape-step) for the *shape input* that the lookup returned with the discovery: its round resumes the discovery, or finishes its Finalize.' \
-    'When one has, say to run the `lets-shape` skill on `#<i>`, and stop.' \
+    'When a shape step has run in this run, say to run the `lets-shape` skill on `#<i>`, and stop.' \
     'When it finds none, go on to the next item.'; do
     grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
   done

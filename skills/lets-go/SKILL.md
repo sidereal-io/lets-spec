@@ -479,17 +479,18 @@ says.
         at each `#<parent>` it found. When no shape step has run in this
         run, [run the shape step](#run-the-shape-step) for the *shape
         input* that the lookup returned with the discovery: its round
-        resumes the discovery, or finishes its Finalize. When one has,
-        say to run the `lets-shape` skill on `#<i>`, and stop. Before
-        you stop, name the maps' edits, as
-        [Name the maps' edits](references/shape.md#name-the-maps-edits)
-        says for a run that stops after discovery and before
-        [Claim](#claim).
+        resumes the discovery, or finishes its Finalize.
         The shape input is `#<i>`, or the idea or the issue that the
         epic's `Input:` line names, when the lookup found that input's
         answers. When the lookup returns several discoveries with
         different shape inputs, run the shape step for `#<i>`:
         `lets-shape` asks which one.
+        When a shape step has run in this run, say to run the
+        `lets-shape` skill on `#<i>`, and stop. Before you stop, name
+        the maps' edits, as
+        [Name the maps' edits](references/shape.md#name-the-maps-edits)
+        says for a run that stops after discovery and before
+        [Claim](#claim).
         When it finds none, go on to the next item.
      4. **Any other epic:** When a shape step reported `done` in this
         run, and the run has not printed the `Done shape` line, print it
