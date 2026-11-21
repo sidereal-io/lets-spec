@@ -1132,11 +1132,11 @@ and review build. Prose and printed lines use these names. `--for`,
 Shape runs only before the walk, as
 [Run the shape step](#run-the-shape-step) says, so this table has no row
 for it. Its skill is `lets-shape`, which
-[Write the prompt](references/step-prompt.md#write-the-prompt) names, and
-[Check the issue](#check-the-issue) prints its line. The walk runs the
-other four steps. Every other step runs in a fresh session, as
-[Run a step](#run-a-step) says. On `lets-minimal`, review plan never
-runs.
+[Write the prompt](references/step-prompt.md#write-the-prompt)
+names, and [Check the issue](#check-the-issue) prints its line. The
+walk runs the other four steps. Every other step runs in a fresh
+session, as [Run a step](#run-a-step) says. On `lets-minimal`, review
+plan never runs.
 
 Each row says which skill the step runs, which record shows the step
 was done, and the line to print when it was done before this run.
