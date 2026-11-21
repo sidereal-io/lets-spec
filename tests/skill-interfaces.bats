@@ -2482,10 +2482,30 @@ epic_run_file() {
   for phrase in \
     '**An epic with a stopped discovery:** run [Find the input'"'"'s discovery](references/shape.md#find-the-inputs-discovery) for `#<i>`.' \
     'say that a discovery of `#<i>` is in progress at each `#<parent>` it found' \
-    'When no shape step has run in this run, [run the shape step](#run-the-shape-step) for `#<i>`: its round resumes the discovery, or finishes its Finalize.' \
+    'When no shape step has run in this run, [run the shape step](#run-the-shape-step) for the *shape input* that the lookup returned with the discovery: its round resumes the discovery, or finishes its Finalize.' \
     'When one has, say to run the `lets-shape` skill on `#<i>`, and stop.' \
     'When it finds none, go on to the next item.'; do
     grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+}
+
+@test "an epic run finishes a stopped Finalize through the input its Input line names" {
+  local check shape phrase
+  check="$(part_section 'Check the issue')"
+  for phrase in \
+    'The shape input is `#<i>`, or the idea or the issue that the epic'"'"'s `Input:` line names, when the lookup found that input'"'"'s answers.' \
+    'When the lookup returns several discoveries with different shape inputs, run the shape step for `#<i>`: `lets-shape` asks which one.'; do
+    grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+  shape="$(part_section 'Run the shape step')"
+  for phrase in \
+    'For an epic whose stopped discovery [Check the issue](../SKILL.md#check-the-issue) found, it is the shape input that [Find the input'"'"'s discovery](#find-the-inputs-discovery) returned' \
+    '**An idea:** run the step as for an idea, with the idea from the `Input:` line as `<idea>`.' \
+    'That sets its `<shape-name>`, the idea form of the prompt in [Write the prompt](step-prompt.md#write-the-prompt), and the check below that the answers file is this idea'"'"'s.' \
+    '**Another issue:** run the step as for an issue, with that issue in place of `#<i>`' \
+    'its `<shape-name>` is `issue-` and that issue'"'"'s number' \
+    'A `done` report names the epic and its stories, so the run goes back to [Check the issue](../SKILL.md#check-the-issue) with the epic.'; do
+    grep -qF -- "$phrase" <<<"$shape" || { echo "Run the shape step does not say: $phrase"; false; }
   done
 }
 
@@ -5295,7 +5315,7 @@ readme_step_returns() {
 
 # BEGIN shape-step (#264): lets-shape owns the shape step's rules.
 @test "shape-step: the shape report lists the stories in the order they were created" {
-  tr '\n' ' ' <"$(step_prompt_file)" | grep -qF 'with a `story #<story>: <title>` line for each story, in the order you created them.' ||
+  tr '\n' ' ' <"$(step_prompt_file)" | grep -qF 'with a `story #<story>: <title>` line for each story, in the order discovery created them.' ||
     { echo "the step prompt does not order the story lines"; false; }
 }
 

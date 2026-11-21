@@ -96,6 +96,27 @@ on the default branch, before any branch or change exists, and at most
 once per run. [Check the issue](../SKILL.md#check-the-issue) decides
 when it runs.
 
+The step's input is the idea, or the issue `#<i>`. For an epic whose
+stopped discovery [Check the issue](../SKILL.md#check-the-issue) found,
+it is the shape input that
+[Find the input's discovery](#find-the-inputs-discovery) returned,
+which can be the idea or the issue that the epic's `Input:` line names:
+
+- **An idea:** run the step as for an idea, with the idea from the
+  `Input:` line as `<idea>`. That sets its `<shape-name>`, the idea form
+  of the prompt in [Write the prompt](step-prompt.md#write-the-prompt),
+  and the check below that the answers file is this idea's.
+- **Another issue:** run the step as for an issue, with that issue in
+  place of `#<i>`: its `<shape-name>` is `issue-` and that issue's
+  number, and the issue form of the prompt names that issue's number
+  and URL. The URL is the one the `Input:` line holds, or else the
+  epic's `<issue-url>` with that issue's number in place of the epic's.
+
+[Read the report](../SKILL.md#read-the-report) then removes that
+input's answers file, the one the step used. A `done` report names the
+epic and its stories, so the run goes back to
+[Check the issue](../SKILL.md#check-the-issue) with the epic.
+
 1. Check the discovery maps:
 
    ```bash
@@ -278,7 +299,10 @@ Return to the part that ran it.
 `<name>` is the change's name. Shape runs before there is one, so it
 has a name of its own, `<shape-name>`, from what it shapes:
 
-- **An issue:** `issue-<i>`, such as `issue-180`.
+- **An issue:** `issue-<i>`, such as `issue-180`. For the issue that
+  an epic's `Input:` line names, as
+  [Run the shape step](#run-the-shape-step) says, use that issue's
+  number in place of `<i>`.
 - **An idea:** `idea-<slug>`. To make `<slug>`, split the idea on white
   space. Lower-case each word, and keep only its letters and digits.
   Drop a word left empty. Join the first five words with hyphens, or all
