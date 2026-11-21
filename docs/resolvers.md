@@ -345,6 +345,13 @@ Tell the step to follow these rules:
   longer fence, as this page does. A block closes only at a line of at
   least as many backticks as opened it.
 
+A `needs-input` question may also hold `ask: true`. It asks the caller
+to put that question to the user whatever the question mode: a story
+run's child marks each question of a step's sixth round this way. `ask`
+must be `true` or `false`. `lets` keeps `"ask":true` on the question it
+prints, drops `ask: false`, and reads any other value as a report that
+is not valid.
+
 `lets` prints the report as one JSON line, `outcome` first, and adds
 `date` to a `done` report. A final message with no valid report becomes a
 `failed` report. Its `reason` says what is wrong, and its `message` holds

@@ -16,17 +16,19 @@ import { normalizeName } from '../resolvers/kit/adapter.ts';
 import type { Handle } from '../resolvers/kit/adapter.ts';
 import { parseModel } from '../resolvers/kit/families.ts';
 import type { Effort } from '../resolvers/kit/families.ts';
-import type { StepIntent } from './strategies.ts';
+import type { StepStrategyIntent } from './strategies.ts';
 
 // How long a step may run, in minutes, at every effort. A step such as
 // build runs far longer than a review.
 export const STEP_TIMEOUT_MINUTES = 120;
+// How long a story run may take: it runs up to five steps in turn.
+export const STORY_TIMEOUT_MINUTES = 600;
 
-// for: the step, recorded in the record line. models: each <family> or
+// for: the step, or story, recorded in the record line. models: each <family> or
 // <family>/<model>, best first, asked for one at a time until one is not
 // refused. answersFile: the user's answers to the questions of the last
 // needs-input report, which lets appends to the prompt.
-export type StepOptions = { for: StepIntent; name: string; promptFile: string; effort: Effort; models: string[]; timeoutMinutes?: number; answersFile?: string };
+export type StepOptions = { for: StepStrategyIntent; name: string; promptFile: string; effort: Effort; models: string[]; timeoutMinutes?: number; answersFile?: string };
 
 // The exit code: 0 a report is on stdout, whatever its outcome, 2 usage,
 // 3 every model refused, 4 the outcome is unknown, 6 timeout.
@@ -44,7 +46,7 @@ async function step({ for: intent, name, promptFile, effort, models, timeoutMinu
   const cwd = await repoRoot(deps.cwd, io);
 
   const adapter = await pick('step', { ...deps, config, fileOf });
-  const timeoutMs = (timeoutMinutes ?? STEP_TIMEOUT_MINUTES) * 60000;
+  const timeoutMs = (timeoutMinutes ?? (intent === 'story' ? STORY_TIMEOUT_MINUTES : STEP_TIMEOUT_MINUTES)) * 60000;
   // A session the resolver reports failed is a failed report, not an exit
   // code, so the caller reads every outcome in one place. The resolver gives
   // no handle for it, and keeps the session itself.

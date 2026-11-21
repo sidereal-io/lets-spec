@@ -6,8 +6,11 @@ import type { Kind } from './lookup.ts';
 export type Strategy = 'review' | 'handoff' | 'step';
 // The five steps, in the order they run.
 export const STEP_INTENTS = ['shape', 'plan', 'review-plan', 'build', 'review-build'] as const;
-export type StepIntent = (typeof STEP_INTENTS)[number];
-export type Intent = 'code' | 'apply' | StepIntent;
+// The step strategy's intents: the five steps, then story, which runs a
+// story run in a child lets-go session. A story run is not a step.
+export const STEP_STRATEGY_INTENTS = [...STEP_INTENTS, 'story'] as const;
+export type StepStrategyIntent = (typeof STEP_STRATEGY_INTENTS)[number];
+export type Intent = 'code' | 'apply' | StepStrategyIntent;
 
 export const STRATEGIES: Record<Strategy, { intents: readonly Intent[]; verb: Kind }> = {
   // Read-only, and waits for the final message.
@@ -15,5 +18,5 @@ export const STRATEGIES: Record<Strategy, { intents: readonly Intent[]; verb: Ki
   // Interactive, and returns at once.
   handoff: { intents: ['apply'], verb: 'start' },
   // May write files, waits for the final message, and reads its step report.
-  step: { intents: STEP_INTENTS, verb: 'step' },
+  step: { intents: STEP_STRATEGY_INTENTS, verb: 'step' },
 };

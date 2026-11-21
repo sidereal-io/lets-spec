@@ -289,7 +289,11 @@ goes on.
 
 Given an epic's number, `lets-go` builds each ready story of the epic in
 turn, on the default branch: it claims and builds one story to a pull
-request ready for review, then picks the next. A story blocked by
+request ready for review, then picks the next. The epic run claims the
+story and enters its branch, then each story runs in a child `lets-go`
+session, which walks its steps, so the epic run's own context stays
+small. A story runs in the epic run's own session when no child session
+can start. A story blocked by
 another story of the epic stacks on that story's branch, and its pull
 request targets that branch, once the blocker's pull request is ready
 for review. Merge the blocker's pull request first. The run ends with
@@ -435,7 +439,9 @@ and `lets` prints that report as one JSON line:
 
 - `done`, with the step's `evidence`. `lets` adds the `date`.
 - `needs-input`, with the step's `questions`, each with a
-  `recommendation` when the step has one.
+  `recommendation` when the step has one. A question may also hold
+  `ask: true`, which asks the caller to put it to the user whatever the
+  question mode; `lets` keeps it as `"ask":true`.
 - `failed`, with the `reason`. A session that gives no valid report is a
   `failed` report too.
 
@@ -444,6 +450,11 @@ that needs input, run it again with the same `--prompt-file` and
 `--answers-file <path>`, a YAML list of `question` and `answer` pairs.
 `lets` adds them to the prompt. [A step's report](docs/resolvers.md#a-steps-report)
 shows the block.
+
+`lets delegate step run --for story` runs a story run, not a step: an
+epic run starts a child `lets-go` session that walks one story's steps,
+and ends with one step report. It has 600 minutes unless
+`--timeout-minutes` says otherwise.
 
 ### Set up delegation
 
@@ -469,6 +480,8 @@ delegate:
   step:
     build:
       guidance: Prefer claude/claude-opus-5-5.
+    story:
+      guidance: Prefer claude.
 go:
   questions: auto
 backlog:
@@ -486,7 +499,8 @@ answers.
 `delegate.<strategy>.<intent>.guidance` is your advice, in plain words, on
 which models to use. Its parts are the command that reads it and a value
 `--for` takes: `review.plan`, `review.code`, `handoff.apply`, or
-`step.<step>` for one of the five steps, such as `step.build`. The skill
+`step.<step>` for one of the five steps, such as `step.build`, or
+`step.story` for a story run. The skill
 uses it only to rank and leave out models. A value that is not a string makes `instructions` exit 2.
 
 `go` holds the settings for `lets-go`. `go.questions`, the question

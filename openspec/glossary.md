@@ -98,7 +98,8 @@ and not a step.
 
 One unit of work that `lets-go` runs in its own session: shape, plan,
 review plan, build or review build. `lets delegate step --for` names them
-as `shape`, `plan`, `review-plan`, `build` and `review-build`. A step runs
+as `shape`, `plan`, `review-plan`, `build` and `review-build`. `--for` also
+takes `story`, which runs a story run, not a step. A step runs
 in its own session through the `step` delegate strategy, and ends with a
 step report. A step may write several OpenSpec artifacts. It is not an
 artifact and not a task.
@@ -129,4 +130,7 @@ discovery run.
 
 The part of an epic run that takes one story to a pull request ready for
 review, in a child `lets-go` session of its own. A story run is not a
-step: it runs the steps of its story.
+step: it runs the steps of its story. An epic run starts each story run with
+`lets delegate step run --for story`, which uses the `step` delegate
+strategy and reads the step report the child ends with. The `story`
+intent names no step.

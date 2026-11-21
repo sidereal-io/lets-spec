@@ -4362,3 +4362,345 @@ step_prompt_file() {
     <<<"$(skill_section lets-go 'Write the prompt')" ||
     { echo "Write the prompt does not hold the Stack section for a resumed stacked story"; false; }
 }
+
+# story_prompt_block: the lines of the fenced text block in Start the story
+# run that opens with the story prompt's first line, on one line.
+story_prompt_block() {
+  text_block_lines 'Start the story run' "$(epic_run_file)" |
+    awk '/^You run a story run of a lets-go epic run: / { on = 1 } on' | tr -s '[:space:]' ' '
+}
+
+@test "story run: Start the story run holds the story prompt's frame in one block" {
+  local block phrase
+  has_heading "$(epic_run_file)" 'Start the story run' || { echo "references/epic-run.md has no heading: Start the story run"; false; }
+  block="$(story_prompt_block)"
+  [ -n "$block" ] || { echo "Start the story run has no text block that opens with the story prompt's first line"; false; }
+  for phrase in 'You run a story run of a lets-go epic run: #<i>, for the change <name>, under #<parent>.' \
+    'Issue: #<i>, <issue-url>. Branch: <name>. Schema: <schema>. <route line>' \
+    'The question mode is <mode>.' \
+    'The epic run has already claimed #<i>, routed it and entered the branch `<name>`' \
+    'Claim nothing, route nothing, and stay on `<name>`' \
+    'Invoke the `lets-go` skill' '## What to run' '## Questions' '## The report'; do
+    grep -qF -- "$phrase" <<<"$block" || { echo "the story prompt does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the story prompt holds the Stack section for a stacked story only" {
+  local section phrase
+  section="$(skill_section lets-go 'Start the story run')"
+  for phrase in '.workspace/lets-go/<name>-story-prompt.md' \
+    'For a stacked story only, put the `## Stack` section of [Write the prompt](step-prompt.md#write-the-prompt) between `## What to run` and `## Questions`' \
+    'The prompt of a story that is not stacked holds no `## Stack` section'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Start the story run does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: Start the story run clears the story's answers and rounds only before its first child session" {
+  local section phrase
+  section="$(skill_section lets-go 'Start the story run')"
+  section="$(sed 's/ \\ / /g' <<<"$section")"
+  for phrase in 'rm -f .workspace/lets-go/<name>-story-answers.yaml .workspace/lets-go/<name>-plan-rounds.txt .workspace/lets-go/<name>-review-plan-rounds.txt .workspace/lets-go/<name>-build-rounds.txt .workspace/lets-go/<name>-review-build-rounds.txt' \
+    "Do this only before the story's first child session in this run"; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Start the story run does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: Start the story run ranks the options and runs the child" {
+  local section phrase
+  section="$(skill_section lets-go 'Start the story run' | sed 's/ \\ / /g')"
+  for phrase in 'lets delegate step instructions --for story' \
+    'as [Run a step](../SKILL.md#run-a-step) ranks a step'"'"'s' \
+    'lets delegate step run --for story --name <name>-story --prompt-file .workspace/lets-go/<name>-story-prompt.md --effort high' \
+    '> .workspace/lets-go/<name>-story-report.json 2> .workspace/lets-go/<name>-story-meta.txt'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Start the story run does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: with no child session, the epic run walks the story's steps itself" {
+  local section phrase
+  grep -qxF 'No child session could start for #<i>, so this session walks its steps.' \
+    <<<"$(text_block_lines 'Start the story run' "$(epic_run_file)")" ||
+    { echo "Start the story run has no text block with the line for exit 3"; false; }
+  section="$(skill_section lets-go 'Start the story run')"
+  for phrase in 'walk the story'"'"'s steps in this session, from [Walk the step table](../SKILL.md#walk-the-step-table)' \
+    'Run no subagent with the story prompt'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Start the story run does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: exit 3 after a relay gives the relayed answers to the step that asked" {
+  local section phrase
+  section="$(skill_section lets-go 'Relay a story run'"'"'s questions')"
+  for phrase in 'On exit 3 here, no child gave these answers to the step that asked' \
+    '[Give the answers to the step](story-run.md#give-the-answers-to-the-step)' \
+    'with the pairs of `.workspace/lets-go/<name>-story-answers.yaml`' \
+    'the lines in its `.workspace/lets-go/<session>-rounds.txt`'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Relay a story run's questions does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the picked story runs its parts in this session, then Start the story run" {
+  local part
+  part="$(part_section 'Run the epic')"
+  grep -qF '[Set the question mode](../SKILL.md#set-the-question-mode) in this session, then [Start the story run](#start-the-story-run)' <<<"$part" ||
+    { echo "Run the epic does not send the picked story to Start the story run"; false; }
+  ! grep -qF 'Start no other `lets-go` session for the story' <<<"$part" ||
+    { echo "Run the epic still runs no child session"; false; }
+  ! sed -n '1,/^## /p' "$(epic_run_file)" | tr -s '[:space:]' ' ' | grep -qF "run in the epic run's own session, not in a child session" ||
+    { echo "references/epic-run.md still says the stories run in the epic run's own session"; false; }
+}
+
+@test "story run: the epic run prints none of the child's step lines" {
+  grep -qF "The epic run prints none of the child's \`Skipped\`, \`Done\` or \`Failed\` lines" \
+    <<<"$(skill_section lets-go 'Start the story run')" ||
+    { echo "Start the story run does not keep the child's step lines in the child"; false; }
+}
+
+@test "story run: Set the question mode goes on to Start the story run in an epic run" {
+  grep -qF 'in an epic run, [Start the story run](references/epic-run.md#start-the-story-run) instead' <<<"$(next_line 'Set the question mode')" ||
+    { echo "it said: $(next_line 'Set the question mode')"; false; }
+  overview_row 'Set the question mode' | grep -qF '[Start the story run](references/epic-run.md#start-the-story-run) in an epic run' ||
+    { echo "the overview's row for Set the question mode does not name Start the story run"; false; }
+}
+
+@test "story run: a story run's needs-input report goes to Relay a story run's questions" {
+  has_heading "$(epic_run_file)" "Relay a story run's questions" ||
+    { echo "references/epic-run.md has no heading: Relay a story run's questions"; false; }
+  grep -qF "**0, with a \`needs-input\` report:** go on to [Relay a story run's questions](#relay-a-story-runs-questions)" \
+    <<<"$(skill_section lets-go 'Start the story run')" ||
+    { echo "Start the story run does not relay a needs-input report"; false; }
+}
+
+@test "story run: the epic run asks the user each question the child marked ask" {
+  local section phrase
+  section="$(skill_section lets-go "Relay a story run's questions")"
+  for phrase in '**A question whose `ask` is `true`:**' \
+    'Ask the user that question, whatever `<mode>` is, with its `recommendation` as the suggested answer' \
+    'Write the answer as the user gave it, with no marker' \
+    'Before the first such question of the report, print the `Questions` line that [Relay the questions](../SKILL.md#relay-the-questions) prints'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Relay a story run's questions does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the epic run relays every other question as its question mode says" {
+  local section phrase
+  section="$(skill_section lets-go "Relay a story run's questions")"
+  for phrase in '**Any other question:** relay it as `<mode>` says, as [Relay the questions](../SKILL.md#relay-the-questions) does' \
+    'At `auto`, a question with a `recommendation` takes it as the answer, with the marker' \
+    'At `ask`, every question goes to the user'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Relay a story run's questions does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: each relay replaces the story's answers file and runs the child again" {
+  local section phrase
+  section="$(skill_section lets-go "Relay a story run's questions")"
+  for phrase in "Write this report's pairs, in order, to \`.workspace/lets-go/<name>-story-answers.yaml\`, replacing what it held" \
+    'ask what can run and rank the options again' \
+    '`--answers-file .workspace/lets-go/<name>-story-answers.yaml`' \
+    'Write the story prompt only once' \
+    "Remove neither the story's answers file nor its rounds files"; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Relay a story run's questions does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the epic run settles a done story run only on its pull request's record" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in '**Exit 0, `done`:**' 'gh pr view <name> --json url,state,isDraft' \
+    'When its `state` is `OPEN` and its `isDraft` is `false`' \
+    '`stopped: the story run reported done, but `' '`the pull request is a draft`' '`the branch has no pull request`'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the epic run settles a failed story run from its reason" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in '**Exit 0, `failed`:** a `reason` that starts `failed at <step name>: ` or `stopped: ` follows the story'"'"'s name as it is' \
+    'Any other reason, including one that `lets` wrote because the child gave no valid report, gives `stopped: <reason>`' \
+    '**Exit 2, 4 or 6:** the line is `stopped: <reason>`' '`.workspace/lets-go/<name>-story-meta.txt`' \
+    'Exit 3 is not settled here'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: a story run that did not build goes on from the third action of A stop in an epic run" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in 'Every line but a built or stacked line is a stop in a story run' \
+    'go on from the third action of [A stop in an epic run](#a-stop-in-an-epic-run)' \
+    'Start no child session again for the story in this run'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+# story_run_file: the path of lets-go's references/story-run.md.
+story_run_file() {
+  echo "${skills_dir:-$repo/skills}/lets-go/references/story-run.md"
+}
+
+@test "story run: lets-go keeps eight reference files, each opening with a title and when to read it" {
+  local dir="$repo/skills/lets-go/references" files file
+  files="$(cd "$dir" && printf '%s\n' *.md)"
+  [ "$files" = "$(printf '%s\n' epic-run.md glossary-handoff.md records.md shape.md step-prompt.md story-run.md subagent.md terms.md)" ] ||
+    { echo "lets-go's reference files are: $(tr '\n' ' ' <<<"$files")"; false; }
+  for file in $files; do
+    head -1 "$dir/$file" | grep -qE '^# ' || { echo "references/$file does not open with a # title"; false; }
+    sed -n 3p "$dir/$file" | grep -qE '^Read this file ' || { echo "references/$file does not say when a run reads it"; false; }
+  done
+}
+
+@test "story run: the child's part is in references/story-run.md, which a run reads only in a child session" {
+  local file request
+  file="$(story_run_file)"
+  [ -f "$file" ] || { echo "lets-go has no references/story-run.md"; false; }
+  sed -n 3,4p "$file" | tr -s '[:space:]' ' ' | grep -qF "only in a story run's child session" ||
+    { echo "references/story-run.md does not say a run reads it only in a story run's child session"; false; }
+  has_heading "$file" 'Take up the story run' || { echo "references/story-run.md has no heading: Take up the story run"; false; }
+  ! has_heading "$(lets_go_skill)" 'Take up the story run' || { echo "SKILL.md has the heading: Take up the story run"; false; }
+  request="$(part_section 'Read the request')"
+  grep -qF 'When the request starts with `You run a story run of a lets-go epic run:`, this session is a story run'"'"'s child: go to [Take up the story run](references/story-run.md#take-up-the-story-run)' <<<"$request" ||
+    { echo "Read the request does not send a story prompt to references/story-run.md"; false; }
+}
+
+@test "story run: the child takes the story prompt's values, and checks its branch first" {
+  local section phrase
+  section="$(skill_section lets-go 'Take up the story run')"
+  for phrase in '`<i>`, `<name>` and `<parent>`' '`<issue-url>`, `<schema>` and `<route line>`' '`<mode>`' \
+    '`## Stack` section' 'git branch --show-current' \
+    'reason: "stopped: the story run is on <branch>, not <name>"'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Take up the story run does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the child claims, routes and switches nothing" {
+  local section part
+  section="$(skill_section lets-go 'Take up the story run')"
+  for part in check-the-issue route enter-the-branch claim set-the-question-mode; do
+    grep -qF "](../SKILL.md#$part)" <<<"$section" || { echo "Take up the story run does not name the part it skips: $part"; false; }
+  done
+  grep -qF 'Run none of' <<<"$section" || { echo "Take up the story run does not say it runs none of them"; false; }
+  ! grep -qE 'lets backlog claim|git switch' <<<"$section" || { echo "Take up the story run claims or switches"; false; }
+}
+
+@test "story run: the child walks the step table with the story prompt's mode and stack" {
+  local section phrase
+  section="$(skill_section lets-go 'Take up the story run')"
+  for phrase in 'Walk [The step table](../SKILL.md#the-step-table) from its top row on the branch `<name>`, as [Walk the step table](../SKILL.md#walk-the-step-table) says' \
+    'as [Run a step](../SKILL.md#run-a-step) says' \
+    "Each step's prompt holds \`<mode>\` from the story prompt, and the story prompt's \`## Stack\` section when it has one"; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Take up the story run does not say: $phrase"; false; }
+  done
+  grep -qF '[Take up the story run](story-run.md#take-up-the-story-run)' <<<"$(skill_section lets-go 'Write the prompt')" ||
+    { echo "Write the prompt does not take a child's values from the story prompt"; false; }
+}
+
+@test "story run: the child answers no question, and passes each step's questions up" {
+  local section phrase
+  has_heading "$(story_run_file)" 'Pass the questions up' || { echo "references/story-run.md has no heading: Pass the questions up"; false; }
+  section="$(skill_section lets-go 'Pass the questions up')"
+  for phrase in 'answers none of its questions, at either question mode' \
+    'the settled-question check of [Relay the questions](../SKILL.md#relay-the-questions)' \
+    'Append one line to `.workspace/lets-go/<session>-rounds.txt`' \
+    'date -u +%Y-%m-%dT%H:%M:%SZ >> .workspace/lets-go/<session>-rounds.txt' \
+    "a \`needs-input\` report that holds the step's questions, in the step's order, each with the step's \`recommendation\` when it has one" \
+    "From the step's sixth round" 'ask: true'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Pass the questions up does not say: $phrase"; false; }
+  done
+  grep -qF 'In a story run'"'"'s child, [pass them up](references/story-run.md#pass-the-questions-up) instead' <<<"$(part_section 'Read the report')" ||
+    { echo "Read the report does not send a child's questions up"; false; }
+}
+
+@test "story run: the child gives the epic run's answers to the step that asked" {
+  local section phrase
+  has_heading "$(story_run_file)" 'Give the answers to the step' || { echo "references/story-run.md has no heading: Give the answers to the step"; false; }
+  section="$(skill_section lets-go 'Give the answers to the step')"
+  for phrase in 'When the story prompt ends with an `## Answers` section' \
+    'At the first row of the walk that is not done' '`.workspace/lets-go/<session>-report.json`' \
+    'append each pair of the `## Answers` section whose question is one of that report'"'"'s questions to `.workspace/lets-go/<session>-answers.yaml`' \
+    '`--answers-file .workspace/lets-go/<session>-answers.yaml`' \
+    'reason: "stopped: the answers match no question the <step name> step asked"' \
+    'Check it before you write anything' \
+    "in place of that row's **Not done** action" \
+    'Then [read its report](../SKILL.md#read-the-report)'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Give the answers to the step does not say: $phrase"; false; }
+  done
+  grep -qF '[Give the answers to the step](#give-the-answers-to-the-step)' <<<"$(skill_section lets-go 'Take up the story run')" ||
+    { echo "Take up the story run does not link Give the answers to the step"; false; }
+}
+
+@test "story run: the subagent step keeps a question's ask mark by the rule lets uses" {
+  local section phrase
+  section="$(skill_section lets-go 'Run a step in a subagent')"
+  for phrase in 'may have a string `recommendation` and a boolean `ask`' \
+    '`ask: true` is kept, `ask: false` is dropped, and any other value breaks the report' '`questions[0].ask`' \
+    'keeping `"ask":true` on each question marked `ask: true`'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Run a step in a subagent does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the child ends with a done report that names the pull request" {
+  local section
+  has_heading "$(story_run_file)" 'End the story run' || { echo "references/story-run.md has no heading: End the story run"; false; }
+  section="$(skill_section lets-go 'End the story run')"
+  grep -qF -- '- "pull request #<pr>: <pr-url>"' <<<"$section" ||
+    { echo "End the story run has no done report whose first evidence line names the pull request"; false; }
+  grep -qF '[End the story run](references/story-run.md#end-the-story-run)' <<<"$(next_line 'Walk the step table')" ||
+    { echo "Walk the step table's Next line does not name End the story run"; false; }
+}
+
+@test "story run: the child turns a failed step and every other stop into a failed report" {
+  local section phrase
+  section="$(skill_section lets-go 'End the story run')"
+  for phrase in 'a `failed` report whose reason is `failed at <step name>: ` followed by the step'"'"'s reason' \
+    'reason: "failed at build: tests fail on main"' 'reason: "stopped: <reason>"' \
+    'including a `done` report that its record does not bear out' \
+    'records that disagree, a pull request that is merged or closed, a settled question asked again'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "End the story run does not say: $phrase"; false; }
+  done
+  grep -qF "In a story run's child, print the \`Failed\` line, then end as [End the story run](references/story-run.md#end-the-story-run) says" \
+    <<<"$(part_section 'Read the report')" || { echo "Read the report does not end a child's failed step as a report"; false; }
+}
+
+@test "story run: the child prints no pull request URL or epic line, and runs none of A stop in an epic run" {
+  local section phrase
+  section="$(skill_section lets-go 'End the story run')"
+  for phrase in 'prints no pull request URL and no epic line in place of it' \
+    'Run none of [A stop in an epic run](epic-run.md#a-stop-in-an-epic-run)'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "End the story run does not say: $phrase"; false; }
+  done
+}
+
+# readme_step_returns: the README's What a step returns section, on one line.
+readme_step_returns() {
+  awk '/^### What a step returns$/ { on = 1; next } on && /^#/ { exit } on' "$repo/README.md" | tr -s '[:space:]' ' '
+}
+
+@test "story run: the README's What a step returns names the story intent, its 600 minutes and ask" {
+  local section phrase
+  section="$(readme_step_returns)"
+  for phrase in '`lets delegate step run --for story` runs a story run, not a step' '600 minutes' '`ask: true`'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "the README's What a step returns does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the README's config example gives the story intent guidance" {
+  awk '/^```yaml$/ { on = 1; text = ""; next } on && /^```$/ { on = 0; if (text ~ /\n  step:\n/) print text; next } on { text = text "\n" $0 }' \
+    "$repo/README.md" | grep -qE '^    story:$' || { echo "the README's config example has no step.story entry"; false; }
+  grep -qF '`step.story`' "$repo/README.md" || { echo "the README does not name step.story"; false; }
+}
+
+@test "story run: the README says an epic run builds each story in a child lets-go session" {
+  local section phrase
+  section="$(readme_lets_go)"
+  for phrase in 'each story runs in a child `lets-go` session' \
+    "in the epic run's own session when no child session can start"; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "the README's lets-go section does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: the resolvers page's step report names ask" {
+  awk '/^## A step.s report$/ { on = 1; next } on && /^## / { exit } on' "$repo/docs/resolvers.md" | tr -s '[:space:]' ' ' |
+    grep -qF '`ask: true`' || { echo "docs/resolvers.md's A step's report does not name ask"; false; }
+}

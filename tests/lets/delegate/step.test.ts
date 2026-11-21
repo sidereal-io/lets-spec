@@ -47,6 +47,18 @@ test('--timeout-minutes sets the step\'s time limit', async () => {
   assert.deepEqual(steps(t.adapterCalls)[0].options, { timeoutMs: 30 * 60000 });
 });
 
+test('a story run has 600 minutes', async () => {
+  const t = withT3();
+  await run(options({ for: 'story' }), t.deps);
+  assert.deepEqual(steps(t.adapterCalls)[0].options, { timeoutMs: 600 * 60000 });
+});
+
+test('--timeout-minutes sets a story run\'s time limit', async () => {
+  const t = withT3();
+  await run(options({ for: 'story', timeoutMinutes: 900 }), t.deps);
+  assert.deepEqual(steps(t.adapterCalls)[0].options, { timeoutMs: 900 * 60000 });
+});
+
 test('a done report is printed with the clock\'s date', async () => {
   const t = withT3();
   t.io.now = () => Date.parse('2026-11-04T09:30:00Z');
@@ -77,6 +89,13 @@ test('a needs-input report is printed at exit 0, its questions in order', async 
   assert.equal(await run(options(), t.deps), 0);
   assert.ok(t.stdout().startsWith('{"outcome":"needs-input",'), t.stdout());
   assert.deepEqual(report(t), { outcome: 'needs-input', questions: [{ question: 'Which schema?' }, { question: 'Split it?', recommendation: 'no' }] });
+});
+
+test('a question marked ask: true is printed with "ask":true, and one marked false with no ask', async () => {
+  const text = ending('outcome: needs-input\nquestions:\n  - question: Which schema?\n    ask: true\n  - question: Split it?\n    ask: false\n');
+  const t = withT3({ adapters: { t3: { step: { text } } } });
+  assert.equal(await run(options(), t.deps), 0);
+  assert.deepEqual(report(t), { outcome: 'needs-input', questions: [{ question: 'Which schema?', ask: true }, { question: 'Split it?' }] });
 });
 
 test('a failed report from the session is printed at exit 0', async () => {
