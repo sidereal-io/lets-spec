@@ -2479,10 +2479,18 @@ epic_run_file() {
 }
 
 @test "the shaped epic goes back to Check the issue" {
-  local shape check lines row phrase
+  local shape check lines line row phrase
   shape="$(part_section 'Run the shape step')"
-  grep -qF '**A parent and its stories, when the parent is the run'"'"'s issue `<i>`:** discovery shaped the run'"'"'s epic in place. Go on from the blocker read in [Check the issue](../SKILL.md#check-the-issue) with `<i>`, not to [Pick the first ready story](../SKILL.md#pick-the-first-ready-story).' <<<"$shape" ||
-    { echo "Run the shape step does not send the run's shaped epic back to Check the issue"; false; }
+  grep -qF '**A parent and its stories:** the parent is `<i>`. Go on from the blocker read in [Check the issue](../SKILL.md#check-the-issue) with it. That read finds the parent'"'"'s new open stories, and its `epic` case starts the epic run on them.' <<<"$shape" ||
+    { echo "Run the shape step does not send every shaped parent back to Check the issue"; false; }
+  for phrase in 'when the parent is the run'"'"'s issue' '**Any other parent and its stories:**'; do
+    ! grep -qF -- "$phrase" <<<"$shape" || { echo "Run the shape step still has the case: $phrase"; false; }
+  done
+  # The part's own Next line, in SKILL.md: shape.md's steps follow it in next_line.
+  line="$(awk '/^## Run the shape step$/ { on = 1; next } /^## / { on = 0 } on' "$(lets_go_skill)" |
+    tr -s '[:space:]' ' ' | sed 's/^.*Next: /Next: /; s/ $//')"
+  [ "$line" = 'Next: [Check the issue](#check-the-issue), with the issue or the parent the step shaped.' ] ||
+    { echo "Run the shape step's Next line said: $line"; false; }
   check="$(part_section 'Check the issue')"
   grep -qF 'When a shape step reported `done` in this run, and the run has not printed the `Done shape` line, print it first, as [The step lines](#the-step-lines) says.' <<<"$check" ||
     { echo "the epic case does not print Done shape before Run the epic"; false; }
@@ -2490,8 +2498,8 @@ epic_run_file() {
   grep -qF '[Check the issue](#check-the-issue) prints it, for one issue, or before [Run the epic](#run-the-epic) for the epic it shaped' <<<"$lines" ||
     { echo "The step lines do not name the epic case as a place that prints Done shape"; false; }
   row="$(grep -F '| [Run the shape step](#run-the-shape-step) |' "$(lets_go_skill)")"
-  grep -qF "[Check the issue](#check-the-issue) for one issue, or for a parent that is the run's issue; [Pick the first ready story](#pick-the-first-ready-story) for any other parent and its stories" <<<"$row" ||
-    { echo "the part table's Next for Run the shape step does not name the route back"; false; }
+  [ "$(awk -F ' \\| ' '{ print $4 }' <<<"$row")" = '[Check the issue](#check-the-issue)' ] ||
+    { echo "the part table's Next for Run the shape step does not name only Check the issue: $row"; false; }
   row="$(grep -F '| [Check the issue](#check-the-issue) |' "$(lets_go_skill)")"
   for phrase in \
     '[Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run' \

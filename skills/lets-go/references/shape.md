@@ -122,15 +122,10 @@ when it runs.
    - **One issue:** that issue is `<i>`. Go on from the blocker read in
      [Check the issue](../SKILL.md#check-the-issue) with it, as for an
      issue number.
-   - **A parent and its stories, when the parent is the run's issue
-     `<i>`:** discovery shaped the run's epic in place. Go on from the
+   - **A parent and its stories:** the parent is `<i>`. Go on from the
      blocker read in [Check the issue](../SKILL.md#check-the-issue) with
-     `<i>`, not to
-     [Pick the first ready story](../SKILL.md#pick-the-first-ready-story).
-     That read finds the epic's new stories, and its `epic` case starts
-     the epic run on them.
-   - **Any other parent and its stories:**
-     [pick the first ready story](../SKILL.md#pick-the-first-ready-story).
+     it. That read finds the parent's new open stories, and its `epic`
+     case starts the epic run on them.
 
 ### Name the maps' edits
 
