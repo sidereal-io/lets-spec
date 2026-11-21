@@ -878,6 +878,10 @@ review_build_start() {
   skill_does_not_say lets-go 'gh issue view <i> --json number,title,body,url,parent'
   grep -qF '`subIssues`' <<<"$(procedure_text 'Confirm the packet')" ||
     { echo "Confirm the packet does not take an epic's sub-issues from item"; false; }
+  grep -qF 'with the open sub-issues in its `subIssues` and the closed ones in its `closedSubIssues`' <<<"$(procedure_text 'Confirm the packet' | tr -s '[:space:]' ' ')" ||
+    { echo "Confirm the packet's epic result drops the closed sub-issues"; false; }
+  grep -qF '`epic`: the Kind is Epic. It carries the open and the closed sub-issues.' <<<"$(procedure_text 'Confirm the packet' | tr -s '[:space:]' ' ')" ||
+    { echo "Confirm the packet's results do not say epic carries the closed sub-issues"; false; }
   grep -qF 'the `body` in its `parent`' <<<"$(procedure_text 'Confirm the packet' | tr -s '[:space:]' ' ')" ||
     { echo "Confirm the packet does not read Shared decisions from item's parent"; false; }
 }
@@ -1056,7 +1060,8 @@ review_build_start() {
   # Finalize removes the status line, so lets-go's own answers file is what shows an earlier round.
   for phrase in 'has no status line' '`.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least one pair' \
     '`.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea' \
-    "A kept parent in neither state is not this input's discovery: for example, an open epic whose discovery finished"; do
+    "A kept parent in neither state is not this input's discovery: for example, an open epic whose discovery finished" \
+    'When the input is an issue `#<i>` that is itself in that list, keep it too, whatever its `Input:` line names.'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Find the input's discovery does not say: $phrase"; false; }
   done
   # A finished epic can match that way too, so one issue that is not the parent keeps its maps out of the branch.
@@ -1354,6 +1359,10 @@ readme_lets_go() {
     { echo "the README still says a failed step stops the epic run"; false; }
   ! grep -qF 'It never takes an epic' <<<"$section" || { echo "the README still says lets-go never takes an epic"; false; }
   ! grep -qF 'It leaves a blocked story out' <<<"$section" || { echo "the README still says lets-go leaves a blocked story out"; false; }
+  ! grep -qF 'An epic with no open stories is not shaped yet' <<<"$section" ||
+    { echo "the README still says lets-go does not shape an empty epic"; false; }
+  grep -qF 'An epic with no stories yet is shaped first' <<<"$section" ||
+    { echo "the README does not say lets-go shapes an empty epic"; false; }
 }
 
 @test "lets-go runs review plan as a step of its own" {
@@ -2413,12 +2422,79 @@ epic_run_file() {
   done
 }
 
-@test "an epic run with no open stories points to lets-shape in a text block" {
-  grep -qxF '#<parent> has no open stories. lets-go does not shape an empty epic yet: run the lets-shape skill on #<parent>.' \
-    <<<"$(text_block_lines 'Run the epic' "$(epic_run_file)")" ||
-    { echo "Run the epic has no text block with the empty epic's line"; false; }
-  grep -qF 'stop, claiming nothing and creating no branch' <<<"$(part_section 'Run the epic')" ||
-    { echo "Run the epic does not stop on an empty epic"; false; }
+@test "an epic run shapes an empty epic first" {
+  local check phrase
+  check="$(part_section 'Check the issue')"
+  [ "$(grep -oF 'name the maps'"'"' edits, as [Pick the first ready story](references/shape.md#pick-the-first-ready-story) says' <<<"$check" | wc -l)" -ge 2 ] ||
+    { echo "Check the issue does not name the maps' edits on both stops after a shape step"; false; }
+  for phrase in \
+    '**An empty epic:** `subIssues` and `closedSubIssues` are both empty.' \
+    'When no shape step has run in this run, [run the shape step](#run-the-shape-step) for `#<i>`, claiming nothing and creating no branch before it.' \
+    'When one has, say that `#<i>` has no stories after shaping, say to run the `lets-shape` skill on `#<i>`, and stop.'; do
+    grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+  skill_does_not_say lets-go 'lets-go does not shape an empty epic yet'
+  skill_does_not_say lets-go 'An epic with no open stories is not shaped yet.'
+  ! grep -qF 'The epic has no open stories' "$(lets_go_skill)" ||
+    { echo "the part table still stops Run the epic on an epic with no open stories"; false; }
+}
+
+@test "a finished epic stops the run" {
+  local check phrase
+  grep -qxF '#<parent> is finished: every story under it is closed.' <<<"$(text_block_lines 'Check the issue')" ||
+    { echo "Check the issue has no text block with the finished epic's line"; false; }
+  check="$(part_section 'Check the issue')"
+  for phrase in \
+    '**A finished epic:** `subIssues` is empty, and `closedSubIssues` is not.' \
+    'Then stop. Claim nothing, create no branch, run no step, and leave the epic open.'; do
+    grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+}
+
+@test "an epic run finishes a stopped discovery before it builds" {
+  local check phrase
+  check="$(part_section 'Check the issue')"
+  for phrase in \
+    '**An epic with a stopped discovery:** run [Find the input'"'"'s discovery](references/shape.md#find-the-inputs-discovery) for `#<i>`.' \
+    'say that a discovery of `#<i>` is in progress at each `#<parent>` it found' \
+    'When no shape step has run in this run, [run the shape step](#run-the-shape-step) for `#<i>`: its round resumes the discovery, or finishes its Finalize.' \
+    'When one has, say to run the `lets-shape` skill on `#<i>`, and stop.' \
+    'When it finds none, go on to the next item.'; do
+    grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+}
+
+@test "an epic that became one story finishes its stopped discovery before it builds" {
+  local check phrase
+  check="$(part_section 'Check the issue')"
+  for phrase in \
+    'When the body has an `Input:` line that names `#<i>` itself, the issue is an epic that discovery shaped in place into this one story.' \
+    'run [Find the input'"'"'s discovery](references/shape.md#find-the-inputs-discovery) for `#<i>`' \
+    'When it finds `#<i>`, act on the result as on `needs-shape`, below, with the reason that its discovery of `#<i>` is in progress.'; do
+    grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+}
+
+@test "the shaped epic goes back to Check the issue" {
+  local shape check lines row phrase
+  shape="$(part_section 'Run the shape step')"
+  grep -qF '**A parent and its stories, when the parent is the run'"'"'s issue `<i>`:** discovery shaped the run'"'"'s epic in place. Go on from the blocker read in [Check the issue](../SKILL.md#check-the-issue) with `<i>`, not to [Pick the first ready story](../SKILL.md#pick-the-first-ready-story).' <<<"$shape" ||
+    { echo "Run the shape step does not send the run's shaped epic back to Check the issue"; false; }
+  check="$(part_section 'Check the issue')"
+  grep -qF 'When a shape step reported `done` in this run, and the run has not printed the `Done shape` line, print it first, as [The step lines](#the-step-lines) says.' <<<"$check" ||
+    { echo "the epic case does not print Done shape before Run the epic"; false; }
+  lines="$(skill_section lets-go 'The step lines')"
+  grep -qF '[Check the issue](#check-the-issue) prints it, for one issue, or before [Run the epic](#run-the-epic) for the epic it shaped' <<<"$lines" ||
+    { echo "The step lines do not name the epic case as a place that prints Done shape"; false; }
+  row="$(grep -F '| [Run the shape step](#run-the-shape-step) |' "$(lets_go_skill)")"
+  grep -qF "[Check the issue](#check-the-issue) for one issue, or for a parent that is the run's issue; [Pick the first ready story](#pick-the-first-ready-story) for any other parent and its stories" <<<"$row" ||
+    { echo "the part table's Next for Run the shape step does not name the route back"; false; }
+  row="$(grep -F '| [Check the issue](#check-the-issue) |' "$(lets_go_skill)")"
+  for phrase in \
+    '[Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run' \
+    'a finished epic, or an epic with no stories after shaping'; do
+    grep -qF -- "$phrase" <<<"$row" || { echo "the part table's row for Check the issue does not say: $phrase"; false; }
+  done
 }
 
 @test "an epic run picks each story as next picks it" {
@@ -3843,6 +3919,106 @@ commit_maps() {
   [ "$status" -eq 1 ] || { echo "shape.md still adds the one map: $output"; false; }
 }
 
+# The commands of the epic-run form of Commit the discovery map, in the
+# order references/shape.md gives them.
+map_epic_commands=(
+  'git status --porcelain -uall -- openspec/discovery.md openspec/discovery'
+  'mkdir -p -- "$(dirname -- <path>/<map>)"'
+  'cp -- <map> <path>/<map>'
+  'git -C <path> rm -q -- <map>'
+  'git -C <path> add -- <copied paths>'
+  'git -C <path> commit -m "docs: the discovery map from #<parent>" -- <paths>'
+  'git restore --source=HEAD --staged --worktree -- <tracked paths>'
+  'rm -- <map>'
+)
+
+# map_epic_run <n>: run the nth command of map_epic_commands, with its
+# placeholders filled from the caller's path, p (the map), copied, tracked
+# and all.
+map_epic_run() {
+  local c="${map_epic_commands[$1]}"
+  c="${c//<copied paths>/\"\$\{copied[@]\}\"}"
+  c="${c//<tracked paths>/\"\$\{tracked[@]\}\"}"
+  c="${c//<paths>/\"\$\{all[@]\}\"}"
+  c="${c//<path>/\"\$path\"}"
+  c="${c//<map>/\"\$p\"}"
+  c="${c//#<parent>/#300}"
+  eval "$c"
+}
+
+@test "discovery maps: an epic run commits the discovery map on the first story it claims" {
+  local section command at last=0 phrase
+  section="$(skill_section lets-go 'Commit the map in an epic run')"
+  [ -n "$section" ] || { echo "references/shape.md has no section Commit the map in an epic run"; false; }
+  for command in "${map_epic_commands[@]}"; do
+    at="$(awk -v s="$section" -v c="$command" 'BEGIN { print index(s, c) }')"
+    [ "$at" -gt "$last" ] || { echo "the section does not hold, after the command before it: $command"; false; }
+    last="$at"
+  done
+  for phrase in 'in the epic run'"'"'s own checkout' 'Only once the commit succeeds'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "the section does not say: $phrase"; false; }
+  done
+  run grep -nE 'git (-C <path> )?(add|commit|rm|restore)( .*)? (-- )?openspec/discovery( |$|`)' "$repo/skills/lets-go/references/shape.md"
+  [ "$status" -eq 1 ] || { echo "shape.md passes the folder to git: $output"; false; }
+  grep -qF 'In an epic run, use its [epic-run form](references/shape.md#commit-the-map-in-an-epic-run)' <<<"$(part_section 'Enter the branch')" ||
+    { echo "Enter the branch does not run the epic-run form"; false; }
+  for phrase in 'Return `committed`' 'return `commit-failed`, with Git'"'"'s error' 'return `restore-failed`, with Git'"'"'s error' \
+    'Run this for the first story the epic run claims, and for no later one.'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Commit the map in an epic run does not say: $phrase"; false; }
+  done
+  for phrase in '**`committed`:** go on.' '**`commit-failed`:**' '**`restore-failed`:**' \
+    'for the first story this epic run claims, and for no later one'; do
+    grep -qF -- "$phrase" <<<"$(part_section 'Enter the branch')" || { echo "Enter the branch does not say: $phrase"; false; }
+  done
+  grep -F '| [Enter the branch](#enter-the-branch) |' "$(lets_go_skill)" | grep -qF 'the epic-run map commit returns `commit-failed` or `restore-failed`' ||
+    { echo "the part table's Stops cell for Enter the branch does not name the map commit's results"; false; }
+  # An epic run that claims no story leaves the edits on the default branch, and says so.
+  section="$(skill_section lets-go "Report the maps' edits")"
+  ! grep -qF 'and this epic run claimed no story' <<<"$section" ||
+    { echo "Report the maps' edits still skips a run that claimed a story"; false; }
+  for phrase in 'Run this before [End of the run](../SKILL.md#end-of-the-run) whenever a shape step ran in this run.' \
+    'or a story it claimed stopped before its map commit' \
+    'Run the status command of [Commit the map in an epic run](shape.md#commit-the-map-in-an-epic-run) in the epic run'"'"'s own checkout.' \
+    'name each one, and say that they hold the discovery'"'"'s edits, uncommitted on the default branch' \
+    'Say to commit or discard them before the next run'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Report the maps' edits does not say: $phrase"; false; }
+  done
+  [ "$(grep -cF "](#report-the-maps-edits)" "$(epic_run_file)")" -ge 2 ] ||
+    { echo "Run the epic does not report the maps' edits on each way to End of the run"; false; }
+}
+
+@test "discovery maps: an epic run carries every map into the story's worktree and leaves its checkout clean" {
+  local line code p path=wt copied=() tracked=() all=() news=()
+  map_repo
+  mkdir openspec/discovery
+  printf '# Discovery: Old\n' >openspec/discovery/old.md
+  git add . && git commit -q -m old
+  git worktree add -q -b plugin-contract "$path" 2>/dev/null
+  printf 'personas\n' >>openspec/discovery.md
+  rm openspec/discovery/old.md
+  printf '# Discovery: Warehouse\n' >openspec/discovery/warehouse.md
+  rm -r "$path/openspec/discovery"
+  while IFS= read -r line; do
+    code="${line:0:2}" p="${line:3}"
+    all+=("$p")
+    if [ "$code" = ' D' ]; then
+      map_epic_run 3
+    else
+      map_epic_run 1 && map_epic_run 2
+      copied+=("$p")
+    fi
+    if [ "$code" = '??' ]; then news+=("$p"); else tracked+=("$p"); fi
+  done < <(map_epic_run 0)
+  map_epic_run 4
+  map_epic_run 5 >/dev/null
+  map_epic_run 6
+  for p in "${news[@]}"; do map_epic_run 7; done
+  [ "$(git -C "$path" show --name-only --format= HEAD | sort | tr '\n' ' ')" = \
+    'openspec/discovery.md openspec/discovery/old.md openspec/discovery/warehouse.md ' ] ||
+    { echo "the story's commit holds: $(git -C "$path" show --name-only --format= HEAD)"; false; }
+  [ -z "$(git status --porcelain -- . ':(exclude)wt')" ] || { echo "the checkout keeps: $(git status --porcelain)"; false; }
+}
+
 @test "discovery maps: lets-go commit names each dirty map before the shape step and at a stop" {
   local section
   section="$(skill_section lets-go 'Run the shape step')"
@@ -5108,10 +5284,41 @@ readme_step_returns() {
     { echo "Locate the discovery forbids resuming the parent the user named"; false; }
   ! grep -qF 'An issue that holds a large idea is the input to a discovery run instead.' <<<"$section" ||
     { echo "Locate the discovery still sends a large issue away in its first item"; false; }
-  items="$(sed -n '/^## Locate the discovery/,/^## /p' "$repo/skills/lets-shape/SKILL.md" | grep -oE '^   [1-5]\. \*\*[^*]+\*\*')"
+  grep -qF 'read `lets backlog item <i>`' <<<"$section" ||
+    { echo "Locate the discovery does not read the epic through lets backlog"; false; }
+  grep -qF 'both `subIssues` and `closedSubIssues` are empty' <<<"$section" ||
+    { echo "Locate the discovery does not define an empty epic"; false; }
+  grep -qF 'with the epic as its parent. Ask no `Run discovery on it?`, and do not size the work.' <<<"$section" ||
+    { echo "Locate the discovery asks about discovery for an empty epic"; false; }
+  items="$(sed -n '/^## Locate the discovery/,/^## /p' "$repo/skills/lets-shape/SKILL.md" | grep -oE '^   [1-6]\. \*\*[^*]+\*\*')"
   [ "$(sed 's/^ *[0-9]\. //' <<<"$items" | tr '\n' '|')" = \
-    "**An open parent issue is this input, or its \`Input:\` line names it.**|**The answers already answer the discovery question.**|**The input plainly holds a large idea**|**Any other input**|**No input.**|" ] ||
+    "**An open parent issue is this input, or its \`Input:\` line names it.**|**The input is an empty epic.**|**The answers already answer the discovery question.**|**The input plainly holds a large idea**|**Any other input**|**No input.**|" ] ||
     { echo "the path list is not in order: $items"; false; }
+}
+
+@test "shape-step: lets-shape writes an empty epic's parent into the epic" {
+  local ingest stance template
+  ingest="$(skill_section lets-shape 'Phase 1: Ingest')"
+  grep -qF 'gh issue edit <epic> --body-file <file>' <<<"$ingest" ||
+    { echo "Ingest does not write the parent into the empty epic"; false; }
+  grep -qF 'Create no issue, keep the title, and set no Kind' <<<"$ingest" ||
+    { echo "Ingest files a second parent, retitles the epic or sets its Kind"; false; }
+  grep -qF 'The `Input:` line is `Input: #<epic>`' <<<"$ingest" ||
+    { echo "Ingest does not name the epic in its own Input line"; false; }
+  grep -qF 'End the body with `## Original description`, holding the epic'"'"'s old body word for word' <<<"$ingest" ||
+    { echo "Ingest does not keep the epic's old body"; false; }
+  grep -qF 'When the old body was empty, leave the section out.' <<<"$ingest" ||
+    { echo "Ingest writes an empty Original description"; false; }
+  stance="$(sed -n '/^\*\*The input is read-only\.\*\*/,/^$/p' "$repo/skills/lets-shape/SKILL.md" | tr -s '[:space:]' ' ')"
+  grep -qF 'The one exception is an empty epic' <<<"$stance" ||
+    { echo "the read-only stance does not name the empty epic"; false; }
+  template="$(tr -s '[:space:]' ' ' <"$repo/skills/lets-shape/templates/issue-template.md")"
+  grep -qF '## Original description' <<<"$template" ||
+    { echo "the parent template does not show the Original description section"; false; }
+  grep -qF 'only when the parent is an empty epic' <<<"$template" ||
+    { echo "the template does not say when Original description appears"; false; }
+  skill_section lets-shape 'Phase 5: Stories' | grep -qF 'Keep an `## Original description` section too, as the last section of the body.' ||
+    { echo "Phase 5 drops the Original description when the epic becomes one story"; false; }
 }
 
 @test "shape-step: lets-shape asks about discovery, and runs it only on yes" {

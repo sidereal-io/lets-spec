@@ -40,7 +40,16 @@ Title: `Epic: <capability>`
 ## Open questions
 
 - <question, until resolved> (only while the run is in progress)
+
+## Original description
+
+<the epic's body from before Ingest, word for word> (optional)
 ```
+
+`## Original description` appears only when the parent is an empty epic
+that discovery shaped in place, and its old body was not empty. It stays
+the last section of the body for good. Such a parent keeps the epic's own
+title instead of `Epic: <capability>`.
 
 `Map:` names the run's discovery map, from the repository root, such as
 `openspec/discovery.md` or `openspec/discovery/<product>.md`.
@@ -67,7 +76,8 @@ Title: `<kebab-story-name> — <one-line outcome>`
 
 When the run fits one story, the parent issue takes this shape instead, keeping the
 status line, input reference and `Map:` line above the outcome. The status line
-stays until the run finalizes; the `Input:` and `Map:` lines stay for good.
+stays until the run finalizes; the `Input:` and `Map:` lines stay for good. So does
+an `## Original description` section, at the end of the body.
 
 ## Bug issue
 

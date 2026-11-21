@@ -13,8 +13,9 @@ worktree itself, and its own checkout stays on the default branch. A
 child `lets-go` session then walks the story's steps in its worktree,
 in the background, so the epic run's context grows by a few lines per
 story. When no child session can start, the epic run walks the story's
-steps in its own session, once the wave's children have ended. An epic
-with no open stories is not shaped yet.
+steps in its own session, once the wave's children have ended.
+[Check the issue](../SKILL.md#check-the-issue) sends an epic here only
+when it has open stories.
 
 ## Run the epic
 
@@ -27,18 +28,11 @@ and create no branch for it. The epic run claims each story it builds,
 as for any picked issue.
 
 1. **Start the epic run,** the first time the run reaches this part.
-   When the epic has no open sub-issues, print:
-
-   ```text
-   #<parent> has no open stories. lets-go does not shape an empty epic yet: run the lets-shape skill on #<parent>.
-   ```
-
-   Then stop, claiming nothing and creating no branch. Otherwise,
-   write `.workspace/lets-go/epic-<parent>-lines.txt` afresh, empty,
-   and `.workspace/lets-go/epic-<parent>-children.txt` beside it, so
-   that nothing of an earlier epic run mixes into this one. The lines
-   file holds each story's line, and the children file each child this
-   run waits for, as [Wait for the wave](#wait-for-the-wave) says:
+   First write `.workspace/lets-go/epic-<parent>-lines.txt` afresh,
+   empty, and `.workspace/lets-go/epic-<parent>-children.txt` beside
+   it, so that nothing of an earlier epic run mixes into this one. The
+   lines file holds each story's line, and the children file each child
+   this run waits for, as [Wait for the wave](#wait-for-the-wave) says:
 
    ```bash
    mkdir -p .workspace/lets-go
@@ -110,9 +104,10 @@ as for any picked issue.
    that no chain of blocked-by links joins, and whose packets name no
    overlapping path under **Relevant code**. When every story is
    settled here, run no `waves` command and print no waves: go to
-   [End of the run](../SKILL.md#end-of-the-run). Otherwise, `<keys>`
-   are the keys of the epic's stories in this repository that are not
-   settled yet, in the epic's order, joined by commas, such as
+   [End of the run](../SKILL.md#end-of-the-run), once you have
+   [reported the maps' edits](#report-the-maps-edits). Otherwise,
+   `<keys>` are the keys of the epic's stories in this repository that
+   are not settled yet, in the epic's order, joined by commas, such as
    `283,285,286,287`:
 
    ```bash
@@ -502,7 +497,30 @@ for a story whose child could not start, which this session walks.
 3. Once no child runs and the file lists no `walk` story, the current
    wave is settled. When a later wave holds a story not settled yet,
    go back to *Pick the next story*, which picks from that wave.
-   Otherwise go to [End of the run](../SKILL.md#end-of-the-run).
+   Otherwise go to [End of the run](../SKILL.md#end-of-the-run), once
+   you have [reported the maps' edits](#report-the-maps-edits).
+
+### Report the maps' edits
+
+Discovery's edits to the maps reach a pull request only through the
+first story the epic run claims, as
+[Commit the map in an epic run](shape.md#commit-the-map-in-an-epic-run)
+says. Run this before [End of the run](../SKILL.md#end-of-the-run)
+whenever a shape step ran in this run. Otherwise skip it. The edits are
+still in the epic run's checkout when the epic run claimed no story, or
+a story it claimed stopped before its map commit. When that commit
+succeeded, the status command lists nothing.
+
+Run the status command of
+[Commit the map in an epic run](shape.md#commit-the-map-in-an-epic-run)
+in the epic run's own checkout. When it lists a path, name each one,
+and say that they hold the discovery's edits, uncommitted on the
+default branch. Say to commit or discard them before the next run,
+because the next run stops on them. This is what
+[Pick the first ready story](shape.md#pick-the-first-ready-story) says
+for a run that stops after discovery and before
+[Claim](../SKILL.md#claim): the discovery has finished, so no later run
+resumes it.
 
 ## Start the story run
 

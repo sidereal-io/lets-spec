@@ -119,10 +119,15 @@ the user, with the step's recommendation as the suggested answer. `auto`
 answers each question that has a recommendation, tells the user what it
 chose, and asks the user the rest.
 
+## Empty epic
+
+An epic with no sub-issues, open or closed. An epic run shapes it before
+it builds any story.
+
 ## Epic run
 
-A `lets-go` run given an epic. It shapes the epic when the epic has no
-stories, then builds each of its stories, through one story run each, and
+A `lets-go` run given an epic. It shapes the epic when the epic is
+empty, then builds each of its stories, through one story run each, and
 ends with one line per story. An epic run is not a step and not a
 discovery run.
 

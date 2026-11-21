@@ -1,7 +1,7 @@
 # Shape
 
 Read this file when the run starts from an idea, runs the shape step,
-or commits the discovery map.
+looks for an epic's stopped discovery, or commits the discovery map.
 
 ## Find the input's discovery
 
@@ -17,7 +17,10 @@ input is an idea, or an issue `#<i>`.
    ```
 
 2. Keep each parent whose `Input:` line names this input: the idea word
-   for word, or `#<i>` or the issue's URL.
+   for word, or `#<i>` or the issue's URL. When the input is an issue
+   `#<i>` that is itself in that list, keep it too, whatever its
+   `Input:` line names. An epic that discovery shaped in place names
+   itself, and an epic that an idea's discovery filed names the idea.
 3. A kept parent is this input's discovery in either of two states:
    - **It says `Discovery status: in-progress`.** The discovery stopped
      between rounds, or before [Claim](../SKILL.md#claim).
@@ -81,7 +84,9 @@ when it runs.
    take this input's discovery from
    [Find the input's discovery](#find-the-inputs-discovery). For an
    idea, use what [Start from an idea](#start-from-an-idea) found. For
-   an issue `#<i>`, run the lookup now.
+   an epic, or the one story an epic became, whose stopped discovery
+   [Check the issue](../SKILL.md#check-the-issue) found, use what it
+   found. For any other issue `#<i>`, run the lookup now.
    - **There is one or more:** the edits are that discovery's confirmed
      phases. Go on: the step resumes the discovery or finishes its
      Finalize, and its map commit takes the edits. When several match,
@@ -117,7 +122,14 @@ when it runs.
    - **One issue:** that issue is `<i>`. Go on from the blocker read in
      [Check the issue](../SKILL.md#check-the-issue) with it, as for an
      issue number.
-   - **A parent and its stories:**
+   - **A parent and its stories, when the parent is the run's issue
+     `<i>`:** discovery shaped the run's epic in place. Go on from the
+     blocker read in [Check the issue](../SKILL.md#check-the-issue) with
+     `<i>`, not to
+     [Pick the first ready story](../SKILL.md#pick-the-first-ready-story).
+     That read finds the epic's new stories, and its `epic` case starts
+     the epic run on them.
+   - **Any other parent and its stories:**
      [pick the first ready story](../SKILL.md#pick-the-first-ready-story).
 
 ## Pick the first ready story
@@ -196,6 +208,86 @@ Never pass the `openspec/discovery` folder itself to `git add` or
 `<parent>` is the parent's number, or the story's when the parent
 became the one story. Commit no other path. This is the one commit
 `lets-go` makes itself, beside the glossary import.
+
+In an epic run, use the form below instead.
+
+Return to the part that ran it.
+
+### Commit the map in an epic run
+
+In an epic run, the story's branch is checked out in its own worktree,
+`<path>`. [Claim](../SKILL.md#claim) created it from the committed
+default branch, so the edits stay behind in the epic run's own
+checkout. Carry them into the first story the epic run claims, then
+return the checkout to clean. Run this after
+[The story's worktree](../SKILL.md#the-storys-worktree) has prepared
+`<path>`. Run this for the first story the epic run claims, and for no
+later one.
+
+1. List the changed maps in the epic run's own checkout:
+
+   ```bash
+   git status --porcelain -uall -- openspec/discovery.md openspec/discovery
+   ```
+
+   When it lists no path, make no commit. Return `committed`: there is
+   nothing to carry. Otherwise the listed paths are `<paths>`.
+2. Carry each listed path, `<map>`, into the worktree:
+   - **A path that exists** in the checkout: copy it to the same path
+     in `<path>`. Create its folder first, because the worktree may
+     have no `openspec/discovery/` folder:
+
+     ```bash
+     mkdir -p -- "$(dirname -- <path>/<map>)"
+     cp -- <map> <path>/<map>
+     ```
+
+   - **A path that no longer exists**, marked ` D` or `D `, which
+     discovery removed: remove it in the worktree too.
+
+     ```bash
+     git -C <path> rm -q -- <map>
+     ```
+
+   The paths you copied are `<copied paths>`.
+3. Commit them in the worktree. `git add` takes only the copied paths,
+   because it fails on a path that `git rm` has removed. The commit
+   takes them all:
+
+   ```bash
+   git -C <path> add -- <copied paths>
+   git -C <path> commit -m "docs: the discovery map from #<parent>" -- <paths>
+   ```
+
+   When a command fails, leave the checkout's edits as they are, and
+   return `commit-failed`, with Git's error.
+4. Only once the commit succeeds, return the epic run's checkout to its
+   committed state, so it stays clean on `<default>`. The paths not
+   marked `??` are `<tracked paths>`: restore them, when there are any.
+   Then remove each path marked `??`, a map discovery created:
+
+   ```bash
+   git restore --source=HEAD --staged --worktree -- <tracked paths>
+   rm -- <map>
+   ```
+
+   The edits are safe in the story's commit, so the restore loses
+   nothing. When a command fails, return `restore-failed`, with Git's
+   error: the story's commit already holds the edits. Otherwise return
+   `committed`.
+
+Never pass the `openspec/discovery` folder itself to a Git command.
+`<parent>` is the epic's number.
+
+It returns one of these results:
+
+- `committed`: the story's branch holds the maps' edits, and the epic
+  run's checkout is clean; or no map had changed.
+- `commit-failed`: a copy, removal or commit in `<path>` failed. It
+  carries Git's error. The edits are still in the epic run's checkout.
+- `restore-failed`: the commit succeeded, but the restore of the epic
+  run's checkout failed. It carries Git's error. The story's commit
+  holds the edits, and the checkout still has them too.
 
 Return to the part that ran it.
 

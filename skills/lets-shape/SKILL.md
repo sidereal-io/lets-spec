@@ -43,7 +43,10 @@ Changes are created later, one at a time, by `lets-go`.
 vision file, a GitHub issue, pasted text, or just conversation. Read it.
 Never create, edit or restate it in a file. The run records what it decides
 in its parent issue: the confirmed scope, the priorities and the Won't
-calls.
+calls. The one exception is an empty epic: an epic with no sub-issues,
+open or closed. It is its own parent, so Ingest rewrites its body, and
+keeps the old body word for word in `## Original description`, as
+[Phase 1: Ingest](#phase-1-ingest) says.
 
 **This is a stance with a light structure.** The phases below give the
 conversation a shape. They are not a script. Revisit an earlier phase when
@@ -204,18 +207,26 @@ At the start:
       ask the user which one, as a confirmation question with no
       recommendation. Never pick one yourself. When none is left, go on to the next item. Start no
       second discovery for an input that already has a parent.
-   2. **The answers already answer the discovery question.** Follow
+   2. **The input is an empty epic.** For an issue input `#<i>`, read
+      `lets backlog item <i>`. It is an empty epic when its `kind` is
+      `Epic` and both `subIssues` and `closedSubIssues` are empty: the
+      epic has no sub-issues, open or closed. Run discovery from
+      [Phase 1: Ingest](#phase-1-ingest) with the epic as its parent. Ask no `Run discovery on it?`, and do not size the work. Making the
+      issue an epic already decided to split the work, and the user
+      still confirms the epic's new text at Ingest. An epic with a
+      closed sub-issue is not empty: go on to the next item.
+   3. **The answers already answer the discovery question.** Follow
       [Ask about discovery](#ask-about-discovery) with that answer, and ask
       it no second time: yes runs discovery from
       [Phase 1: Ingest](#phase-1-ingest) with this input, and anything else
       stops. Do not size the work again.
-   3. **The input plainly holds a large idea**, such as a PRD or a
+   4. **The input plainly holds a large idea**, such as a PRD or a
       vision. [Ask about discovery](#ask-about-discovery) before any other
       question.
-   4. **Any other input**, such as one bug, chore or small story, or an
+   5. **Any other input**, such as one bug, chore or small story, or an
       issue to shape: [Shape one issue](#shape-one-issue). Its sizing
       decides whether the work is too large for one issue.
-   5. **No input.** When an open parent issue says
+   6. **No input.** When an open parent issue says
       `Discovery status: in-progress` (`gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`),
       run [Resume mode](#resume-mode) on it. If more than one does, list
       them and ask the user which to resume, or whether to start a new
@@ -477,6 +488,14 @@ Title it `Epic: <capability>`, create it with `gh issue create --title "Epic: <c
 set its Kind to `Epic` with `item-edit`. Phase 5 may turn it into a single
 story.
 
+When the input is an empty epic, as
+[Locate the discovery](#locate-the-discovery) found, the epic is the
+parent. Write the parent template into the epic's own body with
+`gh issue edit <epic> --body-file <file>`, once the user confirms the
+text. Create no issue, keep the title, and set no Kind: the epic has
+one. The `Input:` line is `Input: #<epic>`, naming the epic itself. End the body with `## Original description`, holding the epic's old body word for word, so the input loses none of its text. When the old body was empty, leave the section out. **Scope** still restates the input in your
+own words. Every later phase treats the epic as it treats any parent.
+
 When the input is an issue, fetch its thread again, even when the first
 fetch found nothing to ask about. Ask about each comment that is new or
 edited since the last fetch. When a point goes into the parent, confirm the
@@ -583,7 +602,8 @@ splitting), and resolve with the user before finalizing.
   with the story template. Then set Kind `Story`, its Priority, its Size and
   Status `Todo`, with four `item-edit` commands. Keep the status line, input
   reference, `Map:` line and complete **Glossary handoff** recovery record
-  when replacing the body. Won't calls go in its Scope `out`.
+  when replacing the body. Keep an `## Original description` section too,
+  as the last section of the body. Won't calls go in its Scope `out`.
 - **More than one story.** The stories are sub-issues of the parent.
 
 **Checkpoint:** Issues are public, so show the new and changed issues as a

@@ -40,12 +40,16 @@ export function ready(candidates: Candidate[], { only, exclude = [], met = [], s
     .map(({ key, label, title, url, kind, priority, size }) => ({ key, label, title, url, kind, priority, size }));
 }
 
-// An issue as lets backlog item prints it: only the open sub-issues, each
-// without its state.
-export type ItemView = Omit<Item, 'subIssues'> & { subIssues: Related[] };
+// An issue as lets backlog item prints it: the open and the closed
+// sub-issues in two lists, each without its state, so that an epic with no
+// stories and an epic whose stories are all closed print differently.
+export type ItemView = Omit<Item, 'subIssues'> & { subIssues: Related[]; closedSubIssues: Related[] };
 
 export function itemView({ subIssues, ...rest }: Item): ItemView {
-  return { ...rest, subIssues: subIssues.filter((s) => s.state === 'OPEN').map(({ key, label, title, url }) => ({ key, label, title, url })) };
+  const related = (open: boolean) => subIssues
+    .filter((s) => (s.state === 'OPEN') === open)
+    .map(({ key, label, title, url }) => ({ key, label, title, url }));
+  return { ...rest, subIssues: related(true), closedSubIssues: related(false) };
 }
 
 export type WriteResult<Done extends string, Write extends string> =
