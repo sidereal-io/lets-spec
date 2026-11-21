@@ -7,7 +7,7 @@
 `lets-shape` SHALL pick its path at the start of every run, whoever runs it, with the first match winning. The input is what the caller brings: an idea in words, a file, or an issue `#<i>`. The answers are those the run already has: the ones the user gave in this session, or the `## Answers` section of a resumed step.
 
 1. An open parent issue's `Input:` line names this input, and the parent is in one of two states. When it says `Discovery status: in-progress`, `lets-shape` SHALL resume it. When it has no status line and the answers confirmed its Phase 5 story table, `lets-shape` SHALL finish its Finalize. A parent in neither state, such as an open epic whose discovery finished, SHALL NOT match, and the list goes on to item 2. When several parents match, it SHALL list them and ask which one, and pick none itself.
-2. The answers hold yes to the discovery question: `lets-shape` SHALL run discovery from Ingest with this input.
+2. The answers already answer the discovery question: `lets-shape` SHALL follow that answer and SHALL NOT ask the question again or size the work again. On yes, it SHALL run discovery from Ingest with this input. On anything else, it SHALL stop and say that the work is too large for one issue and discovery was declined.
 3. The input plainly holds a large idea, such as a PRD or a vision: `lets-shape` SHALL ask the discovery question before any other question.
 4. Any other input: `lets-shape` SHALL shape it as one issue. Sizing decides whether it is too large.
 5. No input: an open parent that says `Discovery status: in-progress` is resumed, and when several do, `lets-shape` SHALL ask which one or whether to start a new run. With no such parent, every phase runs when the discovery map does not exist, and *Revision mode* runs when it does.
@@ -25,6 +25,10 @@ A parent whose `Input:` line names another input SHALL NOT be resumed or finishe
 #### Scenario: The user says yes
 - **WHEN** the answers hold the discovery question answered `yes`, and no open parent's `Input:` line names the input
 - **THEN** `lets-shape` runs discovery from Ingest with the input, and its first questions are Ingest's
+
+#### Scenario: The user says no
+- **WHEN** the answers hold the discovery question answered `no`, and no open parent's `Input:` line names the input
+- **THEN** `lets-shape` stops and says that the work is too large for one issue and discovery was declined, and does not shape the work as one issue or size it again
 
 #### Scenario: A large idea brought directly
 - **WHEN** a user runs `lets-shape` with a two-page vision and `openspec/discovery.md` exists

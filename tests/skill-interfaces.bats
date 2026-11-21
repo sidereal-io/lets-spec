@@ -5055,7 +5055,7 @@ readme_step_returns() {
     { echo "Locate the discovery still sends a large issue away in its first item"; false; }
   items="$(sed -n '/^## Locate the discovery/,/^## /p' "$repo/skills/lets-shape/SKILL.md" | grep -oE '^   [1-5]\. \*\*[^*]+\*\*')"
   [ "$(sed 's/^ *[0-9]\. //' <<<"$items" | tr '\n' '|')" = \
-    "**An open parent issue's \`Input:\` line names this input.**|**The answers say yes to the discovery question.**|**The input plainly holds a large idea**|**Any other input**|**No input.**|" ] ||
+    "**An open parent issue's \`Input:\` line names this input.**|**The answers already answer the discovery question.**|**The input plainly holds a large idea**|**Any other input**|**No input.**|" ] ||
     { echo "the path list is not in order: $items"; false; }
 }
 
@@ -5069,6 +5069,8 @@ readme_step_returns() {
     { echo "Ask about discovery does not run Ingest on yes"; false; }
   grep -qF 'say that the work is too large for one issue and discovery was declined' <<<"$section" ||
     { echo "Ask about discovery does not stop on anything else"; false; }
+  skill_section lets-shape 'Locate the discovery' | grep -qF 'Follow [Ask about discovery](#ask-about-discovery) with that answer, and ask it no second time' ||
+    { echo "a recorded answer to the discovery question does not settle the path"; false; }
   skill_section lets-shape 'Locate the discovery' | grep -qF '[Ask about discovery](#ask-about-discovery)' ||
     { echo "the path list does not link Ask about discovery"; false; }
   shape="$(skill_section lets-shape 'Shape one issue')"

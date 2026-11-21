@@ -203,8 +203,11 @@ At the start:
       ask the user which one, as a confirmation question. Never pick one
       yourself. When none is left, go on to the next item. Start no
       second discovery for an input that already has a parent.
-   2. **The answers say yes to the discovery question.** Run discovery
-      from [Phase 1: Ingest](#phase-1-ingest) with this input.
+   2. **The answers already answer the discovery question.** Follow
+      [Ask about discovery](#ask-about-discovery) with that answer, and ask
+      it no second time: yes runs discovery from
+      [Phase 1: Ingest](#phase-1-ingest) with this input, and anything else
+      stops. Do not size the work again.
    3. **The input plainly holds a large idea**, such as a PRD or a
       vision. [Ask about discovery](#ask-about-discovery) before any other
       question.
