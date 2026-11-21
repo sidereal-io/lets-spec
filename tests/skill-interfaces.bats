@@ -1071,8 +1071,20 @@ review_build_start() {
   # Finalize removes the status line, so lets-go's own answers file is what shows an earlier round.
   for phrase in 'has no status line' '`.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least one pair' \
     '`.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea' \
-    "A kept parent in neither state is not this input's discovery: for example, an open epic whose discovery finished" \
+    "A kept parent in none of these states is not this input's discovery: for example, an open epic whose discovery finished" \
     'When the input is an issue `#<i>` that is itself in that list, keep it too, whatever its `Input:` line names.'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Find the input's discovery does not say: $phrase"; false; }
+  done
+  # An epic filed from an idea or a split issue holds that input's answers, not its own.
+  section="$(procedure_text "Find the input's discovery" | tr -s '[:space:]' ' ')"
+  for phrase in \
+    '**It is the input itself, has no status line, and an earlier shape round of the input its `Input:` line names left answers.**' \
+    'This is the case when the input is an issue `#<i>` kept because it is itself in that list, and its `Input:` line names another input' \
+    'An `Input:` line that holds an issue, as `#` and its number or as its URL, names that issue; any other text names an idea, word for word.' \
+    'Make its `<shape-name>`, as [The shape step'"'"'s name](#the-shape-steps-name) says: `issue-` and that issue'"'"'s number, such as `issue-180`, or `idea-<slug>` for the idea.' \
+    'The epic is this input'"'"'s discovery when `.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least one pair, and, for an idea, `.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea.' \
+    'Read no other file, and run no other query, for this state' \
+    'Return each discovery with its *shape input*, the input whose shape round resumes it: the named input for a discovery found in the third state, and this input for every other one.'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Find the input's discovery does not say: $phrase"; false; }
   done
   # A finished epic can match that way too, so one issue that is not the parent keeps its maps out of the branch.

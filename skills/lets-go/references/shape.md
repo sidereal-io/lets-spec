@@ -21,7 +21,7 @@ input is an idea, or an issue `#<i>`.
    `#<i>` that is itself in that list, keep it too, whatever its
    `Input:` line names. An epic that discovery shaped in place names
    itself, and an epic that an idea's discovery filed names the idea.
-3. A kept parent is this input's discovery in either of two states:
+3. A kept parent is this input's discovery in any of three states:
    - **It says `Discovery status: in-progress`.** The discovery stopped
      between rounds, or before [Claim](../SKILL.md#claim).
    - **It has no status line, and an earlier shape round of this input
@@ -33,11 +33,34 @@ input is an idea, or an issue `#<i>`.
      status line before it asks its own questions, and
      [Read the report](../SKILL.md#read-the-report) removes the answers
      file only when shape reports `done` or `failed`.
+   - **It is the input itself, has no status line, and an earlier shape
+     round of the input its `Input:` line names left answers.** This is
+     the case when the input is an issue `#<i>` kept because it is
+     itself in that list, and its `Input:` line names another input: an
+     epic that discovery filed from an idea, or from another issue that
+     it split. Stopping during Finalize leaves the answers under that
+     named input's `<shape-name>`, not under `issue-<i>`. Take the
+     named input. An `Input:` line that holds an issue, as `#` and its
+     number or as its URL, names that issue; any other text names an
+     idea, word for word. Make its `<shape-name>`, as
+     [The shape step's name](#the-shape-steps-name) says: `issue-` and
+     that issue's number, such as `issue-180`, or `idea-<slug>` for the
+     idea. The epic is this input's discovery when
+     `.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least
+     one pair, and, for an idea,
+     `.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea.
+     Read no other file, and run no other query, for this state: the
+     parent list already holds the `Input:` line. The answers file
+     exists only on the machine where that round ran, so on another
+     machine this state finds nothing.
 
-   A kept parent in neither state is not this input's discovery: for
-   example, an open epic whose discovery finished.
+   A kept parent in none of these states is not this input's discovery:
+   for example, an open epic whose discovery finished.
 
 Return to the part that ran it, with each discovery it found, or none.
+Return each discovery with its *shape input*, the input whose shape
+round resumes it: the named input for a discovery found in the third
+state, and this input for every other one.
 
 ## Start from an idea
 
