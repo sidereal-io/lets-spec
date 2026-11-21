@@ -28,11 +28,14 @@ can follow the same pattern.
      and the `## Answers` section confirmed its Phase 5 story table.
   2. The `## Answers` section says yes to the discovery question:
      discovery from Ingest.
-  3. Any other idea or issue: *Shape one issue*.
-  4. No input: today's rules.
+  3. An input that plainly holds a large idea: the discovery question,
+     at once, before any interview (D11).
+  4. Any other idea or issue: *Shape one issue*, where sizing decides.
+  5. No input: today's rules.
 
   For direct use, this means an input the user brings now wins over an
-  unrelated in-progress discovery.
+  unrelated in-progress discovery, and a large idea brought directly is
+  asked the discovery question instead of going to *Revision mode*.
 - *Resume mode* treats phases that an `## Answers` section confirmed as
   settled. It skips the restatement's confirmation and goes straight to
   the recorded next phase.
@@ -48,8 +51,10 @@ can follow the same pattern.
   recommendation. When the glossary handoff asks who carries the edits,
   it recommends the first story in dependency order (D5).
 - `lets-shape` states the end state once, beside its rule that it never
-  creates a change: no change, the default branch, and a clean tree
-  except the discovery maps (D6).
+  creates a change: no change and no change branch, the branch it started
+  on, and no edits of its own left in the tree except the discovery maps
+  (D6, D12). A `lets-go` shape step starts on the default branch, so it
+  ends there with a clean tree.
 - The `lets-go` requirements and bats checks that this touches assert
   behaviour, not the prompt's wording (D7). The done report's evidence
   format stays where it is, in the step prompt's report section (D10).
@@ -77,16 +82,19 @@ None.
   prompt says what to run, the question mode, and how to report* to
   describe what the run does, and to give shape its one sentence. It
   also updates *lets-go refers to no step by its number* (the shape
-  prompt no longer names `lets-shape`'s steps) and *lets-go keeps what
+  prompt no longer names `lets-shape`'s steps), *lets-go keeps what
   only some runs need in reference files* (`shape.md` no longer holds
-  *What shape runs*).
+  *What shape runs*) and *A stopped discovery resumes from its parent
+  issue* (the resume follows `lets-shape`'s own mode order).
 
 ## Impact
 
-- `skills/lets-shape/SKILL.md`: *Locate the discovery*, *Shape one
-  issue* (steps 1, 6 and 7), *Resume mode*, *Phase 6: Finalize*, the
-  glossary handoff's owner question, and the rule that discovery never
-  creates a change.
+- `skills/lets-shape/SKILL.md`: *Locate the discovery*, *Phase 1:
+  Ingest* (the `Input:` line), *Shape one issue* (steps 1, 6 and 7),
+  *Resume mode*, *Phase 6: Finalize*, the glossary handoff's owner
+  question, and the rule that discovery never creates a change.
+- `skills/lets-shape/templates/issue-template.md`: the parent's
+  `Input:` line names an idea's words or `#<i>`.
 - `skills/lets-go/references/shape.md`: *What shape runs* is removed.
 - `skills/lets-go/references/step-prompt.md`: the shape sentence and
   the idea's header line.
@@ -97,5 +105,5 @@ None.
 - `openspec/specs/discovery-checkpoints/spec.md` and
   `openspec/specs/lets-go/spec.md`.
 - No code, CLI or dependency changes. Users who run `lets-shape`
-  directly see the three small changes the ledger lists under *Changes
-  from the story*.
+  directly see the small changes the ledger lists under *Changes from
+  the story*.
