@@ -5051,3 +5051,22 @@ readme_step_returns() {
     "**An open parent issue's \`Input:\` line names this input.**|**The answers say yes to the discovery question.**|**The input plainly holds a large idea**|**Any other input**|**No input.**|" ] ||
     { echo "the path list is not in order: $items"; false; }
 }
+
+@test "shape-step: lets-shape asks about discovery, and runs it only on yes" {
+  local section shape
+  section="$(skill_section lets-shape 'Ask about discovery')"
+  grep -qF 'The work is Size <L or XL>, too large for one issue. Run discovery on it?' <<<"$section" ||
+    { echo "Ask about discovery does not hold the question"; false; }
+  grep -qF 'with the recommendation `yes`' <<<"$section" || { echo "Ask about discovery recommends nothing"; false; }
+  grep -qF '**Yes:** run discovery from [Phase 1: Ingest](#phase-1-ingest)' <<<"$section" ||
+    { echo "Ask about discovery does not run Ingest on yes"; false; }
+  grep -qF 'say that the work is too large for one issue and discovery was declined' <<<"$section" ||
+    { echo "Ask about discovery does not stop on anything else"; false; }
+  skill_section lets-shape 'Locate the discovery' | grep -qF '[Ask about discovery](#ask-about-discovery)' ||
+    { echo "the path list does not link Ask about discovery"; false; }
+  shape="$(skill_section lets-shape 'Shape one issue')"
+  grep -qF '[ask about discovery](#ask-about-discovery)' <<<"$shape" ||
+    { echo "Shape one issue sizing does not link Ask about discovery"; false; }
+  ! grep -qF 'offer a discovery run on it instead, and stop' <<<"$shape" ||
+    { echo "Shape one issue still offers discovery and stops"; false; }
+}

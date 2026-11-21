@@ -225,6 +225,24 @@ At the start:
 If any of these fails, stop and show the error. Never write the map anywhere
 but the resolved root.
 
+### Ask about discovery
+
+The work is too large for one issue when it is Size L or XL, or when the
+input plainly holds a large idea. Then ask the user this question, with
+the recommendation `yes`. For a large idea that has no Size yet, say `L`.
+
+`The work is Size <L or XL>, too large for one issue. Run discovery on it?`
+
+Start no discovery before the answer.
+
+- **Yes:** run discovery from [Phase 1: Ingest](#phase-1-ingest) with the
+  input, and every phase to Finalize, including the glossary handoff.
+  When [Shape one issue](#shape-one-issue) found tentative meanings,
+  record them in the parent issue when Ingest writes it.
+- **Anything else:** stop, and say that the work is too large for one
+  issue and discovery was declined. Create no issue and no glossary
+  definition.
+
 ## Pick the map
 
 Each run reads and writes one discovery map: the run's map. Ingest picks it
@@ -600,7 +618,8 @@ Then hand off:
 
 Use this when the user brings one bug, chore or small story, or names an
 open issue that has no packet. It shapes that one issue. It never edits a
-discovery map and never starts a discovery run. Another skill can send work
+discovery map. Work too large for one issue goes to
+[Ask about discovery](#ask-about-discovery) instead. Another skill can send work
 here too, such as `lets-brainstorm` when it splits a story; it gives you the
 issue's parent and what blocks it.
 
@@ -634,11 +653,9 @@ issue's parent and what blocks it.
    instead, picking the product as [Pick the map](#pick-the-map) says, with
    one difference. Offer only the listed products, never a new one. When
    no listed product fits, use no map's names.
-6. **Size it** XS, S, M, L or XL. L or XL is too big for one change: say so,
-   offer a discovery run on it instead, and stop. Then write no glossary
-   definition. If the user starts the discovery run, record the tentative
-   meanings in its parent issue when Ingest writes it. This stop creates no
-   issue and starts no discovery. Once sizing passes, agree each meaning and
+6. **Size it** XS, S, M, L or XL. L or XL is too big for one change:
+   [ask about discovery](#ask-about-discovery), and write no glossary
+   definition before the answer. Once sizing passes, agree each meaning and
    scope with the user and write it as
    [Develop the vocabulary](#develop-the-vocabulary) says.
 7. **Confirm, then write.** The issue is public, so show the user its title,
