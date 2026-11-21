@@ -2385,12 +2385,12 @@ epic_run_file() {
 }
 
 @test "wave: an epic run sorts the stories not settled into waves before the first pick" {
-  local part start settle waves pick phrase
+  local part start settle waves pick guard phrase
   part="$(part_section 'Run the epic')"
   for phrase in \
     'lets backlog waves --only <keys> > .workspace/lets-go/epic-<parent>-waves.json' \
     "the keys of the epic's stories in this repository that are not settled yet, in the epic's order" \
-    'When every story is settled here, run no `waves` command and print no waves' \
+    'When every story is settled here, run no `waves` command and print no waves: go to [End of the run](../SKILL.md#end-of-the-run)' \
     'On exit 1, act as [Backlog errors](../SKILL.md#backlog-errors) says'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
@@ -2399,6 +2399,9 @@ epic_run_file() {
   pick="${part%%'**Pick the next story.**'*}"
   [ "${#settle}" -lt "${#waves}" ] && [ "${#waves}" -lt "${#pick}" ] ||
     { echo "the waves command is not between settling the finished stories and Pick the next story"; false; }
+  guard="${part%%When every story is settled here*}"
+  [ "${#guard}" -lt "${#waves}" ] ||
+    { echo "the guard for every story settled comes after the waves command"; false; }
 }
 
 @test "wave: an epic run prints its waves in text blocks" {

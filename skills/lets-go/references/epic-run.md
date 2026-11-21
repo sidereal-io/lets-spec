@@ -101,9 +101,12 @@ as for any picked issue.
 
    Last, sort the stories not settled yet into waves: sets of stories
    that no blocked-by link joins, and whose packets name no overlapping
-   path under **Relevant code**. `<keys>` are the keys of the epic's
-   stories in this repository that are not settled yet, in the epic's
-   order, joined by commas, such as `283,285,286,287`:
+   path under **Relevant code**. When every story is settled here, run
+   no `waves` command and print no waves: go to
+   [End of the run](../SKILL.md#end-of-the-run). Otherwise, `<keys>`
+   are the keys of the epic's stories in this repository that are not
+   settled yet, in the epic's order, joined by commas, such as
+   `283,285,286,287`:
 
    ```bash
    lets backlog waves --only <keys> > .workspace/lets-go/epic-<parent>-waves.json
@@ -112,8 +115,7 @@ as for any picked issue.
    The command writes the file afresh, and the waves in it hold for the
    whole epic run: *Pick the next story* reads it before each pick. On
    exit 1, act as [Backlog errors](../SKILL.md#backlog-errors) says,
-   with the error the file holds. When every story is settled here, run
-   no `waves` command and print no waves.
+   with the error the file holds.
 
    Otherwise print the waves, from the file's `waves`, in order. First
    print:
