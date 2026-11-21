@@ -668,7 +668,7 @@ here or on `origin`, find or create it:
 
    When a command fails, say Git's error, and stop, as
    [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
-   says: the story's reason is `stopped: ` followed by Git's error.
+   says: the story's reason is Git's error.
 
 Then prepare the worktree, new or reused. A new worktree holds only
 what Git tracks. Find out once per epic run, in the epic run's own
@@ -688,8 +688,9 @@ worktree with the epic run's environment:
 
 When `lets sync` exits non-zero, say its error, and stop, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
-says, with `stopped: lets sync failed in its worktree: ` followed by
-its error. On any other exit of `git check-ignore`, run no `lets sync`.
+says: the story's reason is
+`lets sync failed in its worktree: ` followed by its error. On any
+other exit of `git check-ignore`, run no `lets sync`.
 Prepare nothing else in the worktree: the steps install what they need,
 as in any fresh checkout.
 

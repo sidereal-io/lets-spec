@@ -4807,7 +4807,7 @@ readme_step_returns() {
   local part phrase
   part="$(part_section 'Enter the branch')"
   for phrase in 'git check-ignore -q .agents/skills/lets-go' 'cd <path> && lets sync' \
-    '`stopped: lets sync failed in its worktree: ` followed by its error' 'Prepare nothing else in the worktree'; do
+    'the story'"'"'s reason is `lets sync failed in its worktree: ` followed by its error' 'Prepare nothing else in the worktree'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Enter the branch does not say: $phrase"; false; }
   done
 }
@@ -5022,4 +5022,12 @@ readme_step_returns() {
     { echo "Run the epic does not settle a story in the epic run's checkout"; false; }
   grep -qF -- 'the lines in its `.workspace/lets-go/<session>-rounds.txt` in `<path>`' <<<"$(skill_section lets-go "Relay a story run's questions")" ||
     { echo "Relay a story run's questions does not put the rounds file in the worktree"; false; }
+}
+
+@test "parallel: a story stopped on entering its worktree gets one stopped: in its line" {
+  local section
+  section="$(skill_section lets-go "The story's worktree")"
+  grep -qF -- 'the story'"'"'s reason is Git'"'"'s error' <<<"$section" ||
+    { echo "The story's worktree does not give Git's error as the reason"; false; }
+  ! grep -qF -- 'reason is `stopped: `' <<<"$section" || { echo "The story's worktree puts stopped: in a reason"; false; }
 }
