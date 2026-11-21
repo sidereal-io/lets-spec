@@ -71,6 +71,9 @@ None.
   case), *Run the shape step*, the removed *Pick the first ready story*
   part, *Enter the branch* (a lost claim), and *The step lines*.
 - `skills/lets-go/references/epic-run.md`: *Report the maps' edits*.
+- `skills/lets-go/references/step-prompt.md`: the shape report asks
+  for a `story` line for each story in the order discovery created
+  them, so a round that only finishes Finalize still lists them.
 - `README.md`: the `lets-go` paragraph at line 279.
 - `tests/skill-interfaces.bats`: the tests of *Pick the first ready
   story* and its line are removed or changed, and new tests cover the

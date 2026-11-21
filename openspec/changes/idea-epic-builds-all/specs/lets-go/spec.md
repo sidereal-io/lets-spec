@@ -93,7 +93,7 @@ No part SHALL be a step: the parts before the walk SHALL run no `lets delegate s
 
 #### Scenario: The pick names next
 - **WHEN** the shape step reports an epic and three stories
-- **THEN** `lets-go` runs its own `next` case, with the three stories as the only candidates, and adds no command of its own for the pick
+- **THEN** `lets-go` goes on from the blocker read in *Check the issue* with the epic as `<i>`, and does not run its own `next` case for the three stories
 
 #### Scenario: A branch made after the check
 - **WHEN** *Check the issue* found no branch `lets-go-chore` for #149, and someone creates a local branch `lets-go-chore` before *Claim* creates it
@@ -536,7 +536,7 @@ When the step reports `done` and its first evidence line is `epic #<epic>: <titl
 - **THEN** it finds no `lets-go does not shape an empty epic yet`
 
 ### Requirement: An epic run finishes a stopped discovery before it builds
-When *Confirm the packet* returns `epic` for an epic with open sub-issues, on the default branch, `lets-go` SHALL run *Find the input's discovery* for `#<epic>` before the epic run starts, as *A stopped discovery resumes from its parent issue* says. That lookup keeps the epic itself when it is a parent. When the lookup finds one or more discoveries, `lets-go` SHALL say that a discovery of `#<epic>` is in progress at each `#<parent>` it found, and run the shape step for the input the lookup returned with it, whose round resumes the discovery or finishes its Finalize. That input is `#<epic>`, or the idea or issue `#<n>` that the epic's `Input:` line names when the lookup found that input's answers. When the step reports `done` with the first evidence line `epic #<epic>: <title>`, `lets-go` SHALL go on from the blocker read in *Check the issue* with `#<epic>` as `<i>`, and start the epic run. When a shape step has already run in this run, it SHALL instead say to run the `lets-shape` skill on `#<epic>`, and stop. When the lookup finds none, the epic run SHALL start. An epic whose discovery finished SHALL NOT be shaped again: it has no status line, and no answers file of an earlier round of `issue-<epic>`, or of the input its `Input:` line names, holds a pair.
+When *Confirm the packet* returns `epic` for an epic with open sub-issues, on the default branch, `lets-go` SHALL run *Find the input's discovery* for `#<epic>` before the epic run starts, as *A stopped discovery resumes from its parent issue* says. That lookup keeps the epic itself when it is a parent. When the lookup finds one or more discoveries, `lets-go` SHALL say that a discovery of `#<epic>` is in progress at each `#<parent>` it found, and run the shape step for the input the lookup returned with it, whose round resumes the discovery or finishes its Finalize. That input is `#<epic>`, or the idea or issue `#<n>` that the epic's `Input:` line names when the lookup found that input's answers. When the step reports `done` with the first evidence line `epic #<epic>: <title>`, followed by a `story #<story>: <title>` line for each of the epic's stories, including stories an earlier round filed, `lets-go` SHALL go on from the blocker read in *Check the issue* with `#<epic>` as `<i>`, and start the epic run. The step prompt SHALL ask for a `story` line for each story, in the order discovery created them, so that a round that only finishes Finalize still lists the stories and *Read the report* does not fail it for naming no story. When a shape step has already run in this run, it SHALL instead say to run the `lets-shape` skill on `#<epic>`, and stop. When the lookup finds none, the epic run SHALL start. An epic whose discovery finished SHALL NOT be shaped again: it has no status line, and no answers file of an earlier round of `issue-<epic>`, or of the input its `Input:` line names, holds a pair.
 
 #### Scenario: A stop between rounds
 - **WHEN** the user runs `lets-go #300`, #300 has the open sub-issues #301 and #302, and its body says `Discovery status: in-progress — next phase: stories` with `Input: #300`
@@ -557,6 +557,45 @@ When *Confirm the packet* returns `epic` for an epic with open sub-issues, on th
 #### Scenario: A finished discovery is not shaped again
 - **WHEN** #300 has the open sub-issues #301 to #303, `Input: #300` and no status line, and `.workspace/lets-go/issue-300-shape-answers.yaml` does not exist
 - **THEN** `lets-go` runs no shape step and starts the epic run on #301 to #303
+
+### Requirement: An epic run ends with one line per story
+An epic run SHALL end with one line for every story the epic had when the run started, in the order the run settled them. `lets-go` SHALL print each story's line as it settles the story, and SHALL print every line again, in order, in *End of the run*. `<story-name>` is the part of the story's title before ` — `, or the whole title when it has none. A line SHALL take one of these forms:
+
+- A built story: `#<story> <story-name>: <pr-url>`, the URL of its pull request. A built story that the epic run stacked on a blocker SHALL end its line with `, stacked on #<blocker>`, such as `#280 epic-run-stacks: <pr-url>, stacked on #279`. The lines then show the merge order: a stacked story's pull request merges after its blocker's. A story whose pull request was ready for review when the run started gets this line too, as *An epic run settles the stories already ready, merged or closed* says.
+- A merged story: `#<story> <story-name>: merged, <pr-url>`, the URL of its merged pull request.
+- A story not built: `#<story> <story-name>: not built, <reason>`. The reason SHALL say why, such as `blocked by #279`, `blocked by #284 and #285, on different branches`, `assigned to octocat`, `taken by octocat`, `its packet is not complete`, `its glossary prerequisite is unresolved`, `in another repository`, `its pull request was closed: <pr-url>` or `it depends on #391, which did not finish`. For a story `lets backlog ready` did not list, `lets-go` SHALL read why with `lets backlog item <story>`: an open blocker that is not met, an assignee, or its Status, Kind or Priority. For a story passed in `--started`, the signed-in user as an assignee SHALL not be the reason, because `lets backlog ready` keeps such a story.
+- A story whose step failed: `#<story> <story-name>: failed at <step name>: <reason>`, with the step's name in plain words, as its `Failed` line names it.
+- A story whose walk stopped for another reason: `#<story> <story-name>: stopped: <reason>`.
+
+A line SHALL end with what *An epic run removes a built story's worktree* says of the story's worktree: `; its worktree is at <path>` for a story that stopped or failed with its worktree kept, and `; its worktree at <path> could not be removed: ` followed by Git's error for a built story whose worktree is kept.
+
+#### Scenario: Two built, one blocked
+- **WHEN** an epic run on #278 builds #279 and then a story #391, and #283 is blocked throughout by #263, which is not a story of #278
+- **THEN** *End of the run* prints `#279 epic-run-skeleton: <pr-url>`, then `#391 <story-name>: <pr-url>`, then `#283 <story-name>: not built, blocked by #263`
+
+#### Scenario: A stacked story's line
+- **WHEN** an epic run on #278 builds #279, then builds #280 stacked on #279
+- **THEN** *End of the run* prints `#279 epic-run-skeleton: <pr-url>`, then `#280 epic-run-stacks: <pr-url>, stacked on #279`
+
+#### Scenario: An assigned story
+- **WHEN** #282 is assigned to `octocat` when the epic run starts, and its change's branch exists nowhere
+- **THEN** its line is `#282 epic-run-resume: not built, assigned to octocat`
+
+#### Scenario: A started story left out for its Status
+- **WHEN** #282 is assigned to the signed-in user `octocat`, its branch `epic-run-resume` exists, it has no open blocker, its Status is Done, and nothing is ready
+- **THEN** its line is `#282 epic-run-resume: not built, its Status is Done`, not `assigned to octocat`
+
+#### Scenario: Each line prints as the story settles
+- **WHEN** the children of #280 and #281 run at once, and #281's child ends first with its pull request ready for review
+- **THEN** `lets-go` prints #281's line when it settles #281, before #280's line, and before any `Picked` line of the next wave
+
+#### Scenario: Built, failed and skipped stories together
+- **WHEN** an epic run on #278 builds #279, the build of #391 fails with `tests fail on main`, #392 is blocked by #391, and the run then builds #394
+- **THEN** *End of the run* prints `#279 epic-run-skeleton: <pr-url>`, `#391 <story-name>: failed at build: tests fail on main; its worktree is at .workspace/lets-go/worktrees/<story-name>`, `#392 <story-name>: not built, it depends on #391, which did not finish` and `#394 <story-name>: <pr-url>`, in that order, and no count line
+
+#### Scenario: A second run after a stop
+- **WHEN** an earlier epic run on #278 built #279 to a ready pull request, then stopped during #280's build, and the user runs `lets-go #278` again
+- **THEN** the new run prints `#279 epic-run-skeleton: <pr-url>` first, then `Resumed #280: <title>, started in an earlier run, under #278.`, and #280's walk goes on from build
 
 ## REMOVED Requirements
 

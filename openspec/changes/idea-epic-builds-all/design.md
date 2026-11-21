@@ -174,8 +174,14 @@ in step 3 of *Run the shape step*. For `#<n>`, it is `#<n>`'s step.
 
 `lets-shape`, given that input, keeps the epic by its `Input:` line and
 finishes Finalize with the answers. Its report is
-`epic #<epic>: <title>`, so D1 sends the run back to *Check the issue*
-with `#<epic>`, and the epic run starts. *Read the report* removes the
+`epic #<epic>: <title>`, followed by a `story` line for each of the
+epic's stories, so D1 sends the run back to *Check the issue* with
+`#<epic>`, and the epic run starts. *Read the report* fails an `epic`
+line with no `story` line. The step prompt in
+`references/step-prompt.md` asks for the story lines "in the order you
+created them", which a round that only finishes Finalize can read as
+none: that round created no story. So the prompt says "in the order
+discovery created them" instead, as *Read the report* already does. *Read the report* removes the
 named input's answers file, which is the one the step used.
 
 Step 1 of *Run the shape step* already takes the discovery that *Check
