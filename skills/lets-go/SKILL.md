@@ -29,6 +29,10 @@ depends on where you run it, and on why the last run stopped:
 - **On the default branch, with the issue number:** it finds the
   change's branch, here or on `origin`, switches to it, and goes on the
   same way. It does not claim the issue again.
+- **On the default branch, with an epic's number:** it starts the epic
+  run again. It gives each story whose pull request is ready, merged or
+  closed its line, resumes each story this user started, and builds the
+  rest.
 - **On the default branch, with nothing:** it does not resume. It picks
   the next ready issue, and a claimed issue is never ready. To resume,
   give the issue number, or run it on the change's branch.
@@ -73,7 +77,7 @@ procedure ranks it.
 | [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch | this session | [Read the request](#read-the-request) | `lets go questions` fails |
 | [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
-| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; [Run the epic](#run-the-epic) for an epic on the default branch, after [Stack the story](references/epic-run.md#stack-the-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run |
+| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; [Run the epic](#run-the-epic) for an epic on the default branch, after [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | The epic has no open stories |
@@ -111,9 +115,9 @@ it always has.
 | `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the `url` that `lets backlog item <i>` prints |
 | `<parent>` | A parent issue, as its key: an epic that discovery filed, a discovery in progress, or the epic of an epic run | The shape report's `epic` line, the discovery query in [Start from an idea](#start-from-an-idea), or, for an epic run, [Check the issue](#check-the-issue) before [Run the epic](#run-the-epic) |
 | `<story>` | One story, as its key: a story that a shape step's report names, or a story of an epic run | Each `story` line of the shape report, or [Run the epic](#run-the-epic), for the story it picks or settles |
-| `<blocker>` | An open issue that blocks a story, as its key. For a stacked story, the blocker it stacks on | The story's `blockedBy`, from `lets backlog item <story>` in [Run the epic](#run-the-epic), or the blocker read in [Stack the story](references/epic-run.md#stack-the-story) |
-| `<blocker-branch>` | A met blocker's branch, the `headRefName` of its pull request. For a stacked story, the branch it stacks on | [Stack the story](references/epic-run.md#stack-the-story), from the `gh pr list` read |
-| `<blocker-pr>` | The number of a stacked story's blocker's pull request | [Stack the story](references/epic-run.md#stack-the-story), from the `gh pr list` read |
+| `<blocker>` | An open issue that blocks a story, as its key. For a stacked story, the blocker it stacks on | The story's `blockedBy`, from `lets backlog item <story>` in [Run the epic](#run-the-epic), the blocker read in [Stack the story](references/epic-run.md#stack-the-story), or a pull request's base in [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) |
+| `<blocker-branch>` | A met blocker's branch, the `headRefName` of its pull request. For a stacked story, the branch it stacks on | [Stack the story](references/epic-run.md#stack-the-story), from the `gh pr list` read, or [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base), from `<pr-base>` |
+| `<blocker-pr>` | The number of a stacked story's blocker's pull request | [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from the `gh pr list` read |
 | `<other-branch>` | The branch of another open blocker of the same story, which the base's branch must contain | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<a>` | The first open blocker of a story whose blockers' branches no one branch contains, as its key. The line that names them all shows it | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<b>` | The second such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
@@ -124,6 +128,8 @@ it always has.
 | `<step name>` | A step's name in plain words, as its `Failed` line names it, such as `review build` | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), from the failed step |
 | `<story-name>` | The part of a story's title before ` — `, or the whole title when it has none | [Run the epic](#run-the-epic), when it settles the story |
 | `<paths>` | The changed discovery maps, one path each | [Commit the discovery map](references/shape.md#commit-the-discovery-map), from its `git status` command |
+| `<pr-base>` | The base branch of a story's pull request, its `baseRefName` | [Run the epic](#run-the-epic) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr list` read |
+| `<story-pr>` | The number of a story's pull request, which [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) edits by | [Run the epic](#run-the-epic) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr list` read |
 | `<pr-url>` | The URL of a story's pull request, in an epic run | [Run the epic](#run-the-epic), when it settles a built story |
 | `<pr>` | The number of the change's pull request | [Read the records](references/records.md#read-the-records), from the pull request's `number` |
 | `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | [Check the issue](#check-the-issue), from the blocker read's title. After a shape step, [Check the issue](#check-the-issue) sets it again from the shaped issue's title |
@@ -334,8 +340,35 @@ says.
    `git ls-remote` there too, to learn whether `origin` has it. Keep
    what you found: [Enter the branch](#enter-the-branch) reads it, and
    does not look again.
-3. Decide on an open blocker before anything else in this part runs. A
-   blocker whose `state` is `OPEN` is open. When one is:
+3. Decide on an open blocker before anything else in this part runs.
+
+   In an epic run, for the story the epic run picked, when its change's
+   branch exists, here or on `origin`, first run
+   [Take up a started story](references/epic-run.md#take-up-a-started-story),
+   whether or not the story has an open blocker: a resumed story whose
+   blockers have all closed still needs its pull request's base read.
+   On its result:
+   - **`stacked`:** go on, below. The story is stacked on the
+     `<blocker>` it carries.
+   - **`not-stacked`:** go on, below.
+   - **`settled`:** go back to [Run the epic](#run-the-epic), which
+     picks again. Do not go on with the story.
+   - **`fetch-failed`:** say which branch could not be fetched, with
+     Git's error, and stop, as
+     [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+     says.
+   - **`edit-failed`:** say which pull request's base could not be
+     moved, with gh's error, and stop, as
+     [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+     says.
+   - **`read-failed`:** say that the story's pull request could not be
+     read, with gh's error, and stop, as
+     [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+     says.
+
+   That decides the story's blockers: skip the rest of this decision.
+
+   Otherwise, a blocker whose `state` is `OPEN` is open. When one is:
    - **The branch exists**, here or on `origin`: the user has stacked it
      by hand. Name the open blockers by number, and go on.
    - **It does not exist:** say which open issues block `#<i>`, and
@@ -399,7 +432,9 @@ Next: [Run the shape step](#run-the-shape-step) when
 shape can run; [Run the epic](#run-the-epic) when it returned `epic` on
 the default branch, or when
 [Stack the story](references/epic-run.md#stack-the-story) settled the
-story; otherwise [Route](#route).
+story, or
+[Take up a started story](references/epic-run.md#take-up-a-started-story)
+did; otherwise [Route](#route).
 
 ## Run the shape step
 

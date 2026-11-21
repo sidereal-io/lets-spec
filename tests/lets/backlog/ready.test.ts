@@ -189,3 +189,54 @@ test('ready --met-blockers never counts a blocker in another repository as met',
   await run(['ready', '--met-blockers', '279'], t.deps);
   assert.deepEqual(keys(t), []);
 });
+
+// The rows for ready --started: the rows given, and the search for the open
+// issues assigned to the signed-in user, each with its blockedBy nodes.
+const mineRows = (base: Row[], mine: [number, ReturnType<typeof blocker>[]][], created: (number: number) => string = createdAt): Row[] => [
+  ...base,
+  ['issue list --search is:open assignee:@me', json(mine.map(([number, nodes]) => ({ number, createdAt: created(number), blockedBy: { nodes, totalCount: nodes.length } })))],
+];
+
+test('ready --started lists a started issue of the signed-in user, ranked with the others', async () => {
+  const t = backlogDeps(mineRows(rows([{ number: 282, priority: 'Should', status: 'In Progress' }, { number: 283 }], [283]), [[282, []]]));
+  assert.equal(await run(['ready', '--started', '282'], t.deps), 0);
+  assert.deepEqual(keys(t), ['283', '282']);
+});
+
+test('ready --started runs the signed-in user\'s search with the 500-item limit', async () => {
+  const t = backlogDeps(mineRows(rows([], []), []));
+  await run(['ready', '--started', '282'], t.deps);
+  assert.deepEqual(t.calls()[3], ['issue', 'list', '--search', 'is:open assignee:@me', '--limit', '500', '--json', 'number,createdAt,blockedBy']);
+  assert.equal(t.calls().length, 4);
+});
+
+test('ready --started ranks a started issue by the creation time of the signed-in user\'s search', async () => {
+  const created: Record<number, string> = { 282: '2026-01-01T00:00:00Z', 100: '2026-02-01T00:00:00Z' };
+  const t = backlogDeps(mineRows(rows([{ number: 100 }, { number: 282, status: 'In Progress' }], [100], (n) => created[n]), [[282, []]], (n) => created[n]));
+  await run(['ready', '--started', '282'], t.deps);
+  assert.deepEqual(keys(t), ['282', '100']);
+});
+
+test('ready --started leaves out a started issue whose open blocker is not met', async () => {
+  const t = backlogDeps(mineRows(rows([{ number: 282, status: 'In Progress' }], []), [[282, [blocker(281)]]]));
+  await run(['ready', '--started', '282'], t.deps);
+  assert.deepEqual(keys(t), []);
+});
+
+test('ready --started --met-blockers lists a started issue whose open blocker is named', async () => {
+  const t = backlogDeps(mineRows(stackRows([{ number: 282, status: 'In Progress' }], [], []), [[282, [blocker(281)]]]));
+  await run(['ready', '--started', '282', '--met-blockers', '281'], t.deps);
+  assert.deepEqual(keys(t), ['282']);
+});
+
+test('ready --started leaves out an issue assigned only to someone else', async () => {
+  const t = backlogDeps(mineRows(rows([{ number: 285, status: 'In Progress' }], []), []));
+  await run(['ready', '--started', '285'], t.deps);
+  assert.deepEqual(keys(t), []);
+});
+
+test('ready --started never counts a blocker in another repository as met', async () => {
+  const t = backlogDeps(mineRows(stackRows([{ number: 282, status: 'In Progress' }], [], []), [[282, [blocker(281, { repo: 'other-org/tools' })]]]));
+  await run(['ready', '--started', '282', '--met-blockers', '281'], t.deps);
+  assert.deepEqual(keys(t), []);
+});

@@ -202,3 +202,15 @@ test('the command list names ready --met-blockers with an example', async () => 
   await run(['--help'], t.deps);
   assert.match(t.stdout(), /ready \[--met-blockers <keys>\][^]*?such as 279,280/);
 });
+
+test('lets backlog ready --help names --started with an example', async () => {
+  const t = backlogDeps([]);
+  assert.equal(await run(['ready', '--help'], t.deps), 0);
+  assert.match(t.stdout(), /--started <keys>[^]*?281,282/);
+});
+
+test('the command list names ready --started with an example', async () => {
+  const t = backlogDeps([]);
+  await run(['--help'], t.deps);
+  assert.match(t.stdout(), /ready \[--started <keys>\][^]*?such as 281,282/);
+});

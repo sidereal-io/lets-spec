@@ -33,8 +33,9 @@ export const LOOKUP_JQ = `.data.repository.nameWithOwner as $repo
   | {repo: $repo, projects: ([.data.repository.projectsV2.nodes[], (.data.repositoryOwner.projectsV2.nodes[] | select(any(.repositories.nodes[]; .nameWithOwner == $repo)))]
       | map(select(.closed | not) | {number, title, url, owner: .owner.login}) | unique_by(.owner, .number))}`;
 
-// The windows the skills read: 500 Project items, and 500 unassigned,
-// unblocked open issues.
+// The windows the skills read: 500 Project items, and 500 issues from each
+// search: unassigned and unblocked, unassigned and blocked, and assigned to
+// the signed-in user.
 export const ITEM_LIMIT = '500';
 export const FREE_LIMIT = '500';
 
@@ -141,7 +142,7 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
   };
 
   return {
-    async listCandidates({ blocked = false } = {}) {
+    async listCandidates({ blocked = false, started = false } = {}) {
       const items = await projectItems();
       // Only a free issue can be ready, so the search for them gives each
       // one's creation time, with no other call.
@@ -149,8 +150,8 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
       const unblocked = new Set(free.map(({ number }) => number));
       const created = new Map(free.map(({ number, createdAt }) => [number, createdAt]));
       const blockers = new Map<number, string[] | null>();
-      if (blocked) {
-        const found = await read(gh, ['issue', 'list', '--search', 'is:open no:assignee is:blocked', '--limit', FREE_LIMIT, '--json', 'number,createdAt,blockedBy']) as { number: number; createdAt: string; blockedBy: unknown }[];
+      type Found = { number: number; createdAt: string; blockedBy: unknown }[];
+      const readBlockers = (found: Found) => {
         for (const { number, createdAt, blockedBy } of found) {
           if (!created.has(number)) created.set(number, createdAt);
           const open = nodes(blockedBy).filter((b) => b.state === 'OPEN').map((b) => named(b.number as number, b.url));
@@ -158,13 +159,22 @@ export async function createGithub(io: Pick<Io, 'execFile'>, cwd: string): Promi
           // here, so it must never count as met.
           blockers.set(number, open.every(({ key, label }) => label === `#${key}`) ? open.map(({ key }) => key) : null);
         }
+      };
+      if (blocked) {
+        readBlockers(await read(gh, ['issue', 'list', '--search', 'is:open no:assignee is:blocked', '--limit', FREE_LIMIT, '--json', 'number,createdAt,blockedBy']) as Found);
+      }
+      const mine = new Set<number>();
+      if (started) {
+        const found = await read(gh, ['issue', 'list', '--search', 'is:open assignee:@me', '--limit', FREE_LIMIT, '--json', 'number,createdAt,blockedBy']) as Found;
+        readBlockers(found);
+        for (const { number } of found) mine.add(number);
       }
       // In issue-number order, so issues created at the same time rank
       // lowest number first.
       const contents = items.map((item) => ({ item, content: item.content as { number: number; title: string; url: string } }));
       return contents.sort((a, b) => a.content.number - b.content.number).map(({ item, content }): Candidate => ({
         ...named(content.number, content.url), title: content.title, url: content.url, ...fields(item),
-        free: unblocked.has(content.number), blockers: blockers.get(content.number) ?? null, created: created.get(content.number) ?? '',
+        free: unblocked.has(content.number), mine: mine.has(content.number), blockers: blockers.get(content.number) ?? null, created: created.get(content.number) ?? '',
       }));
     },
 

@@ -1291,9 +1291,12 @@ readme_lets_go() {
   section="$(readme_lets_go)"
   for phrase in "Given an epic's number, \`lets-go\` builds each ready story of the epic in turn" \
     "A story blocked by another story of the epic stacks on that story's branch, and its pull request targets that branch" \
-    'ends with one line per story'; do
+    'ends with one line per story' \
+    'Running `lets-go` on the epic again goes on with its unfinished stories'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "the README's lets-go section does not say: $phrase"; false; }
   done
+  ! grep -qF "If a story's step fails, the run stops at that story" <<<"$section" ||
+    { echo "the README still says a failed step stops the epic run"; false; }
   ! grep -qF 'It never takes an epic' <<<"$section" || { echo "the README still says lets-go never takes an epic"; false; }
   ! grep -qF 'It leaves a blocked story out' <<<"$section" || { echo "the README still says lets-go leaves a blocked story out"; false; }
 }
@@ -2413,6 +2416,16 @@ epic_run_file() {
   done
 }
 
+@test "resume: an epic run's not-built reason skips a met blocker and the signed-in user on a started story" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in 'naming each open issue in its `blockedBy` that is not a met story' \
+    'For a story passed in `--started`, `lets backlog ready` keeps one assigned to the signed-in user, so that assignee is no reason' \
+    "gh auth status --active --json hosts --jq '.hosts[][].login'"; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
 @test "an epic run's stop rule is written once, in A stop in an epic run" {
   local section line
   section="$(skill_section lets-go 'A stop in an epic run')"
@@ -2421,6 +2434,20 @@ epic_run_file() {
     grep -qF -- "$line" <<<"$section" || { echo "A stop in an epic run does not say: $line"; false; }
   done
   has_heading "$(epic_run_file)" 'A stop in an epic run' || { echo "references/epic-run.md has no heading: A stop in an epic run"; false; }
+}
+
+@test "resume: an epic run's wording covers a resumed story and a ready one" {
+  local phrase
+  for phrase in 'A story settled here as merged or closed that blocks another story' \
+    'Settle the story with its `stopped` line, as [A stop in an epic run](#a-stop-in-an-epic-run) writes it'; do
+    grep -qF -- "$phrase" <<<"$(part_section 'Run the epic')" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+  for phrase in 'before the next `Picked` or `Resumed` line' 'A built story stacked on `#<blocker>` gets this line instead' \
+    'gets the line that [A stop in an epic run](#a-stop-in-an-epic-run) gives it'; do
+    grep -qF -- "$phrase" <<<"$(skill_section lets-go 'Settle a story' | tr -s '[:space:]' ' ')" || { echo "Settle a story does not say: $phrase"; false; }
+  done
+  grep -qF 'from its `Picked` or `Resumed` line to its line' <<<"$(skill_section lets-go 'A stop in an epic run' | tr -s '[:space:]' ' ')" ||
+    { echo "A stop in an epic run does not cover a resumed story"; false; }
 }
 
 @test "an epic run settles a stopped story in a text block" {
@@ -3104,6 +3131,7 @@ description_short() {
   done <<'EOF'
 the change's branch	**On the change's branch:** it finds the issue from the branch's name, prints a dated line for each step already done, and goes on from the first unfinished step.
 the default branch with the issue number	**On the default branch, with the issue number:** it finds the change's branch, here or on `origin`, switches to it, and goes on the same way. It does not claim the issue again.
+the default branch with an epic's number	**On the default branch, with an epic's number:** it starts the epic run again. It gives each story whose pull request is ready, merged or closed its line, resumes each story this user started, and builds the rest.
 the default branch with nothing	**On the default branch, with nothing:** it does not resume. It picks the next ready issue, and a claimed issue is never ready.
 a failed step	**After a failed step:** the run that failed never runs that step again. A new run starts it afresh, in a new session, with the answers given so far.
 a failed shape step	A failed shape step has no branch: the run says to run `lets-shape` on the idea or the issue.
@@ -4151,4 +4179,186 @@ step_prompt_file() {
 @test "an epic run's Settle a story lists a failed blocker among the reasons" {
   grep -qF '`it depends on #<failed>, which did not finish`' <<<"$(skill_section lets-go 'Settle a story')" ||
     { echo "Settle a story does not list a failed blocker among the reasons"; false; }
+}
+
+@test "resume: an epic run looks for each story's branch at the start" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in 'git branch --list <story-name>' 'git ls-remote --heads origin refs/heads/<story-name>' \
+    'before the first pick' "in the epic's order"; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: an epic run reads each story's pull request at the start" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in 'gh pr list --head <story-name> --state all --limit 100 --json number,url,state,isDraft,baseRefName,isCrossRepository,createdAt' \
+    'Drop each entry whose `isCrossRepository` is `true`' \
+    "The story's pull request is the entry whose \`state\` is \`OPEN\`; else the one whose \`state\` is \`MERGED\`; else the \`CLOSED\` one with the latest \`createdAt\`"; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: an epic run settles a story whose pull request is ready at the start" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in '**Open, and its `isDraft` is `false`:**' 'settle the story with its built line' 'runs none of its steps'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: an epic run settles a story whose pull request merged" {
+  grep -qxF '#<story> <story-name>: merged, <pr-url>' <<<"$(text_block_lines 'Settle a story' "$(epic_run_file)")" ||
+    { echo "Settle a story has no text block with a merged story's line"; false; }
+  grep -qF '**Merged:** settle the story with its merged line' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not settle a merged story at the start"; false; }
+}
+
+@test "resume: an epic run settles a story whose pull request was closed" {
+  grep -qF '`its pull request was closed: <pr-url>`' <<<"$(skill_section lets-go 'Settle a story')" ||
+    { echo "Settle a story does not list a closed pull request among the reasons"; false; }
+  grep -qF '**Closed:** settle the story with `not built, its pull request was closed: <pr-url>`' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not settle a story whose pull request was closed"; false; }
+}
+
+@test "resume: an epic run settles nothing at the start for a draft or a missing pull request" {
+  grep -qF '**An open draft, or no pull request:** settle nothing' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not leave a draft or a missing pull request unsettled"; false; }
+}
+
+@test "resume: Read a pull request's base applies its four rules in order" {
+  local text rule last=0 at
+  has_heading "$(epic_run_file)" "Read a pull request's base" || { echo "references/epic-run.md has no heading: Read a pull request's base"; false; }
+  text="$(procedure_text "Read a pull request's base" | tr -s '[:space:]' ' ')"
+  for rule in '`<pr-base>` is `<default>`' \
+    'gh pr list --head <pr-base> --state merged --limit 100 --json number,isCrossRepository,baseRefName' \
+    "\`<pr-base>\` is the change name of an open story of the epic, in this repository" \
+    'Anything else'; do
+    grep -qF -- "$rule" <<<"$text" || { echo "Read a pull request's base does not say: $rule"; false; }
+    at="${text%%"$rule"*}"
+    [ "${#at}" -gt "$last" ] || { echo "Read a pull request's base does not apply this rule after the one before: $rule"; false; }
+    last="${#at}"
+  done
+}
+
+@test "resume: Read a pull request's base moves a merged blocker's pull request to the default branch, with no rebase" {
+  local text phrase
+  text="$(procedure_text "Read a pull request's base" | tr -s '[:space:]' ' ')"
+  for phrase in 'whose `isCrossRepository` is `false` and whose `baseRefName` is `<default>`' \
+    'gh pr edit <story-pr> --base <default>' 'Rebase nothing' 'return `edit-failed`'; do
+    grep -qF -- "$phrase" <<<"$text" || { echo "Read a pull request's base does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: Read a pull request's base returns its results, and says no stop" {
+  local text result
+  text="$(procedure_text "Read a pull request's base")"
+  for result in on-story not-stacked edit-failed; do
+    grep -qF -- "- \`$result\`:" <<<"$text" || { echo "Read a pull request's base does not list: $result"; false; }
+  done
+  grep -qF 'Return to the part or procedure that ran it, with the result.' <<<"$(tr -s '[:space:]' ' ' <<<"$text")" ||
+    { echo "Read a pull request's base does not return to the part that ran it"; false; }
+  procedure_stops "Read a pull request's base"
+}
+
+@test "resume: an epic run reads each ready pull request's base at the start" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in "run [Read a pull request's base](#read-a-pull-requests-base)" \
+    'On `on-story`, settle the story with its stacked line' \
+    'On `not-stacked`, settle it with its built line'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: an epic run passes the started stories as --started" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in "every story not settled yet that has its change's branch as \`--started\`" \
+    'lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279 --started 281' \
+    'With no such story, pass no `--started`'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: an epic run prints the Resumed line for a story passed in --started" {
+  grep -qxF 'Resumed #<i>: <title>, started in an earlier run, under #<parent>.' <<<"$(text_block_lines 'Run the epic' "$(epic_run_file)")" ||
+    { echo "Run the epic has no text block with its Resumed line"; false; }
+  grep -qF 'When `<i>` was passed in `--started`, print this line instead of the `Picked` line' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not say when it prints the Resumed line"; false; }
+}
+
+@test "resume: Take up a started story reads the story's pull request" {
+  local text phrase
+  has_heading "$(epic_run_file)" 'Take up a started story' || { echo "references/epic-run.md has no heading: Take up a started story"; false; }
+  text="$(procedure_text 'Take up a started story' | tr -s '[:space:]' ' ')"
+  for phrase in 'gh pr list --head <name> --state all --limit 100 --json number,state,baseRefName,isCrossRepository,createdAt' \
+    'Drop each entry whose `isCrossRepository` is `true`' \
+    "Run [Read a pull request's base](#read-a-pull-requests-base) for the story" \
+    'Run no [Stack the story](#stack-the-story)'; do
+    grep -qF -- "$phrase" <<<"$text" || { echo "Take up a started story does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: Take up a started story stacks a story only on a met story" {
+  local text phrase
+  text="$(procedure_text 'Take up a started story' | tr -s '[:space:]' ' ')"
+  for phrase in 'gh pr list --state open --limit 1000 --json number,url,isDraft,headRefName,isCrossRepository' \
+    'When the `<blocker>` it carries is met' '`<blocker-pr>` is the number of its pull request' \
+    'Otherwise leave the base as it is, and return `not-stacked`'; do
+    grep -qF -- "$phrase" <<<"$text" || { echo "Take up a started story does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: Take up a started story runs Stack the story for a story with no pull request and an open blocker" {
+  local text
+  text="$(procedure_text 'Take up a started story' | tr -s '[:space:]' ' ')"
+  grep -qF 'With no pull request and an open blocker, run [Stack the story](#stack-the-story)' <<<"$text" ||
+    { echo "Take up a started story does not run Stack the story"; false; }
+  grep -qF 'With a pull request whose `state` is `MERGED` or `CLOSED`, return `not-stacked`' <<<"$text" ||
+    { echo "Take up a started story does not leave a merged or closed pull request to the walk"; false; }
+  grep -qF '[Take up a started story](#take-up-a-started-story) runs it too, for a story whose change'"'"'s branch exists and has no pull request' \
+    <<<"$(skill_section lets-go 'Stack the story')" || { echo "Stack the story does not say Take up a started story runs it"; false; }
+  grep -qF 'For such a story, [Claim](../SKILL.md#claim) does not run' <<<"$(skill_section lets-go 'Stack the story')" ||
+    { echo "Stack the story does not say Claim does not run for a story whose branch exists"; false; }
+}
+
+@test "resume: Take up a started story returns its results to Check the issue, and says no stop" {
+  local text result
+  text="$(procedure_text 'Take up a started story')"
+  for result in stacked not-stacked settled fetch-failed edit-failed read-failed; do
+    grep -qF -- "- \`$result\`:" <<<"$text" || { echo "Take up a started story does not list: $result"; false; }
+  done
+  tr -s '[:space:]' ' ' <<<"$text" | grep -qF 'Return to [Check the issue](../SKILL.md#check-the-issue), with the result.' ||
+    { echo "Take up a started story does not return to Check the issue"; false; }
+  procedure_stops 'Take up a started story'
+}
+
+@test "resume: Check the issue takes up a started story before the open-blocker condition" {
+  local part take blocker
+  part="$(part_section 'Check the issue')"
+  grep -qF 'In an epic run, for the story the epic run picked, when its change'"'"'s branch exists, here or on `origin`, first run [Take up a started story](references/epic-run.md#take-up-a-started-story)' <<<"$part" ||
+    { echo "Check the issue does not run Take up a started story"; false; }
+  grep -qF 'whether or not the story has an open blocker' <<<"$part" ||
+    { echo "Check the issue does not run Take up a started story whatever the blockers"; false; }
+  take="${part%%"](references/epic-run.md#take-up-a-started-story)"*}"
+  blocker="${part%%'A blocker whose `state` is `OPEN` is open. When one is'*}"
+  [ "${#take}" -lt "${#blocker}" ] || { echo "Check the issue takes up a started story under the open-blocker condition"; false; }
+}
+
+@test "resume: Check the issue stops when a started story's base cannot be moved" {
+  local part phrase
+  part="$(part_section 'Check the issue')"
+  for phrase in '**`edit-failed`:** say which pull request'"'"'s base could not be moved, with gh'"'"'s error, and stop, as [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) says' \
+    '**`read-failed`:** say that the story'"'"'s pull request could not be read, with gh'"'"'s error, and stop, as [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) says' \
+    '**`not-stacked`:** go on, below'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+}
+
+@test "resume: the step prompt's Stack section is for a story Take up a started story stacked too" {
+  grep -qF 'A story is stacked when [Stack the story](epic-run.md#stack-the-story) or [Take up a started story](epic-run.md#take-up-a-started-story) returned `stacked` for it' \
+    <<<"$(skill_section lets-go 'Write the prompt')" ||
+    { echo "Write the prompt does not hold the Stack section for a resumed stacked story"; false; }
 }
