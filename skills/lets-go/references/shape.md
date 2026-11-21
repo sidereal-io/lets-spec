@@ -140,44 +140,6 @@ running `lets-go` again with the same idea, or `#<i>`, resumes the
 discovery and keeps its edits. Otherwise, say to commit or discard them
 before the next run, because the next run stops on them.
 
-## Pick the first ready story
-
-Discovery filed a parent issue, `#<parent>`, and its stories. Build one
-of them in this run.
-
-1. Run the third case, `next`, of
-   [Find the source of demand](../SKILL.md#find-the-source-of-demand),
-   with one narrowing: the candidates are the stories the report named,
-   and no other issue. Pass their keys to `lets backlog ready` with
-   `--only`, as the section says. Rank as it does: Must, then Should,
-   then Could, then the oldest issue first. Run
-   [Check the prerequisite](glossary-handoff.md#check-the-prerequisite)
-   and [Confirm the packet](../SKILL.md#confirm-the-packet) on each
-   candidate, in rank order. A ready story is one that `next` would
-   take.
-2. On its result:
-   - **`picked`:** print:
-
-     ```text
-     Picked #<i>: <title>, the first ready story under #<parent>.
-     ```
-
-     That story is `<i>`. Go on from the blocker read in
-     [Check the issue](../SKILL.md#check-the-issue) with it, as for an
-     issue number.
-   - **`nothing-ready`:** print the `Done shape` line, as
-     [The step lines](../SKILL.md#the-step-lines) says. Say
-     that no story under `#<parent>` is
-     ready. Name each story, and why it was left out, as the result
-     carries it: for example, its blocker, its assignee, an unresolved
-     prerequisite, or a packet that is not complete. For a story that
-     `lets backlog ready` did not list, read why with
-     `lets backlog item <story>`: the `assignees` it names, an open
-     issue in its `blockedBy`, or its `status`, `kind` or `priority`.
-     On an error, act as [Backlog errors](../SKILL.md#backlog-errors)
-     says. Say to run `lets-go` with a story's number once it is ready.
-     Then stop. Claim nothing, and create no branch.
-
 ## Commit the discovery map
 
 Discovery edits the discovery maps on the default branch:

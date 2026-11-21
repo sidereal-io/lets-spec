@@ -1042,7 +1042,10 @@ review_build_start() {
   skill_says lets-go 'holds another idea'
   skill_says lets-go 'epic #<parent>: <title>'
   skill_says lets-go 'story #<story>: <title>'
-  skill_says lets-go 'Picked #<i>: <title>, the first ready story under #<parent>.'
+  # Every shaped parent goes on as an epic run, so no part picks one story under it.
+  skill_does_not_say lets-go 'the first ready story under'
+  ! skill_has_section lets-go 'Pick the first ready story' >/dev/null ||
+    { echo "lets-go still has a heading: Pick the first ready story"; false; }
   skill_says lets-go 'docs: the discovery map from #<parent>'
   skill_says lets-go 'Discovery status: in-progress'
   skill_says lets-go "gh issue list --state open --limit 500 --search '\"Input:\" in:body' --json number,title,body"
@@ -1411,7 +1414,7 @@ readme_lets_go() {
 
 # The parts of a lets-go run, in run order. Each is a ## heading of SKILL.md.
 lets_go_parts=('Read the settings' 'Read the request' 'Start from an idea' 'Check the issue' 'Run the shape step'
-  'Pick the first ready story' 'Run the epic' 'Route' 'Enter the branch' 'Set the question mode' 'Walk the step table' 'End of the run')
+  'Run the epic' 'Route' 'Enter the branch' 'Set the question mode' 'Walk the step table' 'End of the run')
 
 # heading_anchor <heading>: the anchor GitHub makes from a heading's text.
 heading_anchor() {
@@ -1625,7 +1628,7 @@ skill_part() {
 # its place in the run, and its Next: line, in SKILL.md.
 @test "each part whose steps moved links them in references/shape.md" {
   local part text
-  for part in 'Start from an idea' 'Run the shape step' 'Pick the first ready story'; do
+  for part in 'Start from an idea' 'Run the shape step'; do
     text="$(skill_part "$part")"
     grep -qF "](references/shape.md#$(heading_anchor "$part"))" <<<"$text" ||
       { echo "$part does not link its steps in references/shape.md"; false; }
@@ -2122,8 +2125,7 @@ procedure_stops() {
   declare -A results=(
     ['Read the request']='picked nothing-ready'
     ['Start from an idea']='matches no-match'
-    ['Check the issue']='found unresolved'
-    ['Pick the first ready story']='picked nothing-ready')
+    ['Check the issue']='found unresolved')
   for part in "${!results[@]}"; do
     for result in ${results[$part]}; do
       grep -qF -- "**\`$result\`:**" <<<"$(part_section "$part")" || { echo "$part does not act on: $result"; false; }
