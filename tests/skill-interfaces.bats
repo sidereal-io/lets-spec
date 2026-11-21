@@ -1028,18 +1028,17 @@ review_build_start() {
   skill_says lets-go 'Failed shape:'
   skill_says lets-go 'at most once'
   skill_says lets-go 'holds another idea'
-  skill_says lets-go 'Run discovery on it?'
   skill_says lets-go 'epic #<parent>: <title>'
   skill_says lets-go 'story #<story>: <title>'
   skill_says lets-go 'Picked #<i>: <title>, the first ready story under #<parent>.'
   skill_says lets-go 'docs: the discovery map from #<parent>'
   skill_says lets-go 'Discovery status: in-progress'
   skill_says lets-go "gh issue list --state open --search '\"Discovery status: in-progress\" in:body' --json number,title,body"
-  skill_says lets-go '*Resume mode*'
-  skill_says lets-go 'Finalize has started on that parent'
   skill_says lets-go 'the edits are that discovery'"'"'s confirmed phases'
+  # lets-shape owns its discovery rules, so lets-go keeps no copy of them.
   for phrase in '#153 adds' '#154 adds' '`lets-go` needs an issue number, and stop' \
-    'end with a failed report that says so and names'; do
+    'end with a failed report that says so and names' 'Run discovery on it?' '*Resume mode*' \
+    'Finalize has started on that parent' 'What shape runs' 'what-shape-runs' '<L or XL>'; do
     skill_does_not_say lets-go "$phrase"
   done
   # A large idea now runs discovery, so the README must not send it away.
@@ -1518,7 +1517,7 @@ section_moved() {
   section_moved references/subagent.md 'Run a step in a subagent'
   section_moved references/glossary-handoff.md 'Glossary preflight' 'Check the prerequisite' 'Check the checkpoint' \
     'What the preflight returns' 'Import the glossary checkpoint' 'Import the commits' 'Recover from a failed import'
-  section_moved references/shape.md 'Commit the discovery map' "The shape step's name" 'What shape runs'
+  section_moved references/shape.md 'Commit the discovery map' "The shape step's name"
   section_moved references/step-prompt.md 'Write the prompt'
 }
 
