@@ -82,9 +82,10 @@ when it runs.
    [Find the input's discovery](#find-the-inputs-discovery). For an
    idea, use what [Start from an idea](#start-from-an-idea) found. For
    an issue `#<i>`, run the lookup now.
-   - **There is one:** the edits are that discovery's confirmed phases.
-     Go on: the step resumes the discovery or finishes its Finalize, and
-     its map commit takes the edits.
+   - **There is one or more:** the edits are that discovery's confirmed
+     phases. Go on: the step resumes the discovery or finishes its
+     Finalize, and its map commit takes the edits. When several match,
+     `lets-shape` asks which one.
    - **There is none:** say that the maps have uncommitted edits, name
      each path it lists, and say to commit or discard them. Stop, and
      run no step. If the run went on, a discovery's commit could sweep
@@ -104,13 +105,15 @@ when it runs.
 5. When it reports `done`,
    [Read the report](../SKILL.md#read-the-report) says what it shaped.
    Check one case first. When the check of the discovery maps above went
-   on only because a parent with no status line was this input's
-   discovery, and the step shaped one issue that is not that parent, the
-   maps' edits may be another discovery's. Print the `Done shape` line,
-   as [The step lines](../SKILL.md#the-step-lines) says. Name each path
-   that check listed, say to commit or discard them, and stop here,
-   before [Check the issue](../SKILL.md#check-the-issue). Claim nothing,
-   and create no branch. Otherwise:
+   on only because one or more parents with no status line were this
+   input's discovery, and the step shaped none of those parents, the
+   maps' edits may be another discovery's. The step shaped none of them
+   when its one issue, or its parent, is not one of them. Print the
+   `Done shape` line, as [The step lines](../SKILL.md#the-step-lines)
+   says. Name each path that check listed, say to commit or discard
+   them, and stop here, before
+   [Check the issue](../SKILL.md#check-the-issue). Claim nothing, and
+   create no branch. Otherwise:
    - **One issue:** that issue is `<i>`. Go on from the blocker read in
      [Check the issue](../SKILL.md#check-the-issue) with it, as for an
      issue number.
