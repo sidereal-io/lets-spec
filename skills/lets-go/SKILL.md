@@ -522,11 +522,13 @@ says.
    branch is checked out in its worktree, `<path>`, and the epic run's
    own checkout stays on `<default>`.
 2. When you ran [Claim](#claim), act on its result:
-   - **`claimed`:** when it carries `verified`, run
+   - **`claimed`:** In an epic run, first prepare the worktree
+     [Claim](#claim) created, as
+     [The story's worktree](#the-storys-worktree) says, whatever the
+     result carries. Then, when it carries `verified`, run
      [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint)
      with the commits it carries, and act on its result as below. In an
-     epic run, first prepare the worktree [Claim](#claim) created, as
-     [The story's worktree](#the-storys-worktree) says. Then run the
+     epic run, run the
      import in `<path>`, each Git command with `git -C <path>`. When it
      fails, remove the worktree with `git worktree remove <path>` before
      its recovery deletes the branch. When

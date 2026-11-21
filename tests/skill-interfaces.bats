@@ -2152,7 +2152,7 @@ procedure_stops() {
 }
 
 @test "Enter the branch imports the glossary checkpoint only after verified" {
-  grep -qF '**`claimed`:** when it carries `verified`, run [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint)' <<<"$(part_section 'Enter the branch')" ||
+  grep -qF 'Then, when it carries `verified`, run [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint)' <<<"$(part_section 'Enter the branch')" ||
     { echo "Enter the branch does not import only after verified"; false; }
 }
 
@@ -4816,7 +4816,7 @@ readme_step_returns() {
   local part phrase
   part="$(part_section 'Enter the branch')"
   for phrase in 'git -C <path> merge --ff-only origin/<name>' \
-    'Then run the import in `<path>`, each Git command with `git -C <path>`' \
+    'In an epic run, run the import in `<path>`, each Git command with `git -C <path>`' \
     'read these files under `<path>`'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Enter the branch does not say: $phrase"; false; }
   done
@@ -4984,4 +4984,11 @@ readme_step_returns() {
       grep -qF -- "$phrase" <<<"$text" || { echo "it does not name $phrase: ${text:0:80}"; false; }
     done
   done
+}
+
+@test "parallel: Enter the branch prepares a claimed story's worktree before it reads the claim's glossary result" {
+  local section
+  section="$(skill_section lets-go 'Enter the branch')"
+  grep -qF -- '**`claimed`:** In an epic run, first prepare the worktree [Claim](#claim) created, as [The story'"'"'s worktree](#the-storys-worktree) says, whatever the result carries. Then, when it carries `verified`' <<<"$section" ||
+    { echo "Enter the branch does not prepare the worktree first for every claimed result"; false; }
 }
