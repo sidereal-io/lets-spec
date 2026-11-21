@@ -870,6 +870,11 @@ review_build_start() {
   skill_says lets-go 'lets backlog ready'
   skill_says lets-go 'lets backlog ready --exclude 149'
   skill_says lets-go '--only'
+  # Only an epic run narrows the pick, so next keeps no rule for a shape report's stories.
+  grep -qF 'An epic run narrows the candidates to the current wave with `--only`' <<<"$(procedure_text 'Find the source of demand' | tr -s '[:space:]' ' ')" ||
+    { echo "Find the source of demand does not leave --only to the epic run"; false; }
+  skill_does_not_say lets-go "a shape report's stories"
+  skill_does_not_say lets-go 'with the same `--only` as the first pick'
   skill_says lets-go 'lets backlog item <i>'
   skill_says lets-go 'lets backlog find <branch>'
   skill_says lets-go "lets backlog find '<idea>'"

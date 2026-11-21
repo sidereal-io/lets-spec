@@ -982,13 +982,12 @@ Take the first case that applies:
    Should or Could. Nobody is assigned to it, and no open issue blocks
    it. A Wont is never a candidate. The `issues` it prints are the
    candidates, ranked Must, then Should, then Could, then the oldest
-   issue first. When the run picks among a shape report's stories,
-   pass their keys with `--only`, such as
-   `lets backlog ready --only 191,192,193`. After a lost claim, leave
-   out every issue lost in this run: each one for which [Claim](#claim)
-   returned `taken`. Pass their keys with `--exclude`, such as
-   `lets backlog ready --exclude 149`, with the same `--only` as the
-   first pick.
+   issue first. An epic run narrows the candidates to the current
+   wave with `--only`, as *Pick the next story* in
+   [Run the epic](#run-the-epic) says. After a lost claim outside an
+   epic run, leave out every issue lost in this run: each one for which
+   [Claim](#claim) returned `taken`. Pass their keys with `--exclude`,
+   such as `lets backlog ready --exclude 149`.
 
    Check each candidate in rank order, with its key as `<i>` while
    you check it. Run
