@@ -1072,6 +1072,8 @@ review_build_start() {
   skill_does_not_say lets-go 'the first ready story it files'
   ! tr -s '[:space:]' ' ' < "$repo/README.md" | grep -qF -- 'picks the first ready story' ||
     { echo "README.md still says a large idea's run picks the first ready story"; false; }
+  tr -s '[:space:]' ' ' < "$repo/README.md" | grep -qF -- 'The run then goes on as an epic run on the parent, as for an epic'"'"'s number below, and builds every story under it.' ||
+    { echo "README.md does not say a large idea's run builds every story"; false; }
 }
 
 @test "lets-go finds an input's discovery after a stop during Finalize" {
@@ -2513,9 +2515,13 @@ epic_run_file() {
     'That sets its `<shape-name>`, the idea form of the prompt in [Write the prompt](step-prompt.md#write-the-prompt), and the check below that the answers file is this idea'"'"'s.' \
     '**Another issue:** run the step as for an issue, with that issue in place of `#<i>`' \
     'its `<shape-name>` is `issue-` and that issue'"'"'s number' \
-    'A `done` report names the epic and its stories, so the run goes back to [Check the issue](../SKILL.md#check-the-issue) with the epic.'; do
+    'A `done` report names the epic and its stories, so the run goes back to [Check the issue](../SKILL.md#check-the-issue) with the epic.' \
+    'The URL is the one the `Input:` line holds, or else the epic'"'"'s `<issue-url>` with that issue'"'"'s number in place of the epic'"'"'s.'; do
     grep -qF -- "$phrase" <<<"$shape" || { echo "Run the shape step does not say: $phrase"; false; }
   done
+  grep -qF -- 'For the issue that an epic'"'"'s `Input:` line names, as [Run the shape step](#run-the-shape-step) says, use that issue'"'"'s number in place of `<i>`.' \
+    <<<"$(skill_section lets-go "The shape step's name")" ||
+    { echo "The shape step's name does not name the issue an Input line names"; false; }
 }
 
 @test "an epic's shape round removes the answers of the input its Input line names" {
