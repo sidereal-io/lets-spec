@@ -1048,6 +1048,16 @@ review_build_start() {
     { echo "README.md still says a large idea stops the run"; false; }
 }
 
+@test "lets-go finds an input's discovery after a stop during Finalize" {
+  local section phrase
+  section="$(skill_section lets-go "Find the input's discovery")"
+  # Finalize removes the status line, so lets-go's own answers file is what shows an earlier round.
+  for phrase in 'has no status line' '`.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least one pair' \
+    '`.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea' 'an open epic whose discovery finished'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Find the input's discovery does not say: $phrase"; false; }
+  done
+}
+
 @test "lets-go runs each step through lets delegate step" {
   skill_says lets-go 'lets delegate step instructions --for <step>'
   skill_says lets-go 'lets delegate step run --for <step>'

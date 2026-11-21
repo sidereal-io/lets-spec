@@ -18,8 +18,21 @@ input is an idea, or an issue `#<i>`.
 
 2. Keep each parent whose `Input:` line names this input: the idea word
    for word, or `#<i>` or the issue's URL.
-3. A kept parent that says `Discovery status: in-progress` is this
-   input's discovery.
+3. A kept parent is this input's discovery in either of two states:
+   - **It says `Discovery status: in-progress`.** The discovery stopped
+     between rounds, or before [Claim](../SKILL.md#claim).
+   - **It has no status line, and an earlier shape round of this input
+     left answers.** That is,
+     `.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least
+     one pair, and, for an idea,
+     `.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea.
+     A stop during Finalize leaves this state: Finalize removes the
+     status line before it asks its own questions, and
+     [Read the report](../SKILL.md#read-the-report) removes the answers
+     file only when shape reports `done` or `failed`.
+
+   A kept parent in neither state is not this input's discovery: for
+   example, an open epic whose discovery finished.
 
 Return to the part that ran it, with each discovery it found, or none.
 
