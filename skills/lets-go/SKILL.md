@@ -163,10 +163,9 @@ reads as it always has.
 | `<second>` | The second model of the ranked options | [Run a step](#run-a-step) or [Start the story run](references/epic-run.md#start-the-story-run), when it ranks the options |
 | `<skill>` | The skill in the step's row of the step table | [Write the prompt](references/step-prompt.md#write-the-prompt) |
 | `<plain-language-path>` | The absolute path to the installed plain-language reference | [Write the prompt](references/step-prompt.md#write-the-prompt) |
-| `<the sentence above>` | The sentence for `## What to run`, or for shape the text of [What shape runs](references/shape.md#what-shape-runs) | [Write the prompt](references/step-prompt.md#write-the-prompt) |
+| `<the sentence above>` | The sentence for `## What to run`, which for shape is one of its two sentences | [Write the prompt](references/step-prompt.md#write-the-prompt) |
 | `<kebab-name>` | The part of an issue title before ` — `, in `lets-shape`'s template | The issue's title |
 | `<one-line outcome>` | The part of an issue title after ` — `, in `lets-shape`'s template | The issue's title |
-| `<L or XL>` | The Size the shape step gave the work, `L` or `XL` | The shape step |
 
 ## Backlog errors
 
@@ -878,8 +877,7 @@ Each one returns its result to what ran it.
 Parallel sessions share the backlog, so claim the issue before you
 create its change branch, OpenSpec artifacts or code. When shaping runs,
 it comes first and may create the issue, its parent and stories, and a
-glossary holding branch: see
-[What shape runs](references/shape.md#what-shape-runs).
+glossary holding branch.
 
 Each `lets backlog` command it runs acts on an error as
 [Backlog errors](#backlog-errors) says.
@@ -1133,12 +1131,12 @@ and review build. Prose and printed lines use these names. `--for`,
 
 Shape runs only before the walk, as
 [Run the shape step](#run-the-shape-step) says, so this table has no row
-for it. Its skill is in
-[What shape runs](references/shape.md#what-shape-runs), and
-[Check the issue](#check-the-issue) prints its line. The walk runs the
-other four steps. Every other step runs in a fresh session, as
-[Run a step](#run-a-step) says. On `lets-minimal`, review plan never
-runs.
+for it. Its skill is `lets-shape`, which
+[Write the prompt](references/step-prompt.md#write-the-prompt)
+names, and [Check the issue](#check-the-issue) prints its line. The
+walk runs the other four steps. Every other step runs in a fresh
+session, as [Run a step](#run-a-step) says. On `lets-minimal`, review
+plan never runs.
 
 Each row says which skill the step runs, which record shows the step
 was done, and the line to print when it was done before this run.

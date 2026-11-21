@@ -180,20 +180,72 @@ At the start:
    terms.
 3. Find the Project, as in [The Project](#the-project). The map's links need
    the owner and the name from its `repo`.
-4. Pick the mode, first match wins:
-   - **The user brings one bug, chore or small story, or names one issue to
-     shape on its own**: [Shape one issue](#shape-one-issue). An issue that
-     holds a large idea is the input to a discovery run instead. If you
-     cannot tell which the user means, ask.
-   - **An open parent issue says `Discovery status: in-progress`** (`gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`): [Resume mode](#resume-mode). If
-     more than one does, list them and ask the user which to resume, or
-     whether to start a new run. Never pick one yourself.
-   - **`<root.path>/openspec/discovery.md` does not exist**: run every
-     phase.
-   - **Otherwise**: [Revision mode](#revision-mode).
+4. Pick the path. The input is what the user, or the skill that runs this
+   one, brings: an idea in words, a file, or an issue `#<i>`. The answers
+   are those this run already has: the ones the user gave in this session,
+   or the `## Answers` section of a resumed step. The first of these that
+   matches wins:
+   1. **An open parent issue is this input, or its `Input:` line names it.**
+      List the parents with `gh issue list --state open --limit 500 --search '"Input:" in:body' --json number,title,body`,
+      and keep each whose `Input:` line names this input: `#<i>` or the
+      issue's URL for an issue, the path for a file, or the idea word for
+      word. When the input is an issue `#<i>` that is itself in that list,
+      it is a parent: keep it too. Then look at each one's status line:
+      - It says `Discovery status: in-progress`: run
+        [Resume mode](#resume-mode) on it.
+      - It has no status line, and the answers confirmed its Phase 5 story
+        table: Finalize has started on it, because Finalize removes the
+        status line before it asks its own questions. Finish
+        [Phase 6: Finalize](#phase-6-finalize) on it, from where the
+        answers leave off, including the glossary handoff.
+
+      Drop a parent in neither state, such as an open epic whose
+      discovery finished. When several parents are left, list them and
+      ask the user which one, as a confirmation question with no
+      recommendation. Never pick one yourself. When none is left, go on to the next item. Start no
+      second discovery for an input that already has a parent.
+   2. **The answers already answer the discovery question.** Follow
+      [Ask about discovery](#ask-about-discovery) with that answer, and ask
+      it no second time: yes runs discovery from
+      [Phase 1: Ingest](#phase-1-ingest) with this input, and anything else
+      stops. Do not size the work again.
+   3. **The input plainly holds a large idea**, such as a PRD or a
+      vision. [Ask about discovery](#ask-about-discovery) before any other
+      question.
+   4. **Any other input**, such as one bug, chore or small story, or an
+      issue to shape: [Shape one issue](#shape-one-issue). Its sizing
+      decides whether the work is too large for one issue.
+   5. **No input.** When an open parent issue says
+      `Discovery status: in-progress` (`gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`),
+      run [Resume mode](#resume-mode) on it. If more than one does, list
+      them and ask the user which to resume, or whether to start a new
+      run. Never pick one yourself. When none does, run every phase if
+      `<root.path>/openspec/discovery.md` does not exist, and
+      [Revision mode](#revision-mode) if it does.
+
+   When the user brings an input, never resume or finish a parent whose
+   `Input:` line names another input, unless the input is that parent.
 
 If any of these fails, stop and show the error. Never write the map anywhere
 but the resolved root.
+
+### Ask about discovery
+
+The work is too large for one issue when it is Size L or XL, or when the
+input plainly holds a large idea. Then ask the user this question, with
+the recommendation `yes`. For a large idea that has no Size yet, say `L`.
+
+`The work is Size <L or XL>, too large for one issue. Run discovery on it?`
+
+Start no discovery before the answer.
+
+- **Yes:** run discovery from [Phase 1: Ingest](#phase-1-ingest) with the
+  input, and every phase to Finalize, including the glossary handoff.
+  When [Shape one issue](#shape-one-issue) found tentative meanings,
+  record them in the parent issue when Ingest writes it.
+- **Anything else:** stop, and say that the work is too large for one
+  issue and discovery was declined. Create no issue and no glossary
+  definition.
 
 ## Pick the map
 
@@ -372,6 +424,14 @@ checkpoint branch until the destination safely contains its definitions.
 
 ## The phases
 
+**Confirmation questions carry no recommendation**, whoever runs this
+skill. The user decides each of them: each phase's confirmation, including
+the parent issue's text at Ingest and [Resume mode](#resume-mode)'s
+restatement; the Phase 5 story table; and the packet confirmation in
+**Confirm, then write**, in [Shape one issue](#shape-one-issue). The two
+product questions are confirmation questions too, as
+[Pick the map](#pick-the-map) says.
+
 **Checkpoint every phase.** Apply the glossary checkpoint procedure above
 whenever the phase changed definitions. When the user confirms a phase,
 write its result at once, and set the parent issue's status line to the next
@@ -405,9 +465,12 @@ text, or just conversation. Then:
 
 **Checkpoint:** The parent issue is public, so confirm its text first. Write
 it from the parent template in
-[templates/issue-template.md](templates/issue-template.md): the status line,
-the input reference, the `Map:` line with the run's map, the confirmed scope
-and any open questions so far. In the same step, create the run's map from
+[templates/issue-template.md](templates/issue-template.md): the status line;
+the `Input:` line, which names the input so a later run can match it: `#<i>`
+for an issue, the path for a file, or the idea word for word for an idea in
+words; the `Map:` line with the run's map; the confirmed scope; and any open
+questions so far. A long conversation with no short statement of the idea
+keeps `conversation, YYYY-MM-DD`, which no later run matches. In the same step, create the run's map from
 [templates/discovery-template.md](templates/discovery-template.md) when the
 file is missing, so a resumed run always finds it.
 Title it `Epic: <capability>`, create it with `gh issue create --title "Epic: <capability>" --body-file <file> --project "<project title>"`, then
@@ -570,13 +633,16 @@ Then hand off:
 
 Use this when the user brings one bug, chore or small story, or names an
 open issue that has no packet. It shapes that one issue. It never edits a
-discovery map and never starts a discovery run. Another skill can send work
+discovery map. Work too large for one issue goes to
+[Ask about discovery](#ask-about-discovery) instead. Another skill can send work
 here too, such as `lets-brainstorm` when it splits a story; it gives you the
 issue's parent and what blocks it.
 
 1. **Find or create the issue.** When the user names no issue, search for
    one first: `gh issue list --state open --search "<words> in:title" --json number,title`. If one matches, ask whether it is the same work. If none
-   does, you create it in step 7. Read a named or confirmed issue with `gh issue view <i> --json title,body,url,parent`. Read its thread as [Issue
+   does, you create it in step 7. When the input says open issues were
+   already searched and none is the same work, skip the search, and create
+   the issue in step 7. Read a named or confirmed issue with `gh issue view <i> --json title,body,url,parent`. Read its thread as [Issue
    comments](references/issue-comments.md) says, and show the user the list.
    If the issue has a **Glossary handoff**, recover its recorded checkpoint
    before continuing or deciding whether this run has glossary edits. An
@@ -604,15 +670,14 @@ issue's parent and what blocks it.
    instead, picking the product as [Pick the map](#pick-the-map) says, with
    one difference. Offer only the listed products, never a new one. When
    no listed product fits, use no map's names.
-6. **Size it** XS, S, M, L or XL. L or XL is too big for one change: say so,
-   offer a discovery run on it instead, and stop. Then write no glossary
-   definition. If the user starts the discovery run, record the tentative
-   meanings in its parent issue when Ingest writes it. This stop creates no
-   issue and starts no discovery. Once sizing passes, agree each meaning and
+6. **Size it** XS, S, M, L or XL. L or XL is too big for one change:
+   [ask about discovery](#ask-about-discovery), and write no glossary
+   definition before the answer. Once sizing passes, agree each meaning and
    scope with the user and write it as
    [Develop the vocabulary](#develop-the-vocabulary) says.
 7. **Confirm, then write.** The issue is public, so show the user its title,
-   body, Kind, Priority and Size, and get a yes. The body carries every
+   body, Kind, Priority and Size, and get a yes. This is a confirmation
+   question, with no recommendation. The body carries every
    fold, so one write covers them all. When the user confirms that an
    existing packet stands unchanged, write nothing and leave its Project
    fields as they are. Otherwise write the packet, retaining any existing
@@ -643,7 +708,11 @@ picked one of several):
    recorded glossary checkpoint as above first. The status line records the next phase; the sections
    already present are confirmed work.
 2. **Restate where discovery stopped** — a one-paragraph summary of what the
-   parent issue and map already capture — and confirm with the user.
+   parent issue and map already capture. When [the answers](#locate-the-discovery)
+   confirmed phases of this parent, or confirmed this restatement, that
+   work is settled: skip this confirmation, and go straight to the
+   recorded next phase. Otherwise, confirm the restatement with the user,
+   as a confirmation question with no recommendation.
 3. **Continue from the recorded phase.** Do not re-litigate confirmed
    sections unless the user brings new information; then revisit and update
    them. When it says `finalize`, go straight to
@@ -724,8 +793,10 @@ person shaping with you.
 
 ### Ask who carries the edits
 
-1. Ask the user which pull request carries the edits. Do not ask again
-   whether the meanings are accepted.
+1. Ask the user which pull request carries the edits. Recommend the pull
+   request of the first story in dependency order. For one story, that is
+   its own pull request. Do not ask again whether the meanings are
+   accepted.
    - For one story, offer its build branch and pull request, or a
      documentation pull request if the user stops after shaping. Create
      that pull request only if the user chooses it.
@@ -804,6 +875,11 @@ Only when the user chose a documentation pull request:
 
 - Discovery **never** creates changes. `lets-go` creates them, one story at
   a time.
+- `lets-shape` creates no change and no change branch. The issues it files
+  and a glossary holding branch are its own. It ends on the branch it
+  started on, with no edits of its own left in the working tree, except the
+  discovery maps, `openspec/discovery.md` and the files under
+  `openspec/discovery/`, when discovery ran.
 - `lets-go` picks the next story, and owns the selection rule. The user can
   also name an issue for it.
 - The story packet is the input — it must stand alone.

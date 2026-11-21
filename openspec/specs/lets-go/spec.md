@@ -258,7 +258,7 @@ When `step run` exits 3, `lets-go` SHALL run the step in a subagent. The subagen
 - **THEN** `.workspace/lets-go/<session>-report.json` holds that question with `"ask":true`
 
 ### Requirement: The step prompt says what to run, the question mode, and how to report
-Each step prompt SHALL name the step, the change, the issue, the branch, the schema and the route line. For the shape step, the issue is `#<i>`, or `none yet` with the idea, and the branch is the default branch. Its schema and route are left out, because *Route* has not run. It SHALL say what to run. For shape: `lets-shape`'s *Shape one issue*, as *The shape step shapes an idea or an unshaped issue* says, and its discovery when the work is too large for one issue, as *The shape step asks before it runs discovery* says. For every other step: invoke the step's skill, as the step table names it, for the change and the issue, and stop where that skill stops. The skills are `lets-plan` for plan, `lets-review-plan` for review plan, `lets-build` for build and `lets-review-build` for review build. The prompt SHALL name no other skill, and no section of a skill, for those steps. `lets-plan` takes the route line from the prompt for the proposal's commit message. The prompt SHALL say the question mode, and what the `lets-go` session does with it. At `auto`, that session answers each question that has a recommendation, and asks the user the rest. At `ask`, it puts every question to the user, with the step's recommendation. The step's own rules SHALL be the same in both modes. It SHALL say that the step never asks the user in its session. When the step needs a decision, it ends with a `needs-input` report that lists every open question, with a `recommendation` where it has one. A question that asks the user to confirm something, such as a brainstorm ledger, an issue packet or a discovery phase, SHALL carry no recommendation. The prompt SHALL say how to read an `## Answers` section. Each answer settles its question. An answer marked as accepted by `lets-go` is recorded as `Assumption` in a brainstorm ledger, and any other answer as `User`. An answer of yes to the confirmation question lets the brainstorm set `Confirmed by user: yes`. The prompt SHALL give the report rules: write the report last, quote a line that holds `#` or `: `, and put no other `step-report` block in the message. It SHALL say what a `done` report's evidence holds: the commits made, and the pull request when the step opened or changed it. For shape, the issue comes first, as `issue #<i>: <title>`, or the parent and the stories, as `epic #<parent>: <title>` and `story #<story>: <title>` lines. For review plan, the verdict and the reviewed commit come first, as `Plan review: <verdict> for <sha>`.
+Each step prompt SHALL name the step, the change, the issue, the branch, the schema and the route line. For the shape step, the issue is `#<i>`, or `none yet` with the idea word for word, and the branch is the default branch. Its schema and route are left out, because *Route* has not run. For an idea whose open issue titles *Start from an idea* searched, the header SHALL also say that the search ran and no open issue is the same work. It SHALL say what to run in one sentence. For every step but shape: invoke the step's skill, as the step table names it, for the change and the issue, and stop where that skill stops. The skills are `lets-plan` for plan, `lets-review-plan` for review plan, `lets-build` for build and `lets-review-build` for review build. For shape, the sentence is ``Invoke the `lets-shape` skill for issue #<i>, and stop where it stops.`` for an issue, and ``Invoke the `lets-shape` skill for the idea above, and stop where it stops.`` for an idea. The prompt SHALL name no other skill, and no section of a skill, for any step. How `lets-shape` picks its path, resumes a discovery and asks its questions is `lets-shape`'s own, as the `discovery-checkpoints` capability says. `lets-plan` takes the route line from the prompt for the proposal's commit message. The prompt SHALL say the question mode, and what the `lets-go` session does with it. At `auto`, that session answers each question that has a recommendation, and asks the user the rest. At `ask`, it puts every question to the user, with the step's recommendation. The step's own rules SHALL be the same in both modes. It SHALL say that the step never asks the user in its session. When the step needs a decision, it ends with a `needs-input` report that lists every open question, with a `recommendation` where it has one. A question that asks the user to confirm something, such as a brainstorm ledger, an issue packet or a discovery phase, SHALL carry no recommendation. The prompt SHALL say how to read an `## Answers` section. Each answer settles its question. An answer marked as accepted by `lets-go` is recorded as `Assumption` in a brainstorm ledger, and any other answer as `User`. An answer of yes to the confirmation question lets the brainstorm set `Confirmed by user: yes`. The prompt SHALL give the report rules: write the report last, quote a line that holds `#` or `: `, and put no other `step-report` block in the message. It SHALL say what a `done` report's evidence holds: the commits made, and the pull request when the step opened or changed it. For shape, the issue comes first, as `issue #<i>: <title>`, or the parent and the stories, as `epic #<parent>: <title>` and `story #<story>: <title>` lines. For review plan, the verdict and the reviewed commit come first, as `Plan review: <verdict> for <sha>`.
 
 #### Scenario: The propose prompt
 - **WHEN** `lets-go` writes the plan prompt for change `lets-go-chore`, issue `#149`, route `lets-minimal`, at `auto`
@@ -295,6 +295,14 @@ Each step prompt SHALL name the step, the change, the issue, the branch, the sch
 #### Scenario: The shape prompt's frame
 - **WHEN** `lets-go` writes the shape prompt for an idea on a repository whose default branch is `main`
 - **THEN** the file says the issue is `none yet`, holds the idea, names `main` as the branch, names no schema and no route, and keeps the `## Questions` and report rules of the other prompts
+
+#### Scenario: The shape prompt for an issue
+- **WHEN** `lets-go` writes the shape prompt for `#180`
+- **THEN** its `## What to run` section holds only ``Invoke the `lets-shape` skill for issue #180, and stop where it stops.``
+
+#### Scenario: The shape prompt names no part of lets-shape
+- **WHEN** `lets-go` writes the shape prompt
+- **THEN** the file names no section of `lets-shape`, such as *Resume mode* or *Shape one issue*, and does not hold `Discovery status: in-progress` or `Run discovery on it?`
 
 ### Requirement: lets-go relays a needs-input report in auto mode
 When a report's outcome is `needs-input`, `lets-go` SHALL go through its questions in order. For a question with a `recommendation`, it SHALL take the recommendation as the answer, and tell the user the question and the answer it gave. It SHALL write that answer as the recommendation followed by ` (lets-go accepted the step's recommendation; the user did not decide)`. For a question without one, it SHALL ask the user that question alone, and wait for the answer before the next. It SHALL append every pair, in order, to `.workspace/lets-go/<session>-answers.yaml`. That file is a YAML list of `question` and `answer` mappings, and keeps the pairs of earlier rounds. `lets-go` SHALL then run the step again with the same `--prompt-file` and `--answers-file <that file>`, through the same `step instructions`, `step run` and exit 3 rules.
@@ -693,7 +701,7 @@ In `ask` mode, when a report's outcome is `needs-input`, `lets-go` SHALL ask the
 - **THEN** `lets-go` shows the error's `message`, claims nothing and runs no step
 
 ### Requirement: The shape step shapes an idea or an unshaped issue
-`lets-go` SHALL run a step named `shape` when the request is an idea that no existing issue matches. It SHALL also run it when *Confirm the packet* returns `needs-shape` for an issue the user named, as *Only an idea or a named issue goes to the shape step* says. It SHALL run that step as *Each step runs through lets delegate step* says, with `--for shape`, on the default branch, before any branch or change exists. The shape step SHALL run at most once per run. After it, a `needs-shape` result SHALL make `lets-go` say to run `lets-shape` on `#<i>`, and stop. `<shape-name>` SHALL be `issue-<i>` for an existing issue, and `idea-<slug>` for an idea. `<slug>` SHALL be built this way: split the idea on white space; lower-case each word; keep only its letters and digits; drop a word left empty; join the first five words with hyphens, or all of them when there are fewer. Once the shape step reports `done` or `failed`, `lets-go` SHALL remove `.workspace/lets-go/<shape-name>-shape-answers.yaml`. Before it writes the shape prompt for an idea, when `.workspace/lets-go/<shape-name>-shape-prompt.md` exists and holds another idea, `lets-go` SHALL remove that answers file too. The shape prompt SHALL say to run `lets-shape`'s *Shape one issue* to its end, including its second comment fetch, its reply, and its glossary handoff. For an idea, it SHALL give the idea word for word. It SHALL say that Start has searched and the user confirmed no open issue is the same work, so the step skips the search and creates the issue. For an existing issue, it SHALL name `#<i>` and say to shape it. It SHALL say to create no change and no change branch, and to end on the default branch with a clean tree, except the discovery maps, `openspec/discovery.md` and the files under `openspec/discovery/`, when discovery ran; a glossary holding branch that `lets-shape` makes is allowed. It SHALL say that the packet confirmation is a confirmation question, with no recommendation. So are the question about which product an idea belongs to, and the question that moves the map for a second product. It SHALL say what the first evidence line of a `done` report is: `issue #<i>: <title>` for one issue. When discovery filed stories, it is `epic #<parent>: <title>`, followed by `story #<story>: <title>` lines. It SHALL say that work too large for one issue, Size L or XL, or an input that holds a large idea, ends the round with the discovery question, as *The shape step asks before it runs discovery* says. When the step reports `done` for one issue, `lets-go` SHALL read `<i>` from that first evidence line. When it reports `done` for a parent and stories, `lets-go` SHALL pick `<i>` as *lets-go picks the first ready story* says. A `done` report whose first evidence line is in neither form SHALL count as `failed`, with a reason that says the shape step named no issue. After a `done` report, Start SHALL go on from its blocker read with `<i>`, as for an issue number, and the shape line SHALL be `Done shape: <date>. <evidence>`. When the step reports `failed`, `lets-go` SHALL print `Failed shape: <reason>`, say to run `lets-shape` on the idea or the issue, name no branch, and stop. When exit 3 sends the step to a subagent, the subagent SHALL work on the default branch.
+`lets-go` SHALL run a step named `shape` when the request is an idea that no existing issue matches. It SHALL also run it when *Confirm the packet* returns `needs-shape` for an issue the user named, as *Only an idea or a named issue goes to the shape step* says. It SHALL run that step as *Each step runs through lets delegate step* says, with `--for shape`, on the default branch, before any branch or change exists. The shape step SHALL run at most once per run. After it, a `needs-shape` result SHALL make `lets-go` say to run `lets-shape` on `#<i>`, and stop. `<shape-name>` SHALL be `issue-<i>` for an existing issue, and `idea-<slug>` for an idea. `<slug>` SHALL be built this way: split the idea on white space; lower-case each word; keep only its letters and digits; drop a word left empty; join the first five words with hyphens, or all of them when there are fewer. Once the shape step reports `done` or `failed`, `lets-go` SHALL remove `.workspace/lets-go/<shape-name>-shape-answers.yaml`. Before it writes the shape prompt for an idea, when `.workspace/lets-go/<shape-name>-shape-prompt.md` exists and holds another idea, `lets-go` SHALL remove that answers file too. The step SHALL run `lets-shape` on the idea or on `#<i>`, with the prompt *The step prompt says what to run, the question mode, and how to report* gives it. `lets-shape` SHALL pick its path as the `discovery-checkpoints` capability says: it shapes the work as one issue, to the end of its comment reads, its reply and its glossary handoff, or runs discovery when the work is too large, as *The shape step runs discovery only after a yes* says. For an idea that the title search already checked, the step SHALL run no second title search. The step SHALL create no change and no change branch, and SHALL end on the default branch with a clean tree, except the discovery maps, `openspec/discovery.md` and the files under `openspec/discovery/`, when discovery ran; a glossary holding branch that `lets-shape` makes is allowed. The packet confirmation, the question about which product an idea belongs to, and the question that moves the map for a second product SHALL reach `lets-go` with no recommendation, so `lets-go` asks the user in either mode. The first evidence line of a `done` report SHALL be `issue #<i>: <title>` for one issue. When discovery filed stories, it SHALL be `epic #<parent>: <title>`, followed by `story #<story>: <title>` lines. When the step reports `done` for one issue, `lets-go` SHALL read `<i>` from that first evidence line. When it reports `done` for a parent and stories, `lets-go` SHALL pick `<i>` as *lets-go picks the first ready story* says. A `done` report whose first evidence line is in neither form SHALL count as `failed`, with a reason that says the shape step named no issue. After a `done` report, Start SHALL go on from its blocker read with `<i>`, as for an issue number, and the shape line SHALL be `Done shape: <date>. <evidence>`. When the step reports `failed`, `lets-go` SHALL print `Failed shape: <reason>`, say to run `lets-shape` on the idea or the issue, name no branch, and stop. When exit 3 sends the step to a subagent, the subagent SHALL work on the default branch.
 
 #### Scenario: An idea no issue matches
 - **WHEN** the user runs `lets-go add a --quiet flag to lets sync`, and the search finds no open issue
@@ -704,12 +712,20 @@ In `ask` mode, when a report's outcome is `needs-input`, `lets-go` SHALL ask the
 - **THEN** `<shape-name>` is `idea-fix-letssync-quiet-output`: the dash alone is dropped, and four words are all there are
 
 #### Scenario: The shape prompt for an idea
-- **WHEN** `lets-go` writes the shape prompt for the idea `add a --quiet flag to lets sync`
-- **THEN** the file names `lets-shape`, holds `add a --quiet flag to lets sync`, says the search has run and to create the issue, says to run *Shape one issue* to its end and finish on the default branch with a clean tree, and says the first evidence line is `issue #<i>: <title>`
+- **WHEN** `lets-go` writes the shape prompt for the idea `add a --quiet flag to lets sync`, after the title search found no match
+- **THEN** its header holds `add a --quiet flag to lets sync` and says the search ran and no open issue is the same work, and its `## What to run` section holds only ``Invoke the `lets-shape` skill for the idea above, and stop where it stops.``
 
 #### Scenario: The shape prompt names discovery
 - **WHEN** `lets-go` writes the shape prompt
-- **THEN** the file holds `Run discovery on it?`, `epic #<parent>: <title>`, `story #<story>: <title>`, `Discovery status: in-progress`, `openspec/discovery.md` and `openspec/discovery/`, and does not say to end with a failed report for a too-large idea
+- **THEN** its report rules name discovery's evidence lines, `epic #<parent>: <title>` and `story #<story>: <title>`, and the file holds none of `lets-shape`'s discovery rules: not `Run discovery on it?`, not `Discovery status: in-progress` and not *Resume mode*
+
+#### Scenario: An idea the search already checked
+- **WHEN** the shape step runs for the idea `add a --quiet flag to lets sync`, after the title search found no match
+- **THEN** the step runs no title search of its own, creates the issue, ends on the default branch with a clean tree, and its first evidence line is `issue #<i>: <title>`
+
+#### Scenario: The packet confirmation reaches the user
+- **WHEN** the shape step reports `needs-input` with the packet confirmation, at `auto`
+- **THEN** the question carries no `recommendation`, and `lets-go` asks the user it
 
 #### Scenario: The answers file after shape
 - **WHEN** the shape step for `idea-add-a-quiet-flag-to` reports `done`, and `.workspace/lets-go/idea-add-a-quiet-flag-to-shape-answers.yaml` holds three pairs
@@ -747,43 +763,6 @@ In `ask` mode, when a report's outcome is `needs-input`, `lets-go` SHALL ask the
 - **WHEN** `step run --for shape` exits 3 and its stderr names `.workspace/lets-delegate/idea-add-a-quiet-flag-to-shape.prompt.md`
 - **THEN** `lets-go` runs a subagent with that prompt file on the default branch, and reads its `step-report` block
 
-### Requirement: The shape step asks before it runs discovery
-The shape step SHALL NOT fail, and SHALL NOT start discovery on its own, when it finds the work too large for one issue. Too large means Size L or XL, or an input that holds a large idea. It SHALL end its round with a `needs-input` report that holds the question `The work is Size <L or XL>, too large for one issue. Run discovery on it?` with the recommendation `yes`. `lets-go` SHALL relay that question as it relays any other, in the run's question mode. When the answer is `yes`, the resumed step SHALL run `lets-shape`'s discovery with the idea or #<i> as its input. It SHALL run every phase from Ingest to Finalize, including the glossary handoff. Each phase's confirmation, and the story table in Phase 5, SHALL be a confirmation question with no recommendation. The parent's `Input:` line SHALL hold the idea's words for an idea, or `#<i>` for an issue, so a later round can match it. When the answer is anything but `yes`, the step SHALL end with a `failed` report that says the work is too large for one issue and discovery was declined. The step SHALL create no change and no change branch; the parent issue, the stories and a glossary holding branch are `lets-shape`'s own.
-
-The shape prompt SHALL say all of this. It SHALL order the step's entry points, so a fresh round does not re-enter *Shape one issue*. First: when an open parent issue says `Discovery status: in-progress` and its `Input:` line names this input, run *Resume mode* on it, and start no second run. Second: when an open parent issue's `Input:` line names this input, it has no status line, and the `## Answers` section confirmed its Phase 5 story table, Finalize has started on it, because Finalize removes the status line before it asks its own questions. Finish Finalize on that parent, including the glossary handoff, and start no second run. Third: when the `## Answers` section answers the discovery question with `yes`, run discovery from Ingest. Otherwise: run *Shape one issue*. It SHALL say that the phases the `## Answers` section confirmed are settled, so *Resume mode* goes straight to the parent's recorded next phase and asks no confirmation of its restatement. It SHALL recommend the first story in dependency order as the owner of glossary edits made in discovery.
-
-#### Scenario: A too-large idea asks
-- **WHEN** the shape step for the idea `rewrite the backlog around a plugin model` sizes it XL
-- **THEN** its report is `needs-input`, with the question `The work is Size XL, too large for one issue. Run discovery on it?` and the recommendation `yes`, and the step has created no issue
-
-#### Scenario: The user says yes
-- **WHEN** the answers file holds that question with the answer `yes`, and no parent issue says `Discovery status: in-progress`
-- **THEN** the resumed step runs discovery from Ingest with the idea as its input, and ends its next round with Ingest's questions and the parent issue's confirmation, which has no recommendation
-
-#### Scenario: A resumed round finds the parent
-- **WHEN** the idea is `rewrite the backlog around a plugin model`, the answers file holds the discovery question answered `yes` and Ingest's confirmation, and the open parent issue `Epic: plugin backlog` says `Discovery status: in-progress — next phase: moscow` with `Input: rewrite the backlog around a plugin model`
-- **THEN** the resumed step resumes that parent at MoSCoW, asks no confirmation of where discovery stopped, and creates no second parent
-
-#### Scenario: A resumed round for an issue
-- **WHEN** the shape step is for `#180`, and an open parent issue says `Discovery status: in-progress` with `Input: #180`
-- **THEN** the resumed step resumes that parent, and does not shape #180 as one issue
-
-#### Scenario: The prompt orders the entry points
-- **WHEN** `lets-go` writes the shape prompt
-- **THEN** the file names *Resume mode* first, Finalize on a parent with no status line second, discovery from Ingest third, and *Shape one issue* otherwise, and says a confirmed phase is settled
-
-#### Scenario: A round during Finalize
-- **WHEN** the answers file holds the discovery question answered `yes` and the Phase 5 story table confirmed, and the open parent `Epic: plugin backlog` has `Input: rewrite the backlog around a plugin model` and no status line, because Finalize removed it before the glossary handoff asked who carries the edits
-- **THEN** the resumed step finishes Finalize on that parent with the handoff's answer, and does not run discovery from Ingest or create a second parent
-
-#### Scenario: The user declines
-- **WHEN** the answers file holds that question with the answer `no`
-- **THEN** the step ends `failed`, with a reason that says the work is too large for one issue and discovery was declined, and `lets-go` prints `Failed shape:` with it
-
-#### Scenario: At auto
-- **WHEN** the user ran `lets-go auto` with the idea, and the shape step reports the discovery question
-- **THEN** `lets-go` answers `yes` itself, tells the user, and runs the step again with the answers file
-
 ### Requirement: The shape report names the parent and the stories
 When discovery filed stories, the shape step's `done` report SHALL hold, as its first evidence line, `epic #<parent>: <title>`, with the parent issue's number and title. It SHALL then hold one line per story, `story #<story>: <title>`, in the order the stories were created. When discovery found that the whole run fits one story, so the parent became that story, the first evidence line SHALL be `issue #<i>: <title>`, as for one issue. `lets-go` SHALL read `<parent>` and each `<story>` from those lines. A `done` report whose first evidence line is in neither form SHALL count as `failed`, with a reason that says the shape step named no issue. A `done` report whose first line is an `epic` line and that holds no `story` line SHALL count as `failed`, with a reason that says the shape step named no story. The `Done shape: <date>. <evidence>` line SHALL carry those lines as its evidence.
 
@@ -819,7 +798,7 @@ After a shape report that names a parent and stories, `lets-go` SHALL pick one s
 - **THEN** `lets-go` prints the `Done shape` line, says no story under #190 is ready, names each story and its blocker, says to run `lets-go` with a story's number once it is ready, and stops with no branch
 
 ### Requirement: A stopped discovery resumes from its parent issue
-A discovery can stop between rounds, or before *Claim*, when no story is ready. For an idea, before the title search of *Start from an idea*, `lets-go` SHALL look for an open parent issue that says `Discovery status: in-progress` and whose `Input:` line holds the idea's words. It SHALL use `lets-shape`'s own query, `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`. When one exists, `lets-go` SHALL say that a discovery of this idea is in progress at `#<parent>`, skip the title search, and run the shape step for the idea. The step resumes that discovery, as *The shape step asks before it runs discovery* says. For an issue, no check is needed: when *Confirm the packet* returns `needs-shape` for `#<i>`, the shape step runs, and finds the parent whose `Input:` is `#<i>`. The answers file rules of *The shape step shapes an idea or an unshaped issue* SHALL hold: an idea retyped word for word keeps its answers, and a reworded idea starts with none and is a new input. The phases the parent already recorded are not lost either way.
+A discovery can stop between rounds, or before *Claim*, when no story is ready. For an idea, before the title search of *Start from an idea*, `lets-go` SHALL look for an open parent issue that says `Discovery status: in-progress` and whose `Input:` line holds the idea's words. It SHALL use `lets-shape`'s own query, `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`. When one exists, `lets-go` SHALL say that a discovery of this idea is in progress at `#<parent>`, skip the title search, and run the shape step for the idea. The step resumes that discovery, because `lets-shape` matches the parent's `Input:` line to the idea, as the `discovery-checkpoints` capability says. For an issue, no check is needed: when *Confirm the packet* returns `needs-shape` for `#<i>`, the shape step runs, and finds the parent whose `Input:` is `#<i>`. The answers file rules of *The shape step shapes an idea or an unshaped issue* SHALL hold: an idea retyped word for word keeps its answers, and a reworded idea starts with none and is a new input. The phases the parent already recorded are not lost either way.
 
 #### Scenario: The same idea again
 - **WHEN** a run for `rewrite the backlog around a plugin model` stopped at MoSCoW, the open parent `Epic: plugin backlog` says `Discovery status: in-progress` with `Input: rewrite the backlog around a plugin model`, and the user runs `lets-go rewrite the backlog around a plugin model` again
@@ -1132,25 +1111,6 @@ Every part but *End of the run* SHALL end its own text with a line that starts `
 - **WHEN** the skill-interfaces test reads *Check the issue*
 - **THEN** its `Next:` line links `#run-the-shape-step` and `#route`, each with its condition
 
-### Requirement: lets-go refers to no step by its number
-`skills/lets-go/SKILL.md` and every `skills/lets-go/references/*.md` SHALL refer to another part of the skill by its name and a link, never by a step number. Outside fenced code blocks and inline code spans, no text SHALL match the word `step` or `steps` followed by a number, in any case. So the skill SHALL not say `*Start* step 3`, `*Claim* step 2`, `Step 3 of [Run a step](#run-a-step)` or `go on to step 4`. The shape prompt SHALL name `lets-shape`'s steps by their bold titles, **Find or create the issue** and **Confirm, then write**, not by their numbers. A numbered list SHALL still number its items.
-
-#### Scenario: No step numbers
-- **WHEN** the skill-interfaces test reads `lets-go`, outside code
-- **THEN** it finds no `step` or `steps` followed by a number
-
-#### Scenario: A step number comes back
-- **WHEN** a skills folder holds `lets-go/SKILL.md` with the line `Go on from *Claim* step 3.`
-- **THEN** the check fails, and its output names `SKILL.md` and `step 3`
-
-#### Scenario: A numbered list
-- **WHEN** a section of `lets-go` holds a list numbered `1.` to `4.`
-- **THEN** the step-number check passes
-
-#### Scenario: The shape prompt names lets-shape's steps
-- **WHEN** the skill-interfaces test reads *What shape runs* in `lets-go`
-- **THEN** it finds `**Find or create the issue**` and `**Confirm, then write**`
-
 ### Requirement: Every link inside lets-go names one of its headings
 This holds for `skills/lets-go/SKILL.md` and for each file in `skills/lets-go/references/`. A link to a place in the same file is written `](#<anchor>)`. Outside code, each such link SHALL match the anchor GitHub makes from one of that file's own headings. GitHub makes it from the heading's text: in lower case, with each space made a hyphen. It drops every character other than a letter, a digit, a hyphen or an underscore. A link to another file is written with a path relative to the linking file, such as `](references/records.md#records-that-disagree)` or `](../SKILL.md#walk-the-step-table)`. Outside code, the path SHALL name a file that exists, and an anchor after it SHALL match one of that file's headings. A link that leaves the skills folder, or that starts with a URL scheme such as `https:`, is not checked here. The skill-interfaces check SHALL fail on a link that matches no file or no heading, and SHALL name the linking file and the link. It SHALL run on the source skills, and on `lets-go` as the release build installs it in each published flow, `standard` and `minimal`.
 
@@ -1373,7 +1333,7 @@ A rule written once MAY run more than once. `next` runs *Check the prerequisite*
 |---|---|
 | `epic-run.md` | The steps of *Run the epic*: how an epic run starts, picks each story, records each story's line and ends |
 | `glossary-handoff.md` | *Glossary preflight*, with *Check the prerequisite*, *Check the checkpoint* and *What the preflight returns*, and *Import the glossary checkpoint*, with *Import the commits* and *Recover from a failed import* |
-| `shape.md` | The steps of *Start from an idea*, *Run the shape step* and *Pick the first ready story*, *Commit the discovery map*, the `<shape-name>` and `<slug>` rules of *The change's name*, and *What shape runs* |
+| `shape.md` | The steps of *Start from an idea*, *Run the shape step* and *Pick the first ready story*, *Commit the discovery map*, and the `<shape-name>` and `<slug>` rules of *The change's name* |
 | `story-run.md` | A story run's child session: how the child takes what the story prompt gives, walks the step table, passes its steps' questions up, and ends with one step report |
 | `step-prompt.md` | *Write the prompt*: the rules that fill the frame, and the frame as one fenced block that the agent copies to `.workspace/lets-go/<session>-prompt.md` and fills |
 | `records.md` | *Read the records* and *Records that disagree* |
@@ -1384,7 +1344,7 @@ A rule written once MAY run more than once. `next` runs *Check the prerequisite*
 
 #### Scenario: The moved sections are in their files
 - **WHEN** the skill-interfaces test lists the headings of each file of `lets-go`
-- **THEN** it finds *Records that disagree* and *Read the records* in `references/records.md`, *Run a step in a subagent* in `references/subagent.md`, *Write the prompt* in `references/step-prompt.md`, *What shape runs* and *Commit the discovery map* in `references/shape.md`, and *Glossary preflight* and *Import the glossary checkpoint* in `references/glossary-handoff.md`, and none of them in `SKILL.md`
+- **THEN** it finds *Records that disagree* and *Read the records* in `references/records.md`, *Run a step in a subagent* in `references/subagent.md`, *Write the prompt* in `references/step-prompt.md`, *Commit the discovery map* in `references/shape.md`, and *Glossary preflight* and *Import the glossary checkpoint* in `references/glossary-handoff.md`, and none of them in `SKILL.md`; no file of `lets-go` has a heading *What shape runs*
 
 #### Scenario: A part whose steps moved
 - **WHEN** the skill-interfaces test reads the *Run the shape step* section of `SKILL.md`
@@ -2348,3 +2308,49 @@ Once no child of the wave runs, the epic run SHALL walk each story kept for late
 #### Scenario: A wait that passes its limit
 - **WHEN** `lets delegate step wait --timeout-minutes 5 --name epic-run-stacks-story` exits 6
 - **THEN** the epic run runs `lets delegate step wait --timeout-minutes 5 --name epic-run-stacks-story` again, and settles nothing
+
+### Requirement: The shape step runs discovery only after a yes
+The shape step SHALL NOT fail, and SHALL NOT start discovery on its own, when it finds the work too large for one issue. Too large means Size L or XL, or an input that holds a large idea. Its round SHALL end with a `needs-input` report that holds the question `The work is Size <L or XL>, too large for one issue. Run discovery on it?` with the recommendation `yes`, as *lets-shape asks before it runs discovery* says. `lets-go` SHALL relay that question as it relays any other, in the run's question mode. When the answer is `yes`, the resumed step SHALL run `lets-shape`'s discovery with the idea or `#<i>` as its input, every phase from Ingest to Finalize, including the glossary handoff. Each phase's confirmation, and the story table in Phase 5, SHALL reach `lets-go` with no recommendation. A later round SHALL carry the discovery on from its parent issue, and SHALL NOT start a second one: it resumes the parent at its recorded next phase, or finishes Finalize on a parent whose status line Finalize removed, as the `discovery-checkpoints` capability says. A phase the answers confirmed SHALL NOT be asked again. When the answer is anything but `yes`, the step SHALL end with a `failed` report that says the work is too large for one issue and discovery was declined. The step SHALL create no change and no change branch; the parent issue, the stories and a glossary holding branch are `lets-shape`'s own. The owner of glossary edits made in discovery SHALL reach `lets-go` with the first story in dependency order as its recommendation.
+
+#### Scenario: A too-large idea asks
+- **WHEN** the shape step for the idea `rewrite the backlog around a plugin model` sizes it XL
+- **THEN** its report is `needs-input`, with the question `The work is Size XL, too large for one issue. Run discovery on it?` and the recommendation `yes`, and the step has created no issue
+
+#### Scenario: The user says yes
+- **WHEN** the answers file holds that question with the answer `yes`, and no parent issue says `Discovery status: in-progress`
+- **THEN** the resumed step runs discovery from Ingest with the idea as its input, and ends its next round with Ingest's questions and the parent issue's confirmation, which has no recommendation
+
+#### Scenario: A resumed round finds the parent
+- **WHEN** the idea is `rewrite the backlog around a plugin model`, the answers file holds the discovery question answered `yes` and Ingest's confirmation, and the open parent issue `Epic: plugin backlog` says `Discovery status: in-progress — next phase: moscow` with `Input: rewrite the backlog around a plugin model`
+- **THEN** the resumed step resumes that parent at MoSCoW, asks no confirmation of where discovery stopped, and creates no second parent
+
+#### Scenario: A resumed round for an issue
+- **WHEN** the shape step is for `#180`, and an open parent issue says `Discovery status: in-progress` with `Input: #180`
+- **THEN** the resumed step resumes that parent, and does not shape #180 as one issue
+
+#### Scenario: A round during Finalize
+- **WHEN** the answers file holds the discovery question answered `yes` and the Phase 5 story table confirmed, and the open parent `Epic: plugin backlog` has `Input: rewrite the backlog around a plugin model` and no status line, because Finalize removed it before the glossary handoff asked who carries the edits
+- **THEN** the resumed step finishes Finalize on that parent with the handoff's answer, and does not run discovery from Ingest or create a second parent
+
+#### Scenario: The user declines
+- **WHEN** the answers file holds that question with the answer `no`
+- **THEN** the step ends `failed`, with a reason that says the work is too large for one issue and discovery was declined, and `lets-go` prints `Failed shape:` with it
+
+#### Scenario: At auto
+- **WHEN** the user ran `lets-go auto` with the idea, and the shape step reports the discovery question
+- **THEN** `lets-go` answers `yes` itself, tells the user, and runs the step again with the answers file
+
+### Requirement: lets-go names a part of a skill, never its step number
+`skills/lets-go/SKILL.md` and every `skills/lets-go/references/*.md` SHALL refer to another part of the skill by its name and a link, never by a step number. Outside fenced code blocks and inline code spans, no text SHALL match the word `step` or `steps` followed by a number, in any case. So the skill SHALL not say `*Start* step 3`, `*Claim* step 2`, `Step 3 of [Run a step](#run-a-step)` or `go on to step 4`. A numbered list SHALL still number its items.
+
+#### Scenario: No step numbers
+- **WHEN** the skill-interfaces test reads `lets-go`, outside code
+- **THEN** it finds no `step` or `steps` followed by a number
+
+#### Scenario: A step number comes back
+- **WHEN** a skills folder holds `lets-go/SKILL.md` with the line `Go on from *Claim* step 3.`
+- **THEN** the check fails, and its output names `SKILL.md` and `step 3`
+
+#### Scenario: A numbered list
+- **WHEN** a section of `lets-go` holds a list numbered `1.` to `4.`
+- **THEN** the step-number check passes

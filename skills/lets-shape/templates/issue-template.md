@@ -12,7 +12,7 @@ Title: `Epic: <capability>`
 
 ```markdown
 > Discovery status: in-progress — next phase: <personas | journey-map | moscow | stories | finalize>
-> Input: <file path, issue link, or "conversation, YYYY-MM-DD">
+> Input: <#<i> for an issue, the file path, the idea word for word, or "conversation, YYYY-MM-DD">
 > Map: <path>
 
 ## Scope

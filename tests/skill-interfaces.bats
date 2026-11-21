@@ -1028,18 +1028,17 @@ review_build_start() {
   skill_says lets-go 'Failed shape:'
   skill_says lets-go 'at most once'
   skill_says lets-go 'holds another idea'
-  skill_says lets-go 'Run discovery on it?'
   skill_says lets-go 'epic #<parent>: <title>'
   skill_says lets-go 'story #<story>: <title>'
   skill_says lets-go 'Picked #<i>: <title>, the first ready story under #<parent>.'
   skill_says lets-go 'docs: the discovery map from #<parent>'
   skill_says lets-go 'Discovery status: in-progress'
   skill_says lets-go "gh issue list --state open --search '\"Discovery status: in-progress\" in:body' --json number,title,body"
-  skill_says lets-go '*Resume mode*'
-  skill_says lets-go 'Finalize has started on that parent'
   skill_says lets-go 'the edits are that discovery'"'"'s confirmed phases'
+  # lets-shape owns its discovery rules, so lets-go keeps no copy of them.
   for phrase in '#153 adds' '#154 adds' '`lets-go` needs an issue number, and stop' \
-    'end with a failed report that says so and names'; do
+    'end with a failed report that says so and names' 'Run discovery on it?' '*Resume mode*' \
+    'Finalize has started on that parent' 'What shape runs' 'what-shape-runs' '<L or XL>'; do
     skill_does_not_say lets-go "$phrase"
   done
   # A large idea now runs discovery, so the README must not send it away.
@@ -1518,7 +1517,7 @@ section_moved() {
   section_moved references/subagent.md 'Run a step in a subagent'
   section_moved references/glossary-handoff.md 'Glossary preflight' 'Check the prerequisite' 'Check the checkpoint' \
     'What the preflight returns' 'Import the glossary checkpoint' 'Import the commits' 'Recover from a failed import'
-  section_moved references/shape.md 'Commit the discovery map' "The shape step's name" 'What shape runs'
+  section_moved references/shape.md 'Commit the discovery map' "The shape step's name"
   section_moved references/step-prompt.md 'Write the prompt'
 }
 
@@ -2165,12 +2164,18 @@ procedure_stops() {
   skill_does_not_say lets-go 'part way'
 }
 
-@test "the shape prompt names lets-shape's steps by their titles, not a step number" {
-  local text title
-  text="$(skill_section lets-go 'What shape runs')"
-  for title in '**Find or create the issue**' '**Confirm, then write**'; do
-    grep -qF -- "$title" <<<"$text" || { echo "What shape runs does not name: $title"; false; }
+@test "shape-step: the shape prompt is one sentence" {
+  local section sentence
+  section="$(skill_section lets-go 'Write the prompt')"
+  for sentence in 'Invoke the `lets-shape` skill for issue #<i>, and stop where it stops.' \
+    'Invoke the `lets-shape` skill for the idea above, and stop where it stops.'; do
+    grep -qF -- "$sentence" <<<"$section" || { echo "Write the prompt does not hold: $sentence"; false; }
   done
+  grep -qF -- 'Issue: none yet. The idea is: <idea>. Branch: <default>. Open issues were searched, and none is the same work.' <<<"$section" ||
+    { echo "the idea's header line has no search note"; false; }
+  grep -qF -- 'only when [Start from an idea](shape.md#start-from-an-idea) ran its title search' <<<"$section" ||
+    { echo "Write the prompt does not limit the search note to a search that ran"; false; }
+  ! grep -qF -- 'what-shape-runs' <<<"$section" || { echo "Write the prompt still links What shape runs"; false; }
 }
 
 @test "each link in lets-go names one of its file's headings" {
@@ -3498,7 +3503,7 @@ shape_templates="$repo/skills/lets-shape/templates"
 
 @test "discovery maps: templates name the parent's map" {
   local file="$shape_templates/issue-template.md" text
-  grep -A1 -xF '> Input: <file path, issue link, or "conversation, YYYY-MM-DD">' "$file" |
+  grep -A1 -xF '> Input: <#<i> for an issue, the file path, the idea word for word, or "conversation, YYYY-MM-DD">' "$file" |
     grep -qxF '> Map: <path>' || { echo "the parent template has no Map line under Input"; false; }
   text="$(tr -s '[:space:]' ' ' <"$file")"
   grep -qF 'keep the `Input:` and `Map:` lines' <<<"$text" ||
@@ -3803,13 +3808,15 @@ commit_maps() {
     { echo "the dirty check still reads one map"; false; }
 }
 
-@test "discovery maps: shape prompt allows every discovery map in its clean tree" {
-  skill_says lets-go 'with a clean tree, except the discovery maps, `openspec/discovery.md` and the files under `openspec/discovery/`, when discovery ran'
-  skill_does_not_say lets-go 'with a clean tree, except `openspec/discovery.md` when discovery ran'
+@test "discovery maps: lets-shape allows every discovery map in its clean tree" {
+  skill_says lets-shape 'with no edits of its own left in the working tree, except the discovery maps, `openspec/discovery.md` and the files under `openspec/discovery/`, when discovery ran'
+  skill_does_not_say lets-shape 'except `openspec/discovery.md` when discovery ran'
 }
 
-@test "discovery maps: shape prompt makes the product and move questions confirmation questions" {
-  skill_says lets-go 'The question about which product an idea belongs to, and the question that moves the map for a second product, are confirmation questions too: give them no recommendation.'
+@test "discovery maps: lets-shape makes the product and move questions confirmation questions" {
+  skill_says lets-shape 'The question about which product an idea belongs to, and the question that moves the map for a second product, are confirmation questions, with no recommendation'
+  skill_section lets-shape 'The phases' | grep -qF 'The two product questions are confirmation questions too, as [Pick the map](#pick-the-map) says.' ||
+    { echo "The phases does not link Pick the map for the product questions"; false; }
 }
 
 @test "discovery maps: docs explain one map per product in a monorepo" {
@@ -5030,4 +5037,110 @@ readme_step_returns() {
   grep -qF -- 'the story'"'"'s reason is Git'"'"'s error' <<<"$section" ||
     { echo "The story's worktree does not give Git's error as the reason"; false; }
   ! grep -qF -- 'reason is `stopped: `' <<<"$section" || { echo "The story's worktree puts stopped: in a reason"; false; }
+}
+
+# BEGIN shape-step (#264): lets-shape owns the shape step's rules.
+@test "shape-step: the shape report lists the stories in the order they were created" {
+  tr '\n' ' ' <"$(step_prompt_file)" | grep -qF 'with a `story #<story>: <title>` line for each story, in the order you created them.' ||
+    { echo "the step prompt does not order the story lines"; false; }
+}
+
+@test "shape-step: lets-shape picks its path from its input, first match wins" {
+  local section items
+  section="$(skill_section lets-shape 'Locate the discovery')"
+  grep -qF 'The answers are those this run already has: the ones the user gave in this session, or the `## Answers` section of a resumed step.' <<<"$section" ||
+    { echo "Locate the discovery does not define the answers"; false; }
+  grep -qF "gh issue list --state open --limit 500 --search '\"Input:\" in:body' --json number,title,body" <<<"$section" ||
+    { echo "Locate the discovery does not list the parents by their Input line"; false; }
+  grep -qF 'and the answers confirmed its Phase 5 story table' <<<"$section" ||
+    { echo "Locate the discovery does not finish Finalize"; false; }
+  grep -qF 'Drop a parent in neither state' <<<"$section" ||
+    { echo "Locate the discovery matches a finished epic"; false; }
+  grep -qF 'ask the user which one, as a confirmation question with no recommendation' <<<"$section" ||
+    { echo "the question about which parent can carry a recommendation"; false; }
+  grep -qF 'When the input is an issue `#<i>` that is itself in that list, it is a parent: keep it too.' <<<"$section" ||
+    { echo "Locate the discovery does not resume the parent the user named"; false; }
+  grep -qF 'never resume or finish a parent whose `Input:` line names another input, unless the input is that parent' <<<"$section" ||
+    { echo "Locate the discovery forbids resuming the parent the user named"; false; }
+  ! grep -qF 'An issue that holds a large idea is the input to a discovery run instead.' <<<"$section" ||
+    { echo "Locate the discovery still sends a large issue away in its first item"; false; }
+  items="$(sed -n '/^## Locate the discovery/,/^## /p' "$repo/skills/lets-shape/SKILL.md" | grep -oE '^   [1-5]\. \*\*[^*]+\*\*')"
+  [ "$(sed 's/^ *[0-9]\. //' <<<"$items" | tr '\n' '|')" = \
+    "**An open parent issue is this input, or its \`Input:\` line names it.**|**The answers already answer the discovery question.**|**The input plainly holds a large idea**|**Any other input**|**No input.**|" ] ||
+    { echo "the path list is not in order: $items"; false; }
+}
+
+@test "shape-step: lets-shape asks about discovery, and runs it only on yes" {
+  local section shape
+  section="$(skill_section lets-shape 'Ask about discovery')"
+  grep -qF 'The work is Size <L or XL>, too large for one issue. Run discovery on it?' <<<"$section" ||
+    { echo "Ask about discovery does not hold the question"; false; }
+  grep -qF 'with the recommendation `yes`' <<<"$section" || { echo "Ask about discovery recommends nothing"; false; }
+  grep -qF '**Yes:** run discovery from [Phase 1: Ingest](#phase-1-ingest)' <<<"$section" ||
+    { echo "Ask about discovery does not run Ingest on yes"; false; }
+  grep -qF 'say that the work is too large for one issue and discovery was declined' <<<"$section" ||
+    { echo "Ask about discovery does not stop on anything else"; false; }
+  skill_section lets-shape 'Locate the discovery' | grep -qF 'Follow [Ask about discovery](#ask-about-discovery) with that answer, and ask it no second time' ||
+    { echo "a recorded answer to the discovery question does not settle the path"; false; }
+  skill_section lets-shape 'Locate the discovery' | grep -qF '[Ask about discovery](#ask-about-discovery)' ||
+    { echo "the path list does not link Ask about discovery"; false; }
+  shape="$(skill_section lets-shape 'Shape one issue')"
+  grep -qF '[ask about discovery](#ask-about-discovery)' <<<"$shape" ||
+    { echo "Shape one issue sizing does not link Ask about discovery"; false; }
+  ! grep -qF 'offer a discovery run on it instead, and stop' <<<"$shape" ||
+    { echo "Shape one issue still offers discovery and stops"; false; }
+}
+
+@test "shape-step: resume mode settles confirmed phases" {
+  local section
+  section="$(skill_section lets-shape 'Resume mode')"
+  grep -qF 'When [the answers](#locate-the-discovery) confirmed phases of this parent, or confirmed this restatement, that work is settled: skip this confirmation, and go straight to the recorded next phase.' <<<"$section" ||
+    { echo "Resume mode asks to confirm its restatement after the answers settled it"; false; }
+  grep -qF 'Otherwise, confirm the restatement with the user, as a confirmation question with no recommendation.' <<<"$section" ||
+    { echo "Resume mode skips the confirmation when the answers settled nothing"; false; }
+  ! grep -qF 'With no answers, confirm the restatement' <<<"$section" ||
+    { echo "Resume mode leaves answers that settled nothing to a guess"; false; }
+}
+
+@test "shape-step: the parent names its input, so a later run can match it" {
+  local section
+  section="$(skill_section lets-shape 'Phase 1: Ingest')"
+  grep -qF 'the `Input:` line, which names the input so a later run can match it: `#<i>` for an issue, the path for a file, or the idea word for word for an idea in words' <<<"$section" ||
+    { echo "Ingest does not say what the Input line holds"; false; }
+  grep -qF 'A long conversation with no short statement of the idea keeps `conversation, YYYY-MM-DD`' <<<"$section" ||
+    { echo "Ingest drops the conversation form"; false; }
+  grep -qxF '> Input: <#<i> for an issue, the file path, the idea word for word, or "conversation, YYYY-MM-DD">' "$repo/skills/lets-shape/templates/issue-template.md" ||
+    { echo "the parent template does not show the Input line's choices"; false; }
+}
+
+@test "shape-step: shape one issue skips a search that ran" {
+  skill_section lets-shape 'Shape one issue' |
+    grep -qF 'When the input says open issues were already searched and none is the same work, skip the search, and create the issue in step 7.' ||
+    { echo "Shape one issue searches again after its caller searched"; false; }
+}
+
+@test "shape-step: lets-shape names its confirmation questions" {
+  local section
+  section="$(skill_section lets-shape 'The phases')"
+  grep -qF '**Confirmation questions carry no recommendation**, whoever runs this skill' <<<"$section" ||
+    { echo "The phases does not say confirmation questions carry no recommendation"; false; }
+  grep -qF "each phase's confirmation, including the parent issue's text at Ingest and [Resume mode](#resume-mode)'s restatement; the Phase 5 story table; and the packet confirmation in **Confirm, then write**" <<<"$section" ||
+    { echo "The phases does not list the confirmation questions"; false; }
+  skill_section lets-shape 'Shape one issue' | grep -qF 'This is a confirmation question, with no recommendation.' ||
+    { echo "Confirm, then write does not say it is a confirmation question"; false; }
+}
+
+@test "shape-step: lets-shape recommends the glossary owner" {
+  skill_section lets-shape 'Ask who carries the edits' |
+    grep -qF 'Recommend the pull request of the first story in dependency order. For one story, that is its own pull request.' ||
+    { echo "Ask who carries the edits recommends no owner"; false; }
+}
+
+@test "shape-step: lets-shape ends where it started" {
+  local section
+  section="$(skill_section lets-shape 'Handing off to lets-go')"
+  grep -qF '`lets-shape` creates no change and no change branch.' <<<"$section" ||
+    { echo "Handing off to lets-go may create a change"; false; }
+  grep -qF 'It ends on the branch it started on' <<<"$section" ||
+    { echo "Handing off to lets-go names no end branch"; false; }
 }

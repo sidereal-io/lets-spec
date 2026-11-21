@@ -21,8 +21,19 @@ step's row of [The step table](../SKILL.md#the-step-table):
 Invoke the `<skill>` skill for the change `<name>`, for issue #<i>, and stop where it stops.
 ```
 
-For shape, put the text of [What shape runs](shape.md#what-shape-runs)
-under `## What to run` instead.
+For shape, put one of these sentences instead. `lets-shape` picks its
+own path from its input: it shapes one issue, asks about discovery, or
+carries on a discovery that an earlier round started. For an issue:
+
+```text
+Invoke the `lets-shape` skill for issue #<i>, and stop where it stops.
+```
+
+For an idea:
+
+```text
+Invoke the `lets-shape` skill for the idea above, and stop where it stops.
+```
 
 For shape, the first two lines differ. There is no change, the branch is
 the default branch, `<default>`, and [Route](../SKILL.md#route) has not
@@ -38,6 +49,16 @@ For an idea, they are:
 ```text
 You run one step of a lets-go run: shape, for an idea.
 Issue: none yet. The idea is: <idea>. Branch: <default>.
+```
+
+Add the sentence `Open issues were searched, and none is the same work.`
+to the end of the second line only when
+[Start from an idea](shape.md#start-from-an-idea) ran its title search,
+and the search or the user found no match. Then `lets-shape` runs no
+search of its own. The second line is then:
+
+```text
+Issue: none yet. The idea is: <idea>. Branch: <default>. Open issues were searched, and none is the same work.
 ```
 
 Resolve the installed
@@ -135,7 +156,9 @@ reason: The tests fail on main before any change.
 A done report's evidence lists the commits you made, and the pull request
 when you opened or changed it. For shape, its first line is the issue,
 as `issue #<i>: <title>`, or the parent, as `epic #<parent>: <title>`,
-with a `story #<story>: <title>` line for each story. For review plan,
+with a `story #<story>: <title>` line for each story, in the order you
+created them. When the parent became the one story, use the `issue`
+form. For review plan,
 its first line is the verdict and the commit reviewed, as
 `Plan review: <verdict> for <sha>`. Write the report last. Quote a line that
 holds `#` or `: `. Put no other step-report block in the message.

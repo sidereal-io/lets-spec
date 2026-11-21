@@ -1,0 +1,38 @@
+<!-- Plain language: Each task must make sense to an agent and reviewer without the planning conversation. Name an observable outcome, its location when needed, and how to verify it. Preserve checkbox syntax and tags. -->
+
+Each task adds or moves a check in `tests/skill-interfaces.bats` first,
+named with the prefix `shape-step:`, watches it fail, then edits the
+skill in `skills/` until it passes. Design decisions are cited as
+design §N.
+
+## 1. lets-shape states the shape step's rules as its own
+
+- [x] 1.1 [medium] *Locate the discovery* in `skills/lets-shape/SKILL.md` picks its path from a five-item list, first match wins, as design §1 says: a parent whose `Input:` line names this input (resume when in progress, finish Finalize when it has no status line and the answers confirmed its story table, skip a parent in neither state, ask when several match), a yes to the discovery question, a plainly large input, any other input to *Shape one issue*, and no input with today's rules. "The answers" is defined once above the list, the input query is `gh issue list --state open --limit 500 --search '"Input:" in:body' --json number,title,body`, and the sentence "An issue that holds a large idea is the input to a discovery run instead." is gone (verify: bats tests/skill-interfaces.bats -f 'shape-step: lets-shape picks its path') (✓ bats tests/skill-interfaces.bats -f 'shape-step: lets-shape picks its path' passed)
+- [x] 1.2 [easy] A subsection *Ask about discovery* under *Locate the discovery* holds `The work is Size <L or XL>, too large for one issue. Run discovery on it?`, the recommendation `yes`, discovery from Ingest on yes, and a stop that says the work is too large and discovery was declined on anything else. The path list's large-input item and *Shape one issue* step 6 link it, and step 6 no longer says to offer discovery and stop (design §2) (verify: bats tests/skill-interfaces.bats -f 'shape-step: lets-shape asks about discovery') (✓ bats tests/skill-interfaces.bats -f 'shape-step: lets-shape asks about discovery' passed)
+- [x] 1.3 [easy] *Resume mode* skips the confirmation of its restatement and goes to the recorded next phase when the answers confirmed phases of the parent, and still asks for that confirmation when there are no answers (design §3) (verify: bats tests/skill-interfaces.bats -f 'shape-step: resume mode settles confirmed phases') (✓ bats tests/skill-interfaces.bats -f 'shape-step: resume mode settles confirmed phases' passed)
+- [x] 1.4 [easy] Phase 1's checkpoint says the parent's `Input:` line holds `#<i>` for an issue, the path for a file, or the idea word for word, and keeps `conversation, YYYY-MM-DD` for a long conversation with no short idea, and the parent template in `skills/lets-shape/templates/issue-template.md` shows the same choices (design §4) (verify: bats tests/skill-interfaces.bats -f 'shape-step: the parent names its input') (✓ bats tests/skill-interfaces.bats -f 'shape-step: the parent names its input' passed)
+- [x] 1.5 [easy] *Shape one issue* step 1 skips its title search when the input says open issues were already searched and none is the same work (design §5) (verify: bats tests/skill-interfaces.bats -f 'shape-step: shape one issue skips a search that ran') (✓ bats tests/skill-interfaces.bats -f 'shape-step: shape one issue skips a search that ran' passed)
+- [x] 1.6 [easy] A paragraph at the top of *The phases* names the confirmation questions, with no recommendation: each phase's confirmation, including Ingest's parent text and *Resume mode*'s restatement, the Phase 5 story table, and **Confirm, then write**, and it links *Pick the map* for the two product questions. The existing check *discovery maps: shape prompt makes the product and move questions confirmation questions* reads `lets-shape` instead of `lets-go` (design §5, §8) (verify: bats tests/skill-interfaces.bats -f 'confirmation questions') (✓ bats tests/skill-interfaces.bats -f 'confirmation questions' passed)
+- [x] 1.7 [easy] *Ask who carries the edits* recommends the first story in dependency order as the owner, which for one story is its own pull request (design §5) (verify: bats tests/skill-interfaces.bats -f 'shape-step: lets-shape recommends the glossary owner') (✓ bats tests/skill-interfaces.bats -f 'shape-step: lets-shape recommends the glossary owner' passed)
+- [x] 1.8 [easy] *Handing off to lets-go* says `lets-shape` creates no change and no change branch, and ends on the branch it started on with no edits of its own left in the tree, except the discovery maps, `openspec/discovery.md` and the files under `openspec/discovery/`, when discovery ran. The check *discovery maps: shape prompt allows every discovery map in its clean tree* reads `lets-shape` instead of `lets-go` (design §6, §8) (verify: bats tests/skill-interfaces.bats -f 'clean tree|shape-step: lets-shape ends where it started') (✓ bats tests/skill-interfaces.bats -f 'clean tree|shape-step: lets-shape ends where it started' passed)
+
+## 2. lets-go's shape prompt is one sentence [depends-on: 1]
+
+- [x] 2.1 [medium] *Write the prompt* in `skills/lets-go/references/step-prompt.md` puts ``Invoke the `lets-shape` skill for issue #<i>, and stop where it stops.`` or ``Invoke the `lets-shape` skill for the idea above, and stop where it stops.`` under `## What to run` for shape, and the idea's header line adds, only when *Start from an idea* ran its title search, that open issues were searched and none is the same work (design §7). The check *the shape prompt names lets-shape's steps by their titles* is replaced by one for these sentences (verify: bats tests/skill-interfaces.bats -f 'shape-step: the shape prompt is one sentence') (✓ bats tests/skill-interfaces.bats -f 'shape-step: the shape prompt is one sentence' passed)
+- [x] 2.2 [medium] No `lets-go` file holds *What shape runs* or a link to it: the section leaves `references/shape.md`, `SKILL.md`'s three links and its `<the sentence above>` row change, and the `<L or XL>` row goes (design §7). `section_moved` drops `What shape runs`, and *lets-go runs a shape step for an idea or an unshaped issue* asserts that `lets-go` no longer says `Run discovery on it?`, `*Resume mode*` or `Finalize has started on that parent` (design §8) (verify: bats tests/skill-interfaces.bats -f 'shape|moved section|link in lets-go') (✓ bats tests/skill-interfaces.bats -f 'shape|moved section|link in lets-go' passed)
+
+## 3. Integration [depends-on: 2]
+
+- [x] 3.1 [easy] The project's three checks pass on the branch (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test && nix flake check && mise run check passed)
+- [x] 3.2 [medium] Pull request #300's description records `wc -l` for `skills/lets-go/SKILL.md` and for the whole `lets-go` skill, before (1,404 and 3,313 lines) and after, and walks through the four ways a shape round can start (resume, Finalize started, discovery yes, shape one issue), each traced to the `lets-shape` text that handles it (verify: gh pr view 300 --json body --jq .body | grep -qi 'walkthrough') (✓ gh pr view 300 --json body --jq .body | grep -qi 'walkthrough' passed)
+
+## Deviations Ledger
+
+<!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-21, task 2.1: D10 says the step prompt's report section already
+  held every shape evidence rule. One was only in *What shape runs*: when
+  discovery turns the parent into the one story, the report uses the
+  `issue` form. That sentence moved into the report section of the frame
+  in `references/step-prompt.md`, so it is not lost when *What shape runs*
+  goes in task 2.2.
