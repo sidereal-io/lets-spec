@@ -22,7 +22,7 @@ None.
 
 ### Modified Capabilities
 
-- `lets-go`: the requirements *A stopped discovery resumes from its parent issue* and *lets-go commits the discovery map on the story's branch* match parents by their `Input:` line and cover a stop during Finalize. *The prose holds the fixed lines the tests check* names the new query instead of the in-progress-only one.
+- `lets-go`: the requirements *A stopped discovery resumes from its parent issue* and *lets-go commits the discovery map on the story's branch* match parents by their `Input:` line and cover a stop during Finalize. *The prose holds the fixed lines the tests check* names the new query instead of the in-progress-only one. *Start finds, confirms, routes and claims the issue* and *lets-go reads and claims the backlog only through lets backlog* name the parent query of *A stopped discovery resumes from its parent issue* instead of the in-progress parent query, and the first allows it for an issue `#<i>` in the dirty-map check.
 
 ## Impact
 
