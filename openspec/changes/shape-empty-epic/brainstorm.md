@@ -18,7 +18,7 @@
 | D8 | An epic's discovery stopped partway: its body says `Discovery status: in-progress`, or a round stopped during Finalize. Does `lets-go` finish shaping it before it builds, even when the epic already has open stories? | Yes. It finds such a discovery with *Find the input's discovery* for `#<epic>`, which also keeps the input issue when the issue is itself a parent. Otherwise a stop during Phase 5 would let the epic run build a half-shaped epic. | Assumption |
 | D9 | What does `lets-go` do with an epic whose sub-issues are all closed? | It prints `#<parent> is finished: every story under it is closed.` and stops. It claims nothing, creates no branch and leaves the epic open. | Assumption |
 | D10 | `lets backlog item` lists only open sub-issues, and `lets-go` reads the backlog only through `lets backlog`. How does `lets-go` tell an empty epic from a finished one? | `lets backlog item` must also report the epic's closed sub-issues. Without that, both look the same: no open stories. The design picks the field. | Evidence: `lets/src/backlog/policy.ts` (`itemView`); `openspec/specs/lets-go/spec.md`, *lets-go reads and claims the backlog only through lets backlog* |
-| D11 | Should *Empty epic* become a glossary term? | Yes, tentative until this ledger is confirmed. Add to `openspec/glossary.md`: "Empty epic: an epic with no sub-issues, open or closed; an epic run shapes it before it builds any story." Change the *Epic run* entry from "when the epic has no stories" to "when the epic is empty". *Finished epic* stays defined only in `lets-go`. | Assumption |
+| D11 | Should *Empty epic* become a glossary term? | Yes. Add to `openspec/glossary.md`: "Empty epic: an epic with no sub-issues, open or closed; an epic run shapes it before it builds any story." Change the *Epic run* entry from "when the epic has no stories" to "when the epic is empty". *Finished epic* stays defined only in `lets-go`. | Assumption |
 | D12 | What evidence accepts the story? | The `lets-go`, `discovery-checkpoints` and `lets-backlog` requirements assert the new behaviour. The requirement *An epic with no open stories points to lets-shape*, its line `lets-go does not shape an empty epic yet` and the bats test that checks it are replaced. The Node tests cover the closed sub-issues that `lets backlog item` reports. | Evidence: #283 packet, **Scope**; `openspec/specs/lets-go/spec.md`; `tests/skill-interfaces.bats` |
 
 ## Changes from the story
@@ -27,4 +27,6 @@
 - **Added: an epic whose discovery stopped partway is finished before it is built** (D8). The packet's Scope leaves out re-shaping an epic that already has stories. This keeps that rule for an epic whose discovery finished, and closes the gap for one whose discovery did not.
 - **Settled: the packet's open question.** The epic's original body is kept word for word at the end of its new body (D4).
 
-Confirmed by user: no
+Confirmed by user: yes
+
+lets-go confirmed this ledger under the user's standing instruction for this run, which is to take each recommendation unless there is none; the user has not reviewed it.
