@@ -3,20 +3,50 @@
 Read this file when the run starts from an idea, runs the shape step,
 or commits the discovery map.
 
-## Start from an idea
+## Find the input's discovery
 
-1. Look for a discovery of this idea that an earlier run started. Use
-   `lets-shape`'s own query:
+An earlier run may have started a discovery of this input and stopped.
+This lookup finds it, so the run resumes that discovery instead of
+searching issue titles or stopping on the discovery maps' edits. The
+input is an idea, or an issue `#<i>`.
+
+1. List the open parent issues with `lets-shape`'s own query:
 
    ```bash
-   gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body
+   gh issue list --state open --limit 500 --search '"Input:" in:body' --json number,title,body
    ```
 
-   When a parent's `Input:` line holds the idea word for word, say that
-   a discovery of this idea is in progress at `#<parent>`. Skip the
-   search below, and
-   [run the shape step](../SKILL.md#run-the-shape-step) for the idea:
-   its round resumes that parent.
+2. Keep each parent whose `Input:` line names this input: the idea word
+   for word, or `#<i>` or the issue's URL.
+3. A kept parent is this input's discovery in either of two states:
+   - **It says `Discovery status: in-progress`.** The discovery stopped
+     between rounds, or before [Claim](../SKILL.md#claim).
+   - **It has no status line, and an earlier shape round of this input
+     left answers.** That is,
+     `.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least
+     one pair, and, for an idea,
+     `.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea.
+     Stopping during Finalize leaves this state: Finalize removes the
+     status line before it asks its own questions, and
+     [Read the report](../SKILL.md#read-the-report) removes the answers
+     file only when shape reports `done` or `failed`.
+
+   A kept parent in neither state is not this input's discovery: for
+   example, an open epic whose discovery finished.
+
+Return to the part that ran it, with each discovery it found, or none.
+
+## Start from an idea
+
+1. Look for a discovery of this idea that an earlier run started: run
+   [Find the input's discovery](#find-the-inputs-discovery) for the
+   idea. On its result:
+   - **One or more:** say that a discovery of this idea is in progress
+     at each `#<parent>` it found. Skip the search below, and
+     [run the shape step](../SKILL.md#run-the-shape-step) for the idea.
+     Its round resumes the discovery, or finishes its Finalize. When
+     several match, `lets-shape` asks which one; ask nothing here.
+   - **None:** go on to the search below.
 2. Run the second case of
    [Find the source of demand](../SKILL.md#find-the-source-of-demand):
    the run has described work, but no issue. It searches open issue
@@ -48,13 +78,14 @@ when it runs.
 
    It names each changed map, new files included, and works when the
    `openspec/discovery/` folder does not exist. When it lists a path,
-   look for this input's discovery: an open
-   parent issue that says `Discovery status: in-progress`, and whose
-   `Input:` line names this input, the idea's words or `#<i>`. For an
+   take this input's discovery from
+   [Find the input's discovery](#find-the-inputs-discovery). For an
    idea, use what [Start from an idea](#start-from-an-idea) found. For
-   an issue, run the query in [Start from an idea](#start-from-an-idea).
-   - **There is one:** the edits are that discovery's confirmed phases.
-     Go on: the step resumes it, and its map commit takes them.
+   an issue `#<i>`, run the lookup now.
+   - **There is one or more:** the edits are that discovery's confirmed
+     phases. Go on: the step resumes the discovery or finishes its
+     Finalize, and its map commit takes the edits. When several match,
+     `lets-shape` asks which one.
    - **There is none:** say that the maps have uncommitted edits, name
      each path it lists, and say to commit or discard them. Stop, and
      run no step. If the run went on, a discovery's commit could sweep
@@ -72,7 +103,17 @@ when it runs.
    the prompt.
 4. Run the shape step, as [Run a step](../SKILL.md#run-a-step) says.
 5. When it reports `done`,
-   [Read the report](../SKILL.md#read-the-report) says what it shaped:
+   [Read the report](../SKILL.md#read-the-report) says what it shaped.
+   Check one case first. When the check of the discovery maps above went
+   on only because one or more parents with no status line were this
+   input's discovery, and the step shaped none of those parents, the
+   maps' edits may be another discovery's. The step shaped none of them
+   when its one issue, or its parent, is not one of them. Print the
+   `Done shape` line, as [The step lines](../SKILL.md#the-step-lines)
+   says. Name each path that check listed, say to commit or discard
+   them, and stop here, before
+   [Check the issue](../SKILL.md#check-the-issue). Claim nothing, and
+   create no branch. Otherwise:
    - **One issue:** that issue is `<i>`. Go on from the blocker read in
      [Check the issue](../SKILL.md#check-the-issue) with it, as for an
      issue number.
@@ -121,8 +162,9 @@ A run that stops after discovery and before [Claim](../SKILL.md#claim),
 for any reason, leaves the maps' edits on the default branch. When the
 status command in [Commit the discovery map](#commit-the-discovery-map)
 lists a path, name each one, and say that they hold the discovery's
-edits, uncommitted on the default branch. While the parent still says
-`Discovery status: in-progress`, say to leave the maps as they are:
+edits, uncommitted on the default branch. While
+[Find the input's discovery](#find-the-inputs-discovery) still takes the
+parent as this input's discovery, say to leave the maps as they are:
 running `lets-go` again with the same idea, or `#<i>`, resumes the
 discovery and keeps its edits. Otherwise, say to commit or discard them
 before the next run, because the next run stops on them.

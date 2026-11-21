@@ -115,7 +115,7 @@ reads as it always has.
 |---|---|---|
 | `<i>` | The run's issue, as its key: the key the user named, the issue `next`, [Pick the first ready story](#pick-the-first-ready-story) or [Run the epic](#run-the-epic) picked, or the issue a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
 | `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the `url` that `lets backlog item <i>` prints |
-| `<parent>` | A parent issue, as its key: an epic that discovery filed, a discovery in progress, or the epic of an epic run | The shape report's `epic` line, the discovery query in [Start from an idea](#start-from-an-idea), or, for an epic run, [Check the issue](#check-the-issue) before [Run the epic](#run-the-epic) |
+| `<parent>` | A parent issue, as its key: an epic that discovery filed, a discovery in progress, or the epic of an epic run | The shape report's `epic` line, [Find the input's discovery](references/shape.md#find-the-inputs-discovery), or, for an epic run, [Check the issue](#check-the-issue) before [Run the epic](#run-the-epic) |
 | `<story>` | One story, as its key: a story that a shape step's report names, or a story of an epic run | Each `story` line of the shape report, or [Run the epic](#run-the-epic), for the story it picks or settles |
 | `<blocker>` | An open issue that blocks a story, as its key. For a stacked story, the blocker it stacks on | The story's `blockedBy`, from `lets backlog item <story>` in [Run the epic](#run-the-epic), the blocker read in [Stack the story](references/epic-run.md#stack-the-story), or a pull request's base in [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) |
 | `<blocker-branch>` | A met blocker's branch, the `headRefName` of its pull request. For a stacked story, the branch it stacks on | [Stack the story](references/epic-run.md#stack-the-story), from the `gh pr list` read, or [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base), from `<pr-base>` |
@@ -172,12 +172,12 @@ reads as it always has.
 The run reads and claims the backlog through `lets backlog`. Three
 reads stay as `gh` commands for now: the comment thread read of
 [Confirm the packet](#confirm-the-packet),
-`gh issue view <i> --json createdAt`, and the in-progress parent query
-of [Start from an idea](#start-from-an-idea). Each `lets backlog`
-command prints one JSON object. When the object holds
-`error`, the backlog cannot answer. Stop: claim nothing more, and run no
-step. In an epic run, while the run is on a story, this stop ends only
-its story's run, as
+`gh issue view <i> --json createdAt`, and the parent query of
+[Find the input's discovery](references/shape.md#find-the-inputs-discovery).
+Each `lets backlog` command prints one JSON object. When the object
+holds `error`, the backlog cannot answer. Stop: claim nothing more,
+and run no step. In an epic run, while the run is on a story, this
+stop ends only its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
 says. A stop between stories, such as an error in a pick, still ends
 the epic run. When children of the wave run at that stop, first start
@@ -1201,8 +1201,10 @@ Shape's line prints at most once for an issue. Print `Done shape` after
 a shape step reported `done`, once per run, when this run has not
 printed it yet: [Check the issue](#check-the-issue) prints it, or
 [Pick the first ready story](#pick-the-first-ready-story) when no story
-is ready. Print `Skipped shape` once for each issue whose packet
-[Check the issue](#check-the-issue) finds complete, and only when no
+is ready, or [Run the shape step](#run-the-shape-step) when it stops on
+the discovery maps' edits. Print `Skipped shape` once for each issue
+whose packet [Check the issue](#check-the-issue) finds complete, and
+only when no
 shape step ran in this run. So a story picked after a lost claim in a
 discovery run prints neither.
 

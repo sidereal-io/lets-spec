@@ -1033,7 +1033,11 @@ review_build_start() {
   skill_says lets-go 'Picked #<i>: <title>, the first ready story under #<parent>.'
   skill_says lets-go 'docs: the discovery map from #<parent>'
   skill_says lets-go 'Discovery status: in-progress'
-  skill_says lets-go "gh issue list --state open --search '\"Discovery status: in-progress\" in:body' --json number,title,body"
+  skill_says lets-go "gh issue list --state open --limit 500 --search '\"Input:\" in:body' --json number,title,body"
+  # The in-progress-only query misses a parent once Finalize has removed its status line.
+  skill_does_not_say lets-go "gh issue list --state open --search '\"Discovery status: in-progress\" in:body' --json number,title,body"
+  skill_does_not_say lets-go 'the in-progress parent query'
+  skill_does_not_say lets-go 'the discovery query in [Start from an idea]'
   skill_says lets-go 'the edits are that discovery'"'"'s confirmed phases'
   # lets-shape owns its discovery rules, so lets-go keeps no copy of them.
   for phrase in '#153 adds' '#154 adds' '`lets-go` needs an issue number, and stop' \
@@ -1044,6 +1048,46 @@ review_build_start() {
   # A large idea now runs discovery, so the README must not send it away.
   ! tr -s '[:space:]' ' ' < "$repo/README.md" | grep -qF -- 'An idea too large for one issue stops the run' ||
     { echo "README.md still says a large idea stops the run"; false; }
+}
+
+@test "lets-go finds an input's discovery after a stop during Finalize" {
+  local section shape phrase
+  section="$(skill_section lets-go "Find the input's discovery")"
+  # Finalize removes the status line, so lets-go's own answers file is what shows an earlier round.
+  for phrase in 'has no status line' '`.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least one pair' \
+    '`.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea' \
+    "A kept parent in neither state is not this input's discovery: for example, an open epic whose discovery finished"; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Find the input's discovery does not say: $phrase"; false; }
+  done
+  # A finished epic can match that way too, so one issue that is not the parent keeps its maps out of the branch.
+  shape="$(part_section 'Run the shape step')"
+  for phrase in "went on only because one or more parents with no status line were this input's discovery" \
+    'the step shaped none of those parents' 'or its parent, is not one of them' 'Print the `Done shape` line' \
+    'Name each path that check listed, say to commit or discard them, and stop here, before [Check the issue]' \
+    'Claim nothing, and create no branch.'; do
+    grep -qF -- "$phrase" <<<"$shape" || { echo "Run the shape step does not say: $phrase"; false; }
+  done
+}
+
+@test "Start from an idea and Run the shape step link Find the input's discovery" {
+  local idea shape stop
+  idea="$(part_section 'Start from an idea')"
+  grep -qF '](#find-the-inputs-discovery)' <<<"$idea" || { echo "Start from an idea does not link Find the input's discovery"; false; }
+  grep -qF 'a discovery of this idea is in progress at each `#<parent>` it found' <<<"$idea" ||
+    { echo "Start from an idea does not name each parent it found"; false; }
+  ! grep -qF 'gh issue list' <<<"$idea" || { echo "Start from an idea still runs the parent query itself"; false; }
+  shape="$(part_section 'Run the shape step')"
+  grep -qF '](#find-the-inputs-discovery)' <<<"$shape" || { echo "Run the shape step does not link Find the input's discovery"; false; }
+  grep -qF 'the step resumes the discovery or finishes its Finalize' <<<"$shape" ||
+    { echo "the dirty-map check does not go on for a stop during Finalize"; false; }
+  ! grep -qF 'parent issue that says `Discovery status: in-progress`, and whose' <<<"$shape" ||
+    { echo "the dirty-map check still restates the in-progress match"; false; }
+  # A run that stops before Claim leaves the maps while the lookup still finds the discovery.
+  stop="$(part_section 'Pick the first ready story')"
+  grep -qF "still takes the parent as this input's discovery" <<<"$stop" ||
+    { echo "the stop note does not use Find the input's discovery"; false; }
+  ! grep -qF 'While the parent still says `Discovery status: in-progress`' <<<"$stop" ||
+    { echo "the stop note still keys on the status line"; false; }
 }
 
 @test "lets-go runs each step through lets delegate step" {
@@ -1909,7 +1953,7 @@ procedure_stops() {
 @test "each lets-go procedure returns to the part that ran it, with no Next line" {
   local procedure text
   for procedure in 'Find the source of demand' 'Confirm the packet' 'Glossary preflight' 'Claim' \
-    'Import the glossary checkpoint' 'Commit the discovery map'; do
+    'Import the glossary checkpoint' 'Commit the discovery map' "Find the input's discovery"; do
     text="$(procedure_text "$procedure")"
     [ -n "$text" ] || { echo "lets-go has no procedure $procedure"; false; }
     # Only Claim runs the whole preflight, so it returns there.

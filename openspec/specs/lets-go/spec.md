@@ -16,7 +16,7 @@ Says what the `lets-go` skill does for a shaped Chore, Bug or Story, or for an i
 - the issue search of *lets-go takes one issue number or an idea*;
 - `git branch --list <name>` and `git ls-remote --heads origin refs/heads/<name>`, to find the change's branch, and the fetch, switch and fast-forward above;
 - the Git and GitHub reads of *lets-go walks the step table*, *A skipped step's line carries its evidence and date* and *Review plan runs as a step, or is not in the route*. These include the reads of `lets-review-plan`'s *Check an earlier review*, which tell whether review plan is done;
-- the in-progress parent query of *A stopped discovery resumes from its parent issue*, run only for an idea;
+- the parent query of *A stopped discovery resumes from its parent issue*, run for an idea, and for an issue `#<i>` when the discovery maps have uncommitted edits before the shape step, as *lets-go commits the discovery map on the story's branch* says;
 - in an epic run only, the reads of *An epic run picks each story as next picks it*, the worktree commands and `lets sync` of *An epic run gives each story run a worktree of its own* and *An epic run reuses a story's clean worktree*, and the fetches and ancestry checks of *An epic run stacks a story on its met blocker*;
 - the `git status --porcelain -uall -- openspec/discovery.md openspec/discovery` before the shape step and after *Claim*, and the commit of the discovery maps it lists, that *lets-go commits the discovery map on the story's branch* says.
 
@@ -391,13 +391,11 @@ The review build step SHALL run the `lets-review-build` skill. On `lets-standard
 - `epic #<parent>: <title>`
 - `story #<story>: <title>`
 - `Plan review: <verdict> for <sha>`
-- `Run discovery on it?`
 - `Picked #<i>: <title>, the first ready story under #<parent>.`
 - `Picked #<i>: <title>, the next ready issue.`
 - `docs: the discovery map from #<parent>`
 - `Discovery status: in-progress`
-- `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`
-- `*Resume mode*`
+- `gh issue list --state open --limit 500 --search '"Input:" in:body' --json number,title,body`
 - `issue-<i>`
 - `idea-<slug>`
 - `--for review-plan`
@@ -421,7 +419,7 @@ The review build step SHALL run the `lets-review-build` skill. On `lets-standard
 - `<shape-name>`
 - `<session>`
 
-Below, the skill means `SKILL.md` together with its reference files. The skill SHALL not hold `review.md`, `VERDICT:`, `#152 adds`, `#153 adds` or `#154 adds`. The skill SHALL not say that `lets-go` takes chores only, or that `lets-go` needs an issue number on the default branch. The skill SHALL not say that review plan runs inside plan or inside build, or that `lets-go` reuses the `lets-build` skill. The skill SHALL not hold `Done review plan: the Plan review` or `with a Code review section`. The skill SHALL not say that a too-large idea ends the shape step with a `failed` report. The README's `lets-go` section SHALL not say that an idea too large for one issue stops the run, or that review plan runs inside build.
+Below, the skill means `SKILL.md` together with its reference files. The skill SHALL not hold `review.md`, `VERDICT:`, `#152 adds`, `#153 adds` or `#154 adds`. The skill SHALL not say that `lets-go` takes chores only, or that `lets-go` needs an issue number on the default branch. The skill SHALL not say that review plan runs inside plan or inside build, or that `lets-go` reuses the `lets-build` skill. The skill SHALL not hold `Done review plan: the Plan review` or `with a Code review section`. The skill SHALL not hold the in-progress-only discovery query `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`, which matches no parent during Finalize. The skill SHALL not say that a too-large idea ends the shape step with a `failed` report. The README's `lets-go` section SHALL not say that an idea too large for one issue stops the run, or that review plan runs inside build.
 
 #### Scenario: The fixed lines
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
@@ -430,6 +428,10 @@ Below, the skill means `SKILL.md` together with its reference files. The skill S
 #### Scenario: The too-large idea
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md`, the files in `skills/lets-go/references/` and `README.md`
 - **THEN** the skill does not say `end with a failed report that says so and names`, and the README does not say `An idea too large for one issue stops the run`
+
+#### Scenario: The old discovery query
+- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
+- **THEN** it finds `gh issue list --state open --limit 500 --search '"Input:" in:body' --json number,title,body`, and does not find `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`
 
 #### Scenario: The step table header changes
 - **WHEN** the step table's header no longer reads `| Step | Skill | Done when | Record | Skip line |`
@@ -798,11 +800,21 @@ After a shape report that names a parent and stories, `lets-go` SHALL pick one s
 - **THEN** `lets-go` prints the `Done shape` line, says no story under #190 is ready, names each story and its blocker, says to run `lets-go` with a story's number once it is ready, and stops with no branch
 
 ### Requirement: A stopped discovery resumes from its parent issue
-A discovery can stop between rounds, or before *Claim*, when no story is ready. For an idea, before the title search of *Start from an idea*, `lets-go` SHALL look for an open parent issue that says `Discovery status: in-progress` and whose `Input:` line holds the idea's words. It SHALL use `lets-shape`'s own query, `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`. When one exists, `lets-go` SHALL say that a discovery of this idea is in progress at `#<parent>`, skip the title search, and run the shape step for the idea. The step resumes that discovery, because `lets-shape` matches the parent's `Input:` line to the idea, as the `discovery-checkpoints` capability says. For an issue, no check is needed: when *Confirm the packet* returns `needs-shape` for `#<i>`, the shape step runs, and finds the parent whose `Input:` is `#<i>`. The answers file rules of *The shape step shapes an idea or an unshaped issue* SHALL hold: an idea retyped word for word keeps its answers, and a reworded idea starts with none and is a new input. The phases the parent already recorded are not lost either way.
+A discovery can stop between rounds, during Finalize, or before *Claim*, when no story is ready. Finalize removes the parent's status line before it asks its own questions, so a stop during Finalize leaves a parent with no status line. To find an input's discovery, `lets-go` SHALL list the open parent issues with `lets-shape`'s query, `gh issue list --state open --limit 500 --search '"Input:" in:body' --json number,title,body`, and keep each whose `Input:` line names this input: the idea word for word for an idea, and `#<i>` or the issue's URL for an issue. A kept parent SHALL be this input's discovery when it says `Discovery status: in-progress`. It SHALL also be this input's discovery when it has no status line and an earlier shape round of this input left answers: `.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least one pair, and, for an idea, `.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea. A parent in neither state, such as an open epic whose discovery finished, SHALL NOT be this input's discovery.
+
+For an idea, `lets-go` SHALL run this lookup before the title search of *Start from an idea*. When it finds a discovery, `lets-go` SHALL say that a discovery of this idea is in progress at `#<parent>`, naming each parent it found, skip the title search, and run the shape step for the idea. The step resumes the discovery, or finishes its Finalize, because `lets-shape` matches the parent's `Input:` line to the idea, as the `discovery-checkpoints` capability says. When it finds none, `lets-go` SHALL run the title search. For an issue, *Start from an idea* does not run: when *Confirm the packet* returns `needs-shape` for `#<i>`, the shape step runs, and finds the parent whose `Input:` is `#<i>`. The answers file rules of *The shape step shapes an idea or an unshaped issue* SHALL hold: an idea retyped word for word keeps its answers, and a reworded idea starts with none and is a new input. The phases the parent already recorded are not lost either way.
 
 #### Scenario: The same idea again
 - **WHEN** a run for `rewrite the backlog around a plugin model` stopped at MoSCoW, the open parent `Epic: plugin backlog` says `Discovery status: in-progress` with `Input: rewrite the backlog around a plugin model`, and the user runs `lets-go rewrite the backlog around a plugin model` again
 - **THEN** `lets-go` says a discovery of this idea is in progress at that parent, runs no title search, and runs the shape step, whose round resumes the parent at MoSCoW
+
+#### Scenario: The same idea after a stop during Finalize
+- **WHEN** a run for `rewrite the backlog around a plugin model` stopped during Finalize, the open parent `Epic: plugin backlog` has `Input: rewrite the backlog around a plugin model` and no status line, `.workspace/lets-go/idea-rewrite-the-backlog-around-a-shape-answers.yaml` holds the Phase 5 story table confirmed, and the user runs `lets-go rewrite the backlog around a plugin model` again
+- **THEN** `lets-go` says a discovery of this idea is in progress at that parent, runs no title search, asks no question, and runs the shape step, whose round finishes Finalize on that parent
+
+#### Scenario: A finished discovery of the same idea
+- **WHEN** the open epic `Epic: plugin backlog` has `Input: rewrite the backlog around a plugin model` and no status line, `.workspace/lets-go/idea-rewrite-the-backlog-around-a-shape-answers.yaml` does not exist, and the user runs `lets-go rewrite the backlog around a plugin model`
+- **THEN** `lets-go` does not say a discovery is in progress, and runs the title search as usual
 
 #### Scenario: A reworded idea
 - **WHEN** the user runs `lets-go rewrite the backlog around a plugin system` instead, and no parent's `Input:` line holds those words
@@ -813,7 +825,7 @@ A discovery can stop between rounds, or before *Claim*, when no story is ready. 
 - **THEN** *Confirm the packet* returns `needs-shape` for #180, and the shape step's round resumes that parent
 
 ### Requirement: lets-go commits the discovery map on the story's branch
-Discovery edits the discovery maps in the working tree on the default branch: `openspec/discovery.md`, and in a repository with several products the files under `openspec/discovery/`. Before it runs the shape step, `lets-go` SHALL run `git status --porcelain -uall -- openspec/discovery.md openspec/discovery`, which names each changed file and works when the folder does not exist. When that lists a path, `lets-go` SHALL look for an open parent issue that says `Discovery status: in-progress` and whose `Input:` line names this input. When one exists, the edits are that discovery's confirmed phases, and `lets-go` SHALL go on and run the shape step, which resumes it. When none exists, `lets-go` SHALL say the maps have uncommitted edits, name each path, say to commit or discard them, and stop. The shape step SHALL end on the default branch with the tree clean, except the discovery maps when discovery ran. When the shape step ran in this run and *Claim* created the picked story's branch, `lets-go` SHALL run that status command again, on the branch, before *lets-go walks the step table* reads the tree. It SHALL commit each path it lists, new files included. The commit is `git add -- <paths>`, then `git commit -m "docs: the discovery map from #<parent>" -- <paths>`. It SHALL never pass `openspec/discovery` itself to `git add` or `git commit`, because both fail on a path that matches no file. `<parent>` is the parent's number, or the story's when the parent became the one story. It SHALL commit no other path. When no discovery map changed, or no shape step ran in this run, it SHALL make no commit. When the run stops after discovery and before *Claim*, `lets-go` SHALL say that the discovery maps it names hold the discovery's edits, uncommitted on the default branch. While the parent still says `Discovery status: in-progress`, it SHALL say to leave the maps as they are, because running `lets-go` again with the same input resumes the discovery and keeps its edits. Otherwise, it SHALL say to commit or discard them before the next run, because a run stops on a dirty tree.
+Discovery edits the discovery maps in the working tree on the default branch: `openspec/discovery.md`, and in a repository with several products the files under `openspec/discovery/`. Before it runs the shape step, `lets-go` SHALL run `git status --porcelain -uall -- openspec/discovery.md openspec/discovery`, which names each changed file and works when the folder does not exist. When that lists a path, `lets-go` SHALL look for this input's discovery, for an idea or an issue `#<i>`, as *A stopped discovery resumes from its parent issue* says. For an idea, it SHALL use what *Start from an idea* found. When this input has a discovery, the edits are that discovery's confirmed phases, and `lets-go` SHALL go on and run the shape step, which resumes the discovery or finishes its Finalize. When it has none, `lets-go` SHALL say the maps have uncommitted edits, name each path, say to commit or discard them, and stop. When the check went on only because one or more parents with no status line were this input's discovery, and the shape step then shaped none of those parents: the one issue it reports, or the parent it reports, is not one of them, the edits may be another discovery's: `lets-go` SHALL print the `Done shape` line, name each path the status command lists, say to commit or discard them, and stop in *Run the shape step*, before *Check the issue*. It SHALL claim nothing and create no branch. The shape step SHALL end on the default branch with the tree clean, except the discovery maps when discovery ran. When the shape step ran in this run and *Claim* created the picked story's branch, `lets-go` SHALL run that status command again, on the branch, before *lets-go walks the step table* reads the tree. It SHALL commit each path it lists, new files included. The commit is `git add -- <paths>`, then `git commit -m "docs: the discovery map from #<parent>" -- <paths>`. It SHALL never pass `openspec/discovery` itself to `git add` or `git commit`, because both fail on a path that matches no file. `<parent>` is the parent's number, or the story's when the parent became the one story. It SHALL commit no other path. When no discovery map changed, or no shape step ran in this run, it SHALL make no commit. When the run stops after discovery and before *Claim*, `lets-go` SHALL say that the discovery maps it names hold the discovery's edits, uncommitted on the default branch. While *Find the input's discovery* still takes the parent as this input's discovery, it SHALL say to leave the maps as they are, because running `lets-go` again with the same input resumes the discovery and keeps its edits. Otherwise, it SHALL say to commit or discard them before the next run, because a run stops on a dirty tree.
 
 #### Scenario: The map is committed
 - **WHEN** discovery changed `openspec/discovery.md`, and *Claim* created the branch `plugin-contract`
@@ -828,12 +840,28 @@ Discovery edits the discovery maps in the working tree on the default branch: `o
 - **THEN** `lets-go` says the map is uncommitted on the default branch, says to commit or discard it before the next run, and commits nothing
 
 #### Scenario: A dirty map before the shape step
-- **WHEN** `git status --porcelain` lists ` M openspec/discovery.md` before the shape step runs, and no open parent issue for this input says `Discovery status: in-progress`
+- **WHEN** `git status --porcelain` lists ` M openspec/discovery.md` before the shape step runs, and this input has no discovery
 - **THEN** `lets-go` says the map has uncommitted edits, says to commit or discard them, and runs no step
 
 #### Scenario: A dirty map from the discovery it resumes
 - **WHEN** a run for `rewrite the backlog around a plugin model` stopped after Personas was confirmed, `git status --porcelain` lists ` M openspec/discovery.md`, and the open parent `Epic: plugin backlog` says `Discovery status: in-progress` with `Input: rewrite the backlog around a plugin model`
 - **THEN** `lets-go` runs the shape step, which resumes the parent at the journey map, and the map commit after *Claim* takes the edits
+
+#### Scenario: A dirty map after a stop during Finalize
+- **WHEN** a run for `#180` stopped during Finalize, `git status --porcelain` lists ` M openspec/discovery.md`, the open parent `Epic: plugin backlog` has `Input: #180` and no status line, and `.workspace/lets-go/issue-180-shape-answers.yaml` holds the Phase 5 story table confirmed
+- **THEN** `lets-go` does not say to commit or discard the map, and runs the shape step, whose round finishes Finalize on that parent
+
+#### Scenario: A dirty map beside a finished discovery
+- **WHEN** `git status --porcelain` lists ` M openspec/discovery.md` before the shape step for `#180` runs, the open epic `Epic: plugin backlog` has `Input: #180` and no status line, and `.workspace/lets-go/issue-180-shape-answers.yaml` does not exist
+- **THEN** `lets-go` says the map has uncommitted edits, says to commit or discard them, and runs no step
+
+#### Scenario: A dirty map beside a finished epic and an abandoned round
+- **WHEN** `git status --porcelain` lists ` M openspec/discovery.md` before the shape step for `#180` runs, the open epic `Epic: plugin backlog` has `Input: #180` and no status line, `.workspace/lets-go/issue-180-shape-answers.yaml` holds one pair from an abandoned round, and the shape step reports `issue #180: Plugin contract`
+- **THEN** `lets-go` prints the `Done shape` line, names `openspec/discovery.md`, says to commit or discard it, and stops before *Check the issue*. It claims nothing, creates no branch and makes no map commit
+
+#### Scenario: A dirty map beside a finished epic, and a new discovery
+- **WHEN** `git status --porcelain` lists ` M openspec/discovery.md` before the shape step for `#180` runs, the open epic `Epic: plugin backlog` has `Input: #180` and no status line, `.workspace/lets-go/issue-180-shape-answers.yaml` holds one pair from an abandoned round, and the shape step reports `epic #300: Plugin contract` with `story #301: Plugin loader`
+- **THEN** `lets-go` prints the `Done shape` line, names `openspec/discovery.md`, says to commit or discard it, and stops before *Check the issue*. It picks no story, claims nothing and makes no map commit
 
 #### Scenario: A later run with no shape step
 - **WHEN** the user runs `lets-go #191` after the map was committed by hand, #191's packet is complete, and *Claim* creates the branch
@@ -848,7 +876,7 @@ Discovery edits the discovery maps in the working tree on the default branch: `o
 - **THEN** `lets-go` commits those three paths, and no other, on `stock-alerts` in one commit, `docs: the discovery map from #<parent>`
 
 #### Scenario: A dirty product map before the shape step
-- **WHEN** `git status --porcelain` lists ` M openspec/discovery/warehouse.md` before the shape step runs, and no open parent issue for this input says `Discovery status: in-progress`
+- **WHEN** `git status --porcelain` lists ` M openspec/discovery/warehouse.md` before the shape step runs, and this input has no discovery
 - **THEN** `lets-go` names `openspec/discovery/warehouse.md`, says to commit or discard it, and runs no step
 
 ### Requirement: Placeholders in lets-go render as written
@@ -1143,7 +1171,7 @@ This holds for `skills/lets-go/SKILL.md` and for each file in `skills/lets-go/re
 - **THEN** every link in each installed file of `lets-go` resolves to a file and a heading inside the installed skills
 
 ### Requirement: Each lets-go procedure returns a result
-Each procedure of `lets-go` SHALL end by returning to the part that ran it, with a result. A procedure is a section under `## Procedures` in `SKILL.md`, or one of *Glossary preflight*, *Import the glossary checkpoint* and *Commit the discovery map* in a reference file. *Glossary preflight*, which only *Claim* runs, SHALL return to *Claim*. A procedure SHALL not tell the agent to stop, and SHALL not name the part that runs next: the part that ran it decides. Outside code, a procedure's text, its subsections included, SHALL not hold the word `stop` or `stops`, in any case. A procedure that can end more than one way SHALL list its results. Each result is a name in backticks, with when it is returned and what it carries, such as the issue, who has it, or what to tell the user. The results SHALL be these:
+Each procedure of `lets-go` SHALL end by returning to the part that ran it, with a result. A procedure is a section under `## Procedures` in `SKILL.md`, or one of *Glossary preflight*, *Import the glossary checkpoint*, *Commit the discovery map* and *Find the input's discovery* in a reference file. *Glossary preflight*, which only *Claim* runs, SHALL return to *Claim*. A procedure SHALL not tell the agent to stop, and SHALL not name the part that runs next: the part that ran it decides. Outside code, a procedure's text, its subsections included, SHALL not hold the word `stop` or `stops`, in any case. A procedure that can end more than one way SHALL list its results. Each result is a name in backticks, with when it is returned and what it carries, such as the issue, who has it, or what to tell the user. The results SHALL be these:
 
 | Procedure | Results |
 |---|---|
@@ -1155,7 +1183,7 @@ Each procedure of `lets-go` SHALL end by returning to the part that ran it, with
 | *Claim* | `claimed`, `taken`, `claim-failed`, `unresolved`, `checkpoint-failed`, `branch-failed` |
 | *Import the glossary checkpoint* | `imported`, `import-failed` |
 
-*Glossary preflight* returns `no-owned-edits` when the story owns no glossary edits, and otherwise passes on what *Check the checkpoint* returns. `verified` carries the checkpoint commits to import. *Claim*'s `claimed` carries what *Glossary preflight* returned, so *Enter the branch* runs *Import the glossary checkpoint* only after `verified`. *Commit the discovery map* ends one way only, so it names no result.
+*Glossary preflight* returns `no-owned-edits` when the story owns no glossary edits, and otherwise passes on what *Check the checkpoint* returns. `verified` carries the checkpoint commits to import. *Claim*'s `claimed` carries what *Glossary preflight* returned, so *Enter the branch* runs *Import the glossary checkpoint* only after `verified`. *Commit the discovery map* ends one way only, so it names no result. *Find the input's discovery* ends one way too: it returns each discovery it found, or none, and names no result.
 
 #### Scenario: Every procedure returns
 - **WHEN** the skill-interfaces test reads each procedure of `lets-go`, in `SKILL.md` and in its reference files
@@ -1563,7 +1591,7 @@ In prose, `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references
 - **THEN** `Failed review build: <reason>` and `Failed shape: <reason>` are lines of a `text` block
 
 ### Requirement: lets-go reads and claims the backlog only through lets backlog
-`lets-go` SHALL read the ready issues with `lets backlog ready`, read an issue with `lets backlog item <i>`, search titles with `lets backlog find`, claim with `lets backlog claim <i>` and release with `lets backlog release <i>`. It SHALL run no `gh project` command and no Project query. These stay as `gh` until the shaping side moves: the comment thread read of *Confirm the packet*, which is a GraphQL query with its pagination; `gh issue view <i> --json createdAt`; the in-progress parent query; and the issue body edit that records a **Glossary handoff** import. Pull request reads and edits stay as `gh pr` commands.
+`lets-go` SHALL read the ready issues with `lets backlog ready`, read an issue with `lets backlog item <i>`, search titles with `lets backlog find`, claim with `lets backlog claim <i>` and release with `lets backlog release <i>`. It SHALL run no `gh project` command and no Project query. These stay as `gh` until the shaping side moves: the comment thread read of *Confirm the packet*, which is a GraphQL query with its pagination; `gh issue view <i> --json createdAt`; the parent query of *A stopped discovery resumes from its parent issue*; and the issue body edit that records a **Glossary handoff** import. Pull request reads and edits stay as `gh pr` commands.
 
 #### Scenario: No backlog gh in the skill
 - **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
