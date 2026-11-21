@@ -290,6 +290,7 @@ When `step run` exits 3, `lets-go` SHALL run the step in a subagent. The subagen
 
 #### Scenario: A done report with no evidence
 - **WHEN** the subagent's block holds `outcome: done` and no `evidence`
+- **THEN** `lets-go` treats the step as `failed`, with a reason that names `evidence`, and stops
 
 #### Scenario: A subagent's marked question
 - **WHEN** the subagent's block holds `outcome: needs-input` and one question with `ask: true`
