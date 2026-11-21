@@ -1055,12 +1055,16 @@ review_build_start() {
   section="$(skill_section lets-go "Find the input's discovery")"
   # Finalize removes the status line, so lets-go's own answers file is what shows an earlier round.
   for phrase in 'has no status line' '`.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least one pair' \
-    '`.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea' 'an open epic whose discovery finished'; do
+    '`.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea' \
+    "A kept parent in neither state is not this input's discovery: for example, an open epic whose discovery finished"; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Find the input's discovery does not say: $phrase"; false; }
   done
   # A finished epic can match that way too, so one issue that is not the parent keeps its maps out of the branch.
   shape="$(part_section 'Run the shape step')"
-  for phrase in 'the step shaped none of those parents' 'or its parent, is not one of them' 'stop here,' 'before [Check the issue]' 'Claim nothing,' 'Print the `Done shape` line'; do
+  for phrase in "went on only because one or more parents with no status line were this input's discovery" \
+    'the step shaped none of those parents' 'or its parent, is not one of them' 'Print the `Done shape` line' \
+    'Name each path that check listed, say to commit or discard them, and stop here, before [Check the issue]' \
+    'Claim nothing, and create no branch.'; do
     grep -qF -- "$phrase" <<<"$shape" || { echo "Run the shape step does not say: $phrase"; false; }
   done
 }
