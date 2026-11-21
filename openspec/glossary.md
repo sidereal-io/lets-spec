@@ -126,8 +126,9 @@ it builds any story.
 
 ## Epic run
 
-A `lets-go` run given an epic. It shapes the epic when the epic is
-empty, then builds each of its stories, through one story run each, and
+A `lets-go` run that builds the stories of one epic: the epic it was
+given, or the epic its shape step filed. It shapes the epic when the
+epic is empty, then builds each of its stories, through one story run each, and
 ends with one line per story. An epic run is not a step and not a
 discovery run.
 
