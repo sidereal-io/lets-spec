@@ -1,7 +1,7 @@
 # Shape
 
 Read this file when the run starts from an idea, runs the shape step,
-or commits the discovery map.
+looks for an epic's stopped discovery, or commits the discovery map.
 
 ## Find the input's discovery
 
@@ -17,7 +17,10 @@ input is an idea, or an issue `#<i>`.
    ```
 
 2. Keep each parent whose `Input:` line names this input: the idea word
-   for word, or `#<i>` or the issue's URL.
+   for word, or `#<i>` or the issue's URL. When the input is an issue
+   `#<i>` that is itself in that list, keep it too, whatever its
+   `Input:` line names. An epic that discovery shaped in place names
+   itself, and an epic that an idea's discovery filed names the idea.
 3. A kept parent is this input's discovery in either of two states:
    - **It says `Discovery status: in-progress`.** The discovery stopped
      between rounds, or before [Claim](../SKILL.md#claim).
@@ -81,7 +84,9 @@ when it runs.
    take this input's discovery from
    [Find the input's discovery](#find-the-inputs-discovery). For an
    idea, use what [Start from an idea](#start-from-an-idea) found. For
-   an issue `#<i>`, run the lookup now.
+   an epic whose stopped discovery
+   [Check the issue](../SKILL.md#check-the-issue) found, use what it
+   found. For any other issue `#<i>`, run the lookup now.
    - **There is one or more:** the edits are that discovery's confirmed
      phases. Go on: the step resumes the discovery or finishes its
      Finalize, and its map commit takes the edits. When several match,

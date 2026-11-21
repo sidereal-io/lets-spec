@@ -458,7 +458,17 @@ says.
 
         Then stop. Claim nothing, create no branch, run no step, and
         leave the epic open.
-     3. **Any other epic:** go to [Run the epic](#run-the-epic) with
+     3. **An epic with a stopped discovery:** run
+        [Find the input's discovery](references/shape.md#find-the-inputs-discovery)
+        for `#<i>`. An earlier round may have stopped after Phase 5
+        filed some stories, so the epic is only half shaped. When it
+        finds one or more, say that a discovery of `#<i>` is in progress
+        at each `#<parent>` it found. When no shape step has run in this
+        run, [run the shape step](#run-the-shape-step) for `#<i>`: its
+        round resumes the discovery, or finishes its Finalize. When one
+        has, say to run the `lets-shape` skill on `#<i>`, and stop. When
+        it finds none, go on to the next item.
+     4. **Any other epic:** go to [Run the epic](#run-the-epic) with
         `<i>` as `<parent>`, and the open sub-issues the result carries.
 6. When [Confirm the packet](#confirm-the-packet) returns `complete`,
    shape is done. Print shape's line, as

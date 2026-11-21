@@ -1056,7 +1056,8 @@ review_build_start() {
   # Finalize removes the status line, so lets-go's own answers file is what shows an earlier round.
   for phrase in 'has no status line' '`.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least one pair' \
     '`.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea' \
-    "A kept parent in neither state is not this input's discovery: for example, an open epic whose discovery finished"; do
+    "A kept parent in neither state is not this input's discovery: for example, an open epic whose discovery finished" \
+    'When the input is an issue `#<i>` that is itself in that list, keep it too, whatever its `Input:` line names.'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Find the input's discovery does not say: $phrase"; false; }
   done
   # A finished epic can match that way too, so one issue that is not the parent keeps its maps out of the branch.
@@ -2436,6 +2437,19 @@ epic_run_file() {
   for phrase in \
     '**A finished epic:** `subIssues` is empty, and `closedSubIssues` is not.' \
     'Then stop. Claim nothing, create no branch, run no step, and leave the epic open.'; do
+    grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+}
+
+@test "an epic run finishes a stopped discovery before it builds" {
+  local check phrase
+  check="$(part_section 'Check the issue')"
+  for phrase in \
+    '**An epic with a stopped discovery:** run [Find the input'"'"'s discovery](references/shape.md#find-the-inputs-discovery) for `#<i>`.' \
+    'say that a discovery of `#<i>` is in progress at each `#<parent>` it found' \
+    'When no shape step has run in this run, [run the shape step](#run-the-shape-step) for `#<i>`: its round resumes the discovery, or finishes its Finalize.' \
+    'When one has, say to run the `lets-shape` skill on `#<i>`, and stop.' \
+    'When it finds none, go on to the next item.'; do
     grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
   done
 }
