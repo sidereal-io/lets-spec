@@ -5108,9 +5108,15 @@ readme_step_returns() {
     { echo "Locate the discovery forbids resuming the parent the user named"; false; }
   ! grep -qF 'An issue that holds a large idea is the input to a discovery run instead.' <<<"$section" ||
     { echo "Locate the discovery still sends a large issue away in its first item"; false; }
-  items="$(sed -n '/^## Locate the discovery/,/^## /p' "$repo/skills/lets-shape/SKILL.md" | grep -oE '^   [1-5]\. \*\*[^*]+\*\*')"
+  grep -qF 'read `lets backlog item <i>`' <<<"$section" ||
+    { echo "Locate the discovery does not read the epic through lets backlog"; false; }
+  grep -qF 'both `subIssues` and `closedSubIssues` are empty' <<<"$section" ||
+    { echo "Locate the discovery does not define an empty epic"; false; }
+  grep -qF 'with the epic as its parent. Ask no `Run discovery on it?`, and do not size the work.' <<<"$section" ||
+    { echo "Locate the discovery asks about discovery for an empty epic"; false; }
+  items="$(sed -n '/^## Locate the discovery/,/^## /p' "$repo/skills/lets-shape/SKILL.md" | grep -oE '^   [1-6]\. \*\*[^*]+\*\*')"
   [ "$(sed 's/^ *[0-9]\. //' <<<"$items" | tr '\n' '|')" = \
-    "**An open parent issue is this input, or its \`Input:\` line names it.**|**The answers already answer the discovery question.**|**The input plainly holds a large idea**|**Any other input**|**No input.**|" ] ||
+    "**An open parent issue is this input, or its \`Input:\` line names it.**|**The input is an empty epic.**|**The answers already answer the discovery question.**|**The input plainly holds a large idea**|**Any other input**|**No input.**|" ] ||
     { echo "the path list is not in order: $items"; false; }
 }
 

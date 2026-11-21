@@ -204,18 +204,26 @@ At the start:
       ask the user which one, as a confirmation question with no
       recommendation. Never pick one yourself. When none is left, go on to the next item. Start no
       second discovery for an input that already has a parent.
-   2. **The answers already answer the discovery question.** Follow
+   2. **The input is an empty epic.** For an issue input `#<i>`, read
+      `lets backlog item <i>`. It is an empty epic when its `kind` is
+      `Epic` and both `subIssues` and `closedSubIssues` are empty: the
+      epic has no sub-issues, open or closed. Run discovery from
+      [Phase 1: Ingest](#phase-1-ingest) with the epic as its parent. Ask no `Run discovery on it?`, and do not size the work. Making the
+      issue an epic already decided to split the work, and the user
+      still confirms the epic's new text at Ingest. An epic with a
+      closed sub-issue is not empty: go on to the next item.
+   3. **The answers already answer the discovery question.** Follow
       [Ask about discovery](#ask-about-discovery) with that answer, and ask
       it no second time: yes runs discovery from
       [Phase 1: Ingest](#phase-1-ingest) with this input, and anything else
       stops. Do not size the work again.
-   3. **The input plainly holds a large idea**, such as a PRD or a
+   4. **The input plainly holds a large idea**, such as a PRD or a
       vision. [Ask about discovery](#ask-about-discovery) before any other
       question.
-   4. **Any other input**, such as one bug, chore or small story, or an
+   5. **Any other input**, such as one bug, chore or small story, or an
       issue to shape: [Shape one issue](#shape-one-issue). Its sizing
       decides whether the work is too large for one issue.
-   5. **No input.** When an open parent issue says
+   6. **No input.** When an open parent issue says
       `Discovery status: in-progress` (`gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`),
       run [Resume mode](#resume-mode) on it. If more than one does, list
       them and ask the user which to resume, or whether to start a new
