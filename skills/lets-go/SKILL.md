@@ -103,11 +103,11 @@ sets it.
 `lets backlog` names each item by its `key`, and shows it by its
 `label`: `149` and `#149` on GitHub. In anything shown to a person,
 `#<i>`, `#<parent>`, `#<story>`, `#<blocker>`, `#<stopped-story>`,
-`#<failed>`, `#<a>`, `#<b>` and `#<c>` stand for the item's `label`: a
-printed line, a question, or text written in an issue. In a command,
-`<i>`, `<parent>` and `<story>` stand for its `key`. With the GitHub
-backlog provider, the label is `#` and the number, so each line reads as
-it always has.
+`#<failed>`, `#<other>`, `#<a>`, `#<b>` and `#<c>` stand for the item's
+`label`: a printed line, a question, or text written in an issue. In a
+command, `<i>`, `<parent>` and `<story>` stand for its `key`. With the
+GitHub backlog provider, the label is `#` and the number, so each line
+reads as it always has.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
@@ -122,6 +122,10 @@ it always has.
 | `<a>` | The first open blocker of a story whose blockers' branches no one branch contains, as its key. The line that names them all shows it | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<b>` | The second such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<c>` | The third such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
+| `<keys>` | The keys of the stories an epic run sorts into waves, in the epic's order, joined by commas, such as `283,285` | [Run the epic](#run-the-epic), from the stories not settled when it starts |
+| `<wave>` | A wave's number in an epic run, counted from 1 | [Run the epic](#run-the-epic), from the order of the waves file's `waves` |
+| `<wave-stories>` | The `label` of each story of a wave, in the order `lets backlog waves` gives, joined by `, ` | [Run the epic](#run-the-epic), from the wave's `stories` in the waves file |
+| `<other>` | The story that a story of an epic run waits for, as its key | [Run the epic](#run-the-epic), from the story's `waitsFor` in the waves file |
 | `<login>` | The login of a person assigned to a story | The story's `assignees`, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](#run-the-epic) |
 | `<stopped-story>` | The story an epic run stopped at, as its key, in the line of another story that was not built | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<failed>` | The story whose run failed or stopped, as its key, in the line of a story that depends on it | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
@@ -151,7 +155,7 @@ it always has.
 | `<sha>` | A commit's short hash, or the commit a review names | [Read the records](references/records.md#read-the-records), or the review plan report |
 | `<verdict>` | A plan review's verdict | The **Plan review** section, or the review plan report |
 | `<evidence>` | What a `done` report's `evidence` lists | [The step lines](#the-step-lines) |
-| `<reason>` | Why a step failed, or, in a story's line in an epic run, why the story was not built or its walk stopped | [The step lines](#the-step-lines), from a `failed` report's `reason`, or from [Read the report](#read-the-report) when a `done` report's record says otherwise: `the step reported done, but` and what the record holds. In a story's line, [Run the epic](#run-the-epic) |
+| `<reason>` | Why a step failed, or, in a story's line in an epic run, why the story was not built or its walk stopped, or, in a wave's line, why a story waits for `#<other>` | [The step lines](#the-step-lines), from a `failed` report's `reason`, or from [Read the report](#read-the-report) when a `done` report's record says otherwise: `the step reported done, but` and what the record holds. In a story's line, [Run the epic](#run-the-epic). In a wave's line, the story's `reason` in the waves file, from [Run the epic](#run-the-epic) |
 | `<YYYY-MM-DD>` | The date in an archive folder's name | The folder's name in `openspec/changes/archive/` |
 | `<first>` | The first model of the ranked options | [Run a step](#run-a-step) or [Start the story run](references/epic-run.md#start-the-story-run), when it ranks the options |
 | `<second>` | The second model of the ranked options | [Run a step](#run-a-step) or [Start the story run](references/epic-run.md#start-the-story-run), when it ranks the options |

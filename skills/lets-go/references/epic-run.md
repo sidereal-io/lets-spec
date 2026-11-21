@@ -3,9 +3,11 @@
 Read this file only in an epic run: a run of `lets-go` whose issue is
 an epic.
 
-An epic run builds the epic's stories one at a time, each to a pull
-request ready for review, and ends with one line per story. The epic
-run claims each story, routes it and enters its branch itself. A child
+An epic run first sorts its stories into waves and prints them, with
+why each story waits, then builds one story at a time, wave by wave,
+each to a pull request ready for review. It ends with one line per
+story. The epic run claims each story, routes it and enters its branch
+itself. A child
 `lets-go` session then walks the story's steps, so the epic run's
 context grows by a few lines per story. When no child session can
 start, the epic run walks the story's steps in its own session. An epic
@@ -96,6 +98,52 @@ as for any picked issue.
    The branches found here hold for the whole epic run. A branch created
    later belongs to a story this run claimed, and that story is settled
    before the next pick.
+
+   Last, sort the stories not settled yet into waves: sets of stories
+   that no chain of blocked-by links joins, and whose packets name no
+   overlapping path under **Relevant code**. When every story is
+   settled here, run no `waves` command and print no waves: go to
+   [End of the run](../SKILL.md#end-of-the-run). Otherwise, `<keys>`
+   are the keys of the epic's stories in this repository that are not
+   settled yet, in the epic's order, joined by commas, such as
+   `283,285,286,287`:
+
+   ```bash
+   lets backlog waves --only <keys> > .workspace/lets-go/epic-<parent>-waves.json
+   ```
+
+   The command writes the file afresh, and the waves in it hold for the
+   whole epic run: *Pick the next story* reads it before each pick. On
+   exit 1, act as [Backlog errors](../SKILL.md#backlog-errors) says,
+   with the error the file holds.
+
+   Otherwise print the waves, from the file's `waves`, in order. First
+   print:
+
+   ```text
+   Waves for #<parent>:
+   ```
+
+   Then print each wave's line. `<wave>` is the wave's number,
+   counted from 1. `<wave-stories>` is the `label` of each of the
+   wave's stories, in the order the command gives, joined by `, `:
+
+   ```text
+   Wave <wave>: <wave-stories>
+   ```
+
+   After each wave's line but the first, print one line for each story
+   of that wave, in the same order. `#<other>` is the story's
+   `waitsFor` label, and `<reason>` is its `reason`, as the command
+   prints them:
+
+   ```text
+   #<story> waits for #<other>: <reason>.
+   ```
+
+   Print the waves once in an epic run, even when there is only one
+   wave. The wave lines are not story lines: append none of them to the
+   lines file.
 2. **Settle the story whose walk ended,** when the run comes back to
    this part from [Start the story run](#start-the-story-run), or from
    [Walk the step table](../SKILL.md#walk-the-step-table) after this
@@ -181,19 +229,29 @@ as for any picked issue.
    [Stack the story](#stack-the-story) uses them. It does not matter
    whether this epic run or an earlier one built the story.
 
+   Before each pick, read
+   `.workspace/lets-go/epic-<parent>-waves.json`, which *Start the epic
+   run* wrote. The current wave is the first of its `waves` that holds a
+   story not settled yet. A wave can have no such
+   story before its turn, such as when each of its stories depends on a
+   story that stopped: skip it.
+
    Run the third case, `next`, of
    [Find the source of demand](../SKILL.md#find-the-source-of-demand),
-   with one narrowing: the candidates are the epic's stories that are in
-   this repository and not settled yet, and no other issue. Pass the
-   keys of the epic's stories in this repository as `--only`, and every
-   settled story as `--exclude`. Pass every met story as
-   `--met-blockers`. Pass every story not settled yet that has its
-   change's branch as `--started`, as *Start the epic run* found it.
-   `lets backlog ready` keeps those assigned to the signed-in user, and
-   ranks them with the others, such as:
+   with one narrowing: the candidates are the stories of the current
+   wave that are not settled yet, and no other issue. A story of a later
+   wave is not a candidate while the current wave holds a story not
+   settled yet, whatever its Priority. Pass the keys of the current
+   wave's stories as `--only`, and every settled story as `--exclude`.
+   Pass every met story as `--met-blockers`. Pass every story not
+   settled yet that has its change's branch as `--started`, as *Start
+   the epic run* found it. `lets backlog ready` keeps those assigned to
+   the signed-in user, and ranks them with the others. With the waves
+   `Wave 1: #279` and `Wave 2: #280, #281`, once #279 is settled, the
+   pick is:
 
    ```bash
-   lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279 --started 281
+   lets backlog ready --only 280,281 --exclude 279 --met-blockers 279 --started 281
    ```
 
    With no story settled, pass no `--exclude`. With no met story, pass
@@ -229,8 +287,8 @@ as for any picked issue.
      [Set the question mode](../SKILL.md#set-the-question-mode) in this
      session, then [Start the story run](#start-the-story-run), which
      runs the story's steps in a child session.
-   - **`nothing-ready`:** settle each story not settled yet, in the
-     epic's order, with its `not built` line, as
+   - **`nothing-ready`:** settle each story of the current wave not
+     settled yet, in the epic's order, with its `not built` line, as
      [Settle a story](#settle-a-story) says. Its reason is one of
      these:
      - For a candidate that `next` skipped, why it skipped it:
@@ -252,7 +310,9 @@ as for any picked issue.
        gh auth status --active --json hosts --jq '.hosts[][].login'
        ```
 
-     Then go to [End of the run](../SKILL.md#end-of-the-run).
+     When a later wave holds a story not settled yet, go back to *Pick
+     the next story*, which picks from that wave. Otherwise go to
+     [End of the run](../SKILL.md#end-of-the-run).
 
 ### Settle a story
 

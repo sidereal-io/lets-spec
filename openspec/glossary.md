@@ -134,3 +134,11 @@ step: it runs the steps of its story. An epic run starts each story run with
 `lets delegate step run --for story`, which uses the `step` delegate
 strategy and reads the step report the child ends with. The `story`
 intent names no step.
+
+## Wave
+
+A set of an epic's stories that an epic run may build at the same time.
+No chain of blocked-by links joins any two of them, and no two of their
+packets name an overlapping path under **Relevant code**. An epic run
+sorts its stories into waves when it starts, and builds the waves in
+order.

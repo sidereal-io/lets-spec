@@ -83,6 +83,13 @@ test('lets backlog --help lists complete and its results, and says it reads, cla
   assert.match(stdout, /^ {2}complete <i> +\{ result: completed \} \| \{ result: failed, message \}$/m);
 });
 
+test('lets backlog --help lists waves and its result', async () => {
+  const gh = withFakeGh();
+  const { stdout, code } = await lets(gh.dir, 'backlog', '--help');
+  assert.equal(code, 0);
+  assert.match(stdout, /^ {2}waves --only <keys>\n +\{ waves: \[\{ stories: \[\{ key, label, waitsFor, reason \}\] \}\] \}$/m);
+});
+
 test('lets backlog --help names the repository\'s lets config when it sets the backlog provider', async () => {
   const gh = withFakeGh();
   const repo = realpathSync(mkdtempSync(join(tmpdir(), 'lets-backlog-repo-')));

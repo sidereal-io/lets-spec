@@ -1714,23 +1714,35 @@ When an epic run starts and the epic has no open sub-issues, `lets-go` SHALL pri
 - **THEN** `lets-go` prints `#300 has no open stories. lets-go does not shape an empty epic yet: run the lets-shape skill on #300.`, claims nothing, creates no branch and runs no step
 
 ### Requirement: An epic run picks each story as next picks it
-An epic run SHALL pick its stories one at a time with the `next` case of *Find the source of demand*. The candidates SHALL be the epic's stories that are in this repository and not yet settled, and no other issue. `lets-go` SHALL pass the epic's stories in this repository to `lets backlog ready` as `--only`, every story already settled as `--exclude`, every met story as `--met-blockers`, as *An epic run counts a blocker as met when its story's pull request is ready* says, and every story not settled yet that has its change's branch as `--started`, as *An epic run resumes the stories this user started* says, such as `lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279 --started 281`. With no story settled it SHALL pass no `--exclude`, with no met story no `--met-blockers`, and with no such branch no `--started`. A story is settled once the epic run has given it its line. The rank, *Check the prerequisite* and *Confirm the packet* on each candidate SHALL be those of `next`. A sub-issue in another repository SHALL not be passed in `--only`: its number can name an issue of this repository.
+An epic run SHALL pick its stories one at a time with the `next` case of *Find the source of demand*. The current wave SHALL be the earliest wave, as *An epic run prints its waves before the first pick* found them, that holds a story not settled yet. The candidates SHALL be the current wave's stories that are not yet settled, and no other issue. `lets-go` SHALL pass the current wave's stories to `lets backlog ready` as `--only`, every story already settled as `--exclude`, every met story as `--met-blockers`, as *An epic run counts a blocker as met when its story's pull request is ready* says, and every story not settled yet that has its change's branch as `--started`, as *An epic run resumes the stories this user started* says, such as `lets backlog ready --only 280,281 --exclude 279 --met-blockers 279 --started 281`. With no story settled it SHALL pass no `--exclude`, with no met story no `--met-blockers`, and with no such branch no `--started`. A story is settled once the epic run has given it its line. The rank, *Check the prerequisite* and *Confirm the packet* on each candidate SHALL be those of `next`, so a story of a later wave SHALL not be picked while the current wave has a story not settled, whatever its Priority. A sub-issue in another repository SHALL not be passed in `--only`: its number can name an issue of this repository.
 
 When the case returns `picked`, `lets-go` SHALL print `Picked #<i>: <title>, the next ready story under #<parent>.`, or the `Resumed` line for a story passed in `--started`. It SHALL then go on from the blocker read in *Check the issue* with that story as `<i>`, as for an issue number: *Check the issue*, *Route*, *Enter the branch* and *Set the question mode*, in this session. It SHALL then run the story's run in a child session, as *An epic run runs each story in a child session* says. When the story's run has ended with its pull request ready for review, `lets-go` SHALL settle the story with its line, as *The epic run settles a story from its child's report* says, run `git switch <default>`, and pick again. It SHALL rank the stories again for every pick, because a story built in this run can change what is ready.
 
-When the case returns `nothing-ready`, every story not yet settled SHALL get its `not built` line, in the epic's order, and the epic run SHALL end as *An epic run ends with one line per story* says.
+When the case returns `nothing-ready`, every story of the current wave not yet settled SHALL get its `not built` line, in the epic's order. When a later wave holds a story not settled yet, `lets-go` SHALL pick again, from that wave. Otherwise the epic run SHALL end as *An epic run ends with one line per story* says.
 
 #### Scenario: The first pick
-- **WHEN** an epic run on #278 starts, #279 is the only story that `lets backlog ready --only 279,280,281,282,283,284,285,286,287` lists, and its prerequisite and packet pass
+- **WHEN** an epic run on #278 starts, nothing is settled, wave 1 holds only #279, `lets backlog ready --only 279` lists #279, and its prerequisite and packet pass
 - **THEN** `lets-go` prints `Picked #279: epic-run-skeleton — lets-go on an epic with open stories builds each ready story in turn, and ends with one line per story, the next ready story under #278.`, reads #279's blockers, and runs *Claim* for it
 
 #### Scenario: The next pick leaves out the settled stories
-- **WHEN** the epic run has built #279, and settles it with its line
-- **THEN** `lets-go` runs `git switch` to the default branch, then `lets backlog ready` with `--only` naming the epic's stories, `--exclude 279`, and `--met-blockers 279` when #279's pull request is open and ready for review
+- **WHEN** the waves are `Wave 1: #279` and `Wave 2: #280, #281`, and the epic run has built #279 and settles it with its line
+- **THEN** `lets-go` runs `git switch` to the default branch, then `lets backlog ready --only 280,281 --exclude 279`, with `--met-blockers 279` when #279's pull request is open and ready for review
 
 #### Scenario: A started story in the pick
-- **WHEN** an epic run on #278 starts, nothing is settled at the start, and only #282's change's branch `epic-run-resume` exists, on `origin`
-- **THEN** the first pick runs `lets backlog ready --only 279,280,281,282,283,284,285,286,287 --started 282`
+- **WHEN** an epic run on #278 starts, nothing is settled at the start, wave 1 holds #281 and #282, and only #282's change's branch `epic-run-resume` exists, on `origin`
+- **THEN** the first pick runs `lets backlog ready --only 281,282 --started 282`
+
+#### Scenario: A story of a later wave waits, whatever its Priority
+- **WHEN** wave 1 holds #283, whose Priority is Could, and wave 2 holds #287, whose Priority is Must
+- **THEN** the first pick runs `lets backlog ready --only 283`, and can pick only #283
+
+#### Scenario: A wave with nothing ready
+- **WHEN** the waves are `Wave 1: #283, #285` and `Wave 2: #286`, the epic run has built #285, #283 is blocked by #263, which is not a story of the epic, and `lets backlog ready --only 283,285 --exclude 285 --met-blockers 285` returns no issues
+- **THEN** `lets-go` settles #283 with `#283 <story-name>: not built, blocked by #263`, then runs `lets backlog ready --only 286 --exclude 283,285 --met-blockers 285`
+
+#### Scenario: The last wave with nothing ready
+- **WHEN** the current wave is the last, and its pick returns `nothing-ready`
+- **THEN** each story of that wave not settled yet gets its `not built` line, and the epic run goes to *End of the run*
 
 #### Scenario: A candidate whose packet is not complete
 - **WHEN** `lets backlog ready` lists #281 and #282, and *Confirm the packet* returns `needs-shape` for #281
@@ -1852,8 +1864,8 @@ In an epic run, an open blocker SHALL count as met only when all of these hold:
 It SHALL not matter whether this epic run or an earlier one built the blocker. The blocker's change's name is the part of its title before ` — `, or the whole title when it has none. Its pull request is the open one whose head branch has that name and whose `isCrossRepository` is false. A blocker whose pull request is a draft, a blocker whose only pull request with that head branch comes from a fork, a blocker with no open pull request, and a blocker that is not one of the epic's stories SHALL not count as met. Before each pick, `lets-go` SHALL read the open pull requests once, with `gh pr list --state open --limit 1000 --json number,url,isDraft,headRefName,isCrossRepository`, and SHALL find the met stories from that one read. A met story's branch and pull request are the ones that read found: *An epic run stacks a story on its met blocker* uses them.
 
 #### Scenario: A blocker built in this run
-- **WHEN** an epic run on #278 has built #279, whose pull request #290 from the branch `epic-run-skeleton` is open and ready for review, and #280's only open blocker is #279
-- **THEN** the next pick runs `lets backlog ready --only 279,280,281,282,283,284,285,286,287 --exclude 279 --met-blockers 279`, and can pick #280
+- **WHEN** an epic run on #278 whose waves are `Wave 1: #279` and `Wave 2: #280, #281` has built #279, whose pull request #290 from the branch `epic-run-skeleton` is open and ready for review, and #280's only open blocker is #279
+- **THEN** the next pick runs `lets backlog ready --only 280,281 --exclude 279 --met-blockers 279`, and can pick #280
 
 #### Scenario: A blocker built in an earlier run
 - **WHEN** an epic run on #278 starts, #279 is open and assigned, and its pull request from `epic-run-skeleton` is open and ready for review
@@ -2184,3 +2196,32 @@ When the child exits 3 after the epic run relayed its questions, the epic run SH
 #### Scenario: Exit 3 after a relay keeps the answers
 - **WHEN** the epic run relays the plan step's question `Which schema?`, writes its answer to `.workspace/lets-go/<name>-story-answers.yaml`, and the child's next run exits 3
 - **THEN** the epic run appends that pair to `.workspace/lets-go/<name>-plan-answers.yaml`, and runs the plan step in its own walk with `--answers-file .workspace/lets-go/<name>-plan-answers.yaml`
+
+### Requirement: An epic run prints its waves before the first pick
+When *Start the epic run* has settled the stories that an earlier epic run finished, and before the first pick, `lets-go` SHALL run `lets backlog waves --only <keys>`, naming every story of the epic in this repository that is not settled yet, in the epic's order. It SHALL then print `Waves for #<parent>:`, and for each wave, in order, the line `Wave <wave>: <wave-stories>`, where `<wave>` is the wave's number, counted from 1, and `<wave-stories>` is the `label` of each of the wave's stories, in the order the command gives, joined by `, `. After each wave's line but the first, it SHALL print one line for each story of that wave: `#<story> waits for #<other>: <reason>.`, where `#<other>` is the story's `waitsFor` label and `<reason>` is its `reason`, as the command prints them. It SHALL print the waves once in an epic run, even when there is only one wave. When every story is settled at the start, `lets-go` SHALL run no `waves` command and print no waves. On an error, it SHALL act as *A backlog error stops the run* says.
+
+The waves SHALL hold for the whole epic run. Running `lets-go` on the epic again SHALL compute them again, from the stories not settled at that run's start. The wave lines SHALL not be story lines: *End of the run* SHALL not print them again.
+
+#### Scenario: The waves of an epic
+- **WHEN** an epic run on #278 starts, #283, #285, #286 and #287 are the stories not settled, and `lets backlog waves --only 283,285,286,287` puts #283 and #285 in wave 1, and #286, waiting for #285 with `blocked by #285`, and #287, waiting for #283 with `both name skills/lets-go/references/shape.md`, in wave 2
+- **THEN** before the first `Picked` line, `lets-go` prints `Waves for #278:`, `Wave 1: #283, #285`, `Wave 2: #286, #287`, `#286 waits for #285: blocked by #285.` and `#287 waits for #283: both name skills/lets-go/references/shape.md.`, in that order
+
+#### Scenario: One wave
+- **WHEN** an epic run on #300 starts, and `lets backlog waves --only 301,302` puts #301 and #302 in one wave
+- **THEN** `lets-go` prints `Waves for #300:` and `Wave 1: #301, #302`, and no `waits for` line
+
+#### Scenario: A story settled at the start is not in the waves
+- **WHEN** an epic run on #278 starts, and #279's pull request is open and ready for review, so *Start the epic run* settles #279
+- **THEN** `lets-go` prints #279's line before the waves, and the `waves` command's `--only` does not name #279
+
+#### Scenario: Every story settled at the start
+- **WHEN** an epic run on #278 starts, and *Start the epic run* settles every story
+- **THEN** `lets-go` runs no `lets backlog waves` command, prints no `Waves for` line, and goes to *End of the run*
+
+#### Scenario: The waves command fails
+- **WHEN** `lets backlog waves` returns `"error": "backend-failed"`
+- **THEN** `lets-go` stops as *Backlog errors* says, and picks no story
+
+#### Scenario: The skill holds the waves step once
+- **WHEN** the skill-interfaces test reads `skills/lets-go/references/epic-run.md`
+- **THEN** it finds `lets backlog waves --only`, `Waves for #<parent>:` and `#<story> waits for #<other>: <reason>.` once each across the files of `lets-go`, under *Run the epic*, and the `waves` command comes after the stories an earlier run finished are settled and before *Pick the next story*

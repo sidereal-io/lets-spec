@@ -1269,6 +1269,18 @@ step_numbers() {
   step_numbers lets-go
 }
 
+@test "wave: the README says an epic run builds its stories wave by wave" {
+  local overview phrase
+  phrase='first sorts its stories into waves and prints them, with why each story waits, then builds one story at a time, wave by wave'
+  grep -qF -- "$phrase" <<<"$(readme_lets_go)" || { echo "the README's lets-go section does not say: $phrase"; false; }
+  overview="$(awk '/^## / { exit } NR > 1' "$(epic_run_file)" | tr -s '[:space:]' ' ')"
+  grep -qF -- "$phrase" <<<"$overview" || { echo "the overview of references/epic-run.md does not say: $phrase"; false; }
+  grep -qF -- 'A wave holds stories that no chain of blocked-by links joins' <<<"$(readme_lets_go)" ||
+    { echo "the README does not say that no chain of blocked-by links joins a wave's stories"; false; }
+  grep -F '| `lets/src/backlog/` |' "$repo/README.md" | grep -qF '`waves.ts`' ||
+    { echo "the README's layout table does not name waves.ts"; false; }
+}
+
 @test "the step number check skips a step number inside a code span" {
   fixture_file lets-go SKILL.md '# lets-go' '' 'Old skills said `step 3` here.'
   step_numbers lets-go
@@ -2365,13 +2377,98 @@ epic_run_file() {
   part="$(part_section 'Run the epic')"
   for phrase in \
     'Run the third case, `next`, of [Find the source of demand](../SKILL.md#find-the-source-of-demand)' \
-    "Pass the keys of the epic's stories in this repository as \`--only\`, and every settled story as \`--exclude\`" \
-    'lets backlog ready --only 279,280,281 --exclude 279' \
+    "Pass the keys of the current wave's stories as \`--only\`, and every settled story as \`--exclude\`" \
+    'lets backlog ready --only 280,281 --exclude 279' \
     'Rank the stories again for every pick'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
   grep -qxF 'Picked #<i>: <title>, the next ready story under #<parent>.' <<<"$(text_block_lines 'Run the epic' "$(epic_run_file)")" ||
     { echo "Run the epic has no text block with its Picked line"; false; }
+}
+
+@test "wave: an epic run sorts the stories not settled into waves before the first pick" {
+  local part start settle waves pick guard phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    'lets backlog waves --only <keys> > .workspace/lets-go/epic-<parent>-waves.json' \
+    "the keys of the epic's stories in this repository that are not settled yet, in the epic's order" \
+    'sets of stories that no chain of blocked-by links joins' \
+    'When every story is settled here, run no `waves` command and print no waves: go to [End of the run](../SKILL.md#end-of-the-run)' \
+    'On exit 1, act as [Backlog errors](../SKILL.md#backlog-errors) says'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+  settle="${part%%and settle the stories it finished*}"
+  waves="${part%%lets backlog waves --only*}"
+  pick="${part%%'**Pick the next story.**'*}"
+  [ "${#settle}" -lt "${#waves}" ] && [ "${#waves}" -lt "${#pick}" ] ||
+    { echo "the waves command is not between settling the finished stories and Pick the next story"; false; }
+  guard="${part%%When every story is settled here*}"
+  [ "${#guard}" -lt "${#waves}" ] ||
+    { echo "the guard for every story settled comes after the waves command"; false; }
+}
+
+@test "wave: an epic run prints its waves in text blocks" {
+  local lines line
+  lines="$(text_block_lines 'Run the epic' "$(epic_run_file)")"
+  for line in 'Waves for #<parent>:' 'Wave <wave>: <wave-stories>' '#<story> waits for #<other>: <reason>.'; do
+    grep -qxF -- "$line" <<<"$lines" || { echo "Run the epic has no text block with: $line"; false; }
+  done
+}
+
+@test "wave: lets-go holds each line of the waves step once" {
+  local line
+  for line in 'lets backlog waves --only' 'Waves for #<parent>:' '#<story> waits for #<other>: <reason>.'; do
+    skill_says_once lets-go "$line"
+  done
+}
+
+@test "wave: an epic run prints the waves once, even for one wave" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    "After each wave's line but the first, print one line for each story of that wave" \
+    "\`<wave-stories>\` is the \`label\` of each of the wave's stories, in the order the command gives, joined by \`, \`" \
+    'Print the waves once in an epic run, even when there is only one wave'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "wave: an epic run picks only from the current wave" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    'Before each pick, read `.workspace/lets-go/epic-<parent>-waves.json`' \
+    'The current wave is the first of its `waves` that holds a story not settled yet' \
+    'the candidates are the stories of the current wave that are not settled yet, and no other issue' \
+    'A story of a later wave is not a candidate while the current wave holds a story not settled yet, whatever its Priority'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+  skill_does_not_say lets-go "Pass the keys of the epic's stories in this repository as \`--only\`"
+  skill_does_not_say lets-go 'lets backlog ready --only 279,280,281'
+}
+
+@test "wave: an epic run settles only the current wave when nothing is ready" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    "**\`nothing-ready\`:** settle each story of the current wave not settled yet, in the epic's order, with its \`not built\` line" \
+    'When a later wave holds a story not settled yet, go back to *Pick the next story*' \
+    'Otherwise go to [End of the run](../SKILL.md#end-of-the-run)'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+  skill_does_not_say lets-go "**\`nothing-ready\`:** settle each story not settled yet"
+}
+
+@test "wave: the placeholders give the waves their own rows" {
+  local rows placeholder
+  rows="$(placeholder_rows)"
+  for placeholder in '<keys>' '<wave>' '<wave-stories>' '<other>'; do
+    grep -qxF -- "$placeholder" <<<"$rows" || { echo "the Placeholders table has no row for $placeholder"; false; }
+  done
+  grep -F '| `<reason>` |' "$(lets_go_skill)" | grep -qF "in a wave's line" ||
+    { echo "the <reason> row does not name a wave's line"; false; }
+  grep -qF '`#<other>`' <<<"$(skill_section lets-go Placeholders)" ||
+    { echo "Placeholders does not show #<other> by its label"; false; }
 }
 
 @test "an epic run settles a sub-issue in another repository without passing it" {
@@ -2407,11 +2504,10 @@ epic_run_file() {
   local part phrase
   part="$(part_section 'Run the epic')"
   for phrase in \
-    "**\`nothing-ready\`:** settle each story not settled yet, in the epic's order, with its \`not built\` line" \
+    "**\`nothing-ready\`:** settle each story of the current wave not settled yet, in the epic's order, with its \`not built\` line" \
     'read why with `lets backlog item <story>`' \
     '`blocked by #<blocker>`' '`assigned to <login>`' \
-    '`its packet is not complete`' '`its glossary prerequisite is unresolved`' \
-    'Then go to [End of the run](../SKILL.md#end-of-the-run)'; do
+    '`its packet is not complete`' '`its glossary prerequisite is unresolved`'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
 }
@@ -3996,7 +4092,7 @@ EXPECTED
     'run this once, before each pick' \
     "is met when an entry's \`headRefName\` is the story's change name" \
     "and that entry's \`isDraft\` and \`isCrossRepository\` are both \`false\`" \
-    'lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279' \
+    'lets backlog ready --only 280,281 --exclude 279 --met-blockers 279' \
     'With no met story, pass no `--met-blockers`'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
@@ -4276,7 +4372,7 @@ step_prompt_file() {
   local part phrase
   part="$(part_section 'Run the epic')"
   for phrase in "every story not settled yet that has its change's branch as \`--started\`" \
-    'lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279 --started 281' \
+    'lets backlog ready --only 280,281 --exclude 279 --met-blockers 279 --started 281' \
     'With no such story, pass no `--started`'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
