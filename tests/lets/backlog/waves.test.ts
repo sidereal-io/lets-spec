@@ -29,6 +29,10 @@ test('relevantPaths drops a leading ./ from a path', () => {
   assert.deepEqual(relevantPaths(packet('- **Relevant code**: `./README.md`')), ['README.md']);
 });
 
+test('relevantPaths keeps the repository\'s root', () => {
+  assert.deepEqual(relevantPaths(packet('- **Relevant code**: `./`, `/`')), ['./', '/']);
+});
+
 test('relevantPaths ignores a code span that holds whitespace', () => {
   assert.deepEqual(relevantPaths(packet('- **Relevant code**: `lets backlog/ready`, `a.ts`')), ['a.ts']);
 });
@@ -73,6 +77,12 @@ test('a folder that holds the other item\'s path overlaps it', () => {
 
 test('an item\'s folder that holds the other item\'s path overlaps it', () => {
   assert.equal(overlap(named('#5', 'lets/src/backlog/'), named('#6', 'lets/src/backlog/commands.ts')), 'lets/src/backlog/ holds lets/src/backlog/commands.ts');
+});
+
+test('the repository\'s root holds every path', () => {
+  assert.equal(overlap(named('#2', 'lets/src/main.ts'), named('#1', './')), './ holds lets/src/main.ts');
+  assert.equal(overlap(named('#2', '/'), named('#1', 'README.md')), '/ holds README.md');
+  assert.equal(overlap(named('#2', './'), named('#1', '/')), 'both name ./');
 });
 
 test('a folder name that only starts another name does not overlap it', () => {
