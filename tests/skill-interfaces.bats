@@ -4218,7 +4218,7 @@ step_prompt_file() {
 @test "stack: Settle a story gives a built stacked story its stacked line" {
   grep -qxF '#<story> <story-name>: <pr-url>, stacked on #<blocker>' <<<"$(text_block_lines 'Settle a story' "$(epic_run_file)")" ||
     { echo "Settle a story has no text block with a stacked story's line"; false; }
-  grep -qF 'while the story is stacked, with its stacked line' <<<"$(part_section 'Run the epic')" ||
+  grep -qF 'while the story is stacked, its stacked line' <<<"$(part_section 'Run the epic')" ||
     { echo "Run the epic does not settle a stacked story with its stacked line"; false; }
 }
 
@@ -4274,7 +4274,7 @@ step_prompt_file() {
 @test "resume: an epic run settles a story whose pull request is ready at the start" {
   local part phrase
   part="$(part_section 'Run the epic')"
-  for phrase in '**Open, and its `isDraft` is `false`:**' 'settle the story with its built line' 'runs none of its steps'; do
+  for phrase in '**Open, and its `isDraft` is `false`:**' 'settle it with its built line' 'runs none of its steps'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
 }
@@ -5000,4 +5000,13 @@ readme_step_returns() {
     { echo "Wait for the wave does not give a walk's subagent the story's worktree"; false; }
   grep -qF -- 'In an epic run'"'"'s walk, this repository is the story'"'"'s worktree, `<path>`' <<<"$(skill_section lets-go 'Run a step in a subagent')" ||
     { echo "Run a step in a subagent does not name the story's worktree"; false; }
+}
+
+@test "parallel: a child's stopped or failed story keeps its worktree's ending, and only a built or stacked story loses its worktree" {
+  local part
+  part="$(part_section 'Run the epic')"
+  grep -qF -- 'Settle the story with it, as [Settle a story](#settle-a-story) says, and end its line with `; its worktree is at <path>`, as the second action of [A stop in an epic run](#a-stop-in-an-epic-run) says' <<<"$part" ||
+    { echo "Run the epic does not end a stopped child's line with its worktree"; false; }
+  awk '/Every line but a built or stacked line is a stop/ { stop = NR } /git worktree remove <path>/ { remove = NR } END { exit !(stop && remove > stop) }' "$(epic_run_file)" ||
+    { echo "Run the epic removes the worktree before it knows the story's line"; false; }
 }

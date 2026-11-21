@@ -156,31 +156,16 @@ as for any picked issue.
    [Walk the step table](../SKILL.md#walk-the-step-table) after this
    session walked the story's steps. `<path>` is the story's worktree.
 
-   Before you settle a story with its built or stacked line, remove its
-   worktree, and keep its branch: the pull request needs it. Remove only
-   a worktree under `.workspace/lets-go/worktrees/`, which the epic run
-   created. A worktree it reused from elsewhere stays as it is. Without
-   `--force`, Git refuses a worktree that holds files that are not
-   committed, so nothing is lost:
-
-   ```bash
-   git worktree remove <path>
-   ```
-
-   When it fails, keep the worktree, and end the story's line with
-   `; its worktree at <path> could not be removed: ` followed by Git's
-   error.
-
    After a walk in this session, the story's pull request is ready for
-   review. Read its URL as `<pr-url>`, and settle the story with its
-   built line, or, while the story is stacked, with its stacked line,
-   as [Settle a story](#settle-a-story) says:
+   review. Read its URL as `<pr-url>`. The story's line is its built
+   line, or, while the story is stacked, its stacked line, as
+   [Settle a story](#settle-a-story) says:
 
    ```bash
    gh pr view <name> --json url --jq .url
    ```
 
-   After a child session, settle the story from the exit code that
+   After a child session, find the story's line from the exit code that
    `lets delegate step wait` gave for its child, and the report in
    `.workspace/lets-go/<name>-story-report.json`:
 
@@ -192,8 +177,8 @@ as for any picked issue.
      ```
 
      When its `state` is `OPEN` and its `isDraft` is `false`, its `url`
-     is `<pr-url>`. Settle the story with its built line, or, while the
-     story is stacked, with its stacked line. Otherwise the line is
+     is `<pr-url>`. The line is its built line, or, while the story is
+     stacked, its stacked line. Otherwise the line is
      `stopped: the story run reported done, but ` and what the record
      holds, such as `the pull request is a draft`,
      `the pull request is merged` or `the branch has no pull request`.
@@ -212,13 +197,30 @@ as for any picked issue.
    here when that walk ends.
 
    Every line but a built or stacked line is a stop in a story run.
-   Settle the story with it, as [Settle a story](#settle-a-story) says.
-   Then go on from the third action of
+   Settle the story with it, as [Settle a story](#settle-a-story) says,
+   and end its line with `; its worktree is at <path>`, as the second
+   action of [A stop in an epic run](#a-stop-in-an-epic-run) says. Keep
+   the worktree. Then go on from the third action of
    [A stop in an epic run](#a-stop-in-an-epic-run): the dependents, and
    the way back to [Wait for the wave](#wait-for-the-wave). Start no
    child session again for the story in this run.
 
-   After a built or stacked line, go back to
+   Only for a built or stacked line, remove the story's
+   worktree, and keep its branch: the pull request needs it. Remove only
+   a worktree under `.workspace/lets-go/worktrees/`, which the epic run
+   created. A worktree it reused from elsewhere stays as it is. Without
+   `--force`, Git refuses a worktree that holds files that are not
+   committed, so nothing is lost:
+
+   ```bash
+   git worktree remove <path>
+   ```
+
+   When it fails, keep the worktree, and end the story's line with
+   `; its worktree at <path> could not be removed: ` followed by Git's
+   error.
+
+   Then settle the story with its line, and go back to
    [Wait for the wave](#wait-for-the-wave).
 
    After a lost claim, the run comes back from
