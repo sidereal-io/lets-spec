@@ -3942,6 +3942,16 @@ map_epic_run() {
   [ "$status" -eq 1 ] || { echo "shape.md passes the folder to git: $output"; false; }
   grep -qF 'In an epic run, use its [epic-run form](references/shape.md#commit-the-map-in-an-epic-run)' <<<"$(part_section 'Enter the branch')" ||
     { echo "Enter the branch does not run the epic-run form"; false; }
+  # An epic run that claims no story leaves the edits on the default branch, and says so.
+  section="$(skill_section lets-go "Report the maps' edits")"
+  for phrase in 'when a shape step ran in this run, and this epic run claimed no story' \
+    'Run the status command of [Commit the map in an epic run](shape.md#commit-the-map-in-an-epic-run) in the epic run'"'"'s own checkout.' \
+    'name each one, and say that they hold the discovery'"'"'s edits, uncommitted on the default branch' \
+    'Say to commit or discard them before the next run'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Report the maps' edits does not say: $phrase"; false; }
+  done
+  [ "$(grep -cF "](#report-the-maps-edits)" "$(epic_run_file)")" -ge 2 ] ||
+    { echo "Run the epic does not report the maps' edits on each way to End of the run"; false; }
 }
 
 @test "discovery maps: an epic run carries every map into the story's worktree and leaves its checkout clean" {

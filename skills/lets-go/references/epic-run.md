@@ -104,9 +104,10 @@ as for any picked issue.
    that no chain of blocked-by links joins, and whose packets name no
    overlapping path under **Relevant code**. When every story is
    settled here, run no `waves` command and print no waves: go to
-   [End of the run](../SKILL.md#end-of-the-run). Otherwise, `<keys>`
-   are the keys of the epic's stories in this repository that are not
-   settled yet, in the epic's order, joined by commas, such as
+   [End of the run](../SKILL.md#end-of-the-run), once you have
+   [reported the maps' edits](#report-the-maps-edits). Otherwise,
+   `<keys>` are the keys of the epic's stories in this repository that
+   are not settled yet, in the epic's order, joined by commas, such as
    `283,285,286,287`:
 
    ```bash
@@ -496,7 +497,28 @@ for a story whose child could not start, which this session walks.
 3. Once no child runs and the file lists no `walk` story, the current
    wave is settled. When a later wave holds a story not settled yet,
    go back to *Pick the next story*, which picks from that wave.
-   Otherwise go to [End of the run](../SKILL.md#end-of-the-run).
+   Otherwise go to [End of the run](../SKILL.md#end-of-the-run), once
+   you have [reported the maps' edits](#report-the-maps-edits).
+
+### Report the maps' edits
+
+Discovery's edits to the maps reach a pull request only through the
+first story the epic run claims, as
+[Commit the map in an epic run](shape.md#commit-the-map-in-an-epic-run)
+says. Run this before [End of the run](../SKILL.md#end-of-the-run),
+when a shape step ran in this run, and this epic run claimed no story.
+Otherwise skip it.
+
+Run the status command of
+[Commit the map in an epic run](shape.md#commit-the-map-in-an-epic-run)
+in the epic run's own checkout. When it lists a path, name each one,
+and say that they hold the discovery's edits, uncommitted on the
+default branch. Say to commit or discard them before the next run,
+because the next run stops on them. This is what
+[Pick the first ready story](shape.md#pick-the-first-ready-story) says
+for a run that stops after discovery and before
+[Claim](../SKILL.md#claim): the discovery has finished, so no later run
+resumes it.
 
 ## Start the story run
 
