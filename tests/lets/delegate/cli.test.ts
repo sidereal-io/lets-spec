@@ -125,6 +125,11 @@ test('delegate --help gives the lets config path and a version 3 example', async
   assert.doesNotMatch(text, /lets-delegate\/|version: 2|delegations/);
 });
 
+test('delegate --help names story among the step intents', async () => {
+  const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /one of the five steps, or story for a story run, for a step/);
+});
+
 test('delegate --help lists the resolvers by name, not by path', async () => {
   const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
   assert.match(text, /- t3 - subagent/);
