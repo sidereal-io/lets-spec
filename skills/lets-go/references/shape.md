@@ -114,10 +114,11 @@ which can be the idea or the issue that the epic's `Input:` line names:
 
 [Read the report](../SKILL.md#read-the-report) then, once the step
 reports `done` or `failed`, removes that input's answers file, the one
-the step used, and, for an epic whose `Input:` line names another
-input, that input's too. A `done` report
-names the epic and its stories, so the run goes back to
-[Check the issue](../SKILL.md#check-the-issue) with the epic.
+the step used; for an epic whose `Input:` line names another input,
+that input's too; and, on `done` for an epic, the epic's own, under
+`issue-<parent>`. A `done` report names the epic and its stories, so
+the run goes back to [Check the issue](../SKILL.md#check-the-issue) with
+the epic.
 
 1. Check the discovery maps:
 

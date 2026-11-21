@@ -1364,6 +1364,13 @@ would find them when the run goes back to
 [Check the issue](#check-the-issue), and stop the run. On
 `needs-input`, remove neither file: the next round needs them.
 
+On `done` with an `epic #<parent>` line, also remove
+`.workspace/lets-go/issue-<parent>-shape-answers.yaml`, whatever input
+the step ran for. The discovery of `#<parent>` has finished, but a
+stopped round of `lets-go #<parent>` may have left answers there, and
+the lookup back in [Check the issue](#check-the-issue) would find them
+and stop the run.
+
 - **`done`**: after shape, go on as
   [Run the shape step](#run-the-shape-step) says. After any other step,
   check the report against the records first. The step may have changed
