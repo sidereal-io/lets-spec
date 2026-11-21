@@ -131,7 +131,8 @@ function endOf(run: RunRecord, io: Io): { exit: number; endedAt: number } | null
   const late = readExit(run.exitFile, io);
   if (late !== null) return late;
   const end = { exit: EXIT.spawn, endedAt: io.now() };
-  io.writeFile(run.metaFile, `${io.readFile(run.metaFile) ?? ''}${KILLED}`);
+  const meta = io.readFile(run.metaFile) ?? '';
+  io.writeFile(run.metaFile, `${meta}${meta === '' || meta.endsWith('\n') ? '' : '\n'}${KILLED}`);
   io.writeFile(run.exitFile, `${JSON.stringify(end)}\n`);
   return end;
 }

@@ -297,3 +297,11 @@ test('report or meta files that cannot be opened are exit 4, naming the step', a
   assert.match(t.stderr(), /fix-x could not start: EISDIR/);
   assert.equal(runRecord(t, 'fix-x'), null);
 });
+
+test('the killed line goes on a line of its own after a meta file that ends mid-line', async () => {
+  const t = await started('a-story');
+  t.io.files.set('/repo/m.txt', 'lets delegate: half a li');
+  t.io.alive.delete(pidOf(t, 'a-story'));
+  await wait({ names: ['a-story'] }, t.deps);
+  assert.equal(t.io.files.get('/repo/m.txt'), `lets delegate: half a li\n${KILLED}`);
+});
