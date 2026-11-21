@@ -13,7 +13,7 @@ Before the first task, record `wc -l skills/lets-go/SKILL.md skills/lets-go/refe
 
 ## 2. Checks and evidence [depends-on: 1]
 
-- [ ] 2.1 [easy] Every check passes, and the pull request description records `wc -l` for `skills/lets-go/SKILL.md` and `skills/lets-go/references/shape.md` before and after. It also records an author's walkthrough of four reruns against the new text: a discovery in progress, a stop during Finalize, a finished epic with the same `Input:` line, and no discovery. Name the walkthrough as the plain-language check that ran, and note the risk from design.md about a finished epic with an abandoned later round (verify: pnpm test && nix flake check && mise run check)
+- [x] 2.1 [easy] Every check passes, and the pull request description records `wc -l` for `skills/lets-go/SKILL.md` and `skills/lets-go/references/shape.md` before and after. It also records an author's walkthrough of four reruns against the new text: a discovery in progress, a stop during Finalize, a finished epic with the same `Input:` line, and no discovery. Name the walkthrough as the plain-language check that ran, and note the risk from design.md about a finished epic with an abandoned later round (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test && nix flake check && mise run check passed; pull request #301 records the `wc -l` counts, the walkthrough and the risk)
 
 ## Deviations Ledger
 
