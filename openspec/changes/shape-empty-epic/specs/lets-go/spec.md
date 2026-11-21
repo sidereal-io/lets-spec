@@ -58,7 +58,7 @@ When *Confirm the packet* returns `epic` for an epic with open sub-issues, on th
 - **THEN** `lets-go` runs no shape step and starts the epic run on #301 to #303
 
 ### Requirement: An epic run commits the discovery map on the first story it claims
-When a shape step ran in this run, and the epic run's *Claim* creates a story's branch and worktree, `lets-go` SHALL run `git status --porcelain -uall -- openspec/discovery.md openspec/discovery` in the epic run's own checkout. When it lists a path, `lets-go` SHALL carry each listed map into the story's worktree as it stands in the epic run's checkout, and commit them there, alone, as `docs: the discovery map from #<parent>`, before the story's child session starts. It SHALL then return each listed map in the epic run's checkout to its committed state, removing a map that was new, so that the checkout stays clean on the default branch. A later story's claim then finds no changed map and makes no commit. When the epic run claims no story, or a story it claims stops before its map commit, the maps' edits SHALL stay in the epic run's checkout. Before *End of the run*, whenever a shape step ran in this run, `lets-go` SHALL run the status command again in the epic run's checkout, and when it lists a path, SHALL say so as *lets-go commits the discovery map on the story's branch* says for a run that stops before *Claim*. When the shape step leaves the epic with no stories, or a shape step already ran when *Check the issue* finds a stopped discovery, `lets-go` SHALL name the maps' edits the same way before it stops.
+When a shape step ran in this run, and the epic run's *Claim* creates a story's branch and worktree, `lets-go` SHALL run `git status --porcelain -uall -- openspec/discovery.md openspec/discovery` in the epic run's own checkout. When it lists a path, `lets-go` SHALL carry each listed map into the story's worktree as it stands in the epic run's checkout, and commit them there, alone, as `docs: the discovery map from #<parent>`, before the story's child session starts. It SHALL then return each listed map in the epic run's checkout to its committed state, removing a map that was new, so that the checkout stays clean on the default branch. `lets-go` SHALL run this only for the first story the epic run claims, so a later story's claim makes no map commit, even when the first one failed. When the epic run claims no story, or a story it claims stops before its map commit, the maps' edits SHALL stay in the epic run's checkout. Before *End of the run*, whenever a shape step ran in this run, `lets-go` SHALL run the status command again in the epic run's checkout, and when it lists a path, SHALL say so as *lets-go commits the discovery map on the story's branch* says for a run that stops before *Claim*. When the shape step leaves the epic with no stories, or a shape step already ran when *Check the issue* finds a stopped discovery, `lets-go` SHALL name the maps' edits the same way before it stops.
 
 #### Scenario: The first claimed story carries the map
 - **WHEN** the shape step for #300 changed `openspec/discovery.md`, and the epic run claims #301 first, with the worktree `.workspace/lets-go/worktrees/plugin-contract`
@@ -349,6 +349,42 @@ Discovery edits the discovery maps in the working tree on the default branch: `o
 #### Scenario: A dirty product map before the shape step
 - **WHEN** `git status --porcelain` lists ` M openspec/discovery/warehouse.md` before the shape step runs, and this input has no discovery
 - **THEN** `lets-go` names `openspec/discovery/warehouse.md`, says to commit or discard it, and runs no step
+
+### Requirement: Each lets-go procedure returns a result
+Each procedure of `lets-go` SHALL end by returning to the part that ran it, with a result. A procedure is a section under `## Procedures` in `SKILL.md`, or one of *Glossary preflight*, *Import the glossary checkpoint*, *Commit the discovery map* and *Find the input's discovery* in a reference file. *Glossary preflight*, which only *Claim* runs, SHALL return to *Claim*. A procedure SHALL not tell the agent to stop, and SHALL not name the part that runs next: the part that ran it decides. Outside code, a procedure's text, its subsections included, SHALL not hold the word `stop` or `stops`, in any case. A procedure that can end more than one way SHALL list its results. Each result is a name in backticks, with when it is returned and what it carries, such as the issue, who has it, or what to tell the user. The results SHALL be these:
+
+| Procedure | Results |
+|---|---|
+| *Find the source of demand* | `found`, `unresolved`, `matches`, `no-match`, `picked`, `nothing-ready` |
+| *Confirm the packet* | `complete`, `needs-shape`, `epic` |
+| *Check the prerequisite* | `resolved`, `unresolved` |
+| *Check the checkpoint* | `verified`, `checkpoint-failed`, `unresolved` |
+| *Glossary preflight* | `no-owned-edits`, `verified`, `unresolved`, `checkpoint-failed` |
+| *Claim* | `claimed`, `taken`, `claim-failed`, `unresolved`, `checkpoint-failed`, `branch-failed` |
+| *Import the glossary checkpoint* | `imported`, `import-failed` |
+| *Commit the map in an epic run* | `committed`, `commit-failed`, `restore-failed` |
+
+*Glossary preflight* returns `no-owned-edits` when the story owns no glossary edits, and otherwise passes on what *Check the checkpoint* returns. `verified` carries the checkpoint commits to import. *Claim*'s `claimed` carries what *Glossary preflight* returned, so *Enter the branch* runs *Import the glossary checkpoint* only after `verified`. *Commit the discovery map* ends one way only, so it names no result. Its epic-run form, *Commit the map in an epic run*, can fail after its commit, so it names its results: `committed` when the story's branch holds the maps' edits or no map changed, `commit-failed` with Git's error when the edits are still only in the epic run's checkout, and `restore-failed` with Git's error when the story's commit holds the edits but the checkout could not be restored. *Find the input's discovery* ends one way too: it returns each discovery it found, or none, and names no result.
+
+#### Scenario: Every procedure returns
+- **WHEN** the skill-interfaces test reads each procedure of `lets-go`, in `SKILL.md` and in its reference files
+- **THEN** each one says it returns to the part that ran it, or, for *Glossary preflight*, to *Claim*, has no `Next:` line, and holds no `stop` or `stops` outside code
+
+#### Scenario: A procedure that stops
+- **WHEN** a skills folder holds `lets-go/SKILL.md` whose *Confirm the packet* says ``Say to run the `lets-shape` skill on `#<i>`, and stop.``
+- **THEN** the check fails, and its output names `Confirm the packet`
+
+#### Scenario: Claim lists its results
+- **WHEN** the skill-interfaces test reads *Claim*
+- **THEN** it finds `claimed`, `taken`, `claim-failed`, `unresolved`, `checkpoint-failed` and `branch-failed`
+
+#### Scenario: Confirm the packet lists its results
+- **WHEN** the skill-interfaces test reads *Confirm the packet*
+- **THEN** it finds `complete`, `needs-shape` and `epic`
+
+#### Scenario: The epic-run map commit lists its results
+- **WHEN** the skill-interfaces test reads *Commit the map in an epic run* and *Enter the branch*
+- **THEN** it finds `committed`, `commit-failed` and `restore-failed` in each, with an action for each one in *Enter the branch*
 
 ## REMOVED Requirements
 

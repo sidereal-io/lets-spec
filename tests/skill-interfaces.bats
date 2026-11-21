@@ -3955,14 +3955,23 @@ map_epic_run() {
     [ "$at" -gt "$last" ] || { echo "the section does not hold, after the command before it: $command"; false; }
     last="$at"
   done
-  for phrase in 'in the epic run'"'"'s own checkout' 'Only once the commit succeeds' \
-    'A story claimed later in this epic run finds no changed map, and makes no commit.'; do
+  for phrase in 'in the epic run'"'"'s own checkout' 'Only once the commit succeeds'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "the section does not say: $phrase"; false; }
   done
   run grep -nE 'git (-C <path> )?(add|commit|rm|restore)( .*)? (-- )?openspec/discovery( |$|`)' "$repo/skills/lets-go/references/shape.md"
   [ "$status" -eq 1 ] || { echo "shape.md passes the folder to git: $output"; false; }
   grep -qF 'In an epic run, use its [epic-run form](references/shape.md#commit-the-map-in-an-epic-run)' <<<"$(part_section 'Enter the branch')" ||
     { echo "Enter the branch does not run the epic-run form"; false; }
+  for phrase in 'Return `committed`' 'return `commit-failed`, with Git'"'"'s error' 'return `restore-failed`, with Git'"'"'s error' \
+    'Run this for the first story the epic run claims, and for no later one.'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Commit the map in an epic run does not say: $phrase"; false; }
+  done
+  for phrase in '**`committed`:** go on.' '**`commit-failed`:**' '**`restore-failed`:**' \
+    'for the first story this epic run claims, and for no later one'; do
+    grep -qF -- "$phrase" <<<"$(part_section 'Enter the branch')" || { echo "Enter the branch does not say: $phrase"; false; }
+  done
+  grep -F '| [Enter the branch](#enter-the-branch) |' "$(lets_go_skill)" | grep -qF 'the epic-run map commit returns `commit-failed` or `restore-failed`' ||
+    { echo "the part table's Stops cell for Enter the branch does not name the map commit's results"; false; }
   # An epic run that claims no story leaves the edits on the default branch, and says so.
   section="$(skill_section lets-go "Report the maps' edits")"
   ! grep -qF 'and this epic run claimed no story' <<<"$section" ||

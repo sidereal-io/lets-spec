@@ -84,7 +84,7 @@ procedure ranks it.
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, waits for the children of a wave, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | `lets delegate step wait` fails, so the epic run cannot wait for its children |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema. In an epic run, it checks the branch out in the story's own worktree instead | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run, or when a stop ends a story's run | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time outside an epic run; the import returns `import-failed`; or the branch has diverged |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema. In an epic run, it checks the branch out in the story's own worktree instead | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run, or when a stop ends a story's run | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time outside an epic run; the import returns `import-failed`; the epic-run map commit returns `commit-failed` or `restore-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table); [Start the story run](references/epic-run.md#start-the-story-run) in an epic run | Never |
 | [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run); [Run the epic](#run-the-epic) in an epic run, also when a stop ends a story's run; [End the story run](references/story-run.md#end-the-story-run) in a story run's child, also when the walk stops | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL, or each story's line in an epic run | this session | Nothing: the run is over | Always |
@@ -588,10 +588,19 @@ says.
      [commit the discovery map](references/shape.md#commit-the-discovery-map).
      In an epic run, use its
      [epic-run form](references/shape.md#commit-the-map-in-an-epic-run),
-     in the epic run's own checkout and `<path>`. When it returns Git's
-     error, say it, and stop, as
-     [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
-     says: the story's reason is Git's error.
+     in the epic run's own checkout and `<path>`, for the first story
+     this epic run claims, and for no later one. On its result:
+     - **`committed`:** go on.
+     - **`commit-failed`:** say Git's error, and stop, as
+       [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+       says: the story's reason is Git's error. The maps' edits stay in
+       the epic run's checkout.
+     - **`restore-failed`:** say Git's error, and that the story's
+       branch holds the maps' edits, so the copies left in the epic
+       run's checkout can be discarded. Then stop, as
+       [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+       says: the story's reason is Git's error.
+
      A run with no shape step has no map to commit, and reads no part of
      `references/shape.md`.
    - **`taken`:** In an epic run, settle the story with

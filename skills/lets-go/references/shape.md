@@ -221,7 +221,8 @@ default branch, so the edits stay behind in the epic run's own
 checkout. Carry them into the first story the epic run claims, then
 return the checkout to clean. Run this after
 [The story's worktree](../SKILL.md#the-storys-worktree) has prepared
-`<path>`.
+`<path>`. Run this for the first story the epic run claims, and for no
+later one.
 
 1. List the changed maps in the epic run's own checkout:
 
@@ -229,9 +230,8 @@ return the checkout to clean. Run this after
    git status --porcelain -uall -- openspec/discovery.md openspec/discovery
    ```
 
-   When it lists no path, make no commit. A story claimed later in
-   this epic run finds no changed map, and makes no commit. Otherwise
-   the listed paths are `<paths>`.
+   When it lists no path, make no commit. Return `committed`: there is
+   nothing to carry. Otherwise the listed paths are `<paths>`.
 2. Carry each listed path, `<map>`, into the worktree:
    - **A path that exists** in the checkout: copy it to the same path
      in `<path>`. Create its folder first, because the worktree may
@@ -260,7 +260,7 @@ return the checkout to clean. Run this after
    ```
 
    When a command fails, leave the checkout's edits as they are, and
-   return Git's error to the part that ran it.
+   return `commit-failed`, with Git's error.
 4. Only once the commit succeeds, return the epic run's checkout to its
    committed state, so it stays clean on `<default>`. The paths not
    marked `??` are `<tracked paths>`: restore them, when there are any.
@@ -272,11 +272,22 @@ return the checkout to clean. Run this after
    ```
 
    The edits are safe in the story's commit, so the restore loses
-   nothing. When a command fails, return Git's error to the part that
-   ran it: the story's commit already holds the edits.
+   nothing. When a command fails, return `restore-failed`, with Git's
+   error: the story's commit already holds the edits. Otherwise return
+   `committed`.
 
 Never pass the `openspec/discovery` folder itself to a Git command.
 `<parent>` is the epic's number.
+
+It returns one of these results:
+
+- `committed`: the story's branch holds the maps' edits, and the epic
+  run's checkout is clean; or no map had changed.
+- `commit-failed`: a copy, removal or commit in `<path>` failed. It
+  carries Git's error. The edits are still in the epic run's checkout.
+- `restore-failed`: the commit succeeded, but the restore of the epic
+  run's checkout failed. It carries Git's error. The story's commit
+  holds the edits, and the checkout still has them too.
 
 Return to the part that ran it.
 
