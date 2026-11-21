@@ -43,6 +43,25 @@ Resolve the installed
 reference. Use its absolute path as `<plain-language-path>` in the
 frame. The step has none of this session's conversation.
 
+For a stacked story only, put this section between `## What to run` and
+`## Writing`, in the prompt of every step of the story, so that a step
+resumed after `needs-input` still sees it. A story is stacked when
+[Stack the story](epic-run.md#stack-the-story) returned `stacked` for
+it. `<blocker>`, `<blocker-branch>` and `<blocker-pr>` are the ones it
+carries. The prompt of a story that is not stacked holds no `## Stack`
+section.
+
+```text
+## Stack
+
+This change is stacked on #<blocker>: its branch starts from
+`<blocker-branch>`, the branch of pull request #<blocker-pr>. Open the
+draft pull request with `--base <blocker-branch>`, and put the line
+`Stacked on #<blocker-pr>; merge that first.` on its own line after
+`Closes #<i>` in its description. If the pull request exists with
+another base, fix it with `gh pr edit <name> --base <blocker-branch>`.
+```
+
 The rest of the frame is the same for every step.
 
 ````text

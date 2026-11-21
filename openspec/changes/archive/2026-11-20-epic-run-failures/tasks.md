@@ -1,0 +1,27 @@
+## 1. A stop ends only its story's run
+
+Every task edits `skills/lets-go/` and adds or changes a test in
+`tests/skill-interfaces.bats`, so none runs in parallel. Edit the skills
+in `skills/`, never the copies in `.agents/skills/`.
+
+- [x] 1.1 [medium] *A stop in an epic run* in `skills/lets-go/references/epic-run.md` is a numbered procedure whose first two actions are today's (do what the stop says; settle the story with `failed at <step name>: <reason>` or `stopped: <reason>`, which makes it `<failed>`), and whose third action runs `git status --porcelain --untracked-files=all -- . ':(exclude).workspace'`: any output ends the epic run as today, with the `#<story> <story-name>: not built, the epic run stopped at #<stopped-story>` text block, leaving the changes as they are, printing every line and stopping. Its opening paragraph says a stop in a story run ends only that story's run, lists the stops it covers (spec, D1) and keeps `except the lost claim` (design D-A, D-B) (verify: bats tests/skill-interfaces.bats -f 'stop') (✓ bats tests/skill-interfaces.bats -f 'stop' passed)
+- [x] 1.2 [complex] The fourth action of *A stop in an epic run* reads `lets backlog item <story>` for each story of the epic, in this repository and not settled yet, keeps the `key`s of its `blockedBy` whose `state` is `OPEN` and whose `url` is the `url` of a story of the epic in this repository, marks dependents of `<failed>` through any number of stories, and settles each, in the epic's order, right after `<failed>`'s line, with the text block `#<story> <story-name>: not built, it depends on #<failed>, which did not finish`. It says a link through an issue outside the epic, or through a story settled before this stop, makes no dependent, and that a key alone never makes one, and that a `lets backlog` error here is a stop between stories, linking [Backlog errors](../SKILL.md#backlog-errors). The new line appears once across the files of `lets-go` (design D-C, D-D) (verify: bats tests/skill-interfaces.bats -f 'stop') (✓ bats tests/skill-interfaces.bats -f 'stop' passed)
+- [x] 1.3 [medium] The fifth action of *A stop in an epic run* runs `git switch <default>` and goes back to [Run the epic](#run-the-epic), whose step 2 sends it on to *Pick the next story*, where every story settled in actions 2 and 4 is passed in `--exclude`. When `git switch` fails, it says Git's error and ends the epic run as the third action does. The section says the epic run retries no failed step and prints no count line (spec; design D-A) (verify: bats tests/skill-interfaces.bats -f 'stop') (✓ bats tests/skill-interfaces.bats -f 'stop' passed)
+- [x] 1.4 [medium] Step 2 of *Run the epic* in `references/epic-run.md` has a case for the run coming back from *A stop in an epic run*, beside the lost-claim case: the story and its dependents are settled and the checkout is on the default branch, so it goes on to the pick. In `SKILL.md`'s parts table, the *Next* column of *Check the issue*, *Enter the branch* and *Walk the step table* adds [Run the epic](#run-the-epic) after a stop in an epic run (design D-F) (verify: bats tests/skill-interfaces.bats -f 'epic run') (✓ bats tests/skill-interfaces.bats -f 'epic run' passed)
+- [x] 1.5 [easy] `SKILL.md`'s placeholder table has a `<failed>` row, "the story whose run failed or stopped, as its key, in the line of a story that depends on it", set by [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), and `#<failed>` is in the list of placeholders shown by their `label` (design D-E) (verify: bats tests/skill-interfaces.bats -f 'placeholder') (✓ bats tests/skill-interfaces.bats -f 'placeholder' passed)
+- [x] 1.6 [medium] No file of `lets-go` says a stop "also ends the epic run at its story". Each of the nine sentences that link *A stop in an epic run* (the overview, *Backlog errors*, *Check the issue*, *Enter the branch*, *Walk the step table*, *Run a step*, *Read the report*, *Relay the questions*, and *Records that disagree* in `references/records.md`) says the stop ends only its story's run, and keeps its link. The overview and *Backlog errors* also say that a stop between stories, such as an error in a pick, still ends the epic run (design D-G) (verify: bats tests/skill-interfaces.bats -f 'stop') (✓ bats tests/skill-interfaces.bats -f 'stop' passed)
+- [x] 1.7 [easy] *Settle a story* in `references/epic-run.md` lists `it depends on #<failed>, which did not finish` among the example reasons of a `not built` line (spec: *An epic run ends with one line per story*) (verify: bats tests/skill-interfaces.bats -f 'epic run') (✓ bats tests/skill-interfaces.bats -f 'epic run' passed)
+- [x] 1.8 [easy] The whole project passes its checks with the change in place (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test, nix flake check and mise run check passed)
+
+## Deviations Ledger
+
+<!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-20: Task 1.5 ran before task 1.1. Action 2 of *A stop in an
+  epic run*, written in 1.1, first uses `<failed>`, and the check
+  *lets-go lists each placeholder once* fails on a placeholder with no
+  row. Adding the row first keeps every commit green.
+- 2026-11-20: Task 1.4's rows say [Run the epic](#run-the-epic) "when a
+  stop ends a story's run", not "after a stop in an epic run". The
+  check *the overview names the results each part stops on* rejects
+  "a stop in" anywhere in the overview table. The meaning is the same.

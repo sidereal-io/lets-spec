@@ -133,3 +133,59 @@ test('a backlog provider with Jira-style keys ranks the one created first, and t
   await run(['ready', '--exclude', 'PROJ-12'], exclude.deps, providers);
   assert.deepEqual(keys(exclude), ['PROJ-9', 'PROJ-3']);
 });
+
+// A blockedBy node as gh issue list --json blockedBy prints it.
+const blocker = (number: number, { repo = REPO, state = 'OPEN' }: { repo?: string; state?: string } = {}) => ({
+  number, state, title: `story-${number} — outcome`, url: `https://github.com/${repo}/issues/${number}`,
+});
+
+// The rows for ready --met-blockers: rows(), and the search for the
+// unassigned blocked open issues, each with its blockedBy nodes.
+const stackRows = (items: Spec[], free: number[], blocked: [number, ReturnType<typeof blocker>[]][], created: (number: number) => string = createdAt): Row[] => [
+  ...rows(items, free, created),
+  ['issue list --search is:open no:assignee is:blocked', json(blocked.map(([number, nodes]) => ({ number, createdAt: created(number), blockedBy: { nodes, totalCount: nodes.length } })))],
+];
+
+test('ready --met-blockers lists an issue whose only open blocker is named', async () => {
+  const t = backlogDeps(stackRows([{ number: 279, status: 'In Progress' }, { number: 280 }], [], [[280, [blocker(279)]]]));
+  assert.equal(await run(['ready', '--met-blockers', '279'], t.deps), 0);
+  assert.deepEqual(keys(t), ['280']);
+});
+
+test('ready --met-blockers runs the blocked search with the 500-item limit', async () => {
+  const t = backlogDeps(stackRows([], [], []));
+  await run(['ready', '--met-blockers', '279'], t.deps);
+  assert.deepEqual(t.calls()[3], ['issue', 'list', '--search', 'is:open no:assignee is:blocked', '--limit', '500', '--json', 'number,createdAt,blockedBy']);
+  assert.equal(t.calls().length, 4);
+});
+
+test('ready --met-blockers ranks a stacked issue by the creation time of the blocked search', async () => {
+  const created: Record<number, string> = { 280: '2026-01-01T00:00:00Z', 100: '2026-02-01T00:00:00Z' };
+  const t = backlogDeps(stackRows([{ number: 100 }, { number: 280 }], [100], [[280, [blocker(279)]]], (n) => created[n]));
+  await run(['ready', '--met-blockers', '279'], t.deps);
+  assert.deepEqual(keys(t), ['280', '100']);
+});
+
+test('ready --met-blockers leaves out an issue with one open blocker not named', async () => {
+  const t = backlogDeps(stackRows([{ number: 281 }], [], [[281, [blocker(279), blocker(280)]]]));
+  await run(['ready', '--met-blockers', '279'], t.deps);
+  assert.deepEqual(keys(t), []);
+});
+
+test('ready --met-blockers ignores a closed blocker', async () => {
+  const t = backlogDeps(stackRows([{ number: 281 }], [], [[281, [blocker(279), blocker(270, { state: 'CLOSED' })]]]));
+  await run(['ready', '--met-blockers', '279'], t.deps);
+  assert.deepEqual(keys(t), ['281']);
+});
+
+test('ready --met-blockers leaves out an assigned issue that the blocked search does not return', async () => {
+  const t = backlogDeps(stackRows([{ number: 282 }], [], []));
+  await run(['ready', '--met-blockers', '279'], t.deps);
+  assert.deepEqual(keys(t), []);
+});
+
+test('ready --met-blockers never counts a blocker in another repository as met', async () => {
+  const t = backlogDeps(stackRows([{ number: 283 }], [], [[283, [blocker(279, { repo: 'other-org/tools' })]]]));
+  await run(['ready', '--met-blockers', '279'], t.deps);
+  assert.deepEqual(keys(t), []);
+});
