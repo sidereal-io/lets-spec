@@ -139,7 +139,7 @@ order, first match wins:
    into the default branch, read with
    `gh pr list --head <pr-base> --state merged --limit 100 --json number,isCrossRepository,baseRefName`,
    keeping the entries whose `isCrossRepository` is false and whose
-   `baseRefName` is `<default>`: the blocker has merged. Run `gh pr edit <name> --base <default>`. Not
+   `baseRefName` is `<default>`: the blocker has merged. Run `gh pr edit <story-pr> --base <default>`, by the pull request's number. Not
    stacked.
 3. The change's branch of an open story of the epic, in this
    repository: stacked on that story.

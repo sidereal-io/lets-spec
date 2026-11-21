@@ -4222,7 +4222,7 @@ step_prompt_file() {
   local text phrase
   text="$(procedure_text "Read a pull request's base" | tr -s '[:space:]' ' ')"
   for phrase in 'whose `isCrossRepository` is `false` and whose `baseRefName` is `<default>`' \
-    'gh pr edit <story-name> --base <default>' 'Rebase nothing' 'return `edit-failed`'; do
+    'gh pr edit <story-pr> --base <default>' 'Rebase nothing' 'return `edit-failed`'; do
     grep -qF -- "$phrase" <<<"$text" || { echo "Read a pull request's base does not say: $phrase"; false; }
   done
 }
@@ -4269,7 +4269,8 @@ step_prompt_file() {
   local text phrase
   has_heading "$(epic_run_file)" 'Take up a started story' || { echo "references/epic-run.md has no heading: Take up a started story"; false; }
   text="$(procedure_text 'Take up a started story' | tr -s '[:space:]' ' ')"
-  for phrase in 'gh pr view <name> --json number,state,baseRefName' \
+  for phrase in 'gh pr list --head <name> --state all --limit 100 --json number,state,baseRefName,isCrossRepository,createdAt' \
+    'Drop each entry whose `isCrossRepository` is `true`' \
     "Run [Read a pull request's base](#read-a-pull-requests-base) for the story" \
     'Run no [Stack the story](#stack-the-story)'; do
     grep -qF -- "$phrase" <<<"$text" || { echo "Take up a started story does not say: $phrase"; false; }

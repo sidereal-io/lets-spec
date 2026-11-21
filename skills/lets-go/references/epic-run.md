@@ -66,7 +66,8 @@ as for any picked issue.
      `MERGED`; else the `CLOSED` one with the latest `createdAt`. Its
      `url` is `<pr-url>`. Settle the story by its pull request:
      - **Open, and its `isDraft` is `false`:** the pull request is
-       ready for review. `<pr-base>` is its `baseRefName`: run
+       ready for review. `<story-pr>` is its `number`, and `<pr-base>`
+       its `baseRefName`: run
        [Read a pull request's base](#read-a-pull-requests-base) for the
        story. On `on-story`, settle the story with its stacked line,
        naming the `<blocker>` it carries. On `not-stacked`, settle it
@@ -254,8 +255,10 @@ story whose pull request is ready for review.
 resumed story's open pull request. It says whether the pull request
 stacks the story on another story, and moves the pull request off the
 branch of a blocker that has merged. `<story>` is the story,
-`<story-name>` its change name, and `<pr-base>` its pull request's
-`baseRefName`. Apply the first of these rules that matches:
+`<story-name>` its change name, `<story-pr>` its pull request's
+`number`, and `<pr-base>` its pull request's `baseRefName`. The caller
+read them from this repository's pull requests, with the forks dropped.
+Apply the first of these rules that matches:
 
 1. **`<pr-base>` is `<default>`:** the story is not stacked. Return
    `not-stacked`.
@@ -274,7 +277,7 @@ branch of a blocker that has merged. `<story>` is the story,
    request's target changes.
 
    ```bash
-   gh pr edit <story-name> --base <default>
+   gh pr edit <story-pr> --base <default>
    ```
 
    When the edit fails, return `edit-failed`. Otherwise the story is
@@ -320,16 +323,19 @@ its change name. The open blockers are the entries of the story's
 1. Read the story's pull request:
 
    ```bash
-   gh pr view <name> --json number,state,baseRefName
+   gh pr list --head <name> --state all --limit 100 --json number,state,baseRefName,isCrossRepository,createdAt
    ```
 
-   When gh says that no pull request is found for the branch, the story
-   has none. When the command fails for another reason, return
-   `read-failed`.
+   Drop each entry whose `isCrossRepository` is `true`: a pull request
+   from a fork can share the name. The story's pull request is the entry
+   whose `state` is `OPEN`; else the one whose `state` is `MERGED`; else
+   the `CLOSED` one with the latest `createdAt`. With no entry left, the
+   story has none. When the command fails, return `read-failed`.
 2. With an open pull request, one whose `state` is `OPEN`, take the
    story's stack from it. `<pr-base>` is its `baseRefName`. Run no
    [Stack the story](#stack-the-story): the branch holds commits made on
-   that base, and another blocker's branch may not contain them. Run
+   that base, and another blocker's branch may not contain them.
+   `<story-pr>` is its `number`. Run
    [Read a pull request's base](#read-a-pull-requests-base) for the
    story, and act on its result:
    - **`on-story`:** read the open pull requests, and find the met
