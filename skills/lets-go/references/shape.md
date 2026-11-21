@@ -26,7 +26,7 @@ input is an idea, or an issue `#<i>`.
      `.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least
      one pair, and, for an idea,
      `.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea.
-     A stop during Finalize leaves this state: Finalize removes the
+     Stopping during Finalize leaves this state: Finalize removes the
      status line before it asks its own questions, and
      [Read the report](../SKILL.md#read-the-report) removes the answers
      file only when shape reports `done` or `failed`.

@@ -1949,7 +1949,7 @@ procedure_stops() {
 @test "each lets-go procedure returns to the part that ran it, with no Next line" {
   local procedure text
   for procedure in 'Find the source of demand' 'Confirm the packet' 'Glossary preflight' 'Claim' \
-    'Import the glossary checkpoint' 'Commit the discovery map'; do
+    'Import the glossary checkpoint' 'Commit the discovery map' "Find the input's discovery"; do
     text="$(procedure_text "$procedure")"
     [ -n "$text" ] || { echo "lets-go has no procedure $procedure"; false; }
     # Only Claim runs the whole preflight, so it returns there.

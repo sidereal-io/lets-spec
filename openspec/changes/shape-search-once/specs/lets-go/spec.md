@@ -246,3 +246,34 @@ No part SHALL be a step: the parts before the walk SHALL run no `lets delegate s
 #### Scenario: The parent's Shared decisions
 - **WHEN** `lets-go` confirms the packet of a Story whose parent is #52
 - **THEN** it reads the parent's **Shared decisions** from the `parent` that `lets backlog item <i>` returned, and runs no `gh issue view 52`
+
+### Requirement: Each lets-go procedure returns a result
+Each procedure of `lets-go` SHALL end by returning to the part that ran it, with a result. A procedure is a section under `## Procedures` in `SKILL.md`, or one of *Glossary preflight*, *Import the glossary checkpoint*, *Commit the discovery map* and *Find the input's discovery* in a reference file. *Glossary preflight*, which only *Claim* runs, SHALL return to *Claim*. A procedure SHALL not tell the agent to stop, and SHALL not name the part that runs next: the part that ran it decides. Outside code, a procedure's text, its subsections included, SHALL not hold the word `stop` or `stops`, in any case. A procedure that can end more than one way SHALL list its results. Each result is a name in backticks, with when it is returned and what it carries, such as the issue, who has it, or what to tell the user. The results SHALL be these:
+
+| Procedure | Results |
+|---|---|
+| *Find the source of demand* | `found`, `unresolved`, `matches`, `no-match`, `picked`, `nothing-ready` |
+| *Confirm the packet* | `complete`, `needs-shape`, `epic` |
+| *Check the prerequisite* | `resolved`, `unresolved` |
+| *Check the checkpoint* | `verified`, `checkpoint-failed`, `unresolved` |
+| *Glossary preflight* | `no-owned-edits`, `verified`, `unresolved`, `checkpoint-failed` |
+| *Claim* | `claimed`, `taken`, `claim-failed`, `unresolved`, `checkpoint-failed`, `branch-failed` |
+| *Import the glossary checkpoint* | `imported`, `import-failed` |
+
+*Glossary preflight* returns `no-owned-edits` when the story owns no glossary edits, and otherwise passes on what *Check the checkpoint* returns. `verified` carries the checkpoint commits to import. *Claim*'s `claimed` carries what *Glossary preflight* returned, so *Enter the branch* runs *Import the glossary checkpoint* only after `verified`. *Commit the discovery map* ends one way only, so it names no result. *Find the input's discovery* ends one way too: it returns each discovery it found, or none, and names no result.
+
+#### Scenario: Every procedure returns
+- **WHEN** the skill-interfaces test reads each procedure of `lets-go`, in `SKILL.md` and in its reference files
+- **THEN** each one says it returns to the part that ran it, or, for *Glossary preflight*, to *Claim*, has no `Next:` line, and holds no `stop` or `stops` outside code
+
+#### Scenario: A procedure that stops
+- **WHEN** a skills folder holds `lets-go/SKILL.md` whose *Confirm the packet* says ``Say to run the `lets-shape` skill on `#<i>`, and stop.``
+- **THEN** the check fails, and its output names `Confirm the packet`
+
+#### Scenario: Claim lists its results
+- **WHEN** the skill-interfaces test reads *Claim*
+- **THEN** it finds `claimed`, `taken`, `claim-failed`, `unresolved`, `checkpoint-failed` and `branch-failed`
+
+#### Scenario: Confirm the packet lists its results
+- **WHEN** the skill-interfaces test reads *Confirm the packet*
+- **THEN** it finds `complete`, `needs-shape` and `epic`
