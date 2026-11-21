@@ -19,6 +19,19 @@ test('item lists only the open sub-issues an adapter returns, without their stat
   assert.deepEqual(view.subIssues, [{ key: '136', label: '#136', title: 'open', url: 'u136' }]);
 });
 
+test('item lists the closed sub-issues apart, in the same shape', () => {
+  const view = itemView(item([
+    { key: '135', label: '#135', title: 'done', url: 'u135', state: 'CLOSED' },
+    { key: '136', label: '#136', title: 'open', url: 'u136', state: 'OPEN' },
+  ]));
+  assert.deepEqual(view.closedSubIssues, [{ key: '135', label: '#135', title: 'done', url: 'u135' }]);
+});
+
+test('an issue with no sub-issues has two empty lists', () => {
+  const view = itemView(item([]));
+  assert.deepEqual([view.subIssues, view.closedSubIssues], [[], []]);
+});
+
 const candidate = (key: string, created: string, extra: Partial<Candidate> = {}): Candidate => ({
   key, label: `#${key}`, title: key, url: `u${key}`, kind: 'Story', priority: 'Must', size: 'S', status: 'Todo', free: true, mine: false, blockers: null, created, ...extra,
 });

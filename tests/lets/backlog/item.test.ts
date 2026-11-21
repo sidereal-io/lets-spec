@@ -44,6 +44,7 @@ test('item reads a shaped story with its Project fields, parent and blockers', a
     blockedBy: [{ key: '135', label: '#135', title: 'contract', state: 'CLOSED', url: url(135) }],
     parent: { key: '52', label: '#52', title: 'backlog-providers — epic', url: url(52), body: '## Shared decisions\n- D1' },
     subIssues: [],
+    closedSubIssues: [],
   });
   assert.deepEqual(t.calls()[1], ['issue', 'view', '136', '--json', 'number,title,body,url,state,assignees,parent,blockedBy,subIssues']);
   assert.deepEqual(t.calls().at(-1), ['issue', 'view', url(52), '--json', 'number,title,body']);
@@ -70,6 +71,41 @@ test('item returns an epic\'s open sub-issues only', async () => {
   await run(['item', '52'], t.deps);
   assert.equal(t.json().kind, 'Epic');
   assert.deepEqual(t.json().subIssues, [{ key: '136', label: '#136', title: 'open one', url: url(136) }, { key: '137', label: '#137', title: 'open two', url: url(137) }]);
+});
+
+test('item returns an epic\'s closed sub-issues apart from its open ones', async () => {
+  const t = backlogDeps(rows([
+    ['issue view 52 ', json(issue(52, {
+      subIssues: { nodes: [
+        { number: 135, title: 'closed one', state: 'CLOSED', url: url(135) },
+        { number: 136, title: 'open one', state: 'OPEN', url: url(136) },
+      ], totalCount: 2 },
+    }))],
+  ], [projectItem(52, { kind: 'Epic', priority: 'Must', status: 'Todo' })]));
+  await run(['item', '52'], t.deps);
+  assert.deepEqual(t.json().closedSubIssues, [{ key: '135', label: '#135', title: 'closed one', url: url(135) }]);
+});
+
+test('an epic with no sub-issues returns two empty lists', async () => {
+  const t = backlogDeps(rows([['issue view 60 ', json(issue(60))]], [projectItem(60, { kind: 'Epic', priority: 'Must', status: 'Todo' })]));
+  await run(['item', '60'], t.deps);
+  assert.deepEqual([t.json().subIssues, t.json().closedSubIssues], [[], []]);
+});
+
+test('an epic whose sub-issues are all closed lists them as closed only', async () => {
+  const t = backlogDeps(rows([
+    ['issue view 61 ', json(issue(61, {
+      subIssues: { nodes: [
+        { number: 62, title: 'first', state: 'CLOSED', url: url(62) },
+        { number: 63, title: 'second', state: 'CLOSED', url: url(63) },
+      ], totalCount: 2 },
+    }))],
+  ], [projectItem(61, { kind: 'Epic', priority: 'Must', status: 'Todo' })]));
+  await run(['item', '61'], t.deps);
+  assert.deepEqual([t.json().subIssues, t.json().closedSubIssues], [[], [
+    { key: '62', label: '#62', title: 'first', url: url(62) },
+    { key: '63', label: '#63', title: 'second', url: url(63) },
+  ]]);
 });
 
 test('an issue not on the Project has null for every Project field', async () => {

@@ -6,7 +6,7 @@ are D1 to D7 in `design.md`. Sections 2 and 3 both add tests to
 
 ## 1. The backlog contract
 
-- [ ] 1.1 [easy] `lets backlog item <i>` returns `closedSubIssues` beside `subIssues`: each closed sub-issue's `key`, `label`, `title` and `url`, in the same shape, and `[]` for an issue with none. `subIssues` still holds only the open ones. Change `itemView` in `lets/src/backlog/policy.ts` and the `item <i>` line of the usage text in `lets/src/backlog/commands.ts`. Tests in `tests/lets/backlog/policy.test.ts` and `tests/lets/backlog/item.test.ts` cover an epic with open and closed sub-issues, one with none, and one whose sub-issues are all closed (D3) (verify: node --test tests/lets/backlog/policy.test.ts tests/lets/backlog/item.test.ts)
+- [x] 1.1 [easy] `lets backlog item <i>` returns `closedSubIssues` beside `subIssues`: each closed sub-issue's `key`, `label`, `title` and `url`, in the same shape, and `[]` for an issue with none. `subIssues` still holds only the open ones. Change `itemView` in `lets/src/backlog/policy.ts` and the `item <i>` line of the usage text in `lets/src/backlog/commands.ts`. Tests in `tests/lets/backlog/policy.test.ts` and `tests/lets/backlog/item.test.ts` cover an epic with open and closed sub-issues, one with none, and one whose sub-issues are all closed (D3) (verify: node --test tests/lets/backlog/policy.test.ts tests/lets/backlog/item.test.ts) (✓ node --test tests/lets/backlog/policy.test.ts tests/lets/backlog/item.test.ts passed)
 
 ## 2. lets-shape shapes an empty epic in place [depends-on: 1]
 

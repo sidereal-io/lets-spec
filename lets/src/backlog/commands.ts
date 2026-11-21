@@ -27,7 +27,8 @@ stdout: one JSON object and a newline.
                      assigned to you and in Todo or In Progress; it still
                      needs every other filter, its blockers included.
   item <i>           { key, label, title, body, url, state, kind, priority, size,
-                       status, assignees, blockedBy, parent, subIssues }
+                       status, assignees, blockedBy, parent, subIssues,
+                       closedSubIssues }
   find <words...>    { issues: [{ key, label, title }] }
   waves --only <keys>
                      { waves: [{ stories: [{ key, label, waitsFor, reason }] }] }
