@@ -86,8 +86,11 @@ jobs:
           test ! -L .agents/skills/openspec-propose/SKILL.md
           git add -A
           lets sync --check
-          if grep -q "OpenSpec CLI on PATH" "$RUNNER_TEMP/sync.err"; then
-            echo "lets sync warned about the OpenSpec CLI version" >&2
+          # Either message fails the job: the CLI is missing, or older than
+          # the release's. grep prints which.
+          if grep -q "OpenSpec CLI" "$RUNNER_TEMP/sync.err"; then
+            echo "lets sync reported a problem with the OpenSpec CLI:" >&2
+            grep "OpenSpec CLI" "$RUNNER_TEMP/sync.err" >&2
             exit 1
           fi
           LETS_SPEC_SKILLS=ignored lets sync
