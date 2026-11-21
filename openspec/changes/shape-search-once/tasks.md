@@ -20,3 +20,4 @@ Before the first task, record `wc -l skills/lets-go/SKILL.md skills/lets-go/refe
 <!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
 
 - 2026-11-21, task 1.1: the test *lets-go links each section it names* fails on a section name in italics, so 1.1 already links [Find the input's discovery](#find-the-inputs-discovery) from *Start from an idea* step 1 and *Run the shape step* step 1. Tasks 1.3 and 1.4 still reword those steps, and their tests assert that new wording as well as the link.
+- 2026-11-21, code review: the guard from task 1.6 changed after the review. It covers a new parent as well as one issue, and several matched parents. It prints the `Done shape` line and stops before *Check the issue*, not just before *Claim* (e94d66e5, 19263fb8). The pull request's **Code review** section lists every fix.
