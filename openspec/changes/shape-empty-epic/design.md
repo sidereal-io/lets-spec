@@ -195,8 +195,13 @@ in this run:
    `??`, and `rm -- <p>` for each path marked `??`.
 
 Step 4 runs only after the commit succeeds, so the edits are never
-lost. A later claim lists no path and makes no commit. When no story is
-claimed, the edits stay, and the existing stop message applies.
+lost. The form runs for the first story the epic run claims and for no
+later one, so a failed restore never commits the maps twice. It returns
+`committed`, `commit-failed` or `restore-failed`, and *Enter the branch*
+stops the story's run on either failure. When no story is claimed, or
+the claimed story stops before its map commit, the edits stay. Before
+*End of the run*, *Report the maps' edits* names them, as the existing
+stop message does.
 
 *Alternatives:* leaving the edits in the checkout lost because the next
 run stops on them, and they never reach a pull request. Committing on
