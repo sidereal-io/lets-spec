@@ -2165,12 +2165,18 @@ procedure_stops() {
   skill_does_not_say lets-go 'part way'
 }
 
-@test "the shape prompt names lets-shape's steps by their titles, not a step number" {
-  local text title
-  text="$(skill_section lets-go 'What shape runs')"
-  for title in '**Find or create the issue**' '**Confirm, then write**'; do
-    grep -qF -- "$title" <<<"$text" || { echo "What shape runs does not name: $title"; false; }
+@test "shape-step: the shape prompt is one sentence" {
+  local section sentence
+  section="$(skill_section lets-go 'Write the prompt')"
+  for sentence in 'Invoke the `lets-shape` skill for issue #<i>, and stop where it stops.' \
+    'Invoke the `lets-shape` skill for the idea above, and stop where it stops.'; do
+    grep -qF -- "$sentence" <<<"$section" || { echo "Write the prompt does not hold: $sentence"; false; }
   done
+  grep -qF -- 'Issue: none yet. The idea is: <idea>. Branch: <default>. Open issues were searched, and none is the same work.' <<<"$section" ||
+    { echo "the idea's header line has no search note"; false; }
+  grep -qF -- 'only when [Start from an idea](shape.md#start-from-an-idea) ran its title search' <<<"$section" ||
+    { echo "Write the prompt does not limit the search note to a search that ran"; false; }
+  ! grep -qF -- 'what-shape-runs' <<<"$section" || { echo "Write the prompt still links What shape runs"; false; }
 }
 
 @test "each link in lets-go names one of its file's headings" {

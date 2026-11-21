@@ -18,7 +18,7 @@ design §N.
 
 ## 2. lets-go's shape prompt is one sentence [depends-on: 1]
 
-- [ ] 2.1 [medium] *Write the prompt* in `skills/lets-go/references/step-prompt.md` puts ``Invoke the `lets-shape` skill for issue #<i>, and stop where it stops.`` or ``Invoke the `lets-shape` skill for the idea above, and stop where it stops.`` under `## What to run` for shape, and the idea's header line adds, only when *Start from an idea* ran its title search, that open issues were searched and none is the same work (design §7). The check *the shape prompt names lets-shape's steps by their titles* is replaced by one for these sentences (verify: bats tests/skill-interfaces.bats -f 'shape-step: the shape prompt is one sentence')
+- [x] 2.1 [medium] *Write the prompt* in `skills/lets-go/references/step-prompt.md` puts ``Invoke the `lets-shape` skill for issue #<i>, and stop where it stops.`` or ``Invoke the `lets-shape` skill for the idea above, and stop where it stops.`` under `## What to run` for shape, and the idea's header line adds, only when *Start from an idea* ran its title search, that open issues were searched and none is the same work (design §7). The check *the shape prompt names lets-shape's steps by their titles* is replaced by one for these sentences (verify: bats tests/skill-interfaces.bats -f 'shape-step: the shape prompt is one sentence') (✓ bats tests/skill-interfaces.bats -f 'shape-step: the shape prompt is one sentence' passed)
 - [ ] 2.2 [medium] No `lets-go` file holds *What shape runs* or a link to it: the section leaves `references/shape.md`, `SKILL.md`'s three links and its `<the sentence above>` row change, and the `<L or XL>` row goes (design §7). `section_moved` drops `What shape runs`, and *lets-go runs a shape step for an idea or an unshaped issue* asserts that `lets-go` no longer says `Run discovery on it?`, `*Resume mode*` or `Finalize has started on that parent` (design §8) (verify: bats tests/skill-interfaces.bats -f 'shape|moved section|link in lets-go')
 
 ## 3. Integration [depends-on: 2]
@@ -29,3 +29,10 @@ design §N.
 ## Deviations Ledger
 
 <!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-21, task 2.1: D10 says the step prompt's report section already
+  held every shape evidence rule. One was only in *What shape runs*: when
+  discovery turns the parent into the one story, the report uses the
+  `issue` form. That sentence moved into the report section of the frame
+  in `references/step-prompt.md`, so it is not lost when *What shape runs*
+  goes in task 2.2.
