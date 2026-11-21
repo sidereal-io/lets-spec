@@ -113,8 +113,9 @@ which can be the idea or the issue that the epic's `Input:` line names:
   epic's `<issue-url>` with that issue's number in place of the epic's.
 
 [Read the report](../SKILL.md#read-the-report) then removes that
-input's answers file, the one the step used. A `done` report names the
-epic and its stories, so the run goes back to
+input's answers file, the one the step used, and, for an epic whose
+`Input:` line names another input, that input's too. A `done` report
+names the epic and its stories, so the run goes back to
 [Check the issue](../SKILL.md#check-the-issue) with the epic.
 
 1. Check the discovery maps:

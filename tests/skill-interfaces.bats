@@ -2513,6 +2513,19 @@ epic_run_file() {
   done
 }
 
+@test "an epic's shape round removes the answers of the input its Input line names" {
+  local report phrase
+  # Left behind, those answers make the lookup back in Check the issue find the discovery again.
+  report="$(part_section 'Read the report')"
+  for phrase in \
+    'When the step ran for an epic `#<i>` whose `Input:` line names another input, remove that input'"'"'s answers file too, under its own `<shape-name>`.' \
+    'For an idea, remove it only when `.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea.'; do
+    grep -qF -- "$phrase" <<<"$report" || { echo "Read the report does not say: $phrase"; false; }
+  done
+  grep -qF -- 'for an epic whose `Input:` line names another input, that input'"'"'s too.' <<<"$(part_section 'Run the shape step')" ||
+    { echo "Run the shape step does not name the named input's answers file"; false; }
+}
+
 @test "an epic that became one story finishes its stopped discovery before it builds" {
   local check phrase
   check="$(part_section 'Check the issue')"
