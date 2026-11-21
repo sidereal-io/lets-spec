@@ -601,6 +601,25 @@ A line SHALL end with what *An epic run removes a built story's worktree* says o
 - **WHEN** an earlier epic run on #278 built #279 to a ready pull request, then stopped during #280's build, and the user runs `lets-go #278` again
 - **THEN** the new run prints `#279 epic-run-skeleton: <pr-url>` first, then `Resumed #280: <title>, started in an earlier run, under #278.`, and #280's walk goes on from build
 
+### Requirement: lets-go reads and claims the backlog only through lets backlog
+`lets-go` SHALL read the ready issues with `lets backlog ready`, read an issue with `lets backlog item <i>`, search titles with `lets backlog find`, claim with `lets backlog claim <i>` and release with `lets backlog release <i>`. It SHALL run no `gh project` command and no Project query. These stay as `gh` until the shaping side moves: the comment thread read of *Confirm the packet*, which is a GraphQL query with its pagination; `gh issue view <i> --json createdAt`; the parent query of *A stopped discovery resumes from its parent issue*; and the issue body edit that records a **Glossary handoff** import. Pull request reads and edits stay as `gh pr` commands.
+
+#### Scenario: No backlog gh in the skill
+- **WHEN** the skill-interfaces test reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
+- **THEN** it finds no `gh project`, no `projectsV2`, no `--add-assignee`, no `--remove-assignee` and no `gh issue list --search "is:open no:assignee`, and finds `lets backlog ready`, `lets backlog item <i>`, `lets backlog find`, `lets backlog claim <i>` and `lets backlog release <i>`
+
+#### Scenario: Why no shaped story is ready
+- **WHEN** a shape step files #190 with the stories #191 and #192 in one wave, the epic run on #190 runs `lets backlog ready --only 191,192`, which returns no issues, and `lets backlog item 191` returns `"assignees": ["octocat"]`
+- **THEN** the epic run settles #191 with `#191 <story-name>: not built, assigned to octocat`
+
+#### Scenario: An epic's sub-issues
+- **WHEN** the user runs `lets-go` for #52, and `lets backlog item 52` returns Kind Epic and `subIssues` #136 and #137
+- **THEN** `lets-go` says that an epic is built through its stories, lists #136 and #137, and runs no other command to find them
+
+#### Scenario: The parent's Shared decisions
+- **WHEN** `lets-go` confirms the packet of a Story whose parent is #52
+- **THEN** it reads the parent's **Shared decisions** from the `parent` that `lets backlog item <i>` returned, and runs no `gh issue view 52`
+
 ## REMOVED Requirements
 
 ### Requirement: lets-go picks the first ready story
