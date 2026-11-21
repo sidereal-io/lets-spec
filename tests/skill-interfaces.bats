@@ -1058,6 +1058,15 @@ review_build_start() {
   done
 }
 
+@test "Start from an idea and Run the shape step link Find the input's discovery" {
+  local idea
+  idea="$(part_section 'Start from an idea')"
+  grep -qF '](#find-the-inputs-discovery)' <<<"$idea" || { echo "Start from an idea does not link Find the input's discovery"; false; }
+  grep -qF 'a discovery of this idea is in progress at each `#<parent>` it found' <<<"$idea" ||
+    { echo "Start from an idea does not name each parent it found"; false; }
+  ! grep -qF 'gh issue list' <<<"$idea" || { echo "Start from an idea still runs the parent query itself"; false; }
+}
+
 @test "lets-go runs each step through lets delegate step" {
   skill_says lets-go 'lets delegate step instructions --for <step>'
   skill_says lets-go 'lets delegate step run --for <step>'

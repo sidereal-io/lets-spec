@@ -38,13 +38,15 @@ Return to the part that ran it, with each discovery it found, or none.
 
 ## Start from an idea
 
-1. Look for a discovery of this idea that an earlier run started, as
-   [Find the input's discovery](#find-the-inputs-discovery) says.
-   When it finds one, say that
-   a discovery of this idea is in progress at `#<parent>`. Skip the
-   search below, and
-   [run the shape step](../SKILL.md#run-the-shape-step) for the idea:
-   its round resumes that parent.
+1. Look for a discovery of this idea that an earlier run started: run
+   [Find the input's discovery](#find-the-inputs-discovery) for the
+   idea. On its result:
+   - **One or more:** say that a discovery of this idea is in progress
+     at each `#<parent>` it found. Skip the search below, and
+     [run the shape step](../SKILL.md#run-the-shape-step) for the idea.
+     Its round resumes the discovery, or finishes its Finalize. When
+     several match, `lets-shape` asks which one; ask nothing here.
+   - **None:** go on to the search below.
 2. Run the second case of
    [Find the source of demand](../SKILL.md#find-the-source-of-demand):
    the run has described work, but no issue. It searches open issue
