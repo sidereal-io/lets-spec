@@ -3498,7 +3498,7 @@ shape_templates="$repo/skills/lets-shape/templates"
 
 @test "discovery maps: templates name the parent's map" {
   local file="$shape_templates/issue-template.md" text
-  grep -A1 -xF '> Input: <file path, issue link, or "conversation, YYYY-MM-DD">' "$file" |
+  grep -A1 -xF '> Input: <#<i> for an issue, the file path, the idea word for word, or "conversation, YYYY-MM-DD">' "$file" |
     grep -qxF '> Map: <path>' || { echo "the parent template has no Map line under Input"; false; }
   text="$(tr -s '[:space:]' ' ' <"$file")"
   grep -qF 'keep the `Input:` and `Map:` lines' <<<"$text" ||
@@ -5078,4 +5078,15 @@ readme_step_returns() {
     { echo "Resume mode asks to confirm its restatement after the answers settled it"; false; }
   grep -qF 'With no answers, confirm the restatement with the user.' <<<"$section" ||
     { echo "Resume mode skips the confirmation with no answers"; false; }
+}
+
+@test "shape-step: the parent names its input, so a later run can match it" {
+  local section
+  section="$(skill_section lets-shape 'Phase 1: Ingest')"
+  grep -qF 'the `Input:` line, which names the input so a later run can match it: `#<i>` for an issue, the path for a file, or the idea word for word for an idea in words' <<<"$section" ||
+    { echo "Ingest does not say what the Input line holds"; false; }
+  grep -qF 'A long conversation with no short statement of the idea keeps `conversation, YYYY-MM-DD`' <<<"$section" ||
+    { echo "Ingest drops the conversation form"; false; }
+  grep -qxF '> Input: <#<i> for an issue, the file path, the idea word for word, or "conversation, YYYY-MM-DD">' "$repo/skills/lets-shape/templates/issue-template.md" ||
+    { echo "the parent template does not show the Input line's choices"; false; }
 }

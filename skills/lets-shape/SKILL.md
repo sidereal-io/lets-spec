@@ -453,9 +453,12 @@ text, or just conversation. Then:
 
 **Checkpoint:** The parent issue is public, so confirm its text first. Write
 it from the parent template in
-[templates/issue-template.md](templates/issue-template.md): the status line,
-the input reference, the `Map:` line with the run's map, the confirmed scope
-and any open questions so far. In the same step, create the run's map from
+[templates/issue-template.md](templates/issue-template.md): the status line;
+the `Input:` line, which names the input so a later run can match it: `#<i>`
+for an issue, the path for a file, or the idea word for word for an idea in
+words; the `Map:` line with the run's map; the confirmed scope; and any open
+questions so far. A long conversation with no short statement of the idea
+keeps `conversation, YYYY-MM-DD`, which no later run matches. In the same step, create the run's map from
 [templates/discovery-template.md](templates/discovery-template.md) when the
 file is missing, so a resumed run always finds it.
 Title it `Epic: <capability>`, create it with `gh issue create --title "Epic: <capability>" --body-file <file> --project "<project title>"`, then
