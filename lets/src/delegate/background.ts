@@ -16,6 +16,12 @@ import { readPromptFile } from './prompt-file.ts';
 import { readAnswersFile } from './step.ts';
 import type { StepOptions } from './step.ts';
 
+// A background step's name, normalized as a session's but not cut short:
+// step wait must name a story's <name>-story as it was started, and two
+// long names that share their first 32 characters must not share a run.
+// step run cuts the session's own name.
+const runName = (raw: string) => normalizeName(raw, Infinity);
+
 // The options of step run, but the exit file, which step start chooses.
 // reportFile and metaFile take the step's stdout and stderr. checkout: the
 // checkout the step runs in, else the working directory's.
@@ -38,7 +44,7 @@ async function startStep(options: StartOptions, deps: Deps): Promise<number> {
   checkModels(models);
   readPromptFile(promptFile, deps);
   if (answersFile !== undefined) readAnswersFile(answersFile, deps);
-  const name = normalizeName(options.name);
+  const name = runName(options.name);
   const root = await repoRoot(cwd, io);
   const runRoot = await repoRoot(resolve(cwd, checkout ?? '.'), io);
   const { runFile, exitFile } = runFiles(root, name);
@@ -89,7 +95,7 @@ async function waitForStep({ names, timeoutMinutes }: WaitOptions, deps: Deps): 
   if (names.length === 0) throw new UsageError('give --name at least once.');
   const root = await repoRoot(deps.cwd, io);
   const runs = names.map((given) => {
-    const run = readRun(runFiles(root, normalizeName(given)).runFile, io);
+    const run = readRun(runFiles(root, runName(given)).runFile, io);
     if (run === null) throw new UsageError(`no background step named ${given} was started here.`);
     return run;
   });

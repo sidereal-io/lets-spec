@@ -14,13 +14,13 @@ export type ModelString = string;
 // How long a review may run, in minutes, for each effort.
 export const DEFAULT_TIMEOUT_MINUTES: Record<Effort, number> = { low: 30, medium: 30, high: 45 };
 
-// A session's name: lowercase, kebab-case, a letter first, at most 32
-// characters.
-export function normalizeName(raw: string): string {
+// A session's name: lowercase, kebab-case, a letter first, at most
+// maxLength characters.
+export function normalizeName(raw: string, maxLength = 32): string {
   const trim = (s: string) => s.replace(/^[-_]+/, '').replace(/[-_]+$/, '');
   let name = trim(raw.toLowerCase().replace(/[^a-z0-9_-]+/g, '-'));
   if (!/^[a-z]/.test(name)) name = `x${name}`;
-  return trim(name.slice(0, 32));
+  return trim(name.slice(0, maxLength));
 }
 
 // The request for a read-only session, whose final message the resolver

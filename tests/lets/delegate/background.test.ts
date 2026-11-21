@@ -265,3 +265,15 @@ test('a step that ends before the time limit is named, at exit 0', async () => {
   assert.equal(await wait({ names: ['a-story'], timeoutMinutes: 5 }, t.deps), 0);
   assert.equal(t.io.clock, 60000);
 });
+
+// A story's <name>-story can be longer than a session name's 32 characters.
+test('a background step keeps a name longer than 32 characters, so step wait names it as it was started', async () => {
+  const long = 'openspec-cli-is-the-projects-own-story';
+  const t = await started(long, 'openspec-cli-is-the-projects-own-other-story');
+  assert.equal(t.stdout().split('\n')[0], `{"name":"${long}","pid":101}`);
+  assert.equal(t.io.spawns[0].args[t.io.spawns[0].args.indexOf('--name') + 1], long);
+  ends(t, long, 0, 1);
+  const before = t.stdout();
+  assert.equal(await wait({ names: [long] }, t.deps), 0);
+  assert.equal(waitOutput(t, before), `{"name":"${long}","exit":0}\n`);
+});
