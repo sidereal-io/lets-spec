@@ -308,11 +308,13 @@ A story whose walk stopped, or whose step failed, gets the line that
 
 ## Start the story run
 
-[Run the epic](#run-the-epic) runs this part for the story it picked,
-once [Set the question mode](../SKILL.md#set-the-question-mode) has set
-`<mode>`, on the story's branch `<name>`. It runs the story's steps in a
-child `lets-go` session. The child shares this checkout, and this
-session waits for it, so the two never write at the same time.
+In an epic run,
+[Set the question mode](../SKILL.md#set-the-question-mode) sends the
+story that [Run the epic](#run-the-epic) picked to this section, once
+it has set `<mode>`, on the story's branch `<name>`. This section
+runs the story's steps in a child `lets-go` session. The child shares
+this checkout, and this session waits for it, so the two never write at
+the same time.
 
 1. **Write the story prompt.** Copy the frame below to
    `.workspace/lets-go/<name>-story-prompt.md`, and fill in each
@@ -419,7 +421,7 @@ session waits for it, so the two never write at the same time.
 
 ## Relay a story run's questions
 
-[Start the story run](#start-the-story-run) runs this part when the
+[Start the story run](#start-the-story-run) runs this section when the
 child's report is `needs-input`. The child answers no question itself.
 This session applies `<mode>` to each one, and starts the child again
 with the answers. The child gives them to the step that asked.
