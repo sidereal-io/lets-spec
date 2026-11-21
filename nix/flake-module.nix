@@ -2,19 +2,20 @@
 # so it works in any project, whatever that project calls its shell.
 #
 #   imports = [ inputs.lets-spec.flakeModules.default ];
-#   perSystem = { config, pkgs, ... }: {
+#   perSystem = { config, inputs', pkgs, ... }: {
 #     letsSpec = {
 #       flow = "standard";            # or "minimal"
 #       skills = "committed";        # or "ignored"
 #     };
 #     devShells.default = pkgs.mkShell {
-#       packages = config.letsSpec.packages;
+#       packages = config.letsSpec.packages ++ [ inputs'.nixpkgs-unstable.legacyPackages.openspec ];
 #       shellHook = config.letsSpec.shellHook;
 #     };
 #   };
 #
-# `self` is this repo's flake. So lets, the skills and the OpenSpec CLI
-# come from the commit the project pins, not from the project's nixpkgs. The
+# `self` is this repo's flake. So lets and the skills come from the commit
+# the project pins, not from the project's nixpkgs. The project installs the
+# OpenSpec CLI itself, as the example does from a nixos-unstable input. The
 # wrapper that sets the skills mode is built with the project's own pkgs.
 # `flows` are the choices the flake builds a package for.
 { self, flows }:
@@ -61,9 +62,10 @@
           default = [ wrapped ];
           defaultText = lib.literalExpression ''[ inputs.lets-spec.packages.''${system}.''${flow}, with lets wrapped to set LETS_SPEC_SKILLS ]'';
           description = ''
-            The pinned OpenSpec CLI and lets for the chosen flow, with
-            the gh the skills call. lets sync uses the chosen skills mode.
-            Add these to the project's development shell.
+            lets for the chosen flow, with Node for lets and the gh the
+            skills call. lets sync uses the chosen skills mode. Add these to
+            the project's development shell, with an OpenSpec CLI the
+            project installs itself: these packages hold none.
           '';
         };
         shellHook = lib.mkOption {

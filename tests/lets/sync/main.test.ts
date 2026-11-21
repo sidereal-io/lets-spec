@@ -14,14 +14,19 @@ const releaseFiles = {
   [`${RELEASE}/fragments/AGENTS.md`]: 'rules\n',
 };
 
-type Setup = { env?: Record<string, string>; files?: Record<string, string>; toplevel?: string | null };
+type Setup = {
+  env?: Record<string, string>; files?: Record<string, string>; toplevel?: string | null; cwd?: string;
+  openspec?: string | { code: number } | null;
+};
 
-function setup({ env = { WORKFLOW_RELEASE: RELEASE }, files = releaseFiles, toplevel = null }: Setup = {}) {
-  const io = fakeIo({ files, toplevel });
+// An installed OpenSpec CLI by default, so tests about other things see no
+// CLI problem.
+function setup({ env = { WORKFLOW_RELEASE: RELEASE }, files = releaseFiles, toplevel = null, cwd = '/project', openspec = '1.2.3\n' }: Setup = {}) {
+  const io = fakeIo({ files, toplevel, openspec });
   const out: string[] = [];
   const err: string[] = [];
   const deps = {
-    env, cwd: '/project', packageRoot: '/pkg', io,
+    env, cwd, packageRoot: '/pkg', io,
     // sync asks no resolver.
     resolvers: {} as Deps['resolvers'],
     stdout: (text: string) => out.push(text),
@@ -78,18 +83,18 @@ test('inside a git repo a valid run exits 0 quietly', async () => {
   assert.equal(t.stderr(), '');
 });
 
-test('a CLI version that differs from release.json is a warning in the footer', async () => {
+test('a CLI older than release.json is a warning in the footer', async () => {
   const release = '/pkg/releases/standard';
   const files: Record<string, string> = {};
   for (const [path, text] of Object.entries(releaseFiles)) files[path.replace(RELEASE, release)] = text;
   files['/pkg/release.json'] = JSON.stringify({ version: '0.1.0', openspec: '1.2.3', commit: 'abc' });
   const t = setup({ env: {}, files, toplevel: '/project' });
   const original = t.io.execFile;
-  t.io.execFile = async (cmd, args, opts) => (cmd === 'openspec' ? { stdout: '1.4.0\n', stderr: '', code: 0 } : original(cmd, args, opts));
+  t.io.execFile = async (cmd, args, opts) => (cmd === 'openspec' ? { stdout: '1.1.0\n', stderr: '', code: 0 } : original(cmd, args, opts));
   t.io.dirs.add(release);
   assert.equal(await run({ check: false }, t.deps), 0);
   assert.ok(t.stderr().includes('problem(s) to fix:'));
-  assert.ok(t.stderr().includes('- the OpenSpec CLI on PATH is 1.4.0, but this release'));
+  assert.ok(t.stderr().includes('- the OpenSpec CLI on PATH is 1.1.0, older than 1.2.3'));
 });
 
 test('a WORKFLOW_RELEASE outside the package still warns from the package release.json', async () => {
@@ -97,9 +102,78 @@ test('a WORKFLOW_RELEASE outside the package still warns from the package releas
   files['/pkg/release.json'] = JSON.stringify({ version: '0.1.0', openspec: '1.2.3', commit: 'abc' });
   const t = setup({ files, toplevel: '/project' });
   const original = t.io.execFile;
-  t.io.execFile = async (cmd, args, opts) => (cmd === 'openspec' ? { stdout: '1.4.0\n', stderr: '', code: 0 } : original(cmd, args, opts));
+  t.io.execFile = async (cmd, args, opts) => (cmd === 'openspec' ? { stdout: '1.1.0\n', stderr: '', code: 0 } : original(cmd, args, opts));
   assert.equal(await run({ check: false }, t.deps), 0);
-  assert.ok(t.stderr().includes("- the OpenSpec CLI on PATH is 1.4.0, but this release's openspec-* skills were generated from 1.2.3. Pin the CLI to 1.2.3."));
+  assert.ok(t.stderr().includes("- the OpenSpec CLI on PATH is 1.1.0, older than 1.2.3, which this release's openspec-* skills were generated from. Upgrade it to 1.2.3 or later."));
+});
+
+const MISSING = 'the OpenSpec CLI is not on PATH, and the openspec-* skills need it. Install it, for example with mise: "npm:@fission-ai/openspec" = "latest".';
+const RELEASE_JSON = { '/pkg/release.json': JSON.stringify({ version: '0.1.0', openspec: '1.2.3', commit: 'abc' }) };
+
+test('no openspec on PATH is a problem to fix', async () => {
+  const t = setup({ toplevel: '/project', openspec: null });
+  assert.equal(await run({ check: false }, t.deps), 0);
+  assert.equal(t.stderr(), `lets-spec: 1 problem(s) to fix:\n- ${MISSING}\n`);
+});
+
+test('no openspec on PATH is a problem to fix with a release.json', async () => {
+  const t = setup({ files: { ...releaseFiles, ...RELEASE_JSON }, toplevel: '/project', openspec: null });
+  assert.equal(await run({ check: false }, t.deps), 0);
+  assert.equal(t.stderr(), `lets-spec: 1 problem(s) to fix:\n- ${MISSING}\n`);
+});
+
+test('an openspec that exits non-zero counts as missing', async () => {
+  const t = setup({ files: { ...releaseFiles, ...RELEASE_JSON }, toplevel: '/project', openspec: { code: 1 } });
+  assert.equal(await run({ check: false }, t.deps), 0);
+  assert.equal(t.stderr(), `lets-spec: 1 problem(s) to fix:\n- ${MISSING}\n`);
+});
+
+test('openspec --version runs once, in the project root', async () => {
+  const t = setup({ toplevel: '/project', cwd: '/project/sub/dir' });
+  await run({ check: false }, t.deps);
+  const calls = t.io.calls.filter(([cmd]) => cmd === 'openspec');
+  assert.deepEqual(calls, [['openspec', ['--version'], { cwd: '/project' }]]);
+});
+
+test('an openspec that prints no version gets no CLI message', async () => {
+  const t = setup({ files: { ...releaseFiles, ...RELEASE_JSON }, toplevel: '/project', openspec: '' });
+  assert.equal(await run({ check: false }, t.deps), 0);
+  assert.equal(t.stderr(), '');
+});
+
+const CHECK_MISSING = 'lets-spec: the OpenSpec CLI is not on PATH. Install it, for example with mise: "npm:@fission-ai/openspec" = "latest".';
+
+// A project that lets sync has just brought up to date. checkStderr is what
+// later runs print.
+async function upToDate(options: Setup) {
+  const t = setup({ toplevel: '/project', ...options });
+  await run({ check: false }, t.deps);
+  const synced = t.stderr().length;
+  return { ...t, checkStderr: () => t.stderr().slice(synced) };
+}
+
+test('check fails on a missing openspec in the committed mode', async () => {
+  const t = await upToDate({ openspec: null });
+  assert.equal(await run({ check: true }, t.deps), 1);
+  assert.equal(t.checkStderr(), `${CHECK_MISSING}\n`);
+});
+
+test('check fails on a missing openspec in the ignored mode', async () => {
+  const t = await upToDate({ env: { WORKFLOW_RELEASE: RELEASE, LETS_SPEC_SKILLS: 'ignored' }, openspec: null });
+  assert.equal(await run({ check: true }, t.deps), 1);
+  assert.equal(t.checkStderr(), `${CHECK_MISSING}\n`);
+});
+
+test('check passes with an installed openspec', async () => {
+  const t = await upToDate({});
+  assert.equal(await run({ check: true }, t.deps), 0);
+  assert.equal(t.checkStderr(), '');
+});
+
+test('check passes with an openspec older than release.json', async () => {
+  const t = await upToDate({ files: { ...releaseFiles, ...RELEASE_JSON }, openspec: '1.1.0\n' });
+  assert.equal(await run({ check: true }, t.deps), 0);
+  assert.equal(t.checkStderr(), '');
 });
 
 test('an empty LETS_SPEC_SKILLS means the default, committed', () => {

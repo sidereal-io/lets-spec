@@ -26,10 +26,12 @@ Each time `lets sync` runs, it:
   names, and the section that listed them in git's local exclude file. So
   git sees the copies, and no old skill is left beside a new one
 - warns about anything to fix: the wrong `schema:`, a config that still
-  names `lets-review-code`, a marker without its pair, a `CLAUDE.md` or
-  `.claude/skills` that is not the expected link, or an OpenSpec CLI on
-  `PATH` that differs from the one the release's `openspec-*` skills were
-  generated from. Earlier releases put a code review rule naming
+  names `lets-review-code`, a marker without its pair, or a `CLAUDE.md` or
+  `.claude/skills` that is not the expected link. It also warns when the
+  OpenSpec CLI is not on `PATH`, or when `openspec --version` fails, since
+  the `openspec-*` skills need it. And it warns when the CLI is older than
+  the one the release's `openspec-*` skills were generated from. A newer
+  CLI is fine. Earlier releases put a code review rule naming
   `lets-review-code` in `openspec/config.yaml`. Delete its
   `operations.archive` entry: the `lets-review-build` skill runs the code
   review now.
@@ -106,7 +108,7 @@ exits 1 if it finds any.
 
 | Mode | It fails when |
 |---|---|
-| Both | The rules block in `AGENTS.md` is missing, out of date, or has a marker without its pair. |
+| Both | The rules block in `AGENTS.md` is missing, out of date, or has a marker without its pair. Or the OpenSpec CLI is missing: it is not on `PATH`, or `openspec --version` fails. It then prints `lets-spec: the OpenSpec CLI is not on PATH. Install it, for example with mise: "npm:@fission-ai/openspec" = "latest".` An older CLI does not fail the check. |
 | `committed` | A copied file differs from the release in its bytes or its execute bit, is missing, or is one the release does not ship. Or `.gitignore` still has the skills block. |
 | `ignored` | `.gitignore` has no skills block, or its block is out of date. A CI clone has no copies, so it does not check them. |
 

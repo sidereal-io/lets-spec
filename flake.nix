@@ -166,11 +166,12 @@
           cp ${lets-cli}/release.json $out/release.json
         '';
 
-        # Everything a project's dev shell needs from this repo. It carries
-        # Node for lets, and the gh the skills call.
+        # What a project's dev shell needs from this repo: lets, Node for
+        # lets, and the gh the skills call. The project installs the OpenSpec
+        # CLI itself.
         bundle = flow: pkgs.buildEnv {
           name = "lets-spec-${flow}";
-          paths = [ openspec (lets flow) pkgs.gh pkgs.nodejs_26 ];
+          paths = [ (lets flow) pkgs.gh pkgs.nodejs_26 ];
         };
       in
         { inherit openspec openspec-skills lets-cli dist; default = bundle "standard"; }
@@ -189,10 +190,11 @@
         # The bats tests run the scripts directly, so they need the
         # workspace's node_modules. The smoke test then sets up a project with
         # the packaged commands, to prove the wrappers find the release, and
-        # that the pinned OpenSpec CLI works with the result.
+        # that the pinned OpenSpec CLI works with the result. The bundle has
+        # no OpenSpec CLI, so the check adds the one the release records.
         commands = pkgs.runCommand "commands-check"
           {
-            nativeBuildInputs = [ pkgs.bats pkgs.git pkgs.yq-go pkgs.jq pkgs.nodejs_26 pkgs.pnpm pkgs.pnpmConfigHook (packagesFor pkgs).default ];
+            nativeBuildInputs = [ pkgs.bats pkgs.git pkgs.yq-go pkgs.jq pkgs.nodejs_26 pkgs.pnpm pkgs.pnpmConfigHook (packagesFor pkgs).default (packagesFor pkgs).openspec ];
             pnpmDeps = pnpmDepsFor pkgs;
           }
           ''
@@ -222,13 +224,29 @@
             lets sync --check
             # The packaged lets prints the version in lets/package.json.
             [ "$(lets --version)" = ${version} ]
-            # It warns when the OpenSpec CLI on PATH is not the one its
-            # release.json records.
-            mkdir ../fake-openspec
-            printf '#!/bin/sh\necho 0.0.1\n' > ../fake-openspec/openspec
-            chmod +x ../fake-openspec/openspec
-            PATH="$PWD/../fake-openspec:$PATH" lets sync 2>warnings >/dev/null
-            grep -qF "the OpenSpec CLI on PATH is 0.0.1, but this release's openspec-* skills were generated from ${pkgs.openspec.version}." warnings
+            # It warns when the OpenSpec CLI on PATH is older than the one
+            # its release.json records, and is silent when it is newer.
+            fake() {
+              mkdir -p "../fake-$1"
+              printf '#!/bin/sh\n%s\n' "$2" > "../fake-$1/openspec"
+              chmod +x "../fake-$1/openspec"
+            }
+            fake older 'echo 0.0.1'
+            fake newer 'echo 999.0.0'
+            fake broken 'exit 1'
+            PATH="$PWD/../fake-older:$PATH" lets sync 2>warnings >/dev/null
+            grep -qF "the OpenSpec CLI on PATH is 0.0.1, older than ${pkgs.openspec.version}, which this release's openspec-* skills were generated from. Upgrade it to ${pkgs.openspec.version} or later." warnings
+            PATH="$PWD/../fake-newer:$PATH" lets sync 2>warnings >/dev/null
+            if grep -q "OpenSpec CLI" warnings; then cat warnings >&2; exit 1; fi
+            # An openspec that exits non-zero, as a broken mise shim does,
+            # counts as missing.
+            PATH="$PWD/../fake-broken:$PATH" lets sync 2>warnings >/dev/null
+            grep -qF 'the OpenSpec CLI is not on PATH, and the openspec-* skills need it.' warnings
+            if PATH="$PWD/../fake-broken:$PATH" lets sync --check 2>warnings; then
+              echo "lets sync --check passed with a broken OpenSpec CLI." >&2
+              exit 1
+            fi
+            grep -qF 'lets-spec: the OpenSpec CLI is not on PATH.' warnings
 
             openspec new change gate </dev/null >/dev/null 2>&1
             openspec instructions brainstorm --change gate </dev/null >instructions 2>stderr
@@ -339,12 +357,21 @@
                 packages = config.letsSpec.packages;
                 shellHook = config.letsSpec.shellHook;
               };
+              legacyPackages.letsSpecPackages = config.letsSpec.packages;
             };
           };
           shell = consumer.devShells.${system}.default;
           hook = pkgs.writeText "shell-hook" shell.shellHook;
+          modulePackages = lib.concatMapStringsSep " " toString consumer.legacyPackages.${system}.letsSpecPackages;
         in pkgs.runCommand "flake-module-check" { nativeBuildInputs = [ pkgs.git ]; } ''
           export HOME="$TMPDIR"
+          # The project installs the OpenSpec CLI, so the module must not.
+          for package in ${modulePackages}; do
+            if [ -e "$package/bin/openspec" ]; then
+              echo "The module's packages supply the OpenSpec CLI: $package/bin/openspec" >&2
+              exit 1
+            fi
+          done
           lets="$(grep -o '/nix/store/[^ "'"'"';]*/bin/lets' ${hook} | head -n 1)"
           # The module wraps lets to pass on the skills mode.
           if ! grep -q "LETS_SPEC_SKILLS.*ignored" "$lets"; then
