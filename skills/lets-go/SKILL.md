@@ -1354,15 +1354,15 @@ Once shape reports `done` or `failed`, remove
 finished shape. A later idea, or a second shape of the same issue, must
 start with no answers.
 
-When the step ran for an epic `#<i>` whose `Input:` line names another
-input, remove that input's answers file too, under its own
-`<shape-name>`. For an idea, remove it only when
-`.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea. The
-epic's round finished that input's discovery. A stopped round of that
-input leaves its answers, and
+On `done` or `failed`, when the step ran for an epic `#<i>` whose
+`Input:` line names another input, remove that input's answers file
+too, under its own `<shape-name>`. For an idea, remove it only when
+`.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea. A
+stopped round of that input leaves its answers, and
 [Find the input's discovery](references/shape.md#find-the-inputs-discovery)
 would find them when the run goes back to
-[Check the issue](#check-the-issue), and stop the run.
+[Check the issue](#check-the-issue), and stop the run. On
+`needs-input`, remove neither file: the next round needs them.
 
 - **`done`**: after shape, go on as
   [Run the shape step](#run-the-shape-step) says. After any other step,

@@ -112,9 +112,10 @@ which can be the idea or the issue that the epic's `Input:` line names:
   and URL. The URL is the one the `Input:` line holds, or else the
   epic's `<issue-url>` with that issue's number in place of the epic's.
 
-[Read the report](../SKILL.md#read-the-report) then removes that
-input's answers file, the one the step used, and, for an epic whose
-`Input:` line names another input, that input's too. A `done` report
+[Read the report](../SKILL.md#read-the-report) then, once the step
+reports `done` or `failed`, removes that input's answers file, the one
+the step used, and, for an epic whose `Input:` line names another
+input, that input's too. A `done` report
 names the epic and its stories, so the run goes back to
 [Check the issue](../SKILL.md#check-the-issue) with the epic.
 

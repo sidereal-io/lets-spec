@@ -2529,12 +2529,16 @@ epic_run_file() {
   # Left behind, those answers make the lookup back in Check the issue find the discovery again.
   report="$(part_section 'Read the report')"
   for phrase in \
-    'When the step ran for an epic `#<i>` whose `Input:` line names another input, remove that input'"'"'s answers file too, under its own `<shape-name>`.' \
-    'For an idea, remove it only when `.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea.'; do
+    'On `done` or `failed`, when the step ran for an epic `#<i>` whose `Input:` line names another input, remove that input'"'"'s answers file too, under its own `<shape-name>`.' \
+    'For an idea, remove it only when `.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea.' \
+    'On `needs-input`, remove neither file: the next round needs them.'; do
     grep -qF -- "$phrase" <<<"$report" || { echo "Read the report does not say: $phrase"; false; }
   done
-  grep -qF -- 'for an epic whose `Input:` line names another input, that input'"'"'s too.' <<<"$(part_section 'Run the shape step')" ||
-    { echo "Run the shape step does not name the named input's answers file"; false; }
+  # Without the condition, an agent could delete a needs-input round's answers.
+  ! grep -qF -- 'The epic'"'"'s round finished that input'"'"'s discovery.' <<<"$report" ||
+    { echo "Read the report still says the epic's round finished that input's discovery"; false; }
+  grep -qF -- 'once the step reports `done` or `failed`, removes that input'"'"'s answers file, the one the step used, and, for an epic whose `Input:` line names another input, that input'"'"'s too.' <<<"$(part_section 'Run the shape step')" ||
+    { echo "Run the shape step does not name the named input's answers file and when it goes"; false; }
 }
 
 @test "an epic that became one story finishes its stopped discovery before it builds" {
