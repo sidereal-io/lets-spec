@@ -683,7 +683,9 @@ wait.
    first two actions of
    [Give the answers to the step](story-run.md#give-the-answers-to-the-step)
    say, with the pairs of `.workspace/lets-go/<name>-story-answers.yaml`
-   in place of the `## Answers` section. When the check fails, the
+   in place of the `## Answers` section. That file is in this checkout,
+   not in `<path>`, so read it from here while the walk runs from
+   `<path>`. When the check fails, the
    story's run stops with its reason, as
    [A stop in an epic run](#a-stop-in-an-epic-run) says. Otherwise the
    walk runs that step with its answers file, as
