@@ -454,6 +454,22 @@ with the answers. The child gives them to the step that asked.
    child counts each step's rounds in its rounds files. Then act on the
    exit code as [Start the story run](#start-the-story-run) says.
 
+   On exit 3 here, no child gave these answers to the step that asked,
+   so this session does, before the walk that exit 3 starts. At the
+   first row of the walk that is not done, check and append them as the
+   first two actions of
+   [Give the answers to the step](story-run.md#give-the-answers-to-the-step)
+   say, with the pairs of `.workspace/lets-go/<name>-story-answers.yaml`
+   in place of the `## Answers` section. When the check fails, the
+   story's run stops with its reason, as
+   [A stop in an epic run](#a-stop-in-an-epic-run) says. Otherwise the
+   walk runs that step with its answers file, as
+   [Run a step](../SKILL.md#run-a-step) says. The step's count of
+   `needs-input` reports in
+   [Relay the questions](../SKILL.md#relay-the-questions) starts from
+   the lines in its `.workspace/lets-go/<session>-rounds.txt`, not from
+   none.
+
 ## Read a pull request's base
 
 [Run the epic](#run-the-epic) runs this procedure at the start, for each

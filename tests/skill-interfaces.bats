@@ -4428,6 +4428,17 @@ story_prompt_block() {
   done
 }
 
+@test "story run: exit 3 after a relay gives the relayed answers to the step that asked" {
+  local section phrase
+  section="$(skill_section lets-go 'Relay a story run'"'"'s questions')"
+  for phrase in 'On exit 3 here, no child gave these answers to the step that asked' \
+    '[Give the answers to the step](story-run.md#give-the-answers-to-the-step)' \
+    'with the pairs of `.workspace/lets-go/<name>-story-answers.yaml`' \
+    'the lines in its `.workspace/lets-go/<session>-rounds.txt`'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Relay a story run's questions does not say: $phrase"; false; }
+  done
+}
+
 @test "story run: the picked story runs its parts in this session, then Start the story run" {
   local part
   part="$(part_section 'Run the epic')"

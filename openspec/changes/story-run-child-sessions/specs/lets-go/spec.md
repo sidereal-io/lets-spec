@@ -160,9 +160,15 @@ Every line but a built or stacked line is a stop in a story run: after settling 
 ### Requirement: With no child session, the epic run walks the story itself
 When `lets delegate step run --for story` exits 3, the epic run SHALL print `No child session could start for #<i>, so this session walks its steps.` It SHALL then walk the story's step table in its own session, as *Walk the step table* says, with each step in a fresh session or a subagent, as *Run a step* says, and settle the story as *Run the epic* does today. It SHALL NOT run the story prompt in a subagent, even when the meta file names a saved prompt.
 
+When the child exits 3 after the epic run relayed its questions, the epic run SHALL first give the pairs of `.workspace/lets-go/<name>-story-answers.yaml` to the step that asked, as the child does with an `## Answers` section: at the first row that is not done, it SHALL check the step's last report and append the pairs to `.workspace/lets-go/<session>-answers.yaml`, or stop the story's run when a pair matches none of its questions. That step's count of `needs-input` reports SHALL start from the lines in its `.workspace/lets-go/<session>-rounds.txt`.
+
 #### Scenario: Only the default resolver
 - **WHEN** the config lists only `subagent`, and the epic run starts the child for #279
 - **THEN** `lets delegate step run --for story` exits 3, the epic run prints `No child session could start for #279, so this session walks its steps.`, runs #279's plan step with `lets delegate step run --for plan`, and starts no subagent with the story prompt
+
+#### Scenario: Exit 3 after a relay keeps the answers
+- **WHEN** the epic run relays the plan step's question `Which schema?`, writes its answer to `.workspace/lets-go/<name>-story-answers.yaml`, and the child's next run exits 3
+- **THEN** the epic run appends that pair to `.workspace/lets-go/<name>-plan-answers.yaml`, and runs the plan step in its own walk with `--answers-file .workspace/lets-go/<name>-plan-answers.yaml`
 
 ## MODIFIED Requirements
 
