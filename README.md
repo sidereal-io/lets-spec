@@ -313,8 +313,11 @@ story whose step fails stops only that story, and the stories that
 depend on it are not built. Running `lets-go` on the epic again goes on
 with its unfinished stories: it lists the stories whose pull request is
 ready, merged or closed, resumes the stories you started, and builds
-the rest. An epic with no open stories is not shaped yet: run
-`lets-shape` on it first.
+the rest. An epic with no stories yet is shaped first: `lets-shape`
+runs discovery with the epic as its parent, writes the scope into the
+epic's own body, keeps its old text under `## Original description`,
+and files the stories under it. The run then builds them. An epic whose
+stories are all closed is finished, and the run stops.
 
 Chores and most XS or S stories use the `lets-minimal` schema;
 [the skill](skills/lets-go/SKILL.md#route) says the exact rule. You

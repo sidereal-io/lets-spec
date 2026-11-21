@@ -46,3 +46,7 @@ are D1 to D7 in `design.md`. Sections 2 and 3 both add tests to
 - **3.5: the procedure returns Git's error.** A lets-go procedure never
   stops; *Enter the branch* stops on the error, as *A stop in an epic
   run* says.
+- **README: the epic paragraph said an empty epic is not shaped.** The
+  plan did not list `README.md`. Its `lets-go` section now says an empty
+  epic is shaped first and a finished epic stops the run, and *the
+  README says lets-go builds an epic's ready stories* checks it.

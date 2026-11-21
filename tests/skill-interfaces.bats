@@ -1355,6 +1355,10 @@ readme_lets_go() {
     { echo "the README still says a failed step stops the epic run"; false; }
   ! grep -qF 'It never takes an epic' <<<"$section" || { echo "the README still says lets-go never takes an epic"; false; }
   ! grep -qF 'It leaves a blocked story out' <<<"$section" || { echo "the README still says lets-go leaves a blocked story out"; false; }
+  ! grep -qF 'An epic with no open stories is not shaped yet' <<<"$section" ||
+    { echo "the README still says lets-go does not shape an empty epic"; false; }
+  grep -qF 'An epic with no stories yet is shaped first' <<<"$section" ||
+    { echo "the README does not say lets-go shapes an empty epic"; false; }
 }
 
 @test "lets-go runs review plan as a step of its own" {
