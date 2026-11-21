@@ -870,6 +870,11 @@ Only when the user chose a documentation pull request:
 
 - Discovery **never** creates changes. `lets-go` creates them, one story at
   a time.
+- `lets-shape` creates no change and no change branch. The issues it files
+  and a glossary holding branch are its own. It ends on the branch it
+  started on, with no edits of its own left in the working tree, except the
+  discovery maps, `openspec/discovery.md` and the files under
+  `openspec/discovery/`, when discovery ran.
 - `lets-go` picks the next story, and owns the selection rule. The user can
   also name an issue for it.
 - The story packet is the input — it must stand alone.

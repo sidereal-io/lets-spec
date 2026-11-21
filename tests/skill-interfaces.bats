@@ -3803,9 +3803,9 @@ commit_maps() {
     { echo "the dirty check still reads one map"; false; }
 }
 
-@test "discovery maps: shape prompt allows every discovery map in its clean tree" {
-  skill_says lets-go 'with a clean tree, except the discovery maps, `openspec/discovery.md` and the files under `openspec/discovery/`, when discovery ran'
-  skill_does_not_say lets-go 'with a clean tree, except `openspec/discovery.md` when discovery ran'
+@test "discovery maps: lets-shape allows every discovery map in its clean tree" {
+  skill_says lets-shape 'with no edits of its own left in the working tree, except the discovery maps, `openspec/discovery.md` and the files under `openspec/discovery/`, when discovery ran'
+  skill_does_not_say lets-shape 'except `openspec/discovery.md` when discovery ran'
 }
 
 @test "discovery maps: lets-shape makes the product and move questions confirmation questions" {
@@ -5114,4 +5114,13 @@ readme_step_returns() {
   skill_section lets-shape 'Ask who carries the edits' |
     grep -qF 'Recommend the pull request of the first story in dependency order. For one story, that is its own pull request.' ||
     { echo "Ask who carries the edits recommends no owner"; false; }
+}
+
+@test "shape-step: lets-shape ends where it started" {
+  local section
+  section="$(skill_section lets-shape 'Handing off to lets-go')"
+  grep -qF '`lets-shape` creates no change and no change branch.' <<<"$section" ||
+    { echo "Handing off to lets-go may create a change"; false; }
+  grep -qF 'It ends on the branch it started on' <<<"$section" ||
+    { echo "Handing off to lets-go names no end branch"; false; }
 }
