@@ -81,7 +81,7 @@ A story run's child SHALL end its session with one step report, as the story pro
 ### Requirement: A story run's child passes its steps' questions up
 A story run's child SHALL answer no step's question, at either question mode. When a step reports `needs-input`, the child SHALL first apply the settled-question stop of *Relay the questions*. Otherwise it SHALL append one line to `.workspace/lets-go/<session>-rounds.txt`, and count the step's rounds in this story run as the lines in that file. It SHALL end with a `needs-input` report that holds the step's questions, in the step's order, each with the step's `recommendation` when it has one. From the step's sixth round, each question SHALL also hold `ask: true`.
 
-When the story prompt ends with an `## Answers` section, the child SHALL give those answers to the step they answer: at the first row of the walk that is not done, when that step's `.workspace/lets-go/<session>-report.json` holds a `needs-input` report, it SHALL append each answer pair whose question is one of that report's questions to `.workspace/lets-go/<session>-answers.yaml`, as *Relay the questions* writes pairs, then run the step with `--answers-file` that file. When a pair matches no question of that report, the child SHALL end with a `failed` report whose reason is `stopped: the answers match no question the <step name> step asked`.
+When the story prompt ends with an `## Answers` section, the child SHALL give those answers to the step they answer: at the first row of the walk that is not done, when that step's `.workspace/lets-go/<session>-report.json` holds a `needs-input` report, it SHALL append each answer pair whose question is one of that report's questions to `.workspace/lets-go/<session>-answers.yaml`, as *Relay the questions* writes pairs, then run the step with `--answers-file` that file, in place of the row's *Not done* action, and read its report. Before it writes any pair, it SHALL check that report. When the report is not `needs-input`, or a pair matches no question of that report, the child SHALL write nothing, run no step, and end with a `failed` report whose reason is `stopped: the answers match no question the <step name> step asked`.
 
 #### Scenario: A question with a recommendation at auto
 - **WHEN** the story prompt says the question mode is `auto`, and the plan step reports `needs-input` with one question that has a recommendation
@@ -160,9 +160,15 @@ Every line but a built or stacked line is a stop in a story run: after settling 
 ### Requirement: With no child session, the epic run walks the story itself
 When `lets delegate step run --for story` exits 3, the epic run SHALL print `No child session could start for #<i>, so this session walks its steps.` It SHALL then walk the story's step table in its own session, as *Walk the step table* says, with each step in a fresh session or a subagent, as *Run a step* says, and settle the story as *Run the epic* does today. It SHALL NOT run the story prompt in a subagent, even when the meta file names a saved prompt.
 
+When the child exits 3 after the epic run relayed its questions, the epic run SHALL first give the pairs of `.workspace/lets-go/<name>-story-answers.yaml` to the step that asked, as the child does with an `## Answers` section: at the first row that is not done, it SHALL check the step's last report and append the pairs to `.workspace/lets-go/<session>-answers.yaml`, or stop the story's run when a pair matches none of its questions. That step's count of `needs-input` reports SHALL start from the lines in its `.workspace/lets-go/<session>-rounds.txt`.
+
 #### Scenario: Only the default resolver
 - **WHEN** the config lists only `subagent`, and the epic run starts the child for #279
 - **THEN** `lets delegate step run --for story` exits 3, the epic run prints `No child session could start for #279, so this session walks its steps.`, runs #279's plan step with `lets delegate step run --for plan`, and starts no subagent with the story prompt
+
+#### Scenario: Exit 3 after a relay keeps the answers
+- **WHEN** the epic run relays the plan step's question `Which schema?`, writes its answer to `.workspace/lets-go/<name>-story-answers.yaml`, and the child's next run exits 3
+- **THEN** the epic run appends that pair to `.workspace/lets-go/<name>-plan-answers.yaml`, and runs the plan step in its own walk with `--answers-file .workspace/lets-go/<name>-plan-answers.yaml`
 
 ## MODIFIED Requirements
 
@@ -284,6 +290,7 @@ When `step run` exits 3, `lets-go` SHALL run the step in a subagent. The subagen
 
 #### Scenario: A done report with no evidence
 - **WHEN** the subagent's block holds `outcome: done` and no `evidence`
+- **THEN** `lets-go` treats the step as `failed`, with a reason that names `evidence`, and stops
 
 #### Scenario: A subagent's marked question
 - **WHEN** the subagent's block holds `outcome: needs-input` and one question with `ask: true`

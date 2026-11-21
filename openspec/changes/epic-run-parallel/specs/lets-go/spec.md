@@ -228,7 +228,7 @@ An epic run SHALL end with one line for every story the epic had when the run st
 
 - A built story: `#<story> <story-name>: <pr-url>`, the URL of its pull request. A built story that the epic run stacked on a blocker SHALL end its line with `, stacked on #<blocker>`, such as `#280 epic-run-stacks: <pr-url>, stacked on #279`. The lines then show the merge order: a stacked story's pull request merges after its blocker's. A story whose pull request was ready for review when the run started gets this line too, as *An epic run settles the stories already ready, merged or closed* says.
 - A merged story: `#<story> <story-name>: merged, <pr-url>`, the URL of its merged pull request.
-- A story not built: `#<story> <story-name>: not built, <reason>`. The reason SHALL say why, such as `blocked by #279`, `blocked by #284 and #285, on different branches`, `assigned to octocat`, `taken by octocat`, `its packet is not complete`, `its glossary prerequisite is unresolved`, `in another repository`, `its pull request was closed: <pr-url>` or `it depends on #391, which did not finish`. For a story `lets backlog ready` did not list, `lets-go` SHALL read why with `lets backlog item <story>`, as *Pick the first ready story* does: an open blocker, an assignee, or its Status, Kind or Priority.
+- A story not built: `#<story> <story-name>: not built, <reason>`. The reason SHALL say why, such as `blocked by #279`, `blocked by #284 and #285, on different branches`, `assigned to octocat`, `taken by octocat`, `its packet is not complete`, `its glossary prerequisite is unresolved`, `in another repository`, `its pull request was closed: <pr-url>` or `it depends on #391, which did not finish`. For a story `lets backlog ready` did not list, `lets-go` SHALL read why with `lets backlog item <story>`, as *Pick the first ready story* does: an open blocker that is not met, an assignee, or its Status, Kind or Priority. For a story passed in `--started`, the signed-in user as an assignee SHALL not be the reason, because `lets backlog ready` keeps such a story.
 - A story whose step failed: `#<story> <story-name>: failed at <step name>: <reason>`, with the step's name in plain words, as its `Failed` line names it.
 - A story whose walk stopped for another reason: `#<story> <story-name>: stopped: <reason>`.
 
@@ -245,6 +245,10 @@ A line SHALL end with what *An epic run removes a built story's worktree* says o
 #### Scenario: An assigned story
 - **WHEN** #282 is assigned to `octocat` when the epic run starts, and its change's branch exists nowhere
 - **THEN** its line is `#282 epic-run-resume: not built, assigned to octocat`
+
+#### Scenario: A started story left out for its Status
+- **WHEN** #282 is assigned to the signed-in user `octocat`, its branch `epic-run-resume` exists, it has no open blocker, its Status is Done, and nothing is ready
+- **THEN** its line is `#282 epic-run-resume: not built, its Status is Done`, not `assigned to octocat`
 
 #### Scenario: Each line prints as the story settles
 - **WHEN** the children of #280 and #281 run at once, and #281's child ends first with its pull request ready for review
@@ -417,6 +421,8 @@ Every line but a built or stacked line is a stop in a story run: after settling 
 ### Requirement: With no child session, the epic run walks the story itself
 When `lets delegate step wait` names a story's child with exit 3, the epic run SHALL keep the story until no other child of the wave runs. It SHALL then print `No child session could start for #<i>, so this session walks its steps.` and walk the story's step table in its own session, with the story's worktree as the repository root, as *Walk the step table* says, with each step in a fresh session or a subagent, as *Run a step* says. It SHALL walk such stories one at a time, in the order their children ended, and settle each as *Run the epic* does when its walk ends, removing its worktree when it is built. It SHALL NOT run the story prompt in a subagent, even when the meta file names a saved prompt.
 
+When the child that `lets delegate step wait` names with exit 3 had been started again after the epic run relayed its questions, the epic run SHALL first give the pairs of `.workspace/lets-go/<name>-story-answers.yaml` to the step that asked, as the child does with an `## Answers` section: at the first row that is not done, it SHALL check the step's last report and append the pairs to `.workspace/lets-go/<session>-answers.yaml`, or stop the story's run when a pair matches none of its questions. That step's count of `needs-input` reports SHALL start from the lines in its `.workspace/lets-go/<session>-rounds.txt`.
+
 #### Scenario: Only the default resolver
 - **WHEN** the config lists only `subagent`, and the epic run starts the child for #279
 - **THEN** `lets delegate step wait` names #279's child with exit 3, the epic run prints `No child session could start for #279, so this session walks its steps.`, runs #279's plan step with `lets delegate step run --for plan` from `.workspace/lets-go/worktrees/epic-run-skeleton`, and starts no subagent with the story prompt
@@ -428,3 +434,7 @@ When `lets delegate step wait` names a story's child with exit 3, the epic run S
 #### Scenario: Two stories with no child session
 - **WHEN** the children of #280 and #281 both exit 3, #281's first
 - **THEN** the epic run walks #281's steps, settles #281, then walks #280's steps
+
+#### Scenario: Exit 3 after a relay keeps the answers
+- **WHEN** the epic run relays the plan step's question `Which schema?`, writes its answer to `.workspace/lets-go/<name>-story-answers.yaml`, starts the child again, and `lets delegate step wait` then names the child with exit 3
+- **THEN** the epic run appends that pair to `.workspace/lets-go/<name>-plan-answers.yaml` in the story's worktree, and runs the plan step in its own walk with `--answers-file .workspace/lets-go/<name>-plan-answers.yaml`

@@ -43,7 +43,7 @@ In `lets backlog waves`, a named item SHALL be another named item's blocker when
 - **THEN** wave 1 holds #7 and #9
 
 ### Requirement: waves reads an item's paths from its packet's Relevant code
-`lets backlog waves` SHALL read an item's paths from the `- **Relevant code**:` list item of its body: that line, and the indented lines that continue it. A path SHALL be a code span with no space in it that holds a `/`, or that ends in a file extension: a `.` followed by letters or digits, such as `README.md`. A leading `./` SHALL be dropped from a path, so `./README.md` and `README.md` are the same path. Every other code span, such as `ready --only` or `subIssues`, SHALL be ignored, and so SHALL all text outside code spans, such as section names in parentheses. Two paths SHALL overlap when they are the same once a trailing `/` is dropped, or when one, with a `/` after it, starts the other: one is a folder that holds the other. Two items SHALL overlap when any of their paths overlap. An item SHALL overlap every other item when its body has no **Relevant code** list item, or its **Relevant code** names no path, such as `new`.
+`lets backlog waves` SHALL read an item's paths from the `- **Relevant code**:` list item of its body: that line, and the indented lines that continue it. A path SHALL be a code span with no space in it that holds a `/`, or that ends in a file extension: a `.` followed by letters or digits, such as `README.md`. A leading `./` SHALL be dropped from a longer path, so `./README.md` and `README.md` are the same path. Every other code span, such as `ready --only` or `subIssues`, SHALL be ignored, and so SHALL all text outside code spans, such as section names in parentheses. Two paths SHALL overlap when they are the same once a trailing `/` is dropped, or when one, with a `/` after it, starts the other: one is a folder that holds the other. The repository's root, `./` or `/`, SHALL hold every path. Two items SHALL overlap when any of their paths overlap. An item SHALL overlap every other item when its body has no **Relevant code** list item, or its **Relevant code** names no path, such as `new`.
 
 #### Scenario: Section names and other code spans are ignored
 - **WHEN** #279's body holds ``- **Relevant code**: `skills/lets-go/SKILL.md` (*Check the issue*), `lets/src/backlog/commands.ts` (`ready --only`, `subIssues`)``
@@ -60,6 +60,10 @@ In `lets backlog waves`, a named item SHALL be another named item's blocker when
 #### Scenario: A folder name that only starts another name
 - **WHEN** #5's **Relevant code** names `skills/lets-go`, and #6's names `skills/lets-go-extra/SKILL.md`
 - **THEN** #5 and #6 do not overlap
+
+#### Scenario: The repository's root holds every path
+- **WHEN** #5's **Relevant code** names `./`, and #6's names `lets/src/main.ts`
+- **THEN** #5 and #6 overlap
 
 #### Scenario: A file name with no folder
 - **WHEN** #5's **Relevant code** names `README.md`, and #6's names `README.md` too

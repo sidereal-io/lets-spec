@@ -78,13 +78,16 @@ as for any picked issue.
      `MERGED`; else the `CLOSED` one with the latest `createdAt`. Its
      `url` is `<pr-url>`. Settle the story by its pull request:
      - **Open, and its `isDraft` is `false`:** the pull request is
-       ready for review. `<pr-base>` is its `baseRefName`: run
+       ready for review. `<story-pr>` is its `number`, and `<pr-base>`
+       its `baseRefName`: run
        [Read a pull request's base](#read-a-pull-requests-base) for the
        story. On `on-story`, settle the story with its stacked line,
        naming the `<blocker>` it carries. On `not-stacked`, settle it
        with its built line. On `edit-failed`, say which pull request's
-       base could not be moved, with gh's error, and settle the story
-       with `stopped: <reason>`, where the reason is gh's error.
+       base could not be moved, with gh's error. Settle the story with
+       its `stopped` line, as
+       [A stop in an epic run](#a-stop-in-an-epic-run) writes it, where
+       the reason is gh's error.
        Either way, the epic run runs none of its steps, and *Pick the
        next story* finds it met while its pull request stays ready.
      - **Merged:** settle the story with its merged line. It is not
@@ -95,18 +98,22 @@ as for any picked issue.
      - **An open draft, or no pull request:** settle nothing. The story
        is not finished, and a pick can take it.
 
-   A story settled here that blocks another story leaves that story
-   blocked while its issue is open: the blocked story gets its own
-   `not built, blocked by #<blocker>` line when no candidate is left.
+   A story settled here as merged or closed that blocks another story
+   leaves that story blocked while its issue is open: the blocked story
+   gets its own `not built, blocked by #<blocker>` line when no
+   candidate is left.
    The branches found here hold for the whole epic run. A branch created
    later belongs to a story this run claimed, and that story is settled
    before the next pick.
 
    Last, sort the stories not settled yet into waves: sets of stories
-   that no blocked-by link joins, and whose packets name no overlapping
-   path under **Relevant code**. `<keys>` are the keys of the epic's
-   stories in this repository that are not settled yet, in the epic's
-   order, joined by commas, such as `283,285,286,287`:
+   that no chain of blocked-by links joins, and whose packets name no
+   overlapping path under **Relevant code**. When every story is
+   settled here, run no `waves` command and print no waves: go to
+   [End of the run](../SKILL.md#end-of-the-run). Otherwise, `<keys>`
+   are the keys of the epic's stories in this repository that are not
+   settled yet, in the epic's order, joined by commas, such as
+   `283,285,286,287`:
 
    ```bash
    lets backlog waves --only <keys> > .workspace/lets-go/epic-<parent>-waves.json
@@ -115,8 +122,7 @@ as for any picked issue.
    The command writes the file afresh, and the waves in it hold for the
    whole epic run: *Pick the next story* reads it before each pick. On
    exit 1, act as [Backlog errors](../SKILL.md#backlog-errors) says,
-   with the error the file holds. When every story is settled here, run
-   no `waves` command and print no waves.
+   with the error the file holds.
 
    Otherwise print the waves, from the file's `waves`, in order. First
    print:
@@ -321,9 +327,17 @@ as for any picked issue.
        with `lets backlog item <story>`. On an error, act as
        [Backlog errors](../SKILL.md#backlog-errors) says. The reason is
        `blocked by #<blocker>`, naming each open issue in its
-       `blockedBy`; else `assigned to <login>`, naming each login in its
-       `assignees`; else its `status`, `kind` or `priority`, such as
-       `its Status is Done`.
+       `blockedBy` that is not a met story; else `assigned to <login>`,
+       naming each login in its `assignees`; else its `status`, `kind`
+       or `priority`, such as `its Status is Done`.
+       For a story passed in `--started`, `lets backlog ready` keeps one
+       assigned to the signed-in user, so that assignee is no reason:
+       name only the other logins, and with none, go on to the next
+       reason. Read the signed-in user's login once:
+
+       ```bash
+       gh auth status --active --json hosts --jq '.hosts[][].login'
+       ```
 
      A story whose child this run started is not settled by the pick:
      give no `not built` line to a story that the children file lists.
@@ -334,8 +348,8 @@ as for any picked issue.
 A story is settled once the epic run has given it its line. To settle a
 story, print its line, and append it to
 `.workspace/lets-go/epic-<parent>-lines.txt`. Print each line as the
-story settles, before the next `Picked` line. When the children file
-lists the story, remove the story's line from
+story settles, before the next `Picked` or `Resumed` line. When the
+children file lists the story, remove the story's line from
 `.workspace/lets-go/epic-<parent>-children.txt`, so no wait names its
 child again:
 
@@ -343,8 +357,9 @@ child again:
 grep -v '^<story> ' .workspace/lets-go/epic-<parent>-children.txt > .workspace/lets-go/epic-<parent>-children.new
 mv .workspace/lets-go/epic-<parent>-children.new .workspace/lets-go/epic-<parent>-children.txt
 ```
- `<story-name>` is the part
-of the story's title before ` — `, or the whole title when it has none.
+
+`<story-name>` is the part of the story's title before ` — `, or the
+whole title when it has none.
 
 A story whose pull request is ready for review gets this line, with the
 pull request's URL. So does a story whose pull request was ready for
@@ -354,9 +369,12 @@ review when the epic run started:
 #<story> <story-name>: <pr-url>
 ```
 
-A built story that [Stack the story](#stack-the-story) stacked on
-`#<blocker>` gets this line instead. The lines then show the merge
-order: its pull request merges after its blocker's.
+A built story stacked on `#<blocker>` gets this line instead, whether
+[Stack the story](#stack-the-story),
+[Take up a started story](#take-up-a-started-story) or
+[Read a pull request's base](#read-a-pull-requests-base) found the
+stack. The lines then show the merge order: its pull request merges
+after its blocker's.
 
 ```text
 #<story> <story-name>: <pr-url>, stacked on #<blocker>
@@ -381,6 +399,10 @@ The reason says why, such as `in another repository`,
 `assigned to <login>`, `its packet is not complete`,
 `its pull request was closed: <pr-url>` or
 `it depends on #<failed>, which did not finish`.
+
+A story whose walk stopped, or whose step failed, gets the line that
+[A stop in an epic run](#a-stop-in-an-epic-run) gives it, with no
+`not built`.
 
 ### Wait for the wave
 
@@ -453,7 +475,11 @@ for a story whose child could not start, which this session walks.
    Then walk the story's steps in this session, from
    [Walk the step table](../SKILL.md#walk-the-step-table), with
    `<path>` as the repository root: run each of the walk's commands
-   from `<path>`. Each step runs as
+   from `<path>`. When the child that ended with exit 3 had been started
+   again by
+   [Relay a story run's questions](#relay-a-story-runs-questions), give
+   its relayed answers to the step that asked first, as that section
+   says. Each step runs as
    [Run a step](../SKILL.md#run-a-step) says: in a fresh session, or in
    a subagent on that step's own exit 3. Run no subagent with the story
    prompt, even when the meta file names a saved prompt: a subagent
@@ -468,15 +494,16 @@ for a story whose child could not start, which this session walks.
 
 ## Start the story run
 
-[Run the epic](#run-the-epic) runs this part for the story it picked,
-once [Set the question mode](../SKILL.md#set-the-question-mode) has set
-`<mode>`, with the story's branch `<name>` checked out in its worktree
-`<path>`. It starts the story's steps in a child `lets-go` session, in
-the background, and goes back to [Run the epic](#run-the-epic) without
-waiting for the child. The child works only in `<path>`, so the
-children of a wave never write in the same checkout. The epic run's own
-files for the story, its prompt, answers, report and meta files, stay
-in this checkout.
+In an epic run,
+[Set the question mode](../SKILL.md#set-the-question-mode) sends the
+story that [Run the epic](#run-the-epic) picked to this section, once
+it has set `<mode>`, with the story's branch `<name>` checked out in its
+worktree `<path>`. This section starts the story's steps in a child
+`lets-go` session, in the background, and goes back to
+[Run the epic](#run-the-epic) without waiting for the child. The child
+works only in `<path>`, so the children of a wave never write in the
+same checkout. The epic run's own files for the story, its prompt,
+answers, report and meta files, stay in this checkout.
 
 1. **Write the story prompt.** Copy the frame below to
    `.workspace/lets-go/<name>-story-prompt.md` in this checkout, and
@@ -587,7 +614,7 @@ in this checkout.
 
 ## Relay a story run's questions
 
-[Wait for the wave](#wait-for-the-wave) runs this part when a child's
+[Wait for the wave](#wait-for-the-wave) runs this section when a child's
 report is `needs-input`. The child answers no question itself. This
 session applies `<mode>` to each one, and starts the child again with
 the answers. The child gives them to the step that asked. `<mode>` is
@@ -649,6 +676,23 @@ wait.
    in the children file. Then go back to
    [Wait for the wave](#wait-for-the-wave).
 
+   When [Wait for the wave](#wait-for-the-wave) later names this child
+   with exit 3, no child gave these answers to the step that asked, so
+   this session does, at the start of the story's walk. At the
+   first row of the walk that is not done, check and append them as the
+   first two actions of
+   [Give the answers to the step](story-run.md#give-the-answers-to-the-step)
+   say, with the pairs of `.workspace/lets-go/<name>-story-answers.yaml`
+   in place of the `## Answers` section. When the check fails, the
+   story's run stops with its reason, as
+   [A stop in an epic run](#a-stop-in-an-epic-run) says. Otherwise the
+   walk runs that step with its answers file, as
+   [Run a step](../SKILL.md#run-a-step) says. The step's count of
+   `needs-input` reports in
+   [Relay the questions](../SKILL.md#relay-the-questions) starts from
+   the lines in its `.workspace/lets-go/<session>-rounds.txt`, not from
+   none.
+
 ## Read a pull request's base
 
 [Run the epic](#run-the-epic) runs this procedure at the start, for each
@@ -657,18 +701,14 @@ story whose pull request is ready for review.
 resumed story's open pull request. It says whether the pull request
 stacks the story on another story, and moves the pull request off the
 branch of a blocker that has merged. `<story>` is the story,
-`<story-name>` its change name, and `<pr-base>` its pull request's
-`baseRefName`. Apply the first of these rules that matches:
+`<story-name>` its change name, `<story-pr>` its pull request's
+`number`, and `<pr-base>` its pull request's `baseRefName`. The caller
+read them from this repository's pull requests, with the forks dropped.
+Apply the first of these rules that matches:
 
 1. **`<pr-base>` is `<default>`:** the story is not stacked. Return
    `not-stacked`.
-2. **`<pr-base>` is the change name of an open story of the epic,**
-   other than `<story>`: the pull request stacks the story on that
-   story. `<blocker>` is that story, and `<blocker-branch>` is
-   `<pr-base>`. Return `on-story`. A blocker whose pull request merged
-   into another story's branch matches here, because its issue is still
-   open: its work is not on the default branch yet.
-3. **`<pr-base>` is the head branch of a pull request of this
+2. **`<pr-base>` is the head branch of a pull request of this
    repository that merged into the default branch:** read the merged
    pull requests from that branch:
 
@@ -683,11 +723,22 @@ branch of a blocker that has merged. `<story>` is the story,
    request's target changes.
 
    ```bash
-   gh pr edit <story-name> --base <default>
+   gh pr edit <story-pr> --base <default>
    ```
 
    When the edit fails, return `edit-failed`. Otherwise the story is
    not stacked: return `not-stacked`.
+
+   This rule comes before the next one because the epic's stories are
+   the set read at the start: a blocker whose pull request merged
+   during the epic run is still one of them, but its work is on the
+   default branch.
+3. **`<pr-base>` is the change name of an open story of the epic, in
+   this repository,** other than `<story>`: the pull request stacks the
+   story on that story. `<blocker>` is that story, and
+   `<blocker-branch>` is `<pr-base>`. Return `on-story`. A blocker whose
+   pull request merged into another story's branch matches here, because
+   its issue is still open: its work is not on the default branch yet.
 4. **Anything else:** leave the base as it is, and return
    `not-stacked`. A base whose pull request merged into a branch other
    than the default branch is one: moving the pull request to the
@@ -718,16 +769,19 @@ its change name. The open blockers are the entries of the story's
 1. Read the story's pull request:
 
    ```bash
-   gh pr view <name> --json number,state,baseRefName
+   gh pr list --head <name> --state all --limit 100 --json number,state,baseRefName,isCrossRepository,createdAt
    ```
 
-   When gh says that no pull request is found for the branch, the story
-   has none. When the command fails for another reason, return
-   `read-failed`.
+   Drop each entry whose `isCrossRepository` is `true`: a pull request
+   from a fork can share the name. The story's pull request is the entry
+   whose `state` is `OPEN`; else the one whose `state` is `MERGED`; else
+   the `CLOSED` one with the latest `createdAt`. With no entry left, the
+   story has none. When the command fails, return `read-failed`.
 2. With an open pull request, one whose `state` is `OPEN`, take the
    story's stack from it. `<pr-base>` is its `baseRefName`. Run no
    [Stack the story](#stack-the-story): the branch holds commits made on
-   that base, and another blocker's branch may not contain them. Run
+   that base, and another blocker's branch may not contain them.
+   `<story-pr>` is its `number`. Run
    [Read a pull request's base](#read-a-pull-requests-base) for the
    story, and act on its result:
    - **`on-story`:** read the open pull requests, and find the met
@@ -744,10 +798,14 @@ its change name. The open blockers are the entries of the story's
      and return `not-stacked`.
    - **`not-stacked`:** return `not-stacked`.
    - **`edit-failed`:** return `edit-failed`.
-3. With no open pull request and an open blocker, run
+3. With a pull request whose `state` is `MERGED` or `CLOSED`, return
+   `not-stacked`, and run no [Stack the story](#stack-the-story): it is
+   for a branch with no pull request.
+   [Walk the step table](../SKILL.md#walk-the-step-table) reads the
+   pull request again, and acts on its state as for any run.
+4. With no pull request and an open blocker, run
    [Stack the story](#stack-the-story), and return its result.
-4. With no open pull request and no open blocker, return
-   `not-stacked`.
+5. With no pull request and no open blocker, return `not-stacked`.
 
 It returns one of these results:
 
@@ -845,11 +903,11 @@ result.
 
 ## A stop in an epic run
 
-While an epic run is on a story, from its `Picked` line to its line, a
-stop ends only that story's run, not the epic run. This holds the same
-way for every stop of the parts and procedures the story runs through,
-such as a failed step, records that disagree, a pull request that is
-merged or closed, a stop of
+While an epic run is on a story, from its `Picked` or `Resumed` line
+to its line, a stop ends only that story's run, not the epic run. This
+holds the same way for every stop of the parts and procedures the story
+runs through, such as a failed step, records that disagree, a pull
+request that is merged or closed, a stop of
 [Check the prerequisite](glossary-handoff.md#check-the-prerequisite),
 a failed claim write, a `lets backlog` error, a `fetch-failed` from
 [Stack the story](#stack-the-story), an `edit-failed` or

@@ -70,42 +70,55 @@ This section is for you if you want the details behind the Quick start.
 | Nix with flakes, or mise | any | Installs the tools below, and runs `lets sync`. |
 | GitHub repository | — | The backlog is a GitHub Project linked to it. |
 | GitHub CLI (`gh`) | 2.102.0 or later | The skills set Project fields by name, and create sub-issues and "blocked by" links. |
-| OpenSpec CLI | The version the release was generated from | The `openspec-*` skills are generated from it. |
+| OpenSpec CLI | The version the release was generated from, or later | The `openspec-*` skills are generated from it, and run it. |
 | Node | 26 or later | `lets` runs on it. |
 | T3 Code, or `codex`, `claude` or `agy`, optional | any | Lets the resolvers built into `lets` run reviews in a [fresh session](#-reviews-in-a-fresh-session). Without one that reaches another model family, the reviews are not independent. |
 
-The flake supplies `gh`, the OpenSpec CLI and Node. With mise, you pin them.
+The flake supplies `gh` and Node. With mise, you pin them. Every project
+installs the OpenSpec CLI itself, with Nix or mise, as the sections below
+show.
 
 ### With Nix
 
-Add the flake input, following `main`; your `flake.lock` pins the commit:
+Add the flake inputs. `lets-spec` follows `main`, and your `flake.lock`
+pins the commit. `nixpkgs-unstable` gives you the OpenSpec CLI:
 
 ```nix
 inputs.lets-spec.url = "github:sidereal-io/lets-spec";
+inputs.nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 ```
+
+The OpenSpec CLI must come from nixos-unstable. The stable channels will
+not do: nixos-25.11 and older have no `openspec` package, and nixos-26.05
+has 1.4.1, older than the CLI the releases are generated from.
 
 With [flake-parts](https://flake.parts), import the module and use it:
 
 ```nix
 imports = [ inputs.lets-spec.flakeModules.default ];
-perSystem = { config, pkgs, ... }: {
+perSystem = { config, inputs', pkgs, ... }: {
   letsSpec = {
     flow = "standard";      # the default
     skills = "committed";   # the default, or "ignored"
   };
   devShells.default = pkgs.mkShell {
-    packages = config.letsSpec.packages;
+    packages = config.letsSpec.packages ++ [ inputs'.nixpkgs-unstable.legacyPackages.openspec ];
     shellHook = config.letsSpec.shellHook;
   };
 };
 ```
 
 Without flake-parts, add the package named for the flow, such as
-`lets-spec.packages.${system}.standard`, run `lets sync` in `shellHook`
-outside CI, and set `LETS_SPEC_SKILLS` for the skills mode. `standard` and
-`committed` are the defaults; [The flows](#the-flows) and
+`lets-spec.packages.${system}.standard`, and
+`nixpkgs-unstable.legacyPackages.${system}.openspec` beside it. Run
+`lets sync` in `shellHook` outside CI, and set `LETS_SPEC_SKILLS` for the
+skills mode. `standard` and `committed` are the defaults;
+[The flows](#the-flows) and
 [Committed or ignored skills](docs/lets-sync.md#committed-or-ignored-skills)
 explain the others.
+
+If `lets sync` says the OpenSpec CLI is older than the release's, run
+`nix flake update nixpkgs-unstable`.
 
 ### With mise
 
@@ -116,7 +129,7 @@ Add this to your project's `mise.toml`, then run `mise lock` and commit
 [tools]
 node = "26"
 gh = "2.102"
-"npm:@fission-ai/openspec" = "1.13.2"   # the version in the release notes
+"npm:@fission-ai/openspec" = "latest"
 "github:sidereal-io/lets-spec" = "latest"
 
 [env]
@@ -128,9 +141,8 @@ enter = "lets sync"
 ```
 
 `standard` and `committed` are the defaults, as with Nix. `latest` stays
-on one release until `mise upgrade`; `auto_update` never moves it. Pin the
-OpenSpec CLI to the version the release notes name, or `lets sync` warns
-you. The `enter` hook needs `mise activate`; without it, run
+on one release until `mise upgrade`; `auto_update` never moves it. The
+`enter` hook needs `mise activate`; without it, run
 `mise exec -- lets sync`.
 
 ### First run and commit
@@ -278,11 +290,11 @@ goes on.
 Given an epic's number, `lets-go` builds each ready story of the epic to
 a pull request ready for review, from the default branch. An epic run
 first sorts its stories into waves and prints them, with why each story
-waits. A wave holds stories that no blocked-by link joins and whose
-packets name no overlapping path under **Relevant code**. The epic run
-then builds the stories of one wave at the same time, each in a git
-worktree of its own, and starts the next wave once every story of this
-one is settled. It claims each story and creates its worktree under
+waits. A wave holds stories that no chain of blocked-by links joins and
+whose packets name no overlapping path under **Relevant code**. The
+epic run then builds the stories of one wave at the same time, each in
+a git worktree of its own, and starts the next wave once every story of
+this one is settled. It claims each story and creates its worktree under
 `.workspace/lets-go/worktrees/`, while its own checkout stays on the
 default branch. Then each story runs in a child `lets-go` session, in
 the background, which walks its steps, so the epic run's own context
@@ -603,17 +615,17 @@ first: some releases need a step of your own.
 ### With Nix
 
 Run `nix flake update lets-spec`, enter the dev shell, and commit what
-`lets sync` wrote. Dependabot's `nix` entry opens a pull request when
+`lets sync` wrote. If the dev shell has no OpenSpec CLI, `lets sync` says
+so: add `openspec` from a nixos-unstable input, as
+[With Nix](#with-nix) shows. Dependabot's `nix` entry opens a pull request when
 `main` moves, but it changes only `flake.lock`, so `lets sync --check`
 fails in CI until someone enters the dev shell on its branch and commits.
 
 ### With mise
 
 1. Run `mise upgrade`.
-2. Set the OpenSpec CLI in `mise.toml` to the version named in the new
-   release's notes, and run `mise install`.
-3. Run `lets sync`.
-4. Commit `mise.toml` and `mise.lock` with what `lets sync` wrote.
+2. Run `lets sync`.
+3. Commit `mise.toml` and `mise.lock` with what `lets sync` wrote.
 
 ## 🛠️ Development
 
@@ -629,7 +641,7 @@ you Node 26, pnpm, bats, `jq`, `yq` and the OpenSpec CLI. Then run
 |---|---|
 | `flake.nix` | Reads `flows.json`, calls `build/`, and defines the packages and checks |
 | `flows.json` | Each flow's recipe: its schemas from `schemas/` and the skills they call, plus the entry points. The first schema is the flow's default and names it. The build fails if a recipe names a missing schema or skill, or lists one twice. |
-| `nix/flake-module.nix` | The flake module that projects import. It puts the OpenSpec CLI, `lets` and `gh` in the dev shell, and runs `lets sync` when the shell starts. |
+| `nix/flake-module.nix` | The flake module that projects import. It puts `lets`, Node and `gh` in the dev shell, and runs `lets sync` when the shell starts. The project adds the OpenSpec CLI itself. |
 | `build/` | The release builder, the OpenSpec skill generator and the list of OpenSpec workflows |
 | `openspec-*` skills | Not committed. The flake generates them from the OpenSpec CLI in its nixpkgs, for the workflows in `build/openspec.json`, so moving nixpkgs can change their text. Each release records the CLI version in its `release.json`. |
 | `lets/` | The `lets` command, in TypeScript. `src/sync/` is `lets sync`, and `src/delegate/` is `lets delegate`. `src/resolvers/t3/`, `cli/` and `subagent/` are the three resolvers, each an adapter that `lets delegate` calls in process. `src/resolvers/kit/` is the code they share with `lets delegate`: the adapter type, the model families, the errors and exit codes. `build.mjs` bundles `lets` into one file with esbuild. |
@@ -647,8 +659,8 @@ you Node 26, pnpm, bats, `jq`, `yq` and the OpenSpec CLI. Then run
 `nix build .#dist` builds the release folder: the `lets` bundle in `bin/`,
 one file with no `node_modules`, and a release for every flow. Bump
 `version` in `lets/package.json` in the commit you tag. Pushing a
-`v<major>.<minor>.<patch>` tag publishes `lets-spec-<version>.tar.gz`, with
-the OpenSpec CLI version in its notes. Then bump this repository's own
+`v<major>.<minor>.<patch>` tag publishes `lets-spec-<version>.tar.gz`. Its
+notes name the oldest OpenSpec CLI the release supports. Then bump this repository's own
 mise pin, and commit what `lets sync` wrote.
 
 ### Testing

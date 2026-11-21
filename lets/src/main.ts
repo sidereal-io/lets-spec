@@ -73,8 +73,9 @@ session runs: review runs it read-only and waits for its answer, handoff
 starts an interactive session and returns at once, and step runs a session
 that may write files and waits for its step report. The intent is what it
 is for: plan or code for a review, apply for a handoff, and one of the five
-steps for a step. Each strategy has two commands: instructions says what
-can run and gives the user's guidance, and run runs it.
+steps, or story for a story run, for a step. Each strategy has two
+commands: instructions says what can run and gives the user's guidance,
+and run runs it.
 
 A resolver turns each request into a real session. Three are built into
 lets: t3 starts sessions in T3 Code, cli runs a family's CLI headless, and

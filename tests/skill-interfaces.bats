@@ -1275,6 +1275,8 @@ step_numbers() {
   grep -qF -- "$phrase" <<<"$(readme_lets_go)" || { echo "the README's lets-go section does not say: $phrase"; false; }
   overview="$(awk '/^## / { exit } NR > 1' "$(epic_run_file)" | tr -s '[:space:]' ' ')"
   grep -qF -- "$phrase" <<<"$overview" || { echo "the overview of references/epic-run.md does not say: $phrase"; false; }
+  grep -qF -- 'A wave holds stories that no chain of blocked-by links joins' <<<"$(readme_lets_go)" ||
+    { echo "the README does not say that no chain of blocked-by links joins a wave's stories"; false; }
   grep -F '| `lets/src/backlog/` |' "$repo/README.md" | grep -qF '`waves.ts`' ||
     { echo "the README's layout table does not name waves.ts"; false; }
 }
@@ -2385,12 +2387,13 @@ epic_run_file() {
 }
 
 @test "wave: an epic run sorts the stories not settled into waves before the first pick" {
-  local part start settle waves pick phrase
+  local part start settle waves pick guard phrase
   part="$(part_section 'Run the epic')"
   for phrase in \
     'lets backlog waves --only <keys> > .workspace/lets-go/epic-<parent>-waves.json' \
     "the keys of the epic's stories in this repository that are not settled yet, in the epic's order" \
-    'When every story is settled here, run no `waves` command and print no waves' \
+    'sets of stories that no chain of blocked-by links joins' \
+    'When every story is settled here, run no `waves` command and print no waves: go to [End of the run](../SKILL.md#end-of-the-run)' \
     'On exit 1, act as [Backlog errors](../SKILL.md#backlog-errors) says'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
   done
@@ -2399,6 +2402,9 @@ epic_run_file() {
   pick="${part%%'**Pick the next story.**'*}"
   [ "${#settle}" -lt "${#waves}" ] && [ "${#waves}" -lt "${#pick}" ] ||
     { echo "the waves command is not between settling the finished stories and Pick the next story"; false; }
+  guard="${part%%When every story is settled here*}"
+  [ "${#guard}" -lt "${#waves}" ] ||
+    { echo "the guard for every story settled comes after the waves command"; false; }
 }
 
 @test "wave: an epic run prints its waves in text blocks" {
@@ -2503,6 +2509,16 @@ epic_run_file() {
   done
 }
 
+@test "resume: an epic run's not-built reason skips a met blocker and the signed-in user on a started story" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in 'naming each open issue in its `blockedBy` that is not a met story' \
+    'For a story passed in `--started`, `lets backlog ready` keeps one assigned to the signed-in user, so that assignee is no reason' \
+    "gh auth status --active --json hosts --jq '.hosts[][].login'"; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
 @test "an epic run's stop rule is written once, in A stop in an epic run" {
   local section line
   section="$(skill_section lets-go 'A stop in an epic run')"
@@ -2511,6 +2527,20 @@ epic_run_file() {
     grep -qF -- "$line" <<<"$section" || { echo "A stop in an epic run does not say: $line"; false; }
   done
   has_heading "$(epic_run_file)" 'A stop in an epic run' || { echo "references/epic-run.md has no heading: A stop in an epic run"; false; }
+}
+
+@test "resume: an epic run's wording covers a resumed story and a ready one" {
+  local phrase
+  for phrase in 'A story settled here as merged or closed that blocks another story' \
+    'Settle the story with its `stopped` line, as [A stop in an epic run](#a-stop-in-an-epic-run) writes it'; do
+    grep -qF -- "$phrase" <<<"$(part_section 'Run the epic')" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+  for phrase in 'before the next `Picked` or `Resumed` line' 'A built story stacked on `#<blocker>` gets this line instead' \
+    'gets the line that [A stop in an epic run](#a-stop-in-an-epic-run) gives it'; do
+    grep -qF -- "$phrase" <<<"$(skill_section lets-go 'Settle a story' | tr -s '[:space:]' ' ')" || { echo "Settle a story does not say: $phrase"; false; }
+  done
+  grep -qF 'from its `Picked` or `Resumed` line to its line' <<<"$(skill_section lets-go 'A stop in an epic run' | tr -s '[:space:]' ' ')" ||
+    { echo "A stop in an epic run does not cover a resumed story"; false; }
 }
 
 @test "an epic run settles a stopped story in a text block" {
@@ -4273,8 +4303,8 @@ step_prompt_file() {
   has_heading "$(epic_run_file)" "Read a pull request's base" || { echo "references/epic-run.md has no heading: Read a pull request's base"; false; }
   text="$(procedure_text "Read a pull request's base" | tr -s '[:space:]' ' ')"
   for rule in '`<pr-base>` is `<default>`' \
-    "\`<pr-base>\` is the change name of an open story of the epic" \
     'gh pr list --head <pr-base> --state merged --limit 100 --json number,isCrossRepository,baseRefName' \
+    "\`<pr-base>\` is the change name of an open story of the epic, in this repository" \
     'Anything else'; do
     grep -qF -- "$rule" <<<"$text" || { echo "Read a pull request's base does not say: $rule"; false; }
     at="${text%%"$rule"*}"
@@ -4287,7 +4317,7 @@ step_prompt_file() {
   local text phrase
   text="$(procedure_text "Read a pull request's base" | tr -s '[:space:]' ' ')"
   for phrase in 'whose `isCrossRepository` is `false` and whose `baseRefName` is `<default>`' \
-    'gh pr edit <story-name> --base <default>' 'Rebase nothing' 'return `edit-failed`'; do
+    'gh pr edit <story-pr> --base <default>' 'Rebase nothing' 'return `edit-failed`'; do
     grep -qF -- "$phrase" <<<"$text" || { echo "Read a pull request's base does not say: $phrase"; false; }
   done
 }
@@ -4334,7 +4364,8 @@ step_prompt_file() {
   local text phrase
   has_heading "$(epic_run_file)" 'Take up a started story' || { echo "references/epic-run.md has no heading: Take up a started story"; false; }
   text="$(procedure_text 'Take up a started story' | tr -s '[:space:]' ' ')"
-  for phrase in 'gh pr view <name> --json number,state,baseRefName' \
+  for phrase in 'gh pr list --head <name> --state all --limit 100 --json number,state,baseRefName,isCrossRepository,createdAt' \
+    'Drop each entry whose `isCrossRepository` is `true`' \
     "Run [Read a pull request's base](#read-a-pull-requests-base) for the story" \
     'Run no [Stack the story](#stack-the-story)'; do
     grep -qF -- "$phrase" <<<"$text" || { echo "Take up a started story does not say: $phrase"; false; }
@@ -4354,8 +4385,10 @@ step_prompt_file() {
 @test "resume: Take up a started story runs Stack the story for a story with no pull request and an open blocker" {
   local text
   text="$(procedure_text 'Take up a started story' | tr -s '[:space:]' ' ')"
-  grep -qF 'With no open pull request and an open blocker, run [Stack the story](#stack-the-story)' <<<"$text" ||
+  grep -qF 'With no pull request and an open blocker, run [Stack the story](#stack-the-story)' <<<"$text" ||
     { echo "Take up a started story does not run Stack the story"; false; }
+  grep -qF 'With a pull request whose `state` is `MERGED` or `CLOSED`, return `not-stacked`' <<<"$text" ||
+    { echo "Take up a started story does not leave a merged or closed pull request to the walk"; false; }
   grep -qF '[Take up a started story](#take-up-a-started-story) runs it too, for a story whose change'"'"'s branch exists and has no pull request' \
     <<<"$(skill_section lets-go 'Stack the story')" || { echo "Stack the story does not say Take up a started story runs it"; false; }
   grep -qF 'For such a story, [Claim](../SKILL.md#claim) does not run' <<<"$(skill_section lets-go 'Stack the story')" ||
@@ -4463,6 +4496,17 @@ story_prompt_block() {
   for phrase in 'walk the story'"'"'s steps in this session, from [Walk the step table](../SKILL.md#walk-the-step-table)' \
     'Run no subagent with the story prompt'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Wait for the wave does not say: $phrase"; false; }
+  done
+}
+
+@test "story run: exit 3 after a relay gives the relayed answers to the step that asked" {
+  local section phrase
+  section="$(skill_section lets-go 'Relay a story run'"'"'s questions')"
+  for phrase in 'with exit 3, no child gave these answers to the step that asked' \
+    '[Give the answers to the step](story-run.md#give-the-answers-to-the-step)' \
+    'with the pairs of `.workspace/lets-go/<name>-story-answers.yaml`' \
+    'the lines in its `.workspace/lets-go/<session>-rounds.txt`'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Relay a story run's questions does not say: $phrase"; false; }
   done
 }
 
@@ -4647,7 +4691,10 @@ story_run_file() {
     'At the first row of the walk that is not done' '`.workspace/lets-go/<session>-report.json`' \
     'append each pair of the `## Answers` section whose question is one of that report'"'"'s questions to `.workspace/lets-go/<session>-answers.yaml`' \
     '`--answers-file .workspace/lets-go/<session>-answers.yaml`' \
-    'reason: "stopped: the answers match no question the <step name> step asked"'; do
+    'reason: "stopped: the answers match no question the <step name> step asked"' \
+    'Check it before you write anything' \
+    "in place of that row's **Not done** action" \
+    'Then [read its report](../SKILL.md#read-the-report)'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Give the answers to the step does not say: $phrase"; false; }
   done
   grep -qF '[Give the answers to the step](#give-the-answers-to-the-step)' <<<"$(skill_section lets-go 'Take up the story run')" ||

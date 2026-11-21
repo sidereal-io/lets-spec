@@ -99,9 +99,11 @@ The command finds the first line that matches
 takes the rest of that line, plus the lines after it that are indented
 more and do not start a new list item. It reads the code spans in that
 text. A code span is a path when it has no whitespace, and either holds
-a `/` or ends in `.` and letters or digits. A leading `./` is dropped.
+a `/` or ends in `.` and letters or digits. A leading `./` is dropped
+from a longer path.
 Overlap compares paths with any trailing `/` dropped: equal, or one
-followed by `/` starts the other. Case matters, as it does in Git.
+followed by `/` starts the other. The repository's root, `./` or `/`,
+holds every path. Case matters, as it does in Git.
 
 A body with no such line, or a line with no path, gives no paths, and
 the item overlaps everything (D5).

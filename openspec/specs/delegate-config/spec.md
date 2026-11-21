@@ -123,7 +123,7 @@ When every resolver the config lists declines, `lets delegate` SHALL exit 2, pri
 - **THEN** the output names `review`, `handoff` and `step`
 
 ### Requirement: Every delegation names its intent
-`instructions` and `run` SHALL require `--for <intent>`. Under `review`, the intent SHALL be `plan` or `code`. Under `handoff`, it SHALL be `apply`. Under `step`, it SHALL be one of the five steps: `shape`, `plan`, `review-plan`, `build` or `review-build`. Without `--for`, or with any other value, they SHALL exit 2, name `--for` on stderr, and ask no resolver.
+`instructions` and `run` SHALL require `--for <intent>`. Under `review`, the intent SHALL be `plan` or `code`. Under `handoff`, it SHALL be `apply`. Under `step`, it SHALL be one of the five steps, `shape`, `plan`, `review-plan`, `build` or `review-build`, or `story`, which runs a story run, not a step. Without `--for`, or with any other value, they SHALL exit 2, name `--for` on stderr, and ask no resolver.
 
 #### Scenario: No intent
 - **WHEN** the user runs `lets delegate handoff run --name build-x --prompt-file p.md --model claude`
@@ -141,6 +141,14 @@ When every resolver the config lists declines, `lets delegate` SHALL exit 2, pri
 - **WHEN** the user runs `lets delegate step instructions --for <step>` once for each of `shape`, `plan`, `review-plan`, `build` and `review-build`
 - **THEN** each exits 0, and its JSON line has `"for"` equal to that step
 
+#### Scenario: The story intent
+- **WHEN** the user runs `lets delegate step instructions --for story`
+- **THEN** it exits 0, and its JSON line has `"for":"story"`
+
+#### Scenario: The story intent under review
+- **WHEN** the user runs `lets delegate review instructions --for story`
+- **THEN** it exits 2, stderr names `--for`, and no resolver is asked
+
 #### Scenario: A review intent under step
 - **WHEN** the user runs `lets delegate step instructions --for code`
 - **THEN** it exits 2, stderr names `--for`, and no resolver is asked
@@ -148,6 +156,10 @@ When every resolver the config lists declines, `lets delegate` SHALL exit 2, pri
 #### Scenario: An old step name under step
 - **WHEN** the user runs `lets delegate step instructions --for apply`
 - **THEN** it exits 2, stderr names `--for`, and no resolver is asked
+
+#### Scenario: The step strategy's help names the story intent
+- **WHEN** the user runs `lets delegate step --help`
+- **THEN** the output names the five steps, and says that `story` runs a story run, not a step
 
 ### Requirement: A refused model passes to the next
 `run` SHALL take `--model` one or more times, as a ranked list. It SHALL ask the resolver that answers for the first model. While that resolver refuses, `run` SHALL ask the same resolver for the next model, and SHALL stop at the first answer that is not a refusal. It SHALL NOT ask a later resolver in the chain after a refusal. When every model is refused, `run` SHALL exit 3, print nothing on stdout, and print on stderr one line per model, `<model>: <reason>`. This holds for `review run`, `handoff run` and `step run`. The review's and the step's JSON line on stderr SHALL name, as `model`, the model the resolver ran, or the `--model` value `lets` asked for when that value names only a family.

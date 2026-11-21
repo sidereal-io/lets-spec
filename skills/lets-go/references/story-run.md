@@ -103,28 +103,32 @@ asks the user. Take these actions in place of
 
 When the story prompt ends with an `## Answers` section, the epic run
 has answered the questions of this story run's last `needs-input`
-report. Each `- Q:` and `A:` pair is one question and its answer. Give
-them to the step that asked:
+report. Each `- Q:` and `A:` pair is one question and its answer.
+At the first row of the walk that is not done, give them to the step
+that asked, in place of that row's **Not done** action in
+[Walk the step table](../SKILL.md#walk-the-step-table):
 
-1. At the first row of the walk that is not done, read
-   `.workspace/lets-go/<session>-report.json`, the step's last report.
-2. When it holds a `needs-input` report, append each pair of the
-   `## Answers` section whose question is one of that report's
-   questions to `.workspace/lets-go/<session>-answers.yaml`, in order,
-   as [Relay the questions](../SKILL.md#relay-the-questions) writes
-   pairs. Keep the pairs of earlier rounds.
+1. Read `.workspace/lets-go/<session>-report.json`, the step's last
+   report. Check it before you write anything. When it is not a
+   `needs-input` report, or a pair matches none of its questions, write
+   nothing, run no step, and end the session with this report:
+
+   ```step-report
+   outcome: failed
+   reason: "stopped: the answers match no question the <step name> step asked"
+   ```
+
+2. Otherwise, append each pair of the `## Answers` section whose
+   question is one of that report's questions to
+   `.workspace/lets-go/<session>-answers.yaml`, in order, as
+   [Relay the questions](../SKILL.md#relay-the-questions) writes pairs.
+   Keep the pairs of earlier rounds.
 3. Run the step again, as [Run a step](../SKILL.md#run-a-step) says,
    with the same prompt file and
    `--answers-file .workspace/lets-go/<session>-answers.yaml`. Ask for
-   the options again, and rank them again.
-
-When that report is not `needs-input`, or a pair matches none of its
-questions, run no step, and end the session with this report:
-
-```step-report
-outcome: failed
-reason: "stopped: the answers match no question the <step name> step asked"
-```
+   the options again, and rank them again. Then
+   [read its report](../SKILL.md#read-the-report), which says whether
+   the walk goes on.
 
 ## End the story run
 

@@ -6,7 +6,8 @@
 //   dirs:     paths that are folders even when empty
 //   toplevel: what `git rev-parse --show-toplevel` answers; without it git
 //             fails with code 128.
-//   openspec: what `openspec --version` prints; without it the command
+//   openspec: what `openspec --version` prints, exiting 0; { code } to exit
+//             with that code and print nothing; without it the command
 //             cannot start (code null).
 import type { Io } from '../../../../lets/src/io.ts';
 
@@ -19,7 +20,7 @@ export type FakeIo = Io & {
   toplevel: string | null;
 };
 
-type Options = { files?: Record<string, string>; dirs?: string[]; toplevel?: string | null; openspec?: string | null };
+type Options = { files?: Record<string, string>; dirs?: string[]; toplevel?: string | null; openspec?: string | { code: number } | null };
 
 export function fakeIo({ files = {}, dirs = [], toplevel = null, openspec = null }: Options = {}): FakeIo {
   const io: FakeIo = {
@@ -91,6 +92,7 @@ export function fakeIo({ files = {}, dirs = [], toplevel = null, openspec = null
       }
       if (cmd === 'openspec') {
         if (openspec === null) return { stdout: '', stderr: '', code: null };
+        if (typeof openspec === 'object') return { stdout: '', stderr: '', code: openspec.code };
         if (key === 'openspec --version') return { stdout: openspec, stderr: '', code: 0 };
       }
       return { stdout: '', stderr: 'fatal: not a git repository', code: 128 };

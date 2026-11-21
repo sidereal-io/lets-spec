@@ -52,4 +52,4 @@ jobs:
           set -euo pipefail
           name="lets-spec-${TAG#v}"
           openspec="$(jq -r .openspec "$name/release.json")"
-          gh release create "$TAG" "$name.tar.gz" --generate-notes --notes "OpenSpec CLI: $openspec"
+          gh release create "$TAG" "$name.tar.gz" --generate-notes --notes "OpenSpec CLI: $openspec or later"

@@ -24,16 +24,18 @@ export function relevantPaths(body: string): string[] {
   return [...text.join('\n').matchAll(/`([^`]+)`/g)]
     .map(([, span]) => span.trim())
     .filter((span) => !/\s/.test(span) && (span.includes('/') || /\.[A-Za-z0-9]+$/.test(span)))
-    .map((span) => span.replace(/^\.\//, ''));
+    .map((span) => span.replace(/^\.\/(?=.)/, ''));
 }
 
 // How path a relates to path b: the same path, a folder that holds the
 // other, or null. A trailing / does not count, and case does, as in Git.
+// The repository's root, ./ or /, holds every path.
 function relation(a: string, b: string): 'same' | 'a holds b' | 'b holds a' | null {
-  const [x, y] = [a.replace(/\/+$/, ''), b.replace(/\/+$/, '')];
+  const bare = (path: string) => path.replace(/\/+$/, '').replace(/^\.$/, '');
+  const [x, y] = [bare(a), bare(b)];
   if (x === y) return 'same';
-  if (y.startsWith(`${x}/`)) return 'a holds b';
-  if (x.startsWith(`${y}/`)) return 'b holds a';
+  if (x === '' || y.startsWith(`${x}/`)) return 'a holds b';
+  if (y === '' || x.startsWith(`${y}/`)) return 'b holds a';
   return null;
 }
 
