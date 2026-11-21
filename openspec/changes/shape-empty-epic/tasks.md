@@ -25,7 +25,7 @@ are D1 to D7 in `design.md`. Sections 2 and 3 both add tests to
 
 ## 4. Integration [depends-on: 2, 3]
 
-- [ ] 4.1 [easy] All the project's checks pass on the branch: the Node tests, the type check and the bats tests; the flake check; and OpenSpec validation with no warning (verify: pnpm test && nix flake check && mise run check)
+- [x] 4.1 [easy] All the project's checks pass on the branch: the Node tests, the type check and the bats tests; the flake check; and OpenSpec validation with no warning (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test, nix flake check and mise run check passed, with no OpenSpec warning)
 
 ## Deviations Ledger
 
