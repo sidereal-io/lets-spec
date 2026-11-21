@@ -1290,10 +1290,12 @@ readme_lets_go() {
   local section phrase
   section="$(readme_lets_go)"
   for phrase in "Given an epic's number, \`lets-go\` builds each ready story of the epic in turn" \
-    'It leaves a blocked story out' 'ends with one line per story'; do
+    "A story blocked by another story of the epic stacks on that story's branch, and its pull request targets that branch" \
+    'ends with one line per story'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "the README's lets-go section does not say: $phrase"; false; }
   done
   ! grep -qF 'It never takes an epic' <<<"$section" || { echo "the README still says lets-go never takes an epic"; false; }
+  ! grep -qF 'It leaves a blocked story out' <<<"$section" || { echo "the README still says lets-go leaves a blocked story out"; false; }
 }
 
 @test "lets-go runs review plan as a step of its own" {
@@ -3874,4 +3876,183 @@ EXPECTED
   rebuttals="$(skill_section lets-review-plan Rebuttals)"
   [[ "$rebuttals" == *'**Critical**'*'stays open'*'**Moderate**'*'stays open'* ]] ||
     { echo 'unresolved rebuttals do not follow the verdict rules'; false; }
+}
+
+@test "stack: an epic run passes the met stories as --met-blockers" {
+  local part phrase
+  part="$(part_section 'Run the epic')"
+  for phrase in \
+    'gh pr list --state open --limit 1000 --json number,url,isDraft,headRefName,isCrossRepository' \
+    'run this once, before each pick' \
+    "is met when an entry's \`headRefName\` is the story's change name" \
+    "and that entry's \`isDraft\` and \`isCrossRepository\` are both \`false\`" \
+    'lets backlog ready --only 279,280,281 --exclude 279 --met-blockers 279' \
+    'With no met story, pass no `--met-blockers`'; do
+    grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
+  done
+}
+
+@test "stack: Stack the story settles a story whose open blocker is not met" {
+  local section phrase
+  section="$(skill_section lets-go 'Stack the story')"
+  [ -n "$section" ] || { echo "lets-go has no section Stack the story"; false; }
+  has_heading "$(epic_run_file)" 'Stack the story' || { echo "references/epic-run.md has no heading: Stack the story"; false; }
+  for phrase in 'When an open blocker is not met' '`not built, blocked by #<blocker>`' 'Return `settled`'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Stack the story does not say: $phrase"; false; }
+  done
+}
+
+@test "stack: Stack the story takes as base the blocker whose branch contains the others" {
+  local section phrase
+  section="$(skill_section lets-go 'Stack the story')"
+  for phrase in 'git fetch origin <blocker-branch>' \
+    'git merge-base --is-ancestor origin/<other-branch> origin/<blocker-branch>' \
+    'With one open blocker, that blocker is the base' \
+    "the base is the first of them in the epic's order"; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Stack the story does not say: $phrase"; false; }
+  done
+}
+
+@test "stack: Stack the story settles blockers on different branches" {
+  local section phrase
+  section="$(skill_section lets-go 'Stack the story')"
+  for phrase in '`not built, blocked by #<a> and #<b>, on different branches`' '`#<a>, #<b> and #<c>`'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "Stack the story does not say: $phrase"; false; }
+  done
+}
+
+# Settle a story's line is `not built, <reason>`, so a reason that starts
+# with `not built` prints it twice.
+@test "stack: Stack the story gives no reason that starts with not built" {
+  ! tr -s '[:space:]' ' ' <<<"$(skill_section lets-go 'Stack the story')" | grep -qF 'the reason `not built' ||
+    { echo "Stack the story gives a reason that starts with not built"; false; }
+}
+
+@test "stack: Stack the story prints its Stacks on line in a text block" {
+  grep -qxF 'Stacks on #<blocker>: <blocker-branch>, pull request #<blocker-pr>.' \
+    <<<"$(text_block_lines 'Stack the story' "$(epic_run_file)")" ||
+    { echo "Stack the story has no text block with the Stacks on line"; false; }
+  grep -qF 'Return `stacked`' <<<"$(skill_section lets-go 'Stack the story')" ||
+    { echo "Stack the story does not return stacked"; false; }
+}
+
+@test "stack: a settle in Stack the story claims nothing" {
+  grep -qF 'claims nothing, counts no lost claim and does not end the epic run' \
+    <<<"$(skill_section lets-go 'Stack the story')" ||
+    { echo "Stack the story does not say that a settle claims nothing"; false; }
+}
+
+# Stack the story is a procedure: it returns to Check the issue, which
+# decides, so it says no stop and names no next part.
+@test "stack: Stack the story returns its results to Check the issue, and says no stop" {
+  local text result
+  text="$(procedure_text 'Stack the story')"
+  for result in stacked settled fetch-failed; do
+    grep -qF -- "- \`$result\`:" <<<"$text" || { echo "Stack the story does not list: $result"; false; }
+  done
+  tr -s '[:space:]' ' ' <<<"$text" | grep -qF 'Return to [Check the issue](../SKILL.md#check-the-issue), with the result.' ||
+    { echo "Stack the story does not return to Check the issue"; false; }
+  ! grep -qiF 'go back to [Run the epic]' <<<"$text" || { echo "Stack the story names Run the epic as the next part"; false; }
+  procedure_stops 'Stack the story'
+}
+
+@test "stack: Check the issue stops when Stack the story cannot fetch a blocker's branch" {
+  grep -qF '**`fetch-failed`:** say which branch could not be fetched' <<<"$(part_section 'Check the issue')" ||
+    { echo "Check the issue does not act on fetch-failed"; false; }
+}
+
+@test "stack: Check the issue runs Stack the story only in an epic run" {
+  local part stack source
+  part="$(part_section 'Check the issue')"
+  grep -qF 'say which open issues block `#<i>`, and stop' <<<"$part" ||
+    { echo "Check the issue no longer stops on an open blocker with no branch"; false; }
+  grep -qF 'In an epic run, for the story the epic run picked, run [Stack the story](references/epic-run.md#stack-the-story) instead of stopping' <<<"$part" ||
+    { echo "Check the issue does not run Stack the story in an epic run"; false; }
+  grep -qF 'Outside an epic run, nothing stacks' <<<"$part" ||
+    { echo "Check the issue does not say that nothing stacks outside an epic run"; false; }
+  stack="${part%%"](references/epic-run.md#stack-the-story)"*}"
+  source="${part%%"[Find the source of demand](#find-the-source-of-demand) for \`<i>\`"*}"
+  [ "${#stack}" -lt "${#source}" ] ||
+    { echo "Check the issue finds the source of demand before it runs Stack the story"; false; }
+}
+
+@test "stack: Check the issue goes back to Run the epic when Stack the story settles the story" {
+  grep -qF '**`settled`:** go back to [Run the epic](#run-the-epic)' <<<"$(part_section 'Check the issue')" ||
+    { echo "Check the issue does not act on settled"; false; }
+  grep -qF 'or when [Stack the story](references/epic-run.md#stack-the-story) settled the story' <<<"$(next_line 'Check the issue')" ||
+    { echo "the Next line of Check the issue does not name Run the epic after a settle"; false; }
+}
+
+@test "stack: Claim creates a stacked story's branch off its blocker's branch with no upstream" {
+  local claim
+  claim="$(procedure_text 'Claim' | tr -s '[:space:]' ' ')"
+  grep -qF 'git switch --no-track -c <name> origin/<blocker-branch>' <<<"$claim" ||
+    { echo "Claim does not branch a stacked story off its blocker's branch"; false; }
+  grep -qF "Create a branch with the change's name off the default branch" <<<"$claim" ||
+    { echo "Claim no longer branches an unstacked story off the default branch"; false; }
+}
+
+# Check the issue runs Check the prerequisite before Claim, so the check
+# says what the proposed base is.
+@test "stack: Check the prerequisite names a stacked story's proposed base" {
+  grep -qF 'or `origin/<blocker-branch>` for a story that [Stack the story](epic-run.md#stack-the-story) stacked' \
+    <<<"$(skill_section lets-go 'Check the prerequisite')" ||
+    { echo "Check the prerequisite does not name a stacked story's proposed base"; false; }
+}
+
+@test "stack: Claim's proposed base for a stacked story is its blocker's branch" {
+  grep -qF 'For a stacked story, the proposed base is `origin/<blocker-branch>`' <<<"$(procedure_text 'Claim' | tr -s '[:space:]' ' ')" ||
+    { echo "Claim does not name a stacked story's proposed base"; false; }
+}
+
+# step_prompt_file: the path of lets-go's references/step-prompt.md.
+step_prompt_file() {
+  echo "${skills_dir:-$repo/skills}/lets-go/references/step-prompt.md"
+}
+
+@test "stack: the step prompt's Stack section opens the pull request on the blocker's branch" {
+  local block phrase
+  block="$(text_block_lines 'Write the prompt' "$(step_prompt_file)" | tr -s '[:space:]' ' ')"
+  for phrase in '## Stack' 'This change is stacked on #<blocker>' '`--base <blocker-branch>`' \
+    '`Stacked on #<blocker-pr>; merge that first.`' 'after `Closes #<i>`' '`gh pr edit <name> --base <blocker-branch>`'; do
+    grep -qF -- "$phrase" <<<"$block" || { echo "the step prompt's Stack section does not say: $phrase"; false; }
+  done
+}
+
+@test "stack: the step prompt holds the Stack section only for a stacked story" {
+  grep -qF 'For a stacked story only, put this section between `## What to run` and `## Writing`' \
+    <<<"$(skill_section lets-go 'Write the prompt')" ||
+    { echo "Write the prompt does not say where the Stack section goes, and for which story"; false; }
+}
+
+@test "stack: each schema's brainstorm follows the step prompt's Stack section" {
+  local flow
+  for flow in standard minimal; do
+    grep -qF 'When the step prompt has a `## Stack` section, follow it where you open the draft pull request.' \
+      <<<"$(schema_step "$flow" brainstorm)" ||
+      { echo "the $flow brainstorm does not follow the step prompt's Stack section"; false; }
+  done
+}
+
+@test "stack: Settle a story gives a built stacked story its stacked line" {
+  grep -qxF '#<story> <story-name>: <pr-url>, stacked on #<blocker>' <<<"$(text_block_lines 'Settle a story' "$(epic_run_file)")" ||
+    { echo "Settle a story has no text block with a stacked story's line"; false; }
+  grep -qF 'while the story is stacked, with its stacked line' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not settle a stacked story with its stacked line"; false; }
+}
+
+@test "stack: the placeholders show each blocker in the different-branches line by its label" {
+  local section placeholder
+  section="$(skill_section lets-go 'Placeholders')"
+  grep -qF '`#<a>`, `#<b>` and `#<c>` stand for the item'"'"'s `label`' <<<"$section" ||
+    { echo "Placeholders does not show #<a>, #<b> and #<c> by their label"; false; }
+  for placeholder in a b c; do
+    grep -qE "[|] \`<$placeholder>\` [|] [^|]*, as its key" <<<"$section" ||
+      { echo "Placeholders does not give <$placeholder> as its key"; false; }
+  done
+}
+
+@test "stack: Settle a story lists blockers on different branches among the reasons" {
+  grep -qF '`blocked by #<a> and #<b>, on different branches`' <<<"$(skill_section lets-go 'Settle a story')" ||
+    { echo "Settle a story does not list blockers on different branches among the reasons"; false; }
 }

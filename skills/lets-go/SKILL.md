@@ -73,7 +73,7 @@ procedure ranks it.
 | [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch | this session | [Read the request](#read-the-request) | `lets go questions` fails |
 | [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
-| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; [Run the epic](#run-the-epic) for an epic on the default branch; otherwise [Route](#route) | An open blocker with no branch; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run |
+| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; [Run the epic](#run-the-epic) for an epic on the default branch, or after [Stack the story](references/epic-run.md#stack-the-story) settles a story; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | The epic has no open stories |
@@ -97,11 +97,12 @@ sets it.
 
 `lets backlog` names each item by its `key`, and shows it by its
 `label`: `149` and `#149` on GitHub. In anything shown to a person,
-`#<i>`, `#<parent>`, `#<story>`, `#<blocker>` and `#<stopped-story>`
-stand for the item's `label`: a printed line, a question, or text
-written in an issue. In a command, `<i>`, `<parent>` and `<story>`
-stand for its `key`. With the GitHub backlog provider, the label is `#`
-and the number, so each line reads as it always has.
+`#<i>`, `#<parent>`, `#<story>`, `#<blocker>`, `#<stopped-story>`,
+`#<a>`, `#<b>` and `#<c>` stand for the item's `label`: a printed line,
+a question, or text written in an issue. In a command, `<i>`,
+`<parent>` and `<story>` stand for its `key`. With the GitHub backlog
+provider, the label is `#` and the number, so each line reads as it
+always has.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
@@ -109,7 +110,13 @@ and the number, so each line reads as it always has.
 | `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the `url` that `lets backlog item <i>` prints |
 | `<parent>` | A parent issue, as its key: an epic that discovery filed, a discovery in progress, or the epic of an epic run | The shape report's `epic` line, the discovery query in [Start from an idea](#start-from-an-idea), or, for an epic run, [Check the issue](#check-the-issue) before [Run the epic](#run-the-epic) |
 | `<story>` | One story, as its key: a story that a shape step's report names, or a story of an epic run | Each `story` line of the shape report, or [Run the epic](#run-the-epic), for the story it picks or settles |
-| `<blocker>` | An open issue that blocks a story, as its key | The story's `blockedBy`, from `lets backlog item <story>` in [Run the epic](#run-the-epic) |
+| `<blocker>` | An open issue that blocks a story, as its key. For a stacked story, the blocker it stacks on | The story's `blockedBy`, from `lets backlog item <story>` in [Run the epic](#run-the-epic), or the blocker read in [Stack the story](references/epic-run.md#stack-the-story) |
+| `<blocker-branch>` | A met blocker's branch, the `headRefName` of its pull request. For a stacked story, the branch it stacks on | [Stack the story](references/epic-run.md#stack-the-story), from the `gh pr list` read |
+| `<blocker-pr>` | The number of a stacked story's blocker's pull request | [Stack the story](references/epic-run.md#stack-the-story), from the `gh pr list` read |
+| `<other-branch>` | The branch of another open blocker of the same story, which the base's branch must contain | [Stack the story](references/epic-run.md#stack-the-story) |
+| `<a>` | The first open blocker of a story whose blockers' branches no one branch contains, as its key. The line that names them all shows it | [Stack the story](references/epic-run.md#stack-the-story) |
+| `<b>` | The second such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
+| `<c>` | The third such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<login>` | The login of a person assigned to a story | The story's `assignees`, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](#run-the-epic) |
 | `<stopped-story>` | The story an epic run stopped at, as its key, in the line of another story that was not built | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<step name>` | A step's name in plain words, as its `Failed` line names it, such as `review build` | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), from the failed step |
@@ -330,6 +337,19 @@ says.
      by hand. Name the open blockers by number, and go on.
    - **It does not exist:** say which open issues block `#<i>`, and
      stop. The user stacks it on the blocker's branch by hand.
+     In an epic run, for the story the epic run picked, run
+     [Stack the story](references/epic-run.md#stack-the-story) instead
+     of stopping. On its result:
+     - **`stacked`:** go on, below. The story is stacked on the
+       `<blocker>` it carries.
+     - **`settled`:** go back to [Run the epic](#run-the-epic), which
+       picks again. Do not go on with the story.
+     - **`fetch-failed`:** say which branch could not be fetched, with
+       Git's error, and stop, as
+       [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+       says.
+
+     Outside an epic run, nothing stacks.
 
    Either way, name a blocker in another repository by its `url`, not
    its number: a bare number means an issue of this repository.
@@ -374,7 +394,9 @@ says.
 Next: [Run the shape step](#run-the-shape-step) when
 [Confirm the packet](#confirm-the-packet) returned `needs-shape` and
 shape can run; [Run the epic](#run-the-epic) when it returned `epic` on
-the default branch; otherwise [Route](#route).
+the default branch, or when
+[Stack the story](references/epic-run.md#stack-the-story) settled the
+story; otherwise [Route](#route).
 
 ## Run the shape step
 
@@ -862,9 +884,11 @@ return to the part that ran it, with the result.
    [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
    returns `no-owned-edits`, and you read no file. Otherwise run
    [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
-   against the proposed base. When it returns `unresolved` or
-   `checkpoint-failed`, return that result now, with what it carries,
-   before you assign the issue.
+   against the proposed base, the branch the change's branch is
+   created from below: the default branch. For a stacked story, the
+   proposed base is `origin/<blocker-branch>`. When it returns
+   `unresolved` or `checkpoint-failed`, return that result now, with
+   what it carries, before you assign the issue.
 3. Claim the issue. On an error, act as
    [Backlog errors](#backlog-errors) says.
 
@@ -887,9 +911,20 @@ return to the part that ran it, with the result.
      the `write` that failed, its `message` and its `claim` token when
      present. Return it now, before you create a branch, and undo
      nothing.
-4. Create a branch with the change's name off the default branch. This
-   also fails when a local branch with the change's name appeared after
-   [Check the issue](#check-the-issue) looked. A branch that appeared
+4. Create a branch with the change's name off the default branch. For
+   a story that
+   [Stack the story](references/epic-run.md#stack-the-story) stacked,
+   create it off the blocker's branch instead, with no
+   upstream, so that a later plain `git push` never pushes to the
+   blocker's branch:
+
+   ```bash
+   git switch --no-track -c <name> origin/<blocker-branch>
+   ```
+
+   Creating the branch also fails when a local branch with the
+   change's name appeared after [Check the issue](#check-the-issue)
+   looked. A branch that appeared
    only on `origin` does not make it fail: the plan step's first push is
    then rejected, and that step fails. If creating the branch fails,
    release the claim. It releases only this session's claim:

@@ -277,10 +277,12 @@ goes on.
 
 Given an epic's number, `lets-go` builds each ready story of the epic in
 turn, on the default branch: it claims and builds one story to a pull
-request ready for review, then picks the next. It leaves a blocked story
-out, and ends with one line per story: the pull request's URL for each
-story it built, or why it did not build one, such as
-`not built, blocked by #279`. If a story's step fails, the run stops at
+request ready for review, then picks the next. A story blocked by
+another story of the epic stacks on that story's branch, and its pull
+request targets that branch, once the blocker's pull request is ready
+for review. Merge the blocker's pull request first. The run ends with
+one line per story: the pull request's URL for each story it built, or
+why it did not build one, such as `not built, blocked by #279`. If a story's step fails, the run stops at
 that story. An epic with no open stories is not shaped yet: run
 `lets-shape` on it first.
 

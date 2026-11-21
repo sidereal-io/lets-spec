@@ -18,6 +18,9 @@ import { PROVIDERS } from './providers.ts';
 const HELP_BODY = `
 stdout: one JSON object and a newline.
   ready              { issues: [{ key, label, title, url, kind, priority, size }] }
+  ready [--met-blockers <keys>]
+                     also lists an issue whose every open blocker is named,
+                     such as 279,280: those blockers count as met.
   item <i>           { key, label, title, body, url, state, kind, priority, size,
                        status, assignees, blockedBy, parent, subIssues }
   find <words...>    { issues: [{ key, label, title }] }
@@ -107,9 +110,12 @@ export async function run(argv: string[], deps: Pick<Deps, 'env' | 'io' | 'cwd' 
   command('ready', 'list the ready issues, best first')
     .option('--only <keys>', 'keep only these items, such as 191,192', keyList)
     .option('--exclude <keys>', 'leave these items out, such as 149', keyList)
-    .action(({ only, exclude }: { only?: string[]; exclude?: string[] }) => {
+    .option('--met-blockers <keys>', 'count these blockers as met, such as 279,280', keyList)
+    .action(({ only, exclude, metBlockers }: { only?: string[]; exclude?: string[]; metBlockers?: string[] }) => {
       work = async (adapter, _key, keys) => ({
-        issues: ready(await adapter.listCandidates(), { only: only && keys(only), exclude: exclude && keys(exclude) }),
+        issues: ready(await adapter.listCandidates({ blocked: metBlockers !== undefined }), {
+          only: only && keys(only), exclude: exclude && keys(exclude), met: metBlockers && keys(metBlockers),
+        }),
       });
     });
   command('item', 'read one issue, with its Project fields')
