@@ -457,7 +457,11 @@ says.
         `#<i>`, claiming nothing and creating no branch before it. Its
         `lets-shape` shapes the epic in place. When one has, say that
         `#<i>` has no stories after shaping, say to run the `lets-shape`
-        skill on `#<i>`, and stop.
+        skill on `#<i>`, and stop. Before you stop,
+        name the maps' edits, as
+        [Pick the first ready story](references/shape.md#pick-the-first-ready-story)
+        says for a run that stops after discovery and before
+        [Claim](#claim).
      2. **A finished epic:** `subIssues` is empty, and
         `closedSubIssues` is not. Every story under the epic is closed.
         With `<i>` as `<parent>`, print:
@@ -476,8 +480,12 @@ says.
         at each `#<parent>` it found. When no shape step has run in this
         run, [run the shape step](#run-the-shape-step) for `#<i>`: its
         round resumes the discovery, or finishes its Finalize. When one
-        has, say to run the `lets-shape` skill on `#<i>`, and stop. When
-        it finds none, go on to the next item.
+        has, say to run the `lets-shape` skill on `#<i>`, and stop.
+        Before you stop, name the maps' edits, as
+        [Pick the first ready story](references/shape.md#pick-the-first-ready-story)
+        says for a run that stops after discovery and before
+        [Claim](#claim).
+        When it finds none, go on to the next item.
      4. **Any other epic:** When a shape step reported `done` in this
         run, and the run has not printed the `Done shape` line, print it
         first, as [The step lines](#the-step-lines) says. Then go to

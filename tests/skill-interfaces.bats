@@ -2425,6 +2425,8 @@ epic_run_file() {
 @test "an epic run shapes an empty epic first" {
   local check phrase
   check="$(part_section 'Check the issue')"
+  [ "$(grep -oF 'name the maps'"'"' edits, as [Pick the first ready story](references/shape.md#pick-the-first-ready-story) says' <<<"$check" | wc -l)" -ge 2 ] ||
+    { echo "Check the issue does not name the maps' edits on both stops after a shape step"; false; }
   for phrase in \
     '**An empty epic:** `subIssues` and `closedSubIssues` are both empty.' \
     'When no shape step has run in this run, [run the shape step](#run-the-shape-step) for `#<i>`, claiming nothing and creating no branch before it.' \
@@ -3963,7 +3965,10 @@ map_epic_run() {
     { echo "Enter the branch does not run the epic-run form"; false; }
   # An epic run that claims no story leaves the edits on the default branch, and says so.
   section="$(skill_section lets-go "Report the maps' edits")"
-  for phrase in 'when a shape step ran in this run, and this epic run claimed no story' \
+  ! grep -qF 'and this epic run claimed no story' <<<"$section" ||
+    { echo "Report the maps' edits still skips a run that claimed a story"; false; }
+  for phrase in 'Run this before [End of the run](../SKILL.md#end-of-the-run) whenever a shape step ran in this run.' \
+    'or a story it claimed stopped before its map commit' \
     'Run the status command of [Commit the map in an epic run](shape.md#commit-the-map-in-an-epic-run) in the epic run'"'"'s own checkout.' \
     'name each one, and say that they hold the discovery'"'"'s edits, uncommitted on the default branch' \
     'Say to commit or discard them before the next run'; do

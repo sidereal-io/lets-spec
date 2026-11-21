@@ -58,7 +58,7 @@ When *Confirm the packet* returns `epic` for an epic with open sub-issues, on th
 - **THEN** `lets-go` runs no shape step and starts the epic run on #301 to #303
 
 ### Requirement: An epic run commits the discovery map on the first story it claims
-When a shape step ran in this run, and the epic run's *Claim* creates a story's branch and worktree, `lets-go` SHALL run `git status --porcelain -uall -- openspec/discovery.md openspec/discovery` in the epic run's own checkout. When it lists a path, `lets-go` SHALL carry each listed map into the story's worktree as it stands in the epic run's checkout, and commit them there, alone, as `docs: the discovery map from #<parent>`, before the story's child session starts. It SHALL then return each listed map in the epic run's checkout to its committed state, removing a map that was new, so that the checkout stays clean on the default branch. A later story's claim then finds no changed map and makes no commit. When the epic run claims no story, the maps' edits SHALL stay in the epic run's checkout, and `lets-go` SHALL say so as *lets-go commits the discovery map on the story's branch* says for a run that stops before *Claim*.
+When a shape step ran in this run, and the epic run's *Claim* creates a story's branch and worktree, `lets-go` SHALL run `git status --porcelain -uall -- openspec/discovery.md openspec/discovery` in the epic run's own checkout. When it lists a path, `lets-go` SHALL carry each listed map into the story's worktree as it stands in the epic run's checkout, and commit them there, alone, as `docs: the discovery map from #<parent>`, before the story's child session starts. It SHALL then return each listed map in the epic run's checkout to its committed state, removing a map that was new, so that the checkout stays clean on the default branch. A later story's claim then finds no changed map and makes no commit. When the epic run claims no story, or a story it claims stops before its map commit, the maps' edits SHALL stay in the epic run's checkout. Before *End of the run*, whenever a shape step ran in this run, `lets-go` SHALL run the status command again in the epic run's checkout, and when it lists a path, SHALL say so as *lets-go commits the discovery map on the story's branch* says for a run that stops before *Claim*. When the shape step leaves the epic with no stories, or a shape step already ran when *Check the issue* finds a stopped discovery, `lets-go` SHALL name the maps' edits the same way before it stops.
 
 #### Scenario: The first claimed story carries the map
 - **WHEN** the shape step for #300 changed `openspec/discovery.md`, and the epic run claims #301 first, with the worktree `.workspace/lets-go/worktrees/plugin-contract`
@@ -71,6 +71,10 @@ When a shape step ran in this run, and the epic run's *Claim* creates a story's 
 #### Scenario: No story is claimed
 - **WHEN** the shape step for #300 changed `openspec/discovery.md`, and no story under #300 is ready
 - **THEN** `openspec/discovery.md` stays modified in the epic run's checkout, and `lets-go` says to commit or discard it before the next run
+
+#### Scenario: The claimed story stops before its map commit
+- **WHEN** the shape step for #300 changed `openspec/discovery.md`, the epic run claims #301, `lets sync` fails in #301's worktree, and no later story is claimed
+- **THEN** `openspec/discovery.md` stays modified in the epic run's checkout, and before *End of the run* `lets-go` names it and says to commit or discard it before the next run
 
 ## MODIFIED Requirements
 

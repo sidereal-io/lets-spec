@@ -505,9 +505,11 @@ for a story whose child could not start, which this session walks.
 Discovery's edits to the maps reach a pull request only through the
 first story the epic run claims, as
 [Commit the map in an epic run](shape.md#commit-the-map-in-an-epic-run)
-says. Run this before [End of the run](../SKILL.md#end-of-the-run),
-when a shape step ran in this run, and this epic run claimed no story.
-Otherwise skip it.
+says. Run this before [End of the run](../SKILL.md#end-of-the-run)
+whenever a shape step ran in this run. Otherwise skip it. The edits are
+still in the epic run's checkout when the epic run claimed no story, or
+a story it claimed stopped before its map commit. When that commit
+succeeded, the status command lists nothing.
 
 Run the status command of
 [Commit the map in an epic run](shape.md#commit-the-map-in-an-epic-run)
