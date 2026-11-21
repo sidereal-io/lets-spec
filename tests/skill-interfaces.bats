@@ -2428,6 +2428,18 @@ epic_run_file() {
     { echo "the part table still stops Run the epic on an epic with no open stories"; false; }
 }
 
+@test "a finished epic stops the run" {
+  local check phrase
+  grep -qxF '#<parent> is finished: every story under it is closed.' <<<"$(text_block_lines 'Check the issue')" ||
+    { echo "Check the issue has no text block with the finished epic's line"; false; }
+  check="$(part_section 'Check the issue')"
+  for phrase in \
+    '**A finished epic:** `subIssues` is empty, and `closedSubIssues` is not.' \
+    'Then stop. Claim nothing, create no branch, run no step, and leave the epic open.'; do
+    grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+}
+
 @test "an epic run picks each story as next picks it" {
   local part phrase
   part="$(part_section 'Run the epic')"

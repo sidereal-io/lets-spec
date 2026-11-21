@@ -448,7 +448,17 @@ says.
         `lets-shape` shapes the epic in place. When one has, say that
         `#<i>` has no stories after shaping, say to run the `lets-shape`
         skill on `#<i>`, and stop.
-     2. **Any other epic:** go to [Run the epic](#run-the-epic) with
+     2. **A finished epic:** `subIssues` is empty, and
+        `closedSubIssues` is not. Every story under the epic is closed.
+        With `<i>` as `<parent>`, print:
+
+        ```text
+        #<parent> is finished: every story under it is closed.
+        ```
+
+        Then stop. Claim nothing, create no branch, run no step, and
+        leave the epic open.
+     3. **Any other epic:** go to [Run the epic](#run-the-epic) with
         `<i>` as `<parent>`, and the open sub-issues the result carries.
 6. When [Confirm the packet](#confirm-the-packet) returns `complete`,
    shape is done. Print shape's line, as
