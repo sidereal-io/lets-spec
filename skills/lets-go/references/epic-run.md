@@ -481,7 +481,10 @@ for a story whose child could not start, which this session walks.
    its relayed answers to the step that asked first, as that section
    says. Each step runs as
    [Run a step](../SKILL.md#run-a-step) says: in a fresh session, or in
-   a subagent on that step's own exit 3. Run no subagent with the story
+   a subagent on that step's own exit 3. The saved prompt names no
+   checkout, so when a step runs in a subagent, tell the subagent that
+   its checkout is `<path>`: it reads and writes files only there, and
+   runs every command there. Run no subagent with the story
    prompt, even when the meta file names a saved prompt: a subagent
    cannot give each step a fresh session. When the walk ends, the run
    goes to *Settle the story whose run ended*, in

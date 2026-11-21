@@ -4992,3 +4992,12 @@ readme_step_returns() {
   grep -qF -- '**`claimed`:** In an epic run, first prepare the worktree [Claim](#claim) created, as [The story'"'"'s worktree](#the-storys-worktree) says, whatever the result carries. Then, when it carries `verified`' <<<"$section" ||
     { echo "Enter the branch does not prepare the worktree first for every claimed result"; false; }
 }
+
+@test "parallel: a walk's subagent step works in the story's worktree" {
+  local section
+  section="$(skill_section lets-go 'Wait for the wave')"
+  grep -qF -- 'tell the subagent that its checkout is `<path>`' <<<"$section" ||
+    { echo "Wait for the wave does not give a walk's subagent the story's worktree"; false; }
+  grep -qF -- 'In an epic run'"'"'s walk, this repository is the story'"'"'s worktree, `<path>`' <<<"$(skill_section lets-go 'Run a step in a subagent')" ||
+    { echo "Run a step in a subagent does not name the story's worktree"; false; }
+}
