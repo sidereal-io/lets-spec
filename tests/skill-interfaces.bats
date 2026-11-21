@@ -1063,6 +1063,10 @@ review_build_start() {
   # A large idea now runs discovery, so the README must not send it away.
   ! tr -s '[:space:]' ' ' < "$repo/README.md" | grep -qF -- 'An idea too large for one issue stops the run' ||
     { echo "README.md still says a large idea stops the run"; false; }
+  # Discovery's parent goes on as an epic run, which builds every story.
+  skill_does_not_say lets-go 'the first ready story it files'
+  ! tr -s '[:space:]' ' ' < "$repo/README.md" | grep -qF -- 'picks the first ready story' ||
+    { echo "README.md still says a large idea's run picks the first ready story"; false; }
 }
 
 @test "lets-go finds an input's discovery after a stop during Finalize" {

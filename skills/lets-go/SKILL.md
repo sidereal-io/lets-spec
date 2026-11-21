@@ -12,8 +12,9 @@ this session. Then each [step](references/terms.md#step) runs in a
 fresh session: shape when the issue needs it, then plan, review plan,
 build and review build. `lets-minimal` skips review plan. An idea too
 large for one issue runs discovery in the shape step, and the run builds
-the first ready story it files. A step never asks the user: it ends with
-a [step report](references/terms.md#step-report). This session answers
+every story discovery files, as an epic run on the parent. A step never
+asks the user: it ends with a
+[step report](references/terms.md#step-report). This session answers
 the step's questions or asks the user, as the
 [question mode](references/terms.md#question-mode) says.
 "You" is the agent that runs this skill, and "the user" is the person
