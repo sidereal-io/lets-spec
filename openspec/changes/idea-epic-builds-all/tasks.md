@@ -19,7 +19,7 @@ that three links need before 1.4 removes the section that holds it.
 
 ## 2. Integration [depends-on: 1]
 
-- [ ] 2.1 [easy] All the project's checks pass on the branch: the Node tests, the type check and the bats tests; the flake check; and OpenSpec validation with no warning (verify: pnpm test && nix flake check && mise run check)
+- [x] 2.1 [easy] All the project's checks pass on the branch: the Node tests, the type check and the bats tests; the flake check; and OpenSpec validation with no warning (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test passed, 581 bats tests and the Node tests; nix flake check passed; mise run check passed, 18/18, no warning)
 
 ## Deviations Ledger
 
