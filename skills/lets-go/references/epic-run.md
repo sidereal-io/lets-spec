@@ -61,6 +61,11 @@ as for any picked issue.
    After a lost claim, the run comes back from
    [Enter the branch](../SKILL.md#enter-the-branch), which has settled
    the story already: go on to the next step.
+
+   After a stop in a story run, the run comes back from
+   [A stop in an epic run](#a-stop-in-an-epic-run), which has settled
+   the story and its dependents, and switched to the default branch: go
+   on to the next step.
 3. **Pick the next story.** First find the met stories: the stories
    whose pull request is ready for review, so a story they block can
    stack on them. Read the open pull requests, and run this once, before
@@ -166,7 +171,8 @@ A story that was not built gets this line:
 The reason says why, such as `in another repository`,
 `taken by <login>`, `blocked by #<blocker>`,
 `blocked by #<a> and #<b>, on different branches`,
-`assigned to <login>` or `its packet is not complete`.
+`assigned to <login>`, `its packet is not complete` or
+`it depends on #<failed>, which did not finish`.
 
 ## Stack the story
 
@@ -242,13 +248,19 @@ result.
 ## A stop in an epic run
 
 While an epic run is on a story, from its `Picked` line to its line, a
-stop ends the epic run at that story. This holds for every stop of the
-parts and procedures the story runs through, such as a failed step,
-records that disagree, a pull request that is merged or closed, or a
-`lets backlog` error, except the lost claim:
+stop ends only that story's run, not the epic run. This holds the same
+way for every stop of the parts and procedures the story runs through,
+such as a failed step, records that disagree, a pull request that is
+merged or closed, a stop of
+[Check the prerequisite](glossary-handoff.md#check-the-prerequisite),
+a failed claim write, a `lets backlog` error, or a `fetch-failed` from
+[Stack the story](#stack-the-story), except the lost claim:
 [Enter the branch](../SKILL.md#enter-the-branch) settles a lost story,
-and goes back to [Run the epic](#run-the-epic). The story is
-`<stopped-story>`.
+and goes back to [Run the epic](#run-the-epic). A stop between stories,
+such as a `lets backlog` error in a pick, still ends the epic run, as
+[Backlog errors](../SKILL.md#backlog-errors) says.
+
+On a stop in a story run, take these actions in order.
 
 1. Do what the stop says first, such as print the `Failed` line and the
    pull request's URL.
@@ -262,14 +274,69 @@ and goes back to [Run the epic](#run-the-epic). The story is
    #<story> <story-name>: stopped: <reason>
    ```
 
-3. Settle each story not settled yet, in the epic's order, with this
-   line. Here `#<story>` is the story not built, and `#<stopped-story>`
-   the story the epic run stopped at:
+   From here on, this story is `<failed>`.
+3. Check the checkout for changes that are not committed, outside
+   `.workspace/`: staged, unstaged or untracked. Ignored files do not
+   count.
+
+   ```bash
+   git status --porcelain --untracked-files=all -- . ':(exclude).workspace'
+   ```
+
+   When it prints any line, the epic run ends at this story, and
+   `<stopped-story>` is `<failed>`. Settle each story not settled yet,
+   in the epic's order, with this line, where `#<story>` is the story
+   not built:
 
    ```text
    #<story> <story-name>: not built, the epic run stopped at #<stopped-story>
    ```
 
-4. Print every line of `.workspace/lets-go/epic-<parent>-lines.txt`, in
-   order, as [End of the run](../SKILL.md#end-of-the-run) does, and
-   stop. The epic run does not go on past a stopped story.
+   Leave the changes as they are. Print every line of
+   `.workspace/lets-go/epic-<parent>-lines.txt`, in order, as
+   [End of the run](../SKILL.md#end-of-the-run) does, and stop.
+
+   When it prints nothing, go on to the next action.
+4. Find the stories that depend on `<failed>`, and settle them. For
+   each story of the epic, in this repository and not settled yet, run
+   `lets backlog item <story>`. Keep the `key` of each entry of its
+   `blockedBy` whose `state` is `OPEN` and whose `url` is the `url` of
+   a story of the epic in this repository. A blocker in another
+   repository can share its key with a story here, so a key alone never
+   makes a story a dependent.
+
+   Then mark the dependents, through any number of stories. A story not
+   settled yet is a dependent when one of its kept keys is `<failed>`
+   or a dependent. Repeat until no new story is marked. A link through
+   an issue outside the epic, or through a story settled before this
+   stop, makes no dependent.
+
+   Settle each dependent, in the epic's order, right after the line of
+   `<failed>`, with this line. It names `<failed>` itself, even when
+   the dependence goes through other stories:
+
+   ```text
+   #<story> <story-name>: not built, it depends on #<failed>, which did not finish
+   ```
+
+   With no dependent, settle no story here. A `lets backlog` error in
+   this action is a stop between stories, as
+   [Backlog errors](../SKILL.md#backlog-errors) says: it ends the epic
+   run.
+5. Go back to the default branch, so the next story's branch is created
+   off it:
+
+   ```bash
+   git switch <default>
+   ```
+
+   When `git switch` fails, say Git's error, and end the epic run as
+   the third action does. Otherwise go back to
+   [Run the epic](#run-the-epic). Its *Pick the next story* runs next,
+   where every story settled in actions 2 and 4 is passed in
+   `--exclude`, so none of them is picked.
+
+The epic run retries no failed step: running `lets-go` again on the
+failed story's branch carries on, as for any run. The end of the epic
+run prints no count of built, failed or skipped stories: the lines are
+its summary.
