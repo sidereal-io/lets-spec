@@ -2413,12 +2413,19 @@ epic_run_file() {
   done
 }
 
-@test "an epic run with no open stories points to lets-shape in a text block" {
-  grep -qxF '#<parent> has no open stories. lets-go does not shape an empty epic yet: run the lets-shape skill on #<parent>.' \
-    <<<"$(text_block_lines 'Run the epic' "$(epic_run_file)")" ||
-    { echo "Run the epic has no text block with the empty epic's line"; false; }
-  grep -qF 'stop, claiming nothing and creating no branch' <<<"$(part_section 'Run the epic')" ||
-    { echo "Run the epic does not stop on an empty epic"; false; }
+@test "an epic run shapes an empty epic first" {
+  local check phrase
+  check="$(part_section 'Check the issue')"
+  for phrase in \
+    '**An empty epic:** `subIssues` and `closedSubIssues` are both empty.' \
+    'When no shape step has run in this run, [run the shape step](#run-the-shape-step) for `#<i>`, claiming nothing and creating no branch before it.' \
+    'When one has, say that `#<i>` has no stories after shaping, say to run the `lets-shape` skill on `#<i>`, and stop.'; do
+    grep -qF -- "$phrase" <<<"$check" || { echo "Check the issue does not say: $phrase"; false; }
+  done
+  skill_does_not_say lets-go 'lets-go does not shape an empty epic yet'
+  skill_does_not_say lets-go 'An epic with no open stories is not shaped yet.'
+  ! grep -qF 'The epic has no open stories' "$(lets_go_skill)" ||
+    { echo "the part table still stops Run the epic on an epic with no open stories"; false; }
 }
 
 @test "an epic run picks each story as next picks it" {

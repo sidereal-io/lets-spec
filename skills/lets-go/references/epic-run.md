@@ -13,8 +13,9 @@ worktree itself, and its own checkout stays on the default branch. A
 child `lets-go` session then walks the story's steps in its worktree,
 in the background, so the epic run's context grows by a few lines per
 story. When no child session can start, the epic run walks the story's
-steps in its own session, once the wave's children have ended. An epic
-with no open stories is not shaped yet.
+steps in its own session, once the wave's children have ended.
+[Check the issue](../SKILL.md#check-the-issue) sends an epic here only
+when it has open stories.
 
 ## Run the epic
 
@@ -27,18 +28,11 @@ and create no branch for it. The epic run claims each story it builds,
 as for any picked issue.
 
 1. **Start the epic run,** the first time the run reaches this part.
-   When the epic has no open sub-issues, print:
-
-   ```text
-   #<parent> has no open stories. lets-go does not shape an empty epic yet: run the lets-shape skill on #<parent>.
-   ```
-
-   Then stop, claiming nothing and creating no branch. Otherwise,
-   write `.workspace/lets-go/epic-<parent>-lines.txt` afresh, empty,
-   and `.workspace/lets-go/epic-<parent>-children.txt` beside it, so
-   that nothing of an earlier epic run mixes into this one. The lines
-   file holds each story's line, and the children file each child this
-   run waits for, as [Wait for the wave](#wait-for-the-wave) says:
+   First write `.workspace/lets-go/epic-<parent>-lines.txt` afresh,
+   empty, and `.workspace/lets-go/epic-<parent>-children.txt` beside
+   it, so that nothing of an earlier epic run mixes into this one. The
+   lines file holds each story's line, and the children file each child
+   this run waits for, as [Wait for the wave](#wait-for-the-wave) says:
 
    ```bash
    mkdir -p .workspace/lets-go

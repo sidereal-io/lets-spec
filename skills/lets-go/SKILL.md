@@ -82,7 +82,7 @@ procedure ranks it.
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; [Run the epic](#run-the-epic) for an epic on the default branch, after [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
-| [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, waits for the children of a wave, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | The epic has no open stories |
+| [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, waits for the children of a wave, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | `lets delegate step wait` fails, so the epic run cannot wait for its children |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
 | [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema. In an epic run, it checks the branch out in the story's own worktree instead | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run, or when a stop ends a story's run | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time outside an epic run; the import returns `import-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table); [Start the story run](references/epic-run.md#start-the-story-run) in an epic run | Never |
@@ -437,10 +437,19 @@ says.
      started on `<name>`. Say why the packet needs shaping, as the
      result carries it, and show nothing of what a comment says. Say to
      run the `lets-shape` skill on `#<i>`, and stop.
-   - **`epic`:** on the default branch, go to
-     [Run the epic](#run-the-epic) with `<i>` as `<parent>`, and the
-     open sub-issues the result carries. On a change's branch, say that
-     an epic run needs the default branch, and stop.
+   - **`epic`:** on a change's branch, say that an epic run needs the
+     default branch, and stop. On the default branch, sort the epic by
+     the sub-issues the result carries. The first of these that matches
+     wins:
+     1. **An empty epic:** `subIssues` and `closedSubIssues` are both
+        empty. The epic has no stories yet. When no shape step has run
+        in this run, [run the shape step](#run-the-shape-step) for
+        `#<i>`, claiming nothing and creating no branch before it. Its
+        `lets-shape` shapes the epic in place. When one has, say that
+        `#<i>` has no stories after shaping, say to run the `lets-shape`
+        skill on `#<i>`, and stop.
+     2. **Any other epic:** go to [Run the epic](#run-the-epic) with
+        `<i>` as `<parent>`, and the open sub-issues the result carries.
 6. When [Confirm the packet](#confirm-the-packet) returns `complete`,
    shape is done. Print shape's line, as
    [The step lines](#the-step-lines) says.
