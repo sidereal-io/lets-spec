@@ -23,4 +23,4 @@ https://github.com/sidereal-io/lets-spec/issues/287
 - **Widened: an issue that discovery split also goes on as an epic run (D1).** The story's Scope, "when the shape step files a parent and its stories", covers both inputs. So *Pick the first ready story* goes away instead of staying for one input.
 - **Added: the *Epic run* glossary entry now names the epic a shape step filed (D4).**
 
-Confirmed by user: no
+Confirmed by user: yes
