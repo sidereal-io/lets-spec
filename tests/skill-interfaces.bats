@@ -1059,12 +1059,24 @@ review_build_start() {
 }
 
 @test "Start from an idea and Run the shape step link Find the input's discovery" {
-  local idea
+  local idea shape stop
   idea="$(part_section 'Start from an idea')"
   grep -qF '](#find-the-inputs-discovery)' <<<"$idea" || { echo "Start from an idea does not link Find the input's discovery"; false; }
   grep -qF 'a discovery of this idea is in progress at each `#<parent>` it found' <<<"$idea" ||
     { echo "Start from an idea does not name each parent it found"; false; }
   ! grep -qF 'gh issue list' <<<"$idea" || { echo "Start from an idea still runs the parent query itself"; false; }
+  shape="$(part_section 'Run the shape step')"
+  grep -qF '](#find-the-inputs-discovery)' <<<"$shape" || { echo "Run the shape step does not link Find the input's discovery"; false; }
+  grep -qF 'the step resumes the discovery or finishes its Finalize' <<<"$shape" ||
+    { echo "the dirty-map check does not go on for a stop during Finalize"; false; }
+  ! grep -qF 'parent issue that says `Discovery status: in-progress`, and whose' <<<"$shape" ||
+    { echo "the dirty-map check still restates the in-progress match"; false; }
+  # A run that stops before Claim leaves the maps while the lookup still finds the discovery.
+  stop="$(part_section 'Pick the first ready story')"
+  grep -qF "still takes the parent as this input's discovery" <<<"$stop" ||
+    { echo "the stop note does not use Find the input's discovery"; false; }
+  ! grep -qF 'While the parent still says `Discovery status: in-progress`' <<<"$stop" ||
+    { echo "the stop note still keys on the status line"; false; }
 }
 
 @test "lets-go runs each step through lets delegate step" {

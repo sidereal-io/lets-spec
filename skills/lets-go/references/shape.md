@@ -78,14 +78,13 @@ when it runs.
 
    It names each changed map, new files included, and works when the
    `openspec/discovery/` folder does not exist. When it lists a path,
-   look for this input's discovery: an open
-   parent issue that says `Discovery status: in-progress`, and whose
-   `Input:` line names this input, the idea's words or `#<i>`. For an
+   take this input's discovery from
+   [Find the input's discovery](#find-the-inputs-discovery). For an
    idea, use what [Start from an idea](#start-from-an-idea) found. For
-   an issue, run the query in
-   [Find the input's discovery](#find-the-inputs-discovery).
+   an issue `#<i>`, run the lookup now.
    - **There is one:** the edits are that discovery's confirmed phases.
-     Go on: the step resumes it, and its map commit takes them.
+     Go on: the step resumes the discovery or finishes its Finalize, and
+     its map commit takes the edits.
    - **There is none:** say that the maps have uncommitted edits, name
      each path it lists, and say to commit or discard them. Stop, and
      run no step. If the run went on, a discovery's commit could sweep
@@ -152,8 +151,9 @@ A run that stops after discovery and before [Claim](../SKILL.md#claim),
 for any reason, leaves the maps' edits on the default branch. When the
 status command in [Commit the discovery map](#commit-the-discovery-map)
 lists a path, name each one, and say that they hold the discovery's
-edits, uncommitted on the default branch. While the parent still says
-`Discovery status: in-progress`, say to leave the maps as they are:
+edits, uncommitted on the default branch. While
+[Find the input's discovery](#find-the-inputs-discovery) still takes the
+parent as this input's discovery, say to leave the maps as they are:
 running `lets-go` again with the same idea, or `#<i>`, resumes the
 discovery and keeps its edits. Otherwise, say to commit or discard them
 before the next run, because the next run stops on them.
