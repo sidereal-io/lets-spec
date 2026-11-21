@@ -156,8 +156,9 @@ reason: The tests fail on main before any change.
 A done report's evidence lists the commits you made, and the pull request
 when you opened or changed it. For shape, its first line is the issue,
 as `issue #<i>: <title>`, or the parent, as `epic #<parent>: <title>`,
-with a `story #<story>: <title>` line for each story. When the parent
-became the one story, use the `issue` form. For review plan,
+with a `story #<story>: <title>` line for each story, in the order you
+created them. When the parent became the one story, use the `issue`
+form. For review plan,
 its first line is the verdict and the commit reviewed, as
 `Plan review: <verdict> for <sha>`. Write the report last. Quote a line that
 holds `#` or `: `. Put no other step-report block in the message.

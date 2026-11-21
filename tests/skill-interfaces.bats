@@ -5040,6 +5040,11 @@ readme_step_returns() {
 }
 
 # BEGIN shape-step (#264): lets-shape owns the shape step's rules.
+@test "shape-step: the shape report lists the stories in the order they were created" {
+  tr '\n' ' ' <"$(step_prompt_file)" | grep -qF 'with a `story #<story>: <title>` line for each story, in the order you created them.' ||
+    { echo "the step prompt does not order the story lines"; false; }
+}
+
 @test "shape-step: lets-shape picks its path from its input, first match wins" {
   local section items
   section="$(skill_section lets-shape 'Locate the discovery')"
