@@ -376,6 +376,42 @@ the prompt. It lists each pair, and says the questions are settled. A file
 that is missing, is not such a list, is empty, or holds a blank question
 or answer makes the command exit 2.
 
+### Run a step in the background
+
+An epic run builds the stories of a wave at the same time, so it cannot
+wait for each story run in turn. Two commands run a step in the
+background, on any agent host whose shell can run `lets`:
+
+```bash
+lets delegate step start --for story --name fix-x-story \
+  --checkout .workspace/lets-go/worktrees/fix-x \
+  --prompt-file .workspace/lets-go/fix-x-story-prompt.md \
+  --report-file .workspace/lets-go/fix-x-story-report.json \
+  --meta-file .workspace/lets-go/fix-x-story-meta.txt \
+  --effort high --model claude
+lets delegate step wait --timeout-minutes 5 --name fix-x-story --name other-story
+```
+
+- `lets delegate step start` takes every option of `step run`, and
+  starts `step run` with them in the background. `--checkout`, which is
+  optional, names the checkout the session runs in, such as a git
+  worktree. `--report-file` and `--meta-file`, which are required, take
+  the step's stdout, its report, and its stderr, its record line. It
+  prints `{"name":"<name>","pid":<pid>}` and exits 0, or exits 2 with
+  nothing started on a usage error, such as a name whose step still
+  runs.
+- `lets delegate step wait` takes one `--name` for each step to wait
+  for. When one has ended, it prints `{"name":"<name>","exit":<code>}`,
+  where the code is the one `step run` gave, and exits 0. The step's
+  report is then in its report file. A step whose process ended without
+  an exit code, such as one that was killed, counts as exit 4, and its
+  meta file says so. With `--timeout-minutes`, it exits 6 when no step
+  ended in time, and each step still runs. Run it again to go on
+  waiting.
+
+Both keep their state in `.workspace/lets-delegate/` of the repository
+root where `step start` ran, so run them from the same root.
+
 ### The step's guidance
 
 `lets delegate step instructions --for <step>` gives the guidance at

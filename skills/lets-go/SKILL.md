@@ -59,7 +59,9 @@ A run goes through these parts, in this order.
 [Run the epic](#run-the-epic) run only when the request or the
 [packet](references/terms.md#packet) needs them.
 [Run the epic](#run-the-epic) runs only in an epic run, when the run's
-issue is an epic. Each
+issue is an epic. An epic run builds the stories of one wave at the
+same time, each in a git worktree of its own, and starts the next wave
+once every story of this one is settled. Each
 part runs in this session. A part is not a step, and has no step report.
 The shape step that [Run the shape step](#run-the-shape-step) runs is a
 step, and has a report.
@@ -80,9 +82,9 @@ procedure ranks it.
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping and shape can run; [Run the epic](#run-the-epic) for an epic on the default branch, after [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; or [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) for one issue; [Pick the first ready story](#pick-the-first-ready-story) for a parent and its stories | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
-| [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | The epic has no open stories |
+| [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, waits for the children of a wave, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | The epic has no open stories |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run, or when a stop ends a story's run | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time outside an epic run; the import returns `import-failed`; or the branch has diverged |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema. In an epic run, it checks the branch out in the story's own worktree instead | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run, or when a stop ends a story's run | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time outside an epic run; the import returns `import-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table); [Start the story run](references/epic-run.md#start-the-story-run) in an epic run | Never |
 | [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run); [Run the epic](#run-the-epic) in an epic run, also when a stop ends a story's run; [End the story run](references/story-run.md#end-the-story-run) in a story run's child, also when the walk stops | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL, or each story's line in an epic run | this session | Nothing: the run is over | Always |
@@ -102,8 +104,8 @@ sets it.
 
 `lets backlog` names each item by its `key`, and shows it by its
 `label`: `149` and `#149` on GitHub. In anything shown to a person,
-`#<i>`, `#<parent>`, `#<story>`, `#<blocker>`, `#<stopped-story>`,
-`#<failed>`, `#<other>`, `#<a>`, `#<b>` and `#<c>` stand for the item's
+`#<i>`, `#<parent>`, `#<story>`, `#<blocker>`, `#<failed>`,
+`#<other>`, `#<a>`, `#<b>` and `#<c>` stand for the item's
 `label`: a printed line, a question, or text written in an issue. In a
 command, `<i>`, `<parent>` and `<story>` stand for its `key`. With the
 GitHub backlog provider, the label is `#` and the number, so each line
@@ -127,7 +129,6 @@ reads as it always has.
 | `<wave-stories>` | The `label` of each story of a wave, in the order `lets backlog waves` gives, joined by `, ` | [Run the epic](#run-the-epic), from the wave's `stories` in the waves file |
 | `<other>` | The story that a story of an epic run waits for, as its key | [Run the epic](#run-the-epic), from the story's `waitsFor` in the waves file |
 | `<login>` | The login of a person assigned to a story | The story's `assignees`, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](#run-the-epic) |
-| `<stopped-story>` | The story an epic run stopped at, as its key, in the line of another story that was not built | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<failed>` | The story whose run failed or stopped, as its key, in the line of a story that depends on it | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<step name>` | A step's name in plain words, as its `Failed` line names it, such as `review build` | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), from the failed step, or, in a story run's child, [Story run](references/story-run.md), from the step the walk is on |
 | `<story-name>` | The part of a story's title before ` — `, or the whole title when it has none | [Run the epic](#run-the-epic), when it settles the story |
@@ -139,6 +140,7 @@ reads as it always has.
 | `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | [Check the issue](#check-the-issue), from the blocker read's title. After a shape step, [Check the issue](#check-the-issue) sets it again from the shaped issue's title |
 | `<branch>` | The branch the run started on, when it is not the default branch. In a story run's child, the branch it started on, whatever it is | [Read the settings](#read-the-settings), from `git branch --show-current` |
 | `<default>` | The repository's default branch | [Read the settings](#read-the-settings) |
+| `<path>` | A story's git worktree in an epic run: `.workspace/lets-go/worktrees/<name>` in the epic run's checkout for a worktree the epic run creates, or the path `git worktree list --porcelain` prints for one it reuses | [Claim](#claim) or [The story's worktree](#the-storys-worktree) |
 | `<shape-name>` | The shape step's name: `issue-<i>` or `idea-<slug>` | [The shape step's name](references/shape.md#the-shape-steps-name) |
 | `<slug>` | The first five words of the idea, as [The shape step's name](references/shape.md#the-shape-steps-name) makes them | [The shape step's name](references/shape.md#the-shape-steps-name) |
 | `<claim>` | The unique token of this session's claim | [Claim](#claim), from the command's `claim` field |
@@ -179,7 +181,11 @@ step. In an epic run, while the run is on a story, this stop ends only
 its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
 says. A stop between stories, such as an error in a pick, still ends
-the epic run. Say what the error is:
+the epic run. When children of the wave run at that stop, first start
+no other story, and walk none: wait for each child that runs, and
+settle its story, as
+[Wait for the wave](references/epic-run.md#wait-for-the-wave) says.
+Say what the error is:
 
 - **`no-backlog`:** no Project is linked to the repository. Say to run
   the `lets-setup-backlog` skill.
@@ -508,12 +514,24 @@ says.
      [Claim](#claim). When `origin` has it, run
      `git fetch origin <name>` first: `git switch` finds a branch on
      `origin` only once it is fetched. Then run `git switch <name>`.
+     In an epic run, run no `git switch`: check the branch out in the
+     story's own worktree, as
+     [The story's worktree](#the-storys-worktree) says.
 
-   Stay on `<name>` for the whole run.
+   Stay on `<name>` for the whole run. In an epic run, the story's
+   branch is checked out in its worktree, `<path>`, and the epic run's
+   own checkout stays on `<default>`.
 2. When you ran [Claim](#claim), act on its result:
-   - **`claimed`:** when it carries `verified`, run
+   - **`claimed`:** In an epic run, first prepare the worktree
+     [Claim](#claim) created, as
+     [The story's worktree](#the-storys-worktree) says, whatever the
+     result carries. Then, when it carries `verified`, run
      [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint)
-     with the commits it carries, and act on its result as below. When
+     with the commits it carries, and act on its result as below. In an
+     epic run, run the
+     import in `<path>`, each Git command with `git -C <path>`. When it
+     fails, remove the worktree with `git worktree remove <path>` before
+     its recovery deletes the branch. When
      it carries `no-owned-edits`, run no import. Then, when a shape step
      ran in this run,
      [commit the discovery map](references/shape.md#commit-the-discovery-map).
@@ -576,6 +594,12 @@ says.
    git merge --ff-only origin/<name>
    ```
 
+   In an epic run, run the merge in the story's worktree:
+
+   ```bash
+   git -C <path> merge --ff-only origin/<name>
+   ```
+
    Skip the fetch when you have just run it above. If the merge cannot
    fast-forward, the branch and `origin` have diverged: the
    [records disagree](references/records.md#records-that-disagree). If
@@ -590,12 +614,91 @@ says.
 
    When neither exists, it is the schema [Route](#route) picked. Archive
    keeps the file, so an archived change keeps the schema it was built
-   with, even when [Route](#route) would now pick another.
+   with, even when [Route](#route) would now pick another. In an epic
+   run, read these files under `<path>`.
 
 Next: [Set the question mode](#set-the-question-mode);
 [Read the request](#read-the-request) or
 [Pick the first ready story](#pick-the-first-ready-story) after a lost
 claim; in an epic run, [Run the epic](#run-the-epic) after a lost claim.
+
+### The story's worktree
+
+In an epic run, every story's branch is checked out in a git worktree
+of its own, `<path>`, even in a wave of one story, so the stories of a
+wave can run at the same time. The epic run's own checkout stays on
+`<default>` for the whole epic run. [Claim](#claim) creates the
+worktree of a story with no branch. For a story whose branch exists,
+here or on `origin`, find or create it:
+
+1. Look for a worktree that has the branch checked out already. An
+   earlier epic run may have kept one, or the user may have made one:
+
+   ```bash
+   git worktree list --porcelain
+   ```
+
+   Each worktree is a group of lines, which starts with its
+   `worktree <path>` line. Find the group whose `branch` line is
+   `refs/heads/<name>`. When there is one, its path is `<path>`.
+   Check it for changes that are not committed, outside `.workspace/`:
+   staged, unstaged or untracked. Ignored files do not count.
+
+   ```bash
+   git -C <path> status --porcelain --untracked-files=all -- . ':(exclude).workspace'
+   ```
+
+   - **It prints nothing:** use that worktree for the story, and create
+     none. Go on to prepare it, below.
+   - **It prints a line:** say so, and stop, as
+     [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+     says: the story's reason is
+     `its worktree at <path> has changes that are not committed`.
+     Leave the worktree as it is, with its changes.
+
+   When there is none, go on to the next action.
+2. When `origin` has the branch, fetch it, so that `git worktree add`
+   can create the local branch from `origin/<name>`. Then add the
+   worktree. `<path>` is `.workspace/lets-go/worktrees/<name>`:
+
+   ```bash
+   git fetch origin <name>
+   git worktree add .workspace/lets-go/worktrees/<name> <name>
+   ```
+
+   When a command fails, say Git's error, and stop, as
+   [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+   says: the story's reason is Git's error.
+
+Then prepare the worktree, new or reused. A new worktree holds only
+what Git tracks. Find out once per epic run, in the epic run's own
+checkout, whether git ignores the project's lets-spec skills:
+
+```bash
+git check-ignore -q .agents/skills/lets-go
+```
+
+When it exits 0, git ignores them, so the worktree has no `lets-go`
+skill and no lets schemas. Write them with `lets sync`, run in the
+worktree with the epic run's environment:
+
+```bash
+(cd <path> && lets sync)
+```
+
+When `lets sync` exits non-zero, say its error, and stop, as
+[A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+says: the story's reason is
+`lets sync failed in its worktree: ` followed by its error. On any
+other exit of `git check-ignore`, run no `lets sync`.
+Prepare nothing else in the worktree: the steps install what they need,
+as in any fresh checkout.
+
+From here on, every command of the story that reads or writes its
+branch runs in `<path>`: the fast-forward, the import, the schema read,
+the child session, and the walk in this session when no child session
+can start. Run each Git command with `git -C <path>`, and read each
+file under `<path>`.
 
 ## Set the question mode
 
@@ -964,15 +1067,22 @@ return to the part that ran it, with the result.
      the `write` that failed, its `message` and its `claim` token when
      present. Return it now, before you create a branch, and undo
      nothing.
-4. Create a branch with the change's name off the default branch. For
-   a story that
-   [Stack the story](references/epic-run.md#stack-the-story) stacked,
-   create it off the blocker's branch instead, with no
-   upstream, so that a later plain `git push` never pushes to the
-   blocker's branch:
+4. Create a branch with the change's name off the default branch. In
+   an epic run, create the branch and the story's worktree together,
+   so that the epic run's own checkout stays on `<default>`. The
+   worktree is `<path>`:
 
    ```bash
-   git switch --no-track -c <name> origin/<blocker-branch>
+   git worktree add -b <name> .workspace/lets-go/worktrees/<name> <default>
+   ```
+
+   For a story that
+   [Stack the story](references/epic-run.md#stack-the-story) stacked,
+   create them off the blocker's branch instead, with no upstream, so
+   that a later plain `git push` never pushes to the blocker's branch:
+
+   ```bash
+   git worktree add --no-track -b <name> .workspace/lets-go/worktrees/<name> origin/<blocker-branch>
    ```
 
    Creating the branch also fails when a local branch with the

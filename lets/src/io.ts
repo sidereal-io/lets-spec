@@ -1,12 +1,14 @@
 // The real filesystem, git and child processes, as the modules see them.
 // Tests pass a fake with the same methods.
-import { execFile as nodeExecFile } from 'node:child_process';
+import { execFile as nodeExecFile, spawn } from 'node:child_process';
 import {
   chmodSync,
+  closeSync,
   copyFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
+  openSync,
   readdirSync,
   readFileSync,
   readlinkSync,
@@ -42,6 +44,15 @@ export type ExecOptions = {
   killSignal?: NodeJS.Signals;
 };
 
+// A process that outlives lets: its stdout and stderr go to files, which
+// are emptied first.
+export type DetachedOptions = {
+  cwd: string;
+  env: Record<string, string | undefined>;
+  stdoutFile: string;
+  stderrFile: string;
+};
+
 export type Io = {
   readFile(path: string): string | null;
   readBytes(path: string): Buffer | null;
@@ -60,6 +71,14 @@ export type Io = {
   listNames(path: string): string[];
   listFiles(path: string): string[];
   execFile(cmd: string, args: string[], options?: ExecOptions): Promise<ExecResult>;
+  // Starts cmd and returns its process id at once, or null when it cannot
+  // start.
+  spawnDetached(cmd: string, args: string[], options: DetachedOptions): number | null;
+  isAlive(pid: number): boolean;
+  sleep(ms: number): Promise<void>;
+  // The command that runs this lets: the Node binary, its flags and the
+  // entry script.
+  letsCommand(): string[];
   // The user's home folder.
   homedir(): string;
   now(): number;
@@ -213,6 +232,39 @@ export function realIo(): Io {
         child.stdin!.end(input);
       });
     },
+
+    // The child gets its own process group and file descriptors, so it
+    // keeps running once lets exits.
+    spawnDetached(cmd, args, { cwd, env, stdoutFile, stderrFile }) {
+      const stdout = openSync(stdoutFile, 'w');
+      let stderr: number;
+      try {
+        stderr = openSync(stderrFile, 'w');
+      } catch (error) {
+        closeSync(stdout);
+        throw error;
+      }
+      try {
+        const child = spawn(cmd, args, { cwd, env, detached: true, stdio: ['ignore', stdout, stderr] });
+        child.on('error', () => {});
+        child.unref();
+        return child.pid ?? null;
+      } finally {
+        closeSync(stdout);
+        closeSync(stderr);
+      }
+    },
+    // EPERM: the process runs, as another user.
+    isAlive(pid) {
+      try {
+        process.kill(pid, 0);
+        return true;
+      } catch (error) {
+        return (error as NodeJS.ErrnoException).code === 'EPERM';
+      }
+    },
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    letsCommand: () => [process.execPath, ...process.execArgv, process.argv[1]],
 
     homedir: () => homedir(),
     now: () => Date.now(),

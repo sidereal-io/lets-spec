@@ -21,6 +21,8 @@
 //              there is one
 //   notInRepo: true when `git rev-parse --show-toplevel` fails, as outside a
 //              Git repository
+//   roots:     what `git rev-parse --show-toplevel` prints in each folder, by
+//              the folder; default /repo
 import type { ResolverName } from '../../../../lets/src/delegate/config.ts';
 import type { Deps } from '../../../../lets/src/io.ts';
 import type { Adapter, Handle, RunInput, StartInput, StepInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
@@ -159,10 +161,11 @@ type Options = {
   config?: string;
   repoConfig?: string;
   notInRepo?: boolean;
+  roots?: Record<string, string>;
 };
 
 export function commandDeps({
-  adapters = {}, real = {}, gitBefore = '', gitAfter = gitBefore, gitAfterFails = false, head = HEAD, headAfter = head, headFails = false, files = { [PROMPT_FILE]: 'PROMPT TEXT' }, config, repoConfig, notInRepo = false,
+  adapters = {}, real = {}, gitBefore = '', gitAfter = gitBefore, gitAfterFails = false, head = HEAD, headAfter = head, headFails = false, files = { [PROMPT_FILE]: 'PROMPT TEXT' }, config, repoConfig, notInRepo = false, roots = {},
 }: Options = {}) {
   const io = fakeIo({ files: { ...files, ...(config === undefined ? {} : { [CONFIG]: config }), ...(repoConfig === undefined ? {} : { [REPO_CONFIG]: repoConfig }) } });
   const calls: AdapterCall[] = [];
@@ -174,7 +177,7 @@ export function commandDeps({
       return { stdout: `${calls.some(([, method]) => method === 'run') ? headAfter : head}\n`, stderr: '', code: 0 };
     }
     if (cmd === 'git' && args[0] === 'rev-parse' && notInRepo) return { stdout: '', stderr: 'fatal: not a git repository', code: 128 };
-    if (cmd === 'git' && args[0] === 'rev-parse') return { stdout: '/repo\n', stderr: '', code: 0 };
+    if (cmd === 'git' && args[0] === 'rev-parse') return { stdout: `${roots[opts.cwd ?? ''] ?? '/repo'}\n`, stderr: '', code: 0 };
     if (cmd === 'git') {
       if (statusCalls++ === 0) return { stdout: gitBefore, stderr: '', code: 0 };
       return gitAfterFails ? { stdout: '', stderr: 'index.lock exists', code: 128 } : { stdout: gitAfter, stderr: '', code: 0 };

@@ -99,6 +99,19 @@ export function fakeIo({ files = {}, dirs = [], toplevel = null, openspec = null
     },
     homedir: () => '/home/u',
     now: () => 0,
+    // lets sync starts no process and never waits.
+    spawnDetached: () => {
+      throw new Error('spawnDetached is not in this fake');
+    },
+    isAlive: () => {
+      throw new Error('isAlive is not in this fake');
+    },
+    sleep: () => {
+      throw new Error('sleep is not in this fake');
+    },
+    letsCommand: () => {
+      throw new Error('letsCommand is not in this fake');
+    },
   };
   return io;
 }

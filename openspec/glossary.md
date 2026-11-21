@@ -133,12 +133,13 @@ review, in a child `lets-go` session of its own. A story run is not a
 step: it runs the steps of its story. An epic run starts each story run with
 `lets delegate step run --for story`, which uses the `step` delegate
 strategy and reads the step report the child ends with. The `story`
-intent names no step.
+intent names no step. Each story run works in a git worktree of its own,
+which the epic run removes once the story is built.
 
 ## Wave
 
-A set of an epic's stories that an epic run may build at the same time.
+A set of an epic's stories that an epic run builds at the same time.
 No chain of blocked-by links joins any two of them, and no two of their
 packets name an overlapping path under **Relevant code**. An epic run
 sorts its stories into waves when it starts, and builds the waves in
-order.
+order: it starts the next wave once every story of this one is settled.
