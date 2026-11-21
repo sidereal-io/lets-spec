@@ -922,17 +922,25 @@ review_build_start() {
 }
 
 @test "Enter the branch goes back to the part that picked after a lost claim" {
-  local line
+  local line part
   line="$(next_line 'Enter the branch')"
-  grep -qF '](#read-the-request)' <<<"$line" && grep -qF '](#pick-the-first-ready-story)' <<<"$line" ||
-    { echo "it said: $line"; false; }
+  grep -qF '[Read the request](#read-the-request) after a lost claim' <<<"$line" || { echo "it said: $line"; false; }
+  ! grep -qF '](#pick-the-first-ready-story)' <<<"$line" || { echo "it still goes back to Pick the first ready story: $line"; false; }
+  part="$(part_section 'Enter the branch')"
+  grep -qF 'Otherwise `next` picked it: count the lost claim.' <<<"$part" ||
+    { echo "the taken case does not say that next picked the issue"; false; }
+  grep -qF 'go back to [Read the request](#read-the-request), which runs `next` again.' <<<"$part" ||
+    { echo "the taken case does not go back to Read the request"; false; }
+  ! grep -qF 'Pick the first ready story' <<<"$part" || { echo "the taken case still names Pick the first ready story"; false; }
 }
 
-@test "Pick the first ready story prints Done shape once after a lost claim" {
-  grep -qF 'when this run has not printed it yet' <<<"$(skill_section lets-go 'The step lines')" ||
+@test "Done shape prints once per run" {
+  local lines
+  lines="$(skill_section lets-go 'The step lines')"
+  grep -qF 'when this run has not printed it yet' <<<"$lines" ||
     { echo "The step lines print Done shape again after a lost claim"; false; }
-  grep -qF '](../SKILL.md#the-step-lines)' <<<"$(part_section 'Pick the first ready story')" ||
-    { echo "Pick the first ready story does not link The step lines"; false; }
+  ! grep -qF 'Pick the first ready story' <<<"$lines" ||
+    { echo "The step lines still name Pick the first ready story as a place that prints Done shape"; false; }
 }
 
 @test "lets-go sends a failed step back to lets-go" {
@@ -1878,7 +1886,7 @@ overview_row() {
 }
 
 @test "the overview's Next for Enter the branch names both ways back after a lost claim" {
-  overview_row 'Enter the branch' | grep -qF '[Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim' ||
+  overview_row 'Enter the branch' | grep -qF '[Read the request](#read-the-request) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run' ||
     { echo "it said: $(overview_row 'Enter the branch')"; false; }
 }
 

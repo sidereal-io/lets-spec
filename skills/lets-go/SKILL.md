@@ -84,7 +84,7 @@ procedure ranks it.
 | [Pick the first ready story](#pick-the-first-ready-story) | Picks the first ready story that discovery filed | this session | [Check the issue](#check-the-issue) | [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, waits for the children of a wave, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | `lets delegate step wait` fails, so the epic run cannot wait for its children |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema. In an epic run, it checks the branch out in the story's own worktree instead | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) or [Pick the first ready story](#pick-the-first-ready-story) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run, or when a stop ends a story's run | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time outside an epic run; the import returns `import-failed`; the epic-run map commit returns `commit-failed` or `restore-failed`; or the branch has diverged |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema. In an epic run, it checks the branch out in the story's own worktree instead | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run, or when a stop ends a story's run | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time outside an epic run; the import returns `import-failed`; the epic-run map commit returns `commit-failed` or `restore-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table); [Start the story run](references/epic-run.md#start-the-story-run) in an epic run | Never |
 | [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run); [Run the epic](#run-the-epic) in an epic run, also when a stop ends a story's run; [End the story run](references/story-run.md#end-the-story-run) in a story run's child, also when the walk stops | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL, or each story's line in an epic run | this session | Nothing: the run is over | Always |
@@ -607,17 +607,14 @@ says.
      [Settle a story](references/epic-run.md#settle-a-story) says.
      Count no lost claim, and go back to [Run the epic](#run-the-epic),
      which picks again. Otherwise, when the user named `<i>` or
-     confirmed it, say who has it, and stop. Otherwise `next` or
-     [Pick the first ready story](#pick-the-first-ready-story) picked
-     it: count the lost claim. After the third lost claim in this run,
+     confirmed it, say who has it, and stop. Otherwise `next` picked it:
+     count the lost claim. After the third lost claim in this run,
      say that other sessions keep taking the picked issues, and to run
      `lets-go` again. Stop, claiming nothing. This stop applies outside
      an epic run only: an epic run's stories are a fixed set, so it
      always ends. Before that, go back to
-     the part that picked: [Read the request](#read-the-request) for
-     `next`, or
-     [Pick the first ready story](#pick-the-first-ready-story). Keep the
-     lines printed for the lost issue.
+     [Read the request](#read-the-request), which runs `next` again.
+     Keep the lines printed for the lost issue.
    - **`unresolved`:** report the owner or the definitions it carries,
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
@@ -682,9 +679,8 @@ says.
    run, read these files under `<path>`.
 
 Next: [Set the question mode](#set-the-question-mode);
-[Read the request](#read-the-request) or
-[Pick the first ready story](#pick-the-first-ready-story) after a lost
-claim; in an epic run, [Run the epic](#run-the-epic) after a lost claim.
+[Read the request](#read-the-request) after a lost claim; in an epic
+run, [Run the epic](#run-the-epic) after a lost claim.
 
 ### The story's worktree
 
@@ -1268,14 +1264,12 @@ Shape's line prints at most once for an issue. Print `Done shape` after
 a shape step reported `done`, once per run, when this run has not
 printed it yet: [Check the issue](#check-the-issue) prints it, for
 one issue, or before [Run the epic](#run-the-epic) for the epic it
-shaped, or
-[Pick the first ready story](#pick-the-first-ready-story) when no story
-is ready, or [Run the shape step](#run-the-shape-step) when it stops on
+shaped, or [Run the shape step](#run-the-shape-step) when it stops on
 the discovery maps' edits. Print `Skipped shape` once for each issue
 whose packet [Check the issue](#check-the-issue) finds complete, and
 only when no
-shape step ran in this run. So a story picked after a lost claim in a
-discovery run prints neither.
+shape step ran in this run. So a story that an epic run picks after
+its shape step prints neither, even after a lost claim.
 
 ### The change's name
 
