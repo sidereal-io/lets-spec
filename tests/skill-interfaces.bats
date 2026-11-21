@@ -5010,3 +5010,16 @@ readme_step_returns() {
   awk '/Every line but a built or stacked line is a stop/ { stop = NR } /git worktree remove <path>/ { remove = NR } END { exit !(stop && remove > stop) }' "$(epic_run_file)" ||
     { echo "Run the epic removes the worktree before it knows the story's line"; false; }
 }
+
+@test "parallel: the epic run reads each ended child's worktree and stack from its story prompt, and keeps its own files in its checkout" {
+  local section
+  section="$(skill_section lets-go 'Wait for the wave')"
+  grep -qF -- 'Take its `<path>`, and its `## Stack` section when it has one, from its story prompt' <<<"$section" ||
+    { echo "Wait for the wave does not read an ended child's worktree and stack from its story prompt"; false; }
+  grep -qF -- 'When the walk ends, come back to the epic run'"'"'s own checkout' <<<"$section" ||
+    { echo "Wait for the wave does not come back to the epic run's checkout after a walk"; false; }
+  grep -qF -- 'Run this part in the epic run'"'"'s own checkout' <<<"$(part_section 'Run the epic')" ||
+    { echo "Run the epic does not settle a story in the epic run's checkout"; false; }
+  grep -qF -- 'the lines in its `.workspace/lets-go/<session>-rounds.txt` in `<path>`' <<<"$(skill_section lets-go "Relay a story run's questions")" ||
+    { echo "Relay a story run's questions does not put the rounds file in the worktree"; false; }
+}

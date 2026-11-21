@@ -155,6 +155,9 @@ as for any picked issue.
    this part from [Wait for the wave](#wait-for-the-wave), or from
    [Walk the step table](../SKILL.md#walk-the-step-table) after this
    session walked the story's steps. `<path>` is the story's worktree.
+   Run this part in the epic run's own checkout, not in `<path>`: the
+   epic run's files in `.workspace/lets-go/` are there, and Git cannot
+   remove the worktree it runs in.
 
    After a walk in this session, the story's pull request is ready for
    review. Read its URL as `<pr-url>`. The story's line is its built
@@ -433,7 +436,10 @@ for a story whose child could not start, which this session walks.
    On exit 0, it prints one JSON line, `{"name","exit"}`: the child that
    ended first, and the exit code its `lets delegate step run` gave.
    The story whose `<name>-story` it names is `<i>` and `<story>` from
-   here on, and `<path>` is its worktree. Read its report in
+   here on. Take its `<path>`, and its `## Stack` section when it has
+   one, from its story prompt,
+   `.workspace/lets-go/<name>-story-prompt.md`: later picks have set
+   them for other stories since. Read its report in
    `.workspace/lets-go/<name>-story-report.json`, and act on it:
    - **Exit 0, with a `needs-input` report:** go to
      [Relay a story run's questions](#relay-a-story-runs-questions).
@@ -488,7 +494,8 @@ for a story whose child could not start, which this session walks.
    its checkout is `<path>`: it reads and writes files only there, and
    runs every command there. Run no subagent with the story
    prompt, even when the meta file names a saved prompt: a subagent
-   cannot give each step a fresh session. When the walk ends, the run
+   cannot give each step a fresh session. When the walk ends, come back
+   to the epic run's own checkout for every later command, and the run
    goes to *Settle the story whose run ended*, in
    [Run the epic](#run-the-epic), which settles the story and comes
    back here.
@@ -697,8 +704,8 @@ wait.
    [Run a step](../SKILL.md#run-a-step) says. The step's count of
    `needs-input` reports in
    [Relay the questions](../SKILL.md#relay-the-questions) starts from
-   the lines in its `.workspace/lets-go/<session>-rounds.txt`, not from
-   none.
+   the lines in its `.workspace/lets-go/<session>-rounds.txt` in
+   `<path>`, not from none.
 
 ## Read a pull request's base
 
