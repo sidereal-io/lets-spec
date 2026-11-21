@@ -132,6 +132,9 @@ reads as it always has.
 | `<failed>` | The story whose run failed or stopped, as its key, in the line of a story that depends on it | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<step name>` | A step's name in plain words, as its `Failed` line names it, such as `review build` | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), from the failed step, or, in a story run's child, [Story run](references/story-run.md), from the step the walk is on |
 | `<story-name>` | The part of a story's title before ` — `, or the whole title when it has none | [Run the epic](#run-the-epic), when it settles the story |
+| `<map>` | One changed discovery map, as a path, in an epic run | [Commit the map in an epic run](references/shape.md#commit-the-map-in-an-epic-run), from its `git status` command |
+| `<copied paths>` | The changed discovery maps that still exist, which an epic run copies into the story's worktree | [Commit the map in an epic run](references/shape.md#commit-the-map-in-an-epic-run) |
+| `<tracked paths>` | The changed discovery maps that Git tracks, every one not marked `??` | [Commit the map in an epic run](references/shape.md#commit-the-map-in-an-epic-run) |
 | `<paths>` | The changed discovery maps, one path each | [Commit the discovery map](references/shape.md#commit-the-discovery-map), from its `git status` command |
 | `<pr-base>` | The base branch of a story's pull request, its `baseRefName` | [Run the epic](#run-the-epic) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr list` read |
 | `<story-pr>` | The number of a story's pull request, which [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) edits by | [Run the epic](#run-the-epic) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr list` read |
@@ -568,6 +571,12 @@ says.
      it carries `no-owned-edits`, run no import. Then, when a shape step
      ran in this run,
      [commit the discovery map](references/shape.md#commit-the-discovery-map).
+     In an epic run, use its
+     [epic-run form](references/shape.md#commit-the-map-in-an-epic-run),
+     in the epic run's own checkout and `<path>`. When it returns Git's
+     error, say it, and stop, as
+     [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
+     says: the story's reason is Git's error.
      A run with no shape step has no map to commit, and reads no part of
      `references/shape.md`.
    - **`taken`:** In an epic run, settle the story with

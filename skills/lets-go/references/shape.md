@@ -209,6 +209,75 @@ Never pass the `openspec/discovery` folder itself to `git add` or
 became the one story. Commit no other path. This is the one commit
 `lets-go` makes itself, beside the glossary import.
 
+In an epic run, use the form below instead.
+
+Return to the part that ran it.
+
+### Commit the map in an epic run
+
+In an epic run, the story's branch is checked out in its own worktree,
+`<path>`. [Claim](../SKILL.md#claim) created it from the committed
+default branch, so the edits stay behind in the epic run's own
+checkout. Carry them into the first story the epic run claims, then
+return the checkout to clean. Run this after
+[The story's worktree](../SKILL.md#the-storys-worktree) has prepared
+`<path>`.
+
+1. List the changed maps in the epic run's own checkout:
+
+   ```bash
+   git status --porcelain -uall -- openspec/discovery.md openspec/discovery
+   ```
+
+   When it lists no path, make no commit. A story claimed later in
+   this epic run finds no changed map, and makes no commit. Otherwise
+   the listed paths are `<paths>`.
+2. Carry each listed path, `<map>`, into the worktree:
+   - **A path that exists** in the checkout: copy it to the same path
+     in `<path>`. Create its folder first, because the worktree may
+     have no `openspec/discovery/` folder:
+
+     ```bash
+     mkdir -p -- "$(dirname -- <path>/<map>)"
+     cp -- <map> <path>/<map>
+     ```
+
+   - **A path that no longer exists**, marked ` D` or `D `, which
+     discovery removed: remove it in the worktree too.
+
+     ```bash
+     git -C <path> rm -q -- <map>
+     ```
+
+   The paths you copied are `<copied paths>`.
+3. Commit them in the worktree. `git add` takes only the copied paths,
+   because it fails on a path that `git rm` has removed. The commit
+   takes them all:
+
+   ```bash
+   git -C <path> add -- <copied paths>
+   git -C <path> commit -m "docs: the discovery map from #<parent>" -- <paths>
+   ```
+
+   When a command fails, leave the checkout's edits as they are, and
+   return Git's error to the part that ran it.
+4. Only once the commit succeeds, return the epic run's checkout to its
+   committed state, so it stays clean on `<default>`. The paths not
+   marked `??` are `<tracked paths>`: restore them, when there are any.
+   Then remove each path marked `??`, a map discovery created:
+
+   ```bash
+   git restore --source=HEAD --staged --worktree -- <tracked paths>
+   rm -- <map>
+   ```
+
+   The edits are safe in the story's commit, so the restore loses
+   nothing. When a command fails, return Git's error to the part that
+   ran it: the story's commit already holds the edits.
+
+Never pass the `openspec/discovery` folder itself to a Git command.
+`<parent>` is the epic's number.
+
 Return to the part that ran it.
 
 ## The shape step's name

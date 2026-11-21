@@ -3898,6 +3898,84 @@ commit_maps() {
   [ "$status" -eq 1 ] || { echo "shape.md still adds the one map: $output"; false; }
 }
 
+# The commands of the epic-run form of Commit the discovery map, in the
+# order references/shape.md gives them.
+map_epic_commands=(
+  'git status --porcelain -uall -- openspec/discovery.md openspec/discovery'
+  'mkdir -p -- "$(dirname -- <path>/<map>)"'
+  'cp -- <map> <path>/<map>'
+  'git -C <path> rm -q -- <map>'
+  'git -C <path> add -- <copied paths>'
+  'git -C <path> commit -m "docs: the discovery map from #<parent>" -- <paths>'
+  'git restore --source=HEAD --staged --worktree -- <tracked paths>'
+  'rm -- <map>'
+)
+
+# map_epic_run <n>: run the nth command of map_epic_commands, with its
+# placeholders filled from the caller's path, p (the map), copied, tracked
+# and all.
+map_epic_run() {
+  local c="${map_epic_commands[$1]}"
+  c="${c//<copied paths>/\"\$\{copied[@]\}\"}"
+  c="${c//<tracked paths>/\"\$\{tracked[@]\}\"}"
+  c="${c//<paths>/\"\$\{all[@]\}\"}"
+  c="${c//<path>/\"\$path\"}"
+  c="${c//<map>/\"\$p\"}"
+  c="${c//#<parent>/#300}"
+  eval "$c"
+}
+
+@test "discovery maps: an epic run commits the discovery map on the first story it claims" {
+  local section command at last=0 phrase
+  section="$(skill_section lets-go 'Commit the map in an epic run')"
+  [ -n "$section" ] || { echo "references/shape.md has no section Commit the map in an epic run"; false; }
+  for command in "${map_epic_commands[@]}"; do
+    at="$(awk -v s="$section" -v c="$command" 'BEGIN { print index(s, c) }')"
+    [ "$at" -gt "$last" ] || { echo "the section does not hold, after the command before it: $command"; false; }
+    last="$at"
+  done
+  for phrase in 'in the epic run'"'"'s own checkout' 'Only once the commit succeeds' \
+    'A story claimed later in this epic run finds no changed map, and makes no commit.'; do
+    grep -qF -- "$phrase" <<<"$section" || { echo "the section does not say: $phrase"; false; }
+  done
+  run grep -nE 'git (-C <path> )?(add|commit|rm|restore)( .*)? (-- )?openspec/discovery( |$|`)' "$repo/skills/lets-go/references/shape.md"
+  [ "$status" -eq 1 ] || { echo "shape.md passes the folder to git: $output"; false; }
+  grep -qF 'In an epic run, use its [epic-run form](references/shape.md#commit-the-map-in-an-epic-run)' <<<"$(part_section 'Enter the branch')" ||
+    { echo "Enter the branch does not run the epic-run form"; false; }
+}
+
+@test "discovery maps: an epic run carries every map into the story's worktree and leaves its checkout clean" {
+  local line code p path=wt copied=() tracked=() all=() news=()
+  map_repo
+  mkdir openspec/discovery
+  printf '# Discovery: Old\n' >openspec/discovery/old.md
+  git add . && git commit -q -m old
+  git worktree add -q -b plugin-contract "$path" 2>/dev/null
+  printf 'personas\n' >>openspec/discovery.md
+  rm openspec/discovery/old.md
+  printf '# Discovery: Warehouse\n' >openspec/discovery/warehouse.md
+  rm -r "$path/openspec/discovery"
+  while IFS= read -r line; do
+    code="${line:0:2}" p="${line:3}"
+    all+=("$p")
+    if [ "$code" = ' D' ]; then
+      map_epic_run 3
+    else
+      map_epic_run 1 && map_epic_run 2
+      copied+=("$p")
+    fi
+    if [ "$code" = '??' ]; then news+=("$p"); else tracked+=("$p"); fi
+  done < <(map_epic_run 0)
+  map_epic_run 4
+  map_epic_run 5 >/dev/null
+  map_epic_run 6
+  for p in "${news[@]}"; do map_epic_run 7; done
+  [ "$(git -C "$path" show --name-only --format= HEAD | sort | tr '\n' ' ')" = \
+    'openspec/discovery.md openspec/discovery/old.md openspec/discovery/warehouse.md ' ] ||
+    { echo "the story's commit holds: $(git -C "$path" show --name-only --format= HEAD)"; false; }
+  [ -z "$(git status --porcelain -- . ':(exclude)wt')" ] || { echo "the checkout keeps: $(git status --porcelain)"; false; }
+}
+
 @test "discovery maps: lets-go commit names each dirty map before the shape step and at a stop" {
   local section
   section="$(skill_section lets-go 'Run the shape step')"
