@@ -96,7 +96,9 @@ gh issue list --state open --limit 500 --search '"Input:" in:body' --json number
 Keep each issue whose `Input:` line names this input. The parent's
 status line then picks the case: in-progress goes to *Resume mode*; no
 status line, with the story table confirmed in the answers, goes to
-*Phase 6: Finalize*. This is the query *Add a second
+*Phase 6: Finalize*. Drop a parent in neither state, such as an open
+epic whose discovery finished, before counting matches. With none
+left, the list goes on to item 2. This is the query *Add a second
 product* already uses, with `--limit 500` added: `gh issue list`
 returns 30 issues by default, and open epics and single stories also
 carry an `Input:` line.
@@ -222,9 +224,11 @@ In `tests/skill-interfaces.bats`:
   resumed round] → Item 1 is first and names both parent cases. The
   walkthrough in the pull request traces each of the four starts
   against the new text.
-- [Item 1 matches two parents with the same `Input:`, such as an old
-  epic and this run's] → It lists them and asks which one, as a
-  confirmation question. It never picks.
+- [Item 1 matches two parents with the same `Input:`] → A finished
+  epic is dropped before the count, so an old epic and this run's
+  match as one. Two live parents with the same input are listed, and
+  the user is asked which one, as a confirmation question. It never
+  picks.
 - [A large idea brought directly no longer runs *Revision mode*'s map
   check before Ingest] → Accepted in D11. The user can run `lets-shape`
   with no input to revise the map.

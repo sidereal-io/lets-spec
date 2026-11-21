@@ -6,7 +6,7 @@
 
 `lets-shape` SHALL pick its path at the start of every run, whoever runs it, with the first match winning. The input is what the caller brings: an idea in words, a file, or an issue `#<i>`. The answers are those the run already has: the ones the user gave in this session, or the `## Answers` section of a resumed step.
 
-1. An open parent issue's `Input:` line names this input. When the parent says `Discovery status: in-progress`, `lets-shape` SHALL resume it. When it has no status line and the answers confirmed its Phase 5 story table, `lets-shape` SHALL finish its Finalize. When several parents match, it SHALL list them and ask which one, and pick none itself.
+1. An open parent issue's `Input:` line names this input, and the parent is in one of two states. When it says `Discovery status: in-progress`, `lets-shape` SHALL resume it. When it has no status line and the answers confirmed its Phase 5 story table, `lets-shape` SHALL finish its Finalize. A parent in neither state, such as an open epic whose discovery finished, SHALL NOT match, and the list goes on to item 2. When several parents match, it SHALL list them and ask which one, and pick none itself.
 2. The answers hold yes to the discovery question: `lets-shape` SHALL run discovery from Ingest with this input.
 3. The input plainly holds a large idea, such as a PRD or a vision: `lets-shape` SHALL ask the discovery question before any other question.
 4. Any other input: `lets-shape` SHALL shape it as one issue. Sizing decides whether it is too large.
@@ -29,6 +29,10 @@ A parent whose `Input:` line names another input SHALL NOT be resumed or finishe
 #### Scenario: A large idea brought directly
 - **WHEN** a user runs `lets-shape` with a two-page vision and `openspec/discovery.md` exists
 - **THEN** `lets-shape` asks the discovery question before it asks about a Kind or a packet, and does not start *Revision mode*
+
+#### Scenario: A finished epic names the input
+- **WHEN** the input is `#180`, the open parent `Epic: plugin backlog` has `Input: #180` and no status line, and the answers do not confirm its Phase 5 story table
+- **THEN** `lets-shape` neither resumes nor finishes that parent, asks no question about which parent, and goes on to the next item of the list
 
 #### Scenario: An unrelated discovery is in progress
 - **WHEN** the user brings the bug `lets sync prints twice`, and an open parent says `Discovery status: in-progress` with `Input: #150`
@@ -76,7 +80,7 @@ When the work is too large for one issue, `lets-shape` SHALL ask `The work is Si
 
 ### Requirement: The parent's Input line names its input
 
-When Ingest writes the parent issue, its `Input:` line SHALL name the input so a later run can match it: `#<i>` for an issue, the path for a file, and the idea word for word for an idea in words.
+When Ingest writes the parent issue, its `Input:` line SHALL name the input so a later run can match it: `#<i>` for an issue, the path for a file, and the idea word for word for an idea in words. A long conversation with no short statement of the idea SHALL keep `conversation, YYYY-MM-DD`, which no later run matches.
 
 #### Scenario: An idea's parent
 - **WHEN** discovery runs for the idea `rewrite the backlog around a plugin model`
