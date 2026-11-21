@@ -23,7 +23,7 @@ design §N.
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [easy] The project's three checks pass on the branch (verify: pnpm test && nix flake check && mise run check)
+- [x] 3.1 [easy] The project's three checks pass on the branch (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test && nix flake check && mise run check passed)
 - [ ] 3.2 [medium] Pull request #300's description records `wc -l` for `skills/lets-go/SKILL.md` and for the whole `lets-go` skill, before (1,404 and 3,313 lines) and after, and walks through the four ways a shape round can start (resume, Finalize started, discovery yes, shape one issue), each traced to the `lets-shape` text that handles it (verify: gh pr view 300 --json body --jq .body | grep -qi 'walkthrough')
 
 ## Deviations Ledger
