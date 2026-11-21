@@ -185,11 +185,12 @@ At the start:
    are those this run already has: the ones the user gave in this session,
    or the `## Answers` section of a resumed step. The first of these that
    matches wins:
-   1. **An open parent issue's `Input:` line names this input.** List the
-      parents with `gh issue list --state open --limit 500 --search '"Input:" in:body' --json number,title,body`,
+   1. **An open parent issue is this input, or its `Input:` line names it.**
+      List the parents with `gh issue list --state open --limit 500 --search '"Input:" in:body' --json number,title,body`,
       and keep each whose `Input:` line names this input: `#<i>` or the
       issue's URL for an issue, the path for a file, or the idea word for
-      word. Then look at each one's status line:
+      word. When the input is an issue `#<i>` that is itself in that list,
+      it is a parent: keep it too. Then look at each one's status line:
       - It says `Discovery status: in-progress`: run
         [Resume mode](#resume-mode) on it.
       - It has no status line, and the answers confirmed its Phase 5 story
@@ -223,7 +224,7 @@ At the start:
       [Revision mode](#revision-mode) if it does.
 
    When the user brings an input, never resume or finish a parent whose
-   `Input:` line names another input.
+   `Input:` line names another input, unless the input is that parent.
 
 If any of these fails, stop and show the error. Never write the map anywhere
 but the resolved root.

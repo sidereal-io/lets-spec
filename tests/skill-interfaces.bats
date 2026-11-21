@@ -5051,11 +5051,15 @@ readme_step_returns() {
     { echo "Locate the discovery does not finish Finalize"; false; }
   grep -qF 'Drop a parent in neither state' <<<"$section" ||
     { echo "Locate the discovery matches a finished epic"; false; }
+  grep -qF 'When the input is an issue `#<i>` that is itself in that list, it is a parent: keep it too.' <<<"$section" ||
+    { echo "Locate the discovery does not resume the parent the user named"; false; }
+  grep -qF 'never resume or finish a parent whose `Input:` line names another input, unless the input is that parent' <<<"$section" ||
+    { echo "Locate the discovery forbids resuming the parent the user named"; false; }
   ! grep -qF 'An issue that holds a large idea is the input to a discovery run instead.' <<<"$section" ||
     { echo "Locate the discovery still sends a large issue away in its first item"; false; }
   items="$(sed -n '/^## Locate the discovery/,/^## /p' "$repo/skills/lets-shape/SKILL.md" | grep -oE '^   [1-5]\. \*\*[^*]+\*\*')"
   [ "$(sed 's/^ *[0-9]\. //' <<<"$items" | tr '\n' '|')" = \
-    "**An open parent issue's \`Input:\` line names this input.**|**The answers already answer the discovery question.**|**The input plainly holds a large idea**|**Any other input**|**No input.**|" ] ||
+    "**An open parent issue is this input, or its \`Input:\` line names it.**|**The answers already answer the discovery question.**|**The input plainly holds a large idea**|**Any other input**|**No input.**|" ] ||
     { echo "the path list is not in order: $items"; false; }
 }
 
