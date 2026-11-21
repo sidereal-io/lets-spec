@@ -628,7 +628,9 @@ issue's parent and what blocks it.
 
 1. **Find or create the issue.** When the user names no issue, search for
    one first: `gh issue list --state open --search "<words> in:title" --json number,title`. If one matches, ask whether it is the same work. If none
-   does, you create it in step 7. Read a named or confirmed issue with `gh issue view <i> --json title,body,url,parent`. Read its thread as [Issue
+   does, you create it in step 7. When the input says open issues were
+   already searched and none is the same work, skip the search, and create
+   the issue in step 7. Read a named or confirmed issue with `gh issue view <i> --json title,body,url,parent`. Read its thread as [Issue
    comments](references/issue-comments.md) says, and show the user the list.
    If the issue has a **Glossary handoff**, recover its recorded checkpoint
    before continuing or deciding whether this run has glossary edits. An

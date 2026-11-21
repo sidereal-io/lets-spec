@@ -5090,3 +5090,9 @@ readme_step_returns() {
   grep -qxF '> Input: <#<i> for an issue, the file path, the idea word for word, or "conversation, YYYY-MM-DD">' "$repo/skills/lets-shape/templates/issue-template.md" ||
     { echo "the parent template does not show the Input line's choices"; false; }
 }
+
+@test "shape-step: shape one issue skips a search that ran" {
+  skill_section lets-shape 'Shape one issue' |
+    grep -qF 'When the input says open issues were already searched and none is the same work, skip the search, and create the issue in step 7.' ||
+    { echo "Shape one issue searches again after its caller searched"; false; }
+}
