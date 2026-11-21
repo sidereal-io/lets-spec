@@ -132,6 +132,19 @@ when it runs.
    - **Any other parent and its stories:**
      [pick the first ready story](../SKILL.md#pick-the-first-ready-story).
 
+### Name the maps' edits
+
+A run that stops after discovery and before [Claim](../SKILL.md#claim),
+for any reason, leaves the maps' edits on the default branch. When the
+status command in [Commit the discovery map](#commit-the-discovery-map)
+lists a path, name each one, and say that they hold the discovery's
+edits, uncommitted on the default branch. While
+[Find the input's discovery](#find-the-inputs-discovery) still takes the
+parent as this input's discovery, say to leave the maps as they are:
+running `lets-go` again with the same idea, or `#<i>`, resumes the
+discovery and keeps its edits. Otherwise, say to commit or discard them
+before the next run, because the next run stops on them.
+
 ## Pick the first ready story
 
 Discovery filed a parent issue, `#<parent>`, and its stories. Build one
@@ -169,17 +182,6 @@ of them in this run.
      On an error, act as [Backlog errors](../SKILL.md#backlog-errors)
      says. Say to run `lets-go` with a story's number once it is ready.
      Then stop. Claim nothing, and create no branch.
-
-A run that stops after discovery and before [Claim](../SKILL.md#claim),
-for any reason, leaves the maps' edits on the default branch. When the
-status command in [Commit the discovery map](#commit-the-discovery-map)
-lists a path, name each one, and say that they hold the discovery's
-edits, uncommitted on the default branch. While
-[Find the input's discovery](#find-the-inputs-discovery) still takes the
-parent as this input's discovery, say to leave the maps as they are:
-running `lets-go` again with the same idea, or `#<i>`, resumes the
-discovery and keeps its edits. Otherwise, say to commit or discard them
-before the next run, because the next run stops on them.
 
 ## Commit the discovery map
 

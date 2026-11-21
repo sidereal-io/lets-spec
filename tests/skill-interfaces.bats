@@ -1088,7 +1088,10 @@ review_build_start() {
   ! grep -qF 'parent issue that says `Discovery status: in-progress`, and whose' <<<"$shape" ||
     { echo "the dirty-map check still restates the in-progress match"; false; }
   # A run that stops before Claim leaves the maps while the lookup still finds the discovery.
-  stop="$(part_section 'Pick the first ready story')"
+  stop="$(skill_section lets-go "Name the maps' edits")"
+  [ -n "$stop" ] || { echo "references/shape.md has no section Name the maps' edits"; false; }
+  grep -qF 'A run that stops after discovery and before [Claim](../SKILL.md#claim)' <<<"$stop" ||
+    { echo "Name the maps' edits does not hold the stop note"; false; }
   grep -qF "still takes the parent as this input's discovery" <<<"$stop" ||
     { echo "the stop note does not use Find the input's discovery"; false; }
   ! grep -qF 'While the parent still says `Discovery status: in-progress`' <<<"$stop" ||
@@ -2425,7 +2428,7 @@ epic_run_file() {
 @test "an epic run shapes an empty epic first" {
   local check phrase
   check="$(part_section 'Check the issue')"
-  [ "$(grep -oF 'name the maps'"'"' edits, as [Pick the first ready story](references/shape.md#pick-the-first-ready-story) says' <<<"$check" | wc -l)" -ge 2 ] ||
+  [ "$(grep -oF 'name the maps'"'"' edits, as [Name the maps'"'"' edits](references/shape.md#name-the-maps-edits) says' <<<"$check" | wc -l)" -ge 2 ] ||
     { echo "Check the issue does not name the maps' edits on both stops after a shape step"; false; }
   for phrase in \
     '**An empty epic:** `subIssues` and `closedSubIssues` are both empty.' \
@@ -3980,7 +3983,8 @@ map_epic_run() {
     'or a story it claimed stopped before its map commit' \
     'Run the status command of [Commit the map in an epic run](shape.md#commit-the-map-in-an-epic-run) in the epic run'"'"'s own checkout.' \
     'name each one, and say that they hold the discovery'"'"'s edits, uncommitted on the default branch' \
-    'Say to commit or discard them before the next run'; do
+    'Say to commit or discard them before the next run' \
+    'This is what [Name the maps'"'"' edits](shape.md#name-the-maps-edits) says'; do
     grep -qF -- "$phrase" <<<"$section" || { echo "Report the maps' edits does not say: $phrase"; false; }
   done
   [ "$(grep -cF "](#report-the-maps-edits)" "$(epic_run_file)")" -ge 2 ] ||

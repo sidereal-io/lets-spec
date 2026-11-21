@@ -459,7 +459,7 @@ says.
         `#<i>` has no stories after shaping, say to run the `lets-shape`
         skill on `#<i>`, and stop. Before you stop,
         name the maps' edits, as
-        [Pick the first ready story](references/shape.md#pick-the-first-ready-story)
+        [Name the maps' edits](references/shape.md#name-the-maps-edits)
         says for a run that stops after discovery and before
         [Claim](#claim).
      2. **A finished epic:** `subIssues` is empty, and
@@ -482,7 +482,7 @@ says.
         round resumes the discovery, or finishes its Finalize. When one
         has, say to run the `lets-shape` skill on `#<i>`, and stop.
         Before you stop, name the maps' edits, as
-        [Pick the first ready story](references/shape.md#pick-the-first-ready-story)
+        [Name the maps' edits](references/shape.md#name-the-maps-edits)
         says for a run that stops after discovery and before
         [Claim](#claim).
         When it finds none, go on to the next item.
