@@ -65,9 +65,16 @@ async function startStep(options: StartOptions, deps: Deps): Promise<number> {
   const [cmd, ...letsArgs] = io.letsCommand();
   const outputs = { stdoutFile: absolute(reportFile), stderrFile: absolute(metaFile) };
   for (const path of [dirname(runFile), dirname(outputs.stdoutFile), dirname(outputs.stderrFile)]) io.mkdirp(path);
-  // An old exit file would say the new run has ended.
+  // An old exit file would say the new run has ended, and an old run record
+  // left behind by a start that fails would say a run was killed.
   io.remove(exitFile);
-  const pid = io.spawnDetached(cmd, [...letsArgs, ...args], { cwd: runRoot, env: deps.env, ...outputs });
+  io.remove(runFile);
+  let pid: number | null;
+  try {
+    pid = io.spawnDetached(cmd, [...letsArgs, ...args], { cwd: runRoot, env: deps.env, ...outputs });
+  } catch (error) {
+    throw new SpawnError(`the background step ${name} could not start: ${(error as Error).message}`);
+  }
   if (pid === null) throw new SpawnError(`the background step ${name} could not start.`);
 
   const record: RunRecord = { name, pid, checkout: runRoot, reportFile: outputs.stdoutFile, metaFile: outputs.stderrFile, exitFile, startedAt: io.now() };

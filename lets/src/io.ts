@@ -237,7 +237,13 @@ export function realIo(): Io {
     // keeps running once lets exits.
     spawnDetached(cmd, args, { cwd, env, stdoutFile, stderrFile }) {
       const stdout = openSync(stdoutFile, 'w');
-      const stderr = openSync(stderrFile, 'w');
+      let stderr: number;
+      try {
+        stderr = openSync(stderrFile, 'w');
+      } catch (error) {
+        closeSync(stdout);
+        throw error;
+      }
       try {
         const child = spawn(cmd, args, { cwd, env, detached: true, stdio: ['ignore', stdout, stderr] });
         child.on('error', () => {});

@@ -277,3 +277,23 @@ test('a background step keeps a name longer than 32 characters, so step wait nam
   assert.equal(await wait({ names: [long] }, t.deps), 0);
   assert.equal(waitOutput(t, before), `{"name":"${long}","exit":0}\n`);
 });
+
+test('a step that ended, and cannot start again, leaves no run record, so step wait does not count it killed', async () => {
+  const t = await started('fix-x-story');
+  ends(t, 'fix-x-story', 0, 1);
+  t.io.spawnDetached = () => null;
+  assert.equal(await start(startOptions({ name: 'fix-x-story' }), t.deps), 4);
+  assert.equal(runRecord(t, 'fix-x-story'), null);
+  assert.equal(await wait({ names: ['fix-x-story'] }, t.deps), 2);
+});
+
+test('report or meta files that cannot be opened are exit 4, naming the step', async () => {
+  const t = commandDeps();
+  t.io.spawnDetached = () => {
+    throw Object.assign(new Error('EISDIR: illegal operation on a directory'), { code: 'EISDIR' });
+  };
+  assert.equal(await start(startOptions(), t.deps), 4);
+  assert.equal(t.stdout(), '');
+  assert.match(t.stderr(), /fix-x could not start: EISDIR/);
+  assert.equal(runRecord(t, 'fix-x'), null);
+});
