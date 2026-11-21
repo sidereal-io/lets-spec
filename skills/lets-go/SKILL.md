@@ -1025,7 +1025,8 @@ lets backlog item <i>
 - If its `kind` is `null`, the issue is not on the Project, or has no
   Kind: it is not shaped. The result is `needs-shape`: return it now.
 - If its `kind` is `Epic`, the result is `epic`: return it now, with the
-  open sub-issues in its `subIssues`.
+  open sub-issues in its `subIssues` and the closed ones in its
+  `closedSubIssues`.
 
 Read the whole body. Check that every required line for its Kind is
 there and filled in. These are the lines of the `lets-shape` skill's
@@ -1072,7 +1073,8 @@ It returns one of these results:
 - `needs-shape`: the issue is not on the Project or has no Kind, a line
   is missing or holds a placeholder, or comments are unread. It carries
   which, with each unread comment's author and date.
-- `epic`: the Kind is Epic. It carries the open sub-issues.
+- `epic`: the Kind is Epic. It carries the open and the closed
+  sub-issues.
 
 When [Find the source of demand](#find-the-source-of-demand) ran it, for
 a candidate of `next`, return to

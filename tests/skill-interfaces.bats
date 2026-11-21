@@ -878,6 +878,10 @@ review_build_start() {
   skill_does_not_say lets-go 'gh issue view <i> --json number,title,body,url,parent'
   grep -qF '`subIssues`' <<<"$(procedure_text 'Confirm the packet')" ||
     { echo "Confirm the packet does not take an epic's sub-issues from item"; false; }
+  grep -qF 'with the open sub-issues in its `subIssues` and the closed ones in its `closedSubIssues`' <<<"$(procedure_text 'Confirm the packet' | tr -s '[:space:]' ' ')" ||
+    { echo "Confirm the packet's epic result drops the closed sub-issues"; false; }
+  grep -qF '`epic`: the Kind is Epic. It carries the open and the closed sub-issues.' <<<"$(procedure_text 'Confirm the packet' | tr -s '[:space:]' ' ')" ||
+    { echo "Confirm the packet's results do not say epic carries the closed sub-issues"; false; }
   grep -qF 'the `body` in its `parent`' <<<"$(procedure_text 'Confirm the packet' | tr -s '[:space:]' ' ')" ||
     { echo "Confirm the packet does not read Shared decisions from item's parent"; false; }
 }
