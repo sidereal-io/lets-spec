@@ -1201,8 +1201,10 @@ Shape's line prints at most once for an issue. Print `Done shape` after
 a shape step reported `done`, once per run, when this run has not
 printed it yet: [Check the issue](#check-the-issue) prints it, or
 [Pick the first ready story](#pick-the-first-ready-story) when no story
-is ready. Print `Skipped shape` once for each issue whose packet
-[Check the issue](#check-the-issue) finds complete, and only when no
+is ready, or [Run the shape step](#run-the-shape-step) when it stops on
+the discovery maps' edits. Print `Skipped shape` once for each issue
+whose packet [Check the issue](#check-the-issue) finds complete, and
+only when no
 shape step ran in this run. So a story picked after a lost claim in a
 discovery run prints neither.
 

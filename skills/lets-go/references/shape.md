@@ -102,15 +102,18 @@ when it runs.
    the prompt.
 4. Run the shape step, as [Run a step](../SKILL.md#run-a-step) says.
 5. When it reports `done`,
-   [Read the report](../SKILL.md#read-the-report) says what it shaped:
+   [Read the report](../SKILL.md#read-the-report) says what it shaped.
+   Check one case first. When the check of the discovery maps above went
+   on only because a parent with no status line was this input's
+   discovery, and the step shaped one issue that is not that parent, the
+   maps' edits may be another discovery's. Print the `Done shape` line,
+   as [The step lines](../SKILL.md#the-step-lines) says. Name each path
+   that check listed, say to commit or discard them, and stop here,
+   before [Check the issue](../SKILL.md#check-the-issue). Claim nothing,
+   and create no branch. Otherwise:
    - **One issue:** that issue is `<i>`. Go on from the blocker read in
      [Check the issue](../SKILL.md#check-the-issue) with it, as for an
-     issue number. One exception: when the check of the discovery maps
-     above went on only because a parent with no status line was this
-     input's discovery, and `<i>` is not that parent, the maps' edits
-     may be another discovery's. Name each path that check listed, say
-     to commit or discard them, and stop before
-     [Claim](../SKILL.md#claim).
+     issue number.
    - **A parent and its stories:**
      [pick the first ready story](../SKILL.md#pick-the-first-ready-story).
 

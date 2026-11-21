@@ -1060,7 +1060,7 @@ review_build_start() {
   done
   # A finished epic can match that way too, so one issue that is not the parent keeps its maps out of the branch.
   shape="$(part_section 'Run the shape step')"
-  for phrase in 'not that parent' 'stop before [Claim]'; do
+  for phrase in 'not that parent' 'stop here,' 'before [Check the issue]' 'Claim nothing,' 'Print the `Done shape` line'; do
     grep -qF -- "$phrase" <<<"$shape" || { echo "Run the shape step does not say: $phrase"; false; }
   done
 }
