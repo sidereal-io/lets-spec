@@ -100,9 +100,9 @@ as for any picked issue.
    before the next pick.
 
    Last, sort the stories not settled yet into waves: sets of stories
-   that no blocked-by link joins, and whose packets name no overlapping
-   path under **Relevant code**. When every story is settled here, run
-   no `waves` command and print no waves: go to
+   that no chain of blocked-by links joins, and whose packets name no
+   overlapping path under **Relevant code**. When every story is
+   settled here, run no `waves` command and print no waves: go to
    [End of the run](../SKILL.md#end-of-the-run). Otherwise, `<keys>`
    are the keys of the epic's stories in this repository that are not
    settled yet, in the epic's order, joined by commas, such as

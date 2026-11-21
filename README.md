@@ -292,8 +292,8 @@ turn, on the default branch: it claims and builds one story to a pull
 request ready for review, then picks the next. An epic run first sorts
 its stories into waves and prints them, with why each story waits, then
 builds one story at a time, wave by wave. A wave holds stories that no
-blocked-by link joins and whose packets name no overlapping path under
-**Relevant code**. The epic run claims the
+chain of blocked-by links joins and whose packets name no overlapping
+path under **Relevant code**. The epic run claims the
 story and enters its branch, then each story runs in a child `lets-go`
 session, which walks its steps, so the epic run's own context stays
 small. A story runs in the epic run's own session when no child session

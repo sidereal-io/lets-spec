@@ -1275,6 +1275,8 @@ step_numbers() {
   grep -qF -- "$phrase" <<<"$(readme_lets_go)" || { echo "the README's lets-go section does not say: $phrase"; false; }
   overview="$(awk '/^## / { exit } NR > 1' "$(epic_run_file)" | tr -s '[:space:]' ' ')"
   grep -qF -- "$phrase" <<<"$overview" || { echo "the overview of references/epic-run.md does not say: $phrase"; false; }
+  grep -qF -- 'A wave holds stories that no chain of blocked-by links joins' <<<"$(readme_lets_go)" ||
+    { echo "the README does not say that no chain of blocked-by links joins a wave's stories"; false; }
   grep -F '| `lets/src/backlog/` |' "$repo/README.md" | grep -qF '`waves.ts`' ||
     { echo "the README's layout table does not name waves.ts"; false; }
 }
@@ -2390,6 +2392,7 @@ epic_run_file() {
   for phrase in \
     'lets backlog waves --only <keys> > .workspace/lets-go/epic-<parent>-waves.json' \
     "the keys of the epic's stories in this repository that are not settled yet, in the epic's order" \
+    'sets of stories that no chain of blocked-by links joins' \
     'When every story is settled here, run no `waves` command and print no waves: go to [End of the run](../SKILL.md#end-of-the-run)' \
     'On exit 1, act as [Backlog errors](../SKILL.md#backlog-errors) says'; do
     grep -qF -- "$phrase" <<<"$part" || { echo "Run the epic does not say: $phrase"; false; }
