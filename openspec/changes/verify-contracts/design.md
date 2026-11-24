@@ -78,8 +78,9 @@ tests at public boundaries.
 
 In Phase 1, run the static checks the project has, such as its type checker
 or linter. When it has none, Phase 1 ends once the contracts are written
-down: signatures, usage text or spec scenarios. Phase 3's failing black-box
-test then shows what the code must do.
+down: signatures, usage text or spec scenarios, and the skill's first exit
+criterion is met. Phase 3's failing black-box test then shows what the code
+must do.
 
 Take each expected value in a test from the spec or a worked example, never
 from the code's own logic. Code takes its external clients, such as an HTTP

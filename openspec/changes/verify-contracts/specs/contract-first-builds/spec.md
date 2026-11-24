@@ -78,8 +78,9 @@ external clients as inputs so a test can substitute them.
 Both apply instructions SHALL say that Phase 1 runs the static checks the
 project has, such as a type checker or a linter. When the project has none,
 Phase 1 SHALL end once the contracts are written down, as signatures, usage
-text or spec scenarios. Phase 3's failing black-box test then shows what the
-code must do.
+text or spec scenarios, and the skill's first exit criterion, on type checks
+and linting, is then met. Phase 3's failing black-box test then shows what
+the code must do.
 
 #### Scenario: The project has a type checker
 - **WHEN** a build agent works a task in a project whose checks include a type checker
@@ -87,7 +88,7 @@ code must do.
 
 #### Scenario: The project has no compiler or type checker
 - **WHEN** a build agent works a task in a project of shell scripts tested with bats and no linter
-- **THEN** the apply instruction tells it that Phase 1 ends once the contracts are written down, and that the failing black-box test in Phase 3 shows what the code must do
+- **THEN** the apply instruction tells it that Phase 1 ends once the contracts are written down, that the skill's first exit criterion is then met, and that the failing black-box test in Phase 3 shows what the code must do
 
 ### Requirement: Check requirement coverage per task, and in full at the end
 
