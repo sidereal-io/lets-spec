@@ -118,14 +118,14 @@ Those tests need a real skill from `flows.json`. They use
 `scripts/check.sh` fixture in `tests/support/release.bash` moves to the new
 skill's folder unchanged: it tests file modes, not the skill.
 
-### D-5: Retiring test-first gets a decision record
+### D-5: Retiring test-first needs no decision record
 
-Building contract first and testing at public boundaries, with no
-unit-test-first cycle, changes how every future build writes tests, and a
-reader of ADR-020 meets "test-first" there. The ADR step judges whether
-this qualifies under `lets-write-adrs`. If it does, the new record
-supersedes ADR-020's "test-first" clause only, and ADR-020's text stays as
-it is (D3).
+Building contract first changes how every future build writes tests, and a
+reader of ADR-020 meets "test-first" there. It still fails the
+`lets-write-adrs` test: the shipped skill states its own reasons, and
+reversing it means swapping one skill's text. ADR-020's decision, that
+`lets-go` is the only runner, is unchanged, and its text stays as it is
+(D3). `adr.md` records this review.
 
 ## Risks / Trade-offs
 
