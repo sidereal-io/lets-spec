@@ -5710,4 +5710,8 @@ readme_step_returns() {
       { echo "${template#"$repo/"} keeps the old task rule"; false; }
   done
 }
+@test "verify-contracts: nothing shipped names lets-test-first" {
+  run grep -rnF lets-test-first "$repo/skills" "$repo/schemas" "$repo/flows.json" "$repo/flake.nix" "$repo/README.md"
+  [ "$status" -eq 1 ] || { echo "$output"; false; }
+}
 # End verify-contracts (#304).
