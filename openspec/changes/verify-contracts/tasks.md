@@ -8,7 +8,7 @@ task runs in parallel. Name each new test with the prefix `verify-contracts:`.
 
 ## 1. The new skill
 
-- [ ] 1.1 [easy] `skills/lets-verify-contracts/SKILL.md` holds the fenced source text in #304's body, word for word, and the folder holds nothing else. `flows.json` does not list it yet: the test that each shipped skill is named by its schema, its config or a shipped skill would fail until 2.1. A new test, *verify-contracts: lets-verify-contracts ships SKILL.md alone*, checks that the folder holds only `SKILL.md` (D1, D-1) (verify: gh issue view 304 --json body --jq .body | sed -n '/^~~~~markdown$/,/^~~~~$/p' | sed '1d;$d' | diff - skills/lets-verify-contracts/SKILL.md && bats -f "verify-contracts: lets-verify-contracts ships" tests/skill-interfaces.bats)
+- [x] 1.1 [easy] `skills/lets-verify-contracts/SKILL.md` holds the fenced source text in #304's body, word for word, and the folder holds nothing else. `flows.json` does not list it yet: the test that each shipped skill is named by its schema, its config or a shipped skill would fail until 2.1. A new test, *verify-contracts: lets-verify-contracts ships SKILL.md alone*, checks that the folder holds only `SKILL.md` (D1, D-1) (verify: gh issue view 304 --json body --jq .body | sed -n '/^~~~~markdown$/,/^~~~~$/p' | sed '1d;$d' | diff - skills/lets-verify-contracts/SKILL.md && bats -f "verify-contracts: lets-verify-contracts ships" tests/skill-interfaces.bats) (✓ issue diff empty; bats "verify-contracts: lets-verify-contracts ships" passed)
 
 ## 2. Point the build at it [depends-on: 1]
 

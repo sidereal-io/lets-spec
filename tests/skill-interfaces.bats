@@ -5665,3 +5665,10 @@ readme_step_returns() {
   grep -qF 'It ends on the branch it started on' <<<"$section" ||
     { echo "Handing off to lets-go names no end branch"; false; }
 }
+
+# verify-contracts (#304): the build step works contract first.
+@test "verify-contracts: lets-verify-contracts ships SKILL.md alone" {
+  [ "$(ls -A "$repo/skills/lets-verify-contracts")" = SKILL.md ] ||
+    { echo "skills/lets-verify-contracts holds: $(ls -A "$repo/skills/lets-verify-contracts" 2>&1)"; false; }
+}
+# End verify-contracts (#304).
