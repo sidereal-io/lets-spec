@@ -555,9 +555,10 @@ fixture_file() {
   done
 }
 
-@test "lets-build runs openspec-apply-change test-first" {
+@test "lets-build runs openspec-apply-change contract first" {
   skill_says lets-build '`openspec-apply-change` skill'
-  skill_says lets-build '`lets-test-first` skill'
+  skill_says lets-build '`lets-verify-contracts` skill'
+  skill_does_not_say lets-build 'test-first'
 }
 
 @test "lets-build is the build step and nothing else" {

@@ -1,6 +1,6 @@
 ---
 name: lets-build
-description: Build one planned change in an OpenSpec project, on the change's branch. Runs openspec-apply-change, test-first, and stops when every task is ticked. Use when lets-go runs the build step, or when someone asks to build or carry on building the planned change on the current branch. To start an issue or the next story, use lets-go.
+description: Build one planned change in an OpenSpec project, on the change's branch. Runs openspec-apply-change, contract first, and stops when every task is ticked. Use when lets-go runs the build step, or when someone asks to build or carry on building the planned change on the current branch. To start an issue or the next story, use lets-go.
 ---
 
 # Let's build
@@ -40,9 +40,9 @@ and the next action.
 ## Apply
 
 Invoke the `openspec-apply-change` skill for the change `<branch>`. The
-schema's apply instruction works each task test-first with the
-`lets-test-first` skill. When every task is ticked, stop, and say that
-the `lets-review-build` skill finishes the change.
+schema's apply instruction works each task with the
+`lets-verify-contracts` skill. When every task is ticked, stop, and say
+that the `lets-review-build` skill finishes the change.
 
 ## Rules
 
