@@ -20,8 +20,26 @@ task runs in parallel. Name each new test with the prefix `verify-contracts:`.
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [easy] All the project's checks pass on the branch: the Node tests, the type check and the bats tests; the flake check, which builds both flows and syncs a project; and OpenSpec validation with no warning. Check that every requirement in `specs/contract-first-builds/spec.md` and `specs/task-planning/spec.md` has a test, and record any gap under the Deviations Ledger (verify: pnpm test && nix flake check && mise run check)
+- [x] 3.1 [easy] All the project's checks pass on the branch: the Node tests, the type check and the bats tests; the flake check, which builds both flows and syncs a project; and OpenSpec validation with no warning. Check that every requirement in `specs/contract-first-builds/spec.md` and `specs/task-planning/spec.md` has a test, and record any gap under the Deviations Ledger (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test, nix flake check and mise run check passed; coverage gaps recorded below)
 
 ## Deviations Ledger
 
 <!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-24, 3.1: *writing reference inputs resolve inside each published
+  flow* required every shipped `SKILL.md` to link a `references/*.md` file.
+  `lets-verify-contracts` links none, because D1 makes it #304's text word
+  for word. The user chose to exempt only that skill from the must-link
+  rule; any link it gains must still resolve. Both apply instructions
+  already send the build agent to the plain-language reference.
+- 2026-11-24, 3.1: requirement coverage. The per-task half of *Check
+  requirement coverage per task, and in full at the end* had no assertion,
+  so *verify-contracts: both apply instructions build contract first* now
+  also checks `check spec coverage only for the requirements the task
+  builds`. Two scenarios rest on other checks, not on a test of this change:
+  - *The skill matches the source text*: no test compares the skill with
+    #304, because that needs the network. Task 1.1's verify command ran the
+    diff, and it was empty.
+  - *A project syncs the new release*: `tests/sync-skills.bats` tests the
+    removal of a skill a release no longer ships with `lets-spawn`, not
+    `lets-test-first`. The mechanism is the same.

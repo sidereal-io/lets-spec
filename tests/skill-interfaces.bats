@@ -3517,7 +3517,12 @@ load support/release
     local installed text
     for skill in $(flow_skills "$flow"); do
       installed="$out/overlay/.agents/skills/$skill"
-      assert_reference_links "$installed/SKILL.md" "$out/overlay"
+      # lets-verify-contracts is #304's text word for word, so it may link
+      # no reference; both apply instructions send the build agent to the
+      # plain-language reference instead. Any link it does gain must resolve.
+      if [ "$skill" != lets-verify-contracts ] || grep -qE '\]\([^)]*references/[^)]*\.md\)' "$installed/SKILL.md"; then
+        assert_reference_links "$installed/SKILL.md" "$out/overlay"
+      fi
       for text in "$installed"/references/*.md "$installed"/templates/*.md; do
         [ -f "$text" ] || continue
         if grep -qE '\]\([^)]*references/[^)]*\.md\)' "$text"; then
@@ -5682,6 +5687,7 @@ readme_step_returns() {
     for phrase in '`lets-verify-contracts` skill' 'run the static checks the project has' \
       'Phase 1 ends once the contracts are written down' "the skill's first exit criterion is met" \
       "never from the code's own logic" 'takes its external clients' \
+      'check spec coverage only for the requirements the task builds' \
       'The integration task, which runs last, checks that every requirement'; do
       grep -qF -- "$phrase" <<<"$text" || { echo "$schema does not say: $phrase"; false; }
     done
