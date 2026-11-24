@@ -5671,4 +5671,22 @@ readme_step_returns() {
   [ "$(ls -A "$repo/skills/lets-verify-contracts")" = SKILL.md ] ||
     { echo "skills/lets-verify-contracts holds: $(ls -A "$repo/skills/lets-verify-contracts" 2>&1)"; false; }
 }
+@test "verify-contracts: both apply instructions build contract first" {
+  local flow schema text phrase
+  for flow in standard minimal; do
+    flow_skills "$flow" | grep -qx lets-verify-contracts || { echo "$flow does not ship lets-verify-contracts"; false; }
+  done
+  for schema in lets-standard lets-minimal; do
+    text="$(tr -s '[:space:]' ' ' <"$repo/schemas/$schema/schema.yaml")"
+    for phrase in '`lets-verify-contracts` skill' 'run the static checks the project has' \
+      'Phase 1 ends once the contracts are written down' "the skill's first exit criterion is met" \
+      "never from the code's own logic" 'takes its external clients' \
+      'The integration task, which runs last, checks that every requirement'; do
+      grep -qF -- "$phrase" <<<"$text" || { echo "$schema does not say: $phrase"; false; }
+    done
+    for phrase in 'watch it fail' 'test-first'; do
+      ! grep -qF -- "$phrase" <<<"$text" || { echo "$schema still says: $phrase"; false; }
+    done
+  done
+}
 # End verify-contracts (#304).
