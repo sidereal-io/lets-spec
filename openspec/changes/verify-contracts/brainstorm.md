@@ -21,4 +21,4 @@
 - Added: the two carried-over points (D4) go into both apply instructions, because the new SKILL.md is copied word for word and cannot link a reference.
 - Added: the no-compiler rule (D5) and the per-task exit check (D7) go into the apply instructions and `lets-write-tasks`, for the same reason.
 
-Confirmed by user: no
+Confirmed by user: yes
