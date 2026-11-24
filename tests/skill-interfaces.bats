@@ -5690,4 +5690,24 @@ readme_step_returns() {
     done
   done
 }
+@test "verify-contracts: lets-write-tasks takes one behavior through three phases" {
+  local phrase template
+  for phrase in 'one at a time, contract first' \
+    'One task is one behavior, taken through contract, code and black-box test' \
+    "Do not split a behavior's phases into separate tasks" \
+    'runs the black-box or invariant test the task adds' \
+    'for a shared-contracts task, the type check or other static check' \
+    "every requirement in the change's specs has at least one black-box or invariant test" \
+    'checks coverage only for the requirements it builds' \
+    'Shared contracts first'; do
+    skill_says lets-write-tasks "$phrase"
+  done
+  skill_has_section lets-write-tasks 'Name the behavior'
+  skill_does_not_say -i lets-write-tasks 'red-green'
+  skill_does_not_say -i lets-write-tasks 'test-first'
+  for template in "$repo"/schemas/lets-{standard,minimal}/templates/tasks.md; do
+    grep -qF 'One task is one behavior: its contract, its code, then its black-box test.' "$template" ||
+      { echo "${template#"$repo/"} keeps the old task rule"; false; }
+  done
+}
 # End verify-contracts (#304).
