@@ -42,8 +42,8 @@ edit_copy() {
 
 @test "a script keeps its executable bit" {
   init_project
-  [ "$(stat -c %a .agents/skills/lets-test-first/scripts/check.sh)" = 755 ]
-  [ "$(stat -c %a .agents/skills/lets-test-first/SKILL.md)" = 644 ]
+  [ "$(stat -c %a .agents/skills/lets-verify-contracts/scripts/check.sh)" = 755 ]
+  [ "$(stat -c %a .agents/skills/lets-verify-contracts/SKILL.md)" = 644 ]
 }
 
 @test "a fresh clone of a committed project passes --check and syncs quietly" {

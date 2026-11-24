@@ -2,7 +2,7 @@
 
 # The skills a test release ships. A fixture, not a copy of flows.json: it
 # needs one entry point of each kind, and a skill that only some flows ship.
-fixture_skills=(lets-build lets-shape lets-test-first lets-review-build)
+fixture_skills=(lets-build lets-shape lets-verify-contracts lets-review-build)
 
 # generated_skills <dir>: make a folder that stands in for the generated
 # openspec-* skills, and print its path.
@@ -30,9 +30,9 @@ make_release() {
   build "$dir" lets-standard "${fixture_skills[@]}" >&2
   # No skill ships a script, so give one a script, to check that lets sync
   # keeps its executable bit.
-  mkdir -p "$dir/overlay/.agents/skills/lets-test-first/scripts"
-  printf '#!/bin/sh\n' >"$dir/overlay/.agents/skills/lets-test-first/scripts/check.sh"
-  chmod 755 "$dir/overlay/.agents/skills/lets-test-first/scripts/check.sh"
+  mkdir -p "$dir/overlay/.agents/skills/lets-verify-contracts/scripts"
+  printf '#!/bin/sh\n' >"$dir/overlay/.agents/skills/lets-verify-contracts/scripts/check.sh"
+  chmod 755 "$dir/overlay/.agents/skills/lets-verify-contracts/scripts/check.sh"
   for skill in "$@"; do
     mkdir -p "$dir/overlay/.agents/skills/$skill"
     echo "$skill" >"$dir/overlay/.agents/skills/$skill/SKILL.md"

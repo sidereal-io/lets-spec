@@ -14,29 +14,29 @@ build_from() {
 }
 
 @test "the release links exactly the schemas and the skills it is given" {
-  build "$out" lets-standard,lets-minimal lets-test-first lets-build
+  build "$out" lets-standard,lets-minimal lets-verify-contracts lets-build
   [ "$(cd "$out/overlay" && ls -A | tr '\n' ' ')" = ".agents openspec " ]
   [ "$(ls -A "$out/overlay/openspec")" = schemas ]
   [ "$(ls "$out/overlay/openspec/schemas" | tr '\n' ' ')" = "lets-minimal lets-standard " ]
-  [ "$(ls "$out/overlay/.agents/skills" | tr '\n' ' ')" = "lets-build lets-test-first openspec-propose " ]
+  [ "$(ls "$out/overlay/.agents/skills" | tr '\n' ' ')" = "lets-build lets-verify-contracts openspec-propose " ]
 }
 
 @test "the release's schema is a full copy of the source's" {
-  build "$out" lets-standard lets-test-first
+  build "$out" lets-standard lets-verify-contracts
   diff -r "$repo/schemas/lets-standard" "$out/overlay/openspec/schemas/lets-standard"
 }
 
 @test "the release holds the rules sync keeps in AGENTS.md, and creates no AGENTS.md" {
-  build "$out" lets-standard lets-test-first
+  build "$out" lets-standard lets-verify-contracts
   diff "$repo/overlays/AGENTS.md" "$out/fragments/AGENTS.md"
   [ ! -e "$out/init/AGENTS.md" ]
 }
 
 @test "the release's config is the first schema's own, and names it" {
-  build "$out" lets-standard,lets-minimal lets-test-first
+  build "$out" lets-standard,lets-minimal lets-verify-contracts
   diff "$repo/overlays/openspec/config.d/lets-standard.yaml" "$out/init/openspec/config.yaml"
   rm -rf "$out"
-  build "$out" lets-minimal lets-test-first
+  build "$out" lets-minimal lets-verify-contracts
   [ "$(yq -r .schema "$out/init/openspec/config.yaml")" = lets-minimal ]
   [ ! -e "$out/init/openspec/config.d" ]
 }
@@ -45,7 +45,7 @@ build_from() {
   local schema
   for schema in lets-standard lets-minimal; do
     rm -rf "$out"
-    build "$out" "$schema" lets-test-first
+    build "$out" "$schema" lets-verify-contracts
     [ "$(yq 'has("operations")' "$out/init/openspec/config.yaml")" = false ] ||
       { echo "the $schema release's config holds operations"; false; }
   done
@@ -63,13 +63,13 @@ build_from() {
 
 @test "the build works when there are no generated skills" {
   mkdir "$BATS_TEST_TMPDIR/generated"
-  run build_from "$BATS_TEST_TMPDIR/generated" lets-standard lets-test-first
+  run build_from "$BATS_TEST_TMPDIR/generated" lets-standard lets-verify-contracts
   [ "$status" -eq 0 ]
-  [ "$(ls "$out/overlay/.agents/skills")" = lets-test-first ]
+  [ "$(ls "$out/overlay/.agents/skills")" = lets-verify-contracts ]
 }
 
 @test "the build fails when the generated skills' folder is missing" {
-  run build_from "$BATS_TEST_TMPDIR/nosuch" lets-standard lets-test-first
+  run build_from "$BATS_TEST_TMPDIR/nosuch" lets-standard lets-verify-contracts
   [ "$status" -eq 1 ]
   [[ "$output" == *"there is no folder of generated skills at $BATS_TEST_TMPDIR/nosuch"* ]]
 }
@@ -81,7 +81,7 @@ build_from() {
 }
 
 @test "the build fails on an unknown schema in the list" {
-  run build "$out" lets-standard,nosuch lets-test-first
+  run build "$out" lets-standard,nosuch lets-verify-contracts
   [ "$status" -eq 1 ]
   [[ "$output" == *"there is no schema named nosuch"* ]]
 }
@@ -91,30 +91,30 @@ build_from() {
   mkdir -p "$source"
   cp -R "$repo/schemas" "$repo/skills" "$repo/overlays" "$source/"
   rm "$source/overlays/openspec/config.d/lets-minimal.yaml"
-  run node "$repo/build/build-release.mjs" "$source" "$(generated_skills "$BATS_TEST_TMPDIR/generated")" "$out" lets-minimal lets-test-first
+  run node "$repo/build/build-release.mjs" "$source" "$(generated_skills "$BATS_TEST_TMPDIR/generated")" "$out" lets-minimal lets-verify-contracts
   [ "$status" -eq 1 ]
   [[ "$output" == *"there is no config for lets-minimal in overlays/openspec/config.d/"* ]]
 }
 
 @test "the build fails on an unknown skill" {
-  run build "$out" lets-standard lets-test-first nosuch
+  run build "$out" lets-standard lets-verify-contracts nosuch
   [ "$status" -eq 1 ]
   [[ "$output" == *"there is no skill named nosuch"* ]]
 }
 
 @test "the build fails on a skill listed twice" {
-  run build "$out" lets-standard lets-test-first lets-test-first
+  run build "$out" lets-standard lets-verify-contracts lets-verify-contracts
   [ "$status" -eq 1 ]
-  [[ "$output" == *"lets-test-first is listed twice"* ]]
+  [[ "$output" == *"lets-verify-contracts is listed twice"* ]]
 }
 
 @test "the build fails when an authored skill has a generated skill's name" {
   local generated
   generated="$(generated_skills "$BATS_TEST_TMPDIR/generated")"
-  mkdir -p "$generated/lets-test-first"
-  run build_from "$generated" lets-standard lets-test-first
+  mkdir -p "$generated/lets-verify-contracts"
+  run build_from "$generated" lets-standard lets-verify-contracts
   [ "$status" -eq 1 ]
-  [[ "$output" == *"lets-test-first has the same name as a generated OpenSpec skill"* ]]
+  [[ "$output" == *"lets-verify-contracts has the same name as a generated OpenSpec skill"* ]]
 }
 
 # build_bundles: build the lets bundle, as lets/build.mjs does for the
