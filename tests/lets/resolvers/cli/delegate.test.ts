@@ -62,18 +62,6 @@ const claudeReview = async (result: NonNullable<Parameters<typeof fakeIo>[0]>['r
   return { code, stdout: t.stdout(), stderr: t.stderr() };
 };
 
-test('a CLI that ends with an empty message is exit 5', async () => {
-  const answer = await claudeReview([{ stdout: '\n', stderr: '', code: 0 }]);
-  assert.equal(answer.code, 5);
-  assert.match(answer.stderr, /empty final message/);
-});
-
-test('a codex review that writes no last message is exit 5', async () => {
-  const t = withCli(fakeIo({ commands: ['codex'] }));
-  assert.equal(await review(reviewOptions(), t.deps), 5);
-  assert.match(t.stderr(), /empty final message/);
-});
-
 test('a CLI that runs past the timeout is stopped, and is exit 6', async () => {
   const answer = await claudeReview([{ stdout: '', stderr: '', code: 1, timedOut: true }]);
   assert.equal(answer.code, 6);
@@ -89,22 +77,10 @@ const codexReview = async (gitAfter = '') => {
   return { code, io };
 };
 
-test('a clean review removes its last-message file', async () => {
-  const { code, io } = await codexReview();
-  assert.equal(code, 0);
-  assert.equal(io.exists(LAST_MESSAGE), false);
-});
-
 test('a review that changed the tree keeps its last-message file', async () => {
   const { code, io } = await codexReview(' M src/a.js\0');
   assert.equal(code, 7);
   assert.equal(io.exists(LAST_MESSAGE), true);
-});
-
-test('a clean claude review, which writes no files, removes nothing', async () => {
-  const io = answering();
-  assert.equal(await review(reviewOptions({ models: ['claude'] }), withCli(io).deps), 0);
-  assert.deepEqual(io.removed, []);
 });
 
 // A step named build-x for build, at high effort, on the gpt family.

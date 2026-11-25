@@ -5,10 +5,10 @@
 // result. Each test gives a stand-in the exact command it expects, so the
 // command lets gives each CLI is checked too.
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, test } from 'node:test';
-import { agy, claude, codex, type LetsResult, unstartable } from '../support/lets.ts';
+import { agy, claude, codex, type LetsResult, snapshot, unstartable } from '../support/lets.ts';
 import { delegateRepo, PROMPT } from './repo.ts';
 
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
@@ -365,5 +365,54 @@ describe('review run', () => {
     const result = await repo.run(review({ models: ['claude'] }));
     failed(result, 3);
     assert.match(result.stderr, /^lets delegate: claude: cannot run claude: /m);
+  });
+
+  test('a blank final message is exit 5, and codex\'s last-message file stays', async (t) => {
+    const blankClaude = delegateRepo(t, { user: CLI });
+    claude(blankClaude.standIns, { rows: [{ args: claudeP(), stdout: ' \n' }] });
+    const fromClaude = await blankClaude.run(review({ models: ['claude'] }));
+    failed(fromClaude, 5);
+    assert.match(fromClaude.stderr, new RegExp(`cli gave an empty final message \\(process ${SESSION}\\)`));
+    const blankCodex = delegateRepo(t, { user: CLI });
+    codex(blankCodex.standIns, [], { rows: [codexAnswers(blankCodex.cwd, ' \n')] });
+    const fromCodex = await blankCodex.run(review());
+    failed(fromCodex, 5);
+    assert.match(fromCodex.stderr, /empty final message/);
+    assert.equal(readFileSync(lastMessage(blankCodex.cwd), 'utf8'), ' \n');
+  });
+
+  test('a codex review that writes no last message is exit 5', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    codex(repo.standIns, [], { rows: [{ args: codexExec(repo.cwd), stdout: 'working...\n' }] });
+    const result = await repo.run(review());
+    failed(result, 5);
+    assert.match(result.stderr, /empty final message/);
+  });
+
+  test('a folder where the last message goes is exit 4, with the error, and codex does not run', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    mkdirSync(lastMessage(repo.cwd), { recursive: true });
+    const stand = codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
+    const result = await repo.run(review());
+    failed(result, 4);
+    assert.match(result.stderr, /EISDIR/);
+    assert.deepEqual(stand.calls(), []);
+  });
+
+  test('a clean codex review removes its last-message file', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
+    assert.equal((await repo.run(review())).code, 0);
+    assert.equal(existsSync(lastMessage(repo.cwd)), false);
+  });
+
+  test('a clean claude review adds only the scratch folder to the repository', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    claude(repo.standIns, { rows: [{ args: claudeP(), stdout: FINDINGS }] });
+    const before = snapshot(repo.cwd).split('\n');
+    assert.equal((await repo.run(review({ models: ['claude'] }))).code, 0);
+    const after = snapshot(repo.cwd).split('\n');
+    assert.deepEqual(before.filter((line) => !after.includes(line)), [], 'nothing changed or went');
+    assert.deepEqual(after.filter((line) => !before.includes(line)).map((line) => line.split(' ')[0]), ['./.workspace/', './.workspace/lets-delegate/']);
   });
 });

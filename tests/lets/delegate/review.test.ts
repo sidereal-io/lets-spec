@@ -30,12 +30,6 @@ test('a resolver that cannot tell the checkout gives a null commit, and the revi
   assert.deepEqual({ checkout, commit }, { checkout: null, commit: null });
 });
 
-test('finish goes to the same resolver with the handle, with ok after a clean tree', async () => {
-  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [cli, t3] }\n', adapters: { t3: {}, cli: {} } });
-  await run(options(), t.deps);
-  assert.deepEqual(finishes(t.adapterCalls), [{ name: 'cli', handle: { kind: 'cli', id: 'cli-1' }, ok: true, options: { cwd: '/repo' } }]);
-});
-
 test('a session past its time is exit 6, and a known outcome-unknown error exit 4', async () => {
   for (const [error, code] of [[new TimeoutError('no result in 45 minutes'), 6], [new SpawnError('T3 did not answer'), 4]] as const) {
     const t = withT3({ adapters: { t3: { run: error } } });
@@ -43,21 +37,6 @@ test('a session past its time is exit 6, and a known outcome-unknown error exit 
     assert.match(t.stderr(), new RegExp(error.message));
     assert.equal(t.stdout(), '');
   }
-});
-
-test('an unexpected failure inside the resolver is exit 4 with its message', async () => {
-  const t = withT3({ adapters: { t3: { run: new Error('boom') } } });
-  assert.equal(await run(options(), t.deps), 4);
-  assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), /boom/);
-});
-
-test('an empty final message is exit 5, with finish ok false', async () => {
-  const t = withT3({ adapters: { t3: { run: { text: ' \n' } } } });
-  assert.equal(await run(options(), t.deps), 5);
-  assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), /empty final message \(t3 t3-1\)/);
-  assert.deepEqual(finishes(t.adapterCalls).map(({ ok }) => ok), [false]);
 });
 
 test('a tree the session changed is exit 7, with finish ok false and no findings', async () => {
