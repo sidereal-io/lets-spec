@@ -91,7 +91,8 @@ export function pinnedEnv(extra?: EnvChanges): NodeJS.ProcessEnv {
 export function runLets(args: string[], options: RunLetsOptions): Promise<LetsResult> {
   const command = `lets ${args.join(' ')}`;
   const env = pinnedEnv();
-  if (options.standIns !== undefined) env.PATH = `${options.standIns}${delimiter}${env.PATH ?? ''}`;
+  // An empty PATH entry means the current folder, so add none.
+  if (options.standIns !== undefined) env.PATH = env.PATH ? `${options.standIns}${delimiter}${env.PATH}` : options.standIns;
   const timeout = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   return new Promise((done, fail) => {
     execFile(
