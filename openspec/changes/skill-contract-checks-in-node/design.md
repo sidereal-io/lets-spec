@@ -87,7 +87,8 @@
   function takes a folder, so a test can point it at a folder of its
   own.
 - One test file per check: `tests/contracts/commands.test.ts`,
-  `links.test.ts`, `skills.test.ts` and `gh.test.ts`. Each holds the
+  `links.test.ts`, `skills.test.ts`, `templates.test.ts` and
+  `gh.test.ts`. Each holds the
   test over the real texts first, then the tests on small texts.
 
 Alternative: put the text readers in `tests/support/`. Rejected: only
@@ -185,7 +186,7 @@ rule: a URL, a placeholder and an emoji heading.
 |---|---|
 | each skill is named for its folder (18) | `skills.test.ts` |
 | each gh command the prose names is one gh knows (30) | `gh.test.ts` |
-| each schema template the prose names exists (46) | `skills.test.ts` |
+| each schema template the prose names exists (46) | `templates.test.ts` |
 | each skill a flow ships, other than an entry point, is named by … (77) | `skills.test.ts` |
 | each skill a schema or config names is one its flow ships … (128) | `skills.test.ts` |
 | each lets delegate review, handoff or step the prose names … (257) | `commands.test.ts` |
