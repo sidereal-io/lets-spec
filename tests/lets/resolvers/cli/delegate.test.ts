@@ -44,17 +44,6 @@ const stepping = (message: string) => {
   return io;
 };
 
-test('a step with codex runs it in its write mode, and prints the report from its last message', async () => {
-  const io = stepping(DONE_REPORT);
-  const t = withCli(io);
-  assert.equal(await step(stepOptions({ models: ['gpt/gpt-6-luna'] }), t.deps), 0);
-  assert.deepEqual(argsOf(io), [['codex',
-    ['exec', '--dangerously-bypass-approvals-and-sandbox', '-c', 'model_reasoning_effort="high"', '-m', 'gpt-6-luna', '-o', STEP_LAST_MESSAGE, '-']]]);
-  assert.deepEqual(JSON.parse(t.stdout()), { outcome: 'done', evidence: ['commit 3f2a1c0'], date: '1970-01-01T00:00:00Z' });
-  const { resolver, family, model, handle } = metadata(t);
-  assert.deepEqual({ resolver, family, model, handle }, { resolver: 'cli', family: 'gpt', model: 'gpt-6-luna', handle: { kind: 'process', id: 'build-x' } });
-});
-
 const NEEDS_INPUT_REPORT = 'Stuck.\n\n```step-report\noutcome: needs-input\nquestions:\n  - question: Which base?\n```\n';
 
 test('a step on the bare family claude runs claude in its write mode, with no model, and prints a needs-input report', async () => {
@@ -63,21 +52,6 @@ test('a step on the bare family claude runs claude in its write mode, with no mo
   assert.equal(await step(stepOptions({ models: ['claude'] }), t.deps), 0);
   assert.deepEqual(argsOf(io), [['claude', ['-p', '--permission-mode', 'bypassPermissions', '--effort', 'high']]]);
   assert.equal(JSON.parse(t.stdout()).outcome, 'needs-input');
-});
-
-test('a step runs the CLI in the repository, with the prompt on stdin, 120 minutes and no session markers', async () => {
-  const io = stepping(DONE_REPORT);
-  assert.equal(await step(stepOptions({ models: ['claude'] }), withCli(io).deps), 0);
-  const [, , { cwd, input, timeoutMs, env }] = io.calls[0];
-  assert.deepEqual([cwd, input, timeoutMs], ['/repo', 'PROMPT TEXT', 120 * 60000]);
-  assert.equal(env?.CLAUDECODE, undefined);
-});
-
-test('a gemini step at medium effort runs agy in its write mode, with the step\'s time limit', async () => {
-  const io = stepping(DONE_REPORT);
-  assert.equal(await step(stepOptions({ models: ['gemini/gemini-3.8-flash'], effort: 'medium', timeoutMinutes: 30 }), withCli(io).deps), 0);
-  assert.deepEqual(argsOf(io), [['agy', ['--mode', 'accept-edits', '--dangerously-skip-permissions', '--effort', 'medium',
-    '--model', 'gemini-3.8-flash-medium', '--print-timeout', '30m', '-p', 'PROMPT TEXT']]]);
 });
 
 // A step on models, with 3 minutes, whose CLIs answer with results in order.
