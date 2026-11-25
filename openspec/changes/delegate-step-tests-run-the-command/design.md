@@ -69,8 +69,8 @@
   the report file, the meta file and the exit file.
 - **Existing seams reused:** `tests/support/lets.ts` and
   `tests/delegate/repo.ts`. The fake-adapter seam in
-  `tests/lets/delegate/fixtures/command-deps.ts` stays only for the one
-  kept test of D9.
+  `tests/lets/delegate/fixtures/command-deps.ts` stays only for the
+  kept test of D9 and the kept test of a resolver with no step.
 
 ## Scrutiny Tier & Blast Radius
 
@@ -211,7 +211,7 @@ are the stand-ins, with the config `[cli]` unless the row says so.
 | a name lets does not know in the config | `resolvers: [codex]`: exit 2 naming the user config and `codex` |
 | guidance not read, even 42 | `guidance: 42` under `delegate.step.build`: exit 0 |
 | every resolver declines | `[cli]` with no CLI on `PATH`: exit 2, `every resolver declined` and the config path |
-| a resolver that runs no step passes it on | `[cli, subagent]` with no CLI: subagent answers, exit 3 |
+| a resolver that runs no step passes it on | kept in `tests/lets/delegate/step.test.ts`, with a fake t3 adapter that has no step: every real resolver runs steps. `[cli, subagent]` with no CLI, where cli declines and subagent answers with exit 3, shows the chain through lets |
 | a refused model passes to the next | codex refuses `gpt/gpt-6-astra` (exit 1, no stdout), claude answers: done, record `family: claude` |
 | every model refused is exit 3 naming each | codex and agy both refuse: exit 3, one line per model |
 | a refusal never moves down the chain | `[cli, subagent]`, codex refuses: exit 3, and no `.prompt.md` saved |

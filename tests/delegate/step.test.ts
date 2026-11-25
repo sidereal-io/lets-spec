@@ -218,7 +218,9 @@ describe('step run', () => {
     assert.ok(result.stderr.includes(repo.userConfig), result.stderr);
   });
 
-  test('a resolver that runs no step passes it down the chain: with no CLI, subagent answers with exit 3', async (t) => {
+  test('a resolver that declines passes the step down the chain: with no CLI, subagent answers with exit 3', async (t) => {
+    // Every real resolver runs steps, so tests/lets/delegate/step.test.ts
+    // checks a resolver with no step, with a fake adapter.
     const repo = delegateRepo(t, { user: CLI_THEN_SUBAGENT });
     const result = await repo.run(stepRun());
     failed(result, 3);
