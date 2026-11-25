@@ -147,10 +147,15 @@ does not change the result.
 
 ### 5. The time-limit test needs no new way in
 
-Stand-in `codex` and `agy` both use `hangs` (D11). The run has a time
-limit of 35 seconds through `runLets`'s `timeoutMs`. If the two
-listings ran one after the other, the run would need more than 40
-seconds and fail that limit. The test checks that `options` is
+Stand-in `codex` and `agy` both use `hangs` (D11). The test times the
+run, and checks that it took less than 40 seconds: if the two listings
+ran one after the other, the run would need at least 40 seconds. That
+leaves about 20 seconds for a slow machine. A hanging stand-in is a Node
+script that SIGTERM ends, so `lets` adds no 5-second kill grace. The
+run's own time limit, `runLets`'s `timeoutMs`, is 60 seconds, above the
+52 seconds two listings in a row could take with that grace, so a
+sequential `lets` fails the elapsed-time check with a clear message
+rather than a kill. The test checks that `options` is
 `["gpt","gemini"]`, that stderr has two lines starting
 `lets delegate: `, one naming `codex` and one naming `agy`, and that
 each stand-in was called once.
@@ -164,6 +169,7 @@ behavior. "Existing" means a test already in
 | From | Tests | Covered by |
 |---|---|---|
 | `instructions.test.ts` | the JSON line, for a review and for a step; starts nothing; declines pass down the chain; every resolver declines; warnings | new tests with `cli`, stand-ins and `[cli, subagent]` |
+| `instructions.test.ts` | "a review asks for a resolver that can run, and a handoff for one that can start" | the first handoff test of D9 (decision 8) |
 | `instructions.test.ts` | the 12 guidance and malformed-config tests, and the 3 tests of the user's and the repository's config | new tests with a real user config and `.lets/config.yaml` |
 | `instructions.test.ts` | no config, for a review, a handoff or a step; a resolver listed by path | existing: "with no config, review instructions --for plan…", "with no config, step instructions prints…", "a resolver listed by path is exit 2…" |
 | `instructions.test.ts` | of the tests above, the 8 that use handoff | the 2 handoff tests of D9; the rest are rewritten with `review` or `step`, which test the same code |
