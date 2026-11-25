@@ -275,7 +275,8 @@ if (row === undefined) {
  * written.
  */
 export function codex(dir: string, listing: CodexModel[] | ListingFailure = [], options?: FamilyOptions): StandIn {
-  throw new Error('not built yet');
+  const answer = typeof listing === 'string' ? listing : { stdout: JSON.stringify({ models: listing.map(({ slug, visibility }) => ({ slug, visibility })) }) };
+  return harnessCli(dir, 'codex', ['debug', 'models'], answer, options);
 }
 
 /**
@@ -283,10 +284,13 @@ export function codex(dir: string, listing: CodexModel[] | ListingFailure = [], 
  * `agy models` with the line `Fetching available models...`, then one
  * line per id of `listing`, `<id>\t<label>`, or fails as the
  * `ListingFailure` says. The default listing is empty. It answers no
- * other call. Throws when `dir` cannot be written.
+ * other call. `lets` reads only the lines that start `gemini-`, so an
+ * `unreadable` listing gives no gemini model and no warning. Throws when
+ * `dir` cannot be written.
  */
 export function agy(dir: string, listing: string[] | ListingFailure = [], options?: FamilyOptions): StandIn {
-  throw new Error('not built yet');
+  const answer = typeof listing === 'string' ? listing : { stdout: `Fetching available models...\n${listing.map((id) => `${id}\t${id.toUpperCase()}\n`).join('')}` };
+  return harnessCli(dir, 'agy', ['models'], answer, options);
 }
 
 /**
@@ -295,7 +299,34 @@ export function agy(dir: string, listing: string[] | ListingFailure = [], option
  * written.
  */
 export function claude(dir: string, options?: FamilyOptions): StandIn {
-  throw new Error('not built yet');
+  return standIn(dir, 'claude', [], options);
+}
+
+// What a failing listing answers, by how it fails. cannot-start has no row:
+// its program never runs.
+const FAILURES: Record<Exclude<ListingFailure, 'cannot-start'>, Omit<StandInRow, 'args'>> = {
+  'signed-out': { stderr: 'not logged in\n', code: 1 },
+  unreadable: { stdout: 'not json\n' },
+  hangs: { hang: true },
+};
+
+// A stand-in harness CLI called name, whose model listing is the call args,
+// answered as answer says.
+function harnessCli(dir: string, name: string, args: string[], answer: Omit<StandInRow, 'args'> | ListingFailure, options?: FamilyOptions): StandIn {
+  if (answer === 'cannot-start') return unstartable(dir, name);
+  return standIn(dir, name, [{ args, ...(typeof answer === 'string' ? FAILURES[answer] : answer) }], options);
+}
+
+// A program called name in dir that the system cannot start, because the
+// interpreter its #! line names does not exist. It never runs, so it logs
+// no call.
+function unstartable(dir: string, name: string): StandIn {
+  dir = resolve(dir);
+  rmSync(join(dir, `.${name}.log`), { force: true });
+  const program = join(dir, name);
+  writeFileSync(program, `#!${join(dir, '.no-such-interpreter')}\n`);
+  chmodSync(program, 0o755);
+  return { calls: () => [], envs: () => [] };
 }
 
 /**

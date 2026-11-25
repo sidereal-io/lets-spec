@@ -11,7 +11,7 @@
 ## 2. Implementation [depends-on: 1]
 
 - [x] 2.1 [medium] `runLets` with `onlyStandIns: true` gives `lets` a `PATH` of the stand-ins folder, then a folder that holds only a link to `git`, and rejects with a message when no `git` is on this process's `PATH`. A `standIn` row with `hang` logs the call, waits, and exits by itself after 60 seconds. `standIn` logs only the variables named in `logEnv`, and `envs()` returns them per call. The `lets sync` tests still pass (verify: `node --test "tests/sync/*.test.ts"`) (✓ `node --test "tests/sync/*.test.ts"` passed, 67 tests)
-- [ ] 2.2 [medium] `codex`, `agy` and `claude` write stand-ins as design decision 2 says: `codex debug models` and `agy models` print the listing given, in the format `lets` reads, or fail as `signed-out`, `unreadable`, `cannot-start` or `hangs` say; `claude` answers no call (verify: `pnpm check`)
+- [x] 2.2 [medium] `codex`, `agy` and `claude` write stand-ins as design decision 2 says: `codex debug models` and `agy models` print the listing given, in the format `lets` reads, or fail as `signed-out`, `unreadable`, `cannot-start` or `hangs` say; `claude` answers no call (verify: `pnpm check`) (✓ `pnpm check` passed)
 
 ## 3. Black-box tests [depends-on: 2]
 
