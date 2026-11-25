@@ -2,8 +2,14 @@
 // step wait: the arguments each command and each CLI gets, waits on a
 // stand-in or a background process, and the check of a value from the real
 // clock. Not a *.test.ts file, so the test runner does not run it.
+import assert from 'node:assert/strict';
+import { join } from 'node:path';
 import type { TestContext } from 'node:test';
 import type { StandIn } from '../support/lets.ts';
+
+// How long untilCalled and untilGone wait, unless told, and how often they look.
+const UNTIL_MS = 10_000;
+const POLL_MS = 50;
 
 export type Effort = 'low' | 'medium' | 'high';
 
@@ -52,8 +58,12 @@ export interface CodexWriteArgs {
  * on p.md, at high effort, on claude, unless `over` says otherwise. Never
  * fails.
  */
-export function stepRun(over?: StepArgs): string[] {
-  throw new Error('not built yet');
+export function stepRun(over: StepArgs = {}): string[] {
+  const { for: intent = 'build', name = 'Build X', promptFile = 'p.md', effort = 'high', models = ['claude'], timeoutMinutes, answersFile, exitFile } = over;
+  return ['delegate', 'step', 'run', '--for', intent, '--name', name, '--prompt-file', promptFile, '--effort', effort,
+    ...models.flatMap((model) => ['--model', model]),
+    ...optional('--timeout-minutes', timeoutMinutes === undefined ? undefined : String(timeoutMinutes)),
+    ...optional('--answers-file', answersFile), ...optional('--exit-file', exitFile)];
 }
 
 /**
@@ -61,13 +71,16 @@ export function stepRun(over?: StepArgs): string[] {
  * for `run`, then `--report-file r.json` and `--meta-file m.txt`, and
  * `--checkout` when given, unless `over` says otherwise. Never fails.
  */
-export function stepStart(over?: StartArgs): string[] {
-  throw new Error('not built yet');
+export function stepStart(over: StartArgs = {}): string[] {
+  const { reportFile = 'r.json', metaFile = 'm.txt', checkout, ...run } = over;
+  const args = stepRun(run);
+  args[2] = 'start';
+  return [...args, ...optional('--report-file', reportFile ?? undefined), ...optional('--meta-file', metaFile ?? undefined), ...optional('--checkout', checkout)];
 }
 
 /** A final message: a line of prose, then a step-report block holding `yaml`, which must end with a newline. Never fails. */
 export function ending(yaml: string): string {
-  throw new Error('not built yet');
+  return `Prose.\n\n\`\`\`step-report\n${yaml}\`\`\`\n`;
 }
 
 /**
@@ -76,13 +89,15 @@ export function ending(yaml: string): string {
  * and the last message in `<cwd>/.workspace/lets-delegate/<name>.last-message.md`.
  * Never fails.
  */
-export function codexWrite(cwd: string, over?: CodexWriteArgs): string[] {
-  throw new Error('not built yet');
+export function codexWrite(cwd: string, over: CodexWriteArgs = {}): string[] {
+  const { effort = 'high', model = null, name = 'build-x' } = over;
+  return ['exec', '--dangerously-bypass-approvals-and-sandbox', '-c', `model_reasoning_effort="${effort}"`, ...optional('-m', model ?? undefined),
+    '-o', join(cwd, '.workspace', 'lets-delegate', `${name}.last-message.md`), '-'];
 }
 
 /** The write-mode arguments lets gives claude for a step: bypassPermissions, the effort (`high` when absent), and `--model` when given. Never fails. */
-export function claudeWrite(effort?: Effort, model?: string): string[] {
-  throw new Error('not built yet');
+export function claudeWrite(effort: Effort = 'high', model?: string): string[] {
+  return ['-p', '--permission-mode', 'bypassPermissions', '--effort', effort, ...optional('--model', model)];
 }
 
 /**
@@ -93,7 +108,7 @@ export function claudeWrite(effort?: Effort, model?: string): string[] {
  * Never fails.
  */
 export function agyWrite(effort: Effort, timeout: string, prompt: string, model?: string): string[] {
-  throw new Error('not built yet');
+  return ['--mode', 'accept-edits', '--dangerously-skip-permissions', '--effort', effort, ...optional('--model', model), '--print-timeout', timeout, '-p', prompt];
 }
 
 /**
@@ -101,16 +116,16 @@ export function agyWrite(effort: Effort, timeout: string, prompt: string, model?
  * Rejects after `ms` milliseconds (10 seconds when absent), saying how
  * many calls it saw.
  */
-export function untilCalled(stand: StandIn, count?: number, ms?: number): Promise<void> {
-  throw new Error('not built yet');
+export function untilCalled(stand: StandIn, count = 1, ms = UNTIL_MS): Promise<void> {
+  return until(() => stand.calls().length >= count, ms, () => `the stand-in logged ${stand.calls().length} of ${count} calls in ${ms} ms`);
 }
 
 /**
  * Resolves once no process has the id `pid`. Rejects after `ms`
  * milliseconds (10 seconds when absent), naming the pid.
  */
-export function untilGone(pid: number, ms?: number): Promise<void> {
-  throw new Error('not built yet');
+export function untilGone(pid: number, ms = UNTIL_MS): Promise<void> {
+  return until(() => !alive(pid), ms, () => `process ${pid} still runs after ${ms} ms`);
 }
 
 /**
@@ -120,7 +135,13 @@ export function untilGone(pid: number, ms?: number): Promise<void> {
  * Never fails, and the hook never fails either.
  */
 export function cleanUpStep(t: TestContext, pid: number): void {
-  throw new Error('not built yet');
+  t.after(() => {
+    try {
+      stopStep(pid);
+    } catch {
+      // It has ended already.
+    }
+  });
 }
 
 /**
@@ -129,7 +150,7 @@ export function cleanUpStep(t: TestContext, pid: number): void {
  * with `untilGone(pid)`. Throws when no process has the id `pid`.
  */
 export function stopStep(pid: number): void {
-  throw new Error('not built yet');
+  process.kill(pid, 'SIGTERM');
 }
 
 /**
@@ -141,5 +162,39 @@ export function stopStep(pid: number): void {
  * when it does not hold.
  */
 export function assertClock(value: string | number, before: number, after: number): void {
-  throw new Error('not built yet');
+  if (typeof value === 'string') {
+    assert.match(value, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/, `${value} is not an ISO 8601 UTC date to the second`);
+    const ms = Date.parse(value);
+    assert.ok(ms >= Math.floor(before / 1000) * 1000 && ms <= after, `${value} is not between ${new Date(before).toISOString()} and ${new Date(after).toISOString()}`);
+  } else {
+    assert.ok(Number.isInteger(value), `${value} is not a whole number of milliseconds`);
+    assert.ok(value >= before && value <= after, `${value} is not between ${before} and ${after}`);
+  }
+}
+
+// [flag, value], or nothing when value is absent.
+const optional = (flag: string, value: string | undefined) => (value === undefined ? [] : [flag, value]);
+
+// Whether a process has the id pid. EPERM means one does, of another user.
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
+
+// Resolves once done() holds, looking every POLL_MS; rejects with why()
+// after ms.
+function until(done: () => boolean, ms: number, why: () => string): Promise<void> {
+  const deadline = Date.now() + ms;
+  return new Promise((resolve, reject) => {
+    const look = () => {
+      if (done()) resolve();
+      else if (Date.now() >= deadline) reject(new Error(why()));
+      else setTimeout(look, POLL_MS);
+    };
+    look();
+  });
 }

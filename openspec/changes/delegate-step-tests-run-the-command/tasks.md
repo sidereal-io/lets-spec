@@ -11,7 +11,7 @@
 
 ## 2. Implementation [depends-on: 1]
 
-- [ ] 2.1 [medium] The helpers work as design decisions 2 to 4 say: the argument builders give the defaults and take overrides; `untilCalled` and `untilGone` poll until their condition holds and reject with a message after their time limit; `cleanUpStep` registers a `t.after` that sends SIGTERM when the pid still runs; `stopStep` sends SIGTERM at once; `assertClock` checks the form and the range (verify: `pnpm check`)
+- [x] 2.1 [medium] The helpers work as design decisions 2 to 4 say: the argument builders give the defaults and take overrides; `untilCalled` and `untilGone` poll until their condition holds and reject with a message after their time limit; `cleanUpStep` registers a `t.after` that sends SIGTERM when the pid still runs; `stopStep` sends SIGTERM at once; `assertClock` checks the form and the range (verify: `pnpm check`) (✓ `pnpm check` passed)
 
 ## 3. Black-box tests [depends-on: 2]
 
