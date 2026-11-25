@@ -19,7 +19,7 @@ converted as design decision 5 says. Delete each bats file in the task
 that moves its tests.
 
 - [x] 3.1 [parallel] [medium] `tests/release/build.test.ts` holds the 16 tests of `tests/release-build.bats`. It runs `build/build-release.mjs` and `lets/build.mjs` through `run`, reads release configs with `yaml` and `flows.json` with `JSON.parse`, and uses no `yq` or `jq`. The bats file is deleted (verify: `node --test tests/release/build.test.ts`) (✓ `node --test tests/release/build.test.ts` passed, 16 of 16)
-- [ ] 3.2 [parallel] [complex] `tests/openspec/compat.test.ts` holds the 14 tests of `tests/openspec-compat.bats`. It runs the real `openspec` on `PATH` with `OPENSPEC_TELEMETRY=0` and `OPENSPEC_NO_UPDATE_CHECK=1`, loops over `lets-standard` and `lets-minimal` in each test with the schema named in every failure message, reads `schema.yaml` with `yaml`, and throws from setup steps that fail (design decisions 4 and 6). The bats file is deleted (verify: `node --test tests/openspec/compat.test.ts`)
+- [x] 3.2 [parallel] [complex] `tests/openspec/compat.test.ts` holds the 14 tests of `tests/openspec-compat.bats`. It runs the real `openspec` on `PATH` with `OPENSPEC_TELEMETRY=0` and `OPENSPEC_NO_UPDATE_CHECK=1`, loops over `lets-standard` and `lets-minimal` in each test with the schema named in every failure message, reads `schema.yaml` with `yaml`, and throws from setup steps that fail (design decisions 4 and 6). The bats file is deleted (verify: `node --test tests/openspec/compat.test.ts`) (✓ `node --test tests/openspec/compat.test.ts` passed, 14 of 14, with OpenSpec 1.13.2)
 
 ## 4. Integration [depends-on: 3]
 
