@@ -67,7 +67,8 @@ function checkMention(mention: string, file: string, tree: LetsCommandTree): Fin
     ...command.subcommands.flatMap((name) => (tree.get([...command.path, name].join(' ')) as LetsCommand).options),
   ]);
   for (const word of words.slice(at)) {
-    if (!word.startsWith('-') || word === '--') continue;
+    if (word === '--') break;
+    if (!word.startsWith('-')) continue;
     if (!options.has(word.split('=')[0])) return finding;
   }
   return undefined;
@@ -122,7 +123,7 @@ test('the commands check passes a top-level family, the end of options and a pla
     '# Demo',
     '',
     '`lets delegate` runs a prompt in a fresh session.',
-    'Run `lets backlog item <i>`, then `lets delegate step run --for build -- extra`.',
+    'Run `lets backlog item <i>`, then `lets delegate step run --for build -- --extra`.',
     '',
     '```bash',
     'result="$(lets backlog ready --only 3)"',

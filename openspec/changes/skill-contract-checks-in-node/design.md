@@ -121,8 +121,8 @@ folder.
   it is an option of the current command or, when the current command
   has subcommands, of one of them. This rule passes
   `lets delegate step --for` in the glossary copy, which names the
-  `--for` of the step subcommands. `--` always passes. A value after
-  `=` is not read.
+  `--for` of the step subcommands. `--` always passes, and ends the
+  flags: a word after it is an argument. A value after `=` is not read.
 
 Alternative: export the command table from `lets`. Rejected by the
 user's answer (D12): `lets` does not change (D3).
