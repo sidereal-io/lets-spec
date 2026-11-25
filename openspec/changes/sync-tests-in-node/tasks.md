@@ -27,8 +27,12 @@ moves its tests.
 
 - [x] 4.1 [easy] `tests/support/project.bash` is deleted, and the remaining bats files still pass with `common.bash` and `release.bash` (D10, D13) (verify: `bats tests`) (✓ `bats tests` passed, 542 tests)
 - [x] 4.2 [easy] The `tests/` row of the README's *Development* table says that `tests/sync/` holds the black-box tests of `lets sync`, and no longer says the `*.bats` files test `lets sync` (D14) (verify: `! git grep -n 'end-to-end tests of .lets sync' README.md`) (✓ the grep found nothing)
-- [ ] 4.3 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the 67 moved tests with no OpenSpec CLI and whose `commands` check runs the remaining bats files. The pull request says this story kept no unit test and deleted no Node test (verify: `nix flake check`)
+- [x] 4.3 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the 67 moved tests with no OpenSpec CLI and whose `commands` check runs the remaining bats files. The pull request says this story kept no unit test and deleted no Node test (verify: `nix flake check`) (✓ `pnpm test`, `mise run check` and `nix flake check` passed; `node-tests` ran 969 Node tests, `commands` ran 542 bats tests)
 
 ## Deviations Ledger
 
 <!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-24, tasks 1.1 and 1.2: the contracts add a few small things the design does not list. `tests/support/lets.ts` also exports `repo`, the repository's root, which the tests need to read `flows.json` and fixtures. `tests/sync/project.ts` also exports `fixtureSkills`. `Project.init(env?)` takes the environment, as `LETS_SPEC_SKILLS=ignored init_project` did. `fragment`, `shippedSkills` and `releaseFiles` take an optional release path and default to the file's release. `tempDir()` without a test removes its folder when the test file's process exits.
+- 2026-11-24, task 3.2: `releaseWithSchemas` in `tests/sync/setup.test.ts` makes its copy writable with a local helper, as `chmod -R u+w` did in bats, because the helper module keeps its own one private.
+- 2026-11-24, task 3.3: "the untrack command from the problem untracks …" runs the command with `sh -c` instead of `bash -c`, since the command is plain POSIX shell and the flake's `node-tests` check names no bash.
