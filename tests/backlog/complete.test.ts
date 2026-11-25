@@ -15,7 +15,8 @@ async function complete(t: TestContext, { key = '258', number = 258, rows = [] a
   const result = await b.lets('complete', key);
   assert.equal(result.code, code, result.output);
   const calls = b.calls();
-  const ran = (args: string) => calls.some((call) => args.split(' ').every((arg, i) => arg === call[i]));
+  // As in fixtures/fake-gh.ts, a prefix of the joined call, so 'assignees' matches 'assignees,url'.
+  const ran = (args: string) => calls.some((call) => call.join(' ').startsWith(args));
   return { out: b.json(result), calls, ran, state: b.state() as IssueState };
 }
 

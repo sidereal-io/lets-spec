@@ -20,7 +20,8 @@ async function release(t: TestContext, { key = '149', token = TOKEN, rows = [] a
   const result = await b.lets('release', key, '--claim', token);
   assert.equal(result.code, code, result.output);
   const calls = b.calls();
-  const ran = (args: string) => calls.some((call) => args.split(' ').every((arg, i) => arg === call[i]));
+  // As in fixtures/fake-gh.ts, a prefix of the joined call, so 'assignees' matches 'assignees,url'.
+  const ran = (args: string) => calls.some((call) => call.join(' ').startsWith(args));
   return { out: b.json(result), calls, ran, start, state: b.state() as IssueState };
 }
 
