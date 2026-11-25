@@ -16,21 +16,6 @@ function depsWith(text?: string, env: Record<string, string> = {}) {
   return { env, cwd: '/repo', io: fakeIo({ files, homedir: () => '/home/u' }) };
 }
 
-test('a key this lets does not know is ignored, at the top level and under delegate', async () => {
-  const text = 'version: 3\nsync: true\ndelegate:\n  resolvers: [subagent]\n  telemetry: true\n';
-  assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: { resolvers: ['subagent'] } });
-});
-
-test('review and handoff under delegate are kept as written, unchecked', async () => {
-  const text = 'version: 3\ndelegate:\n  resolvers: [subagent]\n  review:\n    code:\n      guidance: 42\n  handoff: apply\n';
-  assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: { resolvers: ['subagent'], review: { code: { guidance: 42 } }, handoff: 'apply' } });
-});
-
-test('step under delegate is kept as written, unchecked', async () => {
-  const text = 'version: 3\ndelegate:\n  step:\n    build:\n      guidance: 42\n';
-  assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: { step: { build: { guidance: 42 } } } });
-});
-
 const CONFIG = '/c/config.yaml';
 const withDelegate = (yaml: string) => checkConfig(parseDocument(`version: 3\n${yaml}`, CONFIG), () => CONFIG);
 
@@ -77,10 +62,6 @@ test('guidanceFor rejects a bad level, naming the file and the dotted key', () =
 test('guidanceFor ignores a bad entry for another intent or the other strategy', () => {
   assert.equal(guidanceFor(withDelegate('delegate:\n  review:\n    plan:\n      guidance: [a, b]\n'), 'review', 'code', () => CONFIG), null);
   assert.equal(guidanceFor(withDelegate('delegate:\n  handoff: 42\n'), 'review', 'code', () => CONFIG), null);
-});
-
-test('checkConfig drops a go key, even with a question mode lets does not know', () => {
-  assert.deepEqual(withDelegate('delegate:\n  resolvers: [t3]\ngo:\n  questions: loud\n'), { version: 3, delegate: { resolvers: ['t3'] } });
 });
 
 const USER = '/home/u/.config/lets/config.yaml';

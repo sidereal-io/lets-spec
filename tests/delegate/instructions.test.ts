@@ -384,6 +384,23 @@ describe('the delegate section of the lets config', () => {
       refused(run, run.userConfig, named);
     }
   });
+
+  test('a key lets does not know, at the top level and under delegate, is ignored', async (t) => {
+    const run = await instructions(t, 'review', 'code', { user: 'version: 3\nsync: true\ndelegate:\n  resolvers: [subagent]\n  telemetry: true\n' });
+    assert.deepEqual(line(run), SUBAGENT_REVIEW);
+  });
+
+  test('a go.questions the delegate commands do not read is ignored, even one lets go would reject', async (t) => {
+    const run = await instructions(t, 'review', 'code', { user: 'version: 3\ndelegate:\n  resolvers: [subagent]\ngo:\n  questions: loud\n' });
+    assert.deepEqual(line(run), SUBAGENT_REVIEW);
+  });
+
+  test('a step ignores bad review and handoff entries', async (t) => {
+    const run = await instructions(t, 'step', 'build', {
+      user: 'version: 3\ndelegate:\n  resolvers: [subagent]\n  review:\n    code:\n      guidance: 42\n  handoff: apply\n',
+    });
+    assert.deepEqual(line(run), { strategy: 'step', for: 'build', resolver: 'subagent', options: [], guidance: null });
+  });
 });
 
 // #306 retires handoff. Whichever of it and this file's story merges
