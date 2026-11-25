@@ -20,7 +20,7 @@ Each moved test keeps its bats name and the checks its bats test makes
 moves its tests.
 
 - [x] 3.1 [parallel] [medium] `tests/sync/rules.test.ts` holds the 16 kept tests of `tests/sync-rules.bats`, and the bats file is deleted. "the rules say lets sync rewrites the copies, in both skills modes" keeps its phrase checks and its both-modes comparison, under a comment that names pull request #32. "the rules block names only plain things a project owner knows" and "the rules block says lets-go picks, claims and routes" are not moved (D12) (verify: `node --test tests/sync/rules.test.ts`) (✓ `node --test tests/sync/rules.test.ts` passed, 16 tests)
-- [ ] 3.2 [parallel] [medium] `tests/sync/setup.test.ts` holds the 22 tests of `tests/sync-setup.bats`, editing `openspec/config.yaml` as text with `setSchema` instead of `yq`, and the bats file is deleted (verify: `node --test tests/sync/setup.test.ts`)
+- [x] 3.2 [parallel] [medium] `tests/sync/setup.test.ts` holds the 22 tests of `tests/sync-setup.bats`, editing `openspec/config.yaml` as text with `setSchema` instead of `yq`, and the bats file is deleted (verify: `node --test tests/sync/setup.test.ts`) (✓ `node --test tests/sync/setup.test.ts` passed, 22 tests)
 - [ ] 3.3 [parallel] [complex] `tests/sync/skills.test.ts` holds the 29 tests of `tests/sync-skills.bats`, reading `flows.json` with `JSON.parse` instead of `jq`, and the bats file is deleted (verify: `node --test tests/sync/skills.test.ts`)
 
 ## 4. Integration [depends-on: 3]
