@@ -39,6 +39,16 @@ export interface RunLetsOptions {
   standIns?: string;
   /** How long the run may take. 30 seconds when absent. */
   timeoutMs?: number;
+  /** The folder of the lets package whose `bin/lets` runs, such as one `letsPackage` made. `<repo>/lets` when absent. */
+  lets?: string;
+}
+
+/** What `letsPackage` puts beside the copied package, where lets looks for it. */
+export interface LetsPackageOptions {
+  /** The text of `release.json`. No file when absent. A string, so a test can write one that is not JSON. */
+  releaseJson?: string;
+  /** Each flow's release folder, by flow name, linked as `releases/<flow>`. */
+  releases?: Record<string, string>;
 }
 
 /** One answer of a stand-in, given to the call whose arguments equal `args`. */
@@ -53,6 +63,8 @@ export interface StandInRow {
 export interface StandIn {
   /** Each call's argument list, in the order the calls came. Empty before the first call. */
   calls(): string[][];
+  /** The folder each call ran in, in the order the calls came. Empty before the first call. */
+  folders(): string[];
 }
 
 /**
@@ -111,6 +123,31 @@ export function runLets(args: string[], options: RunLetsOptions): Promise<LetsRe
       },
     );
   });
+}
+
+/**
+ * Copies the lets package, `lets/bin`, `lets/src` and `lets/package.json`,
+ * into a new temporary folder removed after `t`, with `node_modules`
+ * linked to `lets/node_modules`. lets reads `release.json` and
+ * `releases/<flow>` beside its package, and the source tree has neither,
+ * so a test that needs them runs this copy through `RunLetsOptions.lets`.
+ * Writes `release.json` when `options.releaseJson` is set, and links each
+ * of `options.releases` as `releases/<flow>`. Returns the copy's folder.
+ * Throws when `lets/node_modules` is missing, and says to run pnpm install.
+ */
+export function letsPackage(t: TestContext, options: LetsPackageOptions = {}): string {
+  throw new Error('not built yet');
+}
+
+/**
+ * Makes a new folder, removed after `t`, holding a link to each of
+ * `programs` as found on this process's `PATH`. Set `PATH` to the folder
+ * to run lets with only those programs, so no OpenSpec CLI is found
+ * whatever the machine has installed. Returns the folder. Throws, naming
+ * the program, when one is not on `PATH`.
+ */
+export function pathWith(t: TestContext, programs: string[]): string {
+  throw new Error('not built yet');
 }
 
 /**
@@ -198,6 +235,9 @@ if (row === undefined) {
     calls: () => existsSync(log)
       ? readFileSync(log, 'utf8').split('\n').filter((line) => line !== '').map((line) => JSON.parse(line) as string[])
       : [],
+    folders: () => {
+      throw new Error('not built yet');
+    },
   };
 }
 
