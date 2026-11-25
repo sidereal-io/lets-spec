@@ -401,6 +401,42 @@ describe('the delegate section of the lets config', () => {
     });
     assert.deepEqual(line(run), { strategy: 'step', for: 'build', resolver: 'subagent', options: [], guidance: null });
   });
+
+  test('the guidance is null when a level is missing', async (t) => {
+    for (const body of ['review:\n', 'review:\n  code:\n    other: x\n', 'review:\n  code: {}\n', 'handoff:\n  apply:\n    guidance: x\n']) {
+      assert.equal(line(await instructions(t, 'review', 'code', { user: delegate(body) })).guidance, null, body);
+    }
+  });
+
+  test('a strategy or intent entry that is not a mapping exits 2, naming the user\'s file and the dotted key, and runs no listing', async (t) => {
+    const cases: [string, string][] = [
+      ['review: [a]\n', 'delegate.review must be a mapping, got ["a"]'],
+      ['review:\n  code: text\n', 'delegate.review.code must be a mapping, got "text"'],
+    ];
+    for (const [body, named] of cases) {
+      let stand: ReturnType<typeof codex> | undefined;
+      const run = await instructions(t, 'review', 'code', { user: cliDelegate(body), standIns: (dir) => { stand = codex(dir, [...LUNA]); } });
+      refused(run, run.userConfig, named);
+      assert.deepEqual(stand!.calls(), [], `${body}: no listing ran`);
+    }
+  });
+
+  test('a repository\'s review list over the user\'s guidance replaces it whole, and exits 2 naming the repository\'s file', async (t) => {
+    const run = await instructions(t, 'review', 'code', {
+      user: delegate('review:\n  code:\n    guidance: Prefer claude.\n'),
+      repo: delegate('review: [a]\n'),
+    });
+    refused(run, run.repoConfig, 'delegate.review must be a mapping, got ["a"]');
+  });
+
+  test('the user\'s chain stays under a repository\'s null resolvers, and its decline names the user\'s file', async (t) => {
+    const run = await instructions(t, 'review', 'code', {
+      user: CLI,
+      repo: delegate('resolvers: null\nreview:\n  code:\n    guidance: Use gemini.\n'),
+    });
+    declined(run, run.userConfig);
+    assert.ok(!run.result.stderr.includes(run.repoConfig), run.result.stderr);
+  });
 });
 
 // #306 retires handoff. Whichever of it and this file's story merges
@@ -418,5 +454,10 @@ describe('handoff instructions', () => {
   test('the guidance for a handoff comes from delegate.handoff', async (t) => {
     const run = await instructions(t, 'handoff', 'apply', { user: delegate('handoff:\n  apply:\n    guidance: Prefer claude.\n') });
     assert.equal(line(run).guidance, 'Prefer claude.');
+  });
+
+  test('a step gets no guidance from delegate.handoff', async (t) => {
+    const run = await instructions(t, 'step', 'build', { user: delegate('handoff:\n  apply:\n    guidance: Prefer claude.\n') });
+    assert.equal(line(run).guidance, null);
   });
 });
