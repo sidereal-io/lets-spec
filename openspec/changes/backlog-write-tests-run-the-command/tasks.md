@@ -15,7 +15,7 @@
 
 ## 3. The whole suite [depends-on: 2]
 
-- [ ] 3.1 [medium] The project's three checks pass, the run time of `tests/backlog/` is measured (and a file made concurrent if it takes over 30 seconds), and the pull request description lists the six kept in-process tests of this change with their reasons under the heading `Kept in process` (D12; design decision 8) (verify: `pnpm test && nix flake check && mise run check && gh pr view backlog-write-tests-run-the-command --json body --jq .body | grep -q 'Kept in process'`)
+- [x] 3.1 [medium] The project's three checks pass, the run time of `tests/backlog/` is measured (and a file made concurrent if it takes over 30 seconds), and the pull request description lists the six kept in-process tests of this change with their reasons under the heading `Kept in process` (D12; design decision 8) (verify: `pnpm test && nix flake check && mise run check && gh pr view backlog-write-tests-run-the-command --json body --jq .body | grep -q 'Kept in process'`) (✓ `nix flake check` and `mise run check` passed; `pnpm test` passed on a clean export of HEAD, 955 of 955 Node tests and 542 of 542 bats tests, see the Deviations Ledger; `tests/backlog/` runs 140 tests in 35 seconds, its slowest file `ready.test.ts` in 14.3 seconds, so no file was made concurrent; the pull request description has `Kept in process`)
 
 ## Deviations Ledger
 
@@ -30,3 +30,12 @@
   session would return `taken` without posting a claim; the order would
   depend on timing. Once both sessions wait at `assign`, both have read
   no assignee, so the order is certain. Nothing a test checks changes.
+
+- 2026-11-25, task 3.1: in this worktree, `pnpm test` failed one bats
+  test, "each skill is named for its folder"
+  (`tests/skill-interfaces.bats`). It reads every folder in `skills/`,
+  and another tool on this machine wrote `skills/system/run-workflow/`
+  there at 14:02. Git ignores that folder through the user's global
+  ignore file, and this change did not make it, so it was left in
+  place. On a clean export of HEAD, `pnpm test` passed in full. `nix
+  flake check` builds from the tracked files only, and passed here.
