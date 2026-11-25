@@ -391,7 +391,7 @@ test("archive returns no guidance from the standard flow's config", async (t) =>
 
 test("the standard flow's config names no operation the CLI rejects", async (t) => {
   const demo = await newStandardChange(t);
-  const apply = await openspec(['instructions', 'apply', '--change', 'demo', '--json'], demo.dir);
+  const apply = await succeeds(demo, ['instructions', 'apply', '--change', 'demo', '--json']);
   assert.ok(!apply.stderr.includes('Unknown operation ID'), `${demo.schema}: ${apply.stderr}`);
 });
 
