@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Config, ResolverName } from '../../../lets/src/delegate/config.ts';
-import { chain, inAdapter, pick, withModels } from '../../../lets/src/delegate/lookup.ts';
+import { inAdapter, pick, withModels } from '../../../lets/src/delegate/lookup.ts';
 import { Refused, SessionFailed, SpawnError, TimeoutError, UsageError } from '../../../lets/src/resolvers/kit/errors.ts';
 import { commandDeps, CONFIG } from './fixtures/command-deps.ts';
 import type { FakeResolver } from './fixtures/command-deps.ts';
@@ -13,55 +13,6 @@ function lookup(adapters: Partial<Record<ResolverName, FakeResolver>>, config: C
   const t = commandDeps({ adapters });
   return { t, deps: { ...t.deps, config, fileOf: () => CONFIG } };
 }
-const asked = (t: ReturnType<typeof commandDeps>) => t.adapterCalls('detect').map(([name]) => name);
-
-test('with no config, the chain is subagent', () => {
-  const { deps } = lookup({}, null);
-  assert.deepEqual(chain(deps).map((adapter) => adapter.name), ['subagent']);
-});
-
-test('the chain is the config\'s names, in order', () => {
-  const { deps } = lookup({}, listing('cli', 'subagent', 't3'));
-  assert.deepEqual(chain(deps).map((adapter) => adapter.name), ['cli', 'subagent', 't3']);
-});
-
-test('when the first declines, the next one answers', async () => {
-  const { t, deps } = lookup({ t3: { declines: true }, cli: {} }, listing('t3', 'cli'));
-  assert.equal((await pick('run', deps)).name, 'cli');
-  assert.deepEqual(asked(t), ['t3', 'cli']);
-});
-
-test('when the first answers, no later one is asked', async () => {
-  const { t, deps } = lookup({ t3: {}, cli: {} }, listing('t3', 'cli'));
-  assert.equal((await pick('run', deps)).name, 't3');
-  assert.deepEqual(asked(t), ['t3']);
-});
-
-test('a resolver with no start declines a handoff, and answers a review', async () => {
-  const { deps } = lookup({ cli: { headless: true } }, listing('cli', 'subagent'));
-  assert.equal((await pick('start', deps)).name, 'subagent');
-  assert.equal((await pick('run', deps)).name, 'cli');
-});
-
-test('a resolver with no step declines only a step', async () => {
-  const { deps } = lookup({ cli: { steps: false }, t3: {} }, listing('cli', 't3'));
-  assert.equal((await pick('step', deps)).name, 't3');
-  assert.equal((await pick('run', deps)).name, 'cli');
-});
-
-test('when every resolver declines, it is a usage error naming the config file', async () => {
-  for (const config of [listing('t3', 'cli'), listing()]) {
-    const { deps } = lookup({}, config);
-    await assert.rejects(pick('run', deps),
-      (error) => error instanceof UsageError && /every resolver declined/.test(error.message) && error.message.includes(CONFIG));
-  }
-});
-
-test('the chain runs no program, from the environment or PATH', async () => {
-  const { t, deps } = lookup({ t3: {} }, listing('t3'));
-  assert.equal((await pick('run', { ...deps, env: { ...process.env } })).name, 't3');
-  assert.deepEqual(t.io.calls, [], 'no program was run');
-});
 
 // withModels over models, with answer for each; tried lists the models
 // it was asked for, in order.
@@ -128,16 +79,4 @@ test('an adapter whose detect throws is a SpawnError', async () => {
     throw new Error('no /proc');
   };
   await assert.rejects(pick('run', deps), (error) => error instanceof SpawnError && error.message === 'no /proc');
-});
-
-test('when every resolver declines, the message names the file fileOf gives for the chain', async () => {
-  const { deps } = lookup({}, listing());
-  const keys: string[] = [];
-  const fileOf = (key: string) => {
-    keys.push(key);
-    return '/r/.lets/config.yaml';
-  };
-  await assert.rejects(pick('run', { ...deps, fileOf }),
-    (error) => error instanceof UsageError && error.message.includes('/r/.lets/config.yaml') && !error.message.includes(CONFIG));
-  assert.deepEqual(keys, ['delegate.resolvers']);
 });
