@@ -6,7 +6,7 @@
 
 ## 1. Contracts
 
-- [ ] 1.1 [medium] `tests/support/lets.ts` declares the additions from design decisions 1, 2 and 3, with their types and a doc comment on each that states its preconditions, its result and how it fails: `RunLetsOptions.onlyStandIns`, `StandInRow.hang`, the `logEnv` option of `standIn`, `StandIn.envs()`, `CodexModel`, `ListingFailure`, `FamilyOptions`, and the functions `codex`, `agy` and `claude`. Each new function body throws `not built yet`, and the existing exports behave as before (verify: `pnpm check`)
+- [x] 1.1 [medium] `tests/support/lets.ts` declares the additions from design decisions 1, 2 and 3, with their types and a doc comment on each that states its preconditions, its result and how it fails: `RunLetsOptions.onlyStandIns`, `StandInRow.hang`, the `logEnv` option of `standIn`, `StandIn.envs()`, `CodexModel`, `ListingFailure`, `FamilyOptions`, and the functions `codex`, `agy` and `claude`. Each new function body throws `not built yet`, and the existing exports behave as before (verify: `pnpm check`) (✓ `pnpm check` passed)
 
 ## 2. Implementation [depends-on: 1]
 

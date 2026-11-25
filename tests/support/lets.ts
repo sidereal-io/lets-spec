@@ -39,6 +39,13 @@ export interface RunLetsOptions {
   standIns?: string;
   /** How long the run may take. 30 seconds when absent. */
   timeoutMs?: number;
+  /**
+   * When true, `PATH` is `standIns`, when given, then a folder that holds
+   * only a link named `git` to the `git` on this process's `PATH`, so no
+   * real `codex`, `claude` or `agy` is found. The run rejects, and says
+   * so, when this process has no `git` on its `PATH`.
+   */
+  onlyStandIns?: boolean;
 }
 
 /** One answer of a stand-in, given to the call whose arguments equal `args`. */
@@ -48,12 +55,51 @@ export interface StandInRow {
   stderr?: string;
   /** The exit code. 0 when absent. */
   code?: number;
+  /**
+   * When true, the call is logged, then never answered: the program
+   * prints nothing and waits, until a signal ends it or, at the latest,
+   * 60 seconds pass, so a stand-in that nothing stops is soon gone.
+   */
+  hang?: boolean;
+}
+
+export interface StandInOptions {
+  /**
+   * The variables each call logs, by name. A stand-in logs no others, so
+   * no token from the developer's environment is written to disk.
+   */
+  logEnv?: string[];
 }
 
 export interface StandIn {
   /** Each call's argument list, in the order the calls came. Empty before the first call. */
   calls(): string[][];
+  /**
+   * For each call, in order, the value of each variable named in
+   * `logEnv`, or `undefined` when it was not set. Each record is empty
+   * when no `logEnv` was given.
+   */
+  envs(): Record<string, string | undefined>[];
 }
+
+/** One model in what `codex debug models` prints. `lets` shows only `list`. */
+export interface CodexModel {
+  slug: string;
+  visibility: 'list' | 'hide';
+}
+
+/**
+ * How a model listing fails:
+ * - `signed-out`: exits 1 with `not logged in` on stderr;
+ * - `unreadable`: exits 0 and prints `not json`;
+ * - `cannot-start`: the program is on `PATH`, but its `#!` line names an
+ *   interpreter that does not exist, so starting it fails with `ENOENT`;
+ * - `hangs`: logs the call and waits, as a `hang` row does.
+ */
+export type ListingFailure = 'signed-out' | 'unreadable' | 'cannot-start' | 'hangs';
+
+/** Options for `codex`, `agy` and `claude`, passed on to `standIn`. */
+export type FamilyOptions = StandInOptions;
 
 /**
  * The environment for one run: `process.env` without `WORKFLOW_RELEASE`,
@@ -84,9 +130,12 @@ export function pinnedEnv(extra?: EnvChanges): NodeJS.ProcessEnv {
 /**
  * Runs `lets/bin/lets <args>` with this Node, in `options.cwd`, with the
  * pinned environment, `options.standIns` first on `PATH` and `options.env`
- * on top. Resolves with the exit code and both streams whatever the exit
+ * on top. With `options.onlyStandIns`, `PATH` holds only the stand-ins and
+ * `git`. Resolves with the exit code and both streams whatever the exit
  * code. Rejects when lets cannot be started, or when the run passes its
- * time limit; the message then names the command and the folder.
+ * time limit; the message then names the command and the folder. Also
+ * rejects, before running, when `onlyStandIns` is set and this process
+ * has no `git` on its `PATH`.
  */
 export function runLets(args: string[], options: RunLetsOptions): Promise<LetsResult> {
   const command = `lets ${args.join(' ')}`;
@@ -164,10 +213,11 @@ export function buildRelease(out: string, schemas: string[], skills: string[]): 
  * Writes an executable program called `name` into `dir`, which must
  * exist. Each call logs its arguments, then answers from the first row of
  * `table` whose `args` equals the call's argument list. A call that
- * matches no row exits 127 and says so on standard error. Throws when
+ * matches no row exits 127 and says so on standard error. Each call also
+ * logs the variables `options.logEnv` names, and no others. Throws when
  * `dir` cannot be written.
  */
-export function standIn(dir: string, name: string, table: StandInRow[]): StandIn {
+export function standIn(dir: string, name: string, table: StandInRow[], options?: StandInOptions): StandIn {
   // The program runs in another folder, so the paths it holds are absolute.
   dir = resolve(dir);
   const tableFile = join(dir, `.${name}.table.json`);
@@ -198,7 +248,41 @@ if (row === undefined) {
     calls: () => existsSync(log)
       ? readFileSync(log, 'utf8').split('\n').filter((line) => line !== '').map((line) => JSON.parse(line) as string[])
       : [],
+    envs: () => {
+      throw new Error('not built yet');
+    },
   };
+}
+
+/**
+ * Writes a stand-in `codex` into `dir`, which must exist. It answers
+ * `codex debug models` with `{"models":[{"slug","visibility"}…]}`, in the
+ * order of `listing`, or fails as the `ListingFailure` says. The default
+ * listing is empty. It answers no other call. Throws when `dir` cannot be
+ * written.
+ */
+export function codex(dir: string, listing: CodexModel[] | ListingFailure = [], options?: FamilyOptions): StandIn {
+  throw new Error('not built yet');
+}
+
+/**
+ * Writes a stand-in `agy` into `dir`, which must exist. It answers
+ * `agy models` with the line `Fetching available models...`, then one
+ * line per id of `listing`, `<id>\t<label>`, or fails as the
+ * `ListingFailure` says. The default listing is empty. It answers no
+ * other call. Throws when `dir` cannot be written.
+ */
+export function agy(dir: string, listing: string[] | ListingFailure = [], options?: FamilyOptions): StandIn {
+  throw new Error('not built yet');
+}
+
+/**
+ * Writes a stand-in `claude` into `dir`, which must exist. `claude` has
+ * no model listing, so it answers no call. Throws when `dir` cannot be
+ * written.
+ */
+export function claude(dir: string, options?: FamilyOptions): StandIn {
+  throw new Error('not built yet');
 }
 
 /**
