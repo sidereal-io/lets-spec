@@ -9,7 +9,9 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { TestContext } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { git, type LetsResult, runLets, type StandInRow, standIn, tempDir } from '../support/lets.ts';
+import type { Comment, IssueData, IssueState } from './issue.ts';
 
 /** The repository the stand-in `gh` says lets runs in. */
 export const REPO = 'acme/app';
@@ -41,6 +43,37 @@ export const LOOKUP_ONE: StandInRow[] = [lookup([PROJECT])];
  * Project items as gh prints them.
  */
 export const itemList = (items: unknown[]): StandInRow => ({ args: ['project', 'item-list'], prefix: true, ...json({ items, totalCount: items.length }) });
+
+/**
+ * The row that answers every `gh` call on the issue `number` through the
+ * stand-in issue, `answerIssue` in `issue.ts`, as the user `login`. It
+ * matches every call, so it goes last in a table: after `LOOKUP_ONE`, and
+ * after any row a test adds to make one call fail or answer otherwise.
+ * The issue's state is the stand-in's state: `issueState` makes one.
+ */
+export function issue({ number = 149, login = 'octocat' }: Partial<IssueData> = {}): StandInRow {
+  const data: IssueData = { number, login };
+  return { args: [], prefix: true, answer: { module: ISSUE_MODULE, name: 'answerIssue', data } };
+}
+
+const ISSUE_MODULE = fileURLToPath(new URL('./issue.ts', import.meta.url));
+
+/**
+ * An open issue with no assignees, one empty comment page, `nextId` 1, no
+ * Status written, no rivals and `ownDeletesOnly` unset, with `partial` on
+ * top.
+ */
+export function issueState(partial: Partial<IssueState> = {}): IssueState {
+  return { assignees: [], pages: [[]], nextId: 1, status: [], state: 'OPEN', rivals: [], posted: false, ...partial };
+}
+
+/**
+ * A claim comment, as lets posts it, with the claim token `token`. By
+ * `octocat`, as `OWNER`, with id 1, unless the options say otherwise.
+ */
+export function claimComment(token: string, { id = 1, login = 'octocat', association = 'OWNER' }: { id?: number; login?: string; association?: string } = {}): Comment {
+  return { id, body: `lets-go claimed this issue.\n\nToken: ${token}`, user: { login, type: 'User' }, author_association: association };
+}
 
 /** The lets config files, and other files of the repository, for `backlog`. */
 export interface BacklogFiles {
