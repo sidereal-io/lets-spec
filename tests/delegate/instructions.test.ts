@@ -198,6 +198,13 @@ test('a model listing runs without the session markers, and with the rest of the
   assert.deepEqual(stand!.envs(), [{ CLAUDECODE: undefined, LETS_TEST_KEPT: 'kept' }]);
 });
 
+// What each failure's warning says, after it names codex.
+const FAILURE_TEXT = {
+  'signed-out': /exit 1: not logged in/,
+  unreadable: /JSON/,
+  'cannot-start': /cannot run codex: /,
+} as const;
+
 test('a codex listing that fails lists the bare gpt family, with one warning that names codex', async (t) => {
   for (const failure of ['signed-out', 'unreadable', 'cannot-start'] as const) {
     for (const [strategy, intent] of [['review', 'code'], ['step', 'build']]) {
@@ -207,6 +214,7 @@ test('a codex listing that fails lists the bare gpt family, with one warning tha
       const warnings = run.result.stderr.split('\n').filter((text) => text !== '');
       assert.equal(warnings.length, 1, `${what}: ${run.result.stderr}`);
       assert.match(warnings[0], /^lets delegate: .*codex/, what);
+      assert.match(warnings[0], FAILURE_TEXT[failure], what);
       assert.ok(run.result.stderr.endsWith('\n'), what);
     }
   }
