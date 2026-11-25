@@ -129,25 +129,8 @@ test('an invalid config is a usage error that names the file and the bad value',
   }
 });
 
-test('a config that is not YAML says where the parser stopped, in one sentence', async () => {
-  await assert.rejects(configIn(depsWith('version: 3\ndelegate: { resolvers: [/x\n')),
-    (error) => error instanceof UsageError && /line 3, column 1\.$/.test(error.message));
-});
-
 test('parseDocument gives the checked mapping, every key as written', () => {
   assert.deepEqual(parseDocument('version: 3\ndelegate: [t3]\ngo:\n  level: loud\n', CONFIG), { version: 3, delegate: ['t3'], go: { level: 'loud' } });
-});
-
-test('parseDocument rejects a document that is not a version 3 mapping, naming the file', () => {
-  const cases: [string, string][] = [
-    ['go: { level: [unclosed\n', 'not YAML'],
-    ['- just\n- a list\n', 'mapping'],
-    ['version: 2\ngo:\n  level: ask\n', 'version must be 3, got 2'],
-  ];
-  for (const [text, named] of cases) {
-    assert.throws(() => parseDocument(text, CONFIG),
-      (error) => error instanceof UsageError && error.message.includes(CONFIG) && error.message.includes(named), text);
-  }
 });
 
 test('checkConfig drops a go key, even with a question mode lets does not know', () => {
@@ -263,25 +246,6 @@ test('readLetsConfig reads only the user\'s lets config when the repository has 
   const { document, fileOf } = await readLetsConfig(t.deps);
   assert.deepEqual(document, { version: 3, go: { questions: 'ask' } });
   assert.equal(fileOf('go.questions'), USER);
-});
-
-test('readLetsConfig rejects a repository\'s lets config with the old version, naming it', async () => {
-  const t = commandDeps({ config: 'version: 3\n', repoConfig: 'version: 2\n' });
-  await assert.rejects(readLetsConfig(t.deps),
-    (error) => error instanceof UsageError && error.message.includes(REPO) && /version must be 3/.test(error.message));
-});
-
-test('readLetsConfig rejects a lets config that cannot be read, naming it', async () => {
-  for (const path of [REPO, USER]) {
-    const t = commandDeps({ config: 'version: 3\n', repoConfig: 'version: 3\n' });
-    const readFile = t.io.readFile;
-    t.io.readFile = (at) => {
-      if (at === path) throw Object.assign(new Error(`EISDIR: illegal operation on a directory, read`), { code: 'EISDIR' });
-      return readFile(at);
-    };
-    await assert.rejects(readLetsConfig(t.deps),
-      (error) => error instanceof UsageError && error.message.includes(path) && /EISDIR/.test(error.message), path);
-  }
 });
 
 test('fileOf names the repository\'s lets config for a mapping it set where a value is expected', () => {

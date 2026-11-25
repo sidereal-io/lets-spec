@@ -36,7 +36,6 @@ test('a bad config exits 2 with one lets go line that names the file and the key
     ['version: 3\ngo:\n  questions: loud\n', 'go.questions must be ask or auto, got "loud"'],
     ['version: 3\ngo:\n  questions: [ask]\n', 'go.questions'],
     ['version: 3\ngo: auto\n', 'go must be a mapping'],
-    ['version: 2\ngo:\n  questions: ask\n', 'version must be 3'],
   ];
   for (const [config, named] of cases) {
     const t = commandDeps({ config });

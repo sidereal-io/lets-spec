@@ -76,3 +76,40 @@ describe('where the user\'s lets config is', () => {
     assert.equal(printed(await json.run(questions)), null);
   });
 });
+
+describe('what a file must be', () => {
+  test('a file that is not YAML, not a mapping or not version 3 exits 2, naming the user\'s file and the reason', async (t) => {
+    const cases: [string, string][] = [
+      ['version: 3\ngo: { questions: [unclosed\n', 'is not YAML'],
+      ['- just\n- a list\n', 'must be a mapping with version, got ["just","a list"]'],
+      ['version: 2\ngo:\n  questions: ask\n', 'version must be 3, got 2'],
+      ['version: "3"\n', 'version must be 3, got "3"'],
+      ['go:\n  questions: ask\n', 'version must be 3, got undefined'],
+    ];
+    for (const [user, reason] of cases) {
+      const repo = delegateRepo(t, { user });
+      rejected(await repo.run(questions), repo.userConfig, reason);
+    }
+  });
+
+  test('a YAML error ends with where the parser stopped, as one sentence', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ngo: { questions: [/x\n' });
+    const result = await repo.run(questions);
+    rejected(result, repo.userConfig, 'is not YAML');
+    assert.match(result.stderr, /line 3, column 1\.\n$/);
+  });
+
+  test('a user\'s or a repository\'s lets config that is a folder exits 2, naming that file', async (t) => {
+    const user = delegateRepo(t, { repo: ASK });
+    mkdirSync(user.userConfig, { recursive: true });
+    rejected(await user.run(questions), user.userConfig, 'cannot be read', 'EISDIR');
+    const repo = delegateRepo(t, { user: ASK });
+    mkdirSync(repo.repoConfig, { recursive: true });
+    rejected(await repo.run(questions), repo.repoConfig, 'cannot be read', 'EISDIR');
+  });
+
+  test('a repository\'s lets config with version 2 exits 2, naming it', async (t) => {
+    const repo = delegateRepo(t, { user: ASK, repo: 'version: 2\n' });
+    rejected(await repo.run(questions), repo.repoConfig, 'version must be 3, got 2');
+  });
+});
