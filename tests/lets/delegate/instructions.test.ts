@@ -22,55 +22,6 @@ test('a review asks for a resolver that can run, and a handoff for one that can 
   assert.deepEqual(JSON.parse(h.stdout()), { strategy: 'handoff', for: 'apply', resolver: 'subagent', options: [], guidance: null });
 });
 
-test('the guidance for the intent comes from the config', async () => {
-  const t = withT3('review:\n  code:\n    guidance: Use the strongest gpt model.\n');
-  assert.equal(await run(review, t.deps), 0);
-  assert.equal(JSON.parse(t.stdout()).guidance, 'Use the strongest gpt model.');
-});
-
-test('guidance for another intent only is null', async () => {
-  const t = withT3('review:\n  code:\n    guidance: Use gpt.\n');
-  await run({ strategy: 'review', for: 'plan' }, t.deps);
-  assert.equal(JSON.parse(t.stdout()).guidance, null);
-});
-
-test('guidance for the other strategy only is null', async () => {
-  const t = withT3('handoff:\n  apply:\n    guidance: Use gpt.\n');
-  await run(review, t.deps);
-  assert.equal(JSON.parse(t.stdout()).guidance, null);
-});
-
-test('a multi-line block keeps its lines', async () => {
-  const t = withT3('handoff:\n  apply:\n    guidance: |\n      Prefer claude.\n      Never gemini.\n');
-  await run(handoff, t.deps);
-  assert.equal(JSON.parse(t.stdout()).guidance, 'Prefer claude.\nNever gemini.\n');
-});
-
-test('malformed guidance is exit 2, naming the file and the key, and asks no resolver', async () => {
-  const t = withT3('review:\n  code:\n    guidance: 42\n');
-  assert.equal(await run(review, t.deps), 2);
-  assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), new RegExp(`${CONFIG}.*delegate\\.review\\.code\\.guidance`));
-  assert.deepEqual(t.adapterCalls(), []);
-});
-
-test('a strategy entry that is not a mapping is exit 2, naming the file and the key', async () => {
-  const t = withT3('handoff: apply\n');
-  assert.equal(await run(handoff, t.deps), 2);
-  assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), new RegExp(`${CONFIG}.*delegate\\.handoff must be a mapping`));
-});
-
-test('a bad entry for another intent is not checked', async () => {
-  const t = withT3('review:\n  plan:\n    guidance: [a, b]\n');
-  assert.equal(await run(review, t.deps), 0);
-});
-
-test('a bad entry for the other strategy is not checked', async () => {
-  const t = withT3('handoff: 42\n');
-  assert.equal(await run(review, t.deps), 0);
-});
-
 test('a resolver whose options fail unexpectedly is exit 4 with the message', async () => {
   const t = withT3();
   t.deps.resolvers.t3.options = async () => {
@@ -86,51 +37,4 @@ test('step instructions skip a resolver that runs no step', async () => {
   assert.equal(await run(step, t.deps), 0);
   assert.equal(JSON.parse(t.stdout()).resolver, 't3');
   assert.deepEqual(t.adapterCalls('options').map(([name]) => name), ['t3']);
-});
-
-test('the guidance for a step comes from delegate.step', async () => {
-  const t = withT3('step:\n  build:\n    guidance: Use claude/claude-opus-5-5.\n');
-  assert.equal(await run({ strategy: 'step', for: 'build' }, t.deps), 0);
-  assert.equal(JSON.parse(t.stdout()).guidance, 'Use claude/claude-opus-5-5.');
-});
-
-test('handoff guidance does not reach a step', async () => {
-  const t = withT3('handoff:\n  apply:\n    guidance: Prefer claude.\n');
-  assert.equal(await run({ strategy: 'step', for: 'build' }, t.deps), 0);
-  assert.equal(JSON.parse(t.stdout()).guidance, null);
-});
-
-test('the guidance for the story intent comes from delegate.step.story', async () => {
-  const t = withT3('step:\n  story:\n    guidance: Prefer claude.\n  build:\n    guidance: Use gpt.\n');
-  assert.equal(await run({ strategy: 'step', for: 'story' }, t.deps), 0);
-  assert.equal(JSON.parse(t.stdout()).guidance, 'Prefer claude.');
-});
-
-test('step guidance does not reach the story intent', async () => {
-  const t = withT3('step:\n  build:\n    guidance: Use gpt.\n');
-  assert.equal(await run({ strategy: 'step', for: 'story' }, t.deps), 0);
-  assert.equal(JSON.parse(t.stdout()).guidance, null);
-});
-
-test('the repository\'s guidance for one intent wins, and the user\'s guidance for another stays', async () => {
-  const user = 'version: 3\ndelegate:\n  review:\n    plan:\n      guidance: Prefer gpt.\n    code:\n      guidance: Prefer claude.\n';
-  const repo = 'version: 3\ndelegate:\n  review:\n    code:\n      guidance: Use gemini.\n';
-  const code = commandDeps({ config: user, repoConfig: repo });
-  assert.equal(await run(review, code.deps), 0);
-  assert.equal(JSON.parse(code.stdout()).guidance, 'Use gemini.');
-  const plan = commandDeps({ config: user, repoConfig: repo });
-  assert.equal(await run({ strategy: 'review', for: 'plan' }, plan.deps), 0);
-  assert.equal(JSON.parse(plan.stdout()).guidance, 'Prefer gpt.');
-});
-
-test('malformed guidance in the repository\'s lets config is exit 2, naming that file and the key', async () => {
-  const t = commandDeps({ config: 'version: 3\n', repoConfig: 'version: 3\ndelegate:\n  review:\n    code:\n      guidance: 42\n' });
-  assert.equal(await run(review, t.deps), 2);
-  assert.match(t.stderr(), new RegExp(`${REPO_CONFIG}.*delegate\\.review\\.code\\.guidance`));
-});
-
-test('outside a Git repository, instructions read only the user\'s lets config', async () => {
-  const t = commandDeps({ config: 'version: 3\ndelegate:\n  review:\n    code:\n      guidance: Prefer claude.\n', repoConfig: 'version: 3\ndelegate:\n  review:\n    code:\n      guidance: Use gemini.\n', notInRepo: true });
-  assert.equal(await run(review, t.deps), 0);
-  assert.equal(JSON.parse(t.stdout()).guidance, 'Prefer claude.');
 });

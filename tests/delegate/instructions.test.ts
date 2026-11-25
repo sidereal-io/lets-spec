@@ -236,3 +236,83 @@ test('two listings that hang are both stopped at their limit, at the same time, 
   assert.deepEqual(clis!.codex.calls(), [['debug', 'models']]);
   assert.deepEqual(clis!.agy.calls(), [['models']]);
 });
+
+// A lets config with body under delegate, indented for it. With no chain,
+// subagent answers, which runs no program.
+const delegate = (body: string) => `version: 3\ndelegate:\n${body.replace(/^(?=.)/gm, '  ')}`;
+// The same, with cli first in the chain, so a test can see that no
+// listing ran.
+const cliDelegate = (body: string) => delegate(`resolvers: [cli]\n${body}`);
+
+test('the guidance for the intent comes from the user\'s lets config', async (t) => {
+  const run = await instructions(t, 'review', 'code', { user: delegate('review:\n  code:\n    guidance: Use the strongest gpt model.\n') });
+  assert.equal(line(run).guidance, 'Use the strongest gpt model.');
+});
+
+test('guidance for another intent, or for another strategy, is null', async (t) => {
+  const otherIntent = await instructions(t, 'review', 'plan', { user: delegate('review:\n  code:\n    guidance: Use gpt.\n') });
+  assert.equal(line(otherIntent).guidance, null);
+  const otherStrategy = await instructions(t, 'review', 'code', { user: delegate('step:\n  build:\n    guidance: Use gpt.\n') });
+  assert.equal(line(otherStrategy).guidance, null);
+});
+
+test('a multi-line block keeps its lines', async (t) => {
+  const run = await instructions(t, 'review', 'code', { user: delegate('review:\n  code:\n    guidance: |\n      Prefer claude.\n      Never gemini.\n') });
+  assert.equal(line(run).guidance, 'Prefer claude.\nNever gemini.\n');
+});
+
+test('a step\'s guidance comes from delegate.step, and the story intent\'s from delegate.step.story', async (t) => {
+  const both = delegate('step:\n  story:\n    guidance: Prefer claude.\n  build:\n    guidance: Use gpt.\n');
+  assert.equal(line(await instructions(t, 'step', 'build', { user: both })).guidance, 'Use gpt.');
+  assert.equal(line(await instructions(t, 'step', 'story', { user: both })).guidance, 'Prefer claude.');
+});
+
+test('a step\'s guidance does not reach the story intent, nor the story\'s a step', async (t) => {
+  assert.equal(line(await instructions(t, 'step', 'story', { user: delegate('step:\n  build:\n    guidance: Use gpt.\n') })).guidance, null);
+  assert.equal(line(await instructions(t, 'step', 'build', { user: delegate('step:\n  story:\n    guidance: Prefer claude.\n') })).guidance, null);
+});
+
+test('review guidance does not reach a step', async (t) => {
+  const run = await instructions(t, 'step', 'build', { user: delegate('review:\n  code:\n    guidance: Prefer claude.\n') });
+  assert.equal(line(run).guidance, null);
+});
+
+test('the repository\'s guidance for one intent wins, and the user\'s guidance for another stays', async (t) => {
+  const user = delegate('review:\n  plan:\n    guidance: Prefer gpt.\n  code:\n    guidance: Prefer claude.\n');
+  const repo = delegate('review:\n  code:\n    guidance: Use gemini.\n');
+  assert.equal(line(await instructions(t, 'review', 'code', { user, repo })).guidance, 'Use gemini.');
+  assert.equal(line(await instructions(t, 'review', 'plan', { user, repo })).guidance, 'Prefer gpt.');
+});
+
+test('outside a Git repository, instructions read only the user\'s lets config', async (t) => {
+  const run = await instructions(t, 'review', 'code', {
+    user: delegate('review:\n  code:\n    guidance: Prefer claude.\n'),
+    repo: delegate('review:\n  code:\n    guidance: Use gemini.\n'),
+    notInRepo: true,
+  });
+  assert.equal(line(run).guidance, 'Prefer claude.');
+});
+
+test('bad guidance for the intent is exit 2, naming the file and the key, and runs no listing', async (t) => {
+  const cases: { what: string; setup: Setup; file: keyof Omit<Run, 'result'>; message: RegExp }[] = [
+    { what: 'a number as guidance', setup: { user: cliDelegate('review:\n  code:\n    guidance: 42\n') }, file: 'userConfig', message: /delegate\.review\.code\.guidance must be a string/ },
+    { what: 'a strategy entry that is not a mapping', setup: { user: cliDelegate('review: code\n') }, file: 'userConfig', message: /delegate\.review must be a mapping/ },
+    { what: 'a number in the repository\'s config', setup: { user: cliDelegate(''), repo: delegate('review:\n  code:\n    guidance: 42\n') }, file: 'repoConfig', message: /delegate\.review\.code\.guidance must be a string/ },
+  ];
+  for (const { what, setup, file, message } of cases) {
+    let stand: ReturnType<typeof codex> | undefined;
+    const run = await instructions(t, 'review', 'code', { ...setup, standIns: (dir) => { stand = codex(dir, [...LUNA]); } });
+    assert.equal(run.result.code, 2, `${what}: ${run.result.output}`);
+    assert.equal(run.result.stdout, '', what);
+    assert.ok(run.result.stderr.includes(`${run[file]}: `), `${what}: ${run.result.stderr}`);
+    assert.match(run.result.stderr, message, what);
+    assert.deepEqual(stand!.calls(), [], `${what}: no listing ran`);
+  }
+});
+
+test('a bad entry for another intent, or for another strategy, is not checked', async (t) => {
+  const otherIntent = await instructions(t, 'review', 'code', { user: delegate('review:\n  plan:\n    guidance: [a, b]\n') });
+  assert.equal(line(otherIntent).guidance, null);
+  const otherStrategy = await instructions(t, 'review', 'code', { user: delegate('step: 42\n') });
+  assert.equal(line(otherStrategy).guidance, null);
+});
