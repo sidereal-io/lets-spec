@@ -58,9 +58,10 @@ export interface StandIn {
 /**
  * The environment for one run: `process.env` without `WORKFLOW_RELEASE`,
  * `LETS_SPEC_SKILLS` and `LETS_SPEC_FLOW`, with the locale, git config,
- * author and committer pinned, and `XDG_CONFIG_HOME` set to an empty
- * folder that this process removes when it exits. `extra` is applied
- * last; a key set to `undefined` is removed. Never fails.
+ * author and committer pinned, and `XDG_CONFIG_HOME` set to a new empty
+ * folder, so no run sees config another run wrote. This process removes
+ * the folder when it exits. `extra` is applied last; a key set to
+ * `undefined` is removed. Never fails.
  */
 export function pinnedEnv(extra?: EnvChanges): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env };
@@ -75,7 +76,7 @@ export function pinnedEnv(extra?: EnvChanges): NodeJS.ProcessEnv {
     GIT_AUTHOR_EMAIL: 'test@example.com',
     GIT_COMMITTER_NAME: 'test',
     GIT_COMMITTER_EMAIL: 'test@example.com',
-    XDG_CONFIG_HOME: emptyConfigHome(),
+    XDG_CONFIG_HOME: tempDir(),
   });
   return applyEnv(env, extra);
 }
@@ -235,13 +236,6 @@ function applyEnv(env: NodeJS.ProcessEnv, changes: EnvChanges | undefined): Node
     else env[key] = value;
   }
   return env;
-}
-
-let configHome: string | undefined;
-
-function emptyConfigHome(): string {
-  configHome ??= tempDir();
-  return configHome;
 }
 
 const atExit: string[] = [];
