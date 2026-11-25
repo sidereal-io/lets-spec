@@ -111,6 +111,12 @@ test('the link check names a link to a heading another file does not have', (t) 
   assert.deepEqual(sourceLinkFindings(dir), [{ file: 'skills/lets-go/references/shape.md', name: '../SKILL.md#check-the-issue' }]);
 });
 
+test('the link check reads on after a line that starts with a code span of three backticks', (t) => {
+  const dir = tempDir(t);
+  smallText(dir, 'skills/lets-go/SKILL.md', ['# lets-go', '', '```text``` opens no fence.', '', 'Copy [the frame](references/frame.md).']);
+  assert.deepEqual(sourceLinkFindings(dir), [{ file: 'skills/lets-go/SKILL.md', name: 'references/frame.md' }]);
+});
+
 test('the link check names a skill link that leaves the skills folder', (t) => {
   const dir = tempDir(t);
   smallText(dir, 'README.md', ['# Demo']);

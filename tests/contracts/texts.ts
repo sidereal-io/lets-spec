@@ -137,9 +137,11 @@ function splitText(source: string): Parts {
       else text.code.push({ line, text: raw });
       return;
     }
-    const opening = /^ *(`{3,}|~{3,})/.exec(raw);
+    // A backtick after a backtick run opens no fence: ```` ```text``` ```` is
+    // a code span, and the lines after it are still prose.
+    const opening = /^ *(?:(`{3,})[^`]*$|(~{3,}))/.exec(raw);
     if (opening) {
-      fence = opening[1];
+      fence = opening[1] ?? opening[2];
       span = 0;
       return;
     }
