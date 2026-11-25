@@ -3,7 +3,7 @@
 // committed, the default, or ignored through a marked block in .gitignore.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { appendFileSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { appendFileSync, chmodSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { buildRelease, git, type LetsResult, pinnedEnv, repo, snapshot, tempDir } from '../support/lets.ts';
@@ -24,6 +24,12 @@ const linksEnd = '# END lets-spec links\n';
 const managedPaths = () => [...shippedSkills().map((skill) => `.agents/skills/${skill}`), 'openspec/schemas/lets-standard'];
 
 const chomp = (text: string) => text.replace(/\n+$/, '');
+
+// The release's one script, in a subfolder of a skill.
+const scripts = '.agents/skills/lets-verify-contracts/scripts';
+const script = `${scripts}/check.sh`;
+
+const modeOf = (path: string) => (statSync(path).mode & 0o777).toString(8);
 
 const isLink = (path: string) => {
   try {
@@ -67,6 +73,32 @@ test('a script keeps its executable bit', async (t) => {
   const mode = (file: string) => (statSync(join(p.path, file)).mode & 0o777).toString(8);
   assert.equal(mode('.agents/skills/lets-verify-contracts/scripts/check.sh'), '755');
   assert.equal(mode('.agents/skills/lets-verify-contracts/SKILL.md'), '644');
+});
+
+test('a script with the right bytes and no execute bit is made executable again', async (t) => {
+  const p = project(t);
+  await p.init();
+  chmodSync(join(p.path, script), 0o644);
+  const { code, output } = await p.sync();
+  assert.equal(code, 0, output);
+  assert.ok(output.includes('lets-spec: wrote 1 files. Commit them.'), output);
+  assert.equal(modeOf(join(p.path, script)), '755');
+});
+
+test('a mode that differs only in its write or group bits is left alone', async (t) => {
+  const p = project(t);
+  await p.init();
+  // Git tracks only the execute bit, so lets sync compares only that.
+  chmodSync(join(p.path, '.agents/skills/lets-build/SKILL.md'), 0o664);
+  chmodSync(join(p.path, script), 0o775);
+  const checked = await p.sync(['--check']);
+  assert.equal(checked.code, 0, checked.output);
+  assert.equal(checked.output, '');
+  const synced = await p.sync();
+  assert.equal(synced.code, 0, synced.output);
+  assert.equal(synced.output, '');
+  assert.equal(modeOf(join(p.path, '.agents/skills/lets-build/SKILL.md')), '664');
+  assert.equal(modeOf(join(p.path, script)), '775');
 });
 
 test('a fresh clone of a committed project passes --check and syncs quietly', async (t) => {
@@ -135,10 +167,24 @@ test('a skill the new release no longer ships is removed', async (t) => {
   makeRelease(old, ['lets-spawn']);
   await p.init({ WORKFLOW_RELEASE: old });
   assert.ok(existsSync(join(p.path, '.agents/skills/lets-spawn/SKILL.md')));
+  // A schema an earlier release shipped goes the same way.
+  p.write('openspec/schemas/lets-old/schema.yaml', 'old\n');
   const { code, output } = await p.sync();
   assert.equal(code, 0, output);
   assert.ok(!existsSync(join(p.path, '.agents/skills/lets-spawn')));
   assert.ok(output.includes('lets-spec: removed .agents/skills/lets-spawn.'), output);
+  assert.ok(!existsSync(join(p.path, 'openspec/schemas/lets-old')));
+  assert.ok(output.includes('lets-spec: removed openspec/schemas/lets-old.'), output);
+});
+
+test('a file the release no longer has is removed from its skill', async (t) => {
+  const p = project(t);
+  await p.init();
+  p.write('.agents/skills/lets-build/extra.md', 'extra\n');
+  const { code, output } = await p.sync();
+  assert.equal(code, 0, output);
+  assert.ok(!existsSync(join(p.path, '.agents/skills/lets-build/extra.md')));
+  assert.ok(existsSync(join(p.path, '.agents/skills/lets-build/SKILL.md')));
 });
 
 test('a skill or schema of another name is left alone', async (t) => {
@@ -387,10 +433,64 @@ test('--check fails on a missing skill and on an extra file', async (t) => {
   await p.init();
   rmSync(join(p.path, '.agents/skills/lets-shape'), { recursive: true });
   p.write('.agents/skills/lets-build/extra.md', 'extra\n');
+  p.write('.agents/skills/lets-old/SKILL.md', 'old\n');
   const { code, output } = await p.sync(['--check']);
   assert.equal(code, 1, output);
   assert.ok(output.includes('.agents/skills/lets-shape/SKILL.md is out of date'), output);
   assert.ok(output.includes('.agents/skills/lets-build/extra.md is out of date'), output);
+  assert.ok(output.includes('lets-spec: .agents/skills/lets-old is out of date. Run lets sync, then commit it.'), output);
+});
+
+// The project's script is the release's, in a real folder, executable.
+function assertScriptCopied(root: string) {
+  assert.ok(lstatSync(join(root, scripts)).isDirectory(), `${scripts} is not a real folder`);
+  assert.ok(lstatSync(join(root, script)).isFile(), `${script} is not a file`);
+  assert.deepEqual(readFileSync(join(root, script)), readFileSync(join(release(), 'overlay', script)));
+  assert.equal(modeOf(join(root, script)), '755');
+}
+
+test('a folder link inside a skill is replaced by a folder, and its target is left alone', async (t) => {
+  const p = project(t);
+  await p.init();
+  const outside = join(tempDir(t), 'outside');
+  mkdirSync(outside);
+  writeFileSync(join(outside, 'check.sh'), 'precious\n');
+  rmSync(join(p.path, scripts), { recursive: true });
+  symlinkSync(outside, join(p.path, scripts));
+  const checked = await p.sync(['--check']);
+  assert.equal(checked.code, 1, checked.output);
+  assert.ok(checked.output.includes(`lets-spec: ${script} is out of date.`), checked.output);
+  const { code, output } = await p.sync();
+  assert.equal(code, 0, output);
+  assert.equal(readFileSync(join(outside, 'check.sh'), 'utf8'), 'precious\n');
+  assertScriptCopied(p.path);
+  const after = await p.sync(['--check']);
+  assert.equal(after.code, 0, after.output);
+});
+
+test('a dangling folder link inside a skill is replaced by a folder', async (t) => {
+  const p = project(t);
+  await p.init();
+  rmSync(join(p.path, scripts), { recursive: true });
+  symlinkSync('/nonexistent/gone', join(p.path, scripts));
+  const { code, output } = await p.sync();
+  assert.equal(code, 0, output);
+  assertScriptCopied(p.path);
+});
+
+test('a folder where the release has a file is out of date, then replaced by the file', async (t) => {
+  const p = project(t);
+  await p.init();
+  rmSync(join(p.path, script));
+  p.write(`${script}/inside`, 'x\n');
+  const checked = await p.sync(['--check']);
+  assert.equal(checked.code, 1, checked.output);
+  assert.ok(checked.output.includes(`lets-spec: ${script} is out of date.`), checked.output);
+  const { code, output } = await p.sync();
+  assert.equal(code, 0, output);
+  assertScriptCopied(p.path);
+  const after = await p.sync(['--check']);
+  assert.equal(after.code, 0, after.output);
 });
 
 test('--check in committed mode fails while .gitignore still has the block', async (t) => {
