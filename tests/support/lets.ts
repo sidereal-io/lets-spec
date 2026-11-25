@@ -231,9 +231,13 @@ export function sharedState(dir: string, initial: unknown = {}): SharedState {
   dir = resolve(dir);
   mkdirSync(dir, { recursive: true });
   const file = join(dir, 'state.json');
-  writeFileSync(file, JSON.stringify(initial));
   // Each call at a gate leaves a file in gates/<gate>/; gates/<gate>.open opens it.
   const gates = join(dir, 'gates');
+  // Old gates and an old lock are state too: either would let a call pass a
+  // closed gate, or make every answer wait for a lock nobody holds.
+  rmSync(gates, { recursive: true, force: true });
+  rmSync(join(dir, 'lock'), { recursive: true, force: true });
+  writeFileSync(file, JSON.stringify(initial));
   const arrived = (gate: string) => existsSync(join(gates, gate)) ? readdirSync(join(gates, gate)).length : 0;
   return {
     dir,
