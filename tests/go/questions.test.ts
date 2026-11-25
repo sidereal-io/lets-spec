@@ -165,3 +165,66 @@ describe('go.questions', () => {
     for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], name);
   });
 });
+
+describe('the repository\'s lets config', () => {
+  test('the repository\'s go.questions wins over the user\'s', async (t) => {
+    assert.equal(printed(await delegateRepo(t, { user: ASK, repo: AUTO }).run(questions)), 'auto');
+  });
+
+  test('the user\'s value stays when the repository\'s lets config has no go, or go: null', async (t) => {
+    for (const repo of ['version: 3\n', 'version: 3\ngo: null\n']) {
+      assert.equal(printed(await delegateRepo(t, { user: ASK, repo }).run(questions)), 'ask', repo);
+    }
+  });
+
+  test('with only a repository\'s lets config, its value is printed', async (t) => {
+    assert.equal(printed(await delegateRepo(t, { repo: AUTO }).run(questions)), 'auto');
+  });
+
+  test('run from a subfolder, it reads the lets config at the repository\'s root', async (t) => {
+    const repo = delegateRepo(t, { user: ASK, repo: AUTO });
+    const docs = join(repo.cwd, 'docs');
+    mkdirSync(docs);
+    assert.equal(printed(await repo.run(questions, { cwd: docs })), 'auto');
+  });
+
+  test('outside a Git repository, it reads only the user\'s lets config', async (t) => {
+    const repo = delegateRepo(t, { user: ASK, notInRepo: true });
+    write(repo.repoConfig, AUTO);
+    assert.equal(printed(await repo.run(questions)), 'ask');
+  });
+
+  test('a bad go.questions in the repository\'s lets config exits 2, naming that file, not the user\'s', async (t) => {
+    const repo = delegateRepo(t, { user: ASK, repo: 'version: 3\ngo:\n  questions: loud\n' });
+    const result = await repo.run(questions);
+    rejected(result, repo.repoConfig, 'go.questions', '"loud"');
+    assert.ok(!result.stderr.includes(repo.userConfig), result.stderr);
+  });
+
+  test('a mapping at go.questions in the repository\'s lets config exits 2, naming that file, alone and over the user\'s ask', async (t) => {
+    const alone = delegateRepo(t, { repo: 'version: 3\ngo:\n  questions: {}\n' });
+    rejected(await alone.run(questions), alone.repoConfig, 'go.questions must be ask or auto, got {}');
+    const over = delegateRepo(t, { user: ASK, repo: 'version: 3\ngo:\n  questions: { a: 1 }\n' });
+    rejected(await over.run(questions), over.repoConfig, 'go.questions must be ask or auto, got {"a":1}');
+  });
+
+  test('a go that is a number in the repository\'s lets config replaces the user\'s go whole, and exits 2 naming that file', async (t) => {
+    const repo = delegateRepo(t, { user: ASK, repo: 'version: 3\ngo: 7\n' });
+    rejected(await repo.run(questions), repo.repoConfig, 'go must be a mapping, got 7');
+  });
+
+  test('a bad user\'s go.questions under a go: {} the repository merges into names the user\'s file', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ngo:\n  questions: loud\n', repo: 'version: 3\ngo: {}\n' });
+    rejected(await repo.run(questions), repo.userConfig, 'go.questions', '"loud"');
+  });
+
+  test('a YAML alias that holds itself prints the value in effect, and does not loop', async (t) => {
+    const alone = delegateRepo(t, { user: AUTO, repo: 'version: 3\ngo:\n  questions: ask\nunused: &u { self: *u }\n' });
+    assert.equal(printed(await alone.run(questions)), 'ask', 'only the repository holds the alias');
+    const shared = delegateRepo(t, {
+      user: 'version: 3\ngo:\n  questions: auto\nunused: &a { self: *a, x: 1 }\n',
+      repo: 'version: 3\nunused: &u { self: *u }\n',
+    });
+    assert.equal(printed(await shared.run(questions)), 'auto', 'both files hold the key');
+  });
+});

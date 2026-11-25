@@ -153,23 +153,6 @@ test('mergeDocuments lets a repository string, number or list replace the user\'
   assert.deepEqual(document, { version: 3, go: { questions: 'auto' }, backlog: 7, delegate: { resolvers: ['cli'], review: ['a'] } });
 });
 
-test('mergeDocuments keeps the user\'s value where the repository\'s key is null or absent', () => {
-  const { document } = merged('go:\n  questions: ask\ndelegate:\n  resolvers: [cli]\n', 'delegate:\n  resolvers: null\ngo: null\n');
-  assert.deepEqual(document, { version: 3, go: { questions: 'ask' }, delegate: { resolvers: ['cli'] } });
-});
-
-test('mergeDocuments gives the one document there is, or null for none', () => {
-  assert.deepEqual(merged('go:\n  questions: ask\n', null).document, { version: 3, go: { questions: 'ask' } });
-  assert.deepEqual(merged(null, 'go:\n  questions: auto\n').document, { version: 3, go: { questions: 'auto' } });
-  assert.equal(merged(null, null).document, null);
-});
-
-test('fileOf names the repository\'s lets config for a value that came from it', () => {
-  const { fileOf } = merged('delegate:\n  resolvers: [t3]\n', 'delegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: 42\n');
-  assert.equal(fileOf('delegate.resolvers'), REPO);
-  assert.equal(fileOf('delegate.review.code.guidance'), REPO);
-});
-
 test('fileOf names the repository\'s lets config below a value the repository replaced whole', () => {
   const { fileOf } = merged('delegate:\n  review:\n    code:\n      guidance: x\n', 'delegate:\n  review: [a]\n');
   assert.equal(fileOf('delegate.review.code.guidance'), REPO);
@@ -189,45 +172,4 @@ test('readLetsConfig reads the repository\'s lets config at the repository root,
   assert.deepEqual(document, { version: 3, go: { questions: 'auto' }, delegate: { resolvers: ['t3'] } });
   assert.equal(fileOf('go.questions'), REPO);
   assert.equal(fileOf('delegate.resolvers'), USER);
-});
-
-test('readLetsConfig asks git for the root of the folder it runs in', async () => {
-  const t = commandDeps({ repoConfig: 'version: 3\n' });
-  t.deps.cwd = '/repo/docs';
-  await readLetsConfig(t.deps);
-  assert.ok(t.io.calls.some(([cmd, args, opts]) => cmd === 'git' && args.join(' ') === 'rev-parse --show-toplevel' && opts.cwd === '/repo/docs'));
-});
-
-test('readLetsConfig reads only the user\'s lets config outside a Git repository', async () => {
-  const t = commandDeps({ config: 'version: 3\ngo:\n  questions: ask\n', repoConfig: 'version: 3\ngo:\n  questions: auto\n', notInRepo: true });
-  assert.deepEqual((await readLetsConfig(t.deps)).document, { version: 3, go: { questions: 'ask' } });
-});
-
-test('readLetsConfig reads only the user\'s lets config when the repository has none', async () => {
-  const t = commandDeps({ config: 'version: 3\ngo:\n  questions: ask\n' });
-  const { document, fileOf } = await readLetsConfig(t.deps);
-  assert.deepEqual(document, { version: 3, go: { questions: 'ask' } });
-  assert.equal(fileOf('go.questions'), USER);
-});
-
-test('fileOf names the repository\'s lets config for a mapping it set where a value is expected', () => {
-  const { fileOf } = merged(null, 'go:\n  questions: {}\n');
-  assert.equal(fileOf('go.questions'), REPO);
-  assert.equal(merged('go:\n  questions: ask\n', 'go:\n  questions: { a: 1 }\n').fileOf('go.questions'), REPO);
-});
-
-test('fileOf names the user\'s lets config for a value the user set under a mapping the repository merged into', () => {
-  const { fileOf } = merged('go:\n  questions: loud\n', 'go: {}\n');
-  assert.equal(fileOf('go.questions'), USER);
-});
-
-test('mergeDocuments keeps a recursive alias in the repository\'s lets config without looping', () => {
-  const { document, fileOf } = merged('go:\n  questions: auto\n', 'go:\n  questions: ask\nunused: &u { self: *u }\n');
-  assert.equal((document?.go as Record<string, unknown>).questions, 'ask');
-  assert.equal(fileOf('go.questions'), REPO);
-});
-
-test('mergeDocuments merges a recursive alias the user\'s lets config shares a key with, without looping', () => {
-  const { document } = merged('unused: &a { self: *a, x: 1 }\n', 'unused: &u { self: *u }\n');
-  assert.equal((document?.unused as Record<string, unknown>).x, 1);
 });
