@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import type { TestContext } from 'node:test';
 import type { StandIn } from '../support/lets.ts';
+import { beforeRemoval } from './repo.ts';
 
 // How long untilCalled and untilGone wait, unless told, and how often they look.
 const UNTIL_MS = 10_000;
@@ -129,18 +130,21 @@ export function untilGone(pid: number, ms = UNTIL_MS): Promise<void> {
 }
 
 /**
- * Registers a `t.after` that sends SIGTERM to the background step `pid`
- * when it still runs at the end of the test, so a test that fails half-way
- * leaves no process behind. Call it as soon as `step start` prints the pid.
- * Never fails, and the hook never fails either.
+ * At the end of the test, sends SIGTERM to the background step `pid` when
+ * it still runs, and waits for it to end, before the test's folders are
+ * removed. A test that fails half-way then leaves no process behind, and
+ * no process writes to a folder being removed. Call it as soon as
+ * `step start` prints the pid. Never fails. The hook fails only when the
+ * step still runs 10 seconds after SIGTERM.
  */
 export function cleanUpStep(t: TestContext, pid: number): void {
-  t.after(() => {
+  beforeRemoval(t, async () => {
     try {
       stopStep(pid);
     } catch {
       // It has ended already.
     }
+    await untilGone(pid);
   });
 }
 

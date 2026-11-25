@@ -56,6 +56,20 @@ export interface DelegateRepo {
   run(args: string[], options?: DelegateRunOptions): Promise<LetsResult>;
 }
 
+const beforeRemovalHooks = new WeakMap<TestContext, (() => Promise<void> | void)[]>();
+
+/**
+ * Runs `hook` at the end of the test `t`, before `delegateRepo` removes the
+ * test's folders, so a background process that writes there can end
+ * first. Hooks run in the order they were added. In a test that has made
+ * no `delegateRepo`, it is a plain `t.after`. Never fails.
+ */
+export function beforeRemoval(t: TestContext, hook: () => Promise<void> | void): void {
+  const hooks = beforeRemovalHooks.get(t);
+  if (hooks === undefined) t.after(hook);
+  else hooks.push(hook);
+}
+
 /**
  * Makes the folders for one test, which are removed after it: a user
  * config home, a folder for the stand-ins, and a Git repository that holds
@@ -64,6 +78,14 @@ export interface DelegateRepo {
  * is set. Throws when git fails.
  */
 export function delegateRepo(t: TestContext, setup: DelegateSetup = {}): DelegateRepo {
+  // node:test runs after hooks in the order they were added, so this one
+  // comes before the hooks that remove the folders.
+  if (!beforeRemovalHooks.has(t)) {
+    beforeRemovalHooks.set(t, []);
+    t.after(async () => {
+      for (const hook of beforeRemovalHooks.get(t) ?? []) await hook();
+    });
+  }
   const home = tempDir(t);
   const userConfig = join(home, 'lets', 'config.yaml');
   if (setup.user !== undefined) write(userConfig, setup.user);
