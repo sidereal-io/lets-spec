@@ -19,10 +19,15 @@ const step = { strategy: 'step', for: 'plan' } as const;
 const withT3 = () => commandDeps({ config: 'version: 3\ndelegate:\n  resolvers: [t3]\n', adapters: { t3: {} } });
 
 test('step instructions skip a resolver that runs no step', async () => {
-  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [cli, t3] }\n', adapters: { cli: { steps: false }, t3: {} } });
+  const deps = () => commandDeps({ config: 'version: 3\ndelegate: { resolvers: [cli, t3] }\n', adapters: { cli: { steps: false }, t3: {} } });
+  const t = deps();
   assert.equal(await run(step, t.deps), 0);
   assert.equal(JSON.parse(t.stdout()).resolver, 't3');
   assert.deepEqual(t.adapterCalls('options').map(([name]) => name), ['t3']);
+  // It still answers a review.
+  const r = deps();
+  assert.equal(await run(review, r.deps), 0);
+  assert.equal(JSON.parse(r.stdout()).resolver, 'cli');
 });
 
 test('a resolver whose options fail unexpectedly is exit 4 with the message', async () => {
