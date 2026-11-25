@@ -123,15 +123,20 @@ holds:
 - `backlog(t, rows, { config?, repoConfig?, files? })`: makes a
   temporary git repository with `git init`, writes the stand-in `gh`
   from `rows` into its own temporary folder, and writes the user's lets
-  config into a third folder, used as `XDG_CONFIG_HOME`, when `config`
-  is given. It writes `repoConfig` to `.lets/config.yaml`, and `files`
+  config to `lets/config.yaml` in a third folder, used as
+  `XDG_CONFIG_HOME`, when `config` is given. `lets` reads
+  `$XDG_CONFIG_HOME/lets/config.yaml` (`lets/src/config-dir.ts`). It writes `repoConfig` to `.lets/config.yaml`, and `files`
   at their paths in the repository. It returns:
   - `lets(...args)`: `runLets(['backlog', ...args], …)` in the
     repository, with the stand-in folder and `XDG_CONFIG_HOME` set;
   - `json(result)`: the one JSON object on the result's standard
     output;
   - `calls()`: the stand-in's log;
-  - `repo` and `configFile`, the paths a test checks a message names.
+  - `repo`, the repository's real path;
+  - `configFile`, the user's lets config,
+    `<XDG_CONFIG_HOME>/lets/config.yaml`, and `repoConfigFile`, the
+    repository's, `<repo>/.lets/config.yaml`: the paths a test checks a
+    message names. Each is returned whether or not the file was written.
 
 The tests' own builders, such as `ready.test.ts`'s `item()` and
 `stackRows()`, move with them into the new files, changed only to
@@ -185,13 +190,13 @@ arguments and the parts of the query and filter it checks today.
 |---|---|
 | `gh` cannot start | `runLets` with `env: { PATH: <an empty temporary folder> }`, and no stand-ins. git cannot start either, so `lets` reads only the user's lets config, which is absent; `gh` then fails to start. |
 | A read answered with text that is not JSON | A lookup row whose `stdout` is `not json`. |
-| A user's lets config that cannot be read, `EISDIR` | `config.yaml` in the `XDG_CONFIG_HOME` folder is a folder. |
-| A user's lets config that cannot be read, `EACCES` | `config.yaml` with mode `000`. The test skips, saying why, when the process runs as root, which can read the file anyway. |
+| A user's lets config that cannot be read, `EISDIR` | `configFile`, `lets/config.yaml` in the `XDG_CONFIG_HOME` folder, is a folder. |
+| A user's lets config that cannot be read, `EACCES` | `configFile` is a file with mode `000`. The test skips, saying why, when the process runs as root, which can read the file anyway. |
 | A `lets` block in `openspec/config.yaml` | `files: { 'openspec/config.yaml': … }`. |
 | `backlogProviderFor()` cases | One lets config file per case, through `lets backlog find x` or `key 149`. `key` runs no `gh` call, so a case that selects GitHub needs no table. |
 
-The message checks that named `CONFIG_FILE` or `REPO_CONFIG_FILE` name
-the real paths `backlog()` returns.
+A message check that named `CONFIG_FILE` now names `configFile`, and
+one that named `REPO_CONFIG_FILE` names `repoConfigFile`.
 
 ### 6. The kept tests stay where they are, and the pull request lists them
 

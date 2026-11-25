@@ -1,7 +1,7 @@
 ## 1. Contracts the tests build on
 
 - [ ] 1.1 [easy] A `standIn` row with `prefix: true` answers any call whose argument list starts with the row's `args`, element by element; a row without it still needs an exact match, and a call no row answers still exits 127. `StandInRow` and the doc comment on `standIn` in `tests/support/lets.ts` say so, including that a prefix row goes after the more specific rows it would shadow (design decision 1) (verify: `pnpm check && node --test "tests/sync/*.test.ts"`)
-- [ ] 1.2 [medium] `tests/backlog/github.ts` exports `REPO`, `PROJECT`, `lookup()`, `LOOKUP_ONE`, `json()`, `fail()`, `itemList()` and `backlog(t, rows, { config?, repoConfig?, files? })`, which returns `lets(...args)`, `json(result)`, `calls()`, `repo` and `configFile`, each with a doc comment stating what it makes and how it fails (design decision 2) (verify: `pnpm check`)
+- [ ] 1.2 [medium] `tests/backlog/github.ts` exports `REPO`, `PROJECT`, `lookup()`, `LOOKUP_ONE`, `json()`, `fail()`, `itemList()` and `backlog(t, rows, { config?, repoConfig?, files? })`, which returns `lets(...args)`, `json(result)`, `calls()`, `repo`, `configFile` (`<XDG_CONFIG_HOME>/lets/config.yaml`) and `repoConfigFile` (`<repo>/.lets/config.yaml`), each with a doc comment stating what it makes and how it fails (design decision 2) (verify: `pnpm check`)
 
 ## 2. The commands, tested through `lets` [depends-on: 1]
 
