@@ -22,11 +22,19 @@ gone*. Its *Shared decisions* section applies to this story.
 | D9 | Do the Node tests use `yq` or `jq`? | No. They edit YAML as text and read `flows.json` with `JSON.parse`. | Evidence: #309 packet |
 | D10 | Do the bats helpers `common.bash` and `release.bash` stay? | Yes, until #310. `tests/release-build.bats`, `tests/openspec-compat.bats` and `tests/skill-interfaces.bats` still load them. | Evidence: the `load` lines of those files |
 | D11 | Do `pnpm test` and `nix flake check` still run every test? | Yes. Both already run `node --test "tests/**/*.test.ts"` and `bats tests`, so new Node test files and the remaining bats files are picked up. | Evidence: `package.json`; `flake.nix` `node-tests` and `commands` |
+| D12 | Three tests in `tests/sync-rules.bats` check the wording of the release's rules text, and #308 bans such tests except after a regression. What happens to them? | Drop "the rules block names only plain things a project owner knows" and "the rules block says lets-go picks, claims and routes": they only look for phrases in the rules text. Keep "the rules say lets sync rewrites the copies, in both skills modes" as a regression test that names pull request #32, with its wording checks and its check that both skills modes give the same rules. So 68 tests move, not the 69 of D1. | Assumption |
+| D13 | Only the three sync bats files load `tests/support/project.bash`. Is it deleted with them? | Yes. Nothing else loads it. #310 removes `common.bash` and `release.bash`. | Assumption |
+| D14 | The README's *Development* section says `tests/` holds "`*.bats`: end-to-end tests of `lets sync`, …", which is false once this change merges. Does this change fix it? | Yes: only that table row, so the README stays true. The full rewrite of the README, `AGENTS.md` and `.github/workflows/ci.yml` stays with the epic's last story. | Assumption |
+| D15 | Do the terms *Black-box test* and *Stand-in* go into `openspec/glossary.md` on this branch? | No. This branch adds no glossary terms, and `openspec/glossary.md` stays unchanged. The terms keep their meaning from #308's *Shared decisions*. | User |
 
 ## Changes from the story
 
-None yet. Questions on three of the moved tests, on
-`tests/support/project.bash`, on the README and on two glossary terms
-are open; their answers go here and in the ledger.
+- **Cut: two tests of the rules text's wording** (D12). The story moves 69
+  tests. Two of them only look for phrases in the release's rules text,
+  which #308 bans unless a test guards a regression. 68 tests move.
+- **Added: delete `tests/support/project.bash`** (D13). Only the three
+  sync bats files load it.
+- **Added: fix one row of the README's *Development* table** (D14), so
+  it no longer says the bats files test `lets sync`.
 
-Confirmed by user: no
+Confirmed by user: yes
