@@ -15,7 +15,10 @@ function ghMentions(root: string): Map<string, string[]> {
   const mentions = new Map<string, string[]>();
   for (const text of readTexts(root)) {
     for (const piece of [...text.spans.map((span) => span.text), ...text.code.map((line) => line.text.trimStart())]) {
-      const match = /^gh ([a-z]+ [a-z-]+)/.exec(piece);
+      // The command is the whole word, so `gh pr view2` is not `gh pr view`;
+      // a flag such as `gh pr --help` is no command. For `gh api`, the word
+      // stops at the `/` of an endpoint.
+      const match = /^gh ([a-z]+ [a-z][\w-]*)/.exec(piece);
       if (match === null) continue;
       const files = mentions.get(match[1]) ?? [];
       if (!files.includes(text.path)) files.push(text.path);
@@ -76,13 +79,18 @@ test('the gh check names a command gh does not know', async (t) => {
   smallText(dir, 'skills/demo/SKILL.md', [
     '# Demo',
     '',
-    'Run `gh pr view 12`, then `gh api graphql -f query=@q.graphql`:',
+    'Run `gh pr view 12`, then `gh api graphql -f query=@q.graphql`, `gh pr --help`',
+    'and `gh api --method POST graphql`:',
     '',
     '```bash',
     'gh pr merge-all --auto',
+    'gh pr view2 12',
     '```',
   ]);
-  assert.deepEqual(await ghFindings(dir), [{ file: 'skills/demo/SKILL.md', name: 'gh pr merge-all' }]);
+  assert.deepEqual(await ghFindings(dir), [
+    { file: 'skills/demo/SKILL.md', name: 'gh pr merge-all' },
+    { file: 'skills/demo/SKILL.md', name: 'gh pr view2' },
+  ]);
 });
 
 test('the gh check fails, naming gh, when gh is not on PATH', async (t) => {
