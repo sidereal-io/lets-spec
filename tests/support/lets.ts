@@ -167,6 +167,8 @@ export function buildRelease(out: string, schemas: string[], skills: string[]): 
  * `dir` cannot be written.
  */
 export function standIn(dir: string, name: string, table: StandInRow[]): StandIn {
+  // The program runs in another folder, so the paths it holds are absolute.
+  dir = resolve(dir);
   const tableFile = join(dir, `.${name}.table.json`);
   const log = join(dir, `.${name}.log`);
   writeFileSync(tableFile, JSON.stringify(table));
