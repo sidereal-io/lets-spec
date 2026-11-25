@@ -43,8 +43,8 @@ In a repository with two or more products, `openspec/discovery.md` SHALL be the 
 - **THEN** `openspec/discovery.md` has a `## Products` heading, a row for each product that links `discovery/web-shop.md` and `discovery/warehouse.md`, and has no `## Journey Map` section
 
 #### Scenario: The template exists
-- **WHEN** the skill-interfaces test reads `skills/lets-shape/templates/`
-- **THEN** it finds a table-of-contents template that the skill links
+- **WHEN** a reader reads `skills/lets-shape/templates/`
+- **THEN** the reader finds a table-of-contents template that the skill links
 
 ### Requirement: A shared persona lives in the root
 When a second product adopts a persona that one product's map holds, `lets-shape` SHALL move the persona's entry to the root map. Each product map that serves the persona SHALL then name it with a link to the root entry and hold no copy of the entry. A persona that only one product serves SHALL stay in that product's map.
