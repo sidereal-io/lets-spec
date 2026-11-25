@@ -130,9 +130,12 @@ for no change in behavior. A later story may move it.
   `{ XDG_CONFIG_HOME: undefined, HOME: <h> }` or
   `{ XDG_CONFIG_HOME: '', HOME: <h> }`, with `<h>` a new temporary
   folder. The test writes `<h>/.config/lets/config.yaml` itself.
-- The same test also writes a file under `repo.home` with another value,
-  and a run with `XDG_CONFIG_HOME` set shows that the file under `HOME`
-  is not read. So each place is shown to win only when it should.
+- The same test also writes a file under `repo.home` with another value.
+  A run with `XDG_CONFIG_HOME` set and `HOME: <h>` shows that the file
+  under `<h>/.config` is not read. Without `HOME: <h>`, that run would
+  show nothing, because `HOME` would still be the developer's own home.
+  So each place is shown to win only when it should, and no test writes
+  under the developer's home.
 
 ### 4. Keeping the developer's T3 out of a result
 
@@ -234,7 +237,7 @@ tests above.
 | mergeDocuments keeps the user's value where the repository's key is null or absent | Q15; existing *a null chain in the repository's lets config keeps the user's chain* |
 | mergeDocuments gives the one document there is, or null for none | Q16, Q18, Q3 |
 | fileOf names the repository's lets config for a value that came from it | Q19; existing *a bad resolver in the repository's lets config* and *bad guidance … a number in the repository's config* |
-| fileOf names the repository's lets config below a value the repository replaced whole | I10 |
+| fileOf names the repository's lets config below a value the repository replaced whole | I10 shows the repository's file is named for the key it replaced, `delegate.review`. A key below it is **not shown**: `guidanceFor` stops at a `delegate.review` that is not a mapping, and every other check stops at its own container, so no command asks for the file of a key below a value that is not a mapping. |
 | fileOf names the user's lets config for a value the user set, or that neither file sets | I11 for a value the user set. A key neither file sets: **deleted without cover** (D6). |
 | readLetsConfig reads the repository's lets config at the root, over the user's | Q14, I11 |
 | readLetsConfig asks git for the root of the folder it runs in | Q17; existing *a review run from a subfolder* |
@@ -287,14 +290,15 @@ says so, and names the case.
 - [A test that points `HOME` at a temporary folder changes how `git` or
   Node behave] → `pinnedEnv` already sets `GIT_CONFIG_GLOBAL=/dev/null`
   and `GIT_CONFIG_NOSYSTEM=1`, so `git` reads nothing from `HOME`. Only
-  Q2's runs change `HOME`.
+  the runs of Q1 and Q2 change `HOME`.
 - [A recursive YAML alias makes `lets` loop, and the test hangs] →
   `runLets` stops a run at 30 seconds and fails the test with a message.
 - [A behavior a removed test checked is lost] → Decision 6 names the
-  cover of each removed test. Two parts of old tests are not shown:
-  `backlog: 7` (D3) and the merged value under a recursive alias. The
-  `fileOf` case for a key neither file sets goes without cover (D6).
-  The pull request lists all three.
+  cover of each removed test. Three parts of old tests are not shown:
+  `backlog: 7` (D3), the merged value under a recursive alias, and
+  `fileOf` for a key below a value the repository replaced whole. No
+  command reads any of them. The `fileOf` case for a key neither file
+  sets goes without cover (D6). The pull request lists all four.
 - [Many runs of `lets` slow the suite] → About 70 runs, each a short
   Node process. Node runs the test files in parallel, as it does today.
 - [`Q5` checks the YAML library's text, `line 3, column 1.`] → The

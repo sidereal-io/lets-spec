@@ -1,6 +1,6 @@
 <!-- Plain language: Each task must make sense to an agent and reviewer without the planning conversation. Name an observable outcome, its location when needed, and how to verify it. Preserve checkbox syntax and tags. -->
 
-<!-- Build by skills/lets-verify-contracts/SKILL.md, not test-first (D1): contracts first, then the black-box tests. Every test is a Node test; write no bats test. Each task that adds black-box tests also deletes the old tests they now cover, as design decision 6 maps them. Q1 to Q23 and I1 to I12 are the tests in design decision 5. -->
+<!-- Build by skills/lets-verify-contracts/SKILL.md, not test-first (D1): contracts first, then the black-box tests. Every test is a Node test; write no bats test. Each task that adds black-box tests also deletes the old tests they now cover, as design decision 6 maps them. An old test goes only when every case it checks is covered; until then, delete only its covered cases. For example, `a bad config exits 2 with one lets go line` in `tests/lets/go/questions.test.ts` loses its `version: 2` case in 2.2 and goes in 2.3, with Q11. Q1 to Q23 and I1 to I12 are the tests in design decision 5. -->
 
 ## 1. Contracts
 
@@ -22,7 +22,7 @@
 ## 4. Integration [depends-on: 3]
 
 - [ ] 4.1 [easy] The `tests/` row of the README's *Development* table says that `go/` holds the black-box tests of `lets go questions`, which run it in a temporary git repository with real lets config files (verify: `git grep -n 'go/.: black-box tests of .lets go questions' README.md`)
-- [ ] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new file in the Nix sandbox. The pull request lists each deleted test with the test that now covers it, as design decision 6 maps them; says no unit test of the lets config stays (D6); and names the three checks with no cover: `fileOf` for a key neither file sets, `backlog: 7` (D3), and the merged value under a recursive alias (verify: `nix flake check`)
+- [ ] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new file in the Nix sandbox. The pull request lists each deleted test with the test that now covers it, as design decision 6 maps them; says no unit test of the lets config stays (D6); and names the four checks with no cover: `fileOf` for a key neither file sets, `backlog: 7` (D3), the merged value under a recursive alias, and `fileOf` for a key below a value the repository replaced whole (verify: `nix flake check`)
 
 ## Deviations Ledger
 
