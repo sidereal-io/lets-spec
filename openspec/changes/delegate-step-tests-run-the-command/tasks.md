@@ -31,7 +31,7 @@ test awaits `untilGone` after `stopStep` (design decision 3).
 
 ## 4. Integration [depends-on: 3]
 
-- [ ] 4.1 [easy] `tests/lets/delegate/fixtures/` keeps only the exports, options and fake-io fields a remaining test uses, as design decision 7 says, and every test that imports it still passes (verify: `pnpm check && node --test "tests/lets/**/*.test.ts"`)
+- [x] 4.1 [easy] `tests/lets/delegate/fixtures/` keeps only the exports, options and fake-io fields a remaining test uses, as design decision 7 says, and every test that imports it still passes (verify: `pnpm check && node --test "tests/lets/**/*.test.ts"`) (✓ `pnpm check && node --test "tests/lets/**/*.test.ts"` passed, 660 tests)
 - [ ] 4.2 [easy] The `tests/` row of the README's *Development* table says that `delegate/` holds the black-box tests of the `lets delegate` instructions, `review run`, `handoff run`, `step run`, `step start` and `step wait` commands (verify: `git grep -n 'step start. and .step wait' README.md`)
 - [ ] 4.3 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new files in the Nix sandbox. The pull request lists each test this story kept with its reason (D5, D9, D11), each test it deleted with the test that now covers it, and the two `review run` and `step run` tests that cover `source-tree.test.ts` (D6) (verify: `nix flake check`)
 

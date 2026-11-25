@@ -1,28 +1,20 @@
-// Deps for the delegate commands. git is scripted; the resolvers built into
-// lets are fake adapters, but for subagent, which is the real one, writing
-// to a fake io. Every adapter records each call it takes.
+// Deps for the delegate commands. git is scripted: the repository root is
+// /repo, HEAD is HEAD, and the tree is clean. The resolvers built into lets
+// are fake adapters, but for subagent, which is the real one, writing to a
+// fake io. Every adapter records each call it takes.
 //
 // options:
 //   adapters:  how each resolver built into lets behaves, by name, as a
 //              FakeResolver; t3 and cli decline by default, and subagent is
 //              the real one
 //   real:      a real adapter to use in place of a fake, by name, such as
-//              the cli adapter on the kit's fake io
-//   gitBefore: what `git status -z` prints before the session
-//   gitAfter:  what it prints after; default gitBefore
-//   gitAfterFails: true when `git status` fails after the session
-//   head:      what `git rev-parse HEAD` prints; default HEAD
-//   headAfter: what it prints once the session has run, as after a session
-//              that made a commit; default head
-//   headFails: true when `git rev-parse HEAD` fails
+//              the T3 adapter on a fake io
 //   files:     the files there are; default the prompt file /repo/p.md
 //   config:    the text of the user's lets config, CONFIG, when there is one
 //   repoConfig: the text of the repository's lets config, REPO_CONFIG, when
 //              there is one
 //   notInRepo: true when `git rev-parse --show-toplevel` fails, as outside a
 //              Git repository
-//   roots:     what `git rev-parse --show-toplevel` prints in each folder, by
-//              the folder; default /repo
 import type { ResolverName } from '../../../../lets/src/delegate/config.ts';
 import type { Deps } from '../../../../lets/src/io.ts';
 import type { Adapter, Handle, RunInput, StartInput, StepInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
@@ -31,31 +23,25 @@ import { createAdapter as subagentAdapter } from '../../../../lets/src/resolvers
 import { fakeIo as fakeResolverIo } from '../../resolvers/kit/fixtures/fake-io.ts';
 import { fakeIo } from './fake-io.ts';
 
-export const PROMPT_FILE = '/repo/p.md';
+const PROMPT_FILE = '/repo/p.md';
 export const CONFIG = '/home/u/.config/lets/config.yaml';
 export const REPO_CONFIG = '/repo/.lets/config.yaml';
-// The commit at HEAD, unless a test gives another.
+// The commit at HEAD.
 export const HEAD = '0123456789abcdef0123456789abcdef01234567';
 // The final message of a step that went well.
-export const DONE_REPORT = 'All done.\n\n```step-report\noutcome: done\nevidence:\n  - commit 3f2a1c0\n```\n';
+const DONE_REPORT = 'All done.\n\n```step-report\noutcome: done\nevidence:\n  - commit 3f2a1c0\n```\n';
 
 // How a fake resolver behaves. By default it detects, starts sessions,
 // runs steps, lists gpt/fake-model, and answers run with FINDINGS on handle
-// <name> <name>-1 in the checkout it was asked for, start with handle <name> <name>-1, and step with a done
-// report on handle <name> <name>-1.
+// <name> <name>-1 in the checkout it was asked for, start with handle
+// <name> <name>-1, and step with a done report on handle <name> <name>-1.
 //   declines: detect() is false
-//   headless: it has no start
 //   steps:    false when it has no step
-//   options:  the models options lists
-//   warnings: what options warns, in order
-//   refuse:   the models run and start refuse, as --model gives them
+//   refuse:   the models run, start and step refuse, as --model gives them
 //   run, start, step: the answer, or the error to throw
 //   finish:   the error finish throws
-export type FakeResolver = {
+type FakeResolver = {
   declines?: boolean;
-  headless?: boolean;
-  options?: string[];
-  warnings?: string[];
   refuse?: string[];
   run?: { text?: string; handle?: Handle; checkout?: string | null } | Error;
   start?: Handle | { instructions: string } | Error;
@@ -65,12 +51,12 @@ export type FakeResolver = {
 };
 
 // One call an adapter took: the resolver, the method, and its input.
-export type AdapterCall = [ResolverName, string, unknown];
+type AdapterCall = [ResolverName, string, unknown];
 
 // The model an input asks for, as --model gives it.
 const modelOf = ({ family, model }: { family: string; model: string | null }) => (model === null ? family : `${family}/${model}`);
 
-export function fakeAdapter(name: ResolverName, behaviour: FakeResolver = {}): Adapter {
+function fakeAdapter(name: ResolverName, behaviour: FakeResolver = {}): Adapter {
   const handle = { kind: name, id: `${name}-1` };
   const answer = <T>(value: T | Error): T => {
     if (value instanceof Error) throw value;
@@ -82,21 +68,16 @@ export function fakeAdapter(name: ResolverName, behaviour: FakeResolver = {}): A
   return {
     name,
     detect: () => behaviour.declines !== true,
-    async options(warn) {
-      for (const message of behaviour.warnings ?? []) warn(message);
-      return behaviour.options ?? ['gpt/fake-model'];
-    },
+    options: async () => ['gpt/fake-model'],
     async run(input) {
       refuses(input);
       const { text = 'FINDINGS', handle: made = handle, checkout = input.cwd } = answer(behaviour.run ?? {});
       return { text, handle: made, checkout };
     },
-    ...(behaviour.headless ? {} : {
-      async start(input: StartInput) {
-        refuses(input);
-        return answer(behaviour.start ?? handle);
-      },
-    }),
+    async start(input: StartInput) {
+      refuses(input);
+      return answer(behaviour.start ?? handle);
+    },
     ...(behaviour.steps === false ? {} : {
       async step(input: StepInput) {
         refuses(input);
@@ -151,37 +132,24 @@ function recorded(adapter: Adapter, calls: AdapterCall[]): Adapter {
 type Options = {
   adapters?: Partial<Record<ResolverName, FakeResolver>>;
   real?: Partial<Record<ResolverName, Adapter>>;
-  gitBefore?: string;
-  gitAfter?: string;
-  gitAfterFails?: boolean;
-  head?: string;
-  headAfter?: string;
-  headFails?: boolean;
   files?: Record<string, string>;
   config?: string;
   repoConfig?: string;
   notInRepo?: boolean;
-  roots?: Record<string, string>;
 };
 
 export function commandDeps({
-  adapters = {}, real = {}, gitBefore = '', gitAfter = gitBefore, gitAfterFails = false, head = HEAD, headAfter = head, headFails = false, files = { [PROMPT_FILE]: 'PROMPT TEXT' }, config, repoConfig, notInRepo = false, roots = {},
+  adapters = {}, real = {}, files = { [PROMPT_FILE]: 'PROMPT TEXT' }, config, repoConfig, notInRepo = false,
 }: Options = {}) {
   const io = fakeIo({ files: { ...files, ...(config === undefined ? {} : { [CONFIG]: config }), ...(repoConfig === undefined ? {} : { [REPO_CONFIG]: repoConfig }) } });
   const calls: AdapterCall[] = [];
-  let statusCalls = 0;
   io.execFile = async (cmd, args, opts = {}) => {
     io.calls.push([cmd, args, opts]);
-    if (cmd === 'git' && args.join(' ') === 'rev-parse HEAD') {
-      if (headFails) return { stdout: 'HEAD\n', stderr: 'fatal: not a git repository', code: 128 };
-      return { stdout: `${calls.some(([, method]) => method === 'run') ? headAfter : head}\n`, stderr: '', code: 0 };
-    }
+    if (cmd === 'git' && args.join(' ') === 'rev-parse HEAD') return { stdout: `${HEAD}\n`, stderr: '', code: 0 };
     if (cmd === 'git' && args[0] === 'rev-parse' && notInRepo) return { stdout: '', stderr: 'fatal: not a git repository', code: 128 };
-    if (cmd === 'git' && args[0] === 'rev-parse') return { stdout: `${roots[opts.cwd ?? ''] ?? '/repo'}\n`, stderr: '', code: 0 };
-    if (cmd === 'git') {
-      if (statusCalls++ === 0) return { stdout: gitBefore, stderr: '', code: 0 };
-      return gitAfterFails ? { stdout: '', stderr: 'index.lock exists', code: 128 } : { stdout: gitAfter, stderr: '', code: 0 };
-    }
+    if (cmd === 'git' && args[0] === 'rev-parse') return { stdout: '/repo\n', stderr: '', code: 0 };
+    // git status: a clean tree.
+    if (cmd === 'git') return { stdout: '', stderr: '', code: 0 };
     throw new Error(`no program but git runs here: ${cmd}`);
   };
 
