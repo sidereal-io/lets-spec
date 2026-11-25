@@ -21,7 +21,7 @@
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [medium] Every check passes: `pnpm test`, `mise run check` and `nix flake check`. Nothing outside `openspec/` and `docs/decisions/` names `skill-interfaces`; `openspec/specs/` stops naming it when archive applies this change's deltas. The pull request lists each bats test of a name or a link with what replaces it, as design.md's table does, and says that this story added no unit test and kept none (verify: `nix flake check`)
+- [x] 3.1 [medium] Every check passes: `pnpm test`, `mise run check` and `nix flake check`. Nothing outside `openspec/` and `docs/decisions/` names `skill-interfaces`; `openspec/specs/` stops naming it when archive applies this change's deltas. The pull request lists each bats test of a name or a link with what replaces it, as design.md's table does, and says that this story added no unit test and kept none (verify: `nix flake check`) (✓ `nix flake check` passed; `pnpm test` passed, 1009 Node tests and 30 bats tests; `mise run check` passed, 19 of 19; `git grep skill-interfaces` outside `openspec/` and `docs/decisions/` found nothing; pull request #331 holds the table)
 
 ## Deviations Ledger
 
