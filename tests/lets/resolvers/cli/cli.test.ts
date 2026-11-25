@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { RunInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
 import { createAdapter, runCommand } from '../../../../lets/src/resolvers/cli/cli.ts';
-import type { ExecResult } from '../../../../lets/src/resolvers/kit/io.ts';
 import { fakeIo } from '../kit/fixtures/fake-io.ts';
 
 const TRICKY = 'Say "hi".\nIt\'s fine.';
@@ -76,62 +75,6 @@ test('agy writes in accept-edits mode with permissions skipped, the prompt as th
 test('agy takes the step\'s model with the effort added', () => {
   assert.deepEqual(command({ mode: 'write', family: 'gemini', effort: 'high', model: 'gemini-3.8-flash', timeoutMinutes: 30 }).args,
     ['--mode', 'accept-edits', '--dangerously-skip-permissions', '--effort', 'high', '--model', 'gemini-3.8-flash-high', '--print-timeout', '30m', '-p', TRICKY]);
-});
-
-// What codex debug models and agy models print, trimmed to the fields read.
-const codexModels = (...models: [string, string][]) => JSON.stringify({ models: models.map(([slug, visibility]) => ({ slug, visibility })) });
-const agyModels = (...ids: string[]) => `Fetching available models...\n${ids.map((id) => `${id}\t${id.toUpperCase()}`).join('\n')}\n`;
-type Listing = ExecResult | Error;
-// An io with the CLIs on PATH, whose listings answer as given.
-function listingIo(commands: string[], listings: Record<string, Listing>) {
-  const io = fakeIo({ commands, execFile: async (cmd, args, options = {}) => {
-    io.calls.push([cmd, args, options]);
-    const listing = listings[cmd] ?? OK;
-    if (listing instanceof Error) throw listing;
-    return listing;
-  } });
-  return io;
-}
-const options = async (io: ReturnType<typeof fakeIo>) => {
-  const warnings: string[] = [];
-  return { options: await createAdapter(io).options((message) => warnings.push(message)), warnings };
-};
-
-test('each listing has 20 seconds, and runs without the session markers', async () => {
-  const io = listingIo(['codex', 'agy'], { codex: { ...OK, stdout: codexModels() }, agy: { ...OK, stdout: agyModels() } });
-  await options(io);
-  for (const [, , { timeoutMs, env }] of io.calls) {
-    assert.equal(timeoutMs, 20_000);
-    assert.equal(env?.CLAUDECODE, undefined);
-  }
-});
-
-test('the listings run at the same time', async () => {
-  const started: string[] = [];
-  let release!: () => void;
-  const gate = new Promise<void>((resolve) => { release = resolve; });
-  const io = fakeIo({ commands: ['codex', 'agy'], execFile: async (cmd) => {
-    started.push(cmd);
-    if (started.length === 2) release();
-    await gate;
-    return { ...OK, stdout: cmd === 'codex' ? codexModels(['gpt-6-luna', 'list']) : agyModels('gemini-3.8-flash-high') };
-  } });
-  assert.deepEqual((await options(io)).options, ['gpt/gpt-6-luna', 'gemini/gemini-3.8-flash']);
-});
-
-test('a listing that fails lists the bare family, and warns naming the CLI', async () => {
-  const failures: [string, Listing][] = [
-    ['exits non-zero', { stdout: '', stderr: 'not logged in', code: 1 }],
-    ['runs too long', { stdout: '', stderr: '', code: 1, timedOut: true }],
-    ['prints what cannot be read', { ...OK, stdout: 'not json' }],
-    ['cannot start', new Error('cannot run codex: spawn codex EACCES')],
-  ];
-  for (const [what, codex] of failures) {
-    const { options: listed, warnings } = await options(listingIo(['codex', 'claude'], { codex }));
-    assert.deepEqual(listed, ['gpt', 'claude'], what);
-    assert.equal(warnings.length, 1, what);
-    assert.match(warnings[0], /codex/, what);
-  }
 });
 
 const run: RunInput = { name: 'x', prompt: TRICKY, cwd: '/r', family: 'gpt', model: null, effort: 'high' };

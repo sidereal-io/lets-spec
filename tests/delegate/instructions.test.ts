@@ -211,3 +211,28 @@ test('a codex listing that fails lists the bare gpt family, with one warning tha
     }
   }
 });
+
+// Each listing has 20 seconds. One after the other, two hanging listings
+// would take at least 40, so a run under 40 shows they ran at once. The
+// run's own limit is above the 52 seconds two in a row could take with
+// lets's 5-second kill grace, so a lets that ran them in turn fails the
+// time check, not the run.
+test('two listings that hang are both stopped at their limit, at the same time, and their families listed bare', async (t) => {
+  let clis: { codex: ReturnType<typeof codex>; agy: ReturnType<typeof agy> } | undefined;
+  const started = Date.now();
+  const run = await instructions(t, 'review', 'code', {
+    user: CLI,
+    standIns: (dir) => { clis = { codex: codex(dir, 'hangs'), agy: agy(dir, 'hangs') }; },
+    timeoutMs: 60_000,
+  });
+  const elapsed = Date.now() - started;
+  assert.ok(elapsed < 40_000, `the run took ${elapsed} ms`);
+  assert.deepEqual(line(run).options, ['gpt', 'gemini']);
+  const warnings = run.result.stderr.split('\n').filter((text) => text !== '');
+  assert.equal(warnings.length, 2, run.result.stderr);
+  for (const warning of warnings) assert.match(warning, /^lets delegate: /);
+  assert.equal(warnings.filter((text) => /\bcodex\b/.test(text)).length, 1, run.result.stderr);
+  assert.equal(warnings.filter((text) => /\bagy\b/.test(text)).length, 1, run.result.stderr);
+  assert.deepEqual(clis!.codex.calls(), [['debug', 'models']]);
+  assert.deepEqual(clis!.agy.calls(), [['models']]);
+});

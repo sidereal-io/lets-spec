@@ -22,12 +22,6 @@ test('a review asks for a resolver that can run, and a handoff for one that can 
   assert.deepEqual(JSON.parse(h.stdout()), { strategy: 'handoff', for: 'apply', resolver: 'subagent', options: [], guidance: null });
 });
 
-test('each warning of the resolver is a line on stderr', async () => {
-  const t = withT3('', { warnings: ['the manifest is old', 'claude is slow'] });
-  assert.equal(await run(review, t.deps), 0);
-  assert.equal(t.stderr(), 'lets delegate: the manifest is old\nlets delegate: claude is slow\n');
-});
-
 test('the guidance for the intent comes from the config', async () => {
   const t = withT3('review:\n  code:\n    guidance: Use the strongest gpt model.\n');
   assert.equal(await run(review, t.deps), 0);
