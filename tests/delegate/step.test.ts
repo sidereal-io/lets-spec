@@ -8,11 +8,12 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { agy, claude, codex, git, type LetsResult } from '../support/lets.ts';
+import { agy, claude, codex, git, type LetsResult, unstartable } from '../support/lets.ts';
 import { delegateRepo, PROMPT } from './repo.ts';
 import { agyWrite, assertClock, claudeWrite, codexWrite, ending, stepRun, type StepArgs } from './steps.ts';
 
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
+const CLI_THEN_SUBAGENT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
 const DONE = ending('outcome: done\nevidence:\n  - "commit 3f2a1c0"\n');
 const NEEDS_INPUT = ending('outcome: needs-input\nquestions:\n  - question: Which schema?\n');
 const FAILED = ending('outcome: failed\nreason: tests fail on main\n');
@@ -33,6 +34,20 @@ function recordOf(result: LetsResult): Record<string, unknown> {
   assert.equal(result.code, 0, result.output);
   return JSON.parse(result.stderr.trim().split('\n').at(-1)!);
 }
+
+// A run that failed with code: nothing on stdout, and stderr that starts
+// with lets's prefix.
+function failed(result: LetsResult, code: number) {
+  assert.equal(result.code, code, result.output);
+  assert.equal(result.stdout, '');
+  assert.match(result.stderr, /^lets delegate: /);
+}
+
+// Every family CLI on PATH, each answering only its model listing.
+const everyCli = (dir: string) => ({ codex: codex(dir), claude: claude(dir), agy: agy(dir) });
+const noCalls = (clis: ReturnType<typeof everyCli>) => {
+  for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], name);
+};
 
 describe('step run', () => {
   test('codex runs in its write mode with -m, in the root, with the prompt on stdin, from a subfolder', async (t) => {
@@ -191,5 +206,109 @@ describe('step run', () => {
     claude(commits.standIns, { rows: [{ args: claudeWrite(), files: { 'a.md': 'a\n' }, commit: 'a session commit', stdout: DONE }] });
     assert.equal(reportOf(await commits.run(stepRun())).outcome, 'done');
     assert.notEqual(git(commits.cwd, 'rev-parse', 'HEAD').stdout.trim(), commits.head);
+  });
+
+  test('when every resolver in the chain declines, a step is exit 2, naming the config', async (t) => {
+    // No CLI on PATH, so cli declines.
+    const repo = delegateRepo(t, { user: CLI });
+    const result = await repo.run(stepRun());
+    failed(result, 2);
+    assert.match(result.stderr, /every resolver declined/);
+    assert.ok(result.stderr.includes(repo.userConfig), result.stderr);
+  });
+
+  test('a resolver that runs no step passes it down the chain: with no CLI, subagent answers with exit 3', async (t) => {
+    const repo = delegateRepo(t, { user: CLI_THEN_SUBAGENT });
+    const result = await repo.run(stepRun());
+    failed(result, 3);
+    assert.match(result.stderr, /no resolver started a session.*subagent.*\.workspace\/lets-delegate\/build-x\.prompt\.md/);
+  });
+
+  test('a resolver lets does not know is exit 2, naming the file and the entry, and no CLI runs', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [codex] }\n' });
+    const clis = everyCli(repo.standIns);
+    const result = await repo.run(stepRun());
+    failed(result, 2);
+    assert.match(result.stderr, new RegExp(`${repo.userConfig}.*codex`));
+    noCalls(clis);
+  });
+
+  test('a step ignores the guidance, even one that is not a string', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate:\n  resolvers: [cli]\n  step:\n    build:\n      guidance: 42\n' });
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
+    assert.equal(reportOf(await repo.run(stepRun())).outcome, 'done');
+  });
+
+  test('a bad --model is exit 2, naming it, and no CLI runs', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    const clis = everyCli(repo.standIns);
+    const result = await repo.run(stepRun({ models: ['gpt', 'llama/llama-4'] }));
+    // lets's option parser rejects it, before step run starts.
+    assert.equal(result.code, 2, result.output);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /--model .*llama\/llama-4/);
+    noCalls(clis);
+  });
+
+  test('a refused model passes to the next one on the same resolver', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    const clis = {
+      codex: codex(repo.standIns, [], { rows: [{ args: codexWrite(repo.cwd, { model: 'gpt-6-astra' }), stderr: 'error: model gpt-6-astra not available\n', code: 1 }] }),
+      claude: claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] }),
+    };
+    const result = await repo.run(stepRun({ models: ['gpt/gpt-6-astra', 'claude'] }));
+    assert.equal(reportOf(result).outcome, 'done');
+    assert.equal(recordOf(result).family, 'claude');
+    assert.equal(clis.codex.calls().length, 1);
+    assert.equal(clis.claude.calls().length, 1);
+  });
+
+  test('a step whose every model is refused is exit 3, with one line per model', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    codex(repo.standIns, [], { rows: [{ args: codexWrite(repo.cwd, { model: 'gpt-6-astra' }), stderr: 'error: model gpt-6-astra not available\n', code: 1 }] });
+    agy(repo.standIns, [], { rows: [{ args: agyWrite('high', '120m', PROMPT), stderr: 'model not found\n', code: 1 }] });
+    const result = await repo.run(stepRun({ models: ['gpt/gpt-6-astra', 'gemini'] }));
+    failed(result, 3);
+    assert.match(result.stderr, /^lets delegate: gpt\/gpt-6-astra: codex refused: exit 1: error: model gpt-6-astra not available\n+gemini: agy refused: exit 1: model not found\n+$/);
+  });
+
+  test('a refusal never moves down the chain: subagent saves no prompt', async (t) => {
+    const repo = delegateRepo(t, { user: CLI_THEN_SUBAGENT });
+    codex(repo.standIns, [], { rows: [{ args: codexWrite(repo.cwd, { model: 'gpt-6-astra' }), stderr: 'model not available\n', code: 1 }] });
+    const result = await repo.run(stepRun({ models: ['gpt/gpt-6-astra'] }));
+    failed(result, 3);
+    assert.match(result.stderr, /codex refused: exit 1: model not available/);
+    assert.doesNotMatch(result.stderr, /no resolver started a session/);
+    assert.equal(existsSync(join(repo.cwd, '.workspace', 'lets-delegate', 'build-x.prompt.md')), false);
+  });
+
+  test('a CLI that cannot start is a refusal, exit 3, naming the CLI', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    unstartable(repo.standIns, 'claude');
+    const result = await repo.run(stepRun());
+    failed(result, 3);
+    assert.match(result.stderr, /^lets delegate: claude: cannot run claude: /m);
+  });
+
+  test('a folder where the last message goes is exit 4, with the error, and codex does not run', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    mkdirSync(lastMessage(repo.cwd), { recursive: true });
+    const stand = codex(repo.standIns, [], { rows: [{ args: codexWrite(repo.cwd), files: { [lastMessage(repo.cwd)]: DONE } }] });
+    const result = await repo.run(stepRun({ models: ['gpt'] }));
+    failed(result, 4);
+    assert.match(result.stderr, /EISDIR/);
+    assert.deepEqual(stand.calls(), []);
+  });
+
+  test('the repository\'s chain replaces the user\'s, and a bad resolver there is exit 2, naming that file', async (t) => {
+    const wins = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent] }\n', repo: CLI });
+    claude(wins.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
+    assert.equal(recordOf(await wins.run(stepRun())).resolver, 'cli');
+    const bad = delegateRepo(t, { user: CLI, repo: 'version: 3\ndelegate: { resolvers: [codex] }\n' });
+    const clis = everyCli(bad.standIns);
+    const result = await bad.run(stepRun());
+    failed(result, 2);
+    assert.match(result.stderr, new RegExp(`${bad.repoConfig}.*codex`));
+    noCalls(clis);
   });
 });

@@ -18,14 +18,6 @@ const withCli = (io: FakeIo, config = ONLY_CLI) => commandDeps({ config, real: {
 
 const CLI_THEN_DEFAULT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
 
-test('with no family CLI on PATH, the default answers a step next, starting nothing', async () => {
-  const io = fakeIo({ commands: [] });
-  const t = withCli(io, CLI_THEN_DEFAULT);
-  assert.equal(await step({ for: 'build', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['claude'] }, t.deps), 3);
-  assert.match(t.stderr(), /\.workspace\/lets-delegate\/build-x\.prompt\.md/);
-  assert.deepEqual(io.calls, []);
-});
-
 const argsOf = (io: FakeIo) => io.calls.map(([cmd, args]) => [cmd, args]);
 // The command's JSON line on stderr.
 const metadata = (t: ReturnType<typeof withCli>) => JSON.parse(t.stderr());
@@ -57,28 +49,6 @@ test('a step whose CLI runs past its time limit is stopped, and is exit 6', asyn
   const answer = await scriptedStep(['claude'], [{ stdout: '', stderr: '', code: 1, timedOut: true }]);
   assert.deepEqual([answer.code, answer.stdout], [6, '']);
   assert.match(answer.stderr, /claude did not finish in 3 minutes/);
-});
-
-test('a codex that refuses a step\'s model hands it to the next --model', async () => {
-  const io = fakeIo({ commands: ['codex', 'claude'], results: [
-    { stdout: '', stderr: 'error: model gpt-6-astra not available', code: 1 },
-    { stdout: DONE_REPORT, stderr: '', code: 0 },
-  ] });
-  const t = withCli(io);
-  assert.equal(await step(stepOptions({ models: ['gpt/gpt-6-astra', 'claude'] }), t.deps), 0);
-  assert.deepEqual(io.calls.map(([cmd]) => cmd), ['codex', 'claude']);
-  assert.equal(JSON.parse(t.stdout()).outcome, 'done');
-  assert.equal(metadata(t).family, 'claude');
-});
-
-test('a step whose CLI cannot start is a refusal, exit 3, naming the CLI', async () => {
-  const io = fakeIo({ commands: ['claude'], execFile: async (cmd) => {
-    throw new Error(`cannot run ${cmd}: spawn ${cmd} EACCES`);
-  } });
-  const t = withCli(io);
-  assert.equal(await step(stepOptions({ models: ['claude'] }), t.deps), 3);
-  assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), /claude/);
 });
 
 // The adapter itself: the chain only ever finishes a handle the adapter
