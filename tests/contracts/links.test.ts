@@ -2,11 +2,18 @@
 // text is read from, and its #anchor is one of that file's headings. An
 // agent that follows a broken link reads nothing, or the wrong part.
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, realpathSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { test } from 'node:test';
-import { repo, tempDir } from '../support/lets.ts';
-import { type Finding, readText, readTexts, type Text } from './texts.ts';
+import { buildRelease, repo, tempDir } from '../support/lets.ts';
+import { type Finding, readText, readTexts, skillFiles, type Text } from './texts.ts';
+
+interface Flow {
+  schemas: string[];
+  skills: string[];
+}
+
+const flows: Record<string, Flow> = JSON.parse(readFileSync(join(repo, 'flows.json'), 'utf8')).flows;
 
 // Each link target in the text's prose, as written: `](<target>)`, without
 // a title. A target with a URL scheme, or with a placeholder such as
@@ -53,6 +60,27 @@ function sourceLinkFindings(root: string): Finding[] {
     if (text.path === 'README.md' || text.path.startsWith('docs/')) return linkFindings(text, dirname(text.file), root);
     return [];
   });
+}
+
+/**
+ * Each link in a release that does not resolve inside its overlay, for
+ * the skills and schemas the flow ships. An installed skill's files are
+ * read from their own folder. Each `schema.yaml` and `fragments/AGENTS.md`
+ * are read from the overlay's root, as an agent reads them in the project.
+ * A flow ships only some skills, so a link that resolves in the source can
+ * break here. Findings name files relative to `release`.
+ */
+function releaseLinkFindings(release: string, flow: Flow): Finding[] {
+  const overlay = join(release, 'overlay');
+  const skillTexts = flow.skills.flatMap((skill) => skillFiles(release, `overlay/.agents/skills/${skill}`))
+    .filter((path) => existsSync(join(release, path)))
+    .map((path) => readText(release, path));
+  const rootTexts = [...flow.schemas.map((schema) => `overlay/openspec/schemas/${schema}/schema.yaml`), 'fragments/AGENTS.md']
+    .map((path) => readText(release, path));
+  return [
+    ...skillTexts.flatMap((text) => linkFindings(text, dirname(text.file), overlay)),
+    ...rootTexts.flatMap((text) => linkFindings(text, overlay, overlay)),
+  ];
 }
 
 function smallText(dir: string, path: string, lines: string[]) {
@@ -109,4 +137,33 @@ test('the link check passes a URL, a placeholder, an emoji heading and a repeate
   ]);
   smallText(dir, 'docs/guide.md', ['# Guide', '', "## The change's name", '', 'Back to [the README](../README.md#demo).']);
   assert.deepEqual(sourceLinkFindings(dir), []);
+});
+
+for (const [name, flow] of Object.entries(flows)) {
+  test(`each link resolves inside the published ${name} flow`, (t) => {
+    const release = join(tempDir(t), name);
+    buildRelease(release, flow.schemas, flow.skills);
+    assert.deepEqual(releaseLinkFindings(release, flow), []);
+  });
+}
+
+test('the published link check names a link to a skill the flow leaves out, through a linked folder', (t) => {
+  const dir = tempDir(t);
+  const real = join(dir, 'real');
+  const flow = { schemas: ['lets-minimal'], skills: ['lets-go'] };
+  smallText(real, 'overlay/.agents/skills/lets-go/SKILL.md', [
+    '# lets-go',
+    '',
+    'Read [the terms](references/terms.md), then run [the review](../lets-review-plan/SKILL.md).',
+  ]);
+  smallText(real, 'overlay/.agents/skills/lets-go/references/terms.md', ['# Terms']);
+  smallText(real, 'overlay/openspec/schemas/lets-minimal/schema.yaml', [
+    'instruction: |',
+    '  Read [Plain language](.agents/skills/lets-go/references/terms.md).',
+  ]);
+  smallText(real, 'fragments/AGENTS.md', ['# Rules', '', 'Start with [lets-go](.agents/skills/lets-go/SKILL.md).']);
+  symlinkSync(real, join(dir, 'alias'));
+  assert.deepEqual(releaseLinkFindings(join(dir, 'alias'), flow), [
+    { file: 'overlay/.agents/skills/lets-go/SKILL.md', name: '../lets-review-plan/SKILL.md' },
+  ]);
 });
