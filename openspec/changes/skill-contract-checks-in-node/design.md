@@ -165,8 +165,9 @@ user's answer (D12): `lets` does not change (D3).
 - Each name is a folder of `skills/`, or an `openspec-*` name.
 - Each skill that a flow's schemas or config name is one `flows.json`
   ships with that flow, as the bats test does (D7).
-- Each skill a flow ships is named by its schemas, its config or one of
-  its shipped skills, unless it is an entry point. The entry points are
+- Each skill a flow ships is named by its schemas, its config or
+  another of its shipped skills, unless it is an entry point. A skill
+  that names itself is not reached by that. The entry points are
   the skills the routing table in `overlays/AGENTS.md` names, read from
   the text, not a typed list.
 - Each skill's `SKILL.md` has `name:` equal to its folder.

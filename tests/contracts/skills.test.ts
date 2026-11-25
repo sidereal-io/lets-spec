@@ -73,19 +73,22 @@ function entryPoints(root: string): string[] {
 /**
  * Each skill a flow ships that nothing in the flow reaches: no entry
  * point of the routing table, and named by none of the flow's schemas,
- * its config or the files of a skill it ships. Each finding names
- * `flows.json` and the skill.
+ * its config or the files of another skill it ships. A skill that names
+ * itself is not reached by that. Each finding names `flows.json` and the
+ * skill.
  */
 function unreachedSkillFindings(root: string): Finding[] {
   const entries = new Set(entryPoints(root));
   return Object.values(readFlows(root)).flatMap((flow) => {
-    const named = new Set([
-      ...flowTexts(root, flow).flatMap(namedSkills),
-      ...flow.skills.flatMap((skill) => skillFiles(root, `skills/${skill}`))
+    const byFlow = new Set(flowTexts(root, flow).flatMap(namedSkills));
+    const bySkill = new Map(flow.skills.map((skill) => [skill, new Set(
+      skillFiles(root, `skills/${skill}`)
         .filter((path) => existsSync(join(root, path)))
         .flatMap((path) => namedSkills(readText(root, path))),
-    ]);
-    return flow.skills.filter((skill) => !entries.has(skill) && !named.has(skill)).map((name) => ({ file: 'flows.json', name }));
+    )]));
+    const reached = (skill: string) =>
+      entries.has(skill) || byFlow.has(skill) || [...bySkill].some(([other, named]) => other !== skill && named.has(skill));
+    return flow.skills.filter((skill) => !reached(skill)).map((name) => ({ file: 'flows.json', name }));
   });
 }
 
@@ -146,5 +149,13 @@ test('the reach check names a shipped skill that nothing in its flow names', (t)
   smallProject(dir);
   assert.deepEqual(unreachedSkillFindings(dir), []);
   writeFileSync(join(dir, 'flows.json'), JSON.stringify({ flows: { demo: { schemas: ['lets-demo'], skills: ['lets-go', 'lets-build', 'lets-review-plan'] } } }));
+  assert.deepEqual(unreachedSkillFindings(dir), [{ file: 'flows.json', name: 'lets-review-plan' }]);
+});
+
+test('the reach check names a shipped skill that only its own files name', (t) => {
+  const dir = tempDir(t);
+  smallProject(dir);
+  writeFileSync(join(dir, 'flows.json'), JSON.stringify({ flows: { demo: { schemas: ['lets-demo'], skills: ['lets-go', 'lets-build', 'lets-review-plan'] } } }));
+  smallText(dir, 'skills/lets-review-plan/SKILL.md', ['---', 'name: lets-review-plan', '---', '# lets-review-plan', '', 'The `lets-review-plan` skill reviews a plan.']);
   assert.deepEqual(unreachedSkillFindings(dir), [{ file: 'flows.json', name: 'lets-review-plan' }]);
 });
