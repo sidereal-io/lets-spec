@@ -31,7 +31,7 @@ tasks share files, so they run in order.
 
 ## 4. Integration [depends-on: 3]
 
-- [ ] 4.1 [easy] The `tests/` row of the README's *Development* table says that `delegate/` holds the black-box tests of the `lets delegate` instructions, `review run` and `handoff run` commands (verify: `git grep -n 'review run. and .handoff run' README.md`)
+- [x] 4.1 [easy] The `tests/` row of the README's *Development* table says that `delegate/` holds the black-box tests of the `lets delegate` instructions, `review run` and `handoff run` commands (verify: `git grep -n 'review run. and .handoff run' README.md`) (✓ git grep -n 'review run. and .handoff run' README.md passed)
 - [ ] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new files in the Nix sandbox. The pull request lists each test this story kept with its reason (D5, D8, D9), each test it deleted with the test that now covers it, and the rename gap in design.md's risks (verify: `nix flake check`)
 
 ## Deviations Ledger
