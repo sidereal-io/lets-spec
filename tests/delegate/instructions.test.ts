@@ -89,7 +89,7 @@ test('review instructions from cli print the strategy, the intent, the resolver 
 });
 
 test('step instructions from cli print the step strategy and the models codex lists', async (t) => {
-  const run = await instructions(t, 'step', 'build', { user: CLI, standIns: (dir) => codex(dir, [...LUNA]) });
+  const run = await instructions(t, 'step', 'build', { user: CLI_THEN_SUBAGENT, standIns: (dir) => codex(dir, [...LUNA]) });
   assert.deepEqual(line(run), { strategy: 'step', for: 'build', resolver: 'cli', options: ['gpt/gpt-6-luna'], guidance: null });
 });
 
