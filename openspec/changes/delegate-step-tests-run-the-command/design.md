@@ -120,8 +120,10 @@ export function agyWrite(effort: string, timeout: string, prompt: string, model?
 export function untilCalled(stand: StandIn, count?: number, ms?: number): Promise<void>;
 /** Resolves once no process has id `pid`; rejects after `ms`. */
 export function untilGone(pid: number, ms?: number): Promise<void>;
-/** Sends SIGTERM to the background step `pid` now, and again after the test when it still runs. */
-export function stopStep(t: TestContext, pid: number): void;
+/** Registers `t.after` to send SIGTERM to the background step `pid` when it still runs at the end of the test. */
+export function cleanUpStep(t: TestContext, pid: number): void;
+/** Sends SIGTERM to the background step `pid` now, to make a killed step. */
+export function stopStep(pid: number): void;
 /** Checks `value` by decision 4: an ISO 8601 UTC date to the second, or whole milliseconds, between `before` and `after`. */
 export function assertClock(value: string | number, before: number, after: number): void;
 ```
@@ -138,11 +140,16 @@ comment that says what it needs, what it gives and how it fails.
   the step is surely running and `lets` is passing signals on.
 - **Stopping a step:** `stopStep` sends SIGTERM to the pid that `step
   start` printed. `lets` passes it to the stand-in, then ends by the
-  signal, with no exit file. That is how the tests make a killed step,
-  and how each test that holds a running step cleans up.
-- **No leaks:** every test that starts a step calls `stopStep(t, pid)`
-  or registers its pid with `t.after`, so a test that fails half-way
-  still stops what it started.
+  signal, with no exit file. That is how the tests make a killed step.
+  After `stopStep`, the test awaits `untilGone(pid)` before it writes
+  to the step's meta file or runs `step wait`. Otherwise `step wait`
+  can still see the process alive and sleep a 2-second poll, and the
+  test's write to the meta file can race `lets`'s last stderr output.
+- **No leaks:** every test that starts a step calls `cleanUpStep(t,
+  pid)` as soon as `step start` prints the pid, before any assertion.
+  So a test that fails half-way still stops what it started, and a test
+  that checks a step while it runs keeps it running until the test
+  ends.
 - **Two answers on one stand-in:** rows match by exact arguments, so a
   test that needs one start to hang and the next to answer gives them
   different `--model` values, such as `claude/claude-slow` and
@@ -286,8 +293,9 @@ check` and `git grep` show what is unused. The folder stays (D10).
 
 ## Risks / Trade-offs
 
-- [A background step outlives a failed test] → `stopStep` and
-  `t.after` stop every pid a test started (decision 3).
+- [A background step outlives a failed test] → `cleanUpStep`
+  registers a `t.after` for every pid a test started, before any
+  assertion (decision 3).
 - [A test races a background step, such as stopping it before `lets`
   has started the stand-in] → `untilCalled` waits for the stand-in's
   logged call before any signal, and `untilGone` waits for the process
