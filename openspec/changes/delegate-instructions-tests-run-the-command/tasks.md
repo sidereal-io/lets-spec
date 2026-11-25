@@ -29,7 +29,7 @@ decision 6), never before. The tasks share files, so they run in order.
 
 ## 4. Integration [depends-on: 3]
 
-- [ ] 4.1 [easy] The `tests/` row of the README's *Development* table says that `delegate/` holds the black-box tests of the `lets delegate` instructions commands (verify: `git grep -n 'delegate/.: black-box' README.md`)
+- [x] 4.1 [easy] The `tests/` row of the README's *Development* table says that `delegate/` holds the black-box tests of the `lets delegate` instructions commands (verify: `git grep -n 'delegate/.: black-box' README.md`) (✓ `git grep -n 'delegate/.: black-box' README.md` matched line 730)
 - [ ] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new file in the Nix sandbox. The pull request lists the unit and fake-adapter tests this story kept, each with its reason (D8, D10), and the tests it deleted with the test that now covers each (verify: `nix flake check`)
 
 ## Deviations Ledger
