@@ -30,7 +30,7 @@ decision 6), never before. The tasks share files, so they run in order.
 ## 4. Integration [depends-on: 3]
 
 - [x] 4.1 [easy] The `tests/` row of the README's *Development* table says that `delegate/` holds the black-box tests of the `lets delegate` instructions commands (verify: `git grep -n 'delegate/.: black-box' README.md`) (✓ `git grep -n 'delegate/.: black-box' README.md` matched line 730)
-- [ ] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new file in the Nix sandbox. The pull request lists the unit and fake-adapter tests this story kept, each with its reason (D8, D10), and the tests it deleted with the test that now covers each (verify: `nix flake check`)
+- [x] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new file in the Nix sandbox. The pull request lists the unit and fake-adapter tests this story kept, each with its reason (D8, D10), and the tests it deleted with the test that now covers each (verify: `nix flake check`) (✓ `nix flake check` passed, its `node-tests` ran 943 tests with the new file; `mise run check` passed; `pnpm test` passed its 943 Node tests and the type check, and its bats tests pass in a clean clone, see the ledger)
 
 ## Deviations Ledger
 
@@ -51,3 +51,9 @@ decision 6), never before. The tasks share files, so they run in order.
   `not json` with no newline, as design decision 2 says. `lets` quotes the
   output in its warning, so a newline would split the warning over two
   lines.
+- 2026-11-25, task 4.2: in this worktree, `pnpm test` fails one bats test,
+  "each skill is named for its folder", on `skills/system/`. That folder
+  is not in the repository: a global git ignore hides it, and the tool
+  running this build wrote it before the build began. In a clean clone of
+  this branch, `bats tests/skill-interfaces.bats` passes all 512 tests,
+  and `nix flake check`, which sees only tracked files, passes.
