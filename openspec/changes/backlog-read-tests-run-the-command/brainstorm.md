@@ -28,9 +28,11 @@ metadata and raises no question.
 | D10 | Tests of `lets backlog --help` look for phrases in its output. Do they move? | Yes, as black-box tests of the help output. #308 bans phrase tests of skills, schemas and documents; a command's own output is what a black-box test checks. | Assumption |
 | D11 | Which unit tests stay is listed where? | In the pull request description, each with its reason. | Evidence: #308 *Shared decisions* |
 | D12 | Does this branch add glossary terms? | No. *Black-box test* and *stand-in* keep their meaning from #308's *Shared decisions*, as #309 did. `openspec/glossary.md` stays unchanged. | Assumption |
+| D13 | Four tests use the fake backlog provider with Jira-style keys (`ready.test.ts:118`, `item.test.ts:205` and `:217`, `key.test.ts:49`). No command can reach a second provider, and three `lets-backlog` spec scenarios need one. What happens to them? | They stay as in-process tests, unchanged, and the pull request lists them as kept. No spec changes and no coverage is lost; `fixtures/fake-provider.ts` stays for #316 anyway. | Assumption |
+| D14 | The 60-second `gh` timeout cannot be reached through the command without a 60-second wait. Two tests cover it: the timeout half of `commands.test.ts:60`, and `commands.test.ts:76`, which checks every `gh` call has a finite timeout. What happens to them? | They stay as in-process tests, narrowed to the timeout, and the pull request lists them as kept. `lets` does not change. | Assumption |
 
 ## Changes from the story
 
 None.
 
-Confirmed by user: no
+Confirmed by user: yes
