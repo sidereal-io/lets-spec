@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { type TestContext, test } from 'node:test';
-import { repo, snapshot, tempDir } from '../support/lets.ts';
-import { project, setSchema, useRelease } from './project.ts';
+import { letsPackage, repo, snapshot, tempDir } from '../support/lets.ts';
+import { makeRelease, project, setSchema, useRelease } from './project.ts';
 
 const release = useRelease();
 
@@ -177,6 +177,41 @@ test('sync refuses to run without a release', async (t) => {
   const { code, output } = await p.sync([], { WORKFLOW_RELEASE: undefined });
   assert.equal(code, 1, output);
   assert.ok(output.includes('there is no release for flow'), output);
+});
+
+test('WORKFLOW_RELEASE wins over LETS_SPEC_FLOW', async (t) => {
+  const p = project(t);
+  // The source tree ships no flow, so a run that looked for jira's would fail.
+  const { code, output } = await p.sync([], { LETS_SPEC_FLOW: 'jira' });
+  assert.equal(code, 0, output);
+  assert.ok(existsSync(join(p.path, '.agents/skills/lets-build/SKILL.md')));
+});
+
+test("sync uses the package's standard release when no flow is set", async (t) => {
+  const p = project(t);
+  const lets = letsPackage(t, { releases: { standard: release() } });
+  const { code, output } = await p.sync([], { WORKFLOW_RELEASE: undefined }, { lets });
+  assert.equal(code, 0, output);
+  assert.ok(existsSync(join(p.path, '.agents/skills/lets-build/SKILL.md')));
+});
+
+test("LETS_SPEC_FLOW picks the package's release for that flow", async (t) => {
+  const p = project(t);
+  // The minimal release ships one more skill, which tells the two apart.
+  const minimal = join(tempDir(t), 'minimal');
+  makeRelease(minimal, ['lets-flow-minimal']);
+  const lets = letsPackage(t, { releases: { standard: release(), minimal } });
+  const { code, output } = await p.sync([], { WORKFLOW_RELEASE: undefined, LETS_SPEC_FLOW: 'minimal' }, { lets });
+  assert.equal(code, 0, output);
+  assert.ok(existsSync(join(p.path, '.agents/skills/lets-flow-minimal/SKILL.md')));
+});
+
+test('sync names the folder and the variables when the flow has no release', async (t) => {
+  const p = project(t);
+  const { code, stderr, output } = await p.sync([], { WORKFLOW_RELEASE: undefined, LETS_SPEC_FLOW: 'jira' });
+  assert.equal(code, 1, output);
+  assert.equal(stderr, `error: there is no release for flow 'jira' at ${join(repo, 'lets/releases/jira')}. Set LETS_SPEC_FLOW to a flow this release ships, or WORKFLOW_RELEASE to a release folder.\n`);
+  assert.ok(!existsSync(join(p.path, 'AGENTS.md')));
 });
 
 test('sync refuses a folder that is not a release', async (t) => {

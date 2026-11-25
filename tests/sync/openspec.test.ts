@@ -113,3 +113,23 @@ test("--check passes with a CLI older than the package's release.json", async (t
   assert.equal(code, 0, output);
   assert.equal(output, '');
 });
+
+test('sync gives no version warning when release.json is not JSON', async (t) => {
+  const p = project(t);
+  cliPrints(p.bin, '1.1.0\n');
+  const lets = letsPackage(t, { releaseJson: 'oops' });
+  const { code, stderr, output } = await p.sync([], {}, { lets });
+  assert.equal(code, 0, output);
+  assert.equal(stderr, '');
+});
+
+test("sync gives no version warning for a CLI the same as or newer than the package's release.json", async (t) => {
+  const p = project(t);
+  const lets = letsPackage(t, { releaseJson: RELEASE_JSON });
+  for (const version of ['1.2.3', '2.1.0']) {
+    cliPrints(p.bin, `${version}\n`);
+    const { code, stderr, output } = await p.sync([], {}, { lets });
+    assert.equal(code, 0, output);
+    assert.equal(stderr, '', `CLI ${version}`);
+  }
+});
