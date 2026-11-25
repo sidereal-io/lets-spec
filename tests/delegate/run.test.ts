@@ -138,6 +138,9 @@ describe('review run', () => {
     const { model, independent } = metadata(await repo.run(review({ models: ['claude'], sourceFamily: 'claude' })));
     assert.deepEqual({ model, independent }, { model: 'claude', independent: false });
     assert.deepEqual(stand.calls(), [claudeP()]);
+    const gpt = codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd, FINDINGS, {}, { model: null })] });
+    assert.equal(metadata(await repo.run(review({ models: ['gpt'] }))).model, 'gpt');
+    assert.deepEqual(gpt.calls(), [codexExec(repo.cwd, { model: null })]);
   });
 
   test('agy runs in plan mode, with the prompt as the argument of -p and the effort on the model', async (t) => {
