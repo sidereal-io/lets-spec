@@ -12,16 +12,6 @@ const step = { strategy: 'step', for: 'plan' } as const;
 const withT3 = (more = '', t3: FakeResolver = {}) =>
   commandDeps({ config: `version: 3\ndelegate:\n  resolvers: [t3]\n${more.replace(/^(?=.)/gm, '  ')}`, adapters: { t3 } });
 
-test('a review asks for a resolver that can run, and a handoff for one that can start', async () => {
-  const deps = () => commandDeps({ config: 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n', adapters: { cli: { headless: true } } });
-  const t = deps();
-  await run(review, t.deps);
-  assert.equal(JSON.parse(t.stdout()).resolver, 'cli');
-  const h = deps();
-  await run(handoff, h.deps);
-  assert.deepEqual(JSON.parse(h.stdout()), { strategy: 'handoff', for: 'apply', resolver: 'subagent', options: [], guidance: null });
-});
-
 test('a resolver whose options fail unexpectedly is exit 4 with the message', async () => {
   const t = withT3();
   t.deps.resolvers.t3.options = async () => {

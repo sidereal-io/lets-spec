@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { type TestContext, test } from 'node:test';
+import { describe, type TestContext, test } from 'node:test';
 import { agy, claude, codex, type EnvChanges, git, type LetsResult, runLets, tempDir } from '../support/lets.ts';
 
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
@@ -315,4 +315,22 @@ test('a bad entry for another intent, or for another strategy, is not checked', 
   assert.equal(line(otherIntent).guidance, null);
   const otherStrategy = await instructions(t, 'review', 'code', { user: delegate('step: 42\n') });
   assert.equal(line(otherStrategy).guidance, null);
+});
+
+// #306 retires handoff. Whichever of it and this file's story merges
+// second deletes this block.
+describe('handoff instructions', () => {
+  test('cli answers a review, but declines a handoff without running a CLI, and subagent answers it', async (t) => {
+    const review = await instructions(t, 'review', 'code', { user: CLI_THEN_SUBAGENT, standIns: everyCli });
+    assert.equal(line(review).resolver, 'cli');
+    let clis: ReturnType<typeof everyCli> | undefined;
+    const handoff = await instructions(t, 'handoff', 'apply', { user: CLI_THEN_SUBAGENT, standIns: (dir) => { clis = everyCli(dir); } });
+    assert.deepEqual(line(handoff), { strategy: 'handoff', for: 'apply', resolver: 'subagent', options: [], guidance: null });
+    for (const [name, stand] of Object.entries(clis!)) assert.deepEqual(stand.calls(), [], name);
+  });
+
+  test('the guidance for a handoff comes from delegate.handoff', async (t) => {
+    const run = await instructions(t, 'handoff', 'apply', { user: delegate('handoff:\n  apply:\n    guidance: Prefer claude.\n') });
+    assert.equal(line(run).guidance, 'Prefer claude.');
+  });
 });

@@ -3,7 +3,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run as handoff } from '../../../../lets/src/delegate/handoff.ts';
-import { run as instructions } from '../../../../lets/src/delegate/instructions.ts';
 import { run as review } from '../../../../lets/src/delegate/review.ts';
 import { run as step } from '../../../../lets/src/delegate/step.ts';
 import type { ReviewOptions } from '../../../../lets/src/delegate/review.ts';
@@ -18,7 +17,6 @@ const ONLY_CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
 // commandDeps whose config is config, with the real cli adapter on io.
 const withCli = (io: FakeIo, config = ONLY_CLI) => commandDeps({ config, real: { cli: createAdapter(io) } });
 
-const handoffInstructions = { strategy: 'handoff', for: 'apply' } as const;
 // A review named x, from a claude author, on the gpt family.
 const reviewOptions = (over: Partial<ReviewOptions> = {}): ReviewOptions =>
   ({ for: 'code', name: 'x', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', models: ['gpt'], ...over });
@@ -39,14 +37,6 @@ test('a handoff declines with every family CLI on PATH, starting nothing', async
   assert.equal(await handoff(handoffOptions, t.deps), 2);
   assert.equal(t.stdout(), '');
   assert.match(t.stderr(), /every resolver declined/);
-  assert.deepEqual(io.calls, []);
-});
-
-test('handoff instructions skip cli with codex on PATH, running nothing, and the default answers', async () => {
-  const io = fakeIo({ commands: ['codex'] });
-  const t = withCli(io, 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n');
-  assert.equal(await instructions(handoffInstructions, t.deps), 0);
-  assert.equal(JSON.parse(t.stdout()).resolver, 'subagent');
   assert.deepEqual(io.calls, []);
 });
 
