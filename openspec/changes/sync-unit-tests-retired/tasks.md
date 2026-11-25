@@ -36,7 +36,7 @@ files.
 ## 4. Integration [depends-on: 3]
 
 - [x] 4.1 [easy] `tests/lets/sync/fixtures/` is gone with `fake-io.ts`, nothing under `tests/` names it, and `tests/lets/sync/` holds only `release.test.ts` (D9) (verify: `test ! -e tests/lets/sync/fixtures && ! git grep -n 'sync/fixtures/fake-io' tests`) (✓ the verify command passed, and `pnpm check` too)
-- [ ] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the program tests with no OpenSpec CLI. The pull request description lists the 4 kept `compareVersions` tests with their reason (D7, D12), and gives the time `node --test "tests/sync/*.test.ts"` took before and after the change (verify: `nix flake check`)
+- [x] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the program tests with no OpenSpec CLI. The pull request description lists the 4 kept `compareVersions` tests with their reason (D7, D12), and gives the time `node --test "tests/sync/*.test.ts"` took before and after the change (verify: `nix flake check`) (✓ `pnpm test` (911 tests), `mise run check` and `nix flake check` passed; the pull request lists the 4 kept tests and the time, 66–70 s before and 79–87 s after)
 
 ## Deviations Ledger
 
