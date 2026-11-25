@@ -10,7 +10,7 @@
 
 ## 2. Implementation [depends-on: 1]
 
-- [ ] 2.1 [medium] The helper module works as design decision 2 says: `run` runs a program with the pinned environment, standard input closed and a time limit, and rejects with a message that names the program and says it is not on `PATH` when it cannot be found; `runLets` is built on `run` and keeps its contract; `makeReadOnly` moves here from `tests/sync/project.ts`, which imports it; `buildRelease` calls `generatedSkills`; `tree` lists paths, types and content hashes without modes. The sync tests still pass unchanged (verify: `node --test "tests/sync/*.test.ts" && pnpm check`)
+- [x] 2.1 [medium] The helper module works as design decision 2 says: `run` runs a program with the pinned environment, standard input closed and a time limit, and rejects with a message that names the program and says it is not on `PATH` when it cannot be found; `runLets` is built on `run` and keeps its contract; `makeReadOnly` moves here from `tests/sync/project.ts`, which imports it; `buildRelease` calls `generatedSkills`; `tree` lists paths, types and content hashes without modes. The sync tests still pass unchanged (verify: `node --test "tests/sync/*.test.ts" && pnpm check`) (✓ `node --test "tests/sync/*.test.ts" && pnpm check` passed, 67 of 67)
 
 ## 3. Black-box tests [depends-on: 2]
 
