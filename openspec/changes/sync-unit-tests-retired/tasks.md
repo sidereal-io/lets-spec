@@ -12,7 +12,7 @@
 ## 1. Contracts
 
 - [x] 1.1 [medium] `tests/support/lets.ts` declares `letsPackage(t, options?)` and `LetsPackageOptions` (design decision 3), `pathWith(t, programs)` (decision 4), `StandIn.folders()` (decision 5) and `RunLetsOptions.lets` (decision 3), each with a doc comment that states its preconditions, its result and how it fails. New bodies throw `not built yet` (verify: `pnpm check`) (✓ `pnpm check` passed)
-- [ ] 1.2 [easy] `tests/sync/project.ts` gives `Project` a `bin` field and changes `sync`'s third parameter to `where?: { cwd?: string; lets?: string }` (decision 6). The seven existing calls that pass a folder (two in `tests/sync/setup.test.ts`, five in `tests/sync/skills.test.ts`) pass `{ cwd }`, and every existing program test still passes (verify: `pnpm check && node --test "tests/sync/*.test.ts"`)
+- [x] 1.2 [easy] `tests/sync/project.ts` gives `Project` a `bin` field and changes `sync`'s third parameter to `where?: { cwd?: string; lets?: string }` (decision 6). The seven existing calls that pass a folder (two in `tests/sync/setup.test.ts`, five in `tests/sync/skills.test.ts`) pass `{ cwd }`, and every existing program test still passes (verify: `pnpm check && node --test "tests/sync/*.test.ts"`) (✓ `pnpm check` and the 67 program tests passed)
 
 ## 2. Helper implementation [depends-on: 1]
 

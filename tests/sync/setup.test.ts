@@ -137,7 +137,7 @@ test('sync works on the whole project when run from a folder inside it', async (
   const p = project(t);
   const deep = join(p.path, 'src/deep');
   mkdirSync(deep, { recursive: true });
-  const { code, output } = await p.sync([], {}, deep);
+  const { code, output } = await p.sync([], {}, { cwd: deep });
   assert.equal(code, 0, output);
   assert.ok(existsSync(join(p.path, 'AGENTS.md')));
   assert.ok(existsSync(join(p.path, '.agents/skills/lets-build/SKILL.md')));
@@ -149,7 +149,7 @@ test('sync warns and exits 0 outside a git repo', async (t) => {
   const tmp = tempDir(t);
   const outside = join(tmp, 'outside');
   mkdirSync(outside);
-  const { code, output } = await p.sync([], { GIT_CEILING_DIRECTORIES: tmp }, outside);
+  const { code, output } = await p.sync([], { GIT_CEILING_DIRECTORIES: tmp }, { cwd: outside });
   assert.equal(code, 0, output);
   assert.ok(output.includes('not inside a git repo'), output);
   assert.deepEqual(readdirSync(outside), []);

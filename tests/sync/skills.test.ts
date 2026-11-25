@@ -76,10 +76,10 @@ test('a fresh clone of a committed project passes --check and syncs quietly', as
   assert.equal(p.git('commit', '--quiet', '-m', 'init').code, 0);
   const clone = join(tempDir(t), 'clone');
   assert.equal(git(p.path, 'clone', '--quiet', p.path, clone).code, 0);
-  const checked = await p.sync(['--check'], {}, clone);
+  const checked = await p.sync(['--check'], {}, { cwd: clone });
   assert.equal(checked.code, 0, checked.output);
   assert.equal(checked.output, '');
-  const synced = await p.sync([], {}, clone);
+  const synced = await p.sync([], {}, { cwd: clone });
   assert.equal(synced.code, 0, synced.output);
   assert.ok(!synced.output.includes('wrote'), synced.output);
 });
@@ -91,7 +91,7 @@ test('sync copies the release in a git worktree, and git tracks the copies there
   assert.equal(p.git('commit', '--quiet', '-m', 'init').code, 0);
   const tree = join(tempDir(t), 'tree');
   assert.equal(p.git('worktree', 'add', '--quiet', tree).code, 0);
-  const { code, output } = await p.sync([], {}, tree);
+  const { code, output } = await p.sync([], {}, { cwd: tree });
   assert.equal(code, 0, output);
   assert.ok(!output.includes('wrote'), output);
   assert.ok(existsSync(join(tree, '.agents/skills/lets-build/SKILL.md')));
@@ -438,13 +438,13 @@ test('sync preserves project vocabulary while installing the real reference', as
       mkdirSync(dir);
       assert.equal(git(dir, 'init', '--quiet').code, 0);
       const env = { WORKFLOW_RELEASE: flowRelease, LETS_SPEC_SKILLS: mode };
-      let result = await p.sync([], env, dir);
+      let result = await p.sync([], env, { cwd: dir });
       assert.equal(result.code, 0, result.output);
       assert.ok(!existsSync(join(dir, 'openspec/glossary.md')));
       mkdirSync(join(dir, 'openspec/specs/backend/checkout'), { recursive: true });
       mkdirSync(join(dir, 'docs'));
       for (const path of vocabulary) writeFileSync(join(dir, path), `Project-owned ${path}\n`);
-      result = await p.sync([], env, dir);
+      result = await p.sync([], env, { cwd: dir });
       assert.equal(result.code, 0, result.output);
       assert.deepEqual(readFileSync(join(dir, reference)), readFileSync(join(repo, 'skills/lets-shape/references/domain-language.md')));
       for (const path of vocabulary) assert.equal(readFileSync(join(dir, path), 'utf8'), `Project-owned ${path}\n`);
