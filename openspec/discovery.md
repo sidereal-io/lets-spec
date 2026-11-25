@@ -27,7 +27,7 @@
 
 ## Journey Map
 
-Stage status checked against the code on 2026-11-03.
+Stage status checked against the code on 2026-11-24.
 
 ### People who use Let's Spec
 
@@ -36,16 +36,16 @@ Stage status checked against the code on 2026-11-03.
 ```
   Set it up ──► Set up the backlog ──► Shape ──► Build ──► Review ──► Merge ──► Update
       │               │                 │          │          │          │         │
-   partial         partial           partial    partial    partial   supported  partial
+   partial         partial           partial    partial   supported  supported supported
 ```
 
 1. **Set it up** — install with Nix or mise, run `lets sync`, describe the project — partial: setup remains several documented steps run by hand; flow and skills mode live outside the project's config ([#65](https://github.com/sidereal-io/lets-spec/issues/65)).
 2. **Set up the backlog** — create or check the repository's linked GitHub Project — partial: GitHub Project creation and field checks exist, but setup does not converge views, options and workflows ([#65](https://github.com/sidereal-io/lets-spec/issues/65)). Shared GitHub setup ([#137](https://github.com/sidereal-io/lets-spec/issues/137)) and selection/checking for Beads ([#138](https://github.com/sidereal-io/lets-spec/issues/138)), Linear ([#140](https://github.com/sidereal-io/lets-spec/issues/140)) and Jira Cloud ([#142](https://github.com/sidereal-io/lets-spec/issues/142)) remain open.
 3. **Shape** — turn an idea, bug or chore into GitHub issues with packets and dependencies — partial: GitHub shaping reads comments and folds accepted decisions into packets. Publishing and resuming discovery through the shared boundary remains open for GitHub ([#137](https://github.com/sidereal-io/lets-spec/issues/137)), Beads ([#139](https://github.com/sidereal-io/lets-spec/issues/139)), Linear ([#141](https://github.com/sidereal-io/lets-spec/issues/141)) and Jira Cloud ([#144](https://github.com/sidereal-io/lets-spec/issues/144)); shaping a single Jira Cloud packet is also open ([#143](https://github.com/sidereal-io/lets-spec/issues/143)).
-4. **Build** — select and claim a ready GitHub issue, then plan and build it through a pull request — partial: GitHub selection, claiming and OpenSpec handoff exist; packet checks detect unread comments and brainstorm can cite confirmed comment evidence. The shared GitHub lifecycle ([#136](https://github.com/sidereal-io/lets-spec/issues/136)) and Beads ([#138](https://github.com/sidereal-io/lets-spec/issues/138)), Linear ([#140](https://github.com/sidereal-io/lets-spec/issues/140)) and Jira Cloud ([#142](https://github.com/sidereal-io/lets-spec/issues/142)) paths remain open.
-5. **Review** — plan and code reviews request a fresh session and prefer another family, using the models the resolver reports — partial: the T3 resolver now reads the live model catalogue, but a transient waiting state can still fail a completed read-only review ([#102](https://github.com/sidereal-io/lets-spec/issues/102)).
+4. **Build** — select and claim a ready GitHub issue, then plan and build it through a pull request — partial: GitHub selection, claiming and OpenSpec handoff exist; packet checks detect unread comments and brainstorm can cite confirmed comment evidence. The Beads ([#138](https://github.com/sidereal-io/lets-spec/issues/138)), Linear ([#140](https://github.com/sidereal-io/lets-spec/issues/140)) and Jira Cloud ([#142](https://github.com/sidereal-io/lets-spec/issues/142)) paths remain open.
+5. **Review** — plan and code reviews request a fresh session and prefer another family, using the models the resolver reports — supported.
 6. **Merge** — the user merges the pull request; archive is the last commit — supported.
-7. **Update** — move the pin, sync and commit — partial: the OpenSpec version warning lacks the exact configuration line to change ([#26](https://github.com/sidereal-io/lets-spec/issues/26)).
+7. **Update** — move the pin, sync and commit — supported.
 
 ### People who build Let's Spec
 
@@ -54,10 +54,10 @@ Stage status checked against the code on 2026-11-03.
 ```
   Change ──► Release ──► Bump the pin here ──► Walk Mo's journey
      │          │               │                     │
- supported  supported        partial               partial
+  partial   supported        partial               partial
 ```
 
-1. **Change** — plan, implement and check one issue on one branch and pull request — supported.
+1. **Change** — plan, implement and check one issue on one branch and pull request — partial: the checks run, but 379 tests fail when a skill's sentence is reworded with the same meaning ([#312](https://github.com/sidereal-io/lets-spec/issues/312)), and about three in four tests of `lets` call its internals with fakes, so a refactor that changes no behavior breaks them ([#314](https://github.com/sidereal-io/lets-spec/issues/314), [#315](https://github.com/sidereal-io/lets-spec/issues/315), [#316](https://github.com/sidereal-io/lets-spec/issues/316), [#317](https://github.com/sidereal-io/lets-spec/issues/317), [#318](https://github.com/sidereal-io/lets-spec/issues/318), [#319](https://github.com/sidereal-io/lets-spec/issues/319) and [#320](https://github.com/sidereal-io/lets-spec/issues/320)).
 2. **Release** — push a tag; the workflow builds and publishes the tarball — supported.
 3. **Bump the pin here** — move `mise.toml` to the release and run `lets sync` — partial: done by hand after each release.
 4. **Walk Mo's journey** — use the skills for this repository's own work — partial: see Mo's journey above.
