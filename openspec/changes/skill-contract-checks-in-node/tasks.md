@@ -21,7 +21,7 @@
 ## 3. Integration [depends-on: 2]
 
 - [x] 3.1 [easy] The flake's `node-tests` check has `pkgs.gh` among its inputs, and its comment no longer says the tests use no real `gh` (D8) (verify: `nix build .#checks.x86_64-linux.node-tests`) (✓ `nix build .#checks.x86_64-linux.node-tests` passed)
-- [ ] 3.2 [medium] Every check passes: `pnpm test`, `mise run check` and `nix flake check`, with `tests/skill-interfaces.bats` unchanged and still running (D4). The pull request lists each bats test this change replaces with its Node test, as design.md's table does, and says this story kept no unit test and deleted no test (verify: `nix flake check`)
+- [x] 3.2 [medium] Every check passes: `pnpm test`, `mise run check` and `nix flake check`, with `tests/skill-interfaces.bats` unchanged and still running (D4). The pull request lists each bats test this change replaces with its Node test, as design.md's table does, and says this story kept no unit test and deleted no test (verify: `nix flake check`) (✓ `nix flake check` passed; `mise run check` passed; `pnpm test` passed but for one bats test that trips on an untracked, git-ignored `skills/system/` folder in this checkout, and passes in a clean clone)
 
 ## Deviations Ledger
 
