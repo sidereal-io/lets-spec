@@ -327,6 +327,65 @@ test('a bad entry for another intent, or for another strategy, is not checked', 
   assert.equal(line(otherStrategy).guidance, null);
 });
 
+// A run rejected for a bad lets config: exit 2, nothing on stdout, and one
+// stderr line that starts with file and holds each of named.
+function refused({ result }: Run, file: string, ...named: string[]) {
+  assert.equal(result.code, 2, result.output);
+  assert.equal(result.stdout, '');
+  assert.match(result.stderr, /^[^\n]*\n$/, `stderr is exactly one line: ${result.stderr}`);
+  assert.ok(result.stderr.startsWith(`lets delegate: ${file}: `), result.stderr);
+  for (const text of named) assert.ok(result.stderr.includes(text), `${text} in ${result.stderr}`);
+}
+
+// subagent's answer to review instructions for code, when nothing else answers.
+const SUBAGENT_REVIEW = { strategy: 'review', for: 'code', resolver: 'subagent', options: [], guidance: null };
+
+describe('the delegate section of the lets config', () => {
+  // The one chain asked here that lists t3. An empty T3CODE_HOME holds no
+  // running server, so t3 declines, whatever the developer runs.
+  test('t3, cli and subagent are each a valid entry of the chain', async (t) => {
+    const run = await instructions(t, 'review', 'code', {
+      user: 'version: 3\ndelegate:\n  resolvers:\n    - t3\n    - cli\n    - subagent\n',
+      env: { T3CODE_HOME: tempDir(t) },
+    });
+    assert.deepEqual(line(run), SUBAGENT_REVIEW);
+  });
+
+  test('a config with no delegate, a null or empty one, or no resolvers, has no chain, so subagent answers', async (t) => {
+    for (const user of ['version: 3\n', 'version: 3\ndelegate:\n', 'version: 3\ndelegate: null\n', 'version: 3\ndelegate: {}\n', 'version: 3\ndelegate:\n  resolvers:\n']) {
+      assert.deepEqual(line(await instructions(t, 'review', 'code', { user })), SUBAGENT_REVIEW, user);
+    }
+  });
+
+  test('an entry that is not t3, cli or subagent exits 2, naming the file, the entry and the three names', async (t) => {
+    for (const entry of ['codex', 'T3', '7', '/opt/r/old-resolver']) {
+      const run = await instructions(t, 'review', 'code', { user: `version: 3\ndelegate:\n  resolvers:\n    - t3\n    - ${entry}\n` });
+      refused(run, run.userConfig, 'delegate.resolvers[1]', entry, 't3, cli or subagent');
+    }
+  });
+
+  test('a lets config that is not valid exits 2, naming the user\'s file and the bad value', async (t) => {
+    const cases: [string, string][] = [
+      ['version: 3\ndelegate: { resolvers: [unclosed\n', 'is not YAML'],
+      ['- just\n- a list\n', 'must be a mapping with version'],
+      ['version: 2\nresolvers: []\n', 'version must be 3, got 2'],
+      ['version: 2\ndelegate: [t3]\n', 'version must be 3, got 2'],
+      ['version: "3"\n', 'version must be 3, got "3"'],
+      ['delegate: { resolvers: [] }\n', 'version must be 3'],
+      ['version: 3\ndelegate: [t3]\n', 'delegate must be a mapping, got ["t3"]'],
+      ['version: 3\ndelegate: t3\n', 'delegate must be a mapping, got "t3"'],
+      ['version: 3\ndelegate: { resolvers: t3 }\n', 'delegate.resolvers must be a list, got "t3"'],
+      ['version: 3\ndelegate:\n  resolvers:\n    - bin/old-resolver\n', '"bin/old-resolver"'],
+      ['version: 3\ndelegate:\n  resolvers:\n    - ~/bin/old-resolver\n', '"~/bin/old-resolver"'],
+      ['version: 3\ndelegate:\n  resolvers:\n    - 7\n', 'delegate.resolvers[0] must be t3, cli or subagent, got 7'],
+    ];
+    for (const [user, named] of cases) {
+      const run = await instructions(t, 'review', 'code', { user });
+      refused(run, run.userConfig, named);
+    }
+  });
+});
+
 // #306 retires handoff. Whichever of it and this file's story merges
 // second deletes this block.
 describe('handoff instructions', () => {

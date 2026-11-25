@@ -16,35 +16,6 @@ function depsWith(text?: string, env: Record<string, string> = {}) {
   return { env, cwd: '/repo', io: fakeIo({ files, homedir: () => '/home/u' }) };
 }
 
-test('a valid config reads as its chain of names, in order', async () => {
-  const text = 'version: 3\ndelegate:\n  resolvers:\n    - t3\n    - cli\n    - subagent\n';
-  assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: { resolvers: ['t3', 'cli', 'subagent'] } });
-});
-
-test('a config with no delegate key, or a null one, has no chain', async () => {
-  for (const text of ['version: 3\n', 'version: 3\ndelegate:\n', 'version: 3\ndelegate: null\n']) {
-    assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: {} }, text);
-  }
-});
-
-test('a delegate key with no resolvers, or null ones, has no chain', async () => {
-  for (const text of ['version: 3\ndelegate: {}\n', 'version: 3\ndelegate:\n  resolvers:\n']) {
-    assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: {} }, text);
-  }
-});
-
-test('an entry that is not t3, cli or subagent names the file, the entry and the three names', async () => {
-  for (const entry of ['/opt/r/old-resolver', 'codex', 'T3', '7']) {
-    await assert.rejects(configIn(depsWith(`version: 3\ndelegate:\n  resolvers:\n    - t3\n    - ${entry}\n`)),
-      (error) => error instanceof UsageError && error.message.includes(HOME_CONFIG) && error.message.includes('delegate.resolvers[1]')
-        && error.message.includes(entry) && /t3, cli or subagent/.test(error.message), entry);
-  }
-});
-
-test('an empty chain is a valid config', async () => {
-  assert.deepEqual(await configIn(depsWith('version: 3\ndelegate: { resolvers: [] }\n')), { version: 3, delegate: { resolvers: [] } });
-});
-
 test('a key this lets does not know is ignored, at the top level and under delegate', async () => {
   const text = 'version: 3\nsync: true\ndelegate:\n  resolvers: [subagent]\n  telemetry: true\n';
   assert.deepEqual(await configIn(depsWith(text)), { version: 3, delegate: { resolvers: ['subagent'] } });
@@ -106,27 +77,6 @@ test('guidanceFor rejects a bad level, naming the file and the dotted key', () =
 test('guidanceFor ignores a bad entry for another intent or the other strategy', () => {
   assert.equal(guidanceFor(withDelegate('delegate:\n  review:\n    plan:\n      guidance: [a, b]\n'), 'review', 'code', () => CONFIG), null);
   assert.equal(guidanceFor(withDelegate('delegate:\n  handoff: 42\n'), 'review', 'code', () => CONFIG), null);
-});
-
-test('an invalid config is a usage error that names the file and the bad value', async () => {
-  const cases: [string, string][] = [
-    ['version: 3\ndelegate: { resolvers: [unclosed\n', 'not YAML'],
-    ['- just\n- a list\n', 'mapping'],
-    ['version: 2\nresolvers: []\n', 'version must be 3, got 2'],
-    ['version: 2\ndelegate: [t3]\n', 'version must be 3, got 2'],
-    ['version: "3"\n', '"3"'],
-    ['delegate: { resolvers: [] }\n', 'version must be 3'],
-    ['version: 3\ndelegate: [t3]\n', 'delegate must be a mapping'],
-    ['version: 3\ndelegate: t3\n', 'delegate must be a mapping'],
-    ['version: 3\ndelegate: { resolvers: t3 }\n', 'delegate.resolvers must be a list'],
-    ['version: 3\ndelegate:\n  resolvers:\n    - bin/old-resolver\n', 'bin/old-resolver'],
-    ['version: 3\ndelegate:\n  resolvers:\n    - ~/bin/old-resolver\n', '~/bin/old-resolver'],
-    ['version: 3\ndelegate:\n  resolvers:\n    - 7\n', '7'],
-  ];
-  for (const [text, named] of cases) {
-    await assert.rejects(configIn(depsWith(text)),
-      (error) => error instanceof UsageError && error.message.includes(HOME_CONFIG) && error.message.includes(named), text);
-  }
 });
 
 test('checkConfig drops a go key, even with a question mode lets does not know', () => {
