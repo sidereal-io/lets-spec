@@ -170,6 +170,8 @@ export function standIn(dir: string, name: string, table: StandInRow[]): StandIn
   const tableFile = join(dir, `.${name}.table.json`);
   const log = join(dir, `.${name}.log`);
   writeFileSync(tableFile, JSON.stringify(table));
+  // A stand-in that replaces another starts with no calls.
+  rmSync(log, { force: true });
   const program = join(dir, name);
   // A Node script, so the table needs no matching code in shell. It names
   // this Node, because the Nix sandbox may have no /usr/bin/env.
