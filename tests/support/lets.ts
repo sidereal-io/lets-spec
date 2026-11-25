@@ -3,7 +3,7 @@
 // PATH. Command-specific fixtures live beside their tests, not here.
 import { execFile, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { accessSync, chmodSync, constants, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import type { TestContext } from 'node:test';
@@ -14,6 +14,8 @@ export const repo = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 
 const ENTRY = join(repo, 'lets', 'bin', 'lets');
 const DEFAULT_TIMEOUT_MS = 30_000;
+// How long a hanging stand-in waits before it ends by itself.
+const HANG_MS = 60_000;
 
 /** What one run of a program left behind. */
 export interface RunResult {
@@ -140,8 +142,14 @@ export function pinnedEnv(extra?: EnvChanges): NodeJS.ProcessEnv {
 export function runLets(args: string[], options: RunLetsOptions): Promise<LetsResult> {
   const command = `lets ${args.join(' ')}`;
   const env = pinnedEnv();
-  // An empty PATH entry means the current folder, so add none.
-  if (options.standIns !== undefined) env.PATH = env.PATH ? `${options.standIns}${delimiter}${env.PATH}` : options.standIns;
+  if (options.onlyStandIns) {
+    const gitDir = gitOnlyDir();
+    if (gitDir === null) return Promise.reject(new Error(`${command} in ${options.cwd} needs git on PATH, and this process has none: ${process.env.PATH ?? '(PATH unset)'}`));
+    env.PATH = options.standIns === undefined ? gitDir : `${options.standIns}${delimiter}${gitDir}`;
+  } else if (options.standIns !== undefined) {
+    // An empty PATH entry means the current folder, so add none.
+    env.PATH = env.PATH ? `${options.standIns}${delimiter}${env.PATH}` : options.standIns;
+  }
   const timeout = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   return new Promise((done, fail) => {
     execFile(
@@ -218,6 +226,7 @@ export function buildRelease(out: string, schemas: string[], skills: string[]): 
  * `dir` cannot be written.
  */
 export function standIn(dir: string, name: string, table: StandInRow[], options?: StandInOptions): StandIn {
+  const logEnv = options?.logEnv ?? [];
   // The program runs in another folder, so the paths it holds are absolute.
   dir = resolve(dir);
   const tableFile = join(dir, `.${name}.table.json`);
@@ -231,12 +240,17 @@ export function standIn(dir: string, name: string, table: StandInRow[], options?
   writeFileSync(program, `#!${process.execPath}
 const fs = process.getBuiltinModule('node:fs');
 const args = process.argv.slice(2);
-fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify(args) + '\\n');
+const env = {};
+for (const name of ${JSON.stringify(logEnv)}) if (process.env[name] !== undefined) env[name] = process.env[name];
+fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args, env }) + '\\n');
 const row = JSON.parse(fs.readFileSync(${JSON.stringify(tableFile)}, 'utf8'))
   .find((row) => row.args.length === args.length && row.args.every((arg, i) => arg === args[i]));
 if (row === undefined) {
   process.stderr.write(${JSON.stringify(name)} + ': stand-in has no answer for ' + JSON.stringify(args) + '\\n');
   process.exitCode = 127;
+} else if (row.hang) {
+  // Ends at a signal, as Node does by default, or by itself.
+  setTimeout(() => {}, ${HANG_MS});
 } else {
   if (row.stdout) process.stdout.write(row.stdout);
   if (row.stderr) process.stderr.write(row.stderr);
@@ -244,13 +258,12 @@ if (row === undefined) {
 }
 `);
   chmodSync(program, 0o755);
+  const entries = (): { args: string[]; env: Record<string, string> }[] => existsSync(log)
+    ? readFileSync(log, 'utf8').split('\n').filter((line) => line !== '').map((line) => JSON.parse(line))
+    : [];
   return {
-    calls: () => existsSync(log)
-      ? readFileSync(log, 'utf8').split('\n').filter((line) => line !== '').map((line) => JSON.parse(line) as string[])
-      : [],
-    envs: () => {
-      throw new Error('not built yet');
-    },
+    calls: () => entries().map(({ args }) => args),
+    envs: () => entries().map(({ env }) => Object.fromEntries(logEnv.map((key) => [key, env[key]]))),
   };
 }
 
@@ -317,6 +330,26 @@ function walk(dir: string, rel: string): string[] {
     paths.push(...walk(dir, `${rel}/${entry}`));
   }
   return paths;
+}
+
+let gitOnly: string | null | undefined;
+
+// A folder that holds only a link named git to the git on this process's
+// PATH, made once per process, or null when there is no git.
+function gitOnlyDir(): string | null {
+  if (gitOnly !== undefined) return gitOnly;
+  const found = (process.env.PATH ?? '').split(delimiter).filter((dir) => dir !== '').map((dir) => join(dir, 'git')).find((path) => {
+    try {
+      accessSync(path, constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  if (found === undefined) return (gitOnly = null);
+  const dir = tempDir();
+  symlinkSync(found, join(dir, 'git'));
+  return (gitOnly = dir);
 }
 
 function applyEnv(env: NodeJS.ProcessEnv, changes: EnvChanges | undefined): NodeJS.ProcessEnv {
