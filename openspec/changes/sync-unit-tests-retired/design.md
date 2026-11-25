@@ -130,12 +130,15 @@ test's name. Files: `setup` is `tests/sync/setup.test.ts`, `rules` and
 | a release.json that is not JSON | New: openspec |
 | an unknown CLI version | Covered by the New openspec test for a stand-in that prints nothing |
 | the same version | New: openspec "same or newer", two runs |
-| the same version with build metadata | Kept: `compareVersions` "build metadata is ignored" (decision 8) |
+| the same version with build metadata | Deleted. Its comparison is the kept `compareVersions` test "build metadata is ignored when versions compare" (decision 8) |
 | a newer CLI | New: the "same or newer" test |
 | an older CLI is warned about | New: the two openspec older-CLI tests above |
-| an older patch, compared as a number | Kept: `compareVersions` "compare … as numbers" |
-| a prerelease of the recorded version | Kept: `compareVersions` "a prerelease is older" |
-| 4 `compareVersions` tests | Kept (D7) |
+| an older patch, compared as a number | Deleted. Its comparison is the kept `compareVersions` test "versions compare major, minor and patch as numbers" (decision 8) |
+| a prerelease of the recorded version | Deleted. Its comparison is the kept `compareVersions` test "a prerelease is older than its release" (decision 8) |
+| versions compare major, minor and patch as numbers | Kept as a unit test (D7) |
+| a prerelease is older than its release | Kept as a unit test (D7) |
+| prerelease identifiers compare by semver precedence | Kept as a unit test (D7) |
+| build metadata is ignored when versions compare | Kept as a unit test (D7) |
 
 **`init.test.ts` (3)**
 
@@ -270,8 +273,9 @@ In `tests/sync/project.ts`:
   `PATH`. A test replaces the `openspec` stand-in with
   `standIn(p.bin, 'openspec', rows)`.
 - `Project.sync(args?, env?, where?: { cwd?: string; lets?: string })`
-  replaces the third parameter `cwd`. The three calls that pass a
-  `cwd` today change to `{ cwd }`.
+  replaces the third parameter `cwd`. The seven calls that pass a
+  `cwd` today change to `{ cwd }`: two in `tests/sync/setup.test.ts`
+  and five in `tests/sync/skills.test.ts`.
 
 ### 7. A failed `git ls-files` comes from a broken index (D6)
 
