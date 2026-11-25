@@ -54,7 +54,12 @@ interface Demo {
 // A skip would let pnpm test pass without the schema checks, so a missing
 // CLI fails every test in the file.
 before(async () => {
-  const result = await openspec(['--version'], repo).catch(() => undefined);
+  // Only a missing program means a missing CLI; a timeout or a permission
+  // error keeps its own message.
+  const result = await openspec(['--version'], repo).catch((error: Error) => {
+    if (error.message.endsWith('openspec is not on PATH')) return undefined;
+    throw error;
+  });
   if (result === undefined) throw new Error(MISSING);
   // A broken mise shim is on PATH but exits non-zero.
   if (result.code !== 0) throw new Error(`${MISSING}\nopenspec --version exited ${result.code}:\n${result.output}`);
