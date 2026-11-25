@@ -6,7 +6,7 @@
 ## 1. Contracts
 
 - [x] 1.1 [medium] `tests/support/lets.ts` declares the helper module's exports from design decision 1 (`pinnedEnv`, `runLets`, `tempDir`, `git`, `buildRelease`, `standIn`, `snapshot`) with their types, and a doc comment on each that states its preconditions, its result and how it fails. Each body throws `not built yet` (verify: `pnpm check`) (✓ `pnpm check` passed)
-- [ ] 1.2 [easy] `tests/sync/project.ts` declares the sync fixture's exports from design decision 2 (`makeRelease`, `useRelease`, `project`, `rulesIn`, `fragment`, `shippedSkills`, `releaseFiles`, `setSchema`) with their types and doc comments, typed against the helper module. `useRelease` returns `release()`, the release's path. Each body throws `not built yet` (verify: `pnpm check`)
+- [x] 1.2 [easy] `tests/sync/project.ts` declares the sync fixture's exports from design decision 2 (`makeRelease`, `useRelease`, `project`, `rulesIn`, `fragment`, `shippedSkills`, `releaseFiles`, `setSchema`) with their types and doc comments, typed against the helper module. `useRelease` returns `release()`, the release's path. Each body throws `not built yet` (verify: `pnpm check`) (✓ `pnpm check` passed)
 
 ## 2. Implementation [depends-on: 1]
 
