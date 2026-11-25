@@ -2,7 +2,7 @@
 // never edits them. It warns about their settings, and exits 0 when it
 // warns, so a problem never stops a dev shell from starting.
 import assert from 'node:assert/strict';
-import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { type TestContext, test } from 'node:test';
 import { letsPackage, repo, snapshot, tempDir } from '../support/lets.ts';
@@ -18,6 +18,9 @@ test('sync creates each file the project needs, and names each one', async (t) =
   const { code, output } = await p.sync();
   assert.equal(code, 0, output);
   assert.equal(p.read(CONFIG), readFileSync(join(release(), 'init', CONFIG), 'utf8'));
+  // The release is read-only, as in the Nix store, and the project's copy must not be.
+  assert.equal(statSync(join(release(), 'init', CONFIG)).mode & 0o222, 0);
+  assert.equal((statSync(join(p.path, CONFIG)).mode & 0o777).toString(8), '644');
   assert.equal(readlinkSync(join(p.path, 'CLAUDE.md')), 'AGENTS.md');
   assert.equal(readlinkSync(join(p.path, '.claude/skills')), '../.agents/skills');
   assert.ok(output.includes('created AGENTS.md'), output);

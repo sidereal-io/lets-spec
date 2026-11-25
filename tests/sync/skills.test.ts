@@ -141,12 +141,14 @@ test('a skill the new release no longer ships is removed', async (t) => {
   assert.ok(output.includes('lets-spec: removed .agents/skills/lets-spawn.'), output);
 });
 
-test('a skill of another name is left alone', async (t) => {
+test('a skill or schema of another name is left alone', async (t) => {
   const p = project(t);
-  p.write('.agents/skills/brainstorming/SKILL.md', 'mine\n');
+  // lets sync owns lets-* and openspec-* skills and lets-* schemas, by the whole name.
+  const own = ['.agents/skills/brainstorming/SKILL.md', '.agents/skills/xlets-build/SKILL.md', 'openspec/schemas/mine/schema.yaml'];
+  for (const file of own) p.write(file, 'mine\n');
   const { code, output } = await p.sync();
   assert.equal(code, 0, output);
-  assert.equal(p.read('.agents/skills/brainstorming/SKILL.md'), 'mine\n');
+  for (const file of own) assert.equal(p.read(file), 'mine\n', file);
 });
 
 test('a project synced by the linked layout becomes copied', async (t) => {
