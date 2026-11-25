@@ -25,7 +25,7 @@ moves its tests.
 
 ## 4. Integration [depends-on: 3]
 
-- [ ] 4.1 [easy] `tests/support/project.bash` is deleted, and the remaining bats files still pass with `common.bash` and `release.bash` (D10, D13) (verify: `bats tests`)
+- [x] 4.1 [easy] `tests/support/project.bash` is deleted, and the remaining bats files still pass with `common.bash` and `release.bash` (D10, D13) (verify: `bats tests`) (✓ `bats tests` passed, 542 tests)
 - [ ] 4.2 [easy] The `tests/` row of the README's *Development* table says that `tests/sync/` holds the black-box tests of `lets sync`, and no longer says the `*.bats` files test `lets sync` (D14) (verify: `! git grep -n 'end-to-end tests of .lets sync' README.md`)
 - [ ] 4.3 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the 67 moved tests with no OpenSpec CLI and whose `commands` check runs the remaining bats files. The pull request says this story kept no unit test and deleted no Node test (verify: `nix flake check`)
 
