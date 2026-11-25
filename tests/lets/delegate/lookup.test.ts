@@ -1,18 +1,11 @@
+// The unit tests of withModels and inAdapter, which the run commands use:
+// the order in which models are tried, and how an adapter's error is
+// classed. Which resolver answers is tested through lets, in
+// tests/delegate/instructions.test.ts.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { Config, ResolverName } from '../../../lets/src/delegate/config.ts';
-import { inAdapter, pick, withModels } from '../../../lets/src/delegate/lookup.ts';
+import { inAdapter, withModels } from '../../../lets/src/delegate/lookup.ts';
 import { Refused, SessionFailed, SpawnError, TimeoutError, UsageError } from '../../../lets/src/resolvers/kit/errors.ts';
-import { commandDeps, CONFIG } from './fixtures/command-deps.ts';
-import type { FakeResolver } from './fixtures/command-deps.ts';
-
-// A config whose chain is resolvers.
-const listing = (...resolvers: ResolverName[]): Config => ({ version: 3, delegate: { resolvers } });
-// Lookup deps with these fake adapters, and this config.
-function lookup(adapters: Partial<Record<ResolverName, FakeResolver>>, config: Config | null) {
-  const t = commandDeps({ adapters });
-  return { t, deps: { ...t.deps, config, fileOf: () => CONFIG } };
-}
 
 // withModels over models, with answer for each; tried lists the models
 // it was asked for, in order.
@@ -71,12 +64,4 @@ test('a known error thrown inside an adapter keeps its class', async () => {
       throw known;
     }), (error) => error === known);
   }
-});
-
-test('an adapter whose detect throws is a SpawnError', async () => {
-  const { deps } = lookup({}, listing('t3'));
-  deps.resolvers.t3.detect = () => {
-    throw new Error('no /proc');
-  };
-  await assert.rejects(pick('run', deps), (error) => error instanceof SpawnError && error.message === 'no /proc');
 });
