@@ -81,11 +81,15 @@
   (`namedSkills` over `skillFiles(root, 'skills/lets-go')`). Only
   skills that are folders of `skills/` count: the existing check
   already reports a name that is not.
-- For each flow and each such skill the flow does not ship, the check
-  finds the schemas, of all the flows' schemas, whose `schema.yaml`
-  names the skill. The flow must ship it when no schema names it, or
-  when the flow ships one of the schemas that do. Otherwise the skill
-  belongs to another flow's schema, and the flow may leave it out.
+- Every flow must ship each entry point, with no exemption: every
+  flow's agent gets the same routing table, so a request can reach an
+  entry point in any flow.
+- For each flow and each other such skill the flow does not ship, the
+  check finds the schemas, of all the flows' schemas, whose
+  `schema.yaml` names the skill. The flow must ship it when no schema
+  names it, or when the flow ships one of the schemas that do.
+  Otherwise the skill belongs to another flow's schema, and the flow
+  may leave it out.
 - Each finding is `{ file: 'flows.json', name: <skill> }`.
 
 Today this requires `lets-go`, `lets-shape`, `lets-review-pr`,
