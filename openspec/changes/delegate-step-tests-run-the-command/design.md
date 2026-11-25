@@ -120,7 +120,7 @@ export function agyWrite(effort: string, timeout: string, prompt: string, model?
 export function untilCalled(stand: StandIn, count?: number, ms?: number): Promise<void>;
 /** Resolves once no process has id `pid`; rejects after `ms`. */
 export function untilGone(pid: number, ms?: number): Promise<void>;
-/** Registers `t.after` to send SIGTERM to the background step `pid` when it still runs at the end of the test. */
+/** At the end of the test, before `delegateRepo` removes its folders, sends SIGTERM to the background step `pid` when it still runs, and waits for it to end. */
 export function cleanUpStep(t: TestContext, pid: number): void;
 /** Sends SIGTERM to the background step `pid` now, to make a killed step. */
 export function stopStep(pid: number): void;
@@ -151,7 +151,10 @@ comment that says what it needs, what it gives and how it fails.
   pid)` as soon as `step start` prints the pid, before any assertion.
   So a test that fails half-way still stops what it started, and a test
   that checks a step while it runs keeps it running until the test
-  ends.
+  ends. node:test runs after hooks in the order they were added, so
+  `delegateRepo` adds one first that runs these stops, through
+  `beforeRemoval(t, hook)`. Each step has then ended before the hooks
+  of `tempDir` remove the folders it writes to.
 - **Two answers on one stand-in:** rows match by exact arguments, so a
   test that needs one start to hang and the next to answer gives them
   different `--model` values, such as `claude/claude-slow` and
@@ -295,9 +298,10 @@ check` and `git grep` show what is unused. The folder stays (D10).
 
 ## Risks / Trade-offs
 
-- [A background step outlives a failed test] → `cleanUpStep`
-  registers a `t.after` for every pid a test started, before any
-  assertion (decision 3).
+- [A background step outlives a failed test, or writes to a folder
+  being removed] → `cleanUpStep` registers, for every pid a test
+  started and before any assertion, a stop that runs before the
+  folders are removed and waits for the step to end (decision 3).
 - [A test races a background step, such as stopping it before `lets`
   has started the stand-in] → `untilCalled` waits for the stand-in's
   logged call before any signal, and `untilGone` waits for the process
