@@ -6,7 +6,7 @@
 ## 1. Contracts
 
 - [ ] 1.1 [medium] `tests/support/lets.ts` declares the new exports from design decision 2 (`run` with its options type, `makeReadOnly`, `generatedSkills` and `tree`) with their types, and a doc comment on each that states its preconditions, its result and how it fails. Each new body throws `not built yet`. The existing exports keep their signatures (verify: `pnpm check`)
-- [ ] 1.2 [easy] The root `package.json` has `yaml` at `^2.9.1` in `devDependencies`, added with `pnpm add -D -w yaml@^2.9.1`, and `pnpm-lock.yaml` changes only in its root importer (D12, design decision 8) (verify: `pnpm install --frozen-lockfile && pnpm check`)
+- [ ] 1.2 [easy] The root `package.json` has `yaml` at `^2.9.1` in `devDependencies`, added with `pnpm add -D -w yaml@^2.9.1`, and `pnpm-lock.yaml` changes only in its root importer (D12, design decision 8). If Nix reports a `pnpmDeps` hash mismatch, this commit also puts the reported hash into `flake.nix` (verify: `pnpm install --frozen-lockfile && pnpm check && nix build .#checks.x86_64-linux.node-tests -L`)
 
 ## 2. Implementation [depends-on: 1]
 
@@ -23,10 +23,10 @@ that moves its tests.
 
 ## 4. Integration [depends-on: 3]
 
-- [ ] 4.1 [easy] With no `openspec` on `PATH`, `tests/openspec/compat.test.ts` fails, not skips, and prints `the OpenSpec CLI is missing from PATH` (D10). If the `before` hook does not fail the run, each test checks for the CLI itself, as design.md's risks say (verify: `out="$(env PATH="$(dirname "$(command -v node)")" node --test tests/openspec/compat.test.ts 2>&1)"; test $? -ne 0 && printf '%s' "$out" | grep -qF 'the OpenSpec CLI is missing from PATH'`)
-- [ ] 4.2 [easy] The flake's `node-tests` check has `(packagesFor pkgs).openspec` in its `nativeBuildInputs`, its comment no longer says it runs no real program, and the `pnpmDeps` hash is updated only if Nix reports a mismatch (D7, design decision 7) (verify: `nix build .#checks.x86_64-linux.node-tests -L`)
-- [ ] 4.3 [easy] The `tests/` row of the README's *Development* table names `release/` and `openspec/` as the Node tests of the release build and of each schema under the real OpenSpec CLI, and says `*.bats` holds only the checks of every command, file and skill the prose names (D13) (verify: `! git grep -nF 'end-to-end tests of the release build' README.md && git grep -nF '`openspec/`: ' README.md`)
-- [ ] 4.4 [medium] Every check passes: `pnpm test`, `mise run check` and `nix flake check`. `bats tests` runs only `tests/skill-interfaces.bats`, which still loads `tests/support/common.bash` and `tests/support/release.bash` (D6, D8). The pull request description gives the count of moved tests, 16 and 14 (verify: `nix flake check`)
+- [ ] 4.1 [easy] With no `openspec` on `PATH`, `tests/openspec/compat.test.ts` fails, not skips, and prints `the OpenSpec CLI is missing from PATH` (D10). If the `before` hook does not fail the run, each test checks for the CLI itself, as design.md's risks say (verify: `out="$(env PATH= "$(command -v node)" --test tests/openspec/compat.test.ts 2>&1)"; test $? -ne 0 && printf '%s' "$out" | grep -qF 'the OpenSpec CLI is missing from PATH'`)
+- [ ] 4.2 [easy] The flake's `node-tests` check has `(packagesFor pkgs).openspec` in its `nativeBuildInputs`, and its comment no longer says it runs no real program (D7, design decision 7) (verify: `nix build .#checks.x86_64-linux.node-tests -L`)
+- [ ] 4.3 [easy] The `tests/` row of the README's *Development* table names `release/` and `openspec/` as the Node tests of the release build and of each schema under the real OpenSpec CLI, and says `*.bats` holds only the checks of every command, file and skill the prose names (D13) (verify: `` ! git grep -nF 'end-to-end tests of the release build' README.md && git grep -nF '`release/`: ' README.md && git grep -nF '`openspec/`: ' README.md ``)
+- [ ] 4.4 [medium] Every check passes: `pnpm test`, `mise run check` and `nix flake check`. `bats tests` runs only `tests/skill-interfaces.bats`, which still loads `tests/support/common.bash` and `tests/support/release.bash` (D6, D8). The pull request description gives the count of moved tests, 16 and 14 (verify: `pnpm test && mise run check && nix flake check`)
 
 ## Deviations Ledger
 

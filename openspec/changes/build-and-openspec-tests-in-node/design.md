@@ -93,7 +93,7 @@ test.
 
 | Export | What it does |
 |---|---|
-| `run(program, args, options)` | Runs `program` with `args` in `options.cwd`, with the pinned environment and `options.env` on top, and standard input closed, as `</dev/null` gives. Resolves to `{ code, stdout, stderr, output }`, where `output` is `stdout + stderr`, whatever the exit code. Rejects when the program cannot be started, with a message that names it and says it is not on `PATH` when that is the cause, or when the run passes its time limit: 30 seconds unless `options.timeoutMs` says otherwise. |
+| `run(program, args, options)` | Runs `program` with `args` in `options.cwd`, with the pinned environment and `options.env` on top, and standard input closed, as `</dev/null` gives. Resolves to `{ code, stdout, stderr, output }`, where `output` is `stdout + stderr`, whatever the exit code. Rejects when the program cannot be started, with a message that names it. Node reports a missing `options.cwd` with the same `ENOENT` as a missing program, so the message says the program is not on `PATH` only when `options.cwd` exists, and otherwise says the folder is missing. It also rejects when the run passes its time limit: 30 seconds unless `options.timeoutMs` says otherwise. |
 | `makeReadOnly(dir)` | Moves here from `tests/sync/project.ts`, unchanged. The release test "the build works from a read-only source, as in the Nix store" needs it too. |
 | `generatedSkills(dir)` | Makes the folder that stands in for the generated `openspec-*` skills and returns its path, as `release.bash`'s `generated_skills` does. `buildRelease` calls it. |
 | `tree(dir)` | Every path under `dir`, sorted, with its type and a hash of its content or link target, without modes. Two trees with equal `tree` text pass `diff -r`. |
@@ -122,7 +122,8 @@ CLI's `--json` output. No test uses `yq` or `jq`.
 cwd)`, which calls `run('openspec', …)` with `OPENSPEC_TELEMETRY=0` and
 `OPENSPEC_NO_UPDATE_CHECK=1` (D5). A `before` hook runs
 `openspec --version`. When `run` rejects because the program is not on
-`PATH`, the hook throws `the OpenSpec CLI is missing from PATH: install
+`PATH`, or `openspec --version` exits non-zero, as a broken mise shim
+does, the hook throws `the OpenSpec CLI is missing from PATH: install
 it with mise, or run inside nix develop`, and every test in the file
 fails (D10). There is no version check (D11).
 
@@ -181,7 +182,8 @@ in test code or the test setup, and is cheap to change.
 - [The lockfile change alters the flake's `pnpmDeps` hash, and
   `nix flake check` fails on a hash mismatch.] → The set of packages is
   the same, so the hash should hold. If it does not, the builder puts
-  the hash that Nix reports into `flake.nix` in the same commit.
+  the hash that Nix reports into `flake.nix` in the lockfile's commit,
+  task 1.2.
 - [A `before` hook that throws may report the file's tests as skipped
   rather than failed, so `pnpm test` could pass.] → The builder checks
   it once, with `openspec` taken off `PATH`, and confirms that
