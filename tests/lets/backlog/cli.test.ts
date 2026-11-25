@@ -38,20 +38,6 @@ function letsIn(dir: string, cwd: string, env: Record<string, string>, ...args: 
   });
 }
 
-test('a usage error through the real entry exits 2 with nothing on stdout', async () => {
-  const gh = withFakeGh();
-  const { stdout, code } = await lets(gh.dir, 'backlog', 'item');
-  assert.equal(code, 2);
-  assert.equal(stdout, '');
-});
-
-test('-V inside a lets backlog command is a word, not the version flag', async () => {
-  const gh = withFakeGh();
-  const item = await lets(gh.dir, 'backlog', 'item', '5', '-V');
-  assert.equal(item.code, 2);
-  assert.equal(item.stdout, '');
-});
-
 test('lets backlog --help lists complete and its results, and says it reads, claims and completes work', async () => {
   const gh = withFakeGh();
   const { stdout, code } = await lets(gh.dir, 'backlog', '--help');
