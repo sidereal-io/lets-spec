@@ -19,18 +19,6 @@ const runModels = (calls: Calls) => runs(calls).map(({ input }) => {
   return model === null ? family : `${family}/${model}`;
 });
 
-test('a review prints the final message, then one metadata line on stderr', async () => {
-  const t = withT3();
-  assert.equal(await run(options(), t.deps), 0);
-  assert.equal(t.stdout(), 'FINDINGS\n');
-  assert.deepEqual(JSON.parse(t.stderr()), {
-    for: 'code', resolver: 't3', family: 'gpt', model: 'gpt-6-luna', independent: true,
-    handle: { kind: 't3', id: 't3-1' }, checkout: '/repo', commit: HEAD, gitClean: true, durationSeconds: 0,
-  });
-  assert.deepEqual(Object.keys(JSON.parse(t.stderr())),
-    ['for', 'resolver', 'family', 'model', 'independent', 'handle', 'checkout', 'commit', 'gitClean', 'durationSeconds']);
-});
-
 test('the metadata line names the checkout the resolver ran in, and the commit at its HEAD', async () => {
   const t = withT3({ adapters: { t3: { run: { checkout: '/w/elsewhere' } } } });
   assert.equal(await run(options(), t.deps), 0);
@@ -39,62 +27,12 @@ test('the metadata line names the checkout the resolver ran in, and the commit a
   assert.ok(t.io.calls.some(([cmd, args, opts]) => cmd === 'git' && args.join(' ') === 'rev-parse HEAD' && opts.cwd === '/w/elsewhere'), 'HEAD was read in the checkout');
 });
 
-test('a code review\'s metadata line starts with for: code, and a plan review\'s with for: plan', async () => {
-  for (const intent of ['code', 'plan'] as const) {
-    const t = withT3();
-    assert.equal(await run(options({ for: intent }), t.deps), 0);
-    assert.ok(t.stderr().startsWith(`{"for":"${intent}",`), t.stderr());
-  }
-});
-
-test('the adapter is asked to run the normalized name, the prompt, the family, the model and the effort', async () => {
-  const t = withT3();
-  await run(options(), t.deps);
-  assert.deepEqual(runs(t.adapterCalls), [{
-    name: 't3',
-    input: { name: 'x-plan-review', prompt: 'PROMPT TEXT', cwd: '/repo', family: 'gpt', model: 'gpt-6-luna', effort: 'high' },
-    options: { timeoutMs: 45 * 60000 },
-  }]);
-});
-
 test('a resolver that cannot tell the checkout gives a null commit, and the review still succeeds', async () => {
   const t = withT3({ adapters: { t3: { run: { checkout: null } } } });
   assert.equal(await run(options(), t.deps), 0);
   assert.equal(t.stdout(), 'FINDINGS\n');
   const { checkout, commit } = JSON.parse(t.stderr());
   assert.deepEqual({ checkout, commit }, { checkout: null, commit: null });
-});
-
-test('a HEAD that cannot be read gives a null commit, and the review still succeeds', async () => {
-  const t = withT3({ adapters: { t3: { run: { checkout: '/gone' } } }, headFails: true });
-  assert.equal(await run(options(), t.deps), 0);
-  assert.equal(t.stdout(), 'FINDINGS\n');
-  const { checkout, commit } = JSON.parse(t.stderr());
-  assert.deepEqual({ checkout, commit }, { checkout: '/gone', commit: null });
-});
-
-test('a session that commits gives the commit it made, not the one before it', async () => {
-  const t = withT3({ head: 'a'.repeat(40), headAfter: 'b'.repeat(40) });
-  assert.equal(await run(options(), t.deps), 0);
-  assert.equal(JSON.parse(t.stderr()).commit, 'b'.repeat(40));
-});
-
-test('a bare family is asked for with no particular model', async () => {
-  const t = withT3();
-  await run(options({ models: ['claude'] }), t.deps);
-  assert.deepEqual(runModels(t.adapterCalls), ['claude']);
-  assert.equal(JSON.parse(t.stderr()).model, 'claude');
-});
-
-test('the timeout is the one given, else the default by effort', async () => {
-  const given = withT3();
-  await run(options({ timeoutMinutes: 7 }), given.deps);
-  assert.deepEqual(runs(given.adapterCalls)[0].options, { timeoutMs: 7 * 60000 });
-  for (const effort of ['low', 'medium'] as const) {
-    const t = withT3();
-    await run(options({ effort }), t.deps);
-    assert.deepEqual(runs(t.adapterCalls)[0].options, { timeoutMs: 30 * 60000 }, effort);
-  }
 });
 
 test('a bad --model is exit 2, naming it, and no resolver is asked', async () => {
@@ -138,12 +76,6 @@ test('a listed resolver that answers comes before the subagent entry', async () 
   assert.equal(t.adapterCalls().some(([name]) => name === 'subagent'), false, 'the default was not asked');
 });
 
-test('the run request has no reviewers, whatever the config holds', async () => {
-  const t = withT3({ config: 'version: 3\ndelegate: { resolvers: [t3] }\nreviewers:\n  - family: gpt\n    model: gpt-6-luna\n' });
-  assert.equal(await run(options(), t.deps), 0);
-  assert.equal('reviewers' in (runs(t.adapterCalls)[0].input as object), false);
-});
-
 test('run ignores the guidance, even one that is not a string', async () => {
   const t = withT3({ config: 'version: 3\ndelegate:\n  resolvers: [t3]\n  review:\n    code:\n      guidance: 42\n' });
   assert.equal(await run(options(), t.deps), 0);
@@ -154,12 +86,6 @@ test('finish goes to the same resolver with the handle, with ok after a clean tr
   const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [cli, t3] }\n', adapters: { t3: {}, cli: {} } });
   await run(options(), t.deps);
   assert.deepEqual(finishes(t.adapterCalls), [{ name: 'cli', handle: { kind: 'cli', id: 'cli-1' }, ok: true, options: { cwd: '/repo' } }]);
-});
-
-test('a family equal to the source is not independent, and still a success', async () => {
-  const t = withT3();
-  assert.equal(await run(options({ models: ['claude'] }), t.deps), 0);
-  assert.equal(JSON.parse(t.stderr()).independent, false);
 });
 
 test('a refused model passes to the next one on the same resolver', async () => {

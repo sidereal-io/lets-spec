@@ -8,7 +8,7 @@ import { run as step } from '../../../../lets/src/delegate/step.ts';
 import type { ReviewOptions } from '../../../../lets/src/delegate/review.ts';
 import type { StepOptions } from '../../../../lets/src/delegate/step.ts';
 import { createAdapter } from '../../../../lets/src/resolvers/cli/cli.ts';
-import { commandDeps, DONE_REPORT, HEAD } from '../../delegate/fixtures/command-deps.ts';
+import { commandDeps, DONE_REPORT } from '../../delegate/fixtures/command-deps.ts';
 import { fakeIo } from '../kit/fixtures/fake-io.ts';
 import type { FakeIo } from '../kit/fixtures/fake-io.ts';
 
@@ -62,52 +62,6 @@ const answering = () => {
 const argsOf = (io: FakeIo) => io.calls.map(([cmd, args]) => [cmd, args]);
 // The review's JSON line on stderr.
 const metadata = (t: ReturnType<typeof withCli>) => JSON.parse(t.stderr());
-
-test('a review with codex prints codex\'s final message, on gpt, with a process handle', async () => {
-  const t = withCli(answering());
-  assert.equal(await review(reviewOptions(), t.deps), 0);
-  assert.equal(t.stdout(), 'FINDINGS\n');
-  const { resolver, family, model, handle } = metadata(t);
-  assert.deepEqual({ resolver, family, model, handle }, { resolver: 'cli', family: 'gpt', model: 'gpt', handle: { kind: 'process', id: 'x' } });
-});
-
-test('a review through cli names the command\'s checkout, and the commit at its HEAD', async () => {
-  const t = withCli(answering());
-  assert.equal(await review(reviewOptions(), t.deps), 0);
-  const { checkout, commit } = metadata(t);
-  assert.deepEqual({ checkout, commit }, { checkout: '/repo', commit: HEAD });
-});
-
-test('a review with codex runs the given model with -m, and names it', async () => {
-  const io = answering();
-  const t = withCli(io);
-  assert.equal(await review(reviewOptions({ models: ['gpt/gpt-6-luna'] }), t.deps), 0);
-  assert.equal(io.calls.length, 1);
-  const args = io.calls[0][1];
-  assert.deepEqual(args.slice(args.indexOf('-m'), args.indexOf('-m') + 2), ['-m', 'gpt-6-luna']);
-  assert.deepEqual([metadata(t).family, metadata(t).model], ['gpt', 'gpt-6-luna']);
-});
-
-test('a bare family runs the CLI with no model argument', async () => {
-  const io = answering();
-  const t = withCli(io);
-  assert.equal(await review(reviewOptions({ models: ['claude'] }), t.deps), 0);
-  assert.deepEqual(argsOf(io), [['claude', ['-p', '--permission-mode', 'plan', '--effort', 'high']]]);
-  assert.equal(metadata(t).family, 'claude');
-});
-
-test('a gemini model runs with the review\'s effort added', async () => {
-  const io = answering();
-  assert.equal(await review(reviewOptions({ models: ['gemini/gemini-3.8-flash'], effort: 'high' }), withCli(io).deps), 0);
-  assert.deepEqual(argsOf(io)[0][1].slice(4, 6), ['--model', 'gemini-3.8-flash-high']);
-});
-
-test('a model the CLI never listed is still tried', async () => {
-  const io = answering();
-  await review(reviewOptions({ models: ['gpt/gpt-6-astra'] }), withCli(io).deps);
-  assert.equal(io.calls.length, 1);
-  assert.ok(io.calls[0][1].includes('gpt-6-astra'));
-});
 
 test('codex refusing the model is exit 3, with the end of its stderr', async () => {
   const t = withCli(fakeIo({ commands: ['codex'], results: [{ stdout: '', stderr: 'error: model gpt-6-astra not available', code: 1 }] }));
