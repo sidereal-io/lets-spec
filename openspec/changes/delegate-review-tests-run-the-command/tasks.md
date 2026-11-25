@@ -7,7 +7,7 @@
 
 ## 1. Contracts
 
-- [ ] 1.1 [medium] `tests/support/lets.ts` declares `StandInRow.files`, `StandInRow.commit`, `StandIn.inputs()`, `StandIn.cwds()` and `FamilyOptions.rows`, and `tests/delegate/repo.ts` declares `delegateRepo(t, setup)` with its setup and result types, each with a doc comment on its preconditions, result and failures, as design decisions 1 and 2 say. New function bodies throw `not built yet`, and the existing exports behave as before (verify: `pnpm check`)
+- [x] 1.1 [medium] `tests/support/lets.ts` declares `StandInRow.files`, `StandInRow.commit`, `StandIn.inputs()`, `StandIn.cwds()` and `FamilyOptions.rows`, and `tests/delegate/repo.ts` declares `delegateRepo(t, setup)` with its setup and result types, each with a doc comment on its preconditions, result and failures, as design decisions 1 and 2 say. New function bodies throw `not built yet`, and the existing exports behave as before (verify: `pnpm check`) (✓ pnpm check passed)
 
 ## 2. Implementation [depends-on: 1]
 

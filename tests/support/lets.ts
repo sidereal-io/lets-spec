@@ -60,9 +60,24 @@ export interface StandInRow {
   /**
    * When true, the call is logged, then never answered: the program
    * prints nothing and waits, until a signal ends it or, at the latest,
-   * 60 seconds pass, so a stand-in that nothing stops is soon gone.
+   * 120 seconds pass, so a stand-in that nothing stops is soon gone.
    */
   hang?: boolean;
+  /**
+   * Files to write before the call answers, path to text. A relative path
+   * is from the folder the call ran in. No folder is made: when a file's
+   * folder is missing, or the file cannot be written, the call prints a
+   * line naming the path on stderr and exits 1, and nothing after it in
+   * the row happens.
+   */
+  files?: Record<string, string>;
+  /**
+   * After `files` are written, makes a commit with this message in the
+   * folder the call ran in, with only the paths of `files` staged; a row
+   * with no `files` makes an empty commit. When git fails, the call
+   * prints git's stderr and exits 1.
+   */
+  commit?: string;
 }
 
 export interface StandInOptions {
@@ -82,6 +97,10 @@ export interface StandIn {
    * when no `logEnv` was given.
    */
   envs(): Record<string, string | undefined>[];
+  /** Each call's standard input, in the order the calls came. Empty text for a call that got none. */
+  inputs(): string[];
+  /** The folder each call ran in, as an absolute path, in the order the calls came. */
+  cwds(): string[];
 }
 
 /** One model in what `codex debug models` prints. `lets` shows only `list`. */
@@ -100,8 +119,14 @@ export interface CodexModel {
  */
 export type ListingFailure = 'signed-out' | 'unreadable' | 'cannot-start' | 'hangs';
 
-/** Options for `codex`, `agy` and `claude`, passed on to `standIn`. */
-export type FamilyOptions = StandInOptions;
+/** Options for `codex`, `agy` and `claude`. `logEnv` is passed on to `standIn`. */
+export interface FamilyOptions extends StandInOptions {
+  /**
+   * More rows, after the model listing's, such as the answer to one
+   * `codex exec`. A `cannot-start` stand-in never runs, so it answers none.
+   */
+  rows?: StandInRow[];
+}
 
 /**
  * The environment for one run: `process.env` without `WORKFLOW_RELEASE`,
@@ -264,6 +289,8 @@ if (row === undefined) {
   return {
     calls: () => entries().map(({ args }) => args),
     envs: () => entries().map(({ env }) => Object.fromEntries(logEnv.map((key) => [key, env[key]]))),
+    inputs: () => { throw new Error('not built yet'); },
+    cwds: () => { throw new Error('not built yet'); },
   };
 }
 
@@ -326,7 +353,7 @@ function unstartable(dir: string, name: string): StandIn {
   const program = join(dir, name);
   writeFileSync(program, `#!${join(dir, '.no-such-interpreter')}\n`);
   chmodSync(program, 0o755);
-  return { calls: () => [], envs: () => [] };
+  return { calls: () => [], envs: () => [], inputs: () => [], cwds: () => [] };
 }
 
 /**
