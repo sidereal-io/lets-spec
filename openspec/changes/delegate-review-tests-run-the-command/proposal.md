@@ -36,7 +36,7 @@ now.
   `lookup.test.ts`, and from `tests/lets/resolvers/cli/cli.test.ts` and
   `delegate.test.ts` (D1, D10). `lookup.test.ts` is deleted.
 - **Kept, each with its reason in the pull request** (D5, D8, D9):
-  - 3 fake-adapter tests in `review.test.ts` and 4 in `handoff.test.ts`
+  - 3 fake-adapter tests in `review.test.ts` and 5 in `handoff.test.ts`
     that no `cli` or `subagent` run reaches;
   - "rethrows an error it does not know" in `guarded.test.ts`;
   - the 2 `findRepoRoot` tests in `git.test.ts`, for #320;

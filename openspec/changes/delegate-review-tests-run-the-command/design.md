@@ -145,7 +145,10 @@ export interface FamilyOptions extends StandInOptions {
   repository with `.lets/config.yaml` when given, a prompt file `p.md`,
   and a stand-ins folder, then commits everything, so the tree is clean
   before the run. `setup.noCommit` leaves the repository with no
-  commit. It returns the folders, the two config paths, the last
+  commit. `setup.notInRepo` makes no repository and sets
+  `GIT_CEILING_DIRECTORIES` to the folder's parent, as
+  `tests/delegate/instructions.test.ts` does, so git finds no
+  repository above a temporary folder. It returns the folders, the two config paths, the last
   commit's hash and a function that runs `lets` there with
   `onlyStandIns: true`. It is not a `*.test.ts` file, so the runner
   does not run it.
@@ -208,10 +211,11 @@ tests of D5:
 3. A prompt file that cannot be read is exit 2, naming it.
 4. `[subagent, /opt/r/old-resolver]` is exit 2 and saves no prompt.
 
-`tests/lets/delegate/handoff.test.ts` keeps the 4 tests that no `cli`
+`tests/lets/delegate/handoff.test.ts` keeps the 5 tests that no `cli`
 or `subagent` resolver reaches, under a top comment that says so:
 the handle line, a refused model passing to the next, every model
-refused is exit 3, and any other failure is exit 4. Whichever of this
+refused is exit 3, a refusal never moves down the chain, and any
+other failure is exit 4. Whichever of this
 story and #306 merges second deletes the handoff tests.
 
 ### 7. Where each deleted test goes
@@ -252,7 +256,7 @@ It keeps 3 (D9): the checkout somewhere else, a null checkout, and a
 finish that fails. `cli` always answers with the repository as its
 checkout, and its `finish` fails only for a handle it never makes.
 
-**`tests/lets/delegate/handoff.test.ts`** (24; 20 deleted): the 4 tests
+**`tests/lets/delegate/handoff.test.ts`** (24; 19 deleted): the 4 tests
 of decision 6 cover what `cli` and `subagent` reach. The config tests
 go, because the `review run` tests above cover the same config code
 (D5).
@@ -283,6 +287,10 @@ stdin, and no `CLAUDECODE`, set in the run's environment and named in
 **`tests/lets/resolvers/cli/delegate.test.ts`**: the 19 review and
 handoff tests, by the tests above, and these:
 
+- a model the CLI never listed is still tried: the codex review's
+  stand-in has the default empty listing, and codex runs with
+  `-m gpt-6-luna` (`delegate-resolvers` spec, *A resolver runs a model
+  it never listed*);
 - codex refusing after an earlier review with the same name: a file at
   the last-message path holds old findings, and codex refuses: exit 3,
   not 5;
@@ -292,8 +300,7 @@ handoff tests, by the tests above, and these:
   thing it adds to the repository, by `snapshot`.
 
 Its step tests and "finish removes nothing for a process handle whose
-id is not a session name" stay (D9). The ledger's D9 places that test
-in `tests/lets/delegate/cli.test.ts`; it is in this file.
+id is not a session name" stay (D9).
 
 ### 8. The user's own changes and scratch files
 
