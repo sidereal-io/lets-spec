@@ -2,7 +2,7 @@
 // prose, code spans, fenced code lines and headings. Each check takes a
 // root folder, so a test can point it at a small folder of its own.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 
 /** A broken name a check found: the file, relative to the root it read, and the name. */
 export interface Finding {
@@ -39,20 +39,23 @@ export interface Text {
   headings: Heading[];
 }
 
-const cache = new Map<string, Text>();
+type Parts = Omit<Text, 'path' | 'file'>;
+
+const cache = new Map<string, Parts>();
 
 /**
- * Reads `path` under `root` once, and gives the same `Text` on each later
- * call. Throws when the file cannot be read.
+ * Reads `path` under `root`. Each file is read and split once; a later
+ * call for the same file, under any root, shares its parts. Throws when
+ * the file cannot be read.
  */
 export function readText(root: string, path: string): Text {
-  const file = join(root, path);
-  let text = cache.get(file);
-  if (text === undefined) {
-    text = splitText(path.split(sep).join('/'), file, readFileSync(file, 'utf8'));
-    cache.set(file, text);
+  const file = resolve(root, path);
+  let parts = cache.get(file);
+  if (parts === undefined) {
+    parts = splitText(readFileSync(file, 'utf8'));
+    cache.set(file, parts);
   }
-  return text;
+  return { path: path.split(sep).join('/'), file, ...parts };
 }
 
 /**
@@ -116,8 +119,8 @@ export function headingAnchor(text: string, seen: Map<string, number>): string {
   return anchor;
 }
 
-function splitText(path: string, file: string, source: string): Text {
-  const text: Text = { path, file, prose: [], spans: [], code: [], headings: [] };
+function splitText(source: string): Parts {
+  const text: Parts = { prose: [], spans: [], code: [], headings: [] };
   const seen = new Map<string, number>();
   let fence = '';
   // The length of the backtick run that opened the current code span, or 0.

@@ -612,8 +612,6 @@ what `--check` checks, is in [`docs/lets-sync.md`](docs/lets-sync.md).
 This section is for you if your project wants a newer Let's Spec.
 
 Commit what `lets sync` writes in the same pull request as the new pin.
-Moving up from an older release? Read [`docs/upgrading.md`](docs/upgrading.md)
-first: some releases need a step of your own.
 
 ### With Nix
 
