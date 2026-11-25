@@ -156,7 +156,7 @@ test's name. Files: `setup` is `tests/sync/setup.test.ts`, `rules` and
 | a project skill of another name is not managed | Extend: skills "a skill of another name is left alone" also writes `.agents/skills/xlets-build` and `openspec/schemas/mine` |
 | releasePaths lists each skill folder and the schema | Covered: skills "sync copies each skill …" |
 | a release that ships an unmanaged name is refused | Covered by the New setup unowned-skill test |
-| projectPaths lists the managed paths, links included | Covered: skills "a project synced by the linked layout becomes copied" and "a skill the new release no longer ships is removed" |
+| projectPaths lists the managed paths, links included | Extend: skills "a skill the new release no longer ships is removed" also makes a dangling link at `.agents/skills/openspec-gone`, which is removed and reported |
 | projectPaths is empty in a bare project | Covered: every first sync |
 
 **`skills.test.ts` (16)**
@@ -171,7 +171,7 @@ test's name. Files: `setup` is `tests/sync/setup.test.ts`, `rules` and
 | an identical tree writes nothing | Covered: skills "a second sync is quiet and changes nothing" |
 | a file the release no longer has is removed | New: skills, an extra file in `lets-build` is removed |
 | lets-spawn loses the skill, scripts and all | Covered: skills "a skill the new release no longer ships is removed" |
-| a managed path the release does not ship is removed and reported | Extend: skills "a skill the new release no longer ships is removed" also writes `openspec/schemas/lets-old`, which is removed and reported. The link case is covered by the linked-layout test |
+| a managed path the release does not ship is removed and reported | Extend: skills "a skill the new release no longer ships is removed" also writes `openspec/schemas/lets-old`, which is removed and reported, and a dangling link at `.agents/skills/openspec-gone`, which is removed and reported too |
 | a symlink at a managed path is replaced by files | Covered: skills "a project synced by the linked layout becomes copied" |
 | a path not ours by name is kept | Covered: skills "a skill of another name is left alone" |
 | checkSkills names each stale, missing or extra file | Covered: skills "--check fails on a stale file …" and "… on a missing skill and on an extra file". Extend the second with an extra skill folder `.agents/skills/lets-old` |

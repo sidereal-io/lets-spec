@@ -169,10 +169,14 @@ test('a skill the new release no longer ships is removed', async (t) => {
   assert.ok(existsSync(join(p.path, '.agents/skills/lets-spawn/SKILL.md')));
   // A schema an earlier release shipped goes the same way.
   p.write('openspec/schemas/lets-old/schema.yaml', 'old\n');
+  // So does a link at a managed name, even one whose target is gone.
+  symlinkSync(join(tempDir(t), 'gone'), join(p.path, '.agents/skills/openspec-gone'));
   const { code, output } = await p.sync();
   assert.equal(code, 0, output);
   assert.ok(!existsSync(join(p.path, '.agents/skills/lets-spawn')));
   assert.ok(output.includes('lets-spec: removed .agents/skills/lets-spawn.'), output);
+  assert.ok(!isLink(join(p.path, '.agents/skills/openspec-gone')));
+  assert.ok(output.includes('lets-spec: removed .agents/skills/openspec-gone.'), output);
   assert.ok(!existsSync(join(p.path, 'openspec/schemas/lets-old')));
   assert.ok(output.includes('lets-spec: removed openspec/schemas/lets-old.'), output);
 });
