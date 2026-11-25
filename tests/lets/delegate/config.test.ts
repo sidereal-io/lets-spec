@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checkConfig, guidanceFor, mergeDocuments, parseDocument, questionModeFor, readConfig, readLetsConfig } from '../../../lets/src/delegate/config.ts';
+import { checkConfig, guidanceFor, mergeDocuments, parseDocument, readConfig, readLetsConfig } from '../../../lets/src/delegate/config.ts';
 import { UsageError } from '../../../lets/src/resolvers/kit/errors.ts';
 import { commandDeps } from './fixtures/command-deps.ts';
 import { fakeIo } from './fixtures/fake-io.ts';
@@ -129,46 +129,8 @@ test('an invalid config is a usage error that names the file and the bad value',
   }
 });
 
-test('parseDocument gives the checked mapping, every key as written', () => {
-  assert.deepEqual(parseDocument('version: 3\ndelegate: [t3]\ngo:\n  level: loud\n', CONFIG), { version: 3, delegate: ['t3'], go: { level: 'loud' } });
-});
-
 test('checkConfig drops a go key, even with a question mode lets does not know', () => {
   assert.deepEqual(withDelegate('delegate:\n  resolvers: [t3]\ngo:\n  questions: loud\n'), { version: 3, delegate: { resolvers: ['t3'] } });
-});
-
-const questionsIn = (yaml: string) => questionModeFor(parseDocument(`version: 3\n${yaml}`, CONFIG), () => CONFIG);
-
-test('questionModeFor gives the question mode the config sets', () => {
-  assert.equal(questionsIn('go:\n  questions: ask\n'), 'ask');
-  assert.equal(questionsIn('go:\n  questions: auto\n'), 'auto');
-});
-
-test('questionModeFor gives null when the config sets no question mode', () => {
-  for (const yaml of ['', 'go:\n', 'go: null\n', 'go: {}\n', 'go:\n  questions:\n', 'go:\n  questions: null\n', 'go:\n  verbose: true\n']) {
-    assert.equal(questionsIn(yaml), null, yaml);
-  }
-});
-
-test('questionModeFor ignores the old level key under go', () => {
-  assert.equal(questionsIn('go:\n  level: recommend\n'), null);
-  assert.equal(questionsIn('go:\n  level: loud\n  questions: auto\n'), 'auto');
-});
-
-test('questionModeFor rejects a bad go or go.questions, naming the file and the key', () => {
-  const cases: [string, string][] = [
-    ['go: auto\n', 'go must be a mapping, got "auto"'],
-    ['go: [ask]\n', 'go must be a mapping'],
-    ['go:\n  questions: loud\n', 'go.questions must be ask or auto, got "loud"'],
-    ['go:\n  questions: [ask]\n', 'go.questions must be ask or auto'],
-    ['go:\n  questions: Ask\n', 'go.questions must be ask or auto, got "Ask"'],
-    ['go:\n  questions: 3\n', 'go.questions must be ask or auto, got 3'],
-    ['go:\n  questions: recommend\n', 'go.questions must be ask or auto, got "recommend"'],
-  ];
-  for (const [yaml, named] of cases) {
-    assert.throws(() => questionsIn(yaml),
-      (error) => error instanceof UsageError && error.message.includes(CONFIG) && error.message.includes(named), yaml);
-  }
 });
 
 const USER = '/home/u/.config/lets/config.yaml';

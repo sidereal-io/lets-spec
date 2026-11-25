@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, test } from 'node:test';
 import { delegateRepo } from '../delegate/repo.ts';
-import { type LetsResult, tempDir } from '../support/lets.ts';
+import { agy, claude, codex, type LetsResult, tempDir } from '../support/lets.ts';
 
 const ASK = 'version: 3\ngo:\n  questions: ask\n';
 const AUTO = 'version: 3\ngo:\n  questions: auto\n';
@@ -111,5 +111,57 @@ describe('what a file must be', () => {
   test('a repository\'s lets config with version 2 exits 2, naming it', async (t) => {
     const repo = delegateRepo(t, { user: ASK, repo: 'version: 2\n' });
     rejected(await repo.run(questions), repo.repoConfig, 'version must be 3, got 2');
+  });
+});
+
+describe('go.questions', () => {
+  test('ask and auto each print as one JSON line', async (t) => {
+    for (const mode of ['ask', 'auto']) {
+      const result = await delegateRepo(t, { user: `version: 3\ngo:\n  questions: ${mode}\n` }).run(questions);
+      assert.equal(printed(result), mode);
+      assert.equal(result.stdout, `{"questions":"${mode}"}\n`);
+    }
+  });
+
+  test('a config that sets no question mode prints null', async (t) => {
+    const bodies = ['', 'go:\n', 'go: null\n', 'go: {}\n', 'go:\n  questions:\n', 'go:\n  questions: null\n', 'go:\n  verbose: true\n', 'go:\n  level: recommend\n'];
+    for (const body of bodies) {
+      assert.equal(printed(await delegateRepo(t, { user: `version: 3\n${body}` }).run(questions)), null, body);
+    }
+  });
+
+  test('the old go.level beside go.questions is ignored', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ngo:\n  level: loud\n  questions: auto\n' });
+    assert.equal(printed(await repo.run(questions)), 'auto');
+  });
+
+  test('a bad go or go.questions exits 2, naming the file, the key and the value', async (t) => {
+    const cases: [string, string][] = [
+      ['go: auto\n', 'go must be a mapping, got "auto"'],
+      ['go: [ask]\n', 'go must be a mapping, got ["ask"]'],
+      ['go:\n  questions: loud\n', 'go.questions must be ask or auto, got "loud"'],
+      ['go:\n  questions: [ask]\n', 'go.questions must be ask or auto, got ["ask"]'],
+      ['go:\n  questions: Ask\n', 'go.questions must be ask or auto, got "Ask"'],
+      ['go:\n  questions: 3\n', 'go.questions must be ask or auto, got 3'],
+      ['go:\n  questions: recommend\n', 'go.questions must be ask or auto, got "recommend"'],
+    ];
+    for (const [body, named] of cases) {
+      const repo = delegateRepo(t, { user: `version: 3\n${body}` });
+      rejected(await repo.run(questions), repo.userConfig, named);
+    }
+  });
+
+  test('a delegate section the delegate commands reject, and other top-level keys, do not stop it', async (t) => {
+    for (const other of ['delegate:\n  resolvers: [codex]\n', 'delegate: [t3]\n', 'sync: true\nbacklog: 7\n']) {
+      const repo = delegateRepo(t, { user: `version: 3\n${other}go:\n  questions: ask\n  verbose: true\n` });
+      assert.equal(printed(await repo.run(questions)), 'ask', other);
+    }
+  });
+
+  test('it asks no resolver: with cli as the chain, no codex, claude or agy is called', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate:\n  resolvers: [cli]\ngo:\n  questions: auto\n' });
+    const clis = { codex: codex(repo.standIns), claude: claude(repo.standIns), agy: agy(repo.standIns) };
+    assert.equal(printed(await repo.run(questions)), 'auto');
+    for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], name);
   });
 });
