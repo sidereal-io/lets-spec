@@ -158,22 +158,28 @@ export function stopStep(pid: number): void {
 }
 
 /**
- * Checks a value from lets's real clock, taken between `before` and
- * `after` (both `Date.now()`): a string must be an ISO 8601 UTC date to
- * the second, no earlier than `before` rounded down to the second and no
- * later than `after`; a number must be whole milliseconds between
- * `before` and `after`. Throws an assertion error that names the value
- * when it does not hold.
+ * Checks a date from lets's real clock, taken between `before` and `after`
+ * (both `Date.now()`): an ISO 8601 UTC date to the second, no earlier than
+ * `before` rounded down to the second and no later than `after`. Throws an
+ * assertion error that names the value when it does not hold, or when it
+ * is not a string.
  */
-export function assertClock(value: string | number, before: number, after: number): void {
-  if (typeof value === 'string') {
-    assert.match(value, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/, `${value} is not an ISO 8601 UTC date to the second`);
-    const ms = Date.parse(value);
-    assert.ok(ms >= Math.floor(before / 1000) * 1000 && ms <= after, `${value} is not between ${new Date(before).toISOString()} and ${new Date(after).toISOString()}`);
-  } else {
-    assert.ok(Number.isInteger(value), `${value} is not a whole number of milliseconds`);
-    assert.ok(value >= before && value <= after, `${value} is not between ${before} and ${after}`);
-  }
+export function assertClockDate(value: unknown, before: number, after: number): void {
+  assert.equal(typeof value, 'string', `${value} is not a date string`);
+  assert.match(value as string, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/, `${value} is not an ISO 8601 UTC date to the second`);
+  const ms = Date.parse(value as string);
+  assert.ok(ms >= Math.floor(before / 1000) * 1000 && ms <= after, `${value} is not between ${new Date(before).toISOString()} and ${new Date(after).toISOString()}`);
+}
+
+/**
+ * Checks a time from lets's real clock, taken between `before` and `after`
+ * (both `Date.now()`): whole milliseconds from `before` to `after`. Throws
+ * an assertion error that names the value when it does not hold, or when
+ * it is not a number.
+ */
+export function assertClockMs(value: unknown, before: number, after: number): void {
+  assert.ok(Number.isInteger(value), `${value} is not a whole number of milliseconds`);
+  assert.ok((value as number) >= before && (value as number) <= after, `${value} is not between ${before} and ${after}`);
 }
 
 // [flag, value], or nothing when value is absent.

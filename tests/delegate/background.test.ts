@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { describe, test, type TestContext } from 'node:test';
 import { claude, codex, agy, git, type LetsResult } from '../support/lets.ts';
 import { type DelegateRepo, delegateRepo, PROMPT } from './repo.ts';
-import { agyWrite, assertClock, claudeWrite, cleanUpStep, codexWrite, ending, stepStart, type StartArgs, stopStep, untilCalled, untilGone } from './steps.ts';
+import { agyWrite, assertClockMs, claudeWrite, cleanUpStep, codexWrite, ending, stepStart, type StartArgs, stopStep, untilCalled, untilGone } from './steps.ts';
 
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
 const DONE = ending('outcome: done\nevidence:\n  - "commit 3f2a1c0"\n');
@@ -111,7 +111,7 @@ describe('step start', () => {
     assert.deepEqual(rest, {
       name: 'build-x', pid, checkout: repo.cwd, reportFile: join(repo.cwd, 'r.json'), metaFile: join(repo.cwd, 'm.txt'), exitFile: exitFile(repo.cwd),
     });
-    assertClock(startedAt, before, after);
+    assertClockMs(startedAt, before, after);
   });
 
   test('a missing --report-file or --meta-file, an unreadable prompt or answers file, and a bad --model are each exit 2, and start nothing', async (t) => {

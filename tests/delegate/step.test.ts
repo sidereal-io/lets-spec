@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import { agy, claude, codex, git, type LetsResult, unstartable } from '../support/lets.ts';
 import { delegateRepo, PROMPT } from './repo.ts';
-import { agyWrite, assertClock, claudeWrite, codexWrite, ending, stepRun, type StepArgs } from './steps.ts';
+import { agyWrite, assertClockDate, assertClockMs, claudeWrite, codexWrite, ending, stepRun, type StepArgs } from './steps.ts';
 
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
 const CLI_THEN_SUBAGENT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
@@ -125,7 +125,7 @@ describe('step run', () => {
     assert.ok(result.stdout.startsWith('{"outcome":"done",'), result.stdout);
     const { date, ...rest } = reportOf(result);
     assert.deepEqual(rest, { outcome: 'done', evidence: ['commit 3f2a1c0'] });
-    assertClock(date as string, before, after);
+    assertClockDate(date, before, after);
   });
 
   test('the record line on stderr names the session that ran the step, its keys in order', async (t) => {
@@ -360,7 +360,7 @@ describe('step run', () => {
     const after = Date.now();
     const text = readFileSync(join(repo.cwd, 'e.json'), 'utf8');
     assert.match(text, /^\{"exit":0,"endedAt":\d+\}\n$/);
-    assertClock(JSON.parse(text).endedAt, before, after);
+    assertClockMs(JSON.parse(text).endedAt, before, after);
   });
 
   test('--exit-file records exit 2 when the prompt file cannot be read', async (t) => {

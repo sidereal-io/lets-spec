@@ -124,8 +124,10 @@ export function untilGone(pid: number, ms?: number): Promise<void>;
 export function cleanUpStep(t: TestContext, pid: number): void;
 /** Sends SIGTERM to the background step `pid` now, to make a killed step. */
 export function stopStep(pid: number): void;
-/** Checks `value` by decision 4: an ISO 8601 UTC date to the second, or whole milliseconds, between `before` and `after`. */
-export function assertClock(value: string | number, before: number, after: number): void;
+/** Checks `value` by decision 4: an ISO 8601 UTC date to the second, between `before` and `after`. Fails on any other type. */
+export function assertClockDate(value: unknown, before: number, after: number): void;
+/** Checks `value` by decision 4: whole milliseconds between `before` and `after`. Fails on any other type. */
+export function assertClockMs(value: unknown, before: number, after: number): void;
 ```
 
 The exact option types are the build's choice. Each export has a doc
