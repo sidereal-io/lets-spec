@@ -343,7 +343,11 @@ describe('review run', () => {
     mkdirSync(dirname(lastMessage(repo.cwd)), { recursive: true });
     writeFileSync(lastMessage(repo.cwd), 'OLD FINDINGS\n');
     codex(repo.standIns, [], { rows: [{ args: codexExec(repo.cwd, { model: 'gpt-6-astra' }), stderr: 'model not available\n', code: 1 }] });
-    failed(await repo.run(review({ models: ['gpt/gpt-6-astra'] })), 3);
+    const result = await repo.run(review({ models: ['gpt/gpt-6-astra'] }));
+    failed(result, 3);
+    // A stand-in that matched no row would be a refusal too, so check that
+    // the refusal is the scripted one.
+    assert.match(result.stderr, /codex refused: exit 1: model not available/);
   });
 
   test('a session that prints and then fails is exit 5, and the next model is not asked', async (t) => {
