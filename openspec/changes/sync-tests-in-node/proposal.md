@@ -1,7 +1,7 @@
 ## Why
 
 The epic #308 removes bats, and bats cannot go until its tests have
-moved. The 68 `lets sync` tests that bats runs come first: they already
+moved. The `lets sync` tests that bats runs come first: they already
 run `lets` as a program, so moving them changes no check, and the helper
 module they need is the one every later story of the epic uses (D5).
 
@@ -19,7 +19,7 @@ module they need is the one every later story of the epic uses (D5).
   repository (D7). The tests use neither `yq` nor `jq` (D9).
 - **Two tests are dropped**, because they only look for phrases in the
   release's rules text. The test of the rules text that guards the
-  regression fixed in pull request #32 stays, and names it. So 68 of
+  regression fixed in pull request #32 stays, and names it. So 67 of
   the 69 bats tests move (D12).
 - **Removed:** the three sync bats files and `tests/support/project.bash`
   (D1, D13). `common.bash` and `release.bash` stay until #310 (D10).
