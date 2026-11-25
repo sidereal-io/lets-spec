@@ -78,6 +78,39 @@ test('sync warns when the config sets no schema', async (t) => {
   assert.ok(output.includes('openspec/config.yaml sets no schema; it must be lets-standard'), output);
 });
 
+test('sync reads each form of the schema line', async (t) => {
+  const p = project(t);
+  await p.init();
+  const noSchema = 'openspec/config.yaml sets no schema; it must be lets-standard.';
+  // Each config, and the one problem lets sync lists for it, if any.
+  const forms: [string, string | null][] = [
+    ['schema: "lets-standard"\n', null],
+    ["schema: 'lets-standard'\n", null],
+    ['schema: lets-standard # note\n', null],
+    ['schema: "lets-standard" # ok\n', null],
+    ['schema: lets-minimal # note\n', "openspec/config.yaml sets schema to 'lets-minimal'; it must be lets-standard."],
+    ['x:\n  schema: nested\n', noSchema],
+    ['schema: # nothing\n', noSchema],
+    ['a: 1\r\nschema: lets-standard\r\nschema: other\r\n', null],
+  ];
+  for (const [config, problem] of forms) {
+    p.write(CONFIG, config);
+    const { code, stderr, output } = await p.sync();
+    assert.equal(code, 0, output);
+    assert.equal(stderr, problem === null ? '' : `lets-spec: 1 problem(s) to fix:\n- ${problem}\n`, `config: ${JSON.stringify(config)}`);
+  }
+});
+
+test('sync warns when a folder is where the config should be', async (t) => {
+  const p = project(t);
+  rmSync(join(p.path, CONFIG));
+  mkdirSync(join(p.path, CONFIG));
+  const { code, output } = await p.sync();
+  assert.equal(code, 0, output);
+  assert.ok(lstatSync(join(p.path, CONFIG)).isDirectory());
+  assert.ok(output.includes('- openspec/config.yaml is missing, and could not be created.'), output);
+});
+
 test('sync warns when the config has a schema it cannot read', async (t) => {
   const p = project(t);
   p.write(CONFIG, 'schema:\n');
@@ -87,7 +120,7 @@ test('sync warns when the config has a schema it cannot read', async (t) => {
 });
 
 // The config release 0.7.0 wrote, whose code review rule names lets-review-code.
-const config070 = readFileSync(join(repo, 'tests/lets/sync/fixtures/config-0.7.0.yaml'), 'utf8');
+const config070 = readFileSync(join(repo, 'tests/sync/fixtures/config-0.7.0.yaml'), 'utf8');
 const staleRule = 'openspec/config.yaml names lets-review-code, which this release does not ship. Delete the operations.archive entry that names it: the lets-review-build skill runs the code review now.';
 
 test('sync lists the code review rule release 0.7.0 wrote, once', async (t) => {
@@ -98,21 +131,38 @@ test('sync lists the code review rule release 0.7.0 wrote, once', async (t) => {
   assert.equal(output.split('\n').filter((line) => line.includes(`- ${staleRule}`)).length, 1, output);
 });
 
+test('sync lists the code review rule once, however many lines name it', async (t) => {
+  const p = project(t);
+  p.write(CONFIG, 'schema: lets-standard\nx: lets-review-code\ny: lets-review-code\n');
+  const { code, output } = await p.sync();
+  assert.equal(code, 0, output);
+  assert.equal(output.split('\n').filter((line) => line.includes(`- ${staleRule}`)).length, 1, output);
+});
+
 test("sync ignores lets-review-code in the config's comments", async (t) => {
   const p = project(t);
-  p.write(CONFIG, 'schema: lets-standard\n# lets-review-code\nx: 1 # lets-review-code\n');
+  p.write(CONFIG, 'schema: lets-standard\n# lets-review-code\n  # lets-review-code\nx: 1 # lets-review-code\ny: "a" # lets-review-code\n');
   const { code, output } = await p.sync();
   assert.equal(code, 0, output);
   assert.ok(!output.includes('lets-review-code'), output);
 });
 
-test('sync lists a wrong schema beside the code review rule', async (t) => {
+test('sync lists lets-review-code after a # inside quotes', async (t) => {
+  const p = project(t);
+  for (const value of ['"note # lets-review-code"', "'note # lets-review-code'"]) {
+    p.write(CONFIG, `schema: lets-standard\nx: ${value}\n`);
+    const { code, output } = await p.sync();
+    assert.equal(code, 0, output);
+    assert.ok(output.includes(`- ${staleRule}`), `x: ${value}\n${output}`);
+  }
+});
+
+test('sync lists a wrong schema, then the code review rule', async (t) => {
   const p = project(t);
   p.write(CONFIG, setSchema(config070, 'spec-driven'));
   const { code, output } = await p.sync();
   assert.equal(code, 0, output);
-  assert.ok(output.includes("openspec/config.yaml sets schema to 'spec-driven'; it must be lets-standard"), output);
-  assert.ok(output.includes(staleRule), output);
+  assert.ok(output.includes(`- openspec/config.yaml sets schema to 'spec-driven'; it must be lets-standard.\n- ${staleRule}\n`), output);
 });
 
 test('sync --check passes on a config that names lets-review-code', async (t) => {
