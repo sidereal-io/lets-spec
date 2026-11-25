@@ -25,62 +25,6 @@ const report = (t: ReturnType<typeof commandDeps>) => {
   return JSON.parse(t.stdout());
 };
 
-test('a needs-input report is printed at exit 0, its questions in order', async () => {
-  const t = withT3({ adapters: { t3: { step: { text: NEEDS_INPUT } } } });
-  assert.equal(await run(options(), t.deps), 0);
-  assert.ok(t.stdout().startsWith('{"outcome":"needs-input",'), t.stdout());
-  assert.deepEqual(report(t), { outcome: 'needs-input', questions: [{ question: 'Which schema?' }, { question: 'Split it?', recommendation: 'no' }] });
-});
-
-test('a question marked ask: true is printed with "ask":true, and one marked false with no ask', async () => {
-  const text = ending('outcome: needs-input\nquestions:\n  - question: Which schema?\n    ask: true\n  - question: Split it?\n    ask: false\n');
-  const t = withT3({ adapters: { t3: { step: { text } } } });
-  assert.equal(await run(options(), t.deps), 0);
-  assert.deepEqual(report(t), { outcome: 'needs-input', questions: [{ question: 'Which schema?', ask: true }, { question: 'Split it?' }] });
-});
-
-test('a failed report from the session is printed at exit 0', async () => {
-  const t = withT3({ adapters: { t3: { step: { text: ending('outcome: failed\nreason: tests fail on main\n') } } } });
-  assert.equal(await run(options(), t.deps), 0);
-  assert.ok(t.stdout().startsWith('{"outcome":"failed",'), t.stdout());
-  assert.deepEqual(report(t), { outcome: 'failed', reason: 'tests fail on main' });
-});
-
-test('a final message with no report is a failed report holding the message, at exit 0', async () => {
-  const t = withT3({ adapters: { t3: { step: { text: 'I stopped.' } } } });
-  assert.equal(await run(options(), t.deps), 0);
-  const { outcome, reason, message } = report(t);
-  assert.deepEqual({ outcome, message }, { outcome: 'failed', message: 'I stopped.' });
-  assert.match(reason, /step-report/);
-});
-
-test('a session the resolver reports failed is a failed report with its reason, at exit 0', async () => {
-  const t = withT3({ adapters: { t3: { step: new SessionFailed('the session stopped to ask') } } });
-  assert.equal(await run(options(), t.deps), 0);
-  assert.deepEqual(report(t), { outcome: 'failed', reason: 'the session stopped to ask' });
-});
-
-test('a session the resolver reports failed has no handle to finish', async () => {
-  const t = withT3({ adapters: { t3: { step: new SessionFailed('the session stopped to ask') } } });
-  await run(options(), t.deps);
-  assert.deepEqual(t.adapterCalls('finish'), []);
-  assert.equal(JSON.parse(t.stderr()).handle, null);
-});
-
-test('a done step is finished with ok, by the resolver that made it', async () => {
-  const t = withT3({ adapters: { t3: { step: { handle: { kind: 'thread', id: 't-1' } } } } });
-  await run(options(), t.deps);
-  assert.deepEqual(finishes(t.adapterCalls), [{ name: 't3', handle: { kind: 'thread', id: 't-1' }, ok: true, options: { cwd: '/repo' } }]);
-});
-
-test('a step that did not end done is finished without ok', async () => {
-  for (const text of [NEEDS_INPUT, ending('outcome: failed\nreason: no\n'), 'no report']) {
-    const t = withT3({ adapters: { t3: { step: { text } } } });
-    await run(options(), t.deps);
-    assert.deepEqual(finishes(t.adapterCalls).map(({ ok }) => ok), [false], text);
-  }
-});
-
 test('a finish that fails is reported, and the report stands', async () => {
   const t = withT3({ adapters: { t3: { step: { handle: { kind: 'thread', id: 't-1' } }, finish: new Error('thread gone') } } });
   assert.equal(await run(options(), t.deps), 0);
@@ -156,12 +100,6 @@ test('a session past its time is exit 6', async () => {
   const t = withT3({ adapters: { t3: { step: new TimeoutError('no answer after 120 minutes') } } });
   assert.equal(await run(options(), t.deps), 6);
   assert.equal(t.stdout(), '');
-});
-
-test('a step runs no git status, and files the session changed do not count', async () => {
-  const t = withT3({ gitAfter: ' M lets/src/main.ts\0' });
-  assert.equal(await run(options(), t.deps), 0);
-  assert.ok(t.io.calls.every(([, args]) => (args as string[])[0] === 'rev-parse'), JSON.stringify(t.io.calls));
 });
 
 // commandDeps with t3, the prompt file, and an answers file /repo/a.yaml

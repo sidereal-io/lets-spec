@@ -46,37 +46,12 @@ const stepping = (message: string) => {
 
 const NEEDS_INPUT_REPORT = 'Stuck.\n\n```step-report\noutcome: needs-input\nquestions:\n  - question: Which base?\n```\n';
 
-test('a step on the bare family claude runs claude in its write mode, with no model, and prints a needs-input report', async () => {
-  const io = stepping(NEEDS_INPUT_REPORT);
-  const t = withCli(io);
-  assert.equal(await step(stepOptions({ models: ['claude'] }), t.deps), 0);
-  assert.deepEqual(argsOf(io), [['claude', ['-p', '--permission-mode', 'bypassPermissions', '--effort', 'high']]]);
-  assert.equal(JSON.parse(t.stdout()).outcome, 'needs-input');
-});
-
 // A step on models, with 3 minutes, whose CLIs answer with results in order.
 const scriptedStep = async (models: string[], results: NonNullable<Parameters<typeof fakeIo>[0]>['results'], commands = ['codex', 'claude']) => {
   const t = withCli(fakeIo({ commands, results }));
   const code = await step(stepOptions({ models, timeoutMinutes: 3 }), t.deps);
   return { code, stdout: t.stdout(), stderr: t.stderr() };
 };
-
-test('a step whose CLI prints and then exits non-zero is a failed report, with no handle', async () => {
-  const answer = await scriptedStep(['claude'], [{ stdout: 'half an answer', stderr: 'rate limited', code: 2 }]);
-  assert.equal(answer.code, 0);
-  const { outcome, reason } = JSON.parse(answer.stdout);
-  assert.equal(outcome, 'failed');
-  assert.match(reason, /claude failed: exit 2: rate limited/);
-  assert.equal(JSON.parse(answer.stderr).handle, null);
-});
-
-test('a codex step that writes no last message is a failed report naming step-report', async () => {
-  const answer = await scriptedStep(['gpt'], [{ stdout: 'working...', stderr: '', code: 0 }]);
-  assert.equal(answer.code, 0);
-  const { outcome, reason } = JSON.parse(answer.stdout);
-  assert.equal(outcome, 'failed');
-  assert.match(reason, /step-report/);
-});
 
 test('a step whose CLI runs past its time limit is stopped, and is exit 6', async () => {
   const answer = await scriptedStep(['claude'], [{ stdout: '', stderr: '', code: 1, timedOut: true }]);
@@ -104,18 +79,6 @@ test('a step whose CLI cannot start is a refusal, exit 3, naming the CLI', async
   assert.equal(await step(stepOptions({ models: ['claude'] }), t.deps), 3);
   assert.equal(t.stdout(), '');
   assert.match(t.stderr(), /claude/);
-});
-
-test('a done codex step removes its last-message file', async () => {
-  const io = stepping(DONE_REPORT);
-  assert.equal(await step(stepOptions(), withCli(io).deps), 0);
-  assert.equal(io.exists(STEP_LAST_MESSAGE), false);
-});
-
-test('a codex step that needs input keeps its last-message file', async () => {
-  const io = stepping(NEEDS_INPUT_REPORT);
-  assert.equal(await step(stepOptions(), withCli(io).deps), 0);
-  assert.equal(io.exists(STEP_LAST_MESSAGE), true);
 });
 
 // The adapter itself: the chain only ever finishes a handle the adapter

@@ -5,15 +5,17 @@
 // a stand-in the exact command it expects, so the write-mode command lets
 // gives each CLI is checked too.
 import assert from 'node:assert/strict';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { agy, claude, codex, type LetsResult } from '../support/lets.ts';
+import { agy, claude, codex, git, type LetsResult } from '../support/lets.ts';
 import { delegateRepo, PROMPT } from './repo.ts';
 import { agyWrite, assertClock, claudeWrite, codexWrite, ending, stepRun, type StepArgs } from './steps.ts';
 
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
 const DONE = ending('outcome: done\nevidence:\n  - "commit 3f2a1c0"\n');
+const NEEDS_INPUT = ending('outcome: needs-input\nquestions:\n  - question: Which schema?\n');
+const FAILED = ending('outcome: failed\nreason: tests fail on main\n');
 const RECORD_KEYS = ['for', 'resolver', 'family', 'model', 'handle', 'durationSeconds'];
 
 // Where codex writes the last message of the step named name, in the root.
@@ -126,5 +128,68 @@ describe('step run', () => {
     const repo = delegateRepo(t, { user: CLI });
     claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
     assert.equal(recordOf(await repo.run(stepRun({ models: ['claude'] }))).model, 'claude');
+  });
+
+  test('a needs-input report is printed at exit 0, its questions in order, with ask: true kept and ask: false dropped', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    const text = ending('outcome: needs-input\nquestions:\n  - question: Which schema?\n    ask: true\n  - question: Split it?\n    recommendation: no\n    ask: false\n');
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: text }] });
+    const result = await repo.run(stepRun());
+    assert.ok(result.stdout.startsWith('{"outcome":"needs-input",'), result.stdout);
+    assert.deepEqual(reportOf(result), { outcome: 'needs-input', questions: [{ question: 'Which schema?', ask: true }, { question: 'Split it?', recommendation: 'no' }] });
+  });
+
+  test('a failed report from the session is printed at exit 0, as given', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: FAILED }] });
+    const result = await repo.run(stepRun());
+    assert.ok(result.stdout.startsWith('{"outcome":"failed",'), result.stdout);
+    assert.deepEqual(reportOf(result), { outcome: 'failed', reason: 'tests fail on main' });
+  });
+
+  test('a final message with no report is a failed report holding the message, at exit 0', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: 'I stopped.' }] });
+    const { outcome, reason, message } = reportOf(await repo.run(stepRun()));
+    assert.deepEqual({ outcome, message }, { outcome: 'failed', message: 'I stopped.' });
+    assert.match(String(reason), /step-report/);
+  });
+
+  test('a CLI that prints and then exits non-zero is a failed report with its reason, and no handle', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: 'half an answer', stderr: 'rate limited\n', code: 2 }] });
+    const result = await repo.run(stepRun());
+    const { outcome, reason } = reportOf(result);
+    assert.equal(outcome, 'failed');
+    assert.match(String(reason), /claude failed: exit 2: rate limited/);
+    assert.equal(recordOf(result).handle, null);
+  });
+
+  test('a codex step that writes no last message is a failed report naming step-report', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    codex(repo.standIns, [], { rows: [{ args: codexWrite(repo.cwd), stdout: 'working...\n' }] });
+    const { outcome, reason } = reportOf(await repo.run(stepRun({ models: ['gpt'] })));
+    assert.equal(outcome, 'failed');
+    assert.match(String(reason), /step-report/);
+  });
+
+  test('a done codex step removes its last-message file, and any other outcome keeps it', async (t) => {
+    for (const [message, outcome, kept] of [[DONE, 'done', false], [NEEDS_INPUT, 'needs-input', true], [FAILED, 'failed', true], ['no report', 'failed', true]] as const) {
+      const repo = delegateRepo(t, { user: CLI });
+      codex(repo.standIns, [], { rows: [{ args: codexWrite(repo.cwd), files: { [lastMessage(repo.cwd)]: message } }] });
+      assert.equal(reportOf(await repo.run(stepRun({ models: ['gpt'] }))).outcome, outcome, message);
+      assert.equal(existsSync(lastMessage(repo.cwd)), kept, message);
+    }
+  });
+
+  test('files the session changes, and commits it makes, do not count: the step is done', async (t) => {
+    const writes = delegateRepo(t, { user: CLI });
+    claude(writes.standIns, { rows: [{ args: claudeWrite(), files: { 'notes.md': 'a note\n' }, stdout: DONE }] });
+    assert.equal(reportOf(await writes.run(stepRun())).outcome, 'done');
+    assert.equal(git(writes.cwd, 'status', '--porcelain').stdout, '?? notes.md\n');
+    const commits = delegateRepo(t, { user: CLI });
+    claude(commits.standIns, { rows: [{ args: claudeWrite(), files: { 'a.md': 'a\n' }, commit: 'a session commit', stdout: DONE }] });
+    assert.equal(reportOf(await commits.run(stepRun())).outcome, 'done');
+    assert.notEqual(git(commits.cwd, 'rev-parse', 'HEAD').stdout.trim(), commits.head);
   });
 });
