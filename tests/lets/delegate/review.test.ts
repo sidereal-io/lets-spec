@@ -1,8 +1,13 @@
+// review run with a fake resolver, for the 3 cases no cli or subagent
+// resolver reaches: cli always runs in the repository root, so it never
+// reports another checkout or none, and its finish fails only for a handle
+// it never makes. Everything else review run does is tested through lets,
+// in tests/delegate/run.test.ts and review-timeout.test.ts.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/review.ts';
 import type { ReviewOptions } from '../../../lets/src/delegate/review.ts';
-import { SpawnError, TimeoutError } from '../../../lets/src/resolvers/kit/errors.ts';
+import { SpawnError } from '../../../lets/src/resolvers/kit/errors.ts';
 import { commandDeps, HEAD } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<ReviewOptions> = {}): ReviewOptions =>
@@ -11,8 +16,6 @@ const options = (over: Partial<ReviewOptions> = {}): ReviewOptions =>
 // commandDeps whose config lists t3, which answers, and more as given.
 const withT3 = (over: Parameters<typeof commandDeps>[0] = {}) =>
   commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3] }\n', ...over, adapters: { t3: {}, ...over.adapters } });
-type Calls = ReturnType<typeof commandDeps>['adapterCalls'];
-const finishes = (calls: Calls) => calls('finish').map(([name, , call]) => ({ name, ...(call as { handle: object; ok: boolean; options: object }) }));
 
 test('the metadata line names the checkout the resolver ran in, and the commit at its HEAD', async () => {
   const t = withT3({ adapters: { t3: { run: { checkout: '/w/elsewhere' } } } });
@@ -28,15 +31,6 @@ test('a resolver that cannot tell the checkout gives a null commit, and the revi
   assert.equal(t.stdout(), 'FINDINGS\n');
   const { checkout, commit } = JSON.parse(t.stderr());
   assert.deepEqual({ checkout, commit }, { checkout: null, commit: null });
-});
-
-test('a session past its time is exit 6, and a known outcome-unknown error exit 4', async () => {
-  for (const [error, code] of [[new TimeoutError('no result in 45 minutes'), 6], [new SpawnError('T3 did not answer'), 4]] as const) {
-    const t = withT3({ adapters: { t3: { run: error } } });
-    assert.equal(await run(options(), t.deps), code, error.message);
-    assert.match(t.stderr(), new RegExp(error.message));
-    assert.equal(t.stdout(), '');
-  }
 });
 
 test('a finish that fails is reported, and the review still succeeds', async () => {

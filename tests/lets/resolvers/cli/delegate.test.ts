@@ -3,9 +3,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run as handoff } from '../../../../lets/src/delegate/handoff.ts';
-import { run as review } from '../../../../lets/src/delegate/review.ts';
 import { run as step } from '../../../../lets/src/delegate/step.ts';
-import type { ReviewOptions } from '../../../../lets/src/delegate/review.ts';
 import type { StepOptions } from '../../../../lets/src/delegate/step.ts';
 import { createAdapter } from '../../../../lets/src/resolvers/cli/cli.ts';
 import { commandDeps, DONE_REPORT } from '../../delegate/fixtures/command-deps.ts';
@@ -17,9 +15,6 @@ const ONLY_CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
 // commandDeps whose config is config, with the real cli adapter on io.
 const withCli = (io: FakeIo, config = ONLY_CLI) => commandDeps({ config, real: { cli: createAdapter(io) } });
 
-// A review named x, from a claude author, on the gpt family.
-const reviewOptions = (over: Partial<ReviewOptions> = {}): ReviewOptions =>
-  ({ for: 'code', name: 'x', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', models: ['gpt'], ...over });
 const handoffOptions = { name: 'fix-login', promptFile: 'p.md', models: ['claude'] };
 
 test('a handoff declines with every family CLI on PATH, starting nothing', async () => {
@@ -41,32 +36,9 @@ test('with no family CLI on PATH, the default answers a step next, starting noth
   assert.deepEqual(io.calls, []);
 });
 
-// An io with every CLI on PATH, whose one run prints FINDINGS: codex in its
-// last-message file, the others on stdout.
-const answering = () => {
-  const io = fakeIo({ commands: ['codex', 'claude', 'agy'], results: [(cmd, args) => {
-    if (cmd === 'codex') io.files.set(args[args.indexOf('-o') + 1], 'FINDINGS\n');
-    return { stdout: cmd === 'codex' ? '' : 'FINDINGS\n', stderr: '', code: 0 };
-  }] });
-  return io;
-};
 const argsOf = (io: FakeIo) => io.calls.map(([cmd, args]) => [cmd, args]);
-// The review's JSON line on stderr.
+// The command's JSON line on stderr.
 const metadata = (t: ReturnType<typeof withCli>) => JSON.parse(t.stderr());
-
-// A claude review, from a codex author, with 3 minutes, whose CLI answers
-// with result, on io when given.
-const claudeReview = async (result: NonNullable<Parameters<typeof fakeIo>[0]>['results'], io = fakeIo({ commands: ['claude'], results: result })) => {
-  const t = withCli(io);
-  const code = await review(reviewOptions({ sourceFamily: 'gpt', models: ['claude'], timeoutMinutes: 3 }), t.deps);
-  return { code, stdout: t.stdout(), stderr: t.stderr() };
-};
-
-test('a CLI that runs past the timeout is stopped, and is exit 6', async () => {
-  const answer = await claudeReview([{ stdout: '', stderr: '', code: 1, timedOut: true }]);
-  assert.equal(answer.code, 6);
-  assert.match(answer.stderr, /claude did not finish in 3 minutes/);
-});
 
 // A step named build-x for build, at high effort, on the gpt family.
 const stepOptions = (over: Partial<StepOptions> = {}): StepOptions =>
