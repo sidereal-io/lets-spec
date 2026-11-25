@@ -449,3 +449,52 @@ describe('review run', () => {
     assert.equal(result.stdout, FINDINGS);
   });
 });
+
+// #306 retires handoff. Whichever of it and this file's story merges
+// second deletes this block, and tests/lets/delegate/handoff.test.ts.
+describe('handoff run', () => {
+  const handoff = (promptFile = 'p.md') =>
+    ['delegate', 'handoff', 'run', '--for', 'apply', '--name', 'Fix Login', '--prompt-file', promptFile, '--model', 'claude'];
+  const saved = (cwd: string) => join(cwd, '.workspace', 'lets-delegate', 'fix-login.prompt.md');
+
+  test('cli declines a handoff without running a CLI, and subagent answers it next', async (t) => {
+    const only = delegateRepo(t, { user: CLI });
+    const onlyClis = everyCli(only.standIns);
+    const declined = await only.run(handoff());
+    failed(declined, 2);
+    assert.match(declined.stderr, /every resolver declined/);
+    const next = delegateRepo(t, { user: CLI_THEN_SUBAGENT });
+    const nextClis = everyCli(next.standIns);
+    const answered = await next.run(handoff());
+    assert.equal(answered.code, 0, answered.output);
+    assert.equal(JSON.parse(answered.stdout).resolver, 'subagent');
+    for (const [name, stand] of [...Object.entries(onlyClis), ...Object.entries(nextClis)]) assert.deepEqual(stand.calls(), [], name);
+  });
+
+  test('subagent saves the prompt under the normalized name, and hands it back with where it is saved', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent] }\n' });
+    const result = await repo.run(handoff());
+    assert.equal(result.code, 0, result.output);
+    assert.match(result.stdout, /^[^\n]*\n$/, 'stdout is exactly one line');
+    const { resolver, handle, instructions } = JSON.parse(result.stdout);
+    assert.deepEqual({ resolver, handle }, { resolver: 'subagent', handle: null });
+    assert.ok(instructions.includes(PROMPT), instructions);
+    assert.ok(instructions.includes('.workspace/lets-delegate/fix-login.prompt.md'), instructions);
+    assert.equal(readFileSync(saved(repo.cwd), 'utf8'), PROMPT);
+  });
+
+  test('a prompt file that cannot be read is exit 2, naming it', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent] }\n' });
+    const result = await repo.run(handoff('gone.md'));
+    failed(result, 2);
+    assert.match(result.stderr, /gone\.md/);
+  });
+
+  test('a bad entry after one that would answer is exit 2, and saves no prompt', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent, /opt/r/old-resolver] }\n' });
+    const result = await repo.run(handoff());
+    failed(result, 2);
+    assert.ok(result.stderr.includes('/opt/r/old-resolver'), result.stderr);
+    assert.equal(existsSync(saved(repo.cwd)), false);
+  });
+});

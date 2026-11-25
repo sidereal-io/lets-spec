@@ -1,8 +1,9 @@
-// The cli resolver through lets delegate: each command with the real cli
-// adapter, on the kit's fake io, named in the config.
+// The cli resolver through lets delegate step run, with the real cli
+// adapter on the kit's fake io, named in the config. #319 moves these to
+// black-box tests. The cli resolver's reviews and handoffs are tested
+// through lets, in tests/delegate/run.test.ts.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { run as handoff } from '../../../../lets/src/delegate/handoff.ts';
 import { run as step } from '../../../../lets/src/delegate/step.ts';
 import type { StepOptions } from '../../../../lets/src/delegate/step.ts';
 import { createAdapter } from '../../../../lets/src/resolvers/cli/cli.ts';
@@ -14,17 +15,6 @@ const ONLY_CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
 
 // commandDeps whose config is config, with the real cli adapter on io.
 const withCli = (io: FakeIo, config = ONLY_CLI) => commandDeps({ config, real: { cli: createAdapter(io) } });
-
-const handoffOptions = { name: 'fix-login', promptFile: 'p.md', models: ['claude'] };
-
-test('a handoff declines with every family CLI on PATH, starting nothing', async () => {
-  const io = fakeIo({ commands: ['codex', 'claude', 'agy'] });
-  const t = withCli(io);
-  assert.equal(await handoff(handoffOptions, t.deps), 2);
-  assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), /every resolver declined/);
-  assert.deepEqual(io.calls, []);
-});
 
 const CLI_THEN_DEFAULT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
 
