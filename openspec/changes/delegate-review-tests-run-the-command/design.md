@@ -66,7 +66,7 @@
 
 - **Tier:** medium. It is test code on #317's pattern, but it extends
   the helper module's contract, which #319 builds on, and it deletes
-  about 110 tests.
+  about 100 tests.
 - **Blast radius:** `tests/support/lets.ts`; new files in
   `tests/delegate/`; deletions in `tests/lets/delegate/` and
   `tests/lets/resolvers/cli/`; one row of the README. No file under
