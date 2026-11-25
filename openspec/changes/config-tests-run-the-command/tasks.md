@@ -21,7 +21,7 @@
 
 ## 4. Integration [depends-on: 3]
 
-- [ ] 4.1 [easy] The `tests/` row of the README's *Development* table says that `go/` holds the black-box tests of `lets go questions`, which run it in a temporary git repository with real lets config files (verify: `git grep -n 'go/.: black-box tests of .lets go questions' README.md`)
+- [x] 4.1 [easy] The `tests/` row of the README's *Development* table says that `go/` holds the black-box tests of `lets go questions`, which run it in a temporary git repository with real lets config files (verify: `git grep -n 'go/.: black-box tests of .lets go questions' README.md`) (✓ `git grep -n 'go/.: black-box tests of .lets go questions' README.md` passed)
 - [ ] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new file in the Nix sandbox. The pull request lists each deleted test with the test that now covers it, as design decision 6 maps them; says no unit test of the lets config stays (D6); and names the four checks with no cover: `fileOf` for a key neither file sets, `backlog: 7` (D3), the merged value under a recursive alias, and `fileOf` for a key below a value the repository replaced whole (verify: `nix flake check`)
 
 ## Deviations Ledger
