@@ -128,11 +128,12 @@ its own terms*.
 |---|---|
 | The tests #311 maps in pull request #329 (18, 30, 46, 77, 128, 257, 262, 1559 to 1747, 2271, 3161, 3182, 3511, 3553, 3563, 3571) | The Node test that table names, unchanged |
 | A flow ships a named skill (94, 655, 3129, 3692) | `requiredSkillFindings`, in `tests/contracts/skills.test.ts` |
+| Each flow ships `lets-verify-contracts` (5680) | `skillNameFindings`, in `tests/contracts/skills.test.ts`, unchanged: both flows' schemas name the skill, so each flow must ship it |
 | `terms.md` matches the glossary (3247 to 3267) | `tests/contracts/terms.test.ts` |
 | The copy holds no other entry (3275) | `terms.test.ts` for a term the glossary lacks; review for an extra term the glossary has |
 | The `Confirmed by user:` marker (141) | Deleted: a fixed string no code reads (D4) |
 | A skill links a given file or section, or a term at its first use (3166 to 3174, 2327 to 2359, 3317 to 3325, 3457) | Deleted: fixed links and form (D4). Each link that is there still resolves, by `links.test.ts` |
-| A text holds, or does not hold, a fixed path (such as 152, 1666, 3718, 5128) | Deleted (D4). Where a text links the path, `links.test.ts` fails when the file is missing |
+| A text holds, or does not hold, a fixed path (such as 152, 1632, 1666, 3718, 5128) | Deleted (D4). Where a text links the path, `links.test.ts` fails when the file is missing |
 | The published copy of `lets-review-pr`'s references matches the source (3692) | Deleted: the release links each skill's folder, as `tests/release-build.bats` checks in "the release links exactly the schemas and the skills it is given" |
 
 Every other test in the file looks for a phrase, queries the README's
