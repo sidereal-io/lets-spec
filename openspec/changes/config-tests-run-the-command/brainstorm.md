@@ -20,7 +20,7 @@ gone*. Its *Shared decisions* section applies to this story. Stacked on
 | D3 | Does this story move `tests/lets/backlog/config.test.ts` (4) and test `lets backlog --help`? | No. Pull request #330 deletes that file and tests the choice of backlog provider through `lets backlog` in `tests/backlog/provider.test.ts` and `tests/backlog/help.test.ts`. This branch is not stacked on #330, so tests here would repeat those once both reach `main`. | Assumption |
 | D4 | Which commands do the black-box tests run? | `lets go questions` for where each file is, what a file must be (YAML, a mapping, version 3), how the two files merge and `go.questions`. `lets delegate <strategy> instructions` for the `delegate` section: the chain, its entries, and the `review`, `handoff` and `step` entries left unchecked. | Evidence: #320 packet, *Scope* and *What the plan needs to know*; `lets/src/go/questions.ts` reads only `version` and `go` |
 | D5 | How are the places of the user's lets config tested? | With real files: under `XDG_CONFIG_HOME` when it is set, and under `$HOME/.config` when it is unset or empty, with `HOME` pointed at a temporary folder. | Evidence: #320 packet, *What the plan needs to know*; `lets/src/config-dir.ts` |
-| D6 | Which unit tests stay? | None. Every behavior the 59 tests check is reachable with one or two config files and one run of `lets`, which is not a far larger setup. The one check no command can show, that `fileOf` names the user's file for a key neither file sets, is deleted without cover. The pull request says so. | Assumption |
+| D6 | Which unit tests stay? | None. Every behavior the 59 tests check is reachable with one or two config files and one run of `lets`, which is not a far larger setup. The one check no command can show, that `fileOf` names the user's file for a key neither file sets, is deleted without cover. The pull request says so. The user chose this knowing it departs from #308's rule that no test goes without black-box cover. | User |
 | D7 | Do `lets` or the config's keys change? | No. | Evidence: #308 *Shared decisions*; #320 packet, *Scope: out* |
 | D8 | Does the T3 token file, which also sits in the lets config folder, get tests here? | No. The T3 resolver's tests stay as they are. | Evidence: #320 packet, *Scope: out*; #308 *Shared decisions* |
 | D9 | Do `tests/lets/delegate/fixtures/command-deps.ts` and `fake-io.ts` go? | No. Other kept tests still import them. | Evidence: `git grep fixtures/command-deps tests` |
@@ -36,4 +36,4 @@ gone*. Its *Shared decisions* section applies to this story. Stacked on
   the likely ones to stay. Each of their cases needs only a config file
   and one run, so by #308's rule they move too (D6).
 
-Confirmed by user: no
+Confirmed by user: yes
