@@ -76,25 +76,27 @@ describe('step start', () => {
     assert.equal(JSON.parse(readFileSync(join(repo.cwd, 'r.json'), 'utf8')).outcome, 'done');
   });
 
-  test('from a subfolder, every --model, --timeout-minutes and --answers-file reach step run, which runs in the root', async (t) => {
+  test('from a subfolder, --for, --effort, every --model, --timeout-minutes and --answers-file reach step run, which runs in the root', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     const docs = join(repo.cwd, 'docs');
     mkdirSync(docs);
     writeFileSync(join(docs, 'a.yaml'), ANSWERS);
     const clis = {
       // codex refuses the first model, so agy runs the second.
-      codex: codex(repo.standIns, [], { rows: [{ args: codexWrite(repo.cwd, { model: 'gpt-6-astra' }), stderr: 'model not available\n', code: 1 }] }),
-      agy: agy(repo.standIns, [], { rows: [{ args: agyWrite('high', '900m', ANSWERED), stdout: DONE }] }),
+      codex: codex(repo.standIns, [], { rows: [{ args: codexWrite(repo.cwd, { model: 'gpt-6-astra', effort: 'low' }), stderr: 'model not available\n', code: 1 }] }),
+      agy: agy(repo.standIns, [], { rows: [{ args: agyWrite('low', '900m', ANSWERED), stdout: DONE }] }),
     };
-    await started(t, repo, { promptFile: '../p.md', models: ['gpt/gpt-6-astra', 'gemini'], timeoutMinutes: 900, answersFile: 'a.yaml' }, docs);
+    await started(t, repo, { for: 'plan', effort: 'low', promptFile: '../p.md', models: ['gpt/gpt-6-astra', 'gemini'], timeoutMinutes: 900, answersFile: 'a.yaml' }, docs);
     assert.deepEqual(ended(await waitFor(repo, ['build-x'], { cwd: docs })), { name: 'build-x', exit: 0 });
     assert.equal(clis.codex.calls().length, 1);
-    assert.deepEqual(clis.agy.calls(), [agyWrite('high', '900m', ANSWERED)]);
+    assert.deepEqual(clis.agy.calls(), [agyWrite('low', '900m', ANSWERED)]);
     assert.deepEqual(clis.agy.cwds(), [repo.cwd]);
     // The report and meta files are where the working directory says; the
     // run is kept under the root.
     assert.equal(JSON.parse(readFileSync(join(docs, 'r.json'), 'utf8')).outcome, 'done');
-    assert.equal(JSON.parse(readFileSync(join(docs, 'm.txt'), 'utf8').trim().split('\n').at(-1)!).family, 'gemini');
+    const record = JSON.parse(readFileSync(join(docs, 'm.txt'), 'utf8').trim().split('\n').at(-1)!);
+    assert.equal(record.family, 'gemini');
+    assert.equal(record.for, 'plan');
     assert.equal(existsSync(join(docs, '.workspace')), false);
     assert.equal(existsSync(runRecordFile(repo.cwd)), true);
   });

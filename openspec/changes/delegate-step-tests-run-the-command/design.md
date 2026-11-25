@@ -238,8 +238,8 @@ removed)
 | Deleted tests | Covered by a black-box test that shows |
 |---|---|
 | a story run in a worktree starts at once, name and pid | a real `git worktree add .workspace/lets-go/worktrees/fix-x`: `step start --for story --name 'Fix X' --checkout …` is exit 0 with `{"name":"fix-x","pid":<n>}`; the stand-in ran in the worktree |
-| the process is lets running step run, paths absolute, no option step run lacks | started from `docs/` with `--model gpt/gpt-6-astra --model gemini`, `--timeout-minutes 900` and `--answers-file a.yaml`: codex refuses the first model, agy runs the second with `--print-timeout 900m` and the answers in `-p`, and the step ends exit 0. A path left relative, or an option step run lacks, would fail the step |
-| every `--model`, `--timeout-minutes` and `--answers-file` go to step run | the same test |
+| the process is lets running step run, paths absolute, no option step run lacks | started from `docs/` with `--for plan`, `--effort low`, `--model gpt/gpt-6-astra --model gemini`, `--timeout-minutes 900` and `--answers-file a.yaml`: codex refuses the first model, agy runs the second with `--effort low`, `--print-timeout 900m` and the answers in `-p`, the step ends exit 0, and the record says `for: plan`. A path left relative, or an option step run lacks, would fail the step |
+| `--for`, `--effort`, every `--model`, `--timeout-minutes` and `--answers-file` go to step run | the same test |
 | without `--checkout`, the root | started from `docs/`: the stand-in ran in the root |
 | paths from the working directory; runs kept under the root | started from `docs/`: the report and meta files are in `docs/`; the run record is in `<root>/.workspace/lets-delegate/` |
 | the run record | its keys and values, `pid` equal to the printed one, `startedAt` by decision 4 |
