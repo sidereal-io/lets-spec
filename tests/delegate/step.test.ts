@@ -5,7 +5,7 @@
 // a stand-in the exact command it expects, so the write-mode command lets
 // gives each CLI is checked too.
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import { agy, claude, codex, git, type LetsResult, unstartable } from '../support/lets.ts';
@@ -17,6 +17,7 @@ const CLI_THEN_SUBAGENT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\
 const DONE = ending('outcome: done\nevidence:\n  - "commit 3f2a1c0"\n');
 const NEEDS_INPUT = ending('outcome: needs-input\nquestions:\n  - question: Which schema?\n');
 const FAILED = ending('outcome: failed\nreason: tests fail on main\n');
+const ANSWERS = '- question: Which schema?\n  answer: lets-minimal\n';
 const RECORD_KEYS = ['for', 'resolver', 'family', 'model', 'handle', 'durationSeconds'];
 
 // Where codex writes the last message of the step named name, in the root.
@@ -310,5 +311,85 @@ describe('step run', () => {
     failed(result, 2);
     assert.match(result.stderr, new RegExp(`${bad.repoConfig}.*codex`));
     noCalls(clis);
+  });
+
+  test('--answers-file sends the prompt, a blank line, then the answers section, and without it the prompt alone', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    writeFileSync(join(repo.cwd, 'a.yaml'), ANSWERS);
+    const stand = claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
+    assert.equal(reportOf(await repo.run(stepRun({ answersFile: 'a.yaml' }))).outcome, 'done');
+    assert.equal(reportOf(await repo.run(stepRun())).outcome, 'done');
+    assert.deepEqual(stand.inputs(), [
+      `${PROMPT}\n## Answers\n\nThese questions from the last step report are settled. Do not ask them again.\n\n- Q: Which schema?\n  A: lets-minimal\n`,
+      PROMPT,
+    ]);
+  });
+
+  test('an answers file that is missing, a mapping, empty or blank is exit 2, naming --answers-file, and no CLI runs', async (t) => {
+    for (const [name, answers] of [['missing', undefined], ['a mapping', 'question: Which?\nanswer: x\n'], ['empty', '[]\n'], ['blank', '- question: Which?\n  answer: "  "\n']] as const) {
+      const repo = delegateRepo(t, { user: CLI });
+      if (answers !== undefined) writeFileSync(join(repo.cwd, 'a.yaml'), answers);
+      const clis = everyCli(repo.standIns);
+      const result = await repo.run(stepRun({ answersFile: 'a.yaml' }));
+      failed(result, 2);
+      assert.match(result.stderr, /--answers-file a\.yaml/, name);
+      noCalls(clis);
+    }
+  });
+
+  test('with no lets config, subagent saves the composed prompt and is exit 3, and no CLI runs', async (t) => {
+    const repo = delegateRepo(t);
+    writeFileSync(join(repo.cwd, 'a.yaml'), ANSWERS);
+    const clis = everyCli(repo.standIns);
+    const result = await repo.run(stepRun({ for: 'plan', name: 'plan-x', answersFile: 'a.yaml' }));
+    failed(result, 3);
+    const saved = readFileSync(join(repo.cwd, '.workspace', 'lets-delegate', 'plan-x.prompt.md'), 'utf8');
+    assert.ok(saved.startsWith(PROMPT) && saved.includes('Which schema?') && saved.includes('lets-minimal'), saved);
+    assert.match(result.stderr, /no resolver.*subagent.*\.workspace\/lets-delegate\/plan-x\.prompt\.md/);
+    assert.doesNotMatch(result.stderr, /installed/);
+    noCalls(clis);
+  });
+
+  test('--exit-file records the exit code and the clock, last', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
+    const before = Date.now();
+    assert.equal(reportOf(await repo.run(stepRun({ exitFile: 'e.json' }))).outcome, 'done');
+    const after = Date.now();
+    const text = readFileSync(join(repo.cwd, 'e.json'), 'utf8');
+    assert.match(text, /^\{"exit":0,"endedAt":\d+\}\n$/);
+    assertClock(JSON.parse(text).endedAt, before, after);
+  });
+
+  test('--exit-file records exit 2 when the prompt file cannot be read', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    failed(await repo.run(stepRun({ promptFile: 'gone.md', exitFile: 'e.json' })), 2);
+    assert.equal(JSON.parse(readFileSync(join(repo.cwd, 'e.json'), 'utf8')).exit, 2);
+  });
+
+  test('--exit-file is read from the working directory', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    const docs = join(repo.cwd, 'docs');
+    mkdirSync(docs);
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
+    assert.equal(reportOf(await repo.run(stepRun({ promptFile: '../p.md', exitFile: 'e.json' }), { cwd: docs })).outcome, 'done');
+    assert.equal(JSON.parse(readFileSync(join(docs, 'e.json'), 'utf8')).exit, 0);
+    assert.equal(existsSync(join(repo.cwd, 'e.json')), false);
+  });
+
+  test('without --exit-file, no exit file is written', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
+    assert.equal(reportOf(await repo.run(stepRun())).outcome, 'done');
+    const files = readdirSync(repo.cwd, { recursive: true, encoding: 'utf8' }).filter((path) => !path.startsWith('.git/'));
+    assert.deepEqual(files.filter((path) => path.endsWith('.exit.json') || path.endsWith('e.json')), [], files.join(', '));
+  });
+
+  test('step run --help names --answers-file, and not --exit-file', async (t) => {
+    const repo = delegateRepo(t);
+    const result = await repo.run(['delegate', 'step', 'run', '--help']);
+    assert.equal(result.code, 0, result.output);
+    assert.match(result.stdout, /--answers-file/);
+    assert.doesNotMatch(result.output, /exit-file/);
   });
 });
