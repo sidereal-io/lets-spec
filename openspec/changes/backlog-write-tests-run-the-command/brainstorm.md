@@ -17,7 +17,7 @@ metadata and raises no question.
 
 | # | Question | Answer | Source |
 |---|---|---|---|
-| D1 | Which tests are in scope? | 40 tests in `tests/lets/backlog/`: `claim` 16, `complete` 10, `release` 8, `race` 4 and `reclaim` 2. The read commands and the live GitHub API (#146) are out. | Evidence: #316 packet; counted in the files |
+| D1 | Which tests are in scope? | 40 tests in `tests/lets/backlog/`: `claim` 16, `complete` 10, `release` 8, `race` 4 and `reclaim` 2. These count `test()` calls; three sit in two-case loops, so 43 run. The read commands and the live GitHub API (#146) are out. | Evidence: #316 packet; counted in the files |
 | D2 | How does a new test run `lets`? | As a black-box test: `lets/bin/lets backlog …` run as a program through `backlog()` in `tests/backlog/github.ts`, checking only stdout, the exit code and what the stand-in `gh` logged or kept. | Evidence: #308 *Shared decisions*; `tests/backlog/github.ts` |
 | D3 | Does `lets` change, or any spec requirement? | No. The `lets-backlog` spec describes what the commands do, and that stays the same. | Evidence: #308 *Shared decisions* |
 | D4 | Which testing strategy does the build follow? | `skills/lets-verify-contracts/SKILL.md` in this checkout, not test-first. Where an installed skill says test-first, lets-verify-contracts wins. | User |

@@ -1,6 +1,6 @@
 ## Why
 
-The 40 tests of `lets backlog claim`, `release` and `complete`, and of
+The 40 tests (43 once their loops run) of `lets backlog claim`, `release` and `complete`, and of
 two claims racing (D1), call `run()` inside the process with a fake
 `gh`. A reorganization of `lets/src/backlog/` that changes no behavior
 can break them, and they are the backlog tests that matter most: a claim

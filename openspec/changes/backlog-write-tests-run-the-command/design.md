@@ -216,6 +216,12 @@ export interface IssueState {
   readsFailAfterPost?: string;
   /** Whether a comment was posted. */
   posted: boolean;
+  /**
+   * When true, deleting a comment another login wrote fails with `HTTP 403`.
+   * The race tests set it. A claim deletes earlier claims by any login, so
+   * other tests leave it unset.
+   */
+  ownDeletesOnly?: boolean;
 }
 ```
 
@@ -232,12 +238,16 @@ session whose `gh` this is. `answerIssue` answers these calls, with
 | `issue edit <n> --add-assignee @me` / `--remove-assignee @me` | adds or removes `login` |
 | `api repos/acme/app/issues/<n>/comments --method POST -f body=…` | posts a comment by `login`, as `OWNER`, with the next id, then adds the rivals |
 | `api repos/acme/app/issues/<n>/comments --paginate --slurp` | the pages |
-| `api repos/acme/app/issues/comments/<id> --method DELETE` | deletes the comment; exit 1 with `HTTP 404` when it is missing, and `HTTP 403` when another login wrote it |
+| `api repos/acme/app/issues/comments/<id> --method DELETE` | deletes the comment; exit 1 with `HTTP 404` when it is missing, and with `HTTP 403` when another login wrote it and `ownDeletesOnly` is set |
 | `project item-edit 7 --owner acme --url <url> --field Status --value <v>` | adds `v` to `status` |
 | `issue close <n> --reason completed` | sets the state to `CLOSED` |
 
 Any other call exits 127, naming the call. The 403 rule stands in for
 the old race test's check that a session deletes only its own comment.
+It is off unless the state sets `ownDeletesOnly`, because a claim that
+wins deletes every earlier claim, whoever wrote it (`claim()` in
+`lets/src/backlog/policy.ts`), as "an unassigned issue ignores an old
+claim by abandoned" and the reclaim tests check.
 
 `tests/backlog/github.ts` gains the builders:
 
@@ -246,7 +256,8 @@ the old race test's check that a session deletes only its own comment.
   goes last in a table, after `LOOKUP_ONE` and after any row a test adds
   to make one call fail or answer otherwise.
 - `issueState(partial)`: an `IssueState` with no assignees, one empty
-  page, `nextId` 1, no Status, `OPEN`, no rivals, and `partial` on top.
+  page, `nextId` 1, no Status, `OPEN`, no rivals, `ownDeletesOnly`
+  unset, and `partial` on top.
 - `claimComment(token, { id, login, association })`: a comment with the
   claim body.
 
@@ -280,6 +291,14 @@ Tests that give no `state` get `{}`, and their rows never read it, so
 | `race.test.ts` | `race.test.ts` | 4 of 4 |
 | `reclaim.test.ts` | `reclaim.test.ts` | 2 of 2 |
 
+The counts are `test()` calls. Three of them sit in loops, so 43 tests
+run: "an unassigned issue ignores an old claim by `<login>`" in
+`claim.test.ts`, for `octocat` and `abandoned`; "release while the loser
+cleans up leaves no owner" in `race.test.ts`, for `(alice, alice)` and
+`(alice, bob)`; and "release after reclaiming an abandoned issue by
+`<login>`" in `reclaim.test.ts`, for `octocat` and `abandoned`. Each
+moves with every case of its loop.
+
 Each moved test keeps its name where its case is unchanged. A test that
 checked `t.ran(key)` checks `calls()` for a call that starts with the
 same arguments. A test that checked a variable of its fake checks
@@ -305,7 +324,7 @@ The in-process test of the close is narrowed to its message, and renamed
 ### 7. The race tests run two processes and open gates in order (D11)
 
 Each race test calls `backlog()` for the first session and
-`b.session()` for the second. Each session's table has `LOOKUP_ONE`,
+`b.session()` for the second, with `ownDeletesOnly: true` in the state. Each session's table has `LOOKUP_ONE`,
 then a gate row, then `issue({ login })`. The gate row matches the
 assignee read, `issue view 149 --json assignees,url`, has
 `gate: 'assignees'`, and answers through `answerIssue` too.
@@ -321,9 +340,12 @@ assignee read, `issue view 149 --json assignees,url`, has
 loser's token from the post in the loser's `calls()`, since the loser's
 result is `taken` and holds no token.
 
-"release while the loser cleans up leaves no owner" adds a second gate,
-`cleanup`, to both tables, on
-`api repos/acme/app/issues/comments/2 --method DELETE`. Comment 2 is the
+"release while the loser cleans up leaves no owner" runs for the logins
+`(alice, alice)` and `(alice, bob)`. It adds a second gate row,
+`cleanup`, to both tables, before `issue({ login })`, on
+`api repos/acme/app/issues/comments/2 --method DELETE`. Like the
+`assignees` row, it answers through `answerIssue`, so the held delete
+removes the comment once the gate opens. Comment 2 is the
 loser's, because the first post gets id 1 and the lowest id wins. After
 step 2:
 
