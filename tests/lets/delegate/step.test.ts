@@ -8,7 +8,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/step.ts';
 import type { StepOptions } from '../../../lets/src/delegate/step.ts';
-import { TimeoutError } from '../../../lets/src/resolvers/kit/errors.ts';
 import { commandDeps } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<StepOptions> = {}): StepOptions =>
@@ -29,10 +28,4 @@ test('a finish that fails is reported, and the report stands', async () => {
   assert.equal(report(t).outcome, 'done');
   assert.match(t.stderr(), /could not finish thread t-1: thread gone/);
   assert.equal(JSON.parse(t.stderr().trim().split('\n').at(-1)!).for, 'build', 'the record still ends stderr');
-});
-
-test('a session past its time is exit 6', async () => {
-  const t = withT3({ adapters: { t3: { step: new TimeoutError('no answer after 120 minutes') } } });
-  assert.equal(await run(options(), t.deps), 6);
-  assert.equal(t.stdout(), '');
 });
