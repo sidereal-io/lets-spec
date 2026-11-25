@@ -32,7 +32,7 @@ tasks share files, so they run in order.
 ## 4. Integration [depends-on: 3]
 
 - [x] 4.1 [easy] The `tests/` row of the README's *Development* table says that `delegate/` holds the black-box tests of the `lets delegate` instructions, `review run` and `handoff run` commands (verify: `git grep -n 'review run. and .handoff run' README.md`) (✓ git grep -n 'review run. and .handoff run' README.md passed)
-- [ ] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new files in the Nix sandbox. The pull request lists each test this story kept with its reason (D5, D8, D9), each test it deleted with the test that now covers it, and the rename gap in design.md's risks (verify: `nix flake check`)
+- [x] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new files in the Nix sandbox. The pull request lists each test this story kept with its reason (D5, D8, D9), each test it deleted with the test that now covers it, and the rename gap in design.md's risks (verify: `nix flake check`) (✓ nix flake check passed; ✓ mise run check passed; pnpm test: 888 Node tests and tsc passed, bats as in the Deviations Ledger)
 
 ## Deviations Ledger
 
@@ -50,3 +50,9 @@ tasks share files, so they run in order.
 - 2026-11-25, task 3.6: after this task, `resolvers/cli/delegate.test.ts`
   still holds its one handoff test besides the step tests and the finish
   test, because task 3.7 is the one that deletes it, with its cover.
+- 2026-11-25, task 4.2: in this checkout, bats failed only "each skill
+  is named for its folder", on an empty, git-ignored `skills/system/`
+  folder that this change did not make. On a clean export of HEAD that
+  test passed, and only the bundle test failed, for want of
+  `node_modules`. Every other check passed, and `nix flake check`,
+  which builds from the git tree, passed whole.
