@@ -6,12 +6,12 @@
 ## 1. Contracts
 
 - [ ] 1.1 [medium] `tests/support/lets.ts` declares the helper module's exports from design decision 1 (`pinnedEnv`, `runLets`, `tempDir`, `git`, `buildRelease`, `standIn`, `snapshot`) with their types, and a doc comment on each that states its preconditions, its result and how it fails. Each body throws `not built yet` (verify: `pnpm check`)
-- [ ] 1.2 [easy] `tests/sync/project.ts` declares the sync fixture's exports from design decision 2 (`makeRelease`, `useRelease`, `project`, `rulesIn`, `fragment`, `shippedSkills`, `releaseFiles`, `setSchema`) with their types and doc comments, typed against the helper module. Each body throws `not built yet` (verify: `pnpm check`)
+- [ ] 1.2 [easy] `tests/sync/project.ts` declares the sync fixture's exports from design decision 2 (`makeRelease`, `useRelease`, `project`, `rulesIn`, `fragment`, `shippedSkills`, `releaseFiles`, `setSchema`) with their types and doc comments, typed against the helper module. `useRelease` returns `release()`, the release's path. Each body throws `not built yet` (verify: `pnpm check`)
 
 ## 2. Implementation [depends-on: 1]
 
-- [ ] 2.1 [medium] The helper module works as design decisions 1, 4, 5 and 6 say: `runLets` runs `lets/bin/lets` with the pinned environment and the stand-in folder first on `PATH`, and rejects a run that passes its time limit; `tempDir` removes read-only trees; `standIn` answers from its table and logs each call; `snapshot` matches `project.bash`'s output fields (verify: `pnpm check`)
-- [ ] 2.2 [medium] The sync fixture works as design decision 2 says: one read-only release per test file with the four fixture skills and the 755 script, and a fresh git repository per test with `schema: lets-standard` and a stand-in `openspec` that prints a version (verify: `pnpm check`)
+- [ ] 2.1 [medium] The helper module works as design decisions 1, 4, 5 and 6 say: `runLets` runs `lets/bin/lets` with the pinned environment and `options.standIns` first on `PATH`, and rejects a run that passes its time limit; `tempDir` removes read-only trees; `standIn` answers from its table and logs each call; `snapshot` matches `project.bash`'s output fields (verify: `pnpm check`)
+- [ ] 2.2 [medium] The sync fixture works as design decision 2 says: one read-only release per test file with the four fixture skills and the 755 script, removed after the file and reached through `release()`, and a fresh git repository per test with `schema: lets-standard` and a stand-in `openspec` that prints a version (verify: `pnpm check`)
 
 ## 3. Black-box tests [depends-on: 2]
 

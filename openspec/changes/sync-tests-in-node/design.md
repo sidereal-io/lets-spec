@@ -82,11 +82,11 @@ It exports:
 | Export | What it does |
 |---|---|
 | `pinnedEnv(extra?)` | The environment for one test: `process.env` without `WORKFLOW_RELEASE`, `LETS_SPEC_SKILLS` and `LETS_SPEC_FLOW`, plus `LC_ALL=C`, `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_NOSYSTEM=1`, the test author and committer, and `XDG_CONFIG_HOME` set to an empty temporary folder (D6). |
-| `runLets(args, options)` | Runs `process.execPath lets/bin/lets <args>` in `options.cwd`, with the pinned environment, the stand-in folder first on `PATH`, and `options.env` on top. Resolves to `{ code, stdout, stderr, output }`, where `output` is `stdout + stderr`. Rejects when the run passes its time limit, 30 seconds unless `options.timeoutMs` says otherwise, with a message that names the command. |
+| `runLets(args, options)` | Runs `process.execPath lets/bin/lets <args>` in `options.cwd`, with the pinned environment, `options.standIns` (the folder that `standIn` wrote to, if any) first on `PATH`, and `options.env` on top. Resolves to `{ code, stdout, stderr, output }`, where `output` is `stdout + stderr`. Rejects when the run passes its time limit, 30 seconds unless `options.timeoutMs` says otherwise, with a message that names the command. |
 | `tempDir(t)` | Makes a temporary folder and removes it after the test or the file. It makes the tree writable first, because a test release is read-only. |
 | `git(cwd, ...args)` | Runs git with the pinned environment. Returns `{ code, stdout, stderr }` and does not throw, so a test can check `git check-ignore`'s exit code. |
 | `buildRelease(out, schemas, skills)` | Runs `build/build-release.mjs` on this repository, with a stand-in folder for the generated `openspec-*` skills, as `release.bash`'s `build` does. |
-| `standIn(dir, name, table)` | Writes an executable program called `name` into `dir`. For each call, it logs the arguments and answers from `table`: standard output, standard error and exit code, matched by the argument list. A call that matches no row exits 127 and says so on standard error. Returns `calls()`, which reads the log. |
+| `standIn(dir, name, table)` | Writes an executable program called `name` into `dir`. `table` is a list of rows `{ args: string[], stdout?: string, stderr?: string, code?: number }`. For each call, it logs the arguments and answers from the first row whose `args` equals the call's argument list. A call that matches no row exits 127 and says so on standard error. Returns `calls()`, which reads the log as one argument list per call (`string[][]`). |
 | `snapshot(dir)` | Every path under `dir` with its type, mode and a hash of its content or its link target, plus `.git/info/exclude`, but not git's objects, as `project.bash`'s `snapshot` does. |
 
 Each export has a doc comment that states its preconditions, its result
@@ -106,10 +106,13 @@ for `lets sync`:
 - `makeRelease(dir, extraSkills?)`: the four fixture skills, the 755
   script in `lets-verify-contracts`, any extra skills, then read-only.
 - `useRelease()`: a `before` hook that builds one release per test file
-  (D7).
+  (D7), in a `tempDir` that is removed after the file. It returns
+  `release()`, which gives the release's path, for the tests that compare
+  files with it or copy it, as the bats tests use `$release`.
 - `project(t)`: a fresh git repository with
   `openspec/config.yaml` = `schema: lets-standard\n`, and a stand-in
-  `openspec` that prints a version (D8). It returns an object with
+  `openspec` that prints a version (D8). It passes the stand-in folder to
+  `runLets` as `standIns`. It returns an object with
   `path`, `read`, `write`, `git`, `sync(args?, env?, cwd?)` and
   `init()`, which runs `lets sync` and checks that it exits 0.
 - `rulesIn(text)`, `fragment()`, `shippedSkills()`, `releaseFiles()`.
