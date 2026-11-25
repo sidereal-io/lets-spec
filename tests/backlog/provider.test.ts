@@ -136,6 +136,18 @@ test('a bad backlog.provider in the repository\'s lets config names that file fi
   assert.deepEqual(b.calls(), []);
 });
 
+test('a bad backlog.provider in the user\'s lets config names that file, even when the repository\'s sets another backlog key', async (t) => {
+  // The repository's file sets backlog but not backlog.provider, so naming
+  // the file for backlog instead would blame the wrong one.
+  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 3\nbacklog:\n  provider: 7\n', repoConfig: 'version: 3\nbacklog:\n  other: 1\n' });
+  const result = await b.lets('find', 'x');
+  assert.equal(result.code, 1, result.output);
+  const out = b.json(result);
+  assert.equal(out.error, 'unknown-backlog-provider');
+  assert.ok(out.message.startsWith(`${b.configFile}: `), out.message);
+  assert.deepEqual(b.calls(), []);
+});
+
 test('a repository\'s lets config with the old version is unknown-backlog-provider, naming it', async (t) => {
   const b = backlog(t, [...LOOKUP_ONE, FIND], { repoConfig: 'version: 2\nbacklog:\n  provider: github\n' });
   const result = await b.lets('ready');
