@@ -3,7 +3,7 @@
 // PATH. Command-specific fixtures live beside their tests, not here.
 import { execFile, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import type { TestContext } from 'node:test';
@@ -94,7 +94,8 @@ export function pinnedEnv(extra?: EnvChanges): NodeJS.ProcessEnv {
 }
 
 /**
- * Runs `lets/bin/lets <args>` with this Node, in `options.cwd`, with the
+ * Runs `lets/bin/lets <args>`, or `<options.lets>/bin/lets` when that is
+ * set, with this Node, in `options.cwd`, with the
  * pinned environment, `options.standIns` first on `PATH` and `options.env`
  * on top. Resolves with the exit code and both streams whatever the exit
  * code. Rejects when lets cannot be started, or when the run passes its
@@ -109,7 +110,7 @@ export function runLets(args: string[], options: RunLetsOptions): Promise<LetsRe
   return new Promise((done, fail) => {
     execFile(
       process.execPath,
-      [ENTRY, ...args],
+      [options.lets === undefined ? ENTRY : join(options.lets, 'bin', 'lets'), ...args],
       { cwd: options.cwd, env: applyEnv(env, options.env), timeout, maxBuffer: 64 * 1024 * 1024 },
       (error, stdout, stderr) => {
         if (error?.killed) {
@@ -136,7 +137,19 @@ export function runLets(args: string[], options: RunLetsOptions): Promise<LetsRe
  * Throws when `lets/node_modules` is missing, and says to run pnpm install.
  */
 export function letsPackage(t: TestContext, options: LetsPackageOptions = {}): string {
-  throw new Error('not built yet');
+  const source = join(repo, 'lets');
+  const modules = join(source, 'node_modules');
+  if (!existsSync(modules)) throw new Error(`${modules} is missing, so a copy of lets cannot run: run pnpm install`);
+  const dir = join(tempDir(t), 'lets');
+  for (const part of ['bin', 'src', 'package.json']) cpSync(join(source, part), join(dir, part), { recursive: true });
+  // node_modules holds links into the pnpm store, so link it rather than copy it.
+  symlinkSync(modules, join(dir, 'node_modules'));
+  if (options.releaseJson !== undefined) writeFileSync(join(dir, 'release.json'), options.releaseJson);
+  for (const [flow, release] of Object.entries(options.releases ?? {})) {
+    mkdirSync(join(dir, 'releases'), { recursive: true });
+    symlinkSync(release, join(dir, 'releases', flow));
+  }
+  return dir;
 }
 
 /**
