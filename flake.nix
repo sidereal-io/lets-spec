@@ -323,12 +323,13 @@
             touch "$out"
           '';
 
-        # The unit tests for the lets package and its resolvers, and
-        # the type check. They use fakes, so no harness and no real gh
-        # run here.
+        # The Node tests and the type check. The tests of lets use fakes,
+        # so no harness runs here. The contract checks run the real gh's
+        # --help, to see that each gh command the texts name is one it
+        # knows.
         node-tests = pkgs.runCommand "node-tests"
           {
-            nativeBuildInputs = [ pkgs.nodejs_26 pkgs.pnpm pkgs.pnpmConfigHook pkgs.git ];
+            nativeBuildInputs = [ pkgs.nodejs_26 pkgs.pnpm pkgs.pnpmConfigHook pkgs.git pkgs.gh ];
             pnpmDeps = pnpmDepsFor pkgs;
           }
           ''
