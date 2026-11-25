@@ -42,11 +42,12 @@ test('sync says only what to install when no OpenSpec CLI is on PATH and the pac
 
 test('sync counts an OpenSpec CLI that exits non-zero as missing', async (t) => {
   const p = project(t);
-  standIn(p.bin, 'openspec', [{ args: ['--version'], code: 1 }]);
+  const cli = standIn(p.bin, 'openspec', [{ args: ['--version'], code: 1 }]);
   const lets = letsPackage(t, { releaseJson: RELEASE_JSON });
   const { code, stderr, output } = await p.sync([], {}, { lets });
   assert.equal(code, 0, output);
   assert.equal(stderr, `lets-spec: 1 problem(s) to fix:\n- ${MISSING}\n`);
+  assert.deepEqual(cli.calls(), [['--version']]);
 });
 
 test("sync asks the OpenSpec CLI its version once, in the project's root, when run from a folder inside it", async (t) => {
@@ -62,11 +63,12 @@ test("sync asks the OpenSpec CLI its version once, in the project's root, when r
 
 test('sync says nothing about an OpenSpec CLI that prints no version', async (t) => {
   const p = project(t);
-  cliPrints(p.bin, '');
+  const cli = cliPrints(p.bin, '');
   const lets = letsPackage(t, { releaseJson: RELEASE_JSON });
   const { code, stderr, output } = await p.sync([], {}, { lets });
   assert.equal(code, 0, output);
   assert.equal(stderr, '');
+  assert.deepEqual(cli.calls(), [['--version']]);
 });
 
 test('--check fails when no OpenSpec CLI is on PATH, in committed mode', async (t) => {
@@ -106,30 +108,33 @@ test("sync warns about a CLI older than the package's release.json, with WORKFLO
 
 test("--check passes with a CLI older than the package's release.json", async (t) => {
   const p = project(t);
-  cliPrints(p.bin, '1.1.0\n');
   const lets = letsPackage(t, { releaseJson: RELEASE_JSON });
   await p.init();
+  const cli = cliPrints(p.bin, '1.1.0\n');
   const { code, output } = await p.sync(['--check'], {}, { lets });
   assert.equal(code, 0, output);
   assert.equal(output, '');
+  assert.deepEqual(cli.calls(), [['--version']]);
 });
 
 test('sync gives no version warning when release.json is not JSON', async (t) => {
   const p = project(t);
-  cliPrints(p.bin, '1.1.0\n');
+  const cli = cliPrints(p.bin, '1.1.0\n');
   const lets = letsPackage(t, { releaseJson: 'oops' });
   const { code, stderr, output } = await p.sync([], {}, { lets });
   assert.equal(code, 0, output);
   assert.equal(stderr, '');
+  assert.deepEqual(cli.calls(), [['--version']]);
 });
 
 test("sync gives no version warning for a CLI the same as or newer than the package's release.json", async (t) => {
   const p = project(t);
   const lets = letsPackage(t, { releaseJson: RELEASE_JSON });
   for (const version of ['1.2.3', '2.1.0']) {
-    cliPrints(p.bin, `${version}\n`);
+    const cli = cliPrints(p.bin, `${version}\n`);
     const { code, stderr, output } = await p.sync([], {}, { lets });
     assert.equal(code, 0, output);
     assert.equal(stderr, '', `CLI ${version}`);
+    assert.deepEqual(cli.calls(), [['--version']], `CLI ${version}`);
   }
 });
