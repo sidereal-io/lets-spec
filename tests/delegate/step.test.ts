@@ -12,6 +12,9 @@ import { agy, claude, codex, git, type LetsResult, unstartable } from '../suppor
 import { delegateRepo, PROMPT } from './repo.ts';
 import { agyWrite, assertClockDate, assertClockMs, claudeWrite, codexWrite, ending, stepRun, type StepArgs } from './steps.ts';
 
+// text, matched as itself in a RegExp, so a temporary path holds no pattern.
+const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
 const CLI_THEN_SUBAGENT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
 const DONE = ending('outcome: done\nevidence:\n  - "commit 3f2a1c0"\n');
@@ -232,7 +235,7 @@ describe('step run', () => {
     const clis = everyCli(repo.standIns);
     const result = await repo.run(stepRun());
     failed(result, 2);
-    assert.match(result.stderr, new RegExp(`${repo.userConfig}.*codex`));
+    assert.match(result.stderr, new RegExp(`${escape(repo.userConfig)}.*codex`));
     noCalls(clis);
   });
 
@@ -311,7 +314,7 @@ describe('step run', () => {
     const clis = everyCli(bad.standIns);
     const result = await bad.run(stepRun());
     failed(result, 2);
-    assert.match(result.stderr, new RegExp(`${bad.repoConfig}.*codex`));
+    assert.match(result.stderr, new RegExp(`${escape(bad.repoConfig)}.*codex`));
     noCalls(clis);
   });
 
