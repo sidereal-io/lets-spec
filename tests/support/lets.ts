@@ -3,7 +3,7 @@
 // PATH. Command-specific fixtures live beside their tests, not here.
 import { execFile, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { accessSync, chmodSync, constants, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { accessSync, chmodSync, constants, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import type { TestContext } from 'node:test';
@@ -369,10 +369,11 @@ let gitOnly: string | null | undefined;
 // PATH, made once per process, or null when there is no git.
 function gitOnlyDir(): string | null {
   if (gitOnly !== undefined) return gitOnly;
-  const found = (process.env.PATH ?? '').split(delimiter).filter((dir) => dir !== '').map((dir) => join(dir, 'git')).find((path) => {
+  const found = (process.env.PATH ?? '').split(delimiter).filter((dir) => dir !== '').map((dir) => resolve(dir, 'git')).find((path) => {
     try {
       accessSync(path, constants.X_OK);
-      return true;
+      // A folder named git is executable too, but it is not the program.
+      return statSync(path).isFile();
     } catch {
       return false;
     }
