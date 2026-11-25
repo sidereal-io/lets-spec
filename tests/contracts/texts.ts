@@ -30,6 +30,8 @@ export interface Text {
   path: string;
   /** The absolute path. */
   file: string;
+  /** The whole file as written. */
+  source: string;
   /** Each line outside fenced code, with its code spans taken out. */
   prose: Piece[];
   /** Each code span outside fenced code. A span that crosses a line break holds a space there. */
@@ -120,7 +122,7 @@ export function headingAnchor(text: string, seen: Map<string, number>): string {
 }
 
 function splitText(source: string): Parts {
-  const text: Parts = { prose: [], spans: [], code: [], headings: [] };
+  const text: Parts = { source, prose: [], spans: [], code: [], headings: [] };
   const seen = new Map<string, number>();
   let fence = '';
   // The length of the backtick run that opened the current code span, or 0.
