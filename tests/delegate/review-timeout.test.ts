@@ -17,6 +17,7 @@ test('a session past its time is stopped, and is exit 6 with no findings', async
   assert.equal(result.stdout, '');
   assert.match(result.stderr, /^lets delegate: claude did not finish in 1 minutes$/m);
   // A hanging stand-in ends by itself after 120 seconds, so a run this
-  // short shows that lets stopped it.
-  assert.ok(elapsed < 90_000, `the run took ${elapsed} ms`);
+  // short shows that lets stopped it, and one this long that lets waited
+  // the whole minute.
+  assert.ok(elapsed >= 55_000 && elapsed < 90_000, `the run took ${elapsed} ms`);
 });
