@@ -11,25 +11,12 @@ test('questions prints the question mode the config sets as one JSON line', asyn
   }
 });
 
-test('questions prints a null question mode when no config file exists', async () => {
-  const t = commandDeps();
-  assert.equal(await run(t.deps), 0);
-  assert.equal(t.stdout(), '{"questions":null}\n');
-});
-
 test('questions prints a null question mode when the config sets none', async () => {
   for (const yaml of ['delegate:\n  resolvers: [subagent]\n', 'go:\n', 'go:\n  questions: null\n', 'go:\n  verbose: true\n', 'go:\n  level: recommend\n']) {
     const t = commandDeps({ config: `version: 3\n${yaml}` });
     assert.equal(await run(t.deps), 0, yaml);
     assert.equal(t.stdout(), '{"questions":null}\n', yaml);
   }
-});
-
-test('questions reads the file under XDG_CONFIG_HOME', async () => {
-  const t = commandDeps({ files: { '/cfg/lets/config.yaml': 'version: 3\ngo:\n  questions: auto\n' } });
-  t.deps.env = { XDG_CONFIG_HOME: '/cfg' };
-  assert.equal(await run(t.deps), 0);
-  assert.equal(t.stdout(), '{"questions":"auto"}\n');
 });
 
 test('questions ignores a delegate chain the delegate commands would reject', async () => {

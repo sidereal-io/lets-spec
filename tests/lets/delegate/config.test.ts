@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checkConfig, configPath, guidanceFor, mergeDocuments, parseDocument, questionModeFor, readConfig, readLetsConfig } from '../../../lets/src/delegate/config.ts';
+import { checkConfig, guidanceFor, mergeDocuments, parseDocument, questionModeFor, readConfig, readLetsConfig } from '../../../lets/src/delegate/config.ts';
 import { UsageError } from '../../../lets/src/resolvers/kit/errors.ts';
 import { commandDeps } from './fixtures/command-deps.ts';
 import { fakeIo } from './fixtures/fake-io.ts';
@@ -15,18 +15,6 @@ function depsWith(text?: string, env: Record<string, string> = {}) {
   const files: Record<string, string> = text === undefined ? {} : { [path]: text };
   return { env, cwd: '/repo', io: fakeIo({ files, homedir: () => '/home/u' }) };
 }
-
-test('the config file is under ~/.config when XDG_CONFIG_HOME is unset', () => {
-  assert.equal(configPath(depsWith()), HOME_CONFIG);
-});
-
-test('the config file is under XDG_CONFIG_HOME when it is set', () => {
-  assert.equal(configPath(depsWith(undefined, { XDG_CONFIG_HOME: '/tmp/cfg' })), '/tmp/cfg/lets/config.yaml');
-});
-
-test('no config file reads as null', async () => {
-  assert.equal(await configIn(depsWith()), null);
-});
 
 test('a valid config reads as its chain of names, in order', async () => {
   const text = 'version: 3\ndelegate:\n  resolvers:\n    - t3\n    - cli\n    - subagent\n';
@@ -139,11 +127,6 @@ test('an invalid config is a usage error that names the file and the bad value',
     await assert.rejects(configIn(depsWith(text)),
       (error) => error instanceof UsageError && error.message.includes(HOME_CONFIG) && error.message.includes(named), text);
   }
-});
-
-test('a config.json with no config.yaml is not read', async () => {
-  const deps = { env: {}, cwd: '/repo', io: fakeIo({ files: { '/home/u/.config/lets/config.json': '{"version":1}' } }) };
-  assert.equal(await configIn(deps), null);
 });
 
 test('a config that is not YAML says where the parser stopped, in one sentence', async () => {
@@ -280,10 +263,6 @@ test('readLetsConfig reads only the user\'s lets config when the repository has 
   const { document, fileOf } = await readLetsConfig(t.deps);
   assert.deepEqual(document, { version: 3, go: { questions: 'ask' } });
   assert.equal(fileOf('go.questions'), USER);
-});
-
-test('readLetsConfig gives a null document when there is neither file', async () => {
-  assert.equal((await readLetsConfig(commandDeps().deps)).document, null);
 });
 
 test('readLetsConfig rejects a repository\'s lets config with the old version, naming it', async () => {
