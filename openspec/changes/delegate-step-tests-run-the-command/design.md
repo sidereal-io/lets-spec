@@ -255,7 +255,7 @@ removed)
 | changes neither report nor meta file of a step with an exit code | both files the same before and after a second `step wait` |
 | a step gone with no exit code is exit 4, with a line at the end of its meta file | a stopped step whose meta file the test fills with `lets delegate: no answer\n`: `{"exit":4}`, the killed line after that text |
 | a killed step is reported once | a second wait: exit 4 again, one killed line |
-| a killed step counts as ended when found | `b` ends; then `a` is stopped: `--name a --name b` names `b` |
+| a killed step counts as ended when found | `a` is stopped; then `b` starts and ends: `--name a --name b` names `b`, which comes first only when `a` ends when `step wait` finds it |
 | an unknown name; no name | exit 2 naming `c-story`; exit 2 naming `--name` |
 | a time limit that passes is exit 6 | decision 5, test 2 |
 | a step that ends before the time limit | `--timeout-minutes 1` on a step that answers: exit 0, well under a minute |

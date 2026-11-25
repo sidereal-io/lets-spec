@@ -279,8 +279,9 @@ describe('step wait', () => {
   test('a killed step counts as ended when it is found, after a step that recorded its end', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     const stand = answersAndHangs(repo);
-    await done(t, repo, 'b');
+    // a dies before b starts, so b comes first only when a ends when found.
     await killed(t, repo, stand, 'a');
+    await done(t, repo, 'b');
     assert.deepEqual(ended(await waitFor(repo, ['a', 'b'])), { name: 'b', exit: 0 });
   });
 
