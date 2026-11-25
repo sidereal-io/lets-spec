@@ -1,5 +1,5 @@
-// The helper module for black-box tests of lets: it runs lets/bin/lets as
-// a program, in temporary folders, with stand-ins for outside programs on
+// The helper module for black-box tests: it runs lets/bin/lets and other
+// programs, in temporary folders, with stand-ins for outside programs on
 // PATH. Command-specific fixtures live beside their tests, not here.
 import { execFile, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -22,23 +22,29 @@ export interface RunResult {
   stderr: string;
 }
 
-/** What one run of lets left behind. `output` is `stdout` followed by `stderr`. */
-export interface LetsResult extends RunResult {
+/** What one run of a program left behind. `output` is `stdout` followed by `stderr`. */
+export interface ProgramResult extends RunResult {
   output: string;
 }
+
+/** What one run of lets left behind. */
+export type LetsResult = ProgramResult;
 
 /** Variables to add to the pinned environment. `undefined` removes one. */
 export type EnvChanges = Record<string, string | undefined>;
 
-export interface RunLetsOptions {
-  /** The folder lets runs in. Tests never call `process.chdir`. */
+export interface RunOptions {
+  /** The folder the program runs in. Tests never call `process.chdir`. */
   cwd: string;
   /** Applied last, on top of the pinned environment. */
   env?: EnvChanges;
-  /** The folder `standIn` wrote to. It goes first on `PATH`. */
-  standIns?: string;
   /** How long the run may take. 30 seconds when absent. */
   timeoutMs?: number;
+}
+
+export interface RunLetsOptions extends RunOptions {
+  /** The folder `standIn` wrote to. It goes first on `PATH`. */
+  standIns?: string;
 }
 
 /** One answer of a stand-in, given to the call whose arguments equal `args`. */
@@ -79,6 +85,20 @@ export function pinnedEnv(extra?: EnvChanges): NodeJS.ProcessEnv {
     XDG_CONFIG_HOME: tempDir(),
   });
   return applyEnv(env, extra);
+}
+
+/**
+ * Runs `program` with `args` in `options.cwd`, which must exist, with the
+ * pinned environment, `options.env` on top and standard input closed, as
+ * `</dev/null` gives. A `program` without a slash is looked up on the
+ * `PATH` of that environment. Resolves with the exit code and both
+ * streams whatever the exit code. Rejects when the program cannot be
+ * started: the message names it, and says it is not on `PATH` when
+ * `options.cwd` exists, or that the folder is missing when it does not.
+ * Rejects too when the run passes its time limit.
+ */
+export function run(program: string, args: string[], options: RunOptions): Promise<ProgramResult> {
+  throw new Error('not built yet');
 }
 
 /**
@@ -135,6 +155,15 @@ export function git(cwd: string, ...args: string[]): RunResult {
   const result = spawnSync('git', args, { cwd, env: pinnedEnv(), encoding: 'utf8' });
   if (result.error) throw result.error;
   return { code: result.status ?? 1, stdout: result.stdout, stderr: result.stderr };
+}
+
+/**
+ * Makes `dir` and its `openspec-propose/SKILL.md`, to stand in for the
+ * generated `openspec-*` skills, and returns `dir`. Its parent must
+ * exist or be creatable. Throws when `dir` cannot be written.
+ */
+export function generatedSkills(dir: string): string {
+  throw new Error('not built yet');
 }
 
 /**
@@ -220,6 +249,26 @@ export function snapshot(dir: string): string {
   const exclude = join(dir, '.git', 'info', 'exclude');
   if (existsSync(exclude)) lines.push(readFileSync(exclude, 'utf8'));
   return lines.join('\n');
+}
+
+/**
+ * Every path under `dir`, sorted, with its type and a hash of its content
+ * or its link target, without modes, `.git` included. Two trees give equal
+ * text exactly when `diff -r` finds them equal, as far as paths, types and
+ * contents go. Throws when `dir` cannot be read.
+ */
+export function tree(dir: string): string {
+  throw new Error('not built yet');
+}
+
+/**
+ * Takes write permission away from `path` and everything under it, for
+ * everyone, as the Nix store does. Links are left alone. Throws when
+ * `path` is missing or cannot be changed. `tempDir` still removes a
+ * read-only tree.
+ */
+export function makeReadOnly(path: string): void {
+  throw new Error('not built yet');
 }
 
 // Each path under dir, from rel, as find prints it: the folder itself, then

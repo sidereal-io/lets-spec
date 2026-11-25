@@ -5,7 +5,7 @@
 
 ## 1. Contracts
 
-- [ ] 1.1 [medium] `tests/support/lets.ts` declares the new exports from design decision 2 (`run` with its options type, `makeReadOnly`, `generatedSkills` and `tree`) with their types, and a doc comment on each that states its preconditions, its result and how it fails. Each new body throws `not built yet`. The existing exports keep their signatures (verify: `pnpm check`)
+- [x] 1.1 [medium] `tests/support/lets.ts` declares the new exports from design decision 2 (`run` with its options type, `makeReadOnly`, `generatedSkills` and `tree`) with their types, and a doc comment on each that states its preconditions, its result and how it fails. Each new body throws `not built yet`. The existing exports keep their signatures (verify: `pnpm check`) (✓ `pnpm check` passed)
 - [ ] 1.2 [easy] The root `package.json` has `yaml` at `^2.9.1` in `devDependencies`, added with `pnpm add -D -w yaml@^2.9.1`, and `pnpm-lock.yaml` changes only in its root importer (D12, design decision 8). If Nix reports a `pnpmDeps` hash mismatch, this commit also puts the reported hash into `flake.nix` (verify: `pnpm install --frozen-lockfile && pnpm check && nix build .#checks.x86_64-linux.node-tests -L`)
 
 ## 2. Implementation [depends-on: 1]
