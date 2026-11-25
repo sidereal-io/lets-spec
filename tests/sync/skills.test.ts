@@ -351,12 +351,18 @@ test('switching to committed removes the block and says what to add', async (t) 
 });
 
 test('switching to committed leaves an empty gitignore when it held only the block', async (t) => {
-  const p = project(t);
-  await p.init(ignored);
-  const { code, output } = await p.sync();
-  assert.equal(code, 0, output);
-  assert.ok(existsSync(join(p.path, '.gitignore')));
-  assert.equal(p.read('.gitignore'), '');
+  // With no .gitignore, ignored mode writes only the block. With an empty
+  // one, it writes a blank line and then the block, and the blank line goes too.
+  for (const start of [null, '']) {
+    const p = project(t);
+    if (start !== null) p.write('.gitignore', start);
+    await p.init(ignored);
+    assert.equal(p.read('.gitignore'), start === null ? skillsBlock : `\n${skillsBlock}`);
+    const { code, output } = await p.sync();
+    assert.equal(code, 0, output);
+    assert.ok(existsSync(join(p.path, '.gitignore')));
+    assert.equal(p.read('.gitignore'), '', `start: ${JSON.stringify(start)}`);
+  }
 });
 
 test('committed mode leaves a block with an unpaired marker unchanged, and warns', async (t) => {

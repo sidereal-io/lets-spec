@@ -10,6 +10,8 @@ import { fragment, makeRelease, project, rulesIn, useRelease } from './project.t
 
 useRelease();
 
+const BEGIN = '<!-- BEGIN lets-spec rules. lets sync rewrites this block: change lets-spec, not this text. -->';
+const END = '<!-- END lets-spec rules -->';
 const staleBlock = '<!-- BEGIN lets-spec rules -->\nold rules\n<!-- END lets-spec rules -->\n';
 
 // Text without its final newlines, as `$(cat file)` gives it in a shell.
@@ -28,6 +30,8 @@ test('sync creates AGENTS.md holding only the rules block', async (t) => {
   const agents = p.read('AGENTS.md');
   assert.equal(rulesIn(agents), fragment());
   assert.equal(fileLines(agents).filter((line) => !line.includes('lets-spec rules')).length, fragment().split('\n').length);
+  assert.ok(agents.startsWith(`${BEGIN}\n`), agents);
+  assert.ok(agents.endsWith(`\n${END}\n`), agents);
   assert.match(output, /created AGENTS\.md/);
 });
 
@@ -60,6 +64,17 @@ test("sync appends the rules after a blank line, and keeps the project's text", 
   const agents = p.read('AGENTS.md');
   assert.equal(lines(agents)[0], '# My project');
   assert.equal(lines(agents)[1], '');
+  assert.equal(rulesIn(agents), fragment());
+  assert.match(output, /added the lets-spec rules to AGENTS\.md/);
+});
+
+test('sync gives an empty AGENTS.md a blank line, then the rules', async (t) => {
+  const p = project(t);
+  p.write('AGENTS.md', '');
+  const { code, output } = await p.sync();
+  assert.equal(code, 0, output);
+  const agents = p.read('AGENTS.md');
+  assert.ok(agents.startsWith(`\n${BEGIN}\n`), agents);
   assert.equal(rulesIn(agents), fragment());
   assert.match(output, /added the lets-spec rules to AGENTS\.md/);
 });
@@ -139,11 +154,27 @@ test('sync keeps a backslash in the rules as written', async (t) => {
   const rules = join(release, 'fragments', 'AGENTS.md');
   chmodSync(join(release, 'fragments'), 0o755);
   chmodSync(rules, 0o644);
-  appendFileSync(rules, 'Run `printf "a\\nb"`.\n');
+  // Each $ pattern means something to String.prototype.replace.
+  const line = 'Run `printf "a\\nb"`, then $1 $& $` $\'.';
+  appendFileSync(rules, `${line}\n`);
   p.write('AGENTS.md', staleBlock);
   const { code, output } = await p.sync([], { WORKFLOW_RELEASE: release });
   assert.equal(code, 0, output);
-  assert.ok(lines(p.read('AGENTS.md')).includes('Run `printf "a\\nb"`.'));
+  assert.ok(lines(p.read('AGENTS.md')).includes(line), p.read('AGENTS.md'));
+});
+
+test('sync puts the end marker on its own line when the rules lack a final newline', async (t) => {
+  const p = project(t);
+  const release = join(tempDir(t), 'unterminated');
+  makeRelease(release);
+  const rules = join(release, 'fragments', 'AGENTS.md');
+  chmodSync(join(release, 'fragments'), 0o755);
+  chmodSync(rules, 0o644);
+  const body = chomp(readFileSync(rules, 'utf8'));
+  writeFileSync(rules, body);
+  const { code, output } = await p.sync([], { WORKFLOW_RELEASE: release });
+  assert.equal(code, 0, output);
+  assert.equal(p.read('AGENTS.md'), `${BEGIN}\n${body}\n${END}\n`);
 });
 
 test('sync writes through a linked AGENTS.md, and keeps its mode', async (t) => {
@@ -170,6 +201,9 @@ test('sync leaves rules with an unpaired marker unchanged, and warns', async (t)
     `rules\n${end}\n`,
     `${end}\nrules\n${begin}\n`,
     `${begin}\n${begin}\nrules\n${end}\n`,
+    `${begin}\nrules\n${end}\n${begin}\nrules\n${end}\n`,
+    // The end marker is a whole line, so one with a trailing space is not one.
+    `${begin}\nrules\n${end} \n`,
   ];
   for (const text of broken) {
     const before = `# Mine\n${text}`;
