@@ -22,15 +22,6 @@ const reviewOptions = (over: Partial<ReviewOptions> = {}): ReviewOptions =>
   ({ for: 'code', name: 'x', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', models: ['gpt'], ...over });
 const handoffOptions = { name: 'fix-login', promptFile: 'p.md', models: ['claude'] };
 
-test('a review declines with no family CLI on PATH, starting nothing', async () => {
-  const io = fakeIo({ commands: ['some-tool'] });
-  const t = withCli(io);
-  assert.equal(await review(reviewOptions(), t.deps), 2);
-  assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), /every resolver declined/);
-  assert.deepEqual(io.calls, []);
-});
-
 test('a handoff declines with every family CLI on PATH, starting nothing', async () => {
   const io = fakeIo({ commands: ['codex', 'claude', 'agy'] });
   const t = withCli(io);

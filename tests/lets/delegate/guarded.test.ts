@@ -1,7 +1,9 @@
+// A known error's exit code and its line, after the prefix, are tested
+// through lets, in tests/delegate/run.test.ts. No command reaches an error
+// lets does not know, so that case stays here.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { guarded } from '../../../lets/src/delegate/guarded.ts';
-import { SessionFailed } from '../../../lets/src/resolvers/kit/errors.ts';
 
 // Deps that keep what the command printed on stderr.
 function setup() {
@@ -9,26 +11,8 @@ function setup() {
   return { deps: { stderr: (text: string) => err.push(text) }, stderr: () => err.join('') };
 }
 
-test('guarded returns the exit code of the command it runs', async () => {
-  const t = setup();
-  assert.equal(await guarded(t.deps, async () => 3), 3);
-  assert.equal(t.stderr(), '');
-});
-
-test('guarded reports an error it knows, and returns its exit code', async () => {
-  const t = setup();
-  assert.equal(await guarded(t.deps, async () => { throw new SessionFailed('the session ended'); }), 5);
-  assert.equal(t.stderr(), 'lets delegate: the session ended\n');
-});
-
 test('guarded rethrows an error it does not know', async () => {
   const t = setup();
   await assert.rejects(guarded(t.deps, async () => { throw new TypeError('a bug'); }), TypeError);
   assert.equal(t.stderr(), '');
-});
-
-test('guarded starts the line with the prefix it is given', async () => {
-  const t = setup();
-  assert.equal(await guarded(t.deps, async () => { throw new SessionFailed('the session ended'); }, 'lets go: '), 5);
-  assert.equal(t.stderr(), 'lets go: the session ended\n');
 });

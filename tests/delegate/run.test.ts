@@ -5,12 +5,14 @@
 // result. Each test gives a stand-in the exact command it expects, so the
 // command lets gives each CLI is checked too.
 import assert from 'node:assert/strict';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import { agy, claude, codex, type LetsResult } from '../support/lets.ts';
 import { delegateRepo, PROMPT } from './repo.ts';
 
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
+const CLI_THEN_SUBAGENT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
 const FINDINGS = 'FINDINGS\n';
 // The session name lets makes of the review's --name.
 const SESSION = 'x-plan-review';
@@ -59,6 +61,17 @@ function metadata(result: LetsResult): Record<string, unknown> {
   const lines = result.stderr.split('\n').filter((line) => line !== '');
   return JSON.parse(lines.at(-1)!);
 }
+
+// A run that failed with code: nothing on stdout, and stderr that starts
+// with lets's prefix.
+function failed(result: LetsResult, code: number) {
+  assert.equal(result.code, code, result.output);
+  assert.equal(result.stdout, '');
+  assert.match(result.stderr, /^lets delegate: /);
+}
+
+// Every family CLI on PATH, each answering only its model listing.
+const everyCli = (dir: string) => ({ codex: codex(dir), claude: claude(dir), agy: agy(dir) });
 
 describe('review run', () => {
   test('a codex review prints the last message, then one metadata line with its 10 keys in order', async (t) => {
@@ -156,5 +169,147 @@ describe('review run', () => {
     assert.equal(metadata(await repo.run(review({ models: ['gpt/gpt-6-luna', 'claude'] }))).family, 'gpt');
     assert.deepEqual(clis.codex.calls(), [codexExec(repo.cwd)]);
     assert.deepEqual(clis.claude.calls(), []);
+  });
+
+  test('when every resolver in the chain declines, a review is exit 2, naming the config, with nothing on stdout', async (t) => {
+    // No CLI on PATH, so cli declines.
+    const repo = delegateRepo(t, { user: CLI });
+    const result = await repo.run(review());
+    failed(result, 2);
+    assert.match(result.stderr, /every resolver declined/);
+    assert.ok(result.stderr.includes(repo.userConfig), result.stderr);
+  });
+
+  test('when cli declines, subagent answers next, and a cli that answers comes before subagent', async (t) => {
+    const declines = delegateRepo(t, { user: CLI_THEN_SUBAGENT });
+    const result = await declines.run(review());
+    failed(result, 3);
+    assert.match(result.stderr, /no resolver started a session.*subagent/);
+    const answers = delegateRepo(t, { user: CLI_THEN_SUBAGENT });
+    codex(answers.standIns, [], { rows: [codexAnswers(answers.cwd)] });
+    assert.equal(metadata(await answers.run(review())).resolver, 'cli');
+  });
+
+  test('with no lets config, subagent is the only resolver asked: exit 3, and nothing on stdout', async (t) => {
+    const repo = delegateRepo(t);
+    const clis = everyCli(repo.standIns);
+    const result = await repo.run(review());
+    failed(result, 3);
+    assert.match(result.stderr, /no resolver started a session/);
+    assert.match(result.stderr, /subagent/);
+    assert.doesNotMatch(result.stderr, /installed/);
+    for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], name);
+  });
+
+  test('subagent runs no program but git, even with every family CLI on PATH', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent] }\n' });
+    const clis = everyCli(repo.standIns);
+    failed(await repo.run(review()), 3);
+    for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], name);
+  });
+
+  test('a review ignores the guidance, even one that is not a string', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: 42\n' });
+    const stand = codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
+    const result = await repo.run(review());
+    assert.equal(metadata(result).resolver, 'cli');
+    assert.equal(result.stdout, FINDINGS);
+    assert.deepEqual(stand.inputs(), [PROMPT]);
+  });
+
+  test('a bad --model is exit 2, naming it, and no CLI runs', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    const clis = everyCli(repo.standIns);
+    const result = await repo.run(review({ models: ['gpt', 'llama/llama-4'] }));
+    // lets's option parser rejects it, before review run starts.
+    assert.equal(result.code, 2, result.output);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /--model .*llama\/llama-4/);
+    for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], name);
+  });
+
+  test('a resolver lets does not know is exit 2, naming the file, the entry and the three names', async (t) => {
+    for (const entry of ['/opt/r/old-resolver', 'bin/old-resolver']) {
+      const repo = delegateRepo(t, { user: `version: 3\ndelegate:\n  resolvers:\n    - ${entry}\n` });
+      const clis = everyCli(repo.standIns);
+      const result = await repo.run(review());
+      failed(result, 2);
+      for (const named of [repo.userConfig, entry, 't3', 'cli', 'subagent']) assert.ok(result.stderr.includes(named), `${entry}: ${named}`);
+      for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], `${entry}: ${name}`);
+    }
+  });
+
+  test('a prompt file that cannot be read is exit 2, naming it, and no CLI runs', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    const clis = everyCli(repo.standIns);
+    const result = await repo.run(review({ promptFile: 'gone.md' }));
+    failed(result, 2);
+    assert.match(result.stderr, /gone\.md/);
+    for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], name);
+  });
+
+  test('a review outside a Git repository is exit 2, naming the folder', async (t) => {
+    const repo = delegateRepo(t, { user: CLI, notInRepo: true });
+    const clis = everyCli(repo.standIns);
+    const result = await repo.run(review());
+    failed(result, 2);
+    assert.ok(result.stderr.includes(`${repo.cwd} is not inside a git repo`), result.stderr);
+    for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], name);
+  });
+
+  test('the repository\'s chain replaces the user\'s whole', async (t) => {
+    // Merged, the user's subagent would answer with exit 3.
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent] }\n', repo: CLI });
+    const result = await repo.run(review());
+    failed(result, 2);
+    assert.match(result.stderr, /every resolver declined/);
+    assert.ok(result.stderr.includes(repo.repoConfig), result.stderr);
+  });
+
+  test('a null chain in the repository\'s lets config keeps the user\'s chain', async (t) => {
+    const repo = delegateRepo(t, { user: CLI, repo: 'version: 3\ndelegate: { resolvers: null }\n' });
+    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
+    assert.equal(metadata(await repo.run(review())).resolver, 'cli');
+  });
+
+  test('a bad user\'s chain that the repository replaces does not stop a review', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [codex] }\n', repo: CLI });
+    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
+    assert.equal(metadata(await repo.run(review())).resolver, 'cli');
+  });
+
+  test('a bad resolver in the repository\'s lets config is exit 2, naming that file and not the user\'s', async (t) => {
+    const repo = delegateRepo(t, { user: CLI, repo: 'version: 3\ndelegate: { resolvers: [codex] }\n' });
+    const result = await repo.run(review());
+    failed(result, 2);
+    assert.ok(result.stderr.includes(repo.repoConfig), result.stderr);
+    assert.match(result.stderr, /codex/);
+    assert.ok(!result.stderr.includes(repo.userConfig), result.stderr);
+  });
+
+  test('a repository\'s lets config with the old version is exit 2, naming it', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\n', repo: 'version: 2\n' });
+    const result = await repo.run(review());
+    failed(result, 2);
+    assert.ok(result.stderr.includes(`${repo.repoConfig}: `), result.stderr);
+    assert.match(result.stderr, /version must be 3/);
+  });
+
+  test('a repository\'s lets config that is a folder is exit 2, naming it', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    mkdirSync(repo.repoConfig, { recursive: true });
+    const result = await repo.run(review());
+    failed(result, 2);
+    assert.ok(result.stderr.includes(repo.repoConfig), result.stderr);
+  });
+
+  test('a review run from a subfolder reads the repository\'s lets config at the root, and runs the CLI there', async (t) => {
+    const repo = delegateRepo(t, { repo: CLI });
+    const docs = join(repo.cwd, 'docs');
+    mkdirSync(docs);
+    const stand = codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
+    const meta = metadata(await repo.run(review({ promptFile: '../p.md' }), { cwd: docs }));
+    assert.deepEqual([meta.resolver, meta.checkout], ['cli', repo.cwd]);
+    assert.deepEqual(stand.cwds(), [repo.cwd]);
   });
 });
