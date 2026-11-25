@@ -330,7 +330,7 @@ scratch file would count as a change.
   names the cover for each one. The build ticks a deletion only with
   its cover passing.
 - [This story and #306 both change the handoff tests] → One block and
-  4 kept tests (decision 6). Git shows the conflict to whichever merges
+  5 kept tests (decision 6). Git shows the conflict to whichever merges
   second.
 - [#319 needs a stand-in ability this story did not add] → #319 adds it
   to `tests/support/lets.ts`, as this story does to #317's.
