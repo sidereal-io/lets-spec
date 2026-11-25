@@ -103,6 +103,8 @@ folder.
 - A mention is a code span that starts with `lets `, or a fenced code
   line where `lets ` starts the line or follows `$ `, `$(`, `&&`, `|` or
   `;`. The mention ends at the end of the span or at a shell operator.
+  In a span or a line, each later `lets ` after `&&`, `|` or `;` starts
+  another mention.
 - The check walks the words after `lets` through the tree: each word
   that is a subcommand of the current command goes one level down. The
   first word that is not a subcommand ends the walk. That word is a
