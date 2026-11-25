@@ -79,7 +79,10 @@
 - `tests/support/lets.ts` gains `letsCommandTree()`. It runs
   `lets --help`, then `lets <path> --help` for each command it lists,
   and returns each command path with its subcommands and options. It
-  belongs with `runLets`, because a later story can use it too.
+  leaves out commander's built-in `help [command]`, which every command
+  with subcommands lists: `lets help --help` prints the root's help
+  again, so following it would loop. It belongs with `runLets`, because
+  a later story can use it too.
 - `tests/contracts/texts.ts` reads the texts and is not a test file.
   It lists the texts (D1), and for each it gives the prose (outside
   fenced code and code spans), the code spans, the fenced code lines,
@@ -106,6 +109,14 @@ folder.
   finding when the current command has subcommands and the word looks
   like one: lower case letters and hyphens. Placeholders such as `<i>`
   and arguments such as `149` are not.
+- A walk that ends on a command with subcommands is a finding, unless
+  that command is directly under `lets`. So `` `lets delegate` `` and
+  `` `lets backlog` `` name a family of commands and pass, but
+  `` `lets delegate review` `` and `lets delegate review --for plan`
+  name no command that runs, and are findings, as in bats tests 257 and
+  262. `skills/lets-go/references/terms.md` is exempt from this rule, as
+  the bats test exempts it: it copies the glossary, which names the step
+  intents as `lets delegate step --for` takes them.
 - Each later word that starts with `-` is a flag. It is a finding unless
   it is an option of the current command or, when the current command
   has subcommands, of one of them. This rule passes
