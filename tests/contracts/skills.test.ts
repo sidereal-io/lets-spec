@@ -92,6 +92,36 @@ function unreachedSkillFindings(root: string): Finding[] {
   });
 }
 
+/**
+ * Each skill `lets-go` and the routing table rely on that a flow leaves
+ * out. The skills relied on are the entry points of the routing table and
+ * each skill a file of `skills/lets-go/` names, if it is a folder of
+ * `skills/`. Every flow ships each entry point: every flow's agent gets
+ * the same routing table. A flow may leave out another such skill only
+ * when a schema names it and the flow ships none of the schemas that do.
+ * Each finding names `flows.json` and the skill, once for each flow that
+ * leaves it out.
+ */
+function requiredSkillFindings(root: string): Finding[] {
+  const known = new Set(skillFolders(root));
+  const entries = new Set(entryPoints(root).filter((name) => known.has(name)));
+  const byGo = new Set(skillFiles(root, 'skills/lets-go')
+    .filter((path) => existsSync(join(root, path)))
+    .flatMap((path) => namedSkills(readText(root, path)))
+    .filter((name) => known.has(name)));
+  const flows = Object.values(readFlows(root));
+  const namedBy = new Map([...new Set(flows.flatMap((flow) => flow.schemas))].map((schema) =>
+    [schema, new Set(namedSkills(readText(root, `schemas/${schema}/schema.yaml`)))]));
+  const required = (flow: Flow, skill: string) => {
+    if (entries.has(skill)) return true;
+    const naming = [...namedBy].filter(([, named]) => named.has(skill)).map(([schema]) => schema);
+    return naming.length === 0 || naming.some((schema) => flow.schemas.includes(schema));
+  };
+  return flows.flatMap((flow) => [...new Set([...entries, ...byGo])]
+    .filter((skill) => !flow.skills.includes(skill) && required(flow, skill))
+    .map((name) => ({ file: 'flows.json', name })));
+}
+
 function smallText(dir: string, path: string, lines: string[]) {
   mkdirSync(dirname(join(dir, path)), { recursive: true });
   writeFileSync(join(dir, path), `${lines.join('\n')}\n`);
@@ -158,4 +188,48 @@ test('the reach check names a shipped skill that only its own files name', (t) =
   writeFileSync(join(dir, 'flows.json'), JSON.stringify({ flows: { demo: { schemas: ['lets-demo'], skills: ['lets-go', 'lets-build', 'lets-review-plan'] } } }));
   smallText(dir, 'skills/lets-review-plan/SKILL.md', ['---', 'name: lets-review-plan', '---', '# lets-review-plan', '', 'The `lets-review-plan` skill reviews a plan.']);
   assert.deepEqual(unreachedSkillFindings(dir), [{ file: 'flows.json', name: 'lets-review-plan' }]);
+});
+
+// Two flows: `demo` as smallProject has it, and `other`, whose own schema
+// names `lets-review-plan` and which ships it.
+function twoFlows(dir: string) {
+  writeFileSync(join(dir, 'flows.json'), JSON.stringify({ flows: {
+    demo: { schemas: ['lets-demo'], skills: ['lets-go', 'lets-build'] },
+    other: { schemas: ['lets-demo', 'lets-other'], skills: ['lets-go', 'lets-build', 'lets-review-plan'] },
+  } }));
+  smallText(dir, 'schemas/lets-other/schema.yaml', ['instruction: The `lets-review-plan` skill reviews the plan.']);
+  smallText(dir, 'overlays/openspec/config.d/lets-other.yaml', ['schema: lets-other']);
+}
+
+test('each flow ships the skills lets-go and the routing table rely on', () => {
+  assert.deepEqual(requiredSkillFindings(repo), []);
+});
+
+test('the required-skills check passes a small project that ships what lets-go names', (t) => {
+  const dir = tempDir(t);
+  smallProject(dir);
+  assert.deepEqual(requiredSkillFindings(dir), []);
+});
+
+test('the required-skills check names a skill lets-go names that a flow leaves out', (t) => {
+  const dir = tempDir(t);
+  smallProject(dir);
+  writeFileSync(join(dir, 'flows.json'), JSON.stringify({ flows: { demo: { schemas: ['lets-demo'], skills: ['lets-go'] } } }));
+  assert.deepEqual(requiredSkillFindings(dir), [{ file: 'flows.json', name: 'lets-build' }]);
+});
+
+test("the required-skills check names an entry point a flow leaves out, though another flow's schema names it", (t) => {
+  const dir = tempDir(t);
+  smallProject(dir);
+  twoFlows(dir);
+  smallText(dir, 'overlays/AGENTS.md', ['# Rules', '', '### Routing', '', '| Request | Start with |', '|---|---|', '| Anything | The `lets-go` skill |', '| A plan to review | The `lets-review-plan` skill |']);
+  assert.deepEqual(requiredSkillFindings(dir), [{ file: 'flows.json', name: 'lets-review-plan' }]);
+});
+
+test("the required-skills check lets a flow leave out a skill that only another flow's schema names", (t) => {
+  const dir = tempDir(t);
+  smallProject(dir);
+  twoFlows(dir);
+  smallText(dir, 'skills/lets-go/references/steps.md', ['# Steps', '', 'Then the `lets-review-plan` skill reviews the plan.']);
+  assert.deepEqual(requiredSkillFindings(dir), []);
 });
