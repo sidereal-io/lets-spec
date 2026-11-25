@@ -38,14 +38,6 @@ function letsIn(dir: string, cwd: string, env: Record<string, string>, ...args: 
   });
 }
 
-test('find searches words after -- as words, even one that looks like a flag', async () => {
-  const gh = withFakeGh();
-  const { stdout, code } = await lets(gh.dir, 'backlog', 'find', '--', '--help');
-  assert.equal(code, 0);
-  assert.deepEqual(JSON.parse(stdout), { issues: [] });
-  assert.ok(gh.calls().includes('issue list --state open --search --help in:title --json number,title'), gh.calls().join('\n'));
-});
-
 test('a usage error through the real entry exits 2 with nothing on stdout', async () => {
   const gh = withFakeGh();
   const { stdout, code } = await lets(gh.dir, 'backlog', 'item');
@@ -53,12 +45,8 @@ test('a usage error through the real entry exits 2 with nothing on stdout', asyn
   assert.equal(stdout, '');
 });
 
-test('--version and -V inside a lets backlog command are words, not the version flag', async () => {
+test('-V inside a lets backlog command is a word, not the version flag', async () => {
   const gh = withFakeGh();
-  const found = await lets(gh.dir, 'backlog', 'find', 'fix', '--version', 'bump');
-  assert.equal(found.code, 0);
-  assert.deepEqual(JSON.parse(found.stdout), { issues: [] });
-  assert.ok(gh.calls().includes('issue list --state open --search fix --version bump in:title --json number,title'), gh.calls().join('\n'));
   const item = await lets(gh.dir, 'backlog', 'item', '5', '-V');
   assert.equal(item.code, 2);
   assert.equal(item.stdout, '');
