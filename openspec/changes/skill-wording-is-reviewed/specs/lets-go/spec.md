@@ -733,7 +733,7 @@ A rule written once MAY run more than once. `next` runs *Check the prerequisite*
 - **THEN** each names **Glossary handoff** and links `references/glossary-handoff.md`, *Find the source of demand* names `resolved`, and *Claim* names `no-owned-edits`
 
 ### Requirement: lets-go carries the glossary's entries for its own terms
-`skills/lets-go/references/terms.md` SHALL hold the entries of `openspec/glossary.md` for *Part*, *Procedure*, *Step*, *Step report*, *Question mode* and *Packet*. Each entry SHALL be a `##` heading with the term, as in the glossary, and its text SHALL be the glossary entry's text, word for word. The file SHALL hold no other entry. An installed skill cannot link `openspec/glossary.md`: in a project that installs `lets-go`, that path is the project's own glossary. So this file is how the definitions travel with the skill. The Node terms check, `tests/contracts/terms.test.ts`, SHALL fail when an entry's text differs from the glossary's, or when an entry is missing from either file, and SHALL name the term. It SHALL read the terms from the headings of `terms.md`, not from a list typed into the test.
+`skills/lets-go/references/terms.md` SHALL hold the entries of `openspec/glossary.md` for *Part*, *Procedure*, *Step*, *Step report*, *Question mode* and *Packet*. Each entry SHALL be a `##` heading with the term, as in the glossary, and its text SHALL be the glossary entry's text, word for word. The file SHALL hold no other entry. An installed skill cannot link `openspec/glossary.md`: in a project that installs `lets-go`, that path is the project's own glossary. So this file is how the definitions travel with the skill. The Node terms check, `tests/contracts/terms.test.ts`, SHALL fail when an entry's text differs from the glossary's, or when the glossary has no entry for a term that `terms.md` holds, and SHALL name the term. It SHALL read the terms from the `##` headings of `terms.md`, not from a list typed into the test. An entry missing from `terms.md` that `lets-go` links fails the Node link check instead.
 
 #### Scenario: The copy matches the glossary
 - **WHEN** the Node terms check reads `skills/lets-go/references/terms.md` and `openspec/glossary.md`
@@ -744,8 +744,8 @@ A rule written once MAY run more than once. `next` runs *Check the prerequisite*
 - **THEN** the check fails, and its output names `Procedure`
 
 #### Scenario: A term missing from the copy
-- **WHEN** a small `terms.md` written for the test has no `## Step report` heading, and its glossary has one
-- **THEN** the check fails, and its output names `Step report`
+- **WHEN** an edit takes the `## Step report` entry out of `terms.md`, and `SKILL.md` still links `references/terms.md#step-report`
+- **THEN** the Node link check fails, and its output names `SKILL.md` and the link
 
 ### Requirement: lets-go links each glossary term at its first use
 In `skills/lets-go/SKILL.md`, the first mention of each of *Packet*, *Step*, *Step report* and *Question mode*, in any case and outside the frontmatter and code, SHALL sit in a link to that term's heading in `references/terms.md`, such as `[step report](references/terms.md#step-report)`. A mention of *Step report* SHALL not count as a mention of *Step*. The skill SHALL not repeat a definition that `terms.md` holds.
