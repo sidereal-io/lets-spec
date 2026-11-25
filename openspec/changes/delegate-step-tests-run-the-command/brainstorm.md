@@ -46,4 +46,4 @@ commit, and log their stdin and folder, and added
   of a process that cannot start, which a black-box test of a report
   file that cannot be opened covers (D9).
 
-Confirmed by user: no
+Confirmed by user: yes
