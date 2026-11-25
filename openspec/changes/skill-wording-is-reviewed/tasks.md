@@ -17,7 +17,7 @@
 ## 2. The bats file goes [depends-on: 1]
 
 - [ ] 2.1 [medium] `tests/skill-interfaces.bats` is deleted, after one last search of it for each test whose body checks a flow (`flow_skills`), a build (`build "$out"`, `cmp`), a file (`[ -f`, `[ -e`, `[ -d`), a link (`assert_reference_links`) or the glossary copy (`terms_match_glossary`). Each test the search finds is in design.md's table *What replaces each bats test of a name or a link*. If one is not, stop and report it as a gap, without deleting the file. The other bats files and `tests/support/common.bash` stay (verify: `test ! -e tests/skill-interfaces.bats && bats tests`)
-- [ ] 2.2 [parallel] [easy] The tests row of the README's *Development* table names `contracts/`, the Node checks of each command, link, skill, template and `gh` command a text names, and says that the `*.bats` files test the release build and each schema with the OpenSpec CLI, as design.md's *The README* says (verify: `node --test tests/contracts/links.test.ts tests/contracts/commands.test.ts`)
+- [ ] 2.2 [parallel] [easy] The tests row of the README's *Development* table names `contracts/`, the Node checks of each command, link, skill, template and `gh` command a text names, and says that the `*.bats` files test the release build and each schema with the OpenSpec CLI, as design.md's *The README* says (verify: `grep -n "contracts/" README.md && node --test tests/contracts/links.test.ts tests/contracts/commands.test.ts`)
 
 ## 3. Integration [depends-on: 2]
 
