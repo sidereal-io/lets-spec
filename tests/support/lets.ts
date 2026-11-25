@@ -15,7 +15,7 @@ export const repo = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const ENTRY = join(repo, 'lets', 'bin', 'lets');
 const DEFAULT_TIMEOUT_MS = 30_000;
 // How long a hanging stand-in waits before it ends by itself.
-const HANG_MS = 60_000;
+const HANG_MS = 120_000;
 
 /** What one run of a program left behind. */
 export interface RunResult {
@@ -244,10 +244,12 @@ export function buildRelease(out: string, schemas: string[], skills: string[]): 
 
 /**
  * Writes an executable program called `name` into `dir`, which must
- * exist. Each call logs its arguments, then answers from the first row of
- * `table` whose `args` equals the call's argument list. A call that
- * matches no row exits 127 and says so on standard error. Each call also
- * logs the variables `options.logEnv` names, and no others. Throws when
+ * exist. Each call logs its arguments, the variables `options.logEnv`
+ * names and no others, its standard input and the folder it ran in. Then
+ * it answers from the first row of `table` whose `args` equals the call's
+ * argument list: it writes the row's `files`, makes its `commit`, prints
+ * its `stdout` and `stderr`, and exits with its `code`. A call that
+ * matches no row exits 127 and says so on standard error. Throws when
  * `dir` cannot be written.
  */
 export function standIn(dir: string, name: string, table: StandInRow[], options?: StandInOptions): StandIn {
@@ -264,33 +266,63 @@ export function standIn(dir: string, name: string, table: StandInRow[], options?
   // this Node, because the Nix sandbox may have no /usr/bin/env.
   writeFileSync(program, `#!${process.execPath}
 const fs = process.getBuiltinModule('node:fs');
+const { spawnSync } = process.getBuiltinModule('node:child_process');
+const name = ${JSON.stringify(name)};
 const args = process.argv.slice(2);
 const env = {};
-for (const name of ${JSON.stringify(logEnv)}) if (process.env[name] !== undefined) env[name] = process.env[name];
-fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args, env }) + '\\n');
+for (const key of ${JSON.stringify(logEnv)}) if (process.env[key] !== undefined) env[key] = process.env[key];
+// lets closes every child's stdin, or gives it /dev/null, so this never waits.
+let stdin = '';
+try {
+  stdin = fs.readFileSync(0, 'utf8');
+} catch {}
+fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args, env, stdin, cwd: process.cwd() }) + '\\n');
 const row = JSON.parse(fs.readFileSync(${JSON.stringify(tableFile)}, 'utf8'))
   .find((row) => row.args.length === args.length && row.args.every((arg, i) => arg === args[i]));
+// Ends the call with exit 1 and why, so a test sees what the stand-in could not do.
+const fail = (why) => {
+  process.stderr.write(name + ': stand-in ' + why + '\\n');
+  process.exit(1);
+};
+const git = (...gitArgs) => {
+  const result = spawnSync('git', gitArgs, { encoding: 'utf8' });
+  if (result.error) fail('cannot run git: ' + result.error.message);
+  if (result.status !== 0) fail('git ' + gitArgs[0] + ' failed: ' + result.stderr.trim());
+};
 if (row === undefined) {
-  process.stderr.write(${JSON.stringify(name)} + ': stand-in has no answer for ' + JSON.stringify(args) + '\\n');
+  process.stderr.write(name + ': stand-in has no answer for ' + JSON.stringify(args) + '\\n');
   process.exitCode = 127;
 } else if (row.hang) {
   // Ends at a signal, as Node does by default, or by itself.
   setTimeout(() => {}, ${HANG_MS});
 } else {
+  const files = Object.keys(row.files ?? {});
+  for (const file of files) {
+    // No folder is made, so a test can see that lets made it first.
+    try {
+      fs.writeFileSync(file, row.files[file]);
+    } catch (error) {
+      fail('could not write ' + file + ': ' + error.message);
+    }
+  }
+  if (row.commit !== undefined) {
+    if (files.length > 0) git('add', '--', ...files);
+    git('commit', '-q', '--allow-empty', '-m', row.commit);
+  }
   if (row.stdout) process.stdout.write(row.stdout);
   if (row.stderr) process.stderr.write(row.stderr);
   process.exitCode = row.code ?? 0;
 }
 `);
   chmodSync(program, 0o755);
-  const entries = (): { args: string[]; env: Record<string, string> }[] => existsSync(log)
+  const entries = (): { args: string[]; env: Record<string, string>; stdin: string; cwd: string }[] => existsSync(log)
     ? readFileSync(log, 'utf8').split('\n').filter((line) => line !== '').map((line) => JSON.parse(line))
     : [];
   return {
     calls: () => entries().map(({ args }) => args),
     envs: () => entries().map(({ env }) => Object.fromEntries(logEnv.map((key) => [key, env[key]]))),
-    inputs: () => { throw new Error('not built yet'); },
-    cwds: () => { throw new Error('not built yet'); },
+    inputs: () => entries().map(({ stdin }) => stdin),
+    cwds: () => entries().map(({ cwd }) => cwd),
   };
 }
 
@@ -298,8 +330,8 @@ if (row === undefined) {
  * Writes a stand-in `codex` into `dir`, which must exist. It answers
  * `codex debug models` with `{"models":[{"slug","visibility"}…]}`, in the
  * order of `listing`, or fails as the `ListingFailure` says. The default
- * listing is empty. It answers no other call. Throws when `dir` cannot be
- * written.
+ * listing is empty. Other calls get `options.rows`, after the listing's
+ * row. Throws when `dir` cannot be written.
  */
 export function codex(dir: string, listing: CodexModel[] | ListingFailure = [], options?: FamilyOptions): StandIn {
   const answer = typeof listing === 'string' ? listing : { stdout: JSON.stringify({ models: listing.map(({ slug, visibility }) => ({ slug, visibility })) }) };
@@ -310,8 +342,8 @@ export function codex(dir: string, listing: CodexModel[] | ListingFailure = [], 
  * Writes a stand-in `agy` into `dir`, which must exist. It answers
  * `agy models` with the line `Fetching available models...`, then one
  * line per id of `listing`, `<id>\t<label>`, or fails as the
- * `ListingFailure` says. The default listing is empty. It answers no
- * other call. `lets` reads only the lines that start `gemini-`, so an
+ * `ListingFailure` says. The default listing is empty. Other calls get
+ * `options.rows`, after the listing's row. `lets` reads only the lines that start `gemini-`, so an
  * `unreadable` listing gives no gemini model and no warning. Throws when
  * `dir` cannot be written.
  */
@@ -322,11 +354,11 @@ export function agy(dir: string, listing: string[] | ListingFailure = [], option
 
 /**
  * Writes a stand-in `claude` into `dir`, which must exist. `claude` has
- * no model listing, so it answers no call. Throws when `dir` cannot be
- * written.
+ * no model listing, so it answers only `options.rows`. Throws when `dir`
+ * cannot be written.
  */
 export function claude(dir: string, options?: FamilyOptions): StandIn {
-  return standIn(dir, 'claude', [], options);
+  return standIn(dir, 'claude', options?.rows ?? [], options);
 }
 
 // What a failing listing answers, by how it fails. cannot-start has no row:
@@ -341,7 +373,7 @@ const FAILURES: Record<Exclude<ListingFailure, 'cannot-start'>, Omit<StandInRow,
 // answered as answer says.
 function harnessCli(dir: string, name: string, args: string[], answer: Omit<StandInRow, 'args'> | ListingFailure, options?: FamilyOptions): StandIn {
   if (answer === 'cannot-start') return unstartable(dir, name);
-  return standIn(dir, name, [{ args, ...(typeof answer === 'string' ? FAILURES[answer] : answer) }], options);
+  return standIn(dir, name, [{ args, ...(typeof answer === 'string' ? FAILURES[answer] : answer) }, ...(options?.rows ?? [])], options);
 }
 
 // A program called name in dir that the system cannot start, because the

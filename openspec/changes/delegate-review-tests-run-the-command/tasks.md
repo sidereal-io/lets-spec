@@ -11,7 +11,7 @@
 
 ## 2. Implementation [depends-on: 1]
 
-- [ ] 2.1 [medium] A stand-in call logs its stdin and folder, then writes the row's `files` without making folders, makes the row's `commit` with only those files staged, and fails with exit 1 naming the path or git's error when it cannot; `codex`, `agy` and `claude` append `rows` after the listing row; a `hang` row ends by itself after 120 seconds. The `lets sync` and instructions tests still pass (verify: `node --test "tests/sync/*.test.ts" tests/delegate/instructions.test.ts`)
+- [x] 2.1 [medium] A stand-in call logs its stdin and folder, then writes the row's `files` without making folders, makes the row's `commit` with only those files staged, and fails with exit 1 naming the path or git's error when it cannot; `codex`, `agy` and `claude` append `rows` after the listing row; a `hang` row ends by itself after 120 seconds. The `lets sync` and instructions tests still pass (verify: `node --test "tests/sync/*.test.ts" tests/delegate/instructions.test.ts`) (✓ node --test "tests/sync/*.test.ts" tests/delegate/instructions.test.ts passed)
 - [ ] 2.2 [easy] `delegateRepo` makes a user config home, a Git repository with `.lets/config.yaml` when given, `p.md` and a stand-ins folder, commits everything unless `noCommit` is set, makes no repository and sets `GIT_CEILING_DIRECTORIES` when `notInRepo` is set, and returns the folders, both config paths, the commit's hash and a runner that uses `onlyStandIns: true` (verify: `pnpm check`)
 
 ## 3. Black-box tests [depends-on: 2]
