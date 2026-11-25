@@ -193,8 +193,9 @@ Stand-in `claude` hangs on `-p --permission-mode plan --effort low`
 gets a time limit of 100 seconds. The test checks exit 6, an empty
 stdout, the line `lets delegate: claude did not finish in 1 minutes`,
 and that the run took less than 90 seconds, so lets stopped the
-stand-in rather than waiting for it to end at 120 seconds. `lets` does
-not change.
+stand-in rather than waiting for it to end at 120 seconds. It also
+checks that the run took at least 55 seconds, so lets waited the whole
+minute (added after the code review). `lets` does not change.
 
 ### 6. Handoff
 
