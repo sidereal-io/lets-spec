@@ -12,9 +12,11 @@ useRelease();
 
 const staleBlock = '<!-- BEGIN lets-spec rules -->\nold rules\n<!-- END lets-spec rules -->\n';
 
-// Text with no final newline loses it, as `$(cat file)` does in a shell.
+// Text without its final newlines, as `$(cat file)` gives it in a shell.
 const chomp = (text: string) => text.replace(/\n+$/, '');
 const lines = (text: string) => chomp(text).split('\n');
+// The file's lines as grep counts them, trailing blank lines included.
+const fileLines = (text: string) => text.replace(/\n$/, '').split('\n');
 // The text as one line, with runs of spaces squeezed, so a phrase can be
 // found across a line break.
 const oneLine = (text: string) => text.replaceAll('\n', ' ').replace(/ +/g, ' ');
@@ -25,7 +27,7 @@ test('sync creates AGENTS.md holding only the rules block', async (t) => {
   assert.equal(code, 0, output);
   const agents = p.read('AGENTS.md');
   assert.equal(rulesIn(agents), fragment());
-  assert.equal(lines(agents).filter((line) => !line.includes('lets-spec rules')).length, fragment().split('\n').length);
+  assert.equal(fileLines(agents).filter((line) => !line.includes('lets-spec rules')).length, fragment().split('\n').length);
   assert.match(output, /created AGENTS\.md/);
 });
 
