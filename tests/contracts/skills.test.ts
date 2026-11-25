@@ -2,11 +2,11 @@
 // where the flow's own files name it. An agent told to run a skill its
 // flow lacks has nothing to run.
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { repo, tempDir } from '../support/lets.ts';
-import { type Finding, readText, readTexts, skillFolders, type Text } from './texts.ts';
+import { type Finding, readText, readTexts, skillFiles, skillFolders, type Text } from './texts.ts';
 
 interface Flow {
   schemas: string[];
@@ -58,6 +58,37 @@ function skillNameFindings(root: string): Finding[] {
   return findings;
 }
 
+// The skills the routing table in overlays/AGENTS.md sends a request to:
+// each `<name>` skill in its Routing section. A user starts these, so no
+// other text needs to name them.
+function entryPoints(root: string): string[] {
+  const text = readText(root, 'overlays/AGENTS.md');
+  const at = text.headings.findIndex((heading) => heading.text === 'Routing');
+  if (at === -1) return [];
+  const next = text.headings.find((heading, index) => index > at && heading.level <= text.headings[at].level);
+  const lines = text.source.split('\n').slice(text.headings[at].line, next ? next.line - 1 : undefined);
+  return namedSkills({ ...text, source: lines.join('\n') });
+}
+
+/**
+ * Each skill a flow ships that nothing in the flow reaches: no entry
+ * point of the routing table, and named by none of the flow's schemas,
+ * its config or the files of a skill it ships. Each finding names
+ * `flows.json` and the skill.
+ */
+function unreachedSkillFindings(root: string): Finding[] {
+  const entries = new Set(entryPoints(root));
+  return Object.values(readFlows(root)).flatMap((flow) => {
+    const named = new Set([
+      ...flowTexts(root, flow).flatMap(namedSkills),
+      ...flow.skills.flatMap((skill) => skillFiles(root, `skills/${skill}`))
+        .filter((path) => existsSync(join(root, path)))
+        .flatMap((path) => namedSkills(readText(root, path))),
+    ]);
+    return flow.skills.filter((skill) => !entries.has(skill) && !named.has(skill)).map((name) => ({ file: 'flows.json', name }));
+  });
+}
+
 function smallText(dir: string, path: string, lines: string[]) {
   mkdirSync(dirname(join(dir, path)), { recursive: true });
   writeFileSync(join(dir, path), `${lines.join('\n')}\n`);
@@ -72,6 +103,7 @@ function smallProject(dir: string) {
   smallText(dir, 'skills/lets-review-plan/SKILL.md', ['---', 'name: lets-review-plan', '---', '# lets-review-plan']);
   smallText(dir, 'schemas/lets-demo/schema.yaml', ['instruction: The `lets-build` skill runs this step.']);
   smallText(dir, 'overlays/openspec/config.d/lets-demo.yaml', ['schema: lets-demo', '# The `ignored` skills mode keeps copies out of git.']);
+  smallText(dir, 'overlays/AGENTS.md', ['# Rules', '', '### Routing', '', '| Request | Start with |', '|---|---|', '| Anything | The `lets-go` skill |', '', '### Writing', '', 'The `lets-review-plan` skill is no entry point.']);
 }
 
 test('each skill the texts name exists, ships with each flow that names it, and is named for its folder', () => {
@@ -103,4 +135,16 @@ test('the skills check names a skill whose name is not its folder', (t) => {
   smallProject(dir);
   smallText(dir, 'skills/lets-build/SKILL.md', ['---', 'name: lets-make', '---', '# lets-build']);
   assert.deepEqual(skillNameFindings(dir), [{ file: 'skills/lets-build/SKILL.md', name: 'lets-make' }]);
+});
+
+test('each skill a flow ships is an entry point, or named by the flow', () => {
+  assert.deepEqual(unreachedSkillFindings(repo), []);
+});
+
+test('the reach check names a shipped skill that nothing in its flow names', (t) => {
+  const dir = tempDir(t);
+  smallProject(dir);
+  assert.deepEqual(unreachedSkillFindings(dir), []);
+  writeFileSync(join(dir, 'flows.json'), JSON.stringify({ flows: { demo: { schemas: ['lets-demo'], skills: ['lets-go', 'lets-build', 'lets-review-plan'] } } }));
+  assert.deepEqual(unreachedSkillFindings(dir), [{ file: 'flows.json', name: 'lets-review-plan' }]);
 });
