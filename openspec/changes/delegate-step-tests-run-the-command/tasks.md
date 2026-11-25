@@ -7,7 +7,7 @@
 
 ## 1. Contracts
 
-- [ ] 1.1 [medium] `tests/delegate/steps.ts` declares `stepRun`, `stepStart`, `ending`, `codexWrite`, `claudeWrite`, `agyWrite`, `untilCalled`, `untilGone`, `cleanUpStep`, `stopStep` and `assertClock` with their option types, each with a doc comment on what it needs, what it gives and how it fails, as design decision 2 says. Each body throws `not built yet` (verify: `pnpm check`)
+- [x] 1.1 [medium] `tests/delegate/steps.ts` declares `stepRun`, `stepStart`, `ending`, `codexWrite`, `claudeWrite`, `agyWrite`, `untilCalled`, `untilGone`, `cleanUpStep`, `stopStep` and `assertClock` with their option types, each with a doc comment on what it needs, what it gives and how it fails, as design decision 2 says. Each body throws `not built yet` (verify: `pnpm check`) (✓ `pnpm check` passed)
 
 ## 2. Implementation [depends-on: 1]
 
