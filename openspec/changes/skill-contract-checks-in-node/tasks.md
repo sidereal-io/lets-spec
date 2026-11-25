@@ -6,7 +6,7 @@
 
 ## 1. Shared contracts
 
-- [ ] 1.1 [medium] `tests/contracts/texts.ts` reads the texts of design.md's *Layout* decision once each, under a root folder a test can choose: for each file, its prose outside fenced code and code spans, its code spans, its fenced code lines and its headings with their anchors by GitHub's rule, and a `Finding` type that names a file and a name. `tests/support/lets.ts` exports `letsCommandTree()`, which runs `lets --help` and each command's `--help` in parallel and returns each command path with its subcommands and options, leaving out commander's built-in `help` command. Each export has a doc comment that says what it returns and how it fails (verify: `pnpm check`)
+- [x] 1.1 [medium] `tests/contracts/texts.ts` reads the texts of design.md's *Layout* decision once each, under a root folder a test can choose: for each file, its prose outside fenced code and code spans, its code spans, its fenced code lines and its headings with their anchors by GitHub's rule, and a `Finding` type that names a file and a name. `tests/support/lets.ts` exports `letsCommandTree()`, which runs `lets --help` and each command's `--help` in parallel and returns each command path with its subcommands and options, leaving out commander's built-in `help` command. Each export has a doc comment that says what it returns and how it fails (verify: `pnpm check`) (✓ `pnpm check` passed)
 
 ## 2. Checks [depends-on: 1]
 
