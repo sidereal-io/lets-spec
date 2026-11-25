@@ -16,7 +16,7 @@
 
 ## 3. Wiring and the whole suite [depends-on: 2]
 
-- [ ] 3.1 [easy] `pnpm run test:backlog` runs `tests/backlog/` as well as `tests/lets/backlog/`, and the `tests/` row of the README's *Development* table names `backlog/` as the black-box tests of `lets backlog` (design decision 7) (verify: `pnpm run test:backlog`)
+- [x] 3.1 [easy] `pnpm run test:backlog` runs `tests/backlog/` as well as `tests/lets/backlog/`, and the `tests/` row of the README's *Development* table names `backlog/` as the black-box tests of `lets backlog` (design decision 7) (verify: `pnpm run test:backlog`) (✓ `pnpm run test:backlog` passed, 185 tests)
 - [ ] 3.2 [medium] The project's three checks pass, the run time of `tests/backlog/` is measured (and its files made concurrent if one takes over 30 seconds), and the pull request description lists each kept in-process test with its reason, under a heading `Kept in process` (D11; design decision 6) (verify: `pnpm test && nix flake check && mise run check && gh pr view backlog-read-tests-run-the-command --json body --jq .body | grep -q 'Kept in process'`)
 
 ## Deviations Ledger
