@@ -56,7 +56,7 @@ nothing.
   rewritten as rules on the skill, the requirements on form lose the
   sentences about their check, and the `terms.md` requirement names its
   Node test.
-- `issue-comments`: 7 requirements name the skill-interfaces test. Their
+- `issue-comments`: 8 requirements name the skill-interfaces test. Their
   scenarios name a reader instead, and the scenario *The query is
   checked by the test suite* names the Node `gh` check.
 - `discovery-maps`: one scenario names the skill-interfaces test, and
@@ -71,5 +71,7 @@ nothing.
 - Specs: `openspec/specs/lets-go/spec.md`,
   `openspec/specs/issue-comments/spec.md` and
   `openspec/specs/discovery-maps/spec.md`.
-- Out of scope: the skills, schemas and README themselves, `lets`,
+- README: the `tests/` row of the *Development* table names
+  `contracts/` and says what the bats files still test.
+- Out of scope: the skills, schemas and the rest of the README, `lets`,
   archived changes and decision records, which keep naming bats.
