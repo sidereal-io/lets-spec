@@ -4,7 +4,7 @@
 
 ## 1. Contracts
 
-- [ ] 1.1 [easy] `tests/go/questions.test.ts` declares the two helpers of design decision 2, `printed(result)` and `rejected(result, file, ...named)`, each with a doc comment on what it asserts, what it returns and how it fails. Each body throws `not built yet`, and the file holds no test yet (verify: `pnpm check`)
+- [x] 1.1 [easy] `tests/go/questions.test.ts` declares the two helpers of design decision 2, `printed(result)` and `rejected(result, file, ...named)`, each with a doc comment on what it asserts, what it returns and how it fails. Each body throws `not built yet`, and the file holds no test yet (verify: `pnpm check`) (✓ `pnpm check` passed)
 
 ## 2. lets go questions [depends-on: 1]
 
