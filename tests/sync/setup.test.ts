@@ -2,10 +2,10 @@
 // never edits them. It warns about their settings, and exits 0 when it
 // warns, so a problem never stops a dev shell from starting.
 import assert from 'node:assert/strict';
-import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { type TestContext, test } from 'node:test';
-import { repo, tempDir } from '../support/lets.ts';
+import { repo, snapshot, tempDir } from '../support/lets.ts';
 import { project, setSchema, useRelease } from './project.ts';
 
 const release = useRelease();
@@ -234,4 +234,32 @@ test('sync refuses a release whose config names a schema it does not ship', asyn
   assert.equal(code, 1, output);
   assert.ok(output.includes("names 'lets-standard', which the release does not ship"), output);
   assert.ok(!existsSync(join(p.path, 'AGENTS.md')));
+});
+
+// A copy of the file's release that also ships .agents/skills/other, a
+// name lets sync does not own.
+function releaseWithUnownedSkill(t: TestContext): string {
+  const dir = releaseWithSchemas(t, 1);
+  mkdirSync(join(dir, 'overlay/.agents/skills/other'));
+  writeFileSync(join(dir, 'overlay/.agents/skills/other/SKILL.md'), 'other\n');
+  return dir;
+}
+
+test('sync refuses a release that ships a skill it does not own, and writes nothing', async (t) => {
+  const p = project(t);
+  const dir = releaseWithUnownedSkill(t);
+  const before = snapshot(p.path);
+  const { code, output } = await p.sync([], { WORKFLOW_RELEASE: dir });
+  assert.equal(code, 1, output);
+  assert.ok(output.includes(`error: ${dir} ships .agents/skills/other, which lets sync does not own.`), output);
+  assert.equal(snapshot(p.path), before);
+});
+
+test('--check in ignored mode refuses a release that ships a skill it does not own', async (t) => {
+  const p = project(t);
+  const dir = releaseWithUnownedSkill(t);
+  await p.init({ LETS_SPEC_SKILLS: 'ignored' });
+  const { code, output } = await p.sync(['--check'], { WORKFLOW_RELEASE: dir, LETS_SPEC_SKILLS: 'ignored' });
+  assert.equal(code, 1, output);
+  assert.ok(output.includes(`error: ${dir} ships .agents/skills/other, which lets sync does not own.`), output);
 });

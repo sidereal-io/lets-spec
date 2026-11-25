@@ -416,6 +416,30 @@ test('--check in ignored mode fails without a current block', async (t) => {
   assert.ok(output.includes('lets-spec: .gitignore has no current lets-spec skills block. Run lets sync, then commit .gitignore.'), output);
 });
 
+test('an empty LETS_SPEC_SKILLS means committed, the default', async (t) => {
+  const p = project(t);
+  const { code, output } = await p.sync([], { LETS_SPEC_SKILLS: '' });
+  assert.equal(code, 0, output);
+  assert.ok(output.includes(`lets-spec: wrote ${releaseFiles().length} files. Commit them.`), output);
+  assert.ok(!existsSync(join(p.path, '.gitignore')));
+});
+
+test('ignored mode counts nothing as tracked when git ls-files fails', async (t) => {
+  const p = project(t);
+  await p.init();
+  p.git('add', '-A');
+  assert.equal(p.git('commit', '--quiet', '-m', 'committed').code, 0);
+  // Bytes that are not an index make git ls-files fail, while git can
+  // still find the repository. Check both, so a git that recovers the
+  // index fails this test rather than passing it with nothing proved.
+  writeFileSync(join(p.path, '.git/index'), 'not an index\n');
+  assert.notEqual(p.git('ls-files').code, 0, 'git ls-files read a broken index');
+  assert.equal(p.git('rev-parse', '--show-toplevel').code, 0);
+  const { code, output } = await p.sync([], ignored);
+  assert.equal(code, 0, output);
+  assert.ok(!output.includes('git still tracks'), output);
+});
+
 test('an unknown LETS_SPEC_SKILLS is a usage error', async (t) => {
   const p = project(t);
   const { code, output } = await p.sync([], { LETS_SPEC_SKILLS: 'tracked' });
