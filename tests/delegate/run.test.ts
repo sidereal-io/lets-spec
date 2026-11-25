@@ -432,6 +432,9 @@ describe('review run', () => {
     const result = await repo.run(review());
     failed(result, 4);
     assert.ok(result.stderr.includes(`could not check the tree after the session: git status failed in ${repo.cwd}`), result.stderr);
+    assert.ok(result.stderr.includes(`(process ${SESSION})`), result.stderr);
+    // The session did not finish clean, so lets keeps its last message.
+    assert.equal(readFileSync(lastMessage(repo.cwd), 'utf8'), FINDINGS);
   });
 
   test('the user\'s own changes from before the run, and the session\'s scratch files, do not count', async (t) => {
