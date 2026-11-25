@@ -17,8 +17,11 @@
 ## 3. Wiring and the whole suite [depends-on: 2]
 
 - [x] 3.1 [easy] `pnpm run test:backlog` runs `tests/backlog/` as well as `tests/lets/backlog/`, and the `tests/` row of the README's *Development* table names `backlog/` as the black-box tests of `lets backlog` (design decision 7) (verify: `pnpm run test:backlog`) (✓ `pnpm run test:backlog` passed, 185 tests)
-- [ ] 3.2 [medium] The project's three checks pass, the run time of `tests/backlog/` is measured (and its files made concurrent if one takes over 30 seconds), and the pull request description lists each kept in-process test with its reason, under a heading `Kept in process` (D11; design decision 6) (verify: `pnpm test && nix flake check && mise run check && gh pr view backlog-read-tests-run-the-command --json body --jq .body | grep -q 'Kept in process'`)
+- [x] 3.2 [medium] The project's three checks pass, the run time of `tests/backlog/` is measured (and its files made concurrent if one takes over 30 seconds), and the pull request description lists each kept in-process test with its reason, under a heading `Kept in process` (D11; design decision 6) (verify: `pnpm test && nix flake check && mise run check && gh pr view backlog-read-tests-run-the-command --json body --jq .body | grep -q 'Kept in process'`) (✓ `mise run check` passed; `nix flake check` passed; `pnpm test`: 954 Node tests and the type check passed, and 541 of 542 bats tests passed, see the Deviations Ledger; `gh pr view … | grep -q 'Kept in process'` passed)
 
 ## Deviations Ledger
 
 <!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-25, task 3.2: in this worktree, the bats test "each skill is named for its folder" failed on `skills/system/run-workflow/SKILL.md`. The tooling wrote that folder after the worktree was made; the user's global git ignore hides it, and no commit holds it. In a clean clone of the branch the test passes, and there the only bats failure is "the lets bundle is one executable script that runs with no node_modules", which needs the `node_modules` the clone lacks. Each bats test passed in one of the two runs. `nix flake check`, which builds from the committed tree, passed.
+- 2026-11-25, task 2.6: the kept in-process test "gh that cannot start or times out is backend-failed" is renamed "gh that times out is backend-failed", since it now checks only the timeout.
