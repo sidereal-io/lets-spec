@@ -16,13 +16,17 @@ const tree = letsCommandTree();
 
 // Each lets command a text names: a code span that starts with `lets `, or
 // a fenced code line where `lets ` starts the line or follows a prompt, a
-// command substitution or a shell operator. A line that ends with `\`
+// command substitution or a shell operator. In either, each later `lets `
+// after a shell operator is a mention too. A line that ends with `\`
 // carries on to the next. A mention ends at a shell operator, a
 // redirection or a comment, but not at a placeholder such as `<path>`.
 function mentions(text: Text): string[] {
-  const found = text.spans.map((span) => span.text).filter((span) => span.startsWith('lets '));
-  for (const line of shellLines(text)) {
-    for (const match of line.matchAll(/(?:^\s*|\$ +|\$\(|&&\s*|\|\s*|;\s*)(lets\s.*)$/g)) found.push(match[1]);
+  const found: string[] = [];
+  const lines = [...text.spans.map((span) => span.text).filter((span) => span.startsWith('lets ')), ...shellLines(text)];
+  // The lookahead leaves the rest of the line to match again, so each lets
+  // after a shell operator is a mention of its own.
+  for (const line of lines) {
+    for (const match of line.matchAll(/(?:^\s*|\$ +|\$\(|&&\s*|\|\s*|;\s*)(?=(lets\s.*)$)/g)) found.push(match[1]);
   }
   return found.map((mention) => mention.split(/\s#|\|\||&&|[|;&)]|(?:^|\s)\d*(?:>>?|<)(?!\w)/)[0].trim().replace(/\s+/g, ' '));
 }
@@ -95,6 +99,15 @@ test('the commands check names a flag the command does not have', async (t) => {
   const dir = tempDir(t);
   smallText(dir, 'docs/demo.md', ['# Demo', '', '```bash', '$ lets sync \\', '    --force && git status', '```']);
   assert.deepEqual(await commandFindings(dir), [{ file: 'docs/demo.md', name: 'lets sync --force' }]);
+});
+
+test('the commands check names each lets command after a shell operator, not only the first', async (t) => {
+  const dir = tempDir(t);
+  smallText(dir, 'docs/demo.md', ['# Demo', '', 'Run `lets sync && lets bogus`.', '', '```bash', 'ids=$(lets backlog ready) && lets backlog bogus "$ids"', '```']);
+  assert.deepEqual(await commandFindings(dir), [
+    { file: 'docs/demo.md', name: 'lets bogus' },
+    { file: 'docs/demo.md', name: 'lets backlog bogus "$ids"' },
+  ]);
 });
 
 test('the commands check names a mention that stops at a family of commands below the top level', async (t) => {
