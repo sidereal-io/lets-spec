@@ -555,9 +555,10 @@ fixture_file() {
   done
 }
 
-@test "lets-build runs openspec-apply-change test-first" {
+@test "lets-build runs openspec-apply-change contract first" {
   skill_says lets-build '`openspec-apply-change` skill'
-  skill_says lets-build '`lets-test-first` skill'
+  skill_says lets-build '`lets-verify-contracts` skill'
+  skill_does_not_say lets-build 'test-first'
 }
 
 @test "lets-build is the build step and nothing else" {
@@ -3516,7 +3517,12 @@ load support/release
     local installed text
     for skill in $(flow_skills "$flow"); do
       installed="$out/overlay/.agents/skills/$skill"
-      assert_reference_links "$installed/SKILL.md" "$out/overlay"
+      # lets-verify-contracts is #304's text word for word, so it may link
+      # no reference; both apply instructions send the build agent to the
+      # plain-language reference instead. Any link it does gain must resolve.
+      if [ "$skill" != lets-verify-contracts ] || grep -qE '\]\([^)]*references/[^)]*\.md\)' "$installed/SKILL.md"; then
+        assert_reference_links "$installed/SKILL.md" "$out/overlay"
+      fi
       for text in "$installed"/references/*.md "$installed"/templates/*.md; do
         [ -f "$text" ] || continue
         if grep -qE '\]\([^)]*references/[^)]*\.md\)' "$text"; then
@@ -5665,3 +5671,53 @@ readme_step_returns() {
   grep -qF 'It ends on the branch it started on' <<<"$section" ||
     { echo "Handing off to lets-go names no end branch"; false; }
 }
+
+# verify-contracts (#304): the build step works contract first.
+@test "verify-contracts: lets-verify-contracts ships SKILL.md alone" {
+  [ "$(ls -A "$repo/skills/lets-verify-contracts")" = SKILL.md ] ||
+    { echo "skills/lets-verify-contracts holds: $(ls -A "$repo/skills/lets-verify-contracts" 2>&1)"; false; }
+}
+@test "verify-contracts: both apply instructions build contract first" {
+  local flow schema text phrase
+  for flow in standard minimal; do
+    flow_skills "$flow" | grep -qx lets-verify-contracts || { echo "$flow does not ship lets-verify-contracts"; false; }
+  done
+  for schema in lets-standard lets-minimal; do
+    text="$(tr -s '[:space:]' ' ' <"$repo/schemas/$schema/schema.yaml")"
+    for phrase in '`lets-verify-contracts` skill' 'run the static checks the project has' \
+      'Phase 1 ends once the contracts are written down' "the skill's first exit criterion is met" \
+      "never from the code's own logic" 'takes its external clients' \
+      'check spec coverage only for the requirements the task builds' \
+      'The integration task, which runs last, checks that every requirement'; do
+      grep -qF -- "$phrase" <<<"$text" || { echo "$schema does not say: $phrase"; false; }
+    done
+    for phrase in 'watch it fail' 'test-first'; do
+      ! grep -qF -- "$phrase" <<<"$text" || { echo "$schema still says: $phrase"; false; }
+    done
+  done
+}
+@test "verify-contracts: lets-write-tasks takes one behavior through three phases" {
+  local phrase template
+  for phrase in 'one at a time, contract first' \
+    'One task is one behavior, taken through contract, code and black-box test' \
+    "Do not split a behavior's phases into separate tasks" \
+    'runs the black-box or invariant test the task adds' \
+    'for a shared-contracts task, the type check or other static check' \
+    "every requirement in the change's specs has at least one black-box or invariant test" \
+    'checks coverage only for the requirements it builds' \
+    'Shared contracts first'; do
+    skill_says lets-write-tasks "$phrase"
+  done
+  skill_has_section lets-write-tasks 'Name the behavior'
+  skill_does_not_say -i lets-write-tasks 'red-green'
+  skill_does_not_say -i lets-write-tasks 'test-first'
+  for template in "$repo"/schemas/lets-{standard,minimal}/templates/tasks.md; do
+    grep -qF 'One task is one behavior: its contract, its code, then its black-box test.' "$template" ||
+      { echo "${template#"$repo/"} keeps the old task rule"; false; }
+  done
+}
+@test "verify-contracts: nothing shipped names lets-test-first" {
+  run grep -rnF lets-test-first "$repo/skills" "$repo/schemas" "$repo/flows.json" "$repo/flake.nix" "$repo/README.md"
+  [ "$status" -eq 1 ] || { echo "$output"; false; }
+}
+# End verify-contracts (#304).

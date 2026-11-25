@@ -216,7 +216,7 @@
             # lets sync copies the skills in. It does not link them.
             [ ! -L .agents/skills/openspec-propose ]
             [ -f .agents/skills/openspec-propose/SKILL.md ]
-            [ -f .claude/skills/lets-test-first/SKILL.md ]
+            [ -f .claude/skills/lets-verify-contracts/SKILL.md ]
             # Agents read the rules from AGENTS.md, through CLAUDE.md for Claude.
             grep -q '^## Workflow$' CLAUDE.md
             # Once the project commits the copies, the check passes.
@@ -276,7 +276,7 @@
             [ "$(yq -r .schema openspec/config.yaml)" = lets-minimal ]
             [ -f openspec/schemas/lets-minimal/schema.yaml ]
             [ ! -e openspec/schemas/lets-standard ]
-            [ -f .agents/skills/lets-test-first/SKILL.md ]
+            [ -f .agents/skills/lets-verify-contracts/SKILL.md ]
             [ ! -e .agents/skills/lets-review-plan ]
             openspec new change small </dev/null >/dev/null 2>&1
             # Write to a file: the CLI spins if a reader such as grep -q

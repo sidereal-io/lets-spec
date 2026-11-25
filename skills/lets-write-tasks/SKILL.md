@@ -1,6 +1,6 @@
 ---
 name: lets-write-tasks
-description: Use when turning a plan into an OpenSpec task list. Says how to size, order, tag and verify tasks so that an agent can build them one at a time, test-first. The schema says the checkbox format the apply step parses.
+description: Use when turning a plan into an OpenSpec task list. Says how to size, order, tag and verify tasks so that an agent can build them one at a time, contract first. The schema says the checkbox format the apply step parses.
 ---
 
 # Writing tasks
@@ -19,9 +19,11 @@ to locate the work and verify completion.
   the story is too big. Do not write or commit `tasks.md`. Report the count
   and the slice to move to a new story, then wait. The user decides the split
   in the brainstorm, and task planning runs again on the smaller story.
-- **One task is one red-green cycle:** one behavior, its failing test,
-  then the code that makes the test pass. A task that needs "and" to
-  describe is two tasks.
+- **One task is one behavior, taken through contract, code and black-box
+  test:** its contract first, then the code, then the black-box or
+  invariant test that proves it at a public boundary. Do not split a
+  behavior's phases into separate tasks: a task of code alone has nothing
+  to verify it. A task that needs "and" to describe is two tasks.
 - **Minutes, not hours.** Split a task you cannot verify with one command.
 
 ## Order
@@ -54,14 +56,20 @@ second touches other files.
 Every task ends with `(verify: <command>)`. A good verify command:
 
 - is one command that exits non-zero on failure, such as `pnpm test -- export` or `cargo test parser`;
-- runs the test the task adds, not the whole suite, unless the task is the integration task;
+- runs the black-box or invariant test the task adds or, for a shared-contracts task, the type check or other static check;
+- runs the whole suite only in the integration task;
 - is one the project already has. Do not invent tooling in a task list.
 
-## Test-first tasks
+Each task checks coverage only for the requirements it builds. The
+integration task, which runs last, checks that every requirement in the
+change's specs has at least one black-box or invariant test.
 
-Write each task so that the agent can write its test first. "Add a CSV
+## Name the behavior
+
+Write each task around one behavior a black-box test can state. "Add a CSV
 export endpoint" names a feature. "Return a CSV file from GET /export for a
-signed-in user" names a behavior a test can state before the code exists.
+signed-in user" names a behavior, with a contract and a test at the public
+boundary that the spec can state before the code exists.
 Name the behavior, not the file. Include the relevant interface or plan
 reference when the next reader needs it to locate the work. A task's
 completion must be recognizable from its stated outcome and verify command,

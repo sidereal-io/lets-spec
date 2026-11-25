@@ -288,9 +288,24 @@ apply:
     the pending tasks in order. You may run `[parallel]` tasks in concurrent
     subagents once the sections they depend on are done.
 
-    Work on each task test-first with the `lets-test-first` skill:
-    write the test, watch it fail for the right reason, then write the code
-    that makes it pass.
+    Work on each task with the `lets-verify-contracts` skill, in its three
+    phases: write the contracts, then the code, then black-box and invariant
+    tests at public boundaries.
+
+    In Phase 1, run the static checks the project has, such as its type checker
+    or linter. When it has none, Phase 1 ends once the contracts are written
+    down: signatures, usage text or spec scenarios, and the skill's first exit
+    criterion is met. Phase 3's failing black-box test then shows what the code
+    must do.
+
+    Take each expected value in a test from the spec or a worked example, never
+    from the code's own logic. Code takes its external clients, such as an HTTP
+    client or the clock, as inputs, so a test can pass in a substitute.
+
+    The skill's exit criteria check spec coverage only for the requirements the
+    task builds. The integration task, which runs last, checks that every
+    requirement in the change's specs has at least one black-box or invariant
+    test.
 
     Tick a task `- [x]` only with its evidence on the same line, such as
     `(✓ <command> passed)`. Never tick ahead. Commit each task on its own with

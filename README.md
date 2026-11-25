@@ -332,7 +332,7 @@ you can run it alone:
 |---|---|
 | `lets-plan` | Plans the change with OpenSpec, and stops when the plan is ready. |
 | `lets-review-plan` | Has another model family review the plan, in `standard`. |
-| `lets-build` | Builds the tasks, test-first, and stops when every task is ticked. |
+| `lets-build` | Builds the tasks, contract first, and stops when every task is ticked. |
 | `lets-review-build` | Has the code reviewed, in `standard`. Then it verifies and archives the change, and marks the pull request ready for review. |
 
 ### The Project fields
@@ -366,9 +366,9 @@ one, and also gets `lets-minimal` for chores and small stories.
 | Use it for | Normal feature work | Small changes |
 | Planning stages | brainstorm → proposal → specs → design → ADR → tasks | brainstorm → specs → tasks |
 | Independent plan review | Yes | No |
-| Building | One commit per task, test-first | One commit per task, test-first |
+| Building | One commit per task, contract first | One commit per task, contract first |
 | Independent code review | Yes | No |
-| Skills it adds | `lets-brainstorm`, `lets-write-specs`, `lets-write-adrs`, `lets-write-tasks`, `lets-test-first`, `lets-review-plan`, `lets-review-build`, `lets-review-pr` | `lets-brainstorm`, `lets-write-specs`, `lets-write-tasks`, `lets-test-first`, `lets-review-build`, `lets-review-pr` |
+| Skills it adds | `lets-brainstorm`, `lets-write-specs`, `lets-write-adrs`, `lets-write-tasks`, `lets-verify-contracts`, `lets-review-plan`, `lets-review-build`, `lets-review-pr` | `lets-brainstorm`, `lets-write-specs`, `lets-write-tasks`, `lets-verify-contracts`, `lets-review-build`, `lets-review-pr` |
 
 The `standard` flow, stage by stage:
 
@@ -381,7 +381,7 @@ The `standard` flow, stage by stage:
 | 5. | ADR | Writes an architecture decision record (ADR) in `docs/decisions/`, only for a choice that is costly to reverse | `adr.md`, plus any new ADRs |
 | 6. | tasks | Breaks the work into a checklist | `tasks.md` |
 | 7. | plan review | Before the build, a fresh session reviews the whole plan with `lets-review-plan` | A **Plan review** section in the pull request |
-| 8. | apply | Builds each task test-first. One commit per task. | Commits |
+| 8. | apply | Builds each task contract first. One commit per task. | Commits |
 | 9. | code review | `lets-review-build` has a fresh session review the branch | A **Code review** section in the pull request |
 | 10. | verify, archive | `lets-review-build` checks the code matches the plan, archives the change, and marks the pull request ready | An archive commit |
 
