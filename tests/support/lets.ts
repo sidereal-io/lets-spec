@@ -147,7 +147,7 @@ export function letsPackage(t: TestContext, options: LetsPackageOptions = {}): s
   if (options.releaseJson !== undefined) writeFileSync(join(dir, 'release.json'), options.releaseJson);
   for (const [flow, release] of Object.entries(options.releases ?? {})) {
     mkdirSync(join(dir, 'releases'), { recursive: true });
-    symlinkSync(release, join(dir, 'releases', flow));
+    symlinkSync(resolve(release), join(dir, 'releases', flow));
   }
   return dir;
 }
@@ -165,7 +165,7 @@ export function pathWith(t: TestContext, programs: string[]): string {
   for (const name of programs) {
     const found = folders.map((folder) => join(folder, name)).find(isExecutable);
     if (found === undefined) throw new Error(`${name} is not on PATH, so pathWith cannot link it`);
-    symlinkSync(found, join(dir, name));
+    symlinkSync(resolve(found), join(dir, name));
   }
   return dir;
 }
