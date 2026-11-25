@@ -62,10 +62,12 @@ function checkMention(mention: string, file: string, tree: LetsCommandTree): Fin
   // lets delegate names a family of commands; lets delegate review names
   // no command that runs.
   if (hasSubcommands && command.path.length > 1 && file !== GLOSSARY_COPY) return finding;
-  const options = new Set([
-    ...command.options,
-    ...command.subcommands.flatMap((name) => (tree.get([...command.path, name].join(' ')) as LetsCommand).options),
-  ]);
+  // Only the glossary copy names a subcommand's flag on its family; lets
+  // itself rejects `lets backlog --only 3`.
+  const subcommandOptions = file === GLOSSARY_COPY
+    ? command.subcommands.flatMap((name) => (tree.get([...command.path, name].join(' ')) as LetsCommand).options)
+    : [];
+  const options = new Set([...command.options, ...subcommandOptions]);
   for (const word of words.slice(at)) {
     if (word === '--') break;
     if (!word.startsWith('-')) continue;
@@ -115,6 +117,15 @@ test('the commands check names a mention that stops at a family of commands belo
   const dir = tempDir(t);
   smallText(dir, 'README.md', ['# Demo', '', 'Then `lets delegate review --for plan` runs.']);
   assert.deepEqual(await commandFindings(dir), [{ file: 'README.md', name: 'lets delegate review --for plan' }]);
+});
+
+test("the commands check names a subcommand's flag on its family", async (t) => {
+  const dir = tempDir(t);
+  smallText(dir, 'skills/demo/SKILL.md', ['# Demo', '', 'Run `lets --check`, then `lets backlog --only 3`.']);
+  assert.deepEqual(await commandFindings(dir), [
+    { file: 'skills/demo/SKILL.md', name: 'lets --check' },
+    { file: 'skills/demo/SKILL.md', name: 'lets backlog --only 3' },
+  ]);
 });
 
 test('the commands check passes a top-level family, the end of options and a placeholder', async (t) => {

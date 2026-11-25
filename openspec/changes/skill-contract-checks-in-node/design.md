@@ -118,10 +118,11 @@ folder.
   the bats test exempts it: it copies the glossary, which names the step
   intents as `lets delegate step --for` takes them.
 - Each later word that starts with `-` is a flag. It is a finding unless
-  it is an option of the current command or, when the current command
-  has subcommands, of one of them. This rule passes
+  it is an option of the current command or, in the glossary copy only,
+  of one of its subcommands. This rule passes
   `lets delegate step --for` in the glossary copy, which names the
-  `--for` of the step subcommands. `--` always passes, and ends the
+  `--for` of the step subcommands. Elsewhere, `lets backlog --only 3`
+  is a finding, as `lets` rejects it. `--` always passes, and ends the
   flags: a word after it is an argument. A value after `=` is not read.
 
 Alternative: export the command table from `lets`. Rejected by the
