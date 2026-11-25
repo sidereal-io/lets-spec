@@ -1,53 +1,10 @@
-// The unit tests of withModels and inAdapter, which the run commands use:
-// the order in which models are tried, and how an adapter's error is
-// classed. Which resolver answers is tested through lets, in
-// tests/delegate/instructions.test.ts.
+// The unit tests of inAdapter: how an adapter's error is classed. The
+// order in which models are tried is tested through lets, in
+// tests/delegate/run.test.ts.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { inAdapter, withModels } from '../../../lets/src/delegate/lookup.ts';
+import { inAdapter } from '../../../lets/src/delegate/lookup.ts';
 import { Refused, SessionFailed, SpawnError, TimeoutError, UsageError } from '../../../lets/src/resolvers/kit/errors.ts';
-
-// withModels over models, with answer for each; tried lists the models
-// it was asked for, in order.
-function tryModels(models: string[], answer: (model: string) => Promise<string>) {
-  const tried: string[] = [];
-  const result = withModels(models, async (model) => {
-    tried.push(model);
-    return answer(model);
-  });
-  return { result, tried };
-}
-
-test('withModels asks only for the first model when it is not refused', async () => {
-  const { result, tried } = tryModels(['gpt', 'gemini'], async () => 'ran');
-  assert.deepEqual(await result, { value: 'ran', model: 'gpt' });
-  assert.deepEqual(tried, ['gpt']);
-});
-
-test('withModels asks for the next model on a refusal', async () => {
-  const { result, tried } = tryModels(['gpt/gpt-6-astra', 'gemini'], async (model) => {
-    if (model === 'gpt/gpt-6-astra') throw new Refused('no tokens');
-    return 'ran';
-  });
-  assert.deepEqual(await result, { value: 'ran', model: 'gemini' });
-  assert.deepEqual(tried, ['gpt/gpt-6-astra', 'gemini']);
-});
-
-test('withModels stops at the first failure that is not a refusal', async () => {
-  const { result, tried } = tryModels(['gpt', 'claude', 'gemini'], async (model) => {
-    throw model === 'gpt' ? new Refused('no') : new SessionFailed('broke');
-  });
-  await assert.rejects(result, SessionFailed);
-  assert.deepEqual(tried, ['gpt', 'claude']);
-});
-
-test('when every model is refused, one Refused names each model and why', async () => {
-  const { result } = tryModels(['gpt/gpt-6-astra', 'gemini'], async (model) => {
-    throw new Refused(`refused ${model}`);
-  });
-  await assert.rejects(result, (error) => error instanceof Refused
-    && error.message === 'gpt/gpt-6-astra: refused gpt/gpt-6-astra\ngemini: refused gemini');
-});
 
 test('an error lets does not know, thrown inside an adapter, is a SpawnError with its message', async () => {
   await assert.rejects(inAdapter(async () => {

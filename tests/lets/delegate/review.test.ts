@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/review.ts';
 import type { ReviewOptions } from '../../../lets/src/delegate/review.ts';
-import { SessionFailed, SpawnError, TimeoutError } from '../../../lets/src/resolvers/kit/errors.ts';
+import { SpawnError, TimeoutError } from '../../../lets/src/resolvers/kit/errors.ts';
 import { commandDeps, HEAD } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<ReviewOptions> = {}): ReviewOptions =>
@@ -12,12 +12,7 @@ const options = (over: Partial<ReviewOptions> = {}): ReviewOptions =>
 const withT3 = (over: Parameters<typeof commandDeps>[0] = {}) =>
   commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3] }\n', ...over, adapters: { t3: {}, ...over.adapters } });
 type Calls = ReturnType<typeof commandDeps>['adapterCalls'];
-const runs = (calls: Calls) => calls('run').map(([name, , call]) => ({ name, ...(call as { input: object; options: object }) }));
 const finishes = (calls: Calls) => calls('finish').map(([name, , call]) => ({ name, ...(call as { handle: object; ok: boolean; options: object }) }));
-const runModels = (calls: Calls) => runs(calls).map(({ input }) => {
-  const { family, model } = input as { family: string; model: string | null };
-  return model === null ? family : `${family}/${model}`;
-});
 
 test('the metadata line names the checkout the resolver ran in, and the commit at its HEAD', async () => {
   const t = withT3({ adapters: { t3: { run: { checkout: '/w/elsewhere' } } } });
@@ -39,34 +34,6 @@ test('finish goes to the same resolver with the handle, with ok after a clean tr
   const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [cli, t3] }\n', adapters: { t3: {}, cli: {} } });
   await run(options(), t.deps);
   assert.deepEqual(finishes(t.adapterCalls), [{ name: 'cli', handle: { kind: 'cli', id: 'cli-1' }, ok: true, options: { cwd: '/repo' } }]);
-});
-
-test('a refused model passes to the next one on the same resolver', async () => {
-  const t = withT3({ adapters: { t3: { refuse: ['gpt/gpt-6-astra'] } } });
-  assert.equal(await run(options({ models: ['gpt/gpt-6-astra', 'gemini/gemini-3-pro'] }), t.deps), 0);
-  assert.deepEqual(runModels(t.adapterCalls), ['gpt/gpt-6-astra', 'gemini/gemini-3-pro']);
-  assert.equal(t.stdout(), 'FINDINGS\n');
-  assert.equal(JSON.parse(t.stderr()).model, 'gemini-3-pro');
-});
-
-test('a review whose every model is refused is exit 3, naming each model', async () => {
-  const t = withT3({ adapters: { t3: { refuse: ['gpt/gpt-6-astra', 'gemini'] } } });
-  assert.equal(await run(options({ models: ['gpt/gpt-6-astra', 'gemini'] }), t.deps), 3);
-  assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), /gpt\/gpt-6-astra: refused gpt\/gpt-6-astra\ngemini: refused gemini/);
-});
-
-test('a refusal never moves down the chain', async () => {
-  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3, cli] }\n', adapters: { t3: { refuse: ['gpt', 'gemini'] }, cli: {} } });
-  assert.equal(await run(options({ models: ['gpt', 'gemini'] }), t.deps), 3);
-  assert.equal(t.adapterCalls().some(([name]) => name === 'cli'), false, 'cli was not asked');
-});
-
-test('a failed session is exit 5, and the next model is not asked', async () => {
-  const t = withT3({ adapters: { t3: { run: new SessionFailed('the session stopped to ask') } } });
-  assert.equal(await run(options({ models: ['gpt', 'gemini'] }), t.deps), 5);
-  assert.match(t.stderr(), /stopped to ask/);
-  assert.deepEqual(runModels(t.adapterCalls), ['gpt']);
 });
 
 test('a session past its time is exit 6, and a known outcome-unknown error exit 4', async () => {

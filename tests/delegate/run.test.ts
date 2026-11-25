@@ -5,10 +5,10 @@
 // result. Each test gives a stand-in the exact command it expects, so the
 // command lets gives each CLI is checked too.
 import assert from 'node:assert/strict';
-import { mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { describe, test } from 'node:test';
-import { agy, claude, codex, type LetsResult } from '../support/lets.ts';
+import { agy, claude, codex, type LetsResult, unstartable } from '../support/lets.ts';
 import { delegateRepo, PROMPT } from './repo.ts';
 
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
@@ -311,5 +311,59 @@ describe('review run', () => {
     const meta = metadata(await repo.run(review({ promptFile: '../p.md' }), { cwd: docs }));
     assert.deepEqual([meta.resolver, meta.checkout], ['cli', repo.cwd]);
     assert.deepEqual(stand.cwds(), [repo.cwd]);
+  });
+
+  test('a refused model passes to the next one on the same resolver', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    const clis = {
+      codex: codex(repo.standIns, [], { rows: [{ args: codexExec(repo.cwd, { model: 'gpt-6-astra' }), stderr: 'error: model gpt-6-astra not available\n', code: 1 }] }),
+      agy: agy(repo.standIns, [], { rows: [{ args: agyP('high', '45m', 'gemini-3-pro-high'), stdout: FINDINGS }] }),
+    };
+    const result = await repo.run(review({ models: ['gpt/gpt-6-astra', 'gemini/gemini-3-pro'] }));
+    const { family, model } = metadata(result);
+    assert.deepEqual({ family, model }, { family: 'gemini', model: 'gemini-3-pro' });
+    assert.equal(result.stdout, FINDINGS);
+    assert.equal(clis.codex.calls().length, 1);
+    assert.equal(clis.agy.calls().length, 1);
+  });
+
+  test('when every model is refused, a review is exit 3 with one line per model, and never moves down the chain', async (t) => {
+    const repo = delegateRepo(t, { user: CLI_THEN_SUBAGENT });
+    codex(repo.standIns, [], { rows: [{ args: codexExec(repo.cwd, { model: 'gpt-6-astra' }), stderr: 'error: model gpt-6-astra not available\n', code: 1 }] });
+    claude(repo.standIns, { rows: [{ args: claudeP(), stderr: 'model not found\n', code: 1 }] });
+    const result = await repo.run(review({ models: ['gpt/gpt-6-astra', 'claude'] }));
+    failed(result, 3);
+    assert.match(result.stderr, /^lets delegate: gpt\/gpt-6-astra: codex refused: exit 1: error: model gpt-6-astra not available\n+claude: claude refused: exit 1: model not found\n+$/);
+    // subagent would say that no resolver started a session.
+    assert.doesNotMatch(result.stderr, /no resolver started a session/);
+  });
+
+  test('a codex refusal after an earlier review with the same name is exit 3, not 5', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    mkdirSync(dirname(lastMessage(repo.cwd)), { recursive: true });
+    writeFileSync(lastMessage(repo.cwd), 'OLD FINDINGS\n');
+    codex(repo.standIns, [], { rows: [{ args: codexExec(repo.cwd, { model: 'gpt-6-astra' }), stderr: 'model not available\n', code: 1 }] });
+    failed(await repo.run(review({ models: ['gpt/gpt-6-astra'] })), 3);
+  });
+
+  test('a session that prints and then fails is exit 5, and the next model is not asked', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    const clis = {
+      claude: claude(repo.standIns, { rows: [{ args: claudeP(), stdout: 'half a review', stderr: 'rate limited\n', code: 2 }] }),
+      codex: codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] }),
+    };
+    const result = await repo.run(review({ models: ['claude', 'gpt/gpt-6-luna'] }));
+    failed(result, 5);
+    assert.match(result.stderr, /claude failed: exit 2: rate limited/);
+    assert.equal(clis.claude.calls().length, 1);
+    assert.deepEqual(clis.codex.calls(), []);
+  });
+
+  test('a CLI that cannot start is a refusal, exit 3, naming the CLI', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    unstartable(repo.standIns, 'claude');
+    const result = await repo.run(review({ models: ['claude'] }));
+    failed(result, 3);
+    assert.match(result.stderr, /^lets delegate: claude: cannot run claude: /m);
   });
 });

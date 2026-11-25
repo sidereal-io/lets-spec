@@ -376,10 +376,13 @@ function harnessCli(dir: string, name: string, args: string[], answer: Omit<Stan
   return standIn(dir, name, [{ args, ...(typeof answer === 'string' ? FAILURES[answer] : answer) }, ...(options?.rows ?? [])], options);
 }
 
-// A program called name in dir that the system cannot start, because the
-// interpreter its #! line names does not exist. It never runs, so it logs
-// no call.
-function unstartable(dir: string, name: string): StandIn {
+/**
+ * Writes a program called `name` into `dir`, which must exist, that the
+ * system cannot start: the interpreter its `#!` line names does not exist,
+ * so starting it fails with `ENOENT`. It never runs, so it logs no call.
+ * Throws when `dir` cannot be written.
+ */
+export function unstartable(dir: string, name: string): StandIn {
   dir = resolve(dir);
   rmSync(join(dir, `.${name}.log`), { force: true });
   const program = join(dir, name);
