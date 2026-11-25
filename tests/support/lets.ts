@@ -3,7 +3,7 @@
 // PATH. Command-specific fixtures live beside their tests, not here.
 import { execFile, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { accessSync, chmodSync, constants, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import type { TestContext } from 'node:test';
@@ -160,7 +160,23 @@ export function letsPackage(t: TestContext, options: LetsPackageOptions = {}): s
  * the program, when one is not on `PATH`.
  */
 export function pathWith(t: TestContext, programs: string[]): string {
-  throw new Error('not built yet');
+  const dir = tempDir(t);
+  const folders = (process.env.PATH ?? '').split(delimiter).filter((folder) => folder !== '');
+  for (const name of programs) {
+    const found = folders.map((folder) => join(folder, name)).find(isExecutable);
+    if (found === undefined) throw new Error(`${name} is not on PATH, so pathWith cannot link it`);
+    symlinkSync(found, join(dir, name));
+  }
+  return dir;
+}
+
+function isExecutable(path: string): boolean {
+  try {
+    accessSync(path, constants.X_OK);
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -212,7 +228,7 @@ export function buildRelease(out: string, schemas: string[], skills: string[]): 
 
 /**
  * Writes an executable program called `name` into `dir`, which must
- * exist. Each call logs its arguments, then answers from the first row of
+ * exist. Each call logs its arguments and the folder it ran in, then answers from the first row of
  * `table` whose `args` equals the call's argument list. A call that
  * matches no row exits 127 and says so on standard error. Throws when
  * `dir` cannot be written.
@@ -231,7 +247,7 @@ export function standIn(dir: string, name: string, table: StandInRow[]): StandIn
   writeFileSync(program, `#!${process.execPath}
 const fs = process.getBuiltinModule('node:fs');
 const args = process.argv.slice(2);
-fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify(args) + '\\n');
+fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args, cwd: process.cwd() }) + '\\n');
 const row = JSON.parse(fs.readFileSync(${JSON.stringify(tableFile)}, 'utf8'))
   .find((row) => row.args.length === args.length && row.args.every((arg, i) => arg === args[i]));
 if (row === undefined) {
@@ -244,13 +260,12 @@ if (row === undefined) {
 }
 `);
   chmodSync(program, 0o755);
+  const logged = (): { args: string[]; cwd: string }[] => existsSync(log)
+    ? readFileSync(log, 'utf8').split('\n').filter((line) => line !== '').map((line) => JSON.parse(line))
+    : [];
   return {
-    calls: () => existsSync(log)
-      ? readFileSync(log, 'utf8').split('\n').filter((line) => line !== '').map((line) => JSON.parse(line) as string[])
-      : [],
-    folders: () => {
-      throw new Error('not built yet');
-    },
+    calls: () => logged().map((call) => call.args),
+    folders: () => logged().map((call) => call.cwd),
   };
 }
 

@@ -17,7 +17,7 @@
 ## 2. Helper implementation [depends-on: 1]
 
 - [x] 2.1 [medium] `letsPackage` copies `lets/bin`, `lets/src` and `lets/package.json` into a temporary folder removed after the test, links `node_modules` to `lets/node_modules`, writes `release.json` when given, links each `releases/<flow>`, and throws with a "run pnpm install" message when `lets/node_modules` is missing. `runLets` runs `<options.lets>/bin/lets` when `lets` is set. (verify: `pnpm check && node --test "tests/sync/*.test.ts"`) (✓ `pnpm check` and the 67 program tests passed; a copy run with its own `release.json` printed that version)
-- [ ] 2.2 [easy] `pathWith` makes a folder with a link to each named program found on `PATH`, and throws naming a program it cannot find. `standIn` logs each call with its folder, `calls()` returns what it did before, and `folders()` returns each call's folder in order (verify: `pnpm check && node --test "tests/sync/*.test.ts"`)
+- [x] 2.2 [easy] `pathWith` makes a folder with a link to each named program found on `PATH`, and throws naming a program it cannot find. `standIn` logs each call with its folder, `calls()` returns what it did before, and `folders()` returns each call's folder in order (verify: `pnpm check && node --test "tests/sync/*.test.ts"`) (✓ `pnpm check` and the 67 program tests passed)
 
 ## 3. Program tests take over each unit test file [depends-on: 2]
 
