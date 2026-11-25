@@ -80,7 +80,10 @@ test('a read that gh answers with something other than JSON is backend-failed', 
   const b = backlog(t, [{ args: ['api', 'graphql'], prefix: true, stdout: 'not json' }]);
   const result = await b.lets('ready');
   assert.equal(result.code, 1, result.output);
-  assert.equal(b.json(result).error, 'backend-failed');
+  const out = b.json(result);
+  assert.equal(out.error, 'backend-failed');
+  // An unmatched stand-in row is backend-failed too, so check the reason.
+  assert.match(out.message, /other than JSON: not json/);
 });
 
 test('a usage error exits 2 and prints nothing on stdout', async (t) => {
