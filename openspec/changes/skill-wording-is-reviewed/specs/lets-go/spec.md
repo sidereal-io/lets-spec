@@ -747,6 +747,10 @@ A rule written once MAY run more than once. `next` runs *Check the prerequisite*
 - **WHEN** a small glossary written for the test has a *Procedure* entry that says `run by a part`, and a small `terms.md` says `run by a part or another procedure`
 - **THEN** the check fails, and its output names `Procedure`
 
+#### Scenario: A term missing from the glossary
+- **WHEN** a small `terms.md` written for the test has a `## Packet` entry, and the small glossary beside it has no `## Packet` heading
+- **THEN** the check fails, and its output names `terms.md` and `Packet`
+
 #### Scenario: A term missing from the copy
 - **WHEN** an edit takes the `## Step report` entry out of `terms.md`, and `SKILL.md` still links `references/terms.md#step-report`
 - **THEN** the Node link check fails, and its output names `SKILL.md` and the link
