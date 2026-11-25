@@ -306,7 +306,7 @@ export function claude(dir: string, options?: FamilyOptions): StandIn {
 // its program never runs.
 const FAILURES: Record<Exclude<ListingFailure, 'cannot-start'>, Omit<StandInRow, 'args'>> = {
   'signed-out': { stderr: 'not logged in\n', code: 1 },
-  unreadable: { stdout: 'not json\n' },
+  unreadable: { stdout: 'not json' },
   hangs: { hang: true },
 };
 

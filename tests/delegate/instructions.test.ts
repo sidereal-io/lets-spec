@@ -145,3 +145,69 @@ test('an empty chain declines every delegation, and is exit 2, naming the config
   const run = await instructions(t, 'review', 'code', { user: 'version: 3\ndelegate: { resolvers: [] }\n', standIns: everyCli });
   declined(run, run.userConfig);
 });
+
+test('cli lists the families in the order gpt, claude, gemini', async (t) => {
+  const run = await instructions(t, 'review', 'code', {
+    user: CLI,
+    standIns: (dir) => { agy(dir, ['gemini-3.8-flash-high']); claude(dir); codex(dir, [...LUNA]); },
+  });
+  assert.deepEqual(line(run).options, ['gpt/gpt-6-luna', 'claude', 'gemini/gemini-3.8-flash']);
+});
+
+test('cli lists only the codex slugs whose visibility is list, in codex\'s order', async (t) => {
+  const run = await instructions(t, 'review', 'code', {
+    user: CLI,
+    standIns: (dir) => codex(dir, [{ slug: 'gpt-reserve', visibility: 'hide' }, { slug: 'gpt-6-luna', visibility: 'list' }, { slug: 'gpt-6.1-sol', visibility: 'list' }]),
+  });
+  assert.deepEqual(line(run).options, ['gpt/gpt-6-luna', 'gpt/gpt-6.1-sol']);
+});
+
+test('cli lists each gemini model once, without its effort, and no other maker\'s model', async (t) => {
+  const run = await instructions(t, 'review', 'code', {
+    user: CLI,
+    standIns: (dir) => agy(dir, ['gemini-3.8-flash-high', 'gemini-3.8-flash-low', 'claude-sonnet-4-6', 'gemini-3.8-pro-medium']),
+  });
+  assert.deepEqual(line(run).options, ['gemini/gemini-3.8-flash', 'gemini/gemini-3.8-pro']);
+});
+
+test('cli lists claude as its bare family, and runs no listing for it', async (t) => {
+  let stand: ReturnType<typeof claude> | undefined;
+  const run = await instructions(t, 'review', 'code', { user: CLI, standIns: (dir) => { stand = claude(dir); } });
+  assert.deepEqual(line(run).options, ['claude']);
+  assert.deepEqual(stand!.calls(), []);
+});
+
+test('cli answers inside another harness', async (t) => {
+  const run = await instructions(t, 'review', 'code', {
+    user: CLI,
+    standIns: (dir) => codex(dir, [...LUNA]),
+    env: { T3CODE_HOME: join(tempDir(t), '.t3') },
+  });
+  const { resolver, options } = line(run);
+  assert.deepEqual({ resolver, options }, { resolver: 'cli', options: ['gpt/gpt-6-luna'] });
+});
+
+test('a model listing runs without the session markers, and with the rest of the environment', async (t) => {
+  let stand: ReturnType<typeof codex> | undefined;
+  const run = await instructions(t, 'review', 'code', {
+    user: CLI,
+    standIns: (dir) => { stand = codex(dir, [...LUNA], { logEnv: ['CLAUDECODE', 'LETS_TEST_KEPT'] }); },
+    env: { CLAUDECODE: '1', LETS_TEST_KEPT: 'kept' },
+  });
+  assert.equal(line(run).resolver, 'cli');
+  assert.deepEqual(stand!.envs(), [{ CLAUDECODE: undefined, LETS_TEST_KEPT: 'kept' }]);
+});
+
+test('a codex listing that fails lists the bare gpt family, with one warning that names codex', async (t) => {
+  for (const failure of ['signed-out', 'unreadable', 'cannot-start'] as const) {
+    for (const [strategy, intent] of [['review', 'code'], ['step', 'build']]) {
+      const what = `${failure}, ${strategy}`;
+      const run = await instructions(t, strategy, intent, { user: CLI, standIns: (dir) => { codex(dir, failure); claude(dir); } });
+      assert.deepEqual(line(run).options, ['gpt', 'claude'], what);
+      const warnings = run.result.stderr.split('\n').filter((text) => text !== '');
+      assert.equal(warnings.length, 1, `${what}: ${run.result.stderr}`);
+      assert.match(warnings[0], /^lets delegate: .*codex/, what);
+      assert.ok(run.result.stderr.endsWith('\n'), what);
+    }
+  }
+});

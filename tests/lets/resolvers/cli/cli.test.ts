@@ -97,31 +97,6 @@ const options = async (io: ReturnType<typeof fakeIo>) => {
   return { options: await createAdapter(io).options((message) => warnings.push(message)), warnings };
 };
 
-test('claude is listed as its bare family, with no listing run', async () => {
-  const io = listingIo(['claude'], {});
-  assert.deepEqual(await options(io), { options: ['claude'], warnings: [] });
-  assert.deepEqual(io.calls, []);
-});
-
-test('codex lists the slugs it shows, in its order', async () => {
-  const io = listingIo(['codex'], { codex: { ...OK, stdout: codexModels(['gpt-reserve', 'hide'], ['gpt-6-luna', 'list'], ['gpt-6.1-sol', 'list']) } });
-  assert.deepEqual((await options(io)).options, ['gpt/gpt-6-luna', 'gpt/gpt-6.1-sol']);
-  assert.deepEqual(io.calls.map(([cmd, args]) => [cmd, args]), [['codex', ['debug', 'models']]]);
-});
-
-test('agy lists each gemini model once, without its effort', async () => {
-  const io = listingIo(['agy'], { agy: { ...OK, stdout: agyModels('gemini-3.8-flash-high', 'gemini-3.8-flash-low', 'claude-sonnet-4-6', 'gemini-3.8-pro-medium') } });
-  assert.deepEqual((await options(io)).options, ['gemini/gemini-3.8-flash', 'gemini/gemini-3.8-pro']);
-  assert.deepEqual(io.calls.map(([cmd, args]) => [cmd, args]), [['agy', ['models']]]);
-});
-
-test('the families are listed gpt, claude, gemini', async () => {
-  const io = listingIo(['agy', 'claude', 'codex'], {
-    codex: { ...OK, stdout: codexModels(['gpt-6-luna', 'list']) }, agy: { ...OK, stdout: agyModels('gemini-3.8-flash-high') },
-  });
-  assert.deepEqual((await options(io)).options, ['gpt/gpt-6-luna', 'claude', 'gemini/gemini-3.8-flash']);
-});
-
 test('each listing has 20 seconds, and runs without the session markers', async () => {
   const io = listingIo(['codex', 'agy'], { codex: { ...OK, stdout: codexModels() }, agy: { ...OK, stdout: agyModels() } });
   await options(io);
