@@ -211,11 +211,13 @@ test('the required-skills check passes a small project that ships what lets-go n
   assert.deepEqual(requiredSkillFindings(dir), []);
 });
 
+// No schema names `lets-plan`, so only lets-go's own text makes a flow ship it.
 test('the required-skills check names a skill lets-go names that a flow leaves out', (t) => {
   const dir = tempDir(t);
   smallProject(dir);
-  writeFileSync(join(dir, 'flows.json'), JSON.stringify({ flows: { demo: { schemas: ['lets-demo'], skills: ['lets-go'] } } }));
-  assert.deepEqual(requiredSkillFindings(dir), [{ file: 'flows.json', name: 'lets-build' }]);
+  smallText(dir, 'skills/lets-plan/SKILL.md', ['---', 'name: lets-plan', '---', '# lets-plan']);
+  smallText(dir, 'skills/lets-go/references/steps.md', ['# Steps', '', 'The `lets-plan` skill plans the change.']);
+  assert.deepEqual(requiredSkillFindings(dir), [{ file: 'flows.json', name: 'lets-plan' }]);
 });
 
 test("the required-skills check names an entry point a flow leaves out, though another flow's schema names it", (t) => {
