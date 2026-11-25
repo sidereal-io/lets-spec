@@ -68,21 +68,6 @@ test('a CLI that runs past the timeout is stopped, and is exit 6', async () => {
   assert.match(answer.stderr, /claude did not finish in 3 minutes/);
 });
 
-const LAST_MESSAGE = '/repo/.workspace/lets-delegate/cli-resolver.last-message.md';
-// A codex review named cli-resolver, which leaves the tree as gitAfter says.
-const codexReview = async (gitAfter = '') => {
-  const io = answering();
-  const t = commandDeps({ config: ONLY_CLI, real: { cli: createAdapter(io) }, gitAfter });
-  const code = await review(reviewOptions({ name: 'cli-resolver' }), t.deps);
-  return { code, io };
-};
-
-test('a review that changed the tree keeps its last-message file', async () => {
-  const { code, io } = await codexReview(' M src/a.js\0');
-  assert.equal(code, 7);
-  assert.equal(io.exists(LAST_MESSAGE), true);
-});
-
 // A step named build-x for build, at high effort, on the gpt family.
 const stepOptions = (over: Partial<StepOptions> = {}): StepOptions =>
   ({ for: 'build', name: 'build-x', promptFile: 'p.md', effort: 'high', models: ['gpt'], ...over });

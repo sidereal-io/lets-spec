@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, test } from 'node:test';
-import { agy, claude, codex, type LetsResult, snapshot, unstartable } from '../support/lets.ts';
+import { agy, claude, codex, git, type LetsResult, snapshot, unstartable } from '../support/lets.ts';
 import { delegateRepo, PROMPT } from './repo.ts';
 
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
@@ -414,5 +414,38 @@ describe('review run', () => {
     const after = snapshot(repo.cwd).split('\n');
     assert.deepEqual(before.filter((line) => !after.includes(line)), [], 'nothing changed or went');
     assert.deepEqual(after.filter((line) => !before.includes(line)).map((line) => line.split(' ')[0]), ['./.workspace/', './.workspace/lets-delegate/']);
+  });
+
+  test('a session that changes a file outside .workspace/ is exit 7, with no findings, and its last-message file stays', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd, FINDINGS, { 'notes.md': 'a note\n' })] });
+    const result = await repo.run(review());
+    failed(result, 7);
+    assert.match(result.stderr, new RegExp(`the session changed files outside \\.workspace/ \\(process ${SESSION}\\)`));
+    assert.equal(readFileSync(lastMessage(repo.cwd), 'utf8'), FINDINGS);
+  });
+
+  test('a tree that cannot be checked after the session is exit 4, with no findings', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    // git rev-parse HEAD still works; git status cannot read the index.
+    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd, FINDINGS, { '.git/index': 'not an index\n' })] });
+    const result = await repo.run(review());
+    failed(result, 4);
+    assert.ok(result.stderr.includes(`could not check the tree after the session: git status failed in ${repo.cwd}`), result.stderr);
+  });
+
+  test('the user\'s own changes from before the run, and the session\'s scratch files, do not count', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    writeFileSync(join(repo.cwd, 'a.md'), 'a\n');
+    writeFileSync(join(repo.cwd, 'old name.md'), 'old\n');
+    for (const args of [['add', 'a.md', 'old name.md'], ['commit', '-q', '-m', 'more'], ['mv', 'old name.md', 'new name.md']]) {
+      assert.equal(git(repo.cwd, ...args).code, 0, args.join(' '));
+    }
+    writeFileSync(join(repo.cwd, 'a.md'), 'changed\n');
+    writeFileSync(join(repo.cwd, 'my notes.md'), 'mine\n');
+    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd, FINDINGS, { '.workspace/scratch notes.md': 'scratch\n' })] });
+    const result = await repo.run(review());
+    assert.equal(metadata(result).gitClean, true);
+    assert.equal(result.stdout, FINDINGS);
   });
 });

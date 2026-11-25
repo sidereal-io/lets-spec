@@ -39,28 +39,6 @@ test('a session past its time is exit 6, and a known outcome-unknown error exit 
   }
 });
 
-test('a tree the session changed is exit 7, with finish ok false and no findings', async () => {
-  const t = withT3({ gitBefore: '', gitAfter: ' M src/a.js\0' });
-  assert.equal(await run(options(), t.deps), 7);
-  assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), /changed files outside \.workspace\/ \(t3 t3-1\)/);
-  assert.deepEqual(finishes(t.adapterCalls).map(({ ok }) => ok), [false]);
-});
-
-test('a git status that fails after the session is exit 4, with finish ok false', async () => {
-  const t = withT3({ gitAfterFails: true });
-  assert.equal(await run(options(), t.deps), 4);
-  assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), /could not check the tree after the session: git status failed in \/repo: index.lock exists \(t3 t3-1\)/);
-  assert.deepEqual(finishes(t.adapterCalls).map(({ ok }) => ok), [false]);
-});
-
-test('files the user had already changed, and scratch files, do not count', async () => {
-  const t = withT3({ gitBefore: ' M src/a.js\0?? .envrc\0', gitAfter: ' M src/a.js\0?? .envrc\0?? .workspace/x\0' });
-  assert.equal(await run(options(), t.deps), 0);
-  assert.equal(t.stdout(), 'FINDINGS\n');
-});
-
 test('a finish that fails is reported, and the review still succeeds', async () => {
   for (const error of [new SpawnError('thread gone'), new Error('thread gone')]) {
     const t = withT3({ adapters: { t3: { finish: error } } });
