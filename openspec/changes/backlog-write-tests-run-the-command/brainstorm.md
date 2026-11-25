@@ -38,4 +38,4 @@ metadata and raises no question.
   `gh` remains for those tests only. The packet's *Why this story* says
   the story removes the last fake `gh`; that is no longer true.
 
-Confirmed by user: no
+Confirmed by user: yes
