@@ -1,7 +1,7 @@
-// The helper module for black-box tests of lets: it runs lets/bin/lets as
-// a program, in temporary folders, with stand-ins for outside programs on
+// The helper module for black-box tests: it runs lets/bin/lets and other
+// programs, in temporary folders, with stand-ins for outside programs on
 // PATH. Command-specific fixtures live beside their tests, not here.
-import { execFile, spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { accessSync, chmodSync, constants, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -22,25 +22,24 @@ export interface RunResult {
   stderr: string;
 }
 
-/** What one run of lets left behind. `output` is `stdout` followed by `stderr`. */
-export interface LetsResult extends RunResult {
+/** What one run of a program left behind. `output` is `stdout` followed by `stderr`. */
+export interface ProgramResult extends RunResult {
   output: string;
 }
+
+/** What one run of lets left behind. */
+export type LetsResult = ProgramResult;
 
 /** Variables to add to the pinned environment. `undefined` removes one. */
 export type EnvChanges = Record<string, string | undefined>;
 
-export interface RunLetsOptions {
-  /** The folder lets runs in. Tests never call `process.chdir`. */
+export interface RunOptions {
+  /** The folder the program runs in. Tests never call `process.chdir`. */
   cwd: string;
   /** Applied last, on top of the pinned environment. */
   env?: EnvChanges;
-  /** The folder `standIn` wrote to. It goes first on `PATH`. */
-  standIns?: string;
   /** How long the run may take. 30 seconds when absent. */
   timeoutMs?: number;
-  /** The folder of the lets package whose `bin/lets` runs, such as one `letsPackage` made. `<repo>/lets` when absent. */
-  lets?: string;
 }
 
 /** What `letsPackage` puts beside the copied package, where lets looks for it. */
@@ -49,6 +48,13 @@ export interface LetsPackageOptions {
   releaseJson?: string;
   /** Each flow's release folder, by flow name, linked as `releases/<flow>`. */
   releases?: Record<string, string>;
+}
+
+export interface RunLetsOptions extends RunOptions {
+  /** The folder `standIn` wrote to. It goes first on `PATH`. */
+  standIns?: string;
+  /** The folder of the lets package whose `bin/lets` runs, such as one `letsPackage` made. `<repo>/lets` when absent. */
+  lets?: string;
 }
 
 /** One answer of a stand-in, given to the call whose arguments equal `args`. */
@@ -94,35 +100,52 @@ export function pinnedEnv(extra?: EnvChanges): NodeJS.ProcessEnv {
 }
 
 /**
- * Runs `lets/bin/lets <args>`, or `<options.lets>/bin/lets` when that is
- * set, with this Node, in `options.cwd`, with the
- * pinned environment, `options.standIns` first on `PATH` and `options.env`
- * on top. Resolves with the exit code and both streams whatever the exit
- * code. Rejects when lets cannot be started, or when the run passes its
- * time limit; the message then names the command and the folder.
+ * Runs `program` with `args` in `options.cwd`, which must exist, with the
+ * pinned environment, `options.env` on top and standard input closed, as
+ * `</dev/null` gives. A `program` without a slash is looked up on the
+ * `PATH` of that environment. Resolves with the exit code and both
+ * streams whatever the exit code. Rejects when the program cannot be
+ * started: the message names it, and says it is not on `PATH` when
+ * `options.cwd` exists, or that the folder is missing when it does not.
+ * Rejects too when the run passes its time limit.
  */
-export function runLets(args: string[], options: RunLetsOptions): Promise<LetsResult> {
-  const command = `lets ${args.join(' ')}`;
-  const env = pinnedEnv();
-  // An empty PATH entry means the current folder, so add none.
-  if (options.standIns !== undefined) env.PATH = env.PATH ? `${options.standIns}${delimiter}${env.PATH}` : options.standIns;
+export function run(program: string, args: string[], options: RunOptions): Promise<ProgramResult> {
+  const command = [program, ...args].join(' ');
   const timeout = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   return new Promise((done, fail) => {
-    execFile(
-      process.execPath,
-      [options.lets === undefined ? ENTRY : join(options.lets, 'bin', 'lets'), ...args],
-      { cwd: options.cwd, env: applyEnv(env, options.env), timeout, maxBuffer: 64 * 1024 * 1024 },
-      (error, stdout, stderr) => {
-        if (error?.killed) {
-          fail(new Error(`${command} in ${options.cwd} passed its time limit of ${timeout} ms`));
-        } else if (error && typeof error.code !== 'number') {
-          fail(new Error(`${command} in ${options.cwd} could not run: ${error.message}`));
-        } else {
-          const code = error ? (error.code as number) : 0;
-          done({ code, stdout, stderr, output: stdout + stderr });
-        }
-      },
-    );
+    // 'ignore' opens /dev/null, so a program that reads standard input sees
+    // its end at once instead of waiting.
+    const child = spawn(program, args, {
+      cwd: options.cwd,
+      env: applyEnv(pinnedEnv(), options.env),
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGKILL');
+    }, timeout);
+    child.stdout.setEncoding('utf8').on('data', (chunk: string) => { stdout += chunk; });
+    child.stderr.setEncoding('utf8').on('data', (chunk: string) => { stderr += chunk; });
+    child.on('error', (error: NodeJS.ErrnoException) => {
+      clearTimeout(timer);
+      // Node reports a missing cwd with the same ENOENT as a missing program.
+      if (error.code === 'ENOENT' && !existsSync(options.cwd)) {
+        fail(new Error(`${command} could not run: the folder ${options.cwd} is missing`));
+      } else if (error.code === 'ENOENT') {
+        fail(new Error(`${command} could not run in ${options.cwd}: ${program} is not on PATH`));
+      } else {
+        fail(new Error(`${command} could not run in ${options.cwd}: ${error.message}`));
+      }
+    });
+    child.on('close', (code, signal) => {
+      clearTimeout(timer);
+      if (timedOut) fail(new Error(`${command} in ${options.cwd} passed its time limit of ${timeout} ms`));
+      else if (code === null) fail(new Error(`${command} in ${options.cwd} was ended by ${signal}`));
+      else done({ code, stdout, stderr, output: stdout + stderr });
+    });
   });
 }
 
@@ -180,6 +203,23 @@ function isExecutable(path: string): boolean {
 }
 
 /**
+ * Runs `lets/bin/lets <args>`, or `<options.lets>/bin/lets` when that is
+ * set, with this Node, through `run`, with `options.standIns` first on
+ * `PATH` and `options.env` on top. Resolves and rejects as `run` does;
+ * the message then names the command and the folder.
+ */
+export function runLets(args: string[], options: RunLetsOptions): Promise<LetsResult> {
+  const env: EnvChanges = {};
+  if (options.standIns !== undefined) {
+    // An empty PATH entry means the current folder, so add none.
+    const path = process.env.PATH;
+    env.PATH = path ? `${options.standIns}${delimiter}${path}` : options.standIns;
+  }
+  const entry = options.lets === undefined ? ENTRY : join(options.lets, 'bin', 'lets');
+  return run(process.execPath, [entry, ...args], { cwd: options.cwd, env: { ...env, ...options.env }, timeoutMs: options.timeoutMs });
+}
+
+/**
  * Makes an empty temporary folder and returns its real path. With `t`,
  * the folder is removed after that test; without, when this process
  * exits, which is after the test file. Removal makes the tree writable
@@ -204,6 +244,17 @@ export function git(cwd: string, ...args: string[]): RunResult {
 }
 
 /**
+ * Makes `dir` and its `openspec-propose/SKILL.md`, to stand in for the
+ * generated `openspec-*` skills, and returns `dir`. Its parent must
+ * exist or be creatable. Throws when `dir` cannot be written.
+ */
+export function generatedSkills(dir: string): string {
+  mkdirSync(join(dir, 'openspec-propose'), { recursive: true });
+  writeFileSync(join(dir, 'openspec-propose', 'SKILL.md'), 'generated\n');
+  return dir;
+}
+
+/**
  * Builds a release of this repository into `out` with
  * `build/build-release.mjs`, as the flake does. `schemas` must not be
  * empty; the first is the default. `skills` are names of folders in
@@ -212,9 +263,7 @@ export function git(cwd: string, ...args: string[]): RunResult {
  * output, when the build fails.
  */
 export function buildRelease(out: string, schemas: string[], skills: string[]): void {
-  const generated = `${out}.generated`;
-  mkdirSync(join(generated, 'openspec-propose'), { recursive: true });
-  writeFileSync(join(generated, 'openspec-propose', 'SKILL.md'), 'generated\n');
+  const generated = generatedSkills(`${out}.generated`);
   const result = spawnSync(
     process.execPath,
     [join(repo, 'build', 'build-release.mjs'), repo, generated, out, schemas.join(','), ...skills],
@@ -290,15 +339,46 @@ export function snapshot(dir: string): string {
   return lines.join('\n');
 }
 
+/**
+ * Every path under `dir`, sorted, with its type and a hash of its content
+ * or its link target, without modes, `.git` included. Two trees give equal
+ * text exactly when `diff -r` finds them equal, as far as paths, types and
+ * contents go. Throws when `dir` cannot be read.
+ */
+export function tree(dir: string): string {
+  const lines: string[] = [];
+  for (const path of walk(dir, '.', true).sort()) {
+    const full = join(dir, path);
+    const stat = lstatSync(full);
+    if (stat.isSymbolicLink()) lines.push(`${path} -> ${readlinkSync(full)}`);
+    else if (stat.isFile()) lines.push(`${path} ${createHash('sha256').update(readFileSync(full)).digest('hex')}`);
+    else lines.push(`${path}/`);
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Takes write permission away from `path` and everything under it, for
+ * everyone, as the Nix store does. Links are left alone. Throws when
+ * `path` is missing or cannot be changed. `tempDir` still removes a
+ * read-only tree.
+ */
+export function makeReadOnly(path: string): void {
+  const stat = lstatSync(path);
+  if (stat.isSymbolicLink()) return;
+  if (stat.isDirectory()) for (const entry of readdirSync(path)) makeReadOnly(join(path, entry));
+  chmodSync(path, stat.mode & ~0o222);
+}
+
 // Each path under dir, from rel, as find prints it: the folder itself, then
-// everything inside, without .git.
-function walk(dir: string, rel: string): string[] {
+// everything inside, without the top .git unless withGit.
+function walk(dir: string, rel: string, withGit = false): string[] {
   const paths = [rel];
   const full = join(dir, rel);
   if (!lstatSync(full).isDirectory()) return paths;
   for (const entry of readdirSync(full)) {
-    if (rel === '.' && entry === '.git') continue;
-    paths.push(...walk(dir, `${rel}/${entry}`));
+    if (rel === '.' && entry === '.git' && !withGit) continue;
+    paths.push(...walk(dir, `${rel}/${entry}`, withGit));
   }
   return paths;
 }

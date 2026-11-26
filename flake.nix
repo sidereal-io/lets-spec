@@ -323,12 +323,12 @@
             touch "$out"
           '';
 
-        # The unit tests for the lets package and its resolvers, and
-        # the type check. They use fakes, so no harness and no real gh
-        # run here.
+        # The Node tests and the type check. The unit tests use fakes, so
+        # no harness and no real gh run here. The OpenSpec tests run the
+        # real OpenSpec CLI on each schema.
         node-tests = pkgs.runCommand "node-tests"
           {
-            nativeBuildInputs = [ pkgs.nodejs_26 pkgs.pnpm pkgs.pnpmConfigHook pkgs.git ];
+            nativeBuildInputs = [ pkgs.nodejs_26 pkgs.pnpm pkgs.pnpmConfigHook pkgs.git (packagesFor pkgs).openspec ];
             pnpmDeps = pnpmDepsFor pkgs;
           }
           ''

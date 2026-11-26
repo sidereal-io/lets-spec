@@ -1,10 +1,10 @@
 // The fixture for the black-box tests of lets sync: a small test release,
 // built once per test file, and a fresh project per test. Not named
 // *.test.ts, so node --test does not run it.
-import { chmodSync, lstatSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { before, type TestContext } from 'node:test';
-import { buildRelease, type EnvChanges, git, type LetsResult, type RunResult, runLets, standIn, tempDir } from '../support/lets.ts';
+import { buildRelease, type EnvChanges, git, type LetsResult, makeReadOnly, type RunResult, runLets, standIn, tempDir } from '../support/lets.ts';
 
 const RULES_BEGIN = '<!-- BEGIN lets-spec rules';
 const RULES_END = '<!-- END lets-spec rules -->';
@@ -177,12 +177,4 @@ export function setSchema(text: string, value: string | null): string {
   const line = /^schema:.*(\n|$)/m;
   if (value === null) return text.replace(line, '');
   return line.test(text) ? text.replace(line, `schema: ${value}$1`) : `schema: ${value}\n${text}`;
-}
-
-// Read-only, as in the Nix store.
-function makeReadOnly(path: string) {
-  const stat = lstatSync(path);
-  if (stat.isSymbolicLink()) return;
-  if (stat.isDirectory()) for (const entry of readdirSync(path)) makeReadOnly(join(path, entry));
-  chmodSync(path, stat.mode & ~0o222);
 }
