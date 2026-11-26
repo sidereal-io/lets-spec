@@ -80,6 +80,22 @@ async function fieldSpanFindings(root: string): Promise<Finding[]> {
     .map((span) => ({ file: text.path, name: span.text })));
 }
 
+/**
+ * Each value span under `root` that holds a value `lets backlog --help`
+ * does not give its field. A value span is a code span `<name>: <value>`
+ * whose name is a field the help prints; any other span passes (D12). A
+ * value that holds a placeholder, such as `<result>`, names no value.
+ */
+async function valueSpanFindings(root: string): Promise<Finding[]> {
+  const fields = backlogFields(await help);
+  return readTexts(root).flatMap((text) => text.spans.flatMap((span) => {
+    const pair = /^([A-Za-z][\w-]*): (\S+)$/.exec(span.text);
+    const values = pair === null ? undefined : fields.get(pair[1]);
+    if (pair === null || values === undefined || pair[2].includes('<') || values.has(pair[2])) return [];
+    return [{ file: text.path, name: span.text }];
+  }));
+}
+
 function smallText(dir: string, path: string, lines: string[]) {
   mkdirSync(dirname(join(dir, path)), { recursive: true });
   writeFileSync(join(dir, path), `${lines.join('\n')}\n`);
@@ -157,4 +173,31 @@ test('the fields check passes a span with no word field right after it', async (
   const dir = tempDir(t);
   smallText(dir, 'skills/demo/SKILL.md', ['# Demo', '', 'Read `nonsense`, field by field, then `nonsense` alone.']);
   assert.deepEqual(await fieldSpanFindings(dir), []);
+});
+
+test('the values check names a value the help does not give its field', async (t) => {
+  const dir = tempDir(t);
+  smallText(dir, 'skills/demo/SKILL.md', ['# Demo', '', 'On `result: bogus`, stop. On `kind: Epic`, split it.']);
+  assert.deepEqual(await valueSpanFindings(dir), [
+    { file: 'skills/demo/SKILL.md', name: 'result: bogus' },
+    { file: 'skills/demo/SKILL.md', name: 'kind: Epic' },
+  ]);
+});
+
+test('the values check passes a value the help gives its field', async (t) => {
+  const dir = tempDir(t);
+  smallText(dir, 'skills/demo/SKILL.md', ['# Demo', '', 'On `result: taken`, `error: no-backlog` or `key: null`, stop.']);
+  assert.deepEqual(await valueSpanFindings(dir), []);
+});
+
+test('the values check passes a placeholder value', async (t) => {
+  const dir = tempDir(t);
+  smallText(dir, 'skills/demo/SKILL.md', ['# Demo', '', 'Say what `result: <result>` means.']);
+  assert.deepEqual(await valueSpanFindings(dir), []);
+});
+
+test('the values check passes a span whose field the help does not print', async (t) => {
+  const dir = tempDir(t);
+  smallText(dir, 'skills/demo/SKILL.md', ['# Demo', '', 'Set `ask: true` and `skip_specs: true`.']);
+  assert.deepEqual(await valueSpanFindings(dir), []);
 });

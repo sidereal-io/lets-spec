@@ -11,7 +11,7 @@
 ## 2. The check [depends-on: 1]
 
 - [x] 2.1 [medium] A field span whose name `lets backlog --help` does not print is a finding `{ file, name }`, by design.md's *Which spans the check reads*. Small texts show one finding each for `` `nonsense` field `` and `` `sub-issues` field ``, and none for `` `claim` field ``, `` `claim` field. ``, `` `message` fields ``, a span and its word on two lines that name a printed field, `` `nonsense`, field `` or a span with no word field after it (verify: `node --test tests/contracts/fields.test.ts`) (✓ `node --test tests/contracts/fields.test.ts` passed, 11 tests)
-- [ ] 2.2 [medium] A value span whose field `lets backlog --help` prints, and whose value the help does not give that field, is a finding. Small texts show one finding each for `result: bogus` and `kind: Epic`, and none for `result: taken`, `error: no-backlog`, `key: null`, `result: <result>`, `ask: true` or `skip_specs: true` (D9, D12) (verify: `node --test tests/contracts/fields.test.ts`)
+- [x] 2.2 [medium] A value span whose field `lets backlog --help` prints, and whose value the help does not give that field, is a finding. Small texts show one finding each for `result: bogus` and `kind: Epic`, and none for `result: taken`, `error: no-backlog`, `key: null`, `result: <result>`, `ask: true` or `skip_specs: true` (D9, D12) (verify: `node --test tests/contracts/fields.test.ts`) (✓ `node --test tests/contracts/fields.test.ts` passed, 15 tests)
 - [ ] 2.3 [easy] One test runs both checks over every text `readTexts(repo)` gives and expects no finding (D6) (verify: `node --test tests/contracts/fields.test.ts`)
 
 ## 3. Rewrite the texts [depends-on: 2]
