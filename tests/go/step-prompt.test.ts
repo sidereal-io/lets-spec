@@ -108,3 +108,32 @@ describe('a walk step\'s prompt', () => {
     for (const program of outside) assert.deepEqual(program.calls(), []);
   });
 });
+
+/** Asserts exit 2, an empty stdout, and one stderr line after `lets go: ` that holds each of `named`. Returns stderr. */
+function rejected(result: LetsResult, ...named: string[]): string {
+  assert.equal(result.code, 2, result.output);
+  assert.equal(result.stdout, '');
+  assert.match(result.stderr, /^lets go: [^\n]*\n$/, result.stderr);
+  for (const text of named) assert.ok(result.stderr.includes(text), `${text} in ${result.stderr}`);
+  return result.stderr;
+}
+
+describe('the plain-language reference', () => {
+  test('## Writing names the installed reference under the repository root, run from a subfolder', async (t) => {
+    const repo = promptRepo(t);
+    const sub = join(repo.cwd, 'a', 'b');
+    mkdirSync(sub, { recursive: true });
+    const prompt = printed(await repo.run(walk('plan'), { cwd: sub }));
+    assert.ok(section(prompt, '## Writing').startsWith(`Plain-language method: ${join(repo.cwd, REFERENCE)}.\n`), prompt);
+  });
+
+  test('with no installed reference, it exits 2 and names the path', async (t) => {
+    const repo = promptRepo(t, { reference: false });
+    rejected(await repo.run(walk('build')), REFERENCE);
+  });
+
+  test('outside a git repository, it exits 2 and says so', async (t) => {
+    const repo = promptRepo(t, { notInRepo: true });
+    rejected(await repo.run(walk('plan')), 'is not in a git repository');
+  });
+});
