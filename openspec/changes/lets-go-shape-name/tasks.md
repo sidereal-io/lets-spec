@@ -16,7 +16,7 @@
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [easy] No file of `skills/lets-go` holds `idea-<slug>`, `<slug>`, `Join the first five words`, `holds this idea`, `holds that idea` or a heading *The shape step's name*, and all three project checks pass. Record `wc -l` for `skills/lets-go/SKILL.md` and for the whole skill in the pull request description, with the note that a stopped idea run's answers file is not found after the upgrade (verify: pnpm test && nix flake check && mise run check)
+- [x] 3.1 [easy] No file of `skills/lets-go` holds `idea-<slug>`, `<slug>`, `Join the first five words`, `holds this idea`, `holds that idea` or a heading *The shape step's name*, and all three project checks pass. Record `wc -l` for `skills/lets-go/SKILL.md` and for the whole skill in the pull request description, with the note that a stopped idea run's answers file is not found after the upgrade (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test, nix flake check and mise run check passed; grep found none of the strings; line counts in pull request #348)
 
 ## Deviations Ledger
 
