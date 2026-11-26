@@ -55,8 +55,11 @@ type StepRecord = { commit: string; date: string };
 
 // The most recent commit, reachable from HEAD, that made a change of kind
 // filter (A added, M modified) to path, or null when none did.
+// --full-history, because after archive path is absent on both sides of a
+// merge, and git's default simplification would follow only the first
+// parent, losing a change that came in through the second.
 async function lastCommit(git: Run, filter: 'A' | 'M', path: string): Promise<StepRecord | null> {
-  const out = await git('git', ['log', '-1', `--diff-filter=${filter}`, '--format=%h%x00%as', '--', path]);
+  const out = await git('git', ['log', '-1', '--full-history', `--diff-filter=${filter}`, '--format=%h%x00%as', '--', path]);
   const line = out.trim();
   if (line === '') return null;
   const [commit, date] = line.split('\0');

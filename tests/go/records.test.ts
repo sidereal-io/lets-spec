@@ -165,6 +165,26 @@ describe('build record', () => {
   });
 });
 
+describe('a change merged in after archive', () => {
+  test('the plan and build records come through the second parent of a merge', async (t) => {
+    const r = repo(t, [noPr()]);
+    const g = (...args: string[]) => {
+      const result = git(r.root, ...args);
+      assert.equal(result.code, 0, `git ${args.join(' ')}: ${result.stderr}`);
+    };
+    g('checkout', '--quiet', '-b', 'upstream');
+    const plan = r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+    const build = r.commit('feat: a', { [`${CHANGE}/tasks.md`]: '- [x] 1.1 a\n' }, '2026-11-05');
+    r.move('chore: archive', CHANGE, ARCHIVE, '2026-11-06');
+    g('checkout', '--quiet', NAME);
+    r.commit('chore: early', { 'notes.md': 'n\n' }, '2026-11-02');
+    g('merge', '--quiet', '--no-edit', 'upstream');
+    const records = printed(await r.records());
+    assert.deepEqual(records.plan, { commit: plan, date: '2026-11-03' });
+    assert.deepEqual(records.build, { commit: build, date: '2026-11-05' });
+  });
+});
+
 describe('review-build record', () => {
   /** A repository whose change was planned, built and archived into `ARCHIVE`. Returns it and the archive commit. */
   function archived(t: TestContext, rows: StandInRow[]): { r: Repo; sha: string } {
