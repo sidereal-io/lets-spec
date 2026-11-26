@@ -37,8 +37,11 @@ function rejected(result: LetsResult, file: string, ...named: string[]): void {
   assert.equal(result.code, 2, result.output);
   assert.equal(result.stdout, '');
   assert.match(result.stderr, /^[^\n]*\n$/, `stderr is exactly one line: ${result.stderr}`);
-  assert.ok(result.stderr.startsWith(`lets go: ${file}: `), result.stderr);
-  for (const text of named) assert.ok(result.stderr.includes(text), `${text} in ${result.stderr}`);
+  const start = `lets go: ${file}: `;
+  assert.ok(result.stderr.startsWith(start), result.stderr);
+  // Only after the file, so a short text such as 7 cannot match the random temporary path.
+  const message = result.stderr.slice(start.length);
+  for (const text of named) assert.ok(message.includes(text), `${text} in ${result.stderr}`);
 }
 
 function write(path: string, text: string) {
