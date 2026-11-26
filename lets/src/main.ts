@@ -18,6 +18,8 @@ import { run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './dele
 import type { StepOptions } from './delegate/step.ts';
 import { STRATEGIES } from './delegate/strategies.ts';
 import { run as questions } from './go/questions.ts';
+import { run as shapeName } from './go/shape-name.ts';
+import type { ShapeNameOptions } from './go/shape-name.ts';
 import type { Intent, Strategy } from './delegate/strategies.ts';
 import { realIo } from './io.ts';
 import type { Deps } from './io.ts';
@@ -275,6 +277,39 @@ Exit codes:
   2  the config is not valid, go is not a mapping, or go.questions is not
      ask or auto. stderr names the file and the key.`;
 
+const GO_SHAPE_NAME_HELP = `
+Names lets-go's shape step for one input, so the skill builds no name of
+its own. Give exactly one of --issue and --idea.
+
+For --issue <i>, the name is issue-<i>, with the key unchanged: only the
+backlog provider reads a key.
+
+For --idea <text>, the name is idea-<slug>-<hash>. The idea is cleaned
+into words: split on white space, lower-cased, only letters and digits in
+any script kept, and empty words dropped. <slug> is the first five words
+joined with hyphens, cut to 50 code points. <hash> is the first 8
+hexadecimal digits of the SHA-256 of all the words joined with spaces. An
+idea retyped in another case or with other punctuation gets the same name.
+
+It reads no file, starts no session and asks no resolver, so the same
+input always gives the same line, in any folder.
+
+stdout: one JSON line, { name, answers }. name is the shape step's name.
+answers is .workspace/lets-go/<name>-shape-answers.yaml, the step's
+answers file, relative to the repository root.
+
+Exit codes:
+  0  ok
+  2  not exactly one of --issue and --idea, an option given twice, or an
+     idea with no letter or digit in any script`;
+
+// An option that takes one value, so a second use is a usage error rather
+// than a silent override.
+const once = (flag: string) => (value: string, previous: string | undefined) => {
+  if (previous !== undefined) throw new InvalidArgumentError(`Give ${flag} only once.`);
+  return value;
+};
+
 // --timeout-minutes: a whole number of minutes.
 function wholeMinutes(value: string): number {
   if (!/^[1-9][0-9]*$/.test(value)) throw new InvalidArgumentError('Give a whole number of minutes.');
@@ -322,6 +357,9 @@ const program = new Command()
   .name('lets')
   .description('The lets-spec command.')
   .version(version())
+  // Without this, the root parser reads --version or -V anywhere in argv,
+  // even as the value of a subcommand's option, such as --idea '--version'.
+  .enablePositionalOptions()
   .exitOverride();
 
 program
@@ -433,16 +471,30 @@ stepCommand
     process.exitCode = await stepWait({ names: name, timeoutMinutes }, realDeps());
   });
 
-program
+const go = program
   .command('go')
-  .summary('settings for the lets-go skill')
-  .description('Read the settings the lets-go skill uses.')
+  .summary('helpers for the lets-go skill')
+  .description('Read the settings the lets-go skill uses, and name its steps.');
+
+go
   .command('questions')
   .summary('print the default question mode')
   .description('Print the default question mode, from go.questions in the lets config.')
   .addHelpText('after', GO_QUESTIONS_HELP)
   .action(async () => {
     process.exitCode = await questions(realDeps());
+  });
+
+go
+  .command('shape-name')
+  .usage('--issue <i> | --idea <text>')
+  .summary('print the shape step\'s name and answers file')
+  .description('Print the name of lets-go\'s shape step for an issue or an idea, and the path of its answers file.')
+  .option('--issue <i>', 'the issue\'s key, as lets backlog prints it', once('--issue'))
+  .option('--idea <text>', 'the idea in the user\'s words', once('--idea'))
+  .addHelpText('after', GO_SHAPE_NAME_HELP)
+  .action(async (options: ShapeNameOptions) => {
+    process.exitCode = await shapeName(options, realDeps());
   });
 
 // lets backlog parses its own arguments, so its help and usage errors come

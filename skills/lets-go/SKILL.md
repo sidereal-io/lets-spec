@@ -77,7 +77,7 @@ procedure ranks it.
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
 | [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch | this session | [Read the request](#read-the-request) | `lets go questions` fails |
-| [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea; [Take up the story run](references/story-run.md#take-up-the-story-run) in a story run's child | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
+| [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea; [Take up the story run](references/story-run.md#take-up-the-story-run) in a story run's child | An idea on a change's branch, an idea `lets go shape-name` rejects, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run; [Run the epic](#run-the-epic) for any other epic on the default branch, after [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run; or the epic is a finished epic, or an epic with no stories after shaping, or its discovery stopped when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) | The discovery map has edits of its own, or the step fails or asks a settled question again |
@@ -143,10 +143,9 @@ reads as it always has.
 | `<branch>` | The branch the run started on, when it is not the default branch. In a story run's child, the branch it started on, whatever it is | [Read the settings](#read-the-settings), from `git branch --show-current` |
 | `<default>` | The repository's default branch | [Read the settings](#read-the-settings) |
 | `<path>` | A story's git worktree in an epic run: `.workspace/lets-go/worktrees/<name>` in the epic run's checkout for a worktree the epic run creates, or the path `git worktree list --porcelain` prints for one it reuses | [Claim](#claim) or [The story's worktree](#the-storys-worktree) |
-| `<shape-name>` | The shape step's name: `issue-<i>` or `idea-<slug>` | [The shape step's name](references/shape.md#the-shape-steps-name) |
-| `<slug>` | The first five words of the idea, as [The shape step's name](references/shape.md#the-shape-steps-name) makes them | [The shape step's name](references/shape.md#the-shape-steps-name) |
+| `<shape-name>` | The shape step's name: the `name` that `lets go shape-name` prints for the step's input | [Read the request](#read-the-request) for an idea, [Check the issue](#check-the-issue) for an issue, [Find the input's discovery](references/shape.md#find-the-inputs-discovery) for the input an epic's `Input:` line names, and [Read the report](#read-the-report) for the inputs whose answers it removes |
 | `<claim>` | The unique token of this session's claim | [Claim](#claim), from the command's `claim` field |
-| `<idea>` | The idea, in the user's words | [Read the request](#read-the-request), or, for an epic's stopped discovery, the epic's `Input:` line in [Run the shape step](#run-the-shape-step) |
+| `<idea>` | The idea, in the user's words | [Read the request](#read-the-request), or, for an epic's stopped discovery, the epic's `Input:` line in [Find the input's discovery](references/shape.md#find-the-inputs-discovery) and [Run the shape step](#run-the-shape-step) |
 | `<word>` | The one word left of the request, before `lets backlog key` says whether it names an issue | [Read the request](#read-the-request) |
 | `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs, or `shape` in [Run the shape step](#run-the-shape-step) |
 | `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
@@ -275,15 +274,28 @@ is left of the request:
 
 | The branch | A number | An idea | Nothing |
 |---|---|---|---|
-| The default branch | The number is `<i>`. Go to [Check the issue](#check-the-issue) | With no letter or digit, stop. Otherwise go to [Start from an idea](#start-from-an-idea) | Run `next`. Its pick is `<i>`: print the `Picked` line, and go to [Check the issue](#check-the-issue). When nothing is ready, stop |
+| The default branch | The number is `<i>`. Go to [Check the issue](#check-the-issue) | Run `lets go shape-name --idea`. When it fails, stop. Otherwise go to [Start from an idea](#start-from-an-idea) | Run `next`. Its pick is `<i>`: print the `Picked` line, and go to [Check the issue](#check-the-issue). When nothing is ready, stop |
 | Another branch, `<branch>` | When the number is one of the matches, it is `<i>`: go to [Check the issue](#check-the-issue). Otherwise stop | Stop: an idea needs the default branch | When exactly one issue matches, it is `<i>`: go to [Check the issue](#check-the-issue). When none or several do, stop |
 
-With an idea on the default branch, read its characters first. When
-the idea holds no letter or digit, in any script, say that an idea
-needs at least one letter or digit, and stop, claiming nothing and
-running no step. This comes before the discovery query and the title
-search, which an idea like `???` gives nothing to work with. A letter
-in any script counts: `ログを直す` is an idea.
+With an idea on the default branch, name its shape step first. Pass
+the idea as one argument in single quotes, and write each `'` in it as
+`'\''`, as for `lets backlog key`:
+
+```bash
+lets go shape-name --idea '<idea>'
+# example
+lets go shape-name --idea 'fix lets-sync — quiet output'
+```
+
+When it exits non-zero, show the user its stderr, and stop, claiming
+nothing and running no step. For an idea with no letter or digit in
+any script, such as `???`, it says that an idea needs at least one
+letter or digit. This comes before the discovery query and the title
+search, which such an idea gives nothing to work with. Otherwise it
+prints one JSON line: keep its `name` as the idea's `<shape-name>`,
+and its `answers` as the idea's answers file. A letter in any script
+counts: `ログを直す` is an idea, and its `<shape-name>` is
+`idea-ログを直す-bffc2164`.
 
 With nothing on the default branch, run the `next` case of
 [Find the source of demand](#find-the-source-of-demand), over the
@@ -423,7 +435,18 @@ says.
      below.
    - **`unresolved`:** report the unresolved owner or checkpoint it
      carries, and stop, even on a stacked branch.
-5. Run [Confirm the packet](#confirm-the-packet). On its result:
+5. Run [Confirm the packet](#confirm-the-packet). When a result below
+   runs
+   [Find the input's discovery](references/shape.md#find-the-inputs-discovery)
+   or the shape step for `#<i>`, first name the issue's shape step:
+
+   ```bash
+   lets go shape-name --issue <i>
+   ```
+
+   Keep the `name` it prints as `<shape-name>`, in place of an idea's,
+   and its `answers` as the issue's answers file. When it exits
+   non-zero, show the user its stderr, and stop. On the result:
    - **`complete`:** check one case first. When the body has an
      `Input:` line that names `#<i>` itself, the issue is an epic that
      discovery shaped in place into this one story. That discovery may
@@ -1278,7 +1301,7 @@ files. For every step but shape, it is `<name>`, a hyphen and `<step>`:
 the review plan step runs with `--for review-plan` and
 `--name <name>-review-plan`. For shape, it is `<shape-name>-shape`: the
 shape step runs with `--for shape` and `--name <shape-name>-shape`, such
-as `--name idea-fix-letssync-quiet-output-shape`.
+as `--name idea-fix-letssync-quiet-output-ef93442d-shape`.
 
 ## Run a step
 
@@ -1349,24 +1372,33 @@ reason is that the shape step named no issue. When it is an `epic` line
 and no `story` line follows, the report is `failed`, and its reason is
 that the shape step named no story.
 
-Once shape reports `done` or `failed`, remove
-`.workspace/lets-go/<shape-name>-shape-answers.yaml`. Nothing resumes a
+Once shape reports `done` or `failed`, remove the step's answers
+file, `.workspace/lets-go/<shape-name>-shape-answers.yaml`. Nothing resumes a
 finished shape. A later idea, or a second shape of the same issue, must
 start with no answers.
 
 On `done` or `failed`, when the step ran for an epic `#<i>` whose
 `Input:` line names another input, remove that input's answers file
-too, under its own `<shape-name>`. For an idea, remove it only when
-`.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea. A
-stopped round of that input leaves its answers, and
+too: the `answers` that `lets go shape-name` prints for that input.
+Run it as
+[Find the input's discovery](references/shape.md#find-the-inputs-discovery)
+says: `--issue` with the issue's number, or `--idea` with the idea.
+When it exits non-zero, that input has no answers file: remove nothing
+for it, and go on. A stopped round of that input leaves its answers, and
 [Find the input's discovery](references/shape.md#find-the-inputs-discovery)
 would find them when the run goes back to
 [Check the issue](#check-the-issue), and stop the run. On
 `needs-input`, remove neither file: the next round needs them.
 
-On `done` with an `epic #<parent>` line, also remove
-`.workspace/lets-go/issue-<parent>-shape-answers.yaml`, whatever input
-the step ran for. The discovery of `#<parent>` has finished, but a
+On `done` with an `epic #<parent>` line, also remove the epic's own
+answers file, whatever input the step ran for: the `answers` that this
+prints, `.workspace/lets-go/issue-<parent>-shape-answers.yaml`.
+
+```bash
+lets go shape-name --issue <parent>
+```
+
+The discovery of `#<parent>` has finished, but a
 stopped round of `lets-go #<parent>` may have left answers there, and
 the lookup back in [Check the issue](#check-the-issue) would find them
 and stop the run.

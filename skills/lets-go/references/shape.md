@@ -25,11 +25,13 @@ input is an idea, or an issue `#<i>`.
    - **It says `Discovery status: in-progress`.** The discovery stopped
      between rounds, or before [Claim](../SKILL.md#claim).
    - **It has no status line, and an earlier shape round of this input
-     left answers.** That is,
-     `.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least
-     one pair, and, for an idea,
-     `.workspace/lets-go/<shape-name>-shape-prompt.md` holds this idea.
-     Stopping during Finalize leaves this state: Finalize removes the
+     left answers.** That is, this input's answers file,
+     `.workspace/lets-go/<shape-name>-shape-answers.yaml`, holds at
+     least one pair. It is the `answers` that `lets go shape-name`
+     printed for this input:
+     [Read the request](../SKILL.md#read-the-request) ran it for an
+     idea, and [Check the issue](../SKILL.md#check-the-issue) for an
+     issue. Stopping during Finalize leaves this state: Finalize removes the
      status line before it asks its own questions, and
      [Read the report](../SKILL.md#read-the-report) removes the answers
      file only when shape reports `done` or `failed`.
@@ -42,15 +44,25 @@ input is an idea, or an issue `#<i>`.
      named input's `<shape-name>`, not under `issue-<i>`. Take the
      named input. An `Input:` line that holds an issue, as `#` and its
      number or as its URL, names that issue; any other text names an
-     idea, word for word. Make its `<shape-name>`, as
-     [The shape step's name](#the-shape-steps-name) says: `issue-` and
-     that issue's number, such as `issue-180`, or `idea-<slug>` for the
-     idea. The epic is this input's discovery when
-     `.workspace/lets-go/<shape-name>-shape-answers.yaml` holds at least
-     one pair, and, for an idea,
-     `.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea.
-     Read no other file, and run no other query, for this state: the
-     parent list already holds the `Input:` line. The answers file
+     idea, word for word. Name that input's shape step with
+     `lets go shape-name`. For an issue, pass its number: for a URL,
+     the number at its end, never the URL, because a `/` in the name
+     would make the answers file's path a folder. For an idea, quote
+     it as [Read the request](../SKILL.md#read-the-request) does, with
+     the idea from the `Input:` line in place of `<idea>`:
+
+     ```bash
+     # for Input: #180, or Input: https://github.com/sidereal-io/lets-spec/issues/180
+     lets go shape-name --issue 180
+     # for an idea
+     lets go shape-name --idea '<idea>'
+     ```
+
+     The epic is this input's discovery when the `answers` it prints
+     names a file that holds at least one pair. When the command exits
+     non-zero, this state finds nothing. Beside that command, which
+     reads no file, read no other file and run no other query for this
+     state: the parent list already holds the `Input:` line. The answers file
      exists only on the machine where that round ran, so on another
      machine this state finds nothing.
 
@@ -109,13 +121,17 @@ it is the shape input that
 which can be the idea or the issue that the epic's `Input:` line names:
 
 - **An idea:** run the step as for an idea, with the idea from the
-  `Input:` line as `<idea>`. That sets its `<shape-name>`, the idea form
-  of the prompt in [Write the prompt](step-prompt.md#write-the-prompt),
-  and the check below that the answers file is this idea's.
+  `Input:` line as `<idea>`. Its `<shape-name>` is the `name` that
+  `lets go shape-name` printed for that idea in
+  [Find the input's discovery](#find-the-inputs-discovery). The idea
+  also sets the idea form of the prompt in
+  [Write the prompt](step-prompt.md#write-the-prompt).
 - **Another issue:** run the step as for an issue, with that issue in
-  place of `#<i>`: its `<shape-name>` is `issue-` and that issue's
-  number, and the issue form of the prompt names that issue's number
-  and URL. The URL is the one the `Input:` line holds, or else the
+  place of `#<i>`: its `<shape-name>` is the `name` that
+  `lets go shape-name` printed for that issue's number in
+  [Find the input's discovery](#find-the-inputs-discovery), such as
+  `issue-180`, and the issue form of the prompt names that issue's
+  number and URL. The URL is the one the `Input:` line holds, or else the
   epic's `<issue-url>` with that issue's number in place of the epic's.
 
 [Read the report](../SKILL.md#read-the-report) then, once the step
@@ -152,15 +168,8 @@ the epic.
    [Set the question mode](../SKILL.md#set-the-question-mode)
    says for a question mode before a shape step. Then go on here, with
    the next step.
-3. For an idea, check that the answers file is this idea's. Two ideas
-   can share their first five words, and so their `<shape-name>`. When
-   `.workspace/lets-go/<shape-name>-shape-prompt.md` exists and holds
-   another idea, an earlier run stopped before it finished, on that
-   other idea. In that case, remove
-   `.workspace/lets-go/<shape-name>-shape-answers.yaml` before you write
-   the prompt.
-4. Run the shape step, as [Run a step](../SKILL.md#run-a-step) says.
-5. When it reports `done`,
+3. Run the shape step, as [Run a step](../SKILL.md#run-a-step) says.
+4. When it reports `done`,
    [Read the report](../SKILL.md#read-the-report) says what it shaped.
    Check one case first. When the check of the discovery maps above went
    on only because one or more parents with no status line were this
@@ -302,22 +311,3 @@ It returns one of these results:
   holds the edits, and the checkout still has them too.
 
 Return to the part that ran it.
-
-## The shape step's name
-
-`<name>` is the change's name. Shape runs before there is one, so it
-has a name of its own, `<shape-name>`, from what it shapes:
-
-- **An issue:** `issue-<i>`, such as `issue-180`. For the issue that
-  an epic's `Input:` line names, as
-  [Run the shape step](#run-the-shape-step) says, use that issue's
-  number in place of `<i>`.
-- **An idea:** `idea-<slug>`. To make `<slug>`, split the idea on white
-  space. Lower-case each word, and keep only its letters and digits.
-  Drop a word left empty. Join the first five words with hyphens, or all
-  of them when there are fewer. `fix lets-sync — quiet output` becomes
-  `idea-fix-letssync-quiet-output`. The same idea typed again gets the
-  same name, so it finds its answers file.
-  [Read the request](../SKILL.md#read-the-request) has already stopped
-  an idea with no letter or digit, so `<slug>` is never empty, and no
-  shape step is named `idea-`.
