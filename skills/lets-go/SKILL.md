@@ -138,7 +138,7 @@ reads as it always has.
 | `<pr-base>` | The base branch of a story's pull request, its `baseRefName` | [Run the epic](#run-the-epic) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr list` read |
 | `<story-pr>` | The number of a story's pull request, which [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) edits by | [Run the epic](#run-the-epic) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr list` read |
 | `<pr-url>` | The URL of a story's pull request, in an epic run | [Run the epic](#run-the-epic), when it settles a built story, or [End the story run](references/story-run.md#end-the-story-run), in a story run's child |
-| `<pr>` | The number of the change's pull request | [Read the records](references/records.md#read-the-records), from the pull request's `number` |
+| `<pr>` | The number of the change's pull request | `lets go records <name>`, from the row's record's `pr`, in [Walk the step table](#walk-the-step-table) |
 | `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | [Check the issue](#check-the-issue), from the blocker read's title. After a shape step, [Check the issue](#check-the-issue) sets it again from the shaped issue's title |
 | `<branch>` | The branch the run started on, when it is not the default branch. In a story run's child, the branch it started on, whatever it is | [Read the settings](#read-the-settings), from `git branch --show-current` |
 | `<default>` | The repository's default branch | [Read the settings](#read-the-settings) |
@@ -156,8 +156,8 @@ reads as it always has.
 | `<route line>` | The line [Route](#route) says, such as `Route: lets-minimal, because #<i> is a Chore.` | [Route](#route). In a story run's child, [Take up the story run](references/story-run.md#take-up-the-story-run), from the story prompt |
 | `<title>` | The title of the issue the line names | The command or report line that names the issue |
 | `<date>` | The date on a printed line | [The step lines](#the-step-lines), for each kind of line |
-| `<sha>` | A commit's short hash, or the commit a review names | [Read the records](references/records.md#read-the-records), or the review plan report |
-| `<verdict>` | A plan review's verdict | The **Plan review** section, or the review plan report |
+| `<sha>` | A commit's short hash, or the commit a review names | `lets go records <name>`, from the row's record's `commit`, in [Walk the step table](#walk-the-step-table), or the review plan report |
+| `<verdict>` | A plan review's verdict | `lets go records <name>`, from the `review-plan` record's `verdict`, in [Walk the step table](#walk-the-step-table), or the review plan report |
 | `<evidence>` | What a `done` report's `evidence` lists | [The step lines](#the-step-lines) |
 | `<reason>` | Why a step failed, or, in a story's line in an epic run, why the story was not built or its walk stopped, or, in a wave's line, why a story waits for `#<other>` | [The step lines](#the-step-lines), from a `failed` report's `reason`, or from [Read the report](#read-the-report) when a `done` report's record says otherwise: `the step reported done, but` and what the record holds. In a story's line, [Run the epic](#run-the-epic). In a wave's line, the story's `reason` field in the waves file, from [Run the epic](#run-the-epic) |
 | `<YYYY-MM-DD>` | The date in an archive folder's name | The folder's name in `openspec/changes/archive/` |
@@ -885,9 +885,26 @@ in this walk changes the records the next row reads.
 
 Then settle the row:
 
-- **Done:** print its Skip line from the table, filled from
-  [Read the records](references/records.md#read-the-records). Go on to
-  the next row.
+- **Done:** the step was done before this run. Print its Skip line from
+  the table, filled from the row's record. Run this at the row, from the
+  repo root:
+
+  ```bash
+  lets go records <name>
+  ```
+
+  It prints one JSON object, with a record under each step's key. Take
+  the record under the row's *Step* key, and fill the Skip line from it:
+  `<date>` from its `date`, `<sha>` from its `commit`, `<pr>` from its
+  `pr` and `<verdict>` from its `verdict`. Do not run `git log`, or cut
+  a section out of the pull request's body, to fill the line. Review
+  plan on `lets-minimal` has a fixed line: read no record for it.
+  - When the command exits non-zero, show the user its stderr, and
+    stop. Run no step.
+  - When the row's record is `null`, the
+    [records disagree](references/records.md#records-that-disagree).
+
+  Then go on to the next row.
 - **Not done:** run the step, as [Run a step](#run-a-step) says. Then
   [read its report](#read-the-report). It checks a `done` report against
   the records, and says what to print and whether the walk goes on.
@@ -1201,8 +1218,9 @@ plan never runs.
 
 Each row says which skill the step runs, which record shows the step
 was done, and the line to print when it was done before this run.
+`lets go records <name>` prints each record under the row's *Step* key.
 [Walk the step table](#walk-the-step-table) says when each step is
-done.
+done, and how to fill the line.
 
 | Step | Skill | Record | Skip line |
 |---|---|---|---|
@@ -1231,9 +1249,11 @@ Done review build: <date>. <evidence>
 ```
 
 A `Skipped` line is the Skip line in the step's row of
-[The step table](#the-step-table), with `<date>` and `<sha>` from
-[Read the records](references/records.md#read-the-records). Shape has no
-row. Its line is:
+[The step table](#the-step-table), filled from the row's record that
+`lets go records <name>` prints, as
+[Walk the step table](#walk-the-step-table) says. `<date>` is the
+commit's author date, as `YYYY-MM-DD`, so a rebase keeps it. Shape has
+no row. Its line is:
 
 ```text
 Skipped shape: #<i>'s packet is complete, last edited <date>.
