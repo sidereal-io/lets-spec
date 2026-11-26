@@ -23,7 +23,7 @@ Both tasks change `skills/lets-go/`, so they run in order. The spec is `specs/le
 
 ## 4. Check the whole change [depends-on: 2, 3]
 
-- [ ] 4.1 [easy] The README's `tests/` row says the `go/` tests of `lets go records` run with a stand-in `gh` and a stand-in `openspec`, and names the new contract test; the three project checks pass; and the pull request description gives `wc -l` for `skills/lets-go/SKILL.md` and `skills/lets-go/references/records.md`, before and after (verify: pnpm test && nix flake check && mise run check)
+- [x] 4.1 [easy] The README's `tests/` row says the `go/` tests of `lets go records` run with a stand-in `gh` and a stand-in `openspec`, and names the new contract test; the three project checks pass; and the pull request description gives `wc -l` for `skills/lets-go/SKILL.md` and `skills/lets-go/references/records.md`, before and after (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test, nix flake check and mise run check passed; pull request #347 gives the line counts)
 
 ## Deviations Ledger
 
