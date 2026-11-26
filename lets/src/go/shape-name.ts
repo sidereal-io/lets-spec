@@ -5,7 +5,7 @@
 import { createHash } from 'node:crypto';
 import { guarded } from '../delegate/guarded.ts';
 import type { Deps } from '../io.ts';
-import { EXIT } from '../resolvers/kit/errors.ts';
+import { EXIT, UsageError } from '../resolvers/kit/errors.ts';
 
 export type ShapeNameOptions = { issue?: string; idea?: string };
 
@@ -37,6 +37,7 @@ function hash(all: string[]): string {
 export function shapeName(options: ShapeNameOptions): string {
   if (options.idea !== undefined) {
     const all = words(options.idea);
+    if (all.length === 0) throw new UsageError('an idea needs at least one letter or digit');
     return `idea-${slug(all)}-${hash(all)}`;
   }
   // An issue key is opaque to everything but its backlog provider
@@ -44,7 +45,7 @@ export function shapeName(options: ShapeNameOptions): string {
   return `issue-${options.issue}`;
 }
 
-// The exit code: 0 ok.
+// The exit code: 0 ok, 2 an idea with no letter or digit.
 export function run(options: ShapeNameOptions, deps: Pick<Deps, 'stdout' | 'stderr'>): Promise<number> {
   return guarded(deps, async () => {
     const name = shapeName(options);

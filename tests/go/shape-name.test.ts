@@ -84,3 +84,27 @@ describe('an idea', () => {
     assert.match(printed(result).name, /^idea-a{49}-[0-9a-f]{8}$/);
   });
 });
+
+/**
+ * Asserts that a run was rejected: exit 2, an empty stdout, and exactly
+ * one line on stderr. Returns that line, without its newline. Fails the
+ * test, with the run's output, when any of these does not hold.
+ */
+function rejected(result: LetsResult): string {
+  assert.equal(result.code, 2, result.output);
+  assert.equal(result.stdout, '');
+  assert.match(result.stderr, /^[^\n]*\n$/, `stderr is exactly one line: ${result.stderr}`);
+  return result.stderr.slice(0, -1);
+}
+
+describe('an idea it cannot name', () => {
+  test('an idea with no letter or digit is rejected', async (t) => {
+    const result = await shapeName(tempDir(t), '--idea', '???');
+    assert.equal(rejected(result), 'lets go: an idea needs at least one letter or digit');
+  });
+
+  test('an idea of white space only is rejected', async (t) => {
+    const result = await shapeName(tempDir(t), '--idea', '   ');
+    assert.equal(rejected(result), 'lets go: an idea needs at least one letter or digit');
+  });
+});

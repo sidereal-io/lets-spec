@@ -299,7 +299,8 @@ answers is .workspace/lets-go/<name>-shape-answers.yaml, the step's
 answers file, relative to the repository root.
 
 Exit codes:
-  0  ok`;
+  0  ok
+  2  an idea with no letter or digit in any script`;
 
 // --timeout-minutes: a whole number of minutes.
 function wholeMinutes(value: string): number {
