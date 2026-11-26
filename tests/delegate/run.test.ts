@@ -212,6 +212,14 @@ describe('review run', () => {
     for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], name);
   });
 
+  test('a handoff key from an earlier lets is ignored, with no message about it', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate:\n  resolvers: [cli]\n  handoff:\n    apply:\n      guidance: Prefer claude.\n' });
+    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
+    const result = await repo.run(review());
+    assert.equal(metadata(result).resolver, 'cli');
+    assert.doesNotMatch(result.stderr, /handoff/);
+  });
+
   test('a review ignores the guidance, even one that is not a string', async (t) => {
     const repo = delegateRepo(t, { user: 'version: 3\ndelegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: 42\n' });
     const stand = codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });

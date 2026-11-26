@@ -402,11 +402,17 @@ describe('the delegate section of the lets config', () => {
     assert.deepEqual(line(run), SUBAGENT_REVIEW);
   });
 
-  test('a step ignores bad review and handoff entries', async (t) => {
+  test('a step ignores a bad review entry', async (t) => {
     const run = await instructions(t, 'step', 'build', {
-      user: 'version: 3\ndelegate:\n  resolvers: [subagent]\n  review:\n    code:\n      guidance: 42\n  handoff: apply\n',
+      user: 'version: 3\ndelegate:\n  resolvers: [subagent]\n  review:\n    code:\n      guidance: 42\n',
     });
     assert.deepEqual(line(run), { strategy: 'step', for: 'build', resolver: 'subagent', options: [], guidance: null });
+  });
+
+  test('a handoff entry from an earlier lets is not checked, and draws no message', async (t) => {
+    const run = await instructions(t, 'step', 'build', { user: 'version: 3\ndelegate:\n  resolvers: [subagent]\n  handoff: 42\n' });
+    assert.deepEqual(line(run), { strategy: 'step', for: 'build', resolver: 'subagent', options: [], guidance: null });
+    assert.doesNotMatch(run.result.stderr, /handoff/);
   });
 
   test('the guidance is null when a level is missing', async (t) => {
