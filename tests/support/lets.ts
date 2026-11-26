@@ -57,9 +57,18 @@ export interface RunLetsOptions extends RunOptions {
   lets?: string;
 }
 
-/** One answer of a stand-in, given to the call whose arguments equal `args`. */
+/**
+ * One answer of a stand-in, given to the call whose arguments equal `args`,
+ * or, with `prefix`, start with `args`.
+ */
 export interface StandInRow {
   args: string[];
+  /**
+   * Match a call whose argument list starts with `args`, element by
+   * element, so `['issue', 'view', '136']` never matches issue 1360. An
+   * exact match when absent.
+   */
+  prefix?: boolean;
   stdout?: string;
   stderr?: string;
   /** The exit code. 0 when absent. */
@@ -336,10 +345,12 @@ export function buildRelease(out: string, schemas: string[], skills: string[]): 
 
 /**
  * Writes an executable program called `name` into `dir`, which must
- * exist. Each call logs its arguments and the folder it ran in, then answers from the first row of
- * `table` whose `args` equals the call's argument list. A call that
- * matches no row exits 127 and says so on standard error. Throws when
- * `dir` cannot be written.
+ * exist. Each call logs its arguments and the folder it ran in, then
+ * answers from the first row of `table` that matches the call's argument
+ * list: one whose `args` equals it, or, for a row with `prefix`, starts
+ * it. A prefix row shadows every row after it that it matches, so put it
+ * after the more specific rows. A call that matches no row exits 127 and
+ * says so on standard error. Throws when `dir` cannot be written.
  */
 export function standIn(dir: string, name: string, table: StandInRow[]): StandIn {
   // The program runs in another folder, so the paths it holds are absolute.
@@ -357,7 +368,8 @@ const fs = process.getBuiltinModule('node:fs');
 const args = process.argv.slice(2);
 fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args, cwd: process.cwd() }) + '\\n');
 const row = JSON.parse(fs.readFileSync(${JSON.stringify(tableFile)}, 'utf8'))
-  .find((row) => row.args.length === args.length && row.args.every((arg, i) => arg === args[i]));
+  .find((row) => (row.prefix ? row.args.length <= args.length : row.args.length === args.length)
+    && row.args.every((arg, i) => arg === args[i]));
 if (row === undefined) {
   process.stderr.write(${JSON.stringify(name)} + ': stand-in has no answer for ' + JSON.stringify(args) + '\\n');
   process.exitCode = 127;
