@@ -22,8 +22,10 @@
 ## 4. Integration [depends-on: 3]
 
 - [x] 4.1 [easy] The `tests/` row of the README's *Development* table says that `go/` holds the black-box tests of `lets go questions`, which run it in a temporary git repository with real lets config files (verify: `git grep -n 'go/.: black-box tests of .lets go questions' README.md`) (✓ `git grep -n 'go/.: black-box tests of .lets go questions' README.md` passed)
-- [ ] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new file in the Nix sandbox. The pull request lists each deleted test with the test that now covers it, as design decision 6 maps them; says no unit test of the lets config stays (D6); and names the four checks with no cover: `fileOf` for a key neither file sets, `backlog: 7` (D3), the merged value under a recursive alias, and `fileOf` for a key below a value the repository replaced whole (verify: `nix flake check`)
+- [x] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new file in the Nix sandbox. The pull request lists each deleted test with the test that now covers it, as design decision 6 maps them; says no unit test of the lets config stays (D6); and names the four checks with no cover: `fileOf` for a key neither file sets, `backlog: 7` (D3), the merged value under a recursive alias, and `fileOf` for a key below a value the repository replaced whole (verify: `nix flake check`) (✓ `nix flake check` passed, its `commands-check` with all 542 bats tests; `mise run check` passed; `pnpm test`: 829 Node tests and the type check passed, and its bats run failed only on bats test 31 because of an untracked, git-ignored `skills/system/` folder this change did not write)
 
 ## Deviations Ledger
 
 <!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-25, task 2.4: design decision 6 maps `readLetsConfig reads only the user's lets config when the repository has none` to Q8 and Q15. Q15 runs with a repository's lets config, so the pull request names Q8 and Q11 instead: both run in a repository with no `.lets/config.yaml`, and Q11 also shows the user's file is named. The test was deleted in 2.4, as planned.
