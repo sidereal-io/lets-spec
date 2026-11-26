@@ -235,6 +235,62 @@ describe('a change merged in after archive', () => {
   });
 });
 
+describe('done answer', () => {
+  const ALL = { plan: true, 'review-plan': true, build: true, 'review-build': true };
+  const NONE = { plan: false, 'review-plan': false, build: false, 'review-build': false };
+
+  test('the done answer is false for every step with no change folder, and openspec is not called', async (t) => {
+    const r = repo(t, [noPr()]);
+    assert.deepEqual(printed(await r.records()).done, NONE);
+    assert.deepEqual(r.openspec.calls(), []);
+  });
+
+  test('the done answer reads the change state once, with openspec instructions apply', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+    printed(await r.records());
+    assert.deepEqual(r.openspec.calls(), [['instructions', 'apply', '--change', NAME, '--json']]);
+  });
+
+  const cases: [string, { plan: boolean; build: boolean }][] = [
+    ['blocked', { plan: false, build: false }],
+    ['ready', { plan: true, build: false }],
+    ['all_done', { plan: true, build: true }],
+  ];
+  for (const [state, want] of cases) {
+    test(`the done answer for a change state of ${state}`, async (t) => {
+      const r = repo(t, [pr(167, '')]);
+      r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+      r.state([changeState(state)]);
+      const answers = printed(await r.records()).done as Record<string, boolean>;
+      assert.equal(answers.plan, want.plan);
+      assert.equal(answers.build, want.build);
+      assert.equal(answers['review-build'], false);
+    });
+  }
+
+  test('the done answer is true for every step once the change is archived, and openspec is not called', async (t) => {
+    const r = repo(t, [pr(167, '')]);
+    r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+    r.commit('feat: a', { [`${CHANGE}/tasks.md`]: '- [x] 1.1 a\n' }, '2026-11-05');
+    r.move('chore: archive', CHANGE, ARCHIVE, '2026-11-06');
+    assert.deepEqual(printed(await r.records()).done, ALL);
+    assert.deepEqual(r.openspec.calls(), []);
+  });
+
+  test('the done answer is true for every step with two archive folders', async (t) => {
+    const r = repo(t, [pr(167, '')]);
+    r.commit('chore: archive', { [`${ARCHIVE}/tasks.md`]: '- [x] 1.1 a\n', [`openspec/changes/archive/2026-11-09-${NAME}/tasks.md`]: '- [x] 1.1 a\n' }, '2026-11-09');
+    assert.deepEqual(printed(await r.records()).done, ALL);
+  });
+
+  test('the done answer: a folder that only ends in the name is not an archive folder', async (t) => {
+    const r = repo(t, [noPr('go-chore')]);
+    r.commit('chore: archive', { [`${ARCHIVE}/tasks.md`]: '- [x] 1.1 a\n' }, '2026-11-06');
+    assert.deepEqual(printed(await r.records('go-chore')).done, NONE);
+  });
+});
+
 describe('review-build record', () => {
   /** A repository whose change was planned, built and archived into `ARCHIVE`. Returns it and the archive commit. */
   function archived(t: TestContext, rows: StandInRow[]): { r: Repo; sha: string } {

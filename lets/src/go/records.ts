@@ -50,19 +50,23 @@ async function lastCommit(git: Run, filter: 'A' | 'M', path: string): Promise<St
 const ARCHIVE = 'openspec/changes/archive';
 const DATED = /^\d{4}-\d{2}-\d{2}-/;
 
-// The archive folder whose whole name is <YYYY-MM-DD>-<name>, or null when
-// there is none, or more than one.
-function archiveFolder(io: Pick<Io, 'isDir' | 'listDirs'>, root: string, name: string): string | null {
+// The archive folders whose whole name is <YYYY-MM-DD>-<name>, by name.
+function archiveFolders(io: Pick<Io, 'isDir' | 'listDirs'>, root: string, name: string): string[] {
   const dir = `${root}/${ARCHIVE}`;
-  if (!io.isDir(dir)) return null;
+  if (!io.isDir(dir)) return [];
   let folders: string[];
   try {
     folders = io.listDirs(dir);
   } catch (error) {
     throw new SpawnError(`could not read ${ARCHIVE}: ${(error as Error).message}`);
   }
-  const found = folders.filter((folder) => DATED.test(folder) && folder.slice(11) === name);
-  return found.length === 1 ? found[0] : null;
+  return folders.filter((folder) => DATED.test(folder) && folder.slice(11) === name).sort();
+}
+
+// The change state that openspec instructions apply prints.
+async function changeState(openspec: Run, name: string): Promise<string> {
+  const out = await openspec('openspec', ['instructions', 'apply', '--change', name, '--json']);
+  return (JSON.parse(out) as { state: string }).state;
 }
 
 const KEBAB = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
@@ -111,15 +115,18 @@ export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'st
     const git = runner(deps.io, root);
     const change = `openspec/changes/${name}`;
     const pr = await pullRequest(deps.io, root, name);
-    const folder = archiveFolder(deps.io, root, name);
-    const archived = folder === null ? null : await lastCommit(git, 'A', `${ARCHIVE}/${folder}/tasks.md`);
+    const archives = archiveFolders(deps.io, root, name);
+    const changeFolder = deps.io.isDir(`${root}/${change}`);
+    const state = changeFolder && archives.length === 0 ? await changeState(git, name) : null;
+    // The record needs the one archive folder; two leave it null.
+    const archived = archives.length === 1 ? await lastCommit(git, 'A', `${ARCHIVE}/${archives[0]}/tasks.md`) : null;
     const records = {
       plan: await lastCommit(git, 'A', `${change}/tasks.md`),
       'review-plan': await reviewPlanRecord(deps.io, git, root, pr),
       build: await lastCommit(git, 'M', `${change}/tasks.md`),
       'review-build': archived === null ? null : { ...archived, pr: pr?.number ?? null },
     };
-    const facts: Facts = { name };
+    const facts: Facts = { name, archives, changeFolder, state };
     const answers = done(facts);
     const line = { ...records, done: answers, disagreements: disagreements(facts, answers), 'pull-request': pr?.state ?? null };
     deps.stdout(`${JSON.stringify(line)}\n`);
