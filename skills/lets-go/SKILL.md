@@ -143,8 +143,7 @@ reads as it always has.
 | `<branch>` | The branch the run started on, when it is not the default branch. In a story run's child, the branch it started on, whatever it is | [Read the settings](#read-the-settings), from `git branch --show-current` |
 | `<default>` | The repository's default branch | [Read the settings](#read-the-settings) |
 | `<path>` | A story's git worktree in an epic run: `.workspace/lets-go/worktrees/<name>` in the epic run's checkout for a worktree the epic run creates, or the path `git worktree list --porcelain` prints for one it reuses | [Claim](#claim) or [The story's worktree](#the-storys-worktree) |
-| `<shape-name>` | The shape step's name: `issue-<i>` or `idea-<slug>` | [The shape step's name](references/shape.md#the-shape-steps-name) |
-| `<slug>` | The first five words of the idea, as [The shape step's name](references/shape.md#the-shape-steps-name) makes them | [The shape step's name](references/shape.md#the-shape-steps-name) |
+| `<shape-name>` | The shape step's name: the `name` that `lets go shape-name` prints for the step's input | [Read the request](#read-the-request) for an idea, [Check the issue](#check-the-issue) for an issue, [Find the input's discovery](references/shape.md#find-the-inputs-discovery) for the input an epic's `Input:` line names, and [Read the report](#read-the-report) for the inputs whose answers it removes |
 | `<claim>` | The unique token of this session's claim | [Claim](#claim), from the command's `claim` field |
 | `<idea>` | The idea, in the user's words | [Read the request](#read-the-request), or, for an epic's stopped discovery, the epic's `Input:` line in [Run the shape step](#run-the-shape-step) |
 | `<word>` | The one word left of the request, before `lets backlog key` says whether it names an issue | [Read the request](#read-the-request) |
@@ -436,7 +435,18 @@ says.
      below.
    - **`unresolved`:** report the unresolved owner or checkpoint it
      carries, and stop, even on a stacked branch.
-5. Run [Confirm the packet](#confirm-the-packet). On its result:
+5. Run [Confirm the packet](#confirm-the-packet). When a result below
+   runs
+   [Find the input's discovery](references/shape.md#find-the-inputs-discovery)
+   or the shape step for `#<i>`, first name the issue's shape step:
+
+   ```bash
+   lets go shape-name --issue <i>
+   ```
+
+   Keep the `name` it prints as `<shape-name>`, in place of an idea's,
+   and its `answers` as the issue's answers file. When it exits
+   non-zero, show the user its stderr, and stop. On the result:
    - **`complete`:** check one case first. When the body has an
      `Input:` line that names `#<i>` itself, the issue is an epic that
      discovery shaped in place into this one story. That discovery may
