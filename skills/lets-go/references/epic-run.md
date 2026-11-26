@@ -119,7 +119,7 @@ as for any picked issue.
    exit 1, act as [Backlog errors](../SKILL.md#backlog-errors) says,
    with the error the file holds.
 
-   Otherwise print the waves, from the file's `waves`, in order. First
+   Otherwise print the waves, from the file's `waves` field, in order. First
    print:
 
    ```text
@@ -127,17 +127,17 @@ as for any picked issue.
    ```
 
    Then print each wave's line. `<wave>` is the wave's number,
-   counted from 1. `<wave-stories>` is the `label` of each of the
-   wave's stories, in the order the command gives, joined by `, `:
+   counted from 1. `<wave-stories>` is the `label` field of each of
+   the wave's stories, in the order the command gives, joined by `, `:
 
    ```text
    Wave <wave>: <wave-stories>
    ```
 
    After each wave's line but the first, print one line for each story
-   of that wave, in the same order. `#<other>` is the story's
-   `waitsFor` label, and `<reason>` is its `reason`, as the command
-   prints them:
+   of that wave, in the same order. `#<other>` is the label in the story's
+   `waitsFor` field, and `<reason>` is its `reason` field, as the
+   command prints them:
 
    ```text
    #<story> waits for #<other>: <reason>.
@@ -249,8 +249,8 @@ as for any picked issue.
 
    Before each pick, read
    `.workspace/lets-go/epic-<parent>-waves.json`, which *Start the epic
-   run* wrote. The current wave is the first of its `waves` that holds a
-   story not settled yet. A wave can have no such
+   run* wrote. The current wave is the first in its `waves` field that
+   holds a story not settled yet. A wave can have no such
    story before its turn, such as when each of its stories depends on a
    story that stopped: skip it.
 
@@ -327,9 +327,10 @@ as for any picked issue.
        with `lets backlog item <story>`. On an error, act as
        [Backlog errors](../SKILL.md#backlog-errors) says. The reason is
        `blocked by #<blocker>`, naming each open issue in its
-       `blockedBy` that is not a met story; else `assigned to <login>`,
-       naming each login in its `assignees`; else its `status`, `kind`
-       or `priority`, such as `its Status is Done`.
+       `blockedBy` field that is not a met story; else
+       `assigned to <login>`, naming each login in its `assignees`
+       field; else its `status` field, `kind` field or `priority` field,
+       such as `its Status is Done`.
        For a story passed in `--started`, `lets backlog ready` keeps one
        assigned to the signed-in user, so that assignee is no reason:
        name only the other logins, and with none, go on to the next
@@ -796,7 +797,7 @@ before
 [Find the source of demand](../SKILL.md#find-the-source-of-demand)
 runs for the story. The story is `<i>` and `<story>`, and `<name>` is
 its change name. The open blockers are the entries of the story's
-`blockedBy`, from the blocker read, whose `state` is `OPEN`.
+`blockedBy` field, from the blocker read, whose `state` is `OPEN`.
 
 1. Read the story's pull request:
 
@@ -870,7 +871,7 @@ story, [Claim](../SKILL.md#claim) does not run: the step prompts'
 branch, before
 [Find the source of demand](../SKILL.md#find-the-source-of-demand) runs
 for the story. The open blockers are the entries of the story's
-`blockedBy`, from the blocker read, whose `state` is `OPEN`.
+`blockedBy` field, from the blocker read, whose `state` is `OPEN`.
 
 1. Read the open pull requests again, and find the met stories as
    *Pick the next story*, in [Run the epic](#run-the-epic), does. A
@@ -982,7 +983,7 @@ On a stop in a story run, take these actions in order.
 3. Find the stories that depend on `<failed>`, and settle them. For
    each story of the epic, in this repository and not settled yet, run
    `lets backlog item <story>`. Keep the `key` of each entry of its
-   `blockedBy` whose `state` is `OPEN` and whose `url` is the `url` of
+   `blockedBy` field whose `state` is `OPEN` and whose `url` is the `url` of
    a story of the epic in this repository. A blocker in another
    repository can share its key with a story here, so a key alone never
    makes a story a dependent.
