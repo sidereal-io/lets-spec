@@ -43,7 +43,7 @@ function backlogFields(help: string): Fields {
   for (const match of help.matchAll(/([A-Za-z][\w-]*)\??:\s*\[/g)) add(match[1]);
   const prose = withoutAsides(help.replace(/\s+/g, ' '));
   for (const match of prose.matchAll(/\bwhere ([A-Za-z][\w-]*) is ([^.]*)\./g)) {
-    add(match[1], match[2].split(/,|\bor\b/).map((value) => value.trim()).filter((value) => value !== ''));
+    add(match[1], match[2].split(/,|\sor\s/).map((value) => value.trim()).filter((value) => value !== ''));
   }
   return fields;
 }
@@ -146,6 +146,11 @@ test('the help gives no prose word before : { outside a shape as a field', () =>
 test('the help gives a where sentence’s name each value, without its asides', () => {
   const fields = backlogFields(['On an error, where error is no-backlog,', 'several (with a note) or not-found.'].join('\n'));
   assert.deepEqual(plain(fields), { error: ['no-backlog', 'not-found', 'several'] });
+});
+
+test('the help keeps a value that holds -or- whole', () => {
+  const fields = backlogFields('On an error, where error is read-or-write or not-found.');
+  assert.deepEqual(plain(fields), { error: ['not-found', 'read-or-write'] });
 });
 
 test('lets backlog --help prints at least one field with a value', async () => {
