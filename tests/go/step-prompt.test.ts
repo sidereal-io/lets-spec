@@ -137,3 +137,38 @@ describe('the plain-language reference', () => {
     rejected(await repo.run(walk('plan')), 'is not in a git repository');
   });
 });
+
+describe('how the step asks and reports', () => {
+  test('at auto, ## Questions names the mode and the rules for needs-input and ## Answers', async (t) => {
+    const repo = promptRepo(t);
+    const questions = section(printed(await repo.run(walk('plan', { questions: 'auto' }))), '## Questions');
+    assert.ok(questions.startsWith('The question mode is auto.'), questions);
+    for (const text of ['needs-input', 'recommendation', '`## Answers`', 'Assumption', 'User', '`Confirmed by user: yes`', '(lets-go\naccepted the step\'s recommendation; the user did not decide)']) {
+      assert.ok(questions.includes(text), `${text} in ${questions}`);
+    }
+  });
+
+  test('at ask, the session puts every question to the user, and the step still lists them with recommendations', async (t) => {
+    const repo = promptRepo(t);
+    const questions = section(printed(await repo.run(walk('plan', { questions: 'ask' }))), '## Questions');
+    assert.ok(questions.startsWith('The question mode is ask.'), questions);
+    assert.ok(questions.includes('At ask, it puts every question to the user'), questions);
+    assert.ok(questions.includes('lists\nevery open question') && questions.includes('Give a\nrecommendation where you have one.'), questions);
+  });
+
+  test('a confirmation carries no recommendation', async (t) => {
+    const repo = promptRepo(t);
+    const questions = section(printed(await repo.run(walk('plan'))), '## Questions');
+    assert.ok(questions.includes('Give none for a question that asks\nthe user to confirm something, such as a brainstorm ledger, an issue\npacket or a discovery phase.'), questions);
+  });
+
+  test('## The report shows the three outcomes and the evidence and quoting rules', async (t) => {
+    const repo = promptRepo(t);
+    const report = section(printed(await repo.run(walk('review-plan'))), '## The report');
+    const blocks = [...report.matchAll(/```step-report\n([\s\S]*?)```/g)].map((match) => match[1].split('\n')[0]);
+    assert.deepEqual(blocks, ['outcome: done', 'outcome: needs-input', 'outcome: failed']);
+    for (const text of ['evidence:', 'questions:', 'reason:', '`Plan review: <verdict> for <sha>`', '`issue #<i>: <title>`', '`epic #<parent>: <title>`', '`story #<story>: <title>`', 'Write the report last.', 'Quote a line that\nholds `#` or `: `.', 'Put no other step-report block in the message.']) {
+      assert.ok(report.includes(text), `${text} in ${report}`);
+    }
+  });
+});
