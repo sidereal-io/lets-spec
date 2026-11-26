@@ -3,8 +3,11 @@
 // an agent that reads the old name. A text marks such a read by the rule
 // in AGENTS.md: the `claim` field, or `result: taken`.
 import assert from 'node:assert/strict';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
-import { repo, runLets } from '../support/lets.ts';
+import { repo, runLets, tempDir } from '../support/lets.ts';
+import { type Finding, readTexts } from './texts.ts';
 
 const help = runLets(['backlog', '--help'], { cwd: repo }).then((result) => {
   assert.equal(result.code, 0, result.output);
@@ -65,6 +68,23 @@ function withoutAsides(text: string): string {
   return rest;
 }
 
+/**
+ * Each field span under `root` whose name `lets backlog --help` does not
+ * print. A field span is a code span of one word with no space, followed
+ * in its paragraph by the word field or fields.
+ */
+async function fieldSpanFindings(root: string): Promise<Finding[]> {
+  const fields = backlogFields(await help);
+  return readTexts(root).flatMap((text) => text.spans
+    .filter((span) => /^\S+$/.test(span.text) && (span.next === 'field' || span.next === 'fields') && !fields.has(span.text))
+    .map((span) => ({ file: text.path, name: span.text })));
+}
+
+function smallText(dir: string, path: string, lines: string[]) {
+  mkdirSync(dirname(join(dir, path)), { recursive: true });
+  writeFileSync(join(dir, path), `${lines.join('\n')}\n`);
+}
+
 // The fields as an object, each with its values sorted, so a test can
 // compare the whole result at once.
 function plain(fields: Fields): Record<string, string[]> {
@@ -104,4 +124,37 @@ test('the help gives a where sentence’s name each value, without its asides', 
 test('lets backlog --help prints at least one field with a value', async () => {
   const withValues = [...backlogFields(await help)].filter(([, values]) => values.size > 0);
   assert.ok(withValues.length > 0, 'no field in lets backlog --help has a value');
+});
+
+test('the fields check names a field span the help does not print', async (t) => {
+  const dir = tempDir(t);
+  smallText(dir, 'skills/demo/SKILL.md', ['# Demo', '', 'Read the `nonsense` field, then the `sub-issues` field.']);
+  assert.deepEqual(await fieldSpanFindings(dir), [
+    { file: 'skills/demo/SKILL.md', name: 'nonsense' },
+    { file: 'skills/demo/SKILL.md', name: 'sub-issues' },
+  ]);
+});
+
+test('the fields check names a field span whose word field is on the next line', async (t) => {
+  const dir = tempDir(t);
+  smallText(dir, 'README.md', ['# Demo', '', 'Read the `nonsense`', 'field.']);
+  assert.deepEqual(await fieldSpanFindings(dir), [{ file: 'README.md', name: 'nonsense' }]);
+});
+
+test('the fields check passes a field span the help prints', async (t) => {
+  const dir = tempDir(t);
+  smallText(dir, 'skills/demo/SKILL.md', [
+    '# Demo',
+    '',
+    'Read the `claim` field and the `claim` field.',
+    'Then the `write` and `message` fields, then the `blockedBy`',
+    'field.',
+  ]);
+  assert.deepEqual(await fieldSpanFindings(dir), []);
+});
+
+test('the fields check passes a span with no word field right after it', async (t) => {
+  const dir = tempDir(t);
+  smallText(dir, 'skills/demo/SKILL.md', ['# Demo', '', 'Read `nonsense`, field by field, then `nonsense` alone.']);
+  assert.deepEqual(await fieldSpanFindings(dir), []);
 });
