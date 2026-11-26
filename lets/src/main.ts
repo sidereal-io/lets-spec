@@ -18,6 +18,7 @@ import { run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './dele
 import type { StepOptions } from './delegate/step.ts';
 import { STRATEGIES } from './delegate/strategies.ts';
 import { run as questions } from './go/questions.ts';
+import { run as records } from './go/records.ts';
 import type { Intent, Strategy } from './delegate/strategies.ts';
 import { realIo } from './io.ts';
 import type { Deps } from './io.ts';
@@ -433,16 +434,27 @@ stepCommand
     process.exitCode = await stepWait({ names: name, timeoutMinutes }, realDeps());
   });
 
-program
+const go = program
   .command('go')
-  .summary('settings for the lets-go skill')
-  .description('Read the settings the lets-go skill uses.')
+  .summary('settings and records for the lets-go skill')
+  .description('Read the settings and records the lets-go skill uses.');
+
+go
   .command('questions')
   .summary('print the default question mode')
   .description('Print the default question mode, from go.questions in the lets config.')
   .addHelpText('after', GO_QUESTIONS_HELP)
   .action(async () => {
     process.exitCode = await questions(realDeps());
+  });
+
+go
+  .command('records')
+  .argument('<name>', 'the change\'s name, which is also its branch')
+  .summary('print the record each step of a change left')
+  .description('Print the record each step of a change left in Git and in its pull request, as one JSON line.')
+  .action(async (name: string) => {
+    process.exitCode = await records(name, realDeps());
   });
 
 // lets backlog parses its own arguments, so its help and usage errors come
