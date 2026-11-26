@@ -1,9 +1,9 @@
-// The helper module for black-box tests of lets: it runs lets/bin/lets as
-// a program, in temporary folders, with stand-ins for outside programs on
+// The helper module for black-box tests: it runs lets/bin/lets and other
+// programs, in temporary folders, with stand-ins for outside programs on
 // PATH. Command-specific fixtures live beside their tests, not here.
-import { execFile, spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { accessSync, chmodSync, constants, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import type { TestContext } from 'node:test';
@@ -22,23 +22,39 @@ export interface RunResult {
   stderr: string;
 }
 
-/** What one run of lets left behind. `output` is `stdout` followed by `stderr`. */
-export interface LetsResult extends RunResult {
+/** What one run of a program left behind. `output` is `stdout` followed by `stderr`. */
+export interface ProgramResult extends RunResult {
   output: string;
 }
+
+/** What one run of lets left behind. */
+export type LetsResult = ProgramResult;
 
 /** Variables to add to the pinned environment. `undefined` removes one. */
 export type EnvChanges = Record<string, string | undefined>;
 
-export interface RunLetsOptions {
-  /** The folder lets runs in. Tests never call `process.chdir`. */
+export interface RunOptions {
+  /** The folder the program runs in. Tests never call `process.chdir`. */
   cwd: string;
   /** Applied last, on top of the pinned environment. */
   env?: EnvChanges;
-  /** The folder `standIn` wrote to. It goes first on `PATH`. */
-  standIns?: string;
   /** How long the run may take. 30 seconds when absent. */
   timeoutMs?: number;
+}
+
+/** What `letsPackage` puts beside the copied package, where lets looks for it. */
+export interface LetsPackageOptions {
+  /** The text of `release.json`. No file when absent. A string, so a test can write one that is not JSON. */
+  releaseJson?: string;
+  /** Each flow's release folder, by flow name, linked as `releases/<flow>`. */
+  releases?: Record<string, string>;
+}
+
+export interface RunLetsOptions extends RunOptions {
+  /** The folder `standIn` wrote to. It goes first on `PATH`. */
+  standIns?: string;
+  /** The folder of the lets package whose `bin/lets` runs, such as one `letsPackage` made. `<repo>/lets` when absent. */
+  lets?: string;
 }
 
 /**
@@ -62,6 +78,8 @@ export interface StandInRow {
 export interface StandIn {
   /** Each call's argument list, in the order the calls came. Empty before the first call. */
   calls(): string[][];
+  /** The folder each call ran in, in the order the calls came. Empty before the first call. */
+  folders(): string[];
 }
 
 /**
@@ -91,35 +109,182 @@ export function pinnedEnv(extra?: EnvChanges): NodeJS.ProcessEnv {
 }
 
 /**
- * Runs `lets/bin/lets <args>` with this Node, in `options.cwd`, with the
- * pinned environment, `options.standIns` first on `PATH` and `options.env`
- * on top. Resolves with the exit code and both streams whatever the exit
- * code. Rejects when lets cannot be started, or when the run passes its
- * time limit; the message then names the command and the folder.
+ * Runs `program` with `args` in `options.cwd`, which must exist, with the
+ * pinned environment, `options.env` on top and standard input closed, as
+ * `</dev/null` gives. A `program` without a slash is looked up on the
+ * `PATH` of that environment. Resolves with the exit code and both
+ * streams whatever the exit code. Rejects when the program cannot be
+ * started: the message names it, and says it is not on `PATH` when
+ * `options.cwd` exists, or that the folder is missing when it does not.
+ * Rejects too when the run passes its time limit.
  */
-export function runLets(args: string[], options: RunLetsOptions): Promise<LetsResult> {
-  const command = `lets ${args.join(' ')}`;
-  const env = pinnedEnv();
-  // An empty PATH entry means the current folder, so add none.
-  if (options.standIns !== undefined) env.PATH = env.PATH ? `${options.standIns}${delimiter}${env.PATH}` : options.standIns;
+export function run(program: string, args: string[], options: RunOptions): Promise<ProgramResult> {
+  const command = [program, ...args].join(' ');
   const timeout = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   return new Promise((done, fail) => {
-    execFile(
-      process.execPath,
-      [ENTRY, ...args],
-      { cwd: options.cwd, env: applyEnv(env, options.env), timeout, maxBuffer: 64 * 1024 * 1024 },
-      (error, stdout, stderr) => {
-        if (error?.killed) {
-          fail(new Error(`${command} in ${options.cwd} passed its time limit of ${timeout} ms`));
-        } else if (error && typeof error.code !== 'number') {
-          fail(new Error(`${command} in ${options.cwd} could not run: ${error.message}`));
-        } else {
-          const code = error ? (error.code as number) : 0;
-          done({ code, stdout, stderr, output: stdout + stderr });
-        }
-      },
-    );
+    // 'ignore' opens /dev/null, so a program that reads standard input sees
+    // its end at once instead of waiting.
+    const child = spawn(program, args, {
+      cwd: options.cwd,
+      env: applyEnv(pinnedEnv(), options.env),
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGKILL');
+    }, timeout);
+    child.stdout.setEncoding('utf8').on('data', (chunk: string) => { stdout += chunk; });
+    child.stderr.setEncoding('utf8').on('data', (chunk: string) => { stderr += chunk; });
+    child.on('error', (error: NodeJS.ErrnoException) => {
+      clearTimeout(timer);
+      // Node reports a missing cwd with the same ENOENT as a missing program.
+      if (error.code === 'ENOENT' && !existsSync(options.cwd)) {
+        fail(new Error(`${command} could not run: the folder ${options.cwd} is missing`));
+      } else if (error.code === 'ENOENT') {
+        fail(new Error(`${command} could not run in ${options.cwd}: ${program} is not on PATH`));
+      } else {
+        fail(new Error(`${command} could not run in ${options.cwd}: ${error.message}`));
+      }
+    });
+    child.on('close', (code, signal) => {
+      clearTimeout(timer);
+      if (timedOut) fail(new Error(`${command} in ${options.cwd} passed its time limit of ${timeout} ms`));
+      else if (code === null) fail(new Error(`${command} in ${options.cwd} was ended by ${signal}`));
+      else done({ code, stdout, stderr, output: stdout + stderr });
+    });
   });
+}
+
+/** One command of lets, as its `--help` lists it. */
+export interface LetsCommand {
+  /** The words after `lets`. Empty for `lets` itself. */
+  path: string[];
+  /** The names of its subcommands, without commander's built-in `help`. */
+  subcommands: string[];
+  /** Each option's short and long names, such as `-h` and `--help`. */
+  options: string[];
+}
+
+/** Every command of lets, keyed by its path joined with spaces; `''` is `lets` itself. */
+export type LetsCommandTree = Map<string, LetsCommand>;
+
+/**
+ * Runs `lets --help`, then `lets <path> --help` for each command it lists,
+ * level by level, the commands of a level in parallel. Leaves out
+ * commander's built-in `help [command]`, whose help is the root's again.
+ * Rejects when a `--help` run exits other than 0, naming the command.
+ */
+export async function letsCommandTree(): Promise<LetsCommandTree> {
+  const tree: LetsCommandTree = new Map();
+  let level: string[][] = [[]];
+  while (level.length > 0) {
+    const commands = await Promise.all(level.map(readLetsCommand));
+    for (const command of commands) tree.set(command.path.join(' '), command);
+    level = commands.flatMap((command) => command.subcommands.map((name) => [...command.path, name]));
+  }
+  return tree;
+}
+
+async function readLetsCommand(path: string[]): Promise<LetsCommand> {
+  const result = await runLets([...path, '--help'], { cwd: repo });
+  if (result.code !== 0) throw new Error(`lets ${[...path, '--help'].join(' ')} exited ${result.code}:\n${result.output}`);
+  return {
+    path,
+    subcommands: helpList(result.stdout, 'Commands:')
+      .map((term) => term.split(' ')[0])
+      .filter((name) => name !== 'help'),
+    options: helpList(result.stdout, 'Options:')
+      .flatMap((term) => term.split(', ').map((name) => name.split(' ')[0])),
+  };
+}
+
+// The terms of one list in commander's help: the lines after the heading,
+// up to a blank line, that start with two spaces and then a term. A longer
+// indent carries on the description above it.
+function helpList(help: string, heading: string): string[] {
+  const lines = help.split('\n');
+  const start = lines.indexOf(heading);
+  if (start === -1) return [];
+  const terms: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (line.trim() === '') break;
+    const term = /^ {2}(\S.*?)(?: {2,}|$)/.exec(line);
+    if (term) terms.push(term[1]);
+  }
+  return terms;
+}
+
+/**
+ * Copies the lets package, `lets/bin`, `lets/src` and `lets/package.json`,
+ * into a new temporary folder removed after `t`, with `node_modules`
+ * linked to `lets/node_modules`. lets reads `release.json` and
+ * `releases/<flow>` beside its package, and the source tree has neither,
+ * so a test that needs them runs this copy through `RunLetsOptions.lets`.
+ * Writes `release.json` when `options.releaseJson` is set, and links each
+ * of `options.releases` as `releases/<flow>`. Returns the copy's folder.
+ * Throws when `lets/node_modules` is missing, and says to run pnpm install.
+ */
+export function letsPackage(t: TestContext, options: LetsPackageOptions = {}): string {
+  const source = join(repo, 'lets');
+  const modules = join(source, 'node_modules');
+  if (!existsSync(modules)) throw new Error(`${modules} is missing, so a copy of lets cannot run: run pnpm install`);
+  const dir = join(tempDir(t), 'lets');
+  for (const part of ['bin', 'src', 'package.json']) cpSync(join(source, part), join(dir, part), { recursive: true });
+  // node_modules holds links into the pnpm store, so link it rather than copy it.
+  symlinkSync(modules, join(dir, 'node_modules'));
+  if (options.releaseJson !== undefined) writeFileSync(join(dir, 'release.json'), options.releaseJson);
+  for (const [flow, release] of Object.entries(options.releases ?? {})) {
+    mkdirSync(join(dir, 'releases'), { recursive: true });
+    symlinkSync(resolve(release), join(dir, 'releases', flow));
+  }
+  return dir;
+}
+
+/**
+ * Makes a new folder, removed after `t`, holding a link to each of
+ * `programs` as found on this process's `PATH`. Set `PATH` to the folder
+ * to run lets with only those programs, so no OpenSpec CLI is found
+ * whatever the machine has installed. Returns the folder. Throws, naming
+ * the program, when one is not on `PATH`.
+ */
+export function pathWith(t: TestContext, programs: string[]): string {
+  const dir = tempDir(t);
+  const folders = (process.env.PATH ?? '').split(delimiter).filter((folder) => folder !== '');
+  for (const name of programs) {
+    const found = folders.map((folder) => join(folder, name)).find(isExecutable);
+    if (found === undefined) throw new Error(`${name} is not on PATH, so pathWith cannot link it`);
+    symlinkSync(resolve(found), join(dir, name));
+  }
+  return dir;
+}
+
+function isExecutable(path: string): boolean {
+  try {
+    accessSync(path, constants.X_OK);
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Runs `lets/bin/lets <args>`, or `<options.lets>/bin/lets` when that is
+ * set, with this Node, through `run`, with `options.standIns` first on
+ * `PATH` and `options.env` on top. Resolves and rejects as `run` does;
+ * the message then names the command and the folder.
+ */
+export function runLets(args: string[], options: RunLetsOptions): Promise<LetsResult> {
+  const env: EnvChanges = {};
+  if (options.standIns !== undefined) {
+    // An empty PATH entry means the current folder, so add none.
+    const path = process.env.PATH;
+    env.PATH = path ? `${options.standIns}${delimiter}${path}` : options.standIns;
+  }
+  const entry = options.lets === undefined ? ENTRY : join(options.lets, 'bin', 'lets');
+  return run(process.execPath, [entry, ...args], { cwd: options.cwd, env: { ...env, ...options.env }, timeoutMs: options.timeoutMs });
 }
 
 /**
@@ -147,6 +312,17 @@ export function git(cwd: string, ...args: string[]): RunResult {
 }
 
 /**
+ * Makes `dir` and its `openspec-propose/SKILL.md`, to stand in for the
+ * generated `openspec-*` skills, and returns `dir`. Its parent must
+ * exist or be creatable. Throws when `dir` cannot be written.
+ */
+export function generatedSkills(dir: string): string {
+  mkdirSync(join(dir, 'openspec-propose'), { recursive: true });
+  writeFileSync(join(dir, 'openspec-propose', 'SKILL.md'), 'generated\n');
+  return dir;
+}
+
+/**
  * Builds a release of this repository into `out` with
  * `build/build-release.mjs`, as the flake does. `schemas` must not be
  * empty; the first is the default. `skills` are names of folders in
@@ -155,9 +331,7 @@ export function git(cwd: string, ...args: string[]): RunResult {
  * output, when the build fails.
  */
 export function buildRelease(out: string, schemas: string[], skills: string[]): void {
-  const generated = `${out}.generated`;
-  mkdirSync(join(generated, 'openspec-propose'), { recursive: true });
-  writeFileSync(join(generated, 'openspec-propose', 'SKILL.md'), 'generated\n');
+  const generated = generatedSkills(`${out}.generated`);
   const result = spawnSync(
     process.execPath,
     [join(repo, 'build', 'build-release.mjs'), repo, generated, out, schemas.join(','), ...skills],
@@ -171,12 +345,12 @@ export function buildRelease(out: string, schemas: string[], skills: string[]): 
 
 /**
  * Writes an executable program called `name` into `dir`, which must
- * exist. Each call logs its arguments, then answers from the first row of
- * `table` that matches the call's argument list: one whose `args` equals
- * it, or, for a row with `prefix`, starts it. A prefix row shadows every
- * row after it that it matches, so put it after the more specific rows. A
- * call that matches no row exits 127 and says so on standard error.
- * Throws when `dir` cannot be written.
+ * exist. Each call logs its arguments and the folder it ran in, then
+ * answers from the first row of `table` that matches the call's argument
+ * list: one whose `args` equals it, or, for a row with `prefix`, starts
+ * it. A prefix row shadows every row after it that it matches, so put it
+ * after the more specific rows. A call that matches no row exits 127 and
+ * says so on standard error. Throws when `dir` cannot be written.
  */
 export function standIn(dir: string, name: string, table: StandInRow[]): StandIn {
   // The program runs in another folder, so the paths it holds are absolute.
@@ -192,7 +366,7 @@ export function standIn(dir: string, name: string, table: StandInRow[]): StandIn
   writeFileSync(program, `#!${process.execPath}
 const fs = process.getBuiltinModule('node:fs');
 const args = process.argv.slice(2);
-fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify(args) + '\\n');
+fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args, cwd: process.cwd() }) + '\\n');
 const row = JSON.parse(fs.readFileSync(${JSON.stringify(tableFile)}, 'utf8'))
   .find((row) => (row.prefix ? row.args.length <= args.length : row.args.length === args.length)
     && row.args.every((arg, i) => arg === args[i]));
@@ -206,10 +380,12 @@ if (row === undefined) {
 }
 `);
   chmodSync(program, 0o755);
+  const logged = (): { args: string[]; cwd: string }[] => existsSync(log)
+    ? readFileSync(log, 'utf8').split('\n').filter((line) => line !== '').map((line) => JSON.parse(line))
+    : [];
   return {
-    calls: () => existsSync(log)
-      ? readFileSync(log, 'utf8').split('\n').filter((line) => line !== '').map((line) => JSON.parse(line) as string[])
-      : [],
+    calls: () => logged().map((call) => call.args),
+    folders: () => logged().map((call) => call.cwd),
   };
 }
 
@@ -234,15 +410,46 @@ export function snapshot(dir: string): string {
   return lines.join('\n');
 }
 
+/**
+ * Every path under `dir`, sorted, with its type and a hash of its content
+ * or its link target, without modes, `.git` included. Two trees give equal
+ * text exactly when `diff -r` finds them equal, as far as paths, types and
+ * contents go. Throws when `dir` cannot be read.
+ */
+export function tree(dir: string): string {
+  const lines: string[] = [];
+  for (const path of walk(dir, '.', true).sort()) {
+    const full = join(dir, path);
+    const stat = lstatSync(full);
+    if (stat.isSymbolicLink()) lines.push(`${path} -> ${readlinkSync(full)}`);
+    else if (stat.isFile()) lines.push(`${path} ${createHash('sha256').update(readFileSync(full)).digest('hex')}`);
+    else lines.push(`${path}/`);
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Takes write permission away from `path` and everything under it, for
+ * everyone, as the Nix store does. Links are left alone. Throws when
+ * `path` is missing or cannot be changed. `tempDir` still removes a
+ * read-only tree.
+ */
+export function makeReadOnly(path: string): void {
+  const stat = lstatSync(path);
+  if (stat.isSymbolicLink()) return;
+  if (stat.isDirectory()) for (const entry of readdirSync(path)) makeReadOnly(join(path, entry));
+  chmodSync(path, stat.mode & ~0o222);
+}
+
 // Each path under dir, from rel, as find prints it: the folder itself, then
-// everything inside, without .git.
-function walk(dir: string, rel: string): string[] {
+// everything inside, without the top .git unless withGit.
+function walk(dir: string, rel: string, withGit = false): string[] {
   const paths = [rel];
   const full = join(dir, rel);
   if (!lstatSync(full).isDirectory()) return paths;
   for (const entry of readdirSync(full)) {
-    if (rel === '.' && entry === '.git') continue;
-    paths.push(...walk(dir, `${rel}/${entry}`));
+    if (rel === '.' && entry === '.git' && !withGit) continue;
+    paths.push(...walk(dir, `${rel}/${entry}`, withGit));
   }
   return paths;
 }
