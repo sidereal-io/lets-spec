@@ -49,13 +49,13 @@ function write(path: string, text: string) {
 const questions = ['go', 'questions'];
 
 describe('where the user\'s lets config is', () => {
-  // Each test writes one file under XDG_CONFIG_HOME and another under a
-  // temporary HOME's .config, so each place is seen to win only when it
-  // should, and no test reads or writes the developer's own home.
+  // Each test sets HOME to a temporary folder, so no test reads or writes
+  // the developer's own home.
   test('the file under XDG_CONFIG_HOME is read, and one under $HOME/.config is not', async (t) => {
     const repo = delegateRepo(t, { user: AUTO });
     const home = tempDir(t);
-    write(join(home, '.config', 'lets', 'config.yaml'), ASK);
+    // Not valid, so a run that read it at all, even under the other file, would exit 2.
+    write(join(home, '.config', 'lets', 'config.yaml'), 'version: 2\n');
     assert.equal(printed(await repo.run(questions, { env: { HOME: home } })), 'auto');
   });
 
@@ -70,10 +70,10 @@ describe('where the user\'s lets config is', () => {
 
   test('with no file, or only a config.json, it prints null', async (t) => {
     const none = delegateRepo(t);
-    assert.equal(printed(await none.run(questions)), null);
+    assert.equal(printed(await none.run(questions, { env: { HOME: tempDir(t) } })), null);
     const json = delegateRepo(t);
     write(join(json.home, 'lets', 'config.json'), '{"version":3,"go":{"questions":"ask"}}');
-    assert.equal(printed(await json.run(questions)), null);
+    assert.equal(printed(await json.run(questions, { env: { HOME: tempDir(t) } })), null);
   });
 });
 
