@@ -254,3 +254,48 @@ describe('the story prompt', () => {
     printed(await repo.run(story()));
   });
 });
+
+const stacked = (blocker: string, branch: string, pr: string) => ['--blocker', blocker, '--blocker-branch', branch, '--blocker-pr', pr];
+
+describe('a stacked story\'s Stack section', () => {
+  test('the plan step: right after ## What to run, naming the blocker, the base and the merge order', async (t) => {
+    const repo = promptRepo(t);
+    const prompt = printed(await repo.run([...walk('plan', { name: 'epic-run-failures', issue: '280' }), ...stacked('279', 'epic-run-skeleton', '290')]));
+    assert.deepEqual(headings(prompt), ['## What to run', '## Stack', '## Writing', '## Questions', '## The report']);
+    const stack = section(prompt, '## Stack');
+    for (const text of ['#279', '`--base epic-run-skeleton`', '`Stacked on #290; merge that first.`', '`Closes #280`', '`gh pr edit epic-run-failures --base epic-run-skeleton`']) {
+      assert.ok(stack.includes(text), `${text} in ${stack}`);
+    }
+  });
+
+  test('the story prompt: right after ## What to run', async (t) => {
+    const repo = promptRepo(t);
+    const prompt = printed(await repo.run([...story(), ...stacked('282', 'epic-run-resume', '293')]));
+    assert.deepEqual(headings(prompt), ['## What to run', '## Stack', '## Questions', '## The report']);
+    const stack = section(prompt, '## Stack');
+    assert.ok(stack.includes('`--base epic-run-resume`') && stack.includes('`Stacked on #293; merge that first.`'), stack);
+  });
+
+  test('the same text in every prompt of the story', async (t) => {
+    const repo = promptRepo(t);
+    const values = { name: 'epic-run-resume-child', issue: '300' };
+    const stack = stacked('282', 'epic-run-resume', '293');
+    const sections = [];
+    for (const args of [story(values), walk('plan', values), walk('build', values), walk('review-build', values)]) {
+      sections.push(section(printed(await repo.run([...args, ...stack])), '## Stack'));
+    }
+    for (const other of sections.slice(1)) assert.equal(other, sections[0]);
+  });
+
+  test('a story that is not stacked has no ## Stack', async (t) => {
+    const repo = promptRepo(t);
+    assert.ok(!headings(printed(await repo.run(walk('build')))).includes('## Stack'));
+    assert.ok(!headings(printed(await repo.run(story()))).includes('## Stack'));
+  });
+
+  test('part of a stack exits 2, naming the missing flags', async (t) => {
+    const repo = promptRepo(t);
+    rejected(await repo.run([...walk('plan'), '--blocker', '279']), '--blocker-branch', '--blocker-pr');
+    rejected(await repo.run([...walk('plan'), '--blocker', '279', '--blocker-pr', '290']), '--blocker-branch');
+  });
+});
