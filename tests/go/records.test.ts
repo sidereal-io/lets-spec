@@ -580,6 +580,89 @@ describe('review plan answer', () => {
   });
 });
 
+describe('required changes', () => {
+  const AWC = 'APPROVE_WITH_CHANGES';
+  /** The section's lists after the verdict: findings, then the required changes, then the rebuttals. */
+  const lists = (findings: string[], required: string[], rebuttals: string[]) => [
+    '- **Findings:**', ...findings.map((text, i) => `  ${i + 1}. ${text}`),
+    `- **Required changes:**${required.length === 0 ? ' none' : ''}`, ...required.map((text, i) => `  ${i + 1}. ${text}`),
+    '- **Rebuttals:**', ...rebuttals.map((text, i) => `  ${i + 1}. ${text}`),
+  ];
+
+  test('required changes with their fixes: true when each required change has a fix commit after the review', async (t) => {
+    const { r, sha } = reviewed(t);
+    const fix = r.commit('docs: fix the design', { [`${CHANGE}/design.md`]: 'd2\n' }, '2026-11-04');
+    r.answer([pr(167, reviewBody(sha, AWC, ...lists(['**a** x. CONFIRMED.', '**b** y. CONFIRMED.'], ['design.md decision 2'],
+      ['Rebutted: the spec says so.', `Fixed in ${fix}: design.md decision 2`])))]);
+    assert.equal(await reviewPlanDone(r), true);
+  });
+
+  test('required changes: a fix item numbered differently from its required change counts', async (t) => {
+    const { r, sha } = reviewed(t);
+    const fix = r.commit('docs: fix the design', { [`${CHANGE}/design.md`]: 'd2\n' }, '2026-11-04');
+    r.answer([pr(167, reviewBody(sha, AWC, ...lists(['**a** x.', '**b** y.', '**c** z.'], ['design.md decision 2'],
+      ['Rebutted: no.', 'Rebutted: no.', `Fixed in ${fix}: design.md decision 2`])))]);
+    assert.equal(await reviewPlanDone(r), true);
+  });
+
+  test('required changes: true with none required and no fix', async (t) => {
+    const { r, sha } = reviewed(t);
+    r.answer([pr(167, reviewBody(sha, AWC, ...lists(['**a** x.'], [], ['Rebutted: no.'])))]);
+    assert.equal(await reviewPlanDone(r), true);
+  });
+
+  test('required changes: false when two required changes have one fix item', async (t) => {
+    const { r, sha } = reviewed(t);
+    const fix = r.commit('docs: fix the design', { [`${CHANGE}/design.md`]: 'd2\n' }, '2026-11-04');
+    r.answer([pr(167, reviewBody(sha, AWC, ...lists(['**a** x.', '**b** y.'], ['design.md decision 2', 'tasks.md task 1.2'],
+      [`Fixed in ${fix}: design.md decision 2`, 'Rebutted: no.'])))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('required changes: a Fixed in line under Findings is not a fix item', async (t) => {
+    const { r, sha } = reviewed(t);
+    const fix = r.commit('docs: fix the design', { [`${CHANGE}/design.md`]: 'd2\n' }, '2026-11-04');
+    r.answer([pr(167, reviewBody(sha, AWC, ...lists([`Fixed in ${fix}: x.`], ['design.md decision 2'], ['Rebutted: no.'])))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('required changes: false when the fix commit also changes code', async (t) => {
+    const { r, sha } = reviewed(t);
+    const fix = r.commit('docs: fix the design', { [`${CHANGE}/design.md`]: 'd2\n', 'lets/src/go/records.ts': 'x\n' }, '2026-11-04');
+    r.answer([pr(167, reviewBody(sha, AWC, ...lists(['**a** x.'], ['design.md decision 2'], [`Fixed in ${fix}: design.md decision 2`])))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('required changes: false when the fix commit moves a plan file out of the plan folders', async (t) => {
+    const { r, sha } = reviewed(t);
+    const fix = r.move('docs: move the design', `${CHANGE}/design.md`, 'notes/design.md', '2026-11-04');
+    r.answer([pr(167, reviewBody(sha, AWC, ...lists(['**a** x.'], ['design.md decision 2'], [`Fixed in ${fix}: design.md decision 2`])))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('required changes: false when the fix item names a commit from before the review', async (t) => {
+    const r = repo(t, [noPr()]);
+    const early = r.commit('docs: plan', { [`${CHANGE}/.openspec.yaml`]: 'schema: lets-standard\n', [`${CHANGE}/design.md`]: 'd\n' }, '2026-11-02');
+    const sha = r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+    r.answer([pr(167, reviewBody(sha, AWC, ...lists(['**a** x.'], ['design.md decision 2'], [`Fixed in ${early}: design.md decision 2`])))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('required changes: false when the fix item names a commit git cannot find', async (t) => {
+    const { r, sha } = reviewed(t);
+    r.answer([pr(167, reviewBody(sha, AWC, ...lists(['**a** x.'], ['design.md decision 2'], ['Fixed in 0000000: design.md decision 2'])))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('required changes: a fix that only changes tasks.md after a task is ticked still counts', async (t) => {
+    const { r, sha } = reviewed(t);
+    const fix = r.commit('docs: fix task 1.2', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n- [ ] 1.2 b2\n' }, '2026-11-04');
+    r.commit('feat: a', { 'lets/src/a.ts': 'a\n', [`${CHANGE}/tasks.md`]: '- [x] 1.1 a\n- [ ] 1.2 b2\n' }, '2026-11-05');
+    r.answer([pr(167, reviewBody(sha, AWC, ...lists(['**a** x.'], ['tasks.md task 1.2'], [`Fixed in ${fix}: task 1.2`])))]);
+    assert.equal(await reviewPlanDone(r), true);
+  });
+});
+
 describe('the command fails', () => {
   /** Asserts exit `code`, an empty stdout and one stderr line that starts `lets go: ` and holds each of `named`. */
   function failed(result: LetsResult, code: number, ...named: string[]): void {

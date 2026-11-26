@@ -95,7 +95,12 @@ export async function reviewPlanDone(git: Exec, run: Run, input: ReviewPlanInput
   }));
   const named = new Set(fixes.filter((fix) => fix !== null));
   if (!changed.every((commit) => named.has(commit))) return false;
-  return true;
+  if (review.verdict === 'APPROVE') return true;
+  // Rule 5: each required change has a fix that holds up. Matched by count,
+  // not by number: the template numbers rebuttals by finding.
+  if (fixes.length < review.required) return false;
+  const after = new Set(ticked ? await log(false) : changed);
+  return fixes.every((fix) => fix !== null && after.has(fix));
 }
 
 // Whether commit changes only paths under plan. --no-renames, so a move out
