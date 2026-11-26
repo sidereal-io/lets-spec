@@ -97,10 +97,11 @@ never disagree on what counts as a word.
 ### Option parsing
 
 - `--issue <i>` and `--idea <text>` are ordinary Commander options.
-  Each has an argument parser that rejects a second use, and
-  `--issue`'s parser rejects a key that is empty or holds anything but
-  letters, digits and hyphens. A rejected value exits 2 with Commander's
-  message, as other `lets` options do.
+  Each has an argument parser that rejects a second use, which exits 2
+  with Commander's message, as other `lets` options do.
+- `--issue` takes the key unchanged and checks nothing about its form.
+  ADR-025 makes a key opaque to everything but its backlog provider,
+  and `lets-go` only passes keys that `lets backlog` printed.
 - The action checks that exactly one option was given. If not, it
   prints `lets go: give exactly one of --issue and --idea` and exits 2.
 - The command reads no file and does not look for the repository, so it

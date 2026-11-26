@@ -20,15 +20,11 @@ Says how `lets go shape-name` names the shape step of `lets-go` for an issue or 
 - **THEN** it exits 0 and prints the same line as inside one
 
 ### Requirement: An issue's name is issue and its key
-For `--issue <i>`, the name SHALL be `issue-` followed by `<i>` unchanged, where `<i>` is the issue's key as `lets backlog` prints it, such as `180` on GitHub or `PROJ-12` on Jira. The command SHALL exit 2 when `<i>` is empty or holds a character other than a letter, a digit or a hyphen, so a key can never become a path.
+For `--issue <i>`, the name SHALL be `issue-` followed by `<i>` unchanged, where `<i>` is the issue's key as `lets backlog` prints it, such as `180` on GitHub or `PROJ-12` on Jira. The command SHALL not check the key's form: only the backlog provider reads a key.
 
 #### Scenario: A key of another backlog provider
 - **WHEN** the user runs `lets go shape-name --issue PROJ-12`
 - **THEN** stdout is `{"name":"issue-PROJ-12","answers":".workspace/lets-go/issue-PROJ-12-shape-answers.yaml"}`
-
-#### Scenario: A key with a slash
-- **WHEN** the user runs `lets go shape-name --issue ../180`
-- **THEN** it exits 2, stdout is empty, and stderr names `../180`
 
 ### Requirement: An idea's name is its first five words and a hash of all its words
 For `--idea <text>`, the command SHALL clean the idea into words: split it on white space, lower-case each word, keep only its letters and digits, in any script, and drop a word left empty. The name SHALL be `idea-<slug>-<hash>`. `<slug>` SHALL be the first five words joined with hyphens, or all of them when there are fewer. `<hash>` SHALL be the first eight lower-case hexadecimal digits of the SHA-256 of all the words joined with single spaces, in UTF-8. Two ideas with the same words after the clean-up SHALL get the same name. Two ideas that share their first five words but differ in a later word SHALL differ in `<hash>`, and so in their answers files, unless the two digests share their first eight digits.
