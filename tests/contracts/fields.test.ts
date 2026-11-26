@@ -107,6 +107,10 @@ function plain(fields: Fields): Record<string, string[]> {
   return Object.fromEntries([...fields].map(([name, values]) => [name, [...values].sort()]).sort(([a], [b]) => (a < b ? -1 : 1)));
 }
 
+test('each lets backlog field and value the texts read is one lets backlog prints', async () => {
+  assert.deepEqual([...await fieldSpanFindings(repo), ...await valueSpanFindings(repo)], []);
+});
+
 test('the help gives each name in a shape across two lines as a field', () => {
   const fields = backlogFields(['  item <i>   { key, title,', '                 status }'].join('\n'));
   assert.deepEqual(plain(fields), { key: [], status: [], title: [] });
