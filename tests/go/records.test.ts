@@ -331,3 +331,20 @@ describe('the command fails', () => {
     failed(result, 4, 'git');
   });
 });
+
+describe('help', () => {
+  test('lets go --help names both commands, and says the group reads settings and records', async (t) => {
+    const result = await runLets(['go', '--help'], { cwd: tempDir(t) });
+    assert.equal(result.code, 0, result.output);
+    for (const text of ['questions', 'records', 'Read the settings and records the lets-go skill uses.']) assert.ok(result.stdout.includes(text), `${text} in ${result.stdout}`);
+  });
+
+  test('lets go records --help names each record, its fields and the exit codes', async (t) => {
+    const result = await runLets(['go', 'records', '--help'], { cwd: tempDir(t) });
+    assert.equal(result.code, 0, result.output);
+    for (const text of ['plan', 'review-plan', 'build', 'review-build', 'commit', 'date', 'pr', 'verdict', 'null', 'tasks.md', 'Plan review']) {
+      assert.ok(result.stdout.includes(text), `${text} in ${result.stdout}`);
+    }
+    for (const code of ['0', '2', '4']) assert.match(result.stdout, new RegExp(`^ {2}${code} {2}`, 'm'), `exit code ${code}`);
+  });
+});
