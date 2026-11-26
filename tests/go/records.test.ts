@@ -438,6 +438,148 @@ describe('review-plan record', () => {
   }
 });
 
+/** A pull request body whose `## Plan review` section says `Reviewed: <sha>` and `- **Verdict:** <verdict>`, then holds `lines`. */
+const reviewBody = (sha: string, verdict: string, ...lines: string[]) => ['Closes #268', '', '## Plan review', '', `Reviewed: ${sha}`, '',
+  '- **Reviewer:** codex/gpt-5, fresh session, independent: yes', `- **Verdict:** ${verdict}`, ...lines, '', '## Code review', '', 'Pending.', ''].join('\n');
+
+/**
+ * A repository whose change, on `schema`, was planned in one commit that
+ * added its .openspec.yaml, design.md and tasks.md, with the change state
+ * `state`. Returns it and that commit, the one a review saw.
+ */
+function reviewed(t: TestContext, { schema = 'lets-standard', state = 'ready' } = {}): { r: Repo; sha: string } {
+  const r = repo(t, [noPr()]);
+  const sha = r.commit('docs: plan', {
+    [`${CHANGE}/.openspec.yaml`]: `schema: ${schema}\ncreated: 2026-11-03\n`,
+    [`${CHANGE}/design.md`]: 'd\n',
+    [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n- [ ] 1.2 b\n',
+  }, '2026-11-03');
+  r.state([changeState(state)]);
+  return { r, sha };
+}
+
+/** The review-plan answer under `done`. */
+const reviewPlanDone = async (r: Repo) => (printed(await r.records()).done as Record<string, boolean>)['review-plan'];
+
+describe('review plan answer', () => {
+  test('the review plan answer is true for a lets-minimal change, with a null record and no disagreement', async (t) => {
+    const { r } = reviewed(t, { schema: 'lets-minimal' });
+    const records = printed(await r.records());
+    assert.equal((records.done as Record<string, boolean>)['review-plan'], true);
+    assert.equal(records['review-plan'], null);
+    assert.deepEqual(records.disagreements, []);
+  });
+
+  test('the review plan answer is false with no Plan review section', async (t) => {
+    const { r } = reviewed(t);
+    r.answer([pr(167, 'Closes #268\n\n## Code review\n\nPending.\n')]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('the review plan answer is false with no pull request', async (t) => {
+    const { r } = reviewed(t);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('the review plan answer is false for a REVISE verdict', async (t) => {
+    const { r, sha } = reviewed(t);
+    r.answer([pr(167, reviewBody(sha, 'REVISE'))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('the review plan answer is false for a verdict it does not know', async (t) => {
+    const { r, sha } = reviewed(t);
+    r.answer([pr(167, reviewBody(sha, 'LGTM'))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('the review plan answer is true for APPROVE with no plan commit after the review', async (t) => {
+    const { r, sha } = reviewed(t);
+    r.answer([pr(167, reviewBody(sha, 'APPROVE'))]);
+    assert.equal(await reviewPlanDone(r), true);
+  });
+
+  test('the review plan answer is true for APPROVE when later commits change code and tick tasks.md', async (t) => {
+    const { r, sha } = reviewed(t, { state: 'all_done' });
+    r.commit('feat: a', { 'lets/src/a.ts': 'a\n', [`${CHANGE}/tasks.md`]: '- [x] 1.1 a\n- [ ] 1.2 b\n' }, '2026-11-04');
+    r.commit('feat: b', { 'lets/src/b.ts': 'b\n', [`${CHANGE}/tasks.md`]: '- [x] 1.1 a\n- [x] 1.2 b\n' }, '2026-11-05');
+    r.answer([pr(167, reviewBody(sha, 'APPROVE'))]);
+    assert.equal(await reviewPlanDone(r), true);
+  });
+
+  test('the review plan answer is false when the reviewed commit is not an ancestor of HEAD', async (t) => {
+    const { r } = reviewed(t);
+    const g = (...args: string[]) => assert.equal(git(r.root, ...args).code, 0, args.join(' '));
+    g('checkout', '--quiet', '-b', 'old');
+    const gone = r.commit('docs: old plan', { [`${CHANGE}/design.md`]: 'old\n' }, '2026-11-02');
+    g('checkout', '--quiet', NAME);
+    r.answer([pr(167, reviewBody(gone, 'APPROVE'))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('the review plan answer is false when a later commit changes design.md and no fix item names it', async (t) => {
+    const { r, sha } = reviewed(t);
+    r.commit('docs: rework the design', { [`${CHANGE}/design.md`]: 'd2\n' }, '2026-11-04');
+    r.answer([pr(167, reviewBody(sha, 'APPROVE'))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('the review plan answer is false when a later commit adds an ADR and no fix item names it', async (t) => {
+    const { r, sha } = reviewed(t);
+    r.commit('docs: ADR', { 'docs/decisions/ADR-099-x.md': 'x\n' }, '2026-11-04');
+    r.answer([pr(167, reviewBody(sha, 'APPROVE'))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('the review plan answer is true when the one later plan commit is a fix a rebuttal names', async (t) => {
+    const { r, sha } = reviewed(t);
+    const fix = r.commit('docs: fix the design', { [`${CHANGE}/design.md`]: 'd2\n' }, '2026-11-04');
+    r.answer([pr(167, reviewBody(sha, 'APPROVE', '- **Rebuttals:**', `  1. Fixed in ${fix}: design.md decision 2`))]);
+    assert.equal(await reviewPlanDone(r), true);
+  });
+
+  test('the review plan answer is false when the commit a rebuttal names also changes code', async (t) => {
+    const { r, sha } = reviewed(t);
+    const fix = r.commit('docs: fix the design', { [`${CHANGE}/design.md`]: 'd2\n', 'lets/src/a.ts': 'a\n' }, '2026-11-04');
+    r.answer([pr(167, reviewBody(sha, 'APPROVE', '- **Rebuttals:**', `  1. Fixed in ${fix}: design.md decision 2`))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('the review plan answer is false for a tick before any task is built: a later commit changes only tasks.md, and no task is ticked', async (t) => {
+    const { r, sha } = reviewed(t);
+    r.commit('docs: one more task', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n- [ ] 1.2 b\n- [ ] 1.3 c\n' }, '2026-11-04');
+    r.answer([pr(167, reviewBody(sha, 'APPROVE'))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('the review plan answer is false when tasks.md was edited in planning and again after the review, with no task ticked', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('docs: plan', { [`${CHANGE}/.openspec.yaml`]: 'schema: lets-standard\n', [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+    const sha = r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n- [ ] 1.2 b\n' }, '2026-11-03');
+    r.commit('docs: one more task', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n- [ ] 1.2 b\n- [ ] 1.3 c\n' }, '2026-11-04');
+    r.answer([pr(167, reviewBody(sha, 'APPROVE'))]);
+    const records = printed(await r.records());
+    assert.notEqual(records.build, null);
+    assert.equal((records.done as Record<string, boolean>)['review-plan'], false);
+  });
+
+  test('the review plan answer reads the ticks from HEAD, not from the working tree', async (t) => {
+    const { r, sha } = reviewed(t);
+    r.commit('docs: one more task', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n- [ ] 1.2 b\n- [ ] 1.3 c\n' }, '2026-11-04');
+    writeFileSync(join(r.root, CHANGE, 'tasks.md'), '- [x] 1.1 a\n- [ ] 1.2 b\n- [ ] 1.3 c\n');
+    r.answer([pr(167, reviewBody(sha, 'APPROVE'))]);
+    assert.equal(await reviewPlanDone(r), false);
+  });
+
+  test('the review plan answer is true for an archived change, whatever the section says', async (t) => {
+    const { r, sha } = reviewed(t);
+    r.commit('docs: rework the design', { [`${CHANGE}/design.md`]: 'd2\n' }, '2026-11-04');
+    r.move('chore: archive', CHANGE, ARCHIVE, '2026-11-06');
+    r.answer([pr(167, reviewBody(sha, 'REVISE'))]);
+    assert.equal(await reviewPlanDone(r), true);
+  });
+});
+
 describe('the command fails', () => {
   /** Asserts exit `code`, an empty stdout and one stderr line that starts `lets go: ` and holds each of `named`. */
   function failed(result: LetsResult, code: number, ...named: string[]): void {

@@ -23,6 +23,9 @@ export type Facts = {
   changeSchema: string | null;
   // The schema: line of openspec/config.yaml, or null.
   flowSchema: string | null;
+  // Review plan's answer by the rules of Check an earlier review, for a
+  // change folder with no archive folder on a schema other than lets-minimal.
+  reviewPlan: boolean;
 };
 
 // Each step's answer, by the first rule that matches: an archived change is
@@ -32,7 +35,7 @@ export function done(facts: Facts): Done {
   if (!facts.changeFolder) return { plan: false, 'review-plan': false, build: false, 'review-build': false };
   return {
     plan: facts.state === 'ready' || facts.state === 'all_done',
-    'review-plan': false,
+    'review-plan': facts.changeSchema === 'lets-minimal' || facts.reviewPlan,
     build: facts.state === 'all_done',
     'review-build': false,
   };

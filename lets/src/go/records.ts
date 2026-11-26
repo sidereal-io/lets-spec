@@ -5,7 +5,8 @@
 import { guarded } from '../delegate/guarded.ts';
 import type { Deps, Io } from '../io.ts';
 import { EXIT, SpawnError, UsageError } from '../resolvers/kit/errors.ts';
-import { exec, failed, oneLine, type Run, runner } from './read.ts';
+import { type PlanReview, planReview, resolveCommit, reviewPlanDone } from './plan-review.ts';
+import { type Exec, exec, failed, oneLine, type Run, runner } from './read.ts';
 import { disagreements, done, type Facts } from './walk.ts';
 
 const NO_PR = /no pull requests found/i;
@@ -104,38 +105,22 @@ function schemaLine(io: Pick<Io, 'exists' | 'readFile'>, root: string, path: str
 const KEBAB = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 const HASH = /^[0-9a-f]{4,40}$/;
 
-// The reviewed commit and verdict in the body's ## Plan review section, up
-// to the next ## line, or null when either is missing or empty. These are
-// the rules of lets-review-plan's Check an earlier review, which writes the
-// section. A Reviewed: line in any other section is never read.
-function planReview(body: string): { sha: string; verdict: string } | null {
-  const lines = body.split(/\r?\n/);
-  const start = lines.findIndex((line) => line.trimEnd() === '## Plan review');
-  if (start === -1) return null;
-  const end = lines.findIndex((line, i) => i > start && line.startsWith('## '));
-  const section = lines.slice(start + 1, end === -1 ? undefined : end);
-  const value = (prefix: string) => section.find((line) => line.startsWith(prefix))?.slice(prefix.length).trim() || null;
-  const sha = value('Reviewed: ');
-  const verdict = value('- **Verdict:** ');
-  return sha === null || verdict === null ? null : { sha, verdict };
+// The review plan record: the reviewed commit as written, its author date,
+// the pull request and the verdict, with the commit's full hash, or null
+// when the section names no commit git can find. A value that is not a hash
+// never reaches git, so HEAD or --all is not read as a revision or an option.
+async function reviewPlanRecord(git: Run, read: Exec, pr: PullRequest | null, review: PlanReview | null) {
+  if (pr === null || review === null || !HASH.test(review.sha)) return null;
+  const oid = await resolveCommit(read, review.sha);
+  if (oid === null) return null;
+  const date = (await git('git', ['log', '-1', '--format=%as', oid])).trim();
+  return { oid, record: { commit: review.sha, date, pr: pr.number, verdict: review.verdict } };
 }
 
-// The review plan record: the reviewed commit as written, its author date,
-// the pull request and the verdict, or null when the section names no
-// commit git can find. A value that is not a hash never reaches git, so
-// HEAD or --all is not read as a revision or an option.
-async function reviewPlanRecord(io: Pick<Io, 'execFile'>, git: Run, root: string, pr: PullRequest | null) {
-  if (pr === null) return null;
-  const review = planReview(pr.body);
-  if (review === null || !HASH.test(review.sha)) return null;
-  const found = await exec(io, root)('git', ['rev-parse', '--verify', '--quiet', '--end-of-options', `${review.sha}^{commit}`]);
-  // --quiet makes a missing commit exit 1 with no output; a timeout or a
-  // signal also exits 1, and is a failed read, not a missing commit.
-  const missing = found.code === 1 && !found.timedOut && !found.signal && found.stdout.trim() === '' && found.stderr.trim() === '';
-  if (missing) return null;
-  if (found.code !== 0) throw failed('git rev-parse', found);
-  const date = (await git('git', ['log', '-1', '--format=%as', found.stdout.trim()])).trim();
-  return { commit: review.sha, date, pr: pr.number, verdict: review.verdict };
+// The paths of HEAD's tree, among paths, that exist.
+async function inHead(git: Run, paths: string[]): Promise<Set<string>> {
+  const out = await git('git', ['ls-tree', '--name-only', '-z', 'HEAD', '--', ...paths]);
+  return new Set(out.split('\0').filter((path) => path !== ''));
 }
 
 // The exit code: 0 ok, 2 a bad name, 4 a failed read.
@@ -145,6 +130,7 @@ export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'st
     if (!KEBAB.test(name)) throw new UsageError(`the change's name must be lower-case kebab-case, such as lets-go-chore: ${oneLine(name)}`);
     const root = (await runner(deps.io, deps.cwd)('git', ['rev-parse', '--show-toplevel'])).trim();
     const git = runner(deps.io, root);
+    const read = exec(deps.io, root);
     const change = `openspec/changes/${name}`;
     const pr = await pullRequest(deps.io, root, name);
     const archives = archiveFolders(deps.io, root, name);
@@ -158,13 +144,20 @@ export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'st
     const state = changeFolder && archives.length === 0 ? await changeState(runner(deps.io, root), name) : null;
     // The record needs the one archive folder; two leave it null.
     const archived = archives.length === 1 ? await lastCommit(git, 'A', `${ARCHIVE}/${archives[0]}/tasks.md`) : null;
+    const review = pr === null ? null : planReview(pr.body);
+    const reviewed = await reviewPlanRecord(git, read, pr, review);
+    const head = await inHead(git, [`${change}/tasks.md`, `${change}/brainstorm.md`]);
+    // Only a change folder with no archive folder, on a schema other than
+    // lets-minimal, needs the rules; the walk decides every other case.
+    const reviewPlan = changeFolder && archives.length === 0 && changeSchema !== 'lets-minimal'
+      && await reviewPlanDone(read, git, { name, review, oid: reviewed?.oid ?? null, tasksInHead: head.has(`${change}/tasks.md`) });
     const records = {
       plan: await lastCommit(git, 'A', `${change}/tasks.md`),
-      'review-plan': await reviewPlanRecord(deps.io, git, root, pr),
+      'review-plan': reviewed?.record ?? null,
       build: await lastCommit(git, 'M', `${change}/tasks.md`),
       'review-build': archived === null ? null : { ...archived, pr: pr?.number ?? null },
     };
-    const facts: Facts = { name, archives, changeFolder, state, changeSchema, flowSchema };
+    const facts: Facts = { name, archives, changeFolder, state, changeSchema, flowSchema, reviewPlan };
     const answers = done(facts);
     const line = { ...records, done: answers, disagreements: disagreements(facts, answers), 'pull-request': pr?.state ?? null };
     deps.stdout(`${JSON.stringify(line)}\n`);
