@@ -886,7 +886,9 @@ in this walk changes the records the next row reads.
 Then settle the row:
 
 - **Done:** the step was done before this run. Print its Skip line from
-  the table, filled from the row's record. Run this at the row, from the
+  the table. Review plan on `lets-minimal` has a fixed line: print it,
+  read no record for it, and go on to the next row. For any other row,
+  fill the line from the row's record. Run this at the row, from the
   repo root:
 
   ```bash
@@ -897,8 +899,7 @@ Then settle the row:
   the record under the row's *Step* key, and fill the Skip line from it:
   `<date>` from its `date`, `<sha>` from its `commit`, `<pr>` from its
   `pr` and `<verdict>` from its `verdict`. Do not run `git log`, or cut
-  a section out of the pull request's body, to fill the line. Review
-  plan on `lets-minimal` has a fixed line: read no record for it.
+  a section out of the pull request's body, to fill the line.
   - When the command exits non-zero, show the user its stderr, and
     stop. Run no step.
   - When the row's record is `null`, the
