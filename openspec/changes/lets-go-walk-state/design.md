@@ -49,7 +49,7 @@ All `git` commands run at the repository root. The command makes each read at mo
 
 | Fact | Read |
 |---|---|
-| Tree | `git status --porcelain=v1 -z`. Entries are split on NUL; a rename entry's second path is skipped. A path is inside `.workspace/` when it is `.workspace/` or starts with it |
+| Tree | `git status --porcelain=v1 -z`. Entries are split on NUL; a rename or copy entry's second path is skipped, except a rename's old path outside `.workspace/` when its new path is inside. A path is inside `.workspace/` when it is `.workspace/` or starts with it |
 | Pull request | `gh pr view <name> --json number,body,state,isDraft`. No pull request is `null`, as today |
 | Archive folders | The names in `openspec/changes/archive/` that match `^\d{4}-\d{2}-\d{2}-<name>$`, as a list. The `review-build` record still needs exactly one |
 | Change folder | `io.isDir(<root>/openspec/changes/<name>)` |

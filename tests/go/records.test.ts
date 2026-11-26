@@ -718,6 +718,13 @@ describe('disagreements', () => {
     assert.deepEqual(await found(r), [{ row: 'dirty-tree', found: 'READ.md, new.md' }]);
   });
 
+  test('a dirty-tree disagreement names the old path of a rename into .workspace/', async (t) => {
+    const r = repo(t, [noPr()]);
+    mkdirSync(join(r.root, '.workspace'));
+    assert.equal(git(r.root, 'mv', 'README.md', '.workspace/README.md').code, 0);
+    assert.deepEqual(await found(r), [{ row: 'dirty-tree', found: 'README.md' }]);
+  });
+
   test('a change-and-archive disagreement names the change folder and each archive folder', async (t) => {
     const r = archived(t, [pr(167, '')]);
     r.commit('docs: again', { [`${CHANGE}/proposal.md`]: 'p\n' }, '2026-11-07');

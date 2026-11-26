@@ -118,17 +118,21 @@ async function reviewPlanRecord(git: Run, read: Exec, pr: PullRequest | null, re
 }
 
 // The paths git status lists outside .workspace/. A rename or copy entry
-// is followed by its old path, which is skipped.
+// is followed by its old path. That path is named only for a rename into
+// .workspace/: otherwise the new path already names the entry, and a copy
+// leaves its old path as it was.
 async function dirtyPaths(git: Run): Promise<string[]> {
   const entries = (await git('git', ['status', '--porcelain=v1', '-z'])).split('\0');
+  const outside = (path: string) => path !== '.workspace/' && !path.startsWith('.workspace/');
   const paths: string[] = [];
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
     if (entry === '') continue;
     const status = entry.slice(0, 2);
     const path = entry.slice(3);
-    if (/[RC]/.test(status)) i++;
-    if (path !== '.workspace/' && !path.startsWith('.workspace/')) paths.push(path);
+    const old = /[RC]/.test(status) ? entries[++i] : undefined;
+    if (outside(path)) paths.push(path);
+    else if (old !== undefined && status.includes('R') && outside(old)) paths.push(old);
   }
   return paths;
 }
