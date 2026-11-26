@@ -26,4 +26,4 @@
 - **Added: a Node test that keeps the README's table in step with the keys lets reads** (D8). Reason: the `story` intent was added without the README saying which session it steers; a test turns the next gap into a failing check.
 - **Not split.** The work fits one story: the config reader and its messages, the README table, the help text, `docs/resolvers.md`, the skills that name a key, the specs, the decision record and the test.
 
-Confirmed by user: no
+Confirmed by user: yes
