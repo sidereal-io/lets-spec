@@ -49,9 +49,9 @@ the old name still fails.
 Leave these in plain code font, without the word field:
 
 - **Other programs' fields and values:** those of `gh`, OpenSpec,
-  `lets delegate`, `lets go questions` and step reports. Many share a
-  name with a `lets backlog` field, such as `state` or `reason`, and
-  would pass the check for the wrong reason.
+  `lets delegate`, `lets go questions`, `lets go records` and step
+  reports. Many share a name with a `lets backlog` field, such as
+  `state` or `reason`, and would pass the check for the wrong reason.
 - **What the `lets backlog` help does not list:** the entries of
   `blockedBy`, `parent` and `subIssues`, and backend values such as
   `OPEN` or `Epic`. Review checks these.
