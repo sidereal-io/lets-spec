@@ -163,9 +163,6 @@ reads as it always has.
 | `<YYYY-MM-DD>` | The date in an archive folder's name | The folder's name in `openspec/changes/archive/` |
 | `<first>` | The first model of the ranked options | [Run a step](#run-a-step) or [Start the story run](references/epic-run.md#start-the-story-run), when it ranks the options |
 | `<second>` | The second model of the ranked options | [Run a step](#run-a-step) or [Start the story run](references/epic-run.md#start-the-story-run), when it ranks the options |
-| `<skill>` | The skill in the step's row of the step table | [Write the prompt](references/step-prompt.md#write-the-prompt) |
-| `<plain-language-path>` | The absolute path to the installed plain-language reference | [Write the prompt](references/step-prompt.md#write-the-prompt) |
-| `<the sentence above>` | The sentence for `## What to run`, which for shape is one of its two sentences | [Write the prompt](references/step-prompt.md#write-the-prompt) |
 | `<kebab-name>` | The part of an issue title before ` — `, in `lets-shape`'s template | The issue's title |
 | `<one-line outcome>` | The part of an issue title after ` — `, in `lets-shape`'s template | The issue's title |
 
@@ -1192,9 +1189,8 @@ and review build. Prose and printed lines use these names. `--for`,
 
 Shape runs only before the walk, as
 [Run the shape step](#run-the-shape-step) says, so this table has no row
-for it. Its skill is `lets-shape`, which
-[Write the prompt](references/step-prompt.md#write-the-prompt)
-names, and [Check the issue](#check-the-issue) prints its line. The
+for it. Its skill is `lets-shape`, which the prompt that
+[Run a step](#run-a-step) writes names, and [Check the issue](#check-the-issue) prints its line. The
 walk runs the other four steps. Every other step runs in a fresh
 session, as [Run a step](#run-a-step) says. On `lets-minimal`, review
 plan never runs.
@@ -1286,7 +1282,55 @@ In an epic run, each stop in this section ends only its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
 says.
 
-1. [Write the prompt](references/step-prompt.md#write-the-prompt).
+1. Write the prompt. If the folder is missing, create it first:
+   `mkdir -p .workspace/lets-go`. Then, from the repo root, run
+   `lets go step-prompt` with the step's values, and send its stdout to
+   the prompt file:
+
+   ```bash
+   lets go step-prompt --for <step> --name '<name>' --issue '<i>' \
+     --issue-url '<issue-url>' --schema '<schema>' --route '<route line>' \
+     --questions <mode> > .workspace/lets-go/<session>-prompt.md
+   ```
+
+   Quote each value for the shell, in single quotes, and write a `'`
+   inside a value as `'\''`: a route line holds `#` and spaces, and an
+   idea can hold any character. The values are the ones the run holds
+   for the step:
+   - **Every step but shape:** the flags above. `<schema>`,
+     `<route line>` and `<mode>` are the ones
+     [Enter the branch](#enter-the-branch), [Route](#route) and
+     [Set the question mode](#set-the-question-mode) set. In a story
+     run's child, they are the ones the story prompt gives, as
+     [Take up the story run](references/story-run.md#take-up-the-story-run)
+     says.
+   - **Shape, for an issue:** `--for shape --issue '<i>'`,
+     `--issue-url '<issue-url>'`, `--branch '<default>'` and
+     `--questions <mode>`, with the `<mode>` that
+     [Run the shape step](#run-the-shape-step) set.
+   - **Shape, for an idea:** `--for shape --idea '<idea>'`,
+     `--branch '<default>'` and `--questions <mode>`. Add `--searched`
+     only when
+     [Start from an idea](references/shape.md#start-from-an-idea) ran
+     its title search, and the search or the user found no match. Then
+     `lets-shape` runs no search of its own.
+   - **A stacked story:** add
+     `--blocker '<blocker>' --blocker-branch '<blocker-branch>' --blocker-pr '<blocker-pr>'`
+     to the command of every step of the story, so that a step resumed
+     after `needs-input` still sees the prompt's `## Stack` section. A
+     story is stacked when
+     [Stack the story](references/epic-run.md#stack-the-story) or
+     [Take up a started story](references/epic-run.md#take-up-a-started-story)
+     returned `stacked` for it, or, in a story run's child, when the
+     story prompt holds a `## Stack` section. The three values are the
+     ones it carries, or the ones the story prompt's section names. For
+     a story that is not stacked, pass none of the three.
+
+   The prompt is all the step gets: it has none of this session's
+   conversation. If the command exits non-zero, show the user its
+   stderr, name the step, and stop. Run neither
+   `lets delegate step instructions` nor `lets delegate step run` for
+   the step.
 2. Ask what can run. From the repo root, run:
 
    ```bash

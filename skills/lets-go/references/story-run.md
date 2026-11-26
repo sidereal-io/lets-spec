@@ -47,7 +47,7 @@ default branch and the current branch, `<branch>`.
    [subagent step](subagent.md#run-a-step-in-a-subagent) on that step's
    exit 3. Each step's prompt holds `<mode>` from the story prompt, and
    the story prompt's `## Stack` section when it has one, as
-   [Write the prompt](step-prompt.md#write-the-prompt) says.
+   [Run a step](../SKILL.md#run-a-step) says.
 
    When the story prompt ends with an `## Answers` section, first
    [Give the answers to the step](#give-the-answers-to-the-step) at the

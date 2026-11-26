@@ -543,7 +543,7 @@ answers, report and meta files, stay in this checkout.
    [Route](../SKILL.md#route) and
    [Set the question mode](../SKILL.md#set-the-question-mode) set for
    the story. For a stacked story only, put the `## Stack` section of
-   [Write the prompt](step-prompt.md#write-the-prompt) between
+   [Run a step](../SKILL.md#run-a-step) between
    `## What to run` and `## Questions`, filled with the same
    `<blocker>`, `<blocker-branch>` and `<blocker-pr>` as the story's
    step prompts. The prompt of a story that is not stacked holds no
