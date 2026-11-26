@@ -24,6 +24,7 @@ extends.
 | D9 | How is the check seen to fail? | A test runs it on a small text written for the test, with one field and one value `lets backlog` does not print, and expects a finding for each. | Evidence: #328 packet, *Scope: in* |
 | D10 | Does any test look for a fixed sentence? | No. | Evidence: #328 packet, *Scope: out*; #308 *Shared decisions* |
 | D11 | Where is the writing rule (D3) written down for the people and agents who edit the texts? | In this repository's own `AGENTS.md`, outside the lets-spec markers, with the `contracts/` row of the README's *Layout* table naming the new check. | Assumption |
+| D12 | Which code spans written as `<field>: <value>` does the check read, given that twelve existing spans use that shape for things `lets backlog` never prints, such as `ask: true`, `skip_specs: true` and `Epic:`? | Only those whose field is one `lets backlog` prints, such as `result`, `error` or `write`; every other span passes. The `AGENTS.md` rule (D11) says so. A rename of the field itself is not caught. | Assumption |
 
 ## Changes from the story
 
