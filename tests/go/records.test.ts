@@ -960,4 +960,15 @@ describe('help', () => {
     }
     for (const code of ['0', '2', '4']) assert.match(result.stdout, new RegExp(`^ {2}${code} {2}`, 'm'), `exit code ${code}`);
   });
+
+  test('lets go records --help names the done, disagreements and pull-request keys, each row, and the rule review plan applies', async (t) => {
+    const result = await runLets(['go', 'records', '--help'], { cwd: tempDir(t) });
+    assert.equal(result.code, 0, result.output);
+    const text = result.stdout.replace(/\s+/g, ' ');
+    for (const name of ['done', 'disagreements', 'pull-request', 'row', 'found', 'true', 'false', 'dirty-tree', 'change-and-archive', 'archive-not-ready',
+      'brainstorm-without-pull-request', 'archive-without-plan-review', 'null-record', 'Check an earlier review', 'lets-review-plan', 'openspec', 'MERGED']) {
+      assert.ok(text.includes(name), `${name} in ${result.stdout}`);
+    }
+    for (const gone of ['does not read the change\'s schema', 'not say whether a step is done']) assert.ok(!text.includes(gone), `no ${gone} in ${result.stdout}`);
+  });
 });

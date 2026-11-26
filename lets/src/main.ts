@@ -277,13 +277,14 @@ Exit codes:
      ask or auto. stderr names the file and the key.`;
 
 const GO_RECORDS_HELP = `
-Reads the record each step of the change <name> left, from the current
-branch's history and from the branch's pull request, with git log and
-gh pr view. It writes nothing, does not read the change's schema, and does
-not say whether a step is done.
+Reads where the change <name> stands, for lets-go's walk: the record each
+step left in the current branch's history and in the branch's pull
+request, whether each step is done, and which records disagree. It reads
+with git, gh pr view and openspec instructions apply, and writes nothing.
 
-stdout: one JSON line, an object with four keys, in step order. Each holds
-that step's record, or null when the step left none:
+stdout: one JSON line, an object with seven keys, in this order.
+
+The first four hold each step's record, or null when the step left none:
 
   plan          the last commit that added openspec/changes/<name>/tasks.md
   review-plan   the commit named by the Reviewed: line of the pull
@@ -301,17 +302,50 @@ section writes it), and date, the commit's author date as YYYY-MM-DD.
 review-plan adds pr, the pull request's number, and verdict. review-build
 adds pr, which is null when the branch has no pull request.
 
+  done           maps plan, review-plan, build and review-build to true or
+                 false. Every step is done once an archive folder exists.
+                 With no openspec/changes/<name>/, none is. Otherwise the
+                 change state says: plan is done when it is ready or
+                 all_done, build when it is all_done. Review plan is done
+                 on a lets-minimal change; otherwise its answer applies
+                 Check an earlier review in the lets-review-plan skill,
+                 mechanically, without reading a fix's diff
+  disagreements  a list of {"row":<row>,"found":<what was found>}, one for
+                 each row that matches, in this order, or []:
+                   dirty-tree        git status lists a path outside .workspace/
+                   change-and-archive
+                                     the change folder and an archive folder
+                                     both exist
+                   archive-not-ready an archive folder exists, and the pull
+                                     request is missing, a draft, or, on a
+                                     lets-standard flow, has no Code review
+                                     section
+                   brainstorm-without-pull-request
+                                     HEAD holds the change's brainstorm.md,
+                                     and the branch has no pull request
+                   archive-without-plan-review
+                                     an archived change, not on lets-minimal,
+                                     has no Plan review section
+                   null-record       a step is done and its record is null
+  pull-request   the pull request's state, such as OPEN, MERGED or CLOSED,
+                 or null when the branch has none
+
   {"plan":{"commit":"2bbc7d0","date":"2026-11-03"},
    "review-plan":{"commit":"7d16565","date":"2026-11-04","pr":167,"verdict":"APPROVE"},
    "build":{"commit":"3222c70","date":"2026-11-05"},
-   "review-build":{"commit":"1d253bd","date":"2026-11-06","pr":167}}
+   "review-build":null,
+   "done":{"plan":true,"review-plan":true,"build":true,"review-build":false},
+   "disagreements":[],"pull-request":"OPEN"}
 
 Exit codes:
   0  ok
   2  the name is missing, or is not lower-case kebab-case
-  4  a read failed: not in a Git repository, git or gh cannot start, or gh
-     fails for a reason other than finding no pull request. stderr names
-     the command and its error.`;
+  4  a read failed: not in a Git repository; git, gh or openspec cannot
+     start; gh fails for a reason other than finding no pull request;
+     openspec instructions apply fails, or prints a change state other
+     than blocked, ready or all_done; or openspec/config.yaml or a
+     .openspec.yaml cannot be read. stderr names the command and its
+     error, or the state and openspec's instruction.`;
 
 // --timeout-minutes: a whole number of minutes.
 function wholeMinutes(value: string): number {
@@ -488,8 +522,8 @@ go
 go
   .command('records')
   .argument('<name>', 'the change\'s name, which is also its branch')
-  .summary('print the record each step of a change left')
-  .description('Print the record each step of a change left in Git and in its pull request, as one JSON line.')
+  .summary('print each step\'s record, whether it is done, and what disagrees')
+  .description('Print the record each step of a change left in Git and in its pull request, whether each step is done, and which records disagree, as one JSON line.')
   .addHelpText('after', GO_RECORDS_HELP)
   .action(async (name: string) => {
     process.exitCode = await records(name, realDeps());
