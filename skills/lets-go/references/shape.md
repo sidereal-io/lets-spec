@@ -110,7 +110,7 @@ which can be the idea or the issue that the epic's `Input:` line names:
 
 - **An idea:** run the step as for an idea, with the idea from the
   `Input:` line as `<idea>`. That sets its `<shape-name>`, the idea form
-  of the prompt in [Write the prompt](step-prompt.md#write-the-prompt),
+  of the prompt in [Run a step](../SKILL.md#run-a-step),
   and the check below that the answers file is this idea's.
 - **Another issue:** run the step as for an issue, with that issue in
   place of `#<i>`: its `<shape-name>` is `issue-` and that issue's
