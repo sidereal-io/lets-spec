@@ -26,8 +26,6 @@ export function normalizeName(raw: string, maxLength = 32): string {
 // The request for a read-only session, whose final message the resolver
 // waits for. A null model is the harness's default for the family.
 export type RunInput = { name: string; prompt: string; cwd: string; family: Family; model: string | null; effort: Effort };
-// The request for an interactive session, which the resolver returns at once.
-export type StartInput = Omit<RunInput, 'effort'>;
 // The request for a session that may write files, whose final message the
 // resolver waits for.
 export type StepInput = RunInput;
@@ -48,10 +46,6 @@ export type Adapter = {
   // the harness says no before the model gives output, after cleaning up
   // what it made. An error after the session exists names it.
   run(input: RunInput, options: { timeoutMs: number }): Promise<{ handle: Handle; text: string; checkout: string | null }>;
-  // Starts an interactive session and returns its handle, or the
-  // instructions a person needs when it starts none. Throws Refused when
-  // the harness says no. Without it, the resolver declines every handoff.
-  start?(input: StartInput): Promise<Handle | { instructions: string }>;
   // Runs a session that may write files and waits for its final message,
   // which ends with the step report. Throws as run does. Without it, the
   // resolver declines every step.

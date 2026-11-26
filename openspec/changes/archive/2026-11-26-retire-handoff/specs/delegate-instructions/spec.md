@@ -1,0 +1,107 @@
+## MODIFIED Requirements
+
+### Requirement: The instructions command
+`lets delegate review instructions --for <plan|code>` and `lets delegate step instructions --for <step>` SHALL ask the resolvers which models they can run now. Each SHALL print one JSON line on stdout, then exit 0. The line SHALL hold `strategy` (`review` or `step`), `for` (the intent given), `resolver` and `options` from the resolver that answered, and `guidance`. They SHALL start no session.
+
+#### Scenario: A resolver with models
+- **WHEN** the config lists `t3`, which can run `gpt/gpt-6-luna` and `claude`, and the user runs `lets delegate review instructions --for code`
+- **THEN** it exits 0, and stdout is one JSON line with `"strategy":"review"`, `"for":"code"`, `"resolver":"t3"` and `"options":["gpt/gpt-6-luna","claude"]`
+
+#### Scenario: No config
+- **WHEN** no config file exists, and the user runs `lets delegate review instructions --for plan`
+- **THEN** it exits 0, and its JSON line has `"strategy":"review"`, `"for":"plan"`, `"resolver":"subagent"` and `"options":[]`
+
+#### Scenario: Step instructions from a resolver with models
+- **WHEN** the config lists `t3`, which runs steps and can run `gpt/gpt-6-luna` and `claude`, and the user runs `lets delegate step instructions --for plan`
+- **THEN** it exits 0, and stdout is one JSON line with `"strategy":"step"`, `"for":"plan"`, `"resolver":"t3"` and `"options":["gpt/gpt-6-luna","claude"]`
+
+#### Scenario: Nothing is started
+- **WHEN** the user runs `lets delegate review instructions --for plan`
+- **THEN** no resolver is asked to run or finish a session
+
+### Requirement: Malformed guidance stops the command
+`instructions` SHALL exit 2, print nothing on stdout, and name the config file and the bad key on stderr in each of these cases:
+
+- the entry for the command's strategy under `delegate` is present and is not a mapping
+- that entry's entry for the intent `--for` gives is present and is not a mapping
+- the intent's `guidance` is present and is not a string
+
+It SHALL NOT check the entries for other strategies or other intents, nor any key under `delegate` that names no strategy, such as `handoff`.
+
+#### Scenario: A number for guidance
+- **WHEN** the config holds `delegate.review.code.guidance: 42`, and the user runs `lets delegate review instructions --for code`
+- **THEN** it exits 2, stdout is empty, and stderr names the config file and `delegate.review.code.guidance`
+
+#### Scenario: A strategy entry that is not a mapping
+- **WHEN** the config holds `delegate.review: code`, and the user runs `lets delegate review instructions --for code`
+- **THEN** it exits 2, stdout is empty, and stderr names the config file and `delegate.review`
+
+#### Scenario: A bad entry for another intent
+- **WHEN** the config holds `delegate.review.plan.guidance: [a, b]`, and the user runs `lets delegate review instructions --for code`
+- **THEN** it exits 0
+
+#### Scenario: A bad entry for the other strategy
+- **WHEN** the config holds `delegate.step: 42`, and the user runs `lets delegate review instructions --for code`
+- **THEN** it exits 0
+
+#### Scenario: A handoff entry from an earlier lets
+- **WHEN** the config holds `delegate.handoff: 42`, and the user runs `lets delegate step instructions --for build`
+- **THEN** it exits 0, and stderr does not contain `handoff`
+
+## ADDED Requirements
+
+### Requirement: The probe asks for the session its strategy runs
+`instructions` SHALL ask each resolver about the kind of session its strategy starts: a read-only session for `review instructions`, and a `step` session for `step instructions`. The resolver that answers SHALL be the first, in lookup order, that does not decline that kind of session.
+
+#### Scenario: A review asks for run
+- **WHEN** the config lists `cli`, a family CLI is on `PATH`, and the user runs `lets delegate review instructions --for code`
+- **THEN** its JSON line has `"resolver":"cli"`
+
+#### Scenario: A resolver that runs no step
+- **WHEN** the config lists `t3`, which runs reviews here but no step, then `subagent`, and the user runs `lets delegate step instructions --for build`
+- **THEN** its JSON line has `"resolver":"subagent"` and `"options":[]`
+
+### Requirement: The guidance is the config entry for the intent
+`guidance` SHALL be the string at `delegate.<strategy>.<intent>.guidance` in the config, for the strategy of the command and the intent `--for` gives, unchanged: `delegate.review.plan.guidance`, `delegate.review.code.guidance`, `delegate.step.<step>.guidance` for one of the five steps, or `delegate.step.story.guidance` for `story`. It SHALL be `null` when there is no config, no `delegate` key, no entry for the strategy, no entry for the intent, or no `guidance` in that entry.
+
+#### Scenario: Guidance for the intent
+- **WHEN** the config holds `delegate.review.code.guidance` `Use the strongest gpt model.`, and the user runs `lets delegate review instructions --for code`
+- **THEN** its JSON line has `"guidance":"Use the strongest gpt model."`
+
+#### Scenario: Guidance for another intent only
+- **WHEN** the config holds `delegate.review.code.guidance` and nothing for `plan`, and the user runs `lets delegate review instructions --for plan`
+- **THEN** its JSON line has `"guidance":null`
+
+#### Scenario: Guidance for the other strategy only
+- **WHEN** the config holds `delegate.step.build.guidance` and no `delegate.review`, and the user runs `lets delegate review instructions --for code`
+- **THEN** its JSON line has `"guidance":null`
+
+#### Scenario: Guidance for a step
+- **WHEN** the config holds `delegate.step.build.guidance` `Use claude/claude-opus-5-5.`, and the user runs `lets delegate step instructions --for build`
+- **THEN** its JSON line has `"guidance":"Use claude/claude-opus-5-5."`
+
+#### Scenario: Review guidance does not reach a step
+- **WHEN** the config holds `delegate.review.code.guidance` and no `delegate.step`, and the user runs `lets delegate step instructions --for build`
+- **THEN** its JSON line has `"guidance":null`
+
+#### Scenario: A multi-line block
+- **WHEN** `delegate.review.code.guidance` is a YAML `|` block of two lines
+- **THEN** `lets delegate review instructions --for code` prints both lines in `guidance`, joined by a newline
+
+#### Scenario: Guidance for the story intent
+- **WHEN** the config holds `delegate.step.story.guidance` `Prefer claude.` and `delegate.step.build.guidance` `Use gpt.`, and the user runs `lets delegate step instructions --for story`
+- **THEN** its JSON line has `"guidance":"Prefer claude."`
+
+#### Scenario: Step guidance does not reach the story intent
+- **WHEN** the config holds `delegate.step.build.guidance` and no `delegate.step.story`, and the user runs `lets delegate step instructions --for story`
+- **THEN** its JSON line has `"guidance":null`
+
+## REMOVED Requirements
+
+### Requirement: The probe names the verb it is for
+**Reason**: Replaced by *The probe asks for the session its strategy runs*, without the handoff strategy. OpenSpec refuses a MODIFIED requirement that drops or renames a scenario, so the requirement moves under a new name. Apart from the strategy, the rule is unchanged: its scenario *A resolver that only runs headless* is gone with the strategy; *A resolver that runs no step* still covers a resolver that declines a kind of session.
+**Migration**: None for `review` and `step`. `lets delegate handoff` is gone; run the work as a `lets-go` step instead.
+
+### Requirement: The guidance comes from the config
+**Reason**: Replaced by *The guidance is the config entry for the intent*, without the handoff strategy. OpenSpec refuses a MODIFIED requirement that drops or renames a scenario, so the requirement moves under a new name. Apart from the strategy, the rule is unchanged: `delegate.handoff.apply.guidance` is no longer read, *Handoff guidance does not reach a step* is now *Review guidance does not reach a step*, and two scenarios now use review guidance.
+**Migration**: None for `review` and `step`. `lets delegate handoff` is gone; run the work as a `lets-go` step instead.

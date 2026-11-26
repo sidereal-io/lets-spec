@@ -416,15 +416,14 @@ with the author. These words come up:
 - **Family:** the models from one maker: `gpt`, `claude` or `gemini`.
 - **Chain:** the resolvers your config lists, which `lets` asks in order.
 - **Review:** a read-only session. `lets` waits for its final message.
-- **Handoff:** an interactive session that builds a planned change.
 - **Step:** one stage of the workflow that `lets-go` runs, such as plan
   or build, in a session that may write files. `lets` waits for its step report.
 - **Decline:** a resolver cannot work here, so the next one is asked.
 - **Refuse:** a resolver will not run the model it was given, so `lets`
   sends it the next model.
 
-Skills call `lets delegate review run`, `lets delegate handoff run` and
-`lets delegate step run`, where `--for` names what the session is for.
+Skills call `lets delegate review run` and `lets delegate step run`,
+where `--for` names what the session is for.
 Each first asks the matching `instructions` command which models it can
 use, and passes them to `run` best first. `lets delegate review run --help`
 lists the options.
@@ -496,9 +495,6 @@ delegate:
       guidance: Prefer the strongest gpt model. Never use gemini.
     code:
       guidance: Prefer a gpt model.
-  handoff:
-    apply:
-      guidance: Prefer claude. Use a small model for a chore.
   step:
     build:
       guidance: Prefer claude/claude-opus-5-5.
@@ -517,10 +513,10 @@ review every resolver declines fails. Each entry is `t3`, `cli` or
 `lets delegate` exit 2. With no `delegate.resolvers`, only `subagent`
 answers.
 
-`review`, `handoff` and `step` are optional.
+`review` and `step` are optional.
 `delegate.<strategy>.<intent>.guidance` is your advice, in plain words, on
 which models to use. Its parts are the command that reads it and a value
-`--for` takes: `review.plan`, `review.code`, `handoff.apply`, or
+`--for` takes: `review.plan`, `review.code`, or
 `step.<step>` for one of the five steps, such as `step.build`, or
 `step.story` for a story run. The skill
 uses it only to rank and leave out models. A value that is not a string makes `instructions` exit 2.
@@ -578,11 +574,11 @@ settings from `openspec/config.yaml`.
 The resolvers are part of `lets`, so there is nothing to install. List
 the ones you want by name:
 
-| Name | It answers | It needs | A review runs as | A handoff | A step |
-|---|---|---|---|---|---|
-| [`t3`](docs/resolvers.md#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | Starts a new thread in the sidebar | A new thread, archived when it is done |
-| [`cli`](docs/resolvers.md#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers | A child process of that CLI, in its write mode |
-| [`subagent`](docs/resolvers.md#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Gives back the prompt to start any agent with | Saves the prompt, and exits 3, so the caller runs the step in a subagent |
+| Name | It answers | It needs | A review runs as | A step |
+|---|---|---|---|---|
+| [`t3`](docs/resolvers.md#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | A new thread, archived when it is done |
+| [`cli`](docs/resolvers.md#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | A child process of that CLI, in its write mode |
+| [`subagent`](docs/resolvers.md#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Saves the prompt, and exits 3, so the caller runs the step in a subagent |
 
 Each declines where it cannot work, so the first that fits where you are
 answers.
@@ -725,7 +721,7 @@ you Node 26, pnpm and the OpenSpec CLI. Then run
 | `skills/` | The authored skills, one `lets-*` folder each: the entry points, and the flow skills the schemas call |
 | `schemas/` | The OpenSpec schemas, each with its templates |
 | `overlays/` | The rules fragment and the files `lets sync` creates in a project. Each flow has its own `openspec/config.yaml`, in `openspec/config.d/<schema>.yaml` |
-| `tests/` | `sync/`: black-box tests of `lets sync`, which run it as a program in a temporary git repository. `backlog/`: black-box tests of `lets backlog`, which run it as a program with a stand-in `gh`. `delegate/`: black-box tests of the `lets delegate` instructions, `review run`, `handoff run`, `step run`, `step start` and `step wait` commands, which run `lets` in a temporary git repository with stand-in `codex`, `claude` and `agy`, and start real background steps. `journey/`: tests that run several `lets` commands in sequence, as `lets-go` does, and feed each one what the last one printed. `go/`: black-box tests of `lets go questions`, which run it in a temporary git repository with real lets config files. `release/`: black-box tests of the release build and the `lets` bundle. `openspec/`: tests of each schema under the real OpenSpec CLI on `PATH`. `contracts/`: Node checks that each command, link, skill, template, `gh` command and `lets backlog` field or value a text names is real: the file, heading, skill or command is there, and `lets backlog --help` prints the field or value. `lets/`: unit tests for `lets` and each resolver, run with fakes. `support/`: the helpers the tests share. |
+| `tests/` | `sync/`: black-box tests of `lets sync`, which run it as a program in a temporary git repository. `backlog/`: black-box tests of `lets backlog`, which run it as a program with a stand-in `gh`. `delegate/`: black-box tests of the `lets delegate` instructions, `review run`, `step run`, `step start` and `step wait` commands, which run `lets` in a temporary git repository with stand-in `codex`, `claude` and `agy`, and start real background steps. `journey/`: tests that run several `lets` commands in sequence, as `lets-go` does, and feed each one what the last one printed. `go/`: black-box tests of `lets go questions`, which run it in a temporary git repository with real lets config files. `release/`: black-box tests of the release build and the `lets` bundle. `openspec/`: tests of each schema under the real OpenSpec CLI on `PATH`. `contracts/`: Node checks that each command, link, skill, template, `gh` command and `lets backlog` field or value a text names is real: the file, heading, skill or command is there, and `lets backlog --help` prints the field or value. `lets/`: unit tests for `lets` and each resolver, run with fakes. `support/`: the helpers the tests share. |
 | `.github/workflows/` | `ci.yml` runs `nix flake check`, `mise run check` and a mise smoke test; `release.yml` publishes a release when a `v*` tag is pushed |
 
 ### Releases

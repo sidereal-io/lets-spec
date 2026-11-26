@@ -62,17 +62,6 @@ When `cli` answers `lets delegate review run`, it SHALL run the CLI of the `--mo
 - **WHEN** `cli` answers a review, and the CLI is still running after the review's timeout
 - **THEN** `cli` stops the CLI's process, and `lets delegate review run` exits 6
 
-### Requirement: The cli resolver declines every handoff
-`cli` SHALL decline every handoff and the instructions for one, even when a family CLI is on `PATH`, and SHALL run no CLI and no listing command for it. The next resolver in the chain answers, or the command exits 2 when none is left.
-
-#### Scenario: A handoff with CLIs on PATH
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex`, `claude` and `agy` are on `PATH`, and the user runs `lets delegate handoff run --for apply` with every required option
-- **THEN** it exits 2, stdout is empty, stderr says every resolver declined, and no process is started
-
-#### Scenario: Handoff instructions with codex on PATH
-- **WHEN** the config's `delegate.resolvers` is `[cli, subagent]`, `codex` is on `PATH`, and the user runs `lets delegate handoff instructions --for apply`
-- **THEN** its JSON line has `"resolver":"subagent"`, and `codex` is not run
-
 ### Requirement: The cli resolver cleans up after a review
 When a review that `cli` answered ends with a clean tree and a final message, `cli` SHALL remove the files it wrote for that session in `.workspace/lets-delegate/`. When the review ends otherwise, it SHALL leave them.
 
@@ -96,49 +85,8 @@ When a review that `cli` answered ends with a clean tree and a final message, `c
 - **WHEN** the same command runs on a system with no `/proc`, where `ps -o ppid= -p <pid>` shows that the running T3 server is the process's ancestor
 - **THEN** it exits 0, its JSON line has `"resolver":"t3"` and `"options":[]`, and stderr is empty
 
-### Requirement: The T3 resolver opens a session in a T3 thread
-Inside T3 Code, when `t3` answers `lets delegate review run` or `lets delegate handoff run`, it SHALL open a session in a T3 thread that runs the `--model`. It SHALL send the model part of `--model` to T3 unchanged. For a `gemini` model, it SHALL send no effort, because T3 offers no effort option for Gemini; a review's `--effort` does not apply.
-
-A bare family SHALL run a model from T3's catalogue, chosen from that family's provider instance, when `t3` lists that instance (see "The T3 resolver lists the models T3 Code can run now"):
-- the visible model that the catalogue marks as the default;
-- or else, when no visible model is the default, the first visible model.
-
-A visible model is one the user has not hidden in T3 Code. A custom model is always visible. For `gemini`, the chosen model SHALL have its `-low`, `-medium` or `-high` suffix removed.
-
-#### Scenario: A review inside T3 Code
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, the user runs `lets delegate review run --for code --model claude/claude-opus-5-5` inside T3 Code, and the session ends with a final message
-- **THEN** the thread runs `claude-opus-5-5`, the command exits 0, and its JSON line on stderr has `"family":"claude"` and a `handle` of kind `thread`
-
-#### Scenario: A handoff inside T3 Code
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, the user runs `lets delegate handoff run --for apply --model gpt/gpt-6-luna` inside T3 Code, and the project has a default model of `claude-opus-5-5`
-- **THEN** the thread runs `gpt-6-luna`
-
-#### Scenario: A gemini review runs the model as given
-- **WHEN** the config's `delegate.resolvers` is `[t3]` and the user runs `lets delegate review run --for plan --effort medium --model gemini/gemini-4-argon` inside T3 Code
-- **THEN** the thread runs `gemini-4-argon`, with no effort option
-
-#### Scenario: A bare family runs the catalogue's default
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `codex` with `gpt-6-luna` and a default of `gpt-5.6-terra`
-- **AND** T3's `model-manifest.json` gives `codex` no default, and the user runs `lets delegate handoff run --for apply --model gpt` inside T3 Code
-- **THEN** the thread runs `gpt-5.6-terra`
-
-#### Scenario: A bare family with no default runs the first visible model
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `codex` with `gpt-5.6-terra` as its default, then `gpt-6-luna`
-- **AND** the user has hidden `gpt-5.6-terra` in T3 Code, and runs `lets delegate handoff run --for apply --model gpt` inside T3 Code
-- **THEN** the thread runs `gpt-6-luna`
-
-#### Scenario: A bare gemini review runs the default without its effort
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `antigravity` with a default of `gemini-3.8-flash-high`
-- **AND** the user runs `lets delegate review run --for plan --effort low --model gemini` inside T3 Code
-- **THEN** the thread runs `gemini-3.8-flash`, with no effort option
-
-#### Scenario: A bare gemini handoff runs the default without its effort
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `antigravity` with a default of `gemini-3.8-flash-high`
-- **AND** the user runs `lets delegate handoff run --for apply --model gemini` inside T3 Code
-- **THEN** the thread runs `gemini-3.8-flash`, with no effort option
-
 ### Requirement: The T3 resolver declines outside T3 Code
-When the process is not inside T3 Code, `t3` SHALL decline every review, handoff and step, and the instructions for each, and SHALL start no session. It SHALL NOT look for any other harness. The next resolver in the chain answers, or the command exits 2 when none is left.
+When the process is not inside T3 Code, `t3` SHALL decline every review and step, and the instructions for each, and SHALL start no session. It SHALL NOT look for any other harness. The next resolver in the chain answers, or the command exits 2 when none is left.
 
 #### Scenario: Inside herdr
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, the user runs `lets delegate review run --for code` with every required option inside herdr, and no T3 server is its ancestor
@@ -258,17 +206,17 @@ It SHALL start no thread, and SHALL say why on stderr. When it refuses every `--
 
 #### Scenario: No visible model
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `codex` with no models
-- **AND** the user runs `lets delegate handoff run --for apply --model gpt` inside T3 Code
+- **AND** the user runs `lets delegate review run --for code --model gpt` inside T3 Code
 - **THEN** it exits 3, stderr names `codex`, and T3 receives no request to start a thread
 
 #### Scenario: A failing instance
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `claudeAgent` with status `error` and a default of `claude-fable-5-1`
-- **AND** the user runs `lets delegate handoff run --for apply --model claude --model gpt` inside T3 Code, and the catalogue lists `codex`, `ready`, with `gpt-6-luna`
+- **AND** the user runs `lets delegate review run --for code --model claude --model gpt` inside T3 Code, and the catalogue lists `codex`, `ready`, with `gpt-6-luna`
 - **THEN** T3 receives one request to start a thread, and that thread runs `gpt-6-luna`
 
 #### Scenario: No catalogue
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the T3 server never replies to the catalogue request
-- **AND** the user runs `lets delegate handoff run --for apply --model claude` inside T3 Code
+- **AND** the user runs `lets delegate review run --for code --model claude` inside T3 Code
 - **THEN** within 15 seconds it exits 3, stderr says that T3 gave no model catalogue, and T3 receives no request to start a thread
 
 ### Requirement: A resolver runs a model it never listed
@@ -279,7 +227,7 @@ It SHALL start no thread, and SHALL say why on stderr. When it refuses every `--
 - **THEN** codex runs with `-m gpt-6-astra`
 
 ### Requirement: A refusal exits 3
-When `t3` or `cli` answers, the harness or the account can say no before the model gives any output. `lets delegate review run`, `lets delegate handoff run` and `lets delegate step run` SHALL treat that as a refusal, and SHALL say why on stderr. A refusal covers a harness that cannot start the session, and a missing harness setup, such as a T3 project. It also covers an account with no access or no tokens left, and a model the harness cannot run. When every `--model` is refused, the command exits 3. The command SHALL exit 4 for `t3` or `cli` only for an outcome it cannot know, such as no reply from T3.
+When `t3` or `cli` answers, the harness or the account can say no before the model gives any output. `lets delegate review run` and `lets delegate step run` SHALL treat that as a refusal, and SHALL say why on stderr. A refusal covers a harness that cannot start the session, and a missing harness setup, such as a T3 project. It also covers an account with no access or no tokens left, and a model the harness cannot run. When every `--model` is refused, the command exits 3. The command SHALL exit 4 for `t3` or `cli` only for an outcome it cannot know, such as no reply from T3.
 
 #### Scenario: The CLI refuses the model
 - **WHEN** the config's `delegate.resolvers` is `[cli]`, the user runs `lets delegate review run --for code --model gpt/gpt-6-astra`, and codex exits 1 with nothing on stdout
@@ -391,42 +339,6 @@ When a step that `cli` answered ends with a `done` report, `cli` SHALL remove th
 #### Scenario: Step instructions with codex on PATH
 - **WHEN** the config's `delegate.resolvers` is `[cli, subagent]`, `codex` is on `PATH`, `codex debug models` lists `gpt-6-luna` with `visibility` `list`, and the user runs `lets delegate step instructions --for build`
 - **THEN** it exits 0, and its JSON line has `"strategy":"step"`, `"resolver":"cli"` and `"options":["gpt/gpt-6-luna"]`
-
-### Requirement: The T3 resolver opens a session in the checkout that asked for it
-When `t3` answers `lets delegate review run` or `lets delegate handoff run`, it SHALL open the thread in the git checkout that holds the command's working directory:
-- From a linked git worktree, the thread SHALL run in that worktree's top-level directory, on the worktree's current branch. It SHALL NOT run in the main checkout.
-- From the main checkout, the thread SHALL run in T3's project checkout, on the main checkout's current branch.
-- When the checkout has a detached HEAD, the thread SHALL run in the same checkout, with no branch.
-
-In every case, the thread SHALL belong to the T3 project for the main checkout. When T3 has no project for the main checkout, `t3` SHALL refuse as "A refusal exits 3" says, and stderr SHALL name the main checkout.
-
-#### Scenario: A review from a linked worktree
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 has a project for the main checkout `/r`
-- **AND** the user runs `lets delegate review run --for code` with every required option inside T3 Code, in the linked worktree `/w/fix-login` on branch `fix-login`
-- **THEN** the thread runs in `/w/fix-login`, on branch `fix-login`, in the project for `/r`
-
-#### Scenario: A handoff from a linked worktree
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 has a project for the main checkout `/r`
-- **AND** the user runs `lets delegate handoff run --for apply --model gpt/gpt-6-luna` inside T3 Code, in the linked worktree `/w/fix-login` on branch `fix-login`
-- **THEN** the thread runs in `/w/fix-login`, on branch `fix-login`
-
-#### Scenario: A review from a subdirectory of a linked worktree
-- **WHEN** the user runs `lets delegate review run --for code` that `t3` answers from `/w/fix-login/lets`, inside the linked worktree `/w/fix-login`
-- **THEN** the thread runs in `/w/fix-login`, not in `/w/fix-login/lets`
-
-#### Scenario: A linked worktree with a detached HEAD
-- **WHEN** the user runs `lets delegate review run --for code` that `t3` answers in the linked worktree `/w/fix-login`, which has a detached HEAD
-- **THEN** the thread runs in `/w/fix-login`, with no branch
-
-#### Scenario: A review from the main checkout
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 has a project for `/r`
-- **AND** the user runs `lets delegate review run --for code` with every required option inside T3 Code, in `/r` on branch `main`
-- **THEN** the thread runs in the project checkout, on branch `main`, with no worktree
-
-#### Scenario: A linked worktree of a repository T3 has no project for
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 has no project for the main checkout `/r`
-- **AND** the user runs `lets delegate review run --for code` with every required option inside T3 Code, in the linked worktree `/w/fix-login`
-- **THEN** it exits 3, `t3` creates no thread, and stderr names `/r`
 
 ### Requirement: The T3 resolver runs a review in default mode
 When `t3` answers `lets delegate review run`, it SHALL open the thread in T3's default interaction mode, never in plan mode, whatever `--for` says. A review that changes files outside `.workspace/` SHALL still exit 7, as for every resolver.
@@ -582,3 +494,66 @@ Inside T3 Code, `lets delegate step instructions` SHALL answer with `resolver` `
 #### Scenario: Step instructions inside T3 Code
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, the command runs inside T3 Code, the catalogue lists `codex`, enabled and `ready`, with `gpt-6-luna`, and the user runs `lets delegate step instructions --for plan`
 - **THEN** it exits 0, and its JSON line has `"strategy":"step"`, `"resolver":"t3"` and `"options":["gpt/gpt-6-luna"]`
+
+### Requirement: The T3 resolver runs a review in a T3 thread
+Inside T3 Code, when `t3` answers `lets delegate review run`, it SHALL open a session in a T3 thread that runs the `--model`. It SHALL send the model part of `--model` to T3 unchanged. For a `gemini` model, it SHALL send no effort, because T3 offers no effort option for Gemini; a review's `--effort` does not apply.
+
+A bare family SHALL run a model from T3's catalogue, chosen from that family's provider instance, when `t3` lists that instance (see "The T3 resolver lists the models T3 Code can run now"):
+- the visible model that the catalogue marks as the default;
+- or else, when no visible model is the default, the first visible model.
+
+A visible model is one the user has not hidden in T3 Code. A custom model is always visible. For `gemini`, the chosen model SHALL have its `-low`, `-medium` or `-high` suffix removed.
+
+#### Scenario: A review inside T3 Code
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, the user runs `lets delegate review run --for code --model claude/claude-opus-5-5` inside T3 Code, the project has a default model of `gpt-6-luna`, and the session ends with a final message
+- **THEN** the thread runs `claude-opus-5-5`, the command exits 0, and its JSON line on stderr has `"family":"claude"` and a `handle` of kind `thread`
+
+#### Scenario: A gemini review runs the model as given
+- **WHEN** the config's `delegate.resolvers` is `[t3]` and the user runs `lets delegate review run --for plan --effort medium --model gemini/gemini-4-argon` inside T3 Code
+- **THEN** the thread runs `gemini-4-argon`, with no effort option
+
+#### Scenario: A bare family runs the catalogue's default
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `codex` with `gpt-6-luna` and a default of `gpt-5.6-terra`
+- **AND** T3's `model-manifest.json` gives `codex` no default, and the user runs `lets delegate review run --for code --model gpt` inside T3 Code
+- **THEN** the thread runs `gpt-5.6-terra`
+
+#### Scenario: A bare family with no default runs the first visible model
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `codex` with `gpt-5.6-terra` as its default, then `gpt-6-luna`
+- **AND** the user has hidden `gpt-5.6-terra` in T3 Code, and runs `lets delegate review run --for code --model gpt` inside T3 Code
+- **THEN** the thread runs `gpt-6-luna`
+
+#### Scenario: A bare gemini review runs the default without its effort
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `antigravity` with a default of `gemini-3.8-flash-high`
+- **AND** the user runs `lets delegate review run --for plan --effort low --model gemini` inside T3 Code
+- **THEN** the thread runs `gemini-3.8-flash`, with no effort option
+
+### Requirement: The T3 resolver opens a review in the checkout that asked for it
+When `t3` answers `lets delegate review run`, it SHALL open the thread in the git checkout that holds the command's working directory:
+- From a linked git worktree, the thread SHALL run in that worktree's top-level directory, on the worktree's current branch. It SHALL NOT run in the main checkout.
+- From the main checkout, the thread SHALL run in T3's project checkout, on the main checkout's current branch.
+- When the checkout has a detached HEAD, the thread SHALL run in the same checkout, with no branch.
+
+In every case, the thread SHALL belong to the T3 project for the main checkout. When T3 has no project for the main checkout, `t3` SHALL refuse as "A refusal exits 3" says, and stderr SHALL name the main checkout.
+
+#### Scenario: A review from a linked worktree
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 has a project for the main checkout `/r`
+- **AND** the user runs `lets delegate review run --for code` with every required option inside T3 Code, in the linked worktree `/w/fix-login` on branch `fix-login`
+- **THEN** the thread runs in `/w/fix-login`, on branch `fix-login`, in the project for `/r`
+
+#### Scenario: A review from a subdirectory of a linked worktree
+- **WHEN** the user runs `lets delegate review run --for code` that `t3` answers from `/w/fix-login/lets`, inside the linked worktree `/w/fix-login`
+- **THEN** the thread runs in `/w/fix-login`, not in `/w/fix-login/lets`
+
+#### Scenario: A linked worktree with a detached HEAD
+- **WHEN** the user runs `lets delegate review run --for code` that `t3` answers in the linked worktree `/w/fix-login`, which has a detached HEAD
+- **THEN** the thread runs in `/w/fix-login`, with no branch
+
+#### Scenario: A review from the main checkout
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 has a project for `/r`
+- **AND** the user runs `lets delegate review run --for code` with every required option inside T3 Code, in `/r` on branch `main`
+- **THEN** the thread runs in the project checkout, on branch `main`, with no worktree
+
+#### Scenario: A linked worktree of a repository T3 has no project for
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 has no project for the main checkout `/r`
+- **AND** the user runs `lets delegate review run --for code` with every required option inside T3 Code, in the linked worktree `/w/fix-login`
+- **THEN** it exits 3, `t3` creates no thread, and stderr names `/r`

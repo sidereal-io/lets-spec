@@ -8,9 +8,9 @@ import type { Config, FileOf } from './config.ts';
 import { exitCodeOf, Refused, SpawnError, UsageError } from '../resolvers/kit/errors.ts';
 import { FAMILIES, parseModel } from '../resolvers/kit/families.ts';
 
-// The kind of session asked for: read-only for a review, interactive for a
-// handoff, and one that may write files, and is waited for, for a step.
-export type Kind = 'run' | 'start' | 'step';
+// The kind of session asked for: read-only for a review, and one that may
+// write files, and is waited for, for a step.
+export type Kind = 'run' | 'step';
 
 // config: the delegate config in effect, or null when there is none.
 // fileOf: the file that holds each of its values.
@@ -22,8 +22,8 @@ export function chain({ config, resolvers }: Pick<LookupDeps, 'config' | 'resolv
 }
 
 // The first adapter in the chain that does not decline kind. An adapter
-// declines when it cannot run here, declines a handoff when it cannot start
-// one, and declines a step when it cannot run one. Throws a UsageError when
+// declines when it cannot run here, and declines a step when it cannot run
+// one. Throws a UsageError when
 // every adapter declines.
 export async function pick(kind: Kind, deps: LookupDeps): Promise<Adapter> {
   for (const adapter of chain(deps)) {

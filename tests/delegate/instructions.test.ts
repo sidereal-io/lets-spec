@@ -402,11 +402,17 @@ describe('the delegate section of the lets config', () => {
     assert.deepEqual(line(run), SUBAGENT_REVIEW);
   });
 
-  test('a step ignores bad review and handoff entries', async (t) => {
+  test('a step ignores a bad review entry', async (t) => {
     const run = await instructions(t, 'step', 'build', {
-      user: 'version: 3\ndelegate:\n  resolvers: [subagent]\n  review:\n    code:\n      guidance: 42\n  handoff: apply\n',
+      user: 'version: 3\ndelegate:\n  resolvers: [subagent]\n  review:\n    code:\n      guidance: 42\n',
     });
     assert.deepEqual(line(run), { strategy: 'step', for: 'build', resolver: 'subagent', options: [], guidance: null });
+  });
+
+  test('a handoff entry from an earlier lets is not checked, and draws no message', async (t) => {
+    const run = await instructions(t, 'step', 'build', { user: 'version: 3\ndelegate:\n  resolvers: [subagent]\n  handoff: 42\n' });
+    assert.deepEqual(line(run), { strategy: 'step', for: 'build', resolver: 'subagent', options: [], guidance: null });
+    assert.doesNotMatch(run.result.stderr, /handoff/);
   });
 
   test('the guidance is null when a level is missing', async (t) => {
@@ -443,28 +449,5 @@ describe('the delegate section of the lets config', () => {
     });
     declined(run, run.userConfig);
     assert.ok(!run.result.stderr.includes(run.repoConfig), run.result.stderr);
-  });
-});
-
-// #306 retires handoff. Whichever of it and this file's story merges
-// second deletes this block.
-describe('handoff instructions', () => {
-  test('cli answers a review, but declines a handoff without running a CLI, and subagent answers it', async (t) => {
-    const review = await instructions(t, 'review', 'code', { user: CLI_THEN_SUBAGENT, standIns: everyCli });
-    assert.equal(line(review).resolver, 'cli');
-    let clis: ReturnType<typeof everyCli> | undefined;
-    const handoff = await instructions(t, 'handoff', 'apply', { user: CLI_THEN_SUBAGENT, standIns: (dir) => { clis = everyCli(dir); } });
-    assert.deepEqual(line(handoff), { strategy: 'handoff', for: 'apply', resolver: 'subagent', options: [], guidance: null });
-    for (const [name, stand] of Object.entries(clis!)) assert.deepEqual(stand.calls(), [], name);
-  });
-
-  test('the guidance for a handoff comes from delegate.handoff', async (t) => {
-    const run = await instructions(t, 'handoff', 'apply', { user: delegate('handoff:\n  apply:\n    guidance: Prefer claude.\n') });
-    assert.equal(line(run).guidance, 'Prefer claude.');
-  });
-
-  test('a step gets no guidance from delegate.handoff', async (t) => {
-    const run = await instructions(t, 'step', 'build', { user: delegate('handoff:\n  apply:\n    guidance: Prefer claude.\n') });
-    assert.equal(line(run).guidance, null);
   });
 });

@@ -1,6 +1,6 @@
-// lets delegate review run and handoff run, run as a program in a real Git
-// repository. The cli and subagent resolvers are chosen by a real lets
-// config, and PATH holds only the stand-in codex, claude and agy a test
+// lets delegate review run, and the default's answer to reviews and
+// steps, run as a program in a real Git repository. The cli and subagent
+// resolvers are chosen by a real lets config, and PATH holds only the stand-in codex, claude and agy a test
 // writes, and git, so no real CLI on the developer's machine changes a
 // result. Each test gives a stand-in the exact command it expects, so the
 // command lets gives each CLI is checked too.
@@ -10,6 +10,7 @@ import { dirname, join } from 'node:path';
 import { describe, test } from 'node:test';
 import { agy, claude, codex, git, type LetsResult, snapshot, unstartable } from '../support/lets.ts';
 import { delegateRepo, PROMPT } from './repo.ts';
+import { stepRun } from './steps.ts';
 
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
 const CLI_THEN_SUBAGENT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
@@ -209,6 +210,14 @@ describe('review run', () => {
     const clis = everyCli(repo.standIns);
     failed(await repo.run(review()), 3);
     for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], name);
+  });
+
+  test('a handoff key from an earlier lets is ignored, with no message about it', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate:\n  resolvers: [cli]\n  handoff:\n    apply:\n      guidance: Prefer claude.\n' });
+    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
+    const result = await repo.run(review());
+    assert.equal(metadata(result).resolver, 'cli');
+    assert.doesNotMatch(result.stderr, /handoff/);
   });
 
   test('a review ignores the guidance, even one that is not a string', async (t) => {
@@ -460,51 +469,65 @@ describe('review run', () => {
   });
 });
 
-// #306 retires handoff. Whichever of it and this file's story merges
-// second deletes this block, and tests/lets/delegate/handoff.test.ts.
-describe('handoff run', () => {
-  const handoff = (promptFile = 'p.md') =>
-    ['delegate', 'handoff', 'run', '--for', 'apply', '--name', 'Fix Login', '--prompt-file', promptFile, '--model', 'claude'];
-  const saved = (cwd: string) => join(cwd, '.workspace', 'lets-delegate', 'fix-login.prompt.md');
-
-  test('cli declines a handoff without running a CLI, and subagent answers it next', async (t) => {
-    const only = delegateRepo(t, { user: CLI });
-    const onlyClis = everyCli(only.standIns);
-    const declined = await only.run(handoff());
-    failed(declined, 2);
-    assert.match(declined.stderr, /every resolver declined/);
-    const next = delegateRepo(t, { user: CLI_THEN_SUBAGENT });
-    const nextClis = everyCli(next.standIns);
-    const answered = await next.run(handoff());
-    assert.equal(answered.code, 0, answered.output);
-    assert.equal(JSON.parse(answered.stdout).resolver, 'subagent');
-    for (const [name, stand] of [...Object.entries(onlyClis), ...Object.entries(nextClis)]) assert.deepEqual(stand.calls(), [], name);
-  });
-
-  test('subagent saves the prompt under the normalized name, and hands it back with where it is saved', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent] }\n' });
-    const result = await repo.run(handoff());
+// When the default, subagent, is asked. PATH holds no node in any of
+// these runs, so each also shows the default needs only lets's own Node.
+describe('the default', () => {
+  const instructions = ['delegate', 'review', 'instructions', '--for', 'code'];
+  const savedPrompt = (cwd: string) => join(cwd, '.workspace', 'lets-delegate', 'build-x.prompt.md');
+  const resolverOf = (result: LetsResult) => {
     assert.equal(result.code, 0, result.output);
-    assert.match(result.stdout, /^[^\n]*\n$/, 'stdout is exactly one line');
-    const { resolver, handle, instructions } = JSON.parse(result.stdout);
-    assert.deepEqual({ resolver, handle }, { resolver: 'subagent', handle: null });
-    assert.ok(instructions.includes(PROMPT), instructions);
-    assert.ok(instructions.includes('.workspace/lets-delegate/fix-login.prompt.md'), instructions);
-    assert.equal(readFileSync(saved(repo.cwd), 'utf8'), PROMPT);
+    return JSON.parse(result.stdout).resolver;
+  };
+
+  test('with no chain in the config, subagent answers', async (t) => {
+    for (const user of [undefined, 'version: 3\n', 'version: 3\ndelegate:\n  review:\n    code:\n      guidance: Prefer claude.\n']) {
+      const repo = delegateRepo(t, { user });
+      assert.equal(resolverOf(await repo.run(instructions)), 'subagent', String(user));
+    }
   });
 
-  test('a prompt file that cannot be read is exit 2, naming it', async (t) => {
+  test('a resolver that declines leaves the answer to subagent after it', async (t) => {
+    // No CLI on PATH, so cli declines.
+    const repo = delegateRepo(t, { user: CLI_THEN_SUBAGENT });
+    assert.equal(resolverOf(await repo.run(instructions)), 'subagent');
+  });
+
+  test('a chain without subagent never asks it: a step is exit 2, and saves no prompt', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    failed(await repo.run(stepRun()), 2);
+    assert.equal(existsSync(savedPrompt(repo.cwd)), false);
+  });
+
+  test('with no node on PATH, subagent saves a step\'s prompt and is exit 3, naming itself', async (t) => {
     const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent] }\n' });
-    const result = await repo.run(handoff('gone.md'));
-    failed(result, 2);
-    assert.match(result.stderr, /gone\.md/);
+    const result = await repo.run(stepRun());
+    failed(result, 3);
+    assert.match(result.stderr, /subagent/);
+    assert.equal(readFileSync(savedPrompt(repo.cwd), 'utf8'), PROMPT);
   });
 
-  test('a bad entry after one that would answer is exit 2, and saves no prompt', async (t) => {
+  test('an empty chain declines a step: exit 2, naming the config', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [] }\n' });
+    const result = await repo.run(stepRun());
+    failed(result, 2);
+    assert.match(result.stderr, /every resolver declined/);
+    assert.ok(result.stderr.includes(repo.userConfig), result.stderr);
+  });
+
+  test('a bad entry after subagent stops a step with exit 2, and saves no prompt', async (t) => {
     const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent, /opt/r/old-resolver] }\n' });
-    const result = await repo.run(handoff());
+    const result = await repo.run(stepRun());
     failed(result, 2);
     assert.ok(result.stderr.includes('/opt/r/old-resolver'), result.stderr);
-    assert.equal(existsSync(saved(repo.cwd)), false);
+    assert.equal(existsSync(savedPrompt(repo.cwd)), false);
+  });
+
+  test('a chain that declines names the user\'s lets config when the repository\'s sets no delegate', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [] }\n', repo: 'version: 3\n' });
+    const result = await repo.run(stepRun());
+    failed(result, 2);
+    assert.match(result.stderr, /every resolver declined/);
+    assert.ok(result.stderr.includes(repo.userConfig), result.stderr);
+    assert.ok(!result.stderr.includes(repo.repoConfig), result.stderr);
   });
 });

@@ -1,16 +1,16 @@
 # The resolvers
 
-A resolver is the part of `lets` that turns a review, a handoff or a step
+A resolver is the part of `lets` that turns a review or a step
 into a real session in one harness. `lets` has three, and you choose them by name
 under `delegate.resolvers` in your `lets` config. There is nothing to install. The README's
 [Set up delegation](../README.md#set-up-delegation) section explains the
 config file.
 
-| Name | It answers | It needs | A review runs as | A handoff | A step |
-|---|---|---|---|---|---|
-| [`t3`](#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | Starts a new thread in the sidebar | A new thread, archived when it is done |
-| [`cli`](#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | Declines, so the next resolver answers | A child process of that CLI, in its write mode |
-| [`subagent`](#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Gives back the prompt to start any agent with | Saves the prompt, and exits 3, so the caller runs the step in a subagent |
+| Name | It answers | It needs | A review runs as | A step |
+|---|---|---|---|---|
+| [`t3`](#t3) | Inside T3 Code | T3 Code running | A new thread, archived when the review succeeds | A new thread, archived when it is done |
+| [`cli`](#cli) | In any terminal | `codex`, `claude` or `agy` on your `PATH` | A child process of that CLI, in its read-only mode | A child process of that CLI, in its write mode |
+| [`subagent`](#subagent) | Anywhere | nothing | Nothing: the skill runs the review in a subagent | Saves the prompt, and exits 3, so the caller runs the step in a subagent |
 
 Each one declines where it cannot work, and the next in your config is
 asked. List them in this order, and leave out any you do not use:
@@ -92,9 +92,8 @@ To run steps somewhere else inside T3 Code, list `cli` before `t3`.
 
 The caller chooses the model, and `t3` runs exactly that one:
 
-- `lets delegate review instructions`, `handoff instructions` and
-  `step instructions` list the models that T3 Code's model picker
-  offers, as `<family>/<model>`.
+- `lets delegate review instructions` and `step instructions` list the
+  models that T3 Code's model picker offers, as `<family>/<model>`.
   `t3` asks the running T3 server for its live catalogue each time.
 - They list a provider only when it is enabled, its status is ready or
   warning, and T3 Code does not mark it unavailable. A provider in
@@ -104,7 +103,7 @@ The caller chooses the model, and `t3` runs exactly that one:
   custom model. They list each Gemini model once, without its effort.
 - When T3 Code gives no catalogue within 10 seconds, or refuses to, they
   list no models, say why on stderr, and still exit 0.
-- A review, a handoff or a step runs the model that `--model` names. A bare
+- A review or a step runs the model that `--model` names. A bare
   family, such as `claude`, runs that provider's default model in the
   catalogue. When you hid the default, it runs the first model you did
   not hide.
@@ -175,27 +174,15 @@ Expect `"outcome":"done"` on stdout, a JSON line on stderr with
 Then check that `t3` still reads T3 Code's model catalogue:
 
 ```sh
-lets delegate handoff instructions --for apply
+lets delegate review instructions --for code
 ```
 
 Its `options` should list the same models as the model picker in a new
 T3 thread. If they are empty, stderr says why.
 
-Then check that a session from a linked worktree runs in that worktree.
-A handoff keeps its thread open, so you can look at it:
-
-```sh
-git worktree add ../smoke-worktree -b smoke-worktree
-cd ../smoke-worktree
-mkdir -p .workspace
-printf 'Reply with the single word READY and nothing else.\n' > .workspace/p.md
-lets delegate handoff run --for apply --name smoke-handoff \
-  --prompt-file .workspace/p.md --model gpt
-```
-
-The new thread should show the `smoke-worktree` folder and branch, not
-the main checkout. Then archive the thread, and remove the worktree with
-`git worktree remove ../smoke-worktree` and `git branch -D smoke-worktree`.
+To check that a session from a linked worktree runs in that worktree,
+run the review from one. Its `"checkout"` should be that worktree, not
+the main checkout.
 
 The review and the step spend tokens. CI never runs them.
 
@@ -205,10 +192,6 @@ The review and the step spend tokens. CI never runs them.
 tool (CLI) of a model family: `codex`, `claude` or `agy`. It works in a
 plain terminal, or inside another harness. It declines when none of the
 three is on your `PATH`.
-
-It never starts a handoff, so it declines every one, without running
-anything. Keep `subagent` after it: a handoff then falls through to the
-default, which gives you the prompt to start any agent with.
 
 ### Which models it lists
 
@@ -297,7 +280,6 @@ run no model, and it starts no session.
 | Request | What it does |
 |---|---|
 | A review | Starts nothing, and the command exits 3. The review skill then runs the review in a subagent. |
-| A handoff | Saves the prompt to `.workspace/lets-delegate/<name>.prompt.md` in the repository, and gives back the prompt and that path, so you can start any agent with it. |
 | A step | Saves the prompt, with any answers added, to `.workspace/lets-delegate/<name>.prompt.md`. Then the command exits 3, and stderr names that file. The caller runs the step in a subagent with it. |
 | `instructions` | Lists no models. |
 
@@ -416,4 +398,4 @@ root where `step start` ran, so run them from the same root.
 
 `lets delegate step instructions --for <step>` gives the guidance at
 `delegate.step.<step>.guidance` in your `lets` config, such as
-`delegate.step.build.guidance`. It does not read the handoff's guidance.
+`delegate.step.build.guidance`.

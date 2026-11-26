@@ -6,8 +6,6 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command, CommanderError, InvalidArgumentError, Option } from 'commander';
 import { BACKLOG_HELP, run as backlog } from './backlog/commands.ts';
-import { run as handoff } from './delegate/handoff.ts';
-import type { HandoffOptions } from './delegate/handoff.ts';
 import { run as instructions } from './delegate/instructions.ts';
 import { EFFORTS, FAMILIES, parseModel } from './resolvers/kit/families.ts';
 import { run as review } from './delegate/review.ts';
@@ -69,10 +67,9 @@ The Nix wrapper sets WORKFLOW_RELEASE.`;
 
 const DELEGATE_HELP = `
 Each delegation has a strategy and an intent. The strategy is how the
-session runs: review runs it read-only and waits for its answer, handoff
-starts an interactive session and returns at once, and step runs a session
-that may write files and waits for its step report. The intent is what it
-is for: plan or code for a review, apply for a handoff, and one of the five
+session runs: review runs it read-only and waits for its answer, and step
+runs a session that may write files and waits for its step report. The
+intent is what it is for: plan or code for a review, and one of the five
 steps, or story for a story run, for a step. Each strategy has two
 commands: instructions says what can run and gives the user's guidance,
 and run runs it.
@@ -99,19 +96,16 @@ value. You write both by hand:
     review:
       code:
         guidance: Prefer the strongest gpt model.
-    handoff:
-      apply:
-        guidance: Prefer claude.
     step:
       build:
         guidance: Prefer claude/claude-opus-5-5.
 
 Each entry under delegate.resolvers is t3, cli or subagent. With no
 config, or no delegate.resolvers, only subagent is asked. It starts no
-session: a review exits 3, a handoff gives back the prompt to carry on by
-hand, and a step saves the prompt and exits 3, for a subagent to run it.
+session: a review exits 3, and a step saves the prompt and exits 3, for a
+subagent to run it.
 
-review, handoff and step are optional. delegate.<strategy>.<intent>.guidance is
+review and step are optional. delegate.<strategy>.<intent>.guidance is
 prose that the skill reads to rank the models; only instructions reads it.
 
 Run lets delegate from the repo root.`;
@@ -141,21 +135,6 @@ Exit codes:
   5  the session failed: an error, it stopped to ask, or an empty message
   6  the session did not finish in time
   7  the session changed files outside .workspace/`;
-
-const HANDOFF_HELP = `
-stdout: one JSON line, { resolver, handle }. When no session could be
-started, handle is null and instructions holds the text to show the user.
-
---model may be given more than once, best first. When the resolver
-refuses a model, lets asks the same resolver for the next one.
-
-Exit codes:
-  0  ok
-  2  usage error, or every resolver in the config declined
-  3  no fresh session can run here on any model given: the harness or the
-     account said no. stderr names each model and why.
-  4  the outcome is unknown: the session could not start, or the harness
-     did not answer`;
 
 const STEP_STRATEGY_HELP = `
 The intents are the five steps: shape, plan, review-plan, build and
@@ -370,19 +349,6 @@ strategyCommand('review', 'run a prompt in a fresh, read-only session and wait f
   .addHelpText('after', REVIEW_HELP)
   .action(async ({ model, ...options }: Omit<ReviewOptions, 'models'> & { model: string[] }) => {
     process.exitCode = await review({ ...options, models: model }, realDeps());
-  });
-
-strategyCommand('handoff', 'start a fresh, interactive session and return at once')
-  .command('run')
-  .summary('start the session')
-  .description('Start a fresh, interactive session with a prompt, on the first model --model names that is not refused, and return at once.')
-  .addOption(forOption('handoff'))
-  .requiredOption('--name <name>', 'a label for the session, normalized to lowercase kebab-case')
-  .requiredOption('--prompt-file <path>', 'the file that holds the prompt')
-  .addOption(modelOption())
-  .addHelpText('after', HANDOFF_HELP)
-  .action(async ({ model, for: _intent, ...options }: Omit<HandoffOptions, 'models'> & { model: string[]; for: Intent }) => {
-    process.exitCode = await handoff({ ...options, models: model }, realDeps());
   });
 
 // The options of step run, which step start takes too.

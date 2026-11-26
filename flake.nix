@@ -258,8 +258,7 @@
             [ -f .agents/skills/lets-setup-backlog/SKILL.md ]
             # With no delegate config, the packaged lets answers as the
             # default it carries.
-            echo 'Run lets-build on branch build-x' > p.md
-            [ "$(lets delegate handoff run --for apply --name build-x --prompt-file p.md --model claude | jq -r .resolver)" = subagent ]
+            [ "$(lets delegate review instructions --for code | jq -r .resolver)" = subagent ]
 
             # A minimal project gets the minimal schema and only its skills.
             cd ..
@@ -315,8 +314,7 @@
             node ${dist}/bin/lets sync --check
             # With nothing else installed or configured, the tarball's lets
             # answers as the default, which is part of it.
-            echo 'Run lets-build on branch build-x' > p.md
-            [ "$(node ${dist}/bin/lets delegate handoff run --for apply --name build-x --prompt-file p.md --model claude | jq -r .resolver)" = subagent ]
+            [ "$(node ${dist}/bin/lets delegate review instructions --for code | jq -r .resolver)" = subagent ]
             touch "$out"
           '';
 
