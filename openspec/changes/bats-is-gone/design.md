@@ -122,6 +122,12 @@ line.
 - [A developer's own script uses the `jq` or `yq` that the dev shell or
   mise installed] → Both are common tools, often installed already. The
   pull request description says they left the tool lists.
+- [A maintainer reruns a step of the `commands` or `dist` smoke test by
+  hand, inside `nix develop`, and `jq` or `yq` is not found] → The
+  checks keep both in their own `nativeBuildInputs`, so `nix build` of
+  the check still works. For a manual rerun,
+  `nix shell --inputs-from . nixpkgs#jq nixpkgs#yq-go` gives both from
+  the flake's own nixpkgs.
 - [`nix flake check` needs `bats` somewhere the search missed] → The
   check runs in CI and before push. A missing tool fails it with a
   "command not found" that names the tool.
