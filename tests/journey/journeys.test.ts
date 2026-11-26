@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { itemList, issue, issueState, json, LOOKUP_ONE, REPO } from '../backlog/github.ts';
 import { type DelegateRepo, delegateRepo, PROMPT } from '../delegate/repo.ts';
-import { agyWrite, claudeWrite, cleanUpStep, codexWrite, ending, untilGone } from '../delegate/steps.ts';
+import { agyWrite, claudeWrite, cleanUpStep, codexWrite, ending, stepRun, stepStart, untilGone } from '../delegate/steps.ts';
 import { agy, claude, codex, type LetsResult, sharedState, type StandInRow, standIn, tempDir } from '../support/lets.ts';
 import { useRelease } from '../sync/project.ts';
 
@@ -118,7 +118,16 @@ function sessionName(title: string, step: string): string {
  * than 0 or names a step that was not still running.
  */
 async function waitForAll(repo: DelegateRepo, names: string[]): Promise<Ended[]> {
-  throw new Error('not built yet');
+  const ended: Ended[] = [];
+  let running = [...names];
+  while (running.length > 0) {
+    const args = ['delegate', 'step', 'wait', ...running.flatMap((name) => ['--name', name])];
+    const one: Ended = printed(await repo.run(args), args.join(' '));
+    assert.ok(running.includes(one.name), `lets ${args.join(' ')} named ${one.name}, which was not still running`);
+    ended.push(one);
+    running = running.filter((name) => name !== one.name);
+  }
+  return ended;
 }
 
 test('the story journey: sync, then ready, item and claim, then a plan step on the models instructions lists', async (t) => {
@@ -161,8 +170,7 @@ test('the story journey: sync, then ready, item and claim, then a plan step on t
     agy: agy(repo.standIns, ['gemini-3.8-flash-high'], { rows: [{ args: writes.agy, stdout: done(`plan of ${item.key}`) }] }),
   };
   const { options } = printed(await repo.run(['delegate', 'step', 'instructions', '--for', 'plan']), 'delegate step instructions --for plan');
-  const step = ['delegate', 'step', 'run', '--for', 'plan', '--name', session, '--prompt-file', 'p.md', '--effort', 'high',
-    ...options.flatMap((model: string) => ['--model', model])];
+  const step = stepRun({ for: 'plan', name: session, promptFile: 'p.md', effort: 'high', models: options });
   const ran = await repo.run(step);
   assert.equal(printed(ran, step.join(' ')).outcome, 'done');
   assert.equal(JSON.parse(ran.stderr.trim().split('\n').at(-1)!).family, 'gemini', ran.stderr);
@@ -183,4 +191,36 @@ test('the epic-wave journey: item and waves, then a story step for each story of
   const { waves } = printed(await repo.run(['backlog', 'waves', '--only', only]), `backlog waves --only ${only}`);
   const wave = waves[0].stories.map((s: { key: string }) => s.key);
   assert.deepEqual(wave, ['53', '54']);
+
+  // codex answers each story's session, told apart by the file its last
+  // message goes to.
+  const titles = new Map<string, string>(epic.subIssues.map((sub: { key: string; title: string }) => [sub.key, sub.title]));
+  const sessions = wave.map((key: string) => ({ key, name: sessionName(titles.get(key)!, 'story') }));
+  codex(repo.standIns, [], { rows: sessions.map(({ key, name }: { key: string; name: string }) => ({
+    args: codexWrite(repo.cwd, { name }),
+    files: { [join(repo.cwd, '.workspace', 'lets-delegate', `${name}.last-message.md`)]: done(`story ${key}`) },
+  })) });
+
+  const started: { key: string; name: string; pid: number }[] = [];
+  for (const { key, name } of sessions) {
+    const args = stepStart({ for: 'story', name, models: ['gpt'], reportFile: `${name}-report.json`, metaFile: `${name}-meta.txt` });
+    const result = await repo.run(args);
+    const step = printed(result, args.join(' '));
+    // Before any assertion, so a failing test still stops the step.
+    if (typeof step.pid === 'number') cleanUpStep(t, step.pid);
+    assert.equal(typeof step.pid, 'number', result.output);
+    started.push({ key, name: step.name, pid: step.pid });
+  }
+
+  const ended = await waitForAll(repo, started.map(({ name }) => name));
+  const byName = (a: Ended, b: Ended) => a.name.localeCompare(b.name);
+  assert.deepEqual(ended.sort(byName), started.map(({ name }) => ({ name, exit: 0 })).sort(byName));
+  for (const { key, name } of started) {
+    const text = readFileSync(join(repo.cwd, `${name}-report.json`), 'utf8');
+    assert.match(text, /^[^\n]+\n$/, `the report file of ${name} holds other than one line:\n${text}`);
+    const report = JSON.parse(text);
+    assert.equal(report.outcome, 'done', text);
+    assert.deepEqual(report.evidence, [`story ${key}`], text);
+  }
+  for (const { pid } of started) await untilGone(pid);
 });
