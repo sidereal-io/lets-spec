@@ -18,7 +18,7 @@
 
 Before 3.1, write a probe in `.workspace/` that lists every code span in the texts whose text is a field or value the help prints, or a `field: value` pair, with its file and line, as design.md's *Rewriting the texts* says. Each task below rewrites the reads of `lets backlog` output in its files by the rule, leaves reads of `gh`, OpenSpec and step reports as they are, and keeps each instruction's meaning.
 
-- [ ] 3.1 [parallel] [complex] `skills/lets-go/SKILL.md` reads every `lets backlog` field and value by the rule: the placeholder table, the error codes, `key`, the issue and item reads, the claim and release results and their `write` values, and the ready-issue search (D8) (verify: `node --test tests/contracts/fields.test.ts`)
+- [x] 3.1 [parallel] [complex] `skills/lets-go/SKILL.md` reads every `lets backlog` field and value by the rule: the placeholder table, the error codes, `key`, the issue and item reads, the claim and release results and their `write` values, and the ready-issue search (D8) (verify: `node --test tests/contracts/fields.test.ts`) (✓ `node --test tests/contracts/fields.test.ts` passed, 16 tests)
 - [ ] 3.2 [parallel] [medium] `skills/lets-go/references/epic-run.md` and `skills/lets-go/references/glossary-handoff.md` read every `lets backlog` field and value by the rule, including the waves file's fields and the release results, such as `result: failed` in place of `"result": "failed"` (D8) (verify: `node --test tests/contracts/fields.test.ts`)
 - [ ] 3.3 [parallel] [medium] The other texts the probe lists, such as `skills/lets-plan/SKILL.md`, `skills/lets-shape/SKILL.md` and `README.md`, read every `lets backlog` field and value by the rule (D8) (verify: `node --test tests/contracts/fields.test.ts`)
 

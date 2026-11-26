@@ -101,22 +101,22 @@ A name in angle brackets is a placeholder. Each one stands for one
 thing, the same everywhere in this skill. Fill it in from where the run
 sets it.
 
-`lets backlog` names each item by its `key`, and shows it by its
-`label`: `149` and `#149` on GitHub. In anything shown to a person,
+`lets backlog` names each item by its `key` field, and shows it by
+its `label` field: `149` and `#149` on GitHub. In anything shown to a person,
 `#<i>`, `#<parent>`, `#<story>`, `#<blocker>`, `#<failed>`,
 `#<other>`, `#<a>`, `#<b>` and `#<c>` stand for the item's
-`label`: a printed line, a question, or text written in an issue. In a
-command, `<i>`, `<parent>` and `<story>` stand for its `key`. With the
+`label` field: a printed line, a question, or text written in an issue. In a
+command, `<i>`, `<parent>` and `<story>` stand for its `key` field. With the
 GitHub backlog provider, the label is `#` and the number, so each line
 reads as it always has.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
 | `<i>` | The run's issue, as its key: the key the user named, the issue `next` or [Run the epic](#run-the-epic) picked, or the issue or parent a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
-| `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the `url` that `lets backlog item <i>` prints |
+| `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the `url` field that `lets backlog item <i>` prints |
 | `<parent>` | A parent issue, as its key: an epic that discovery filed, a discovery in progress, or the epic of an epic run | The shape report's `epic` line, [Find the input's discovery](references/shape.md#find-the-inputs-discovery), or, for an epic run, [Check the issue](#check-the-issue) before [Run the epic](#run-the-epic) |
 | `<story>` | One story, as its key: a story that a shape step's report names, or a story of an epic run | Each `story` line of the shape report, or [Run the epic](#run-the-epic), for the story it picks or settles |
-| `<blocker>` | An open issue that blocks a story, as its key. For a stacked story, the blocker it stacks on | The story's `blockedBy`, from `lets backlog item <story>` in [Run the epic](#run-the-epic), the blocker read in [Stack the story](references/epic-run.md#stack-the-story), or a pull request's base in [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) |
+| `<blocker>` | An open issue that blocks a story, as its key. For a stacked story, the blocker it stacks on | The story's `blockedBy` field, from `lets backlog item <story>` in [Run the epic](#run-the-epic), the blocker read in [Stack the story](references/epic-run.md#stack-the-story), or a pull request's base in [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) |
 | `<blocker-branch>` | A met blocker's branch, the `headRefName` of its pull request. For a stacked story, the branch it stacks on | [Stack the story](references/epic-run.md#stack-the-story), from the `gh pr list` read, or [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base), from `<pr-base>` |
 | `<blocker-pr>` | The number of a stacked story's blocker's pull request | [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from the `gh pr list` read |
 | `<other-branch>` | The branch of another open blocker of the same story, which the base's branch must contain | [Stack the story](references/epic-run.md#stack-the-story) |
@@ -124,10 +124,10 @@ reads as it always has.
 | `<b>` | The second such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<c>` | The third such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<keys>` | The keys of the stories an epic run sorts into waves, in the epic's order, joined by commas, such as `283,285` | [Run the epic](#run-the-epic), from the stories not settled when it starts |
-| `<wave>` | A wave's number in an epic run, counted from 1 | [Run the epic](#run-the-epic), from the order of the waves file's `waves` |
-| `<wave-stories>` | The `label` of each story of a wave, in the order `lets backlog waves` gives, joined by `, ` | [Run the epic](#run-the-epic), from the wave's `stories` in the waves file |
-| `<other>` | The story that a story of an epic run waits for, as its key | [Run the epic](#run-the-epic), from the story's `waitsFor` in the waves file |
-| `<login>` | The login of a person assigned to a story | The story's `assignees`, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](#run-the-epic) |
+| `<wave>` | A wave's number in an epic run, counted from 1 | [Run the epic](#run-the-epic), from the order of the waves file's `waves` field |
+| `<wave-stories>` | The `label` field of each story of a wave, in the order `lets backlog waves` gives, joined by `, ` | [Run the epic](#run-the-epic), from the wave's `stories` field in the waves file |
+| `<other>` | The story that a story of an epic run waits for, as its key | [Run the epic](#run-the-epic), from the story's `waitsFor` field in the waves file |
+| `<login>` | The login of a person assigned to a story | The story's `assignees` field, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](#run-the-epic) |
 | `<failed>` | The story whose run failed or stopped, as its key, in the line of a story that depends on it | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<step name>` | A step's name in plain words, as its `Failed` line names it, such as `review build` | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), from the failed step, or, in a story run's child, [Story run](references/story-run.md), from the step the walk is on |
 | `<story-name>` | The part of a story's title before ` — `, or the whole title when it has none | [Run the epic](#run-the-epic), when it settles the story |
@@ -159,7 +159,7 @@ reads as it always has.
 | `<sha>` | A commit's short hash, or the commit a review names | [Read the records](references/records.md#read-the-records), or the review plan report |
 | `<verdict>` | A plan review's verdict | The **Plan review** section, or the review plan report |
 | `<evidence>` | What a `done` report's `evidence` lists | [The step lines](#the-step-lines) |
-| `<reason>` | Why a step failed, or, in a story's line in an epic run, why the story was not built or its walk stopped, or, in a wave's line, why a story waits for `#<other>` | [The step lines](#the-step-lines), from a `failed` report's `reason`, or from [Read the report](#read-the-report) when a `done` report's record says otherwise: `the step reported done, but` and what the record holds. In a story's line, [Run the epic](#run-the-epic). In a wave's line, the story's `reason` in the waves file, from [Run the epic](#run-the-epic) |
+| `<reason>` | Why a step failed, or, in a story's line in an epic run, why the story was not built or its walk stopped, or, in a wave's line, why a story waits for `#<other>` | [The step lines](#the-step-lines), from a `failed` report's `reason`, or from [Read the report](#read-the-report) when a `done` report's record says otherwise: `the step reported done, but` and what the record holds. In a story's line, [Run the epic](#run-the-epic). In a wave's line, the story's `reason` field in the waves file, from [Run the epic](#run-the-epic) |
 | `<YYYY-MM-DD>` | The date in an archive folder's name | The folder's name in `openspec/changes/archive/` |
 | `<first>` | The first model of the ranked options | [Run a step](#run-a-step) or [Start the story run](references/epic-run.md#start-the-story-run), when it ranks the options |
 | `<second>` | The second model of the ranked options | [Run a step](#run-a-step) or [Start the story run](references/epic-run.md#start-the-story-run), when it ranks the options |
@@ -177,7 +177,7 @@ reads stay as `gh` commands for now: the comment thread read of
 `gh issue view <i> --json createdAt`, and the parent query of
 [Find the input's discovery](references/shape.md#find-the-inputs-discovery).
 Each `lets backlog` command prints one JSON object. When the object
-holds `error`, the backlog cannot answer. Stop: claim nothing more,
+holds the `error` field, the backlog cannot answer. Stop: claim nothing more,
 and run no step. In an epic run, while the run is on a story, this
 stop ends only its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
@@ -188,15 +188,15 @@ settle its story, as
 [Wait for the wave](references/epic-run.md#wait-for-the-wave) says.
 Say what the error is:
 
-- **`no-backlog`:** no Project is linked to the repository. Say to run
+- **`error: no-backlog`:** no Project is linked to the repository. Say to run
   the `lets-setup-backlog` skill.
-- **`several-backlogs`:** list each Project's `title` and `url` from its
-  `projects`, and ask the user to unlink the extras. Never pick one
+- **`error: several-backlogs`:** list each Project's `title` field and
+  `url` field from its `projects` field, and ask the user to unlink the extras. Never pick one
   yourself.
-- **Any other error,** such as `backend-failed` when the backlog
-  provider's tool fails, or `unknown-backlog-provider`: show its
-  `message`.
-  When it carries `claim`, show the token. The user can run
+- **Any other error,** such as `error: backend-failed` when the
+  backlog provider's tool fails, or `error: unknown-backlog-provider`:
+  show its `message` field.
+  When it carries the `claim` field, show the token. The user can run
   `lets backlog release <i> --claim <claim>`. Say the issue may still
   hold your assignment or claim comment. Do not retry.
 
@@ -265,8 +265,8 @@ lets backlog key -- '<word>'
 lets backlog key -- 'can'\''t'
 ```
 
-When it prints a `key`, the word names an issue, and that `key` is
-`<i>`. When `key` is `null`, the word is words, such as `refactor`.
+When it prints a key in its `key` field, the word names an issue, and
+that key is `<i>`. On `key: null`, the word is words, such as `refactor`.
 Ask it before the discovery query and the title search. On an error,
 act as [Backlog errors](#backlog-errors) says.
 
@@ -307,9 +307,9 @@ change's issue, once. On an error, act as
 lets backlog find <branch>
 ```
 
-Keep the `issues` whose title starts with `<branch> — `: these are the
-matches. When the user gave a number, `<i>` must be the `key` of one
-of them. If it is not, say that the issue and the branch do not match,
+Keep the entries of its `issues` field whose title starts with
+`<branch> — `: these are the matches. When the user gave a number,
+`<i>` must be the `key` field of one of them. If it is not, say that the issue and the branch do not match,
 and stop. When they gave none, exactly one match is the issue. If none
 matches, say that `lets-go` runs on the default branch or on a change's
 branch, and needs the issue number on a change's branch. Stop. If
@@ -342,11 +342,11 @@ says.
    lets backlog item <i>
    ```
 
-   Its `blockedBy` lists each blocker with its `state`, and it gives the
-   `title` too. Keep the whole result: the packet check below reads it.
+   Its `blockedBy` field lists each blocker with its `state`, and its
+   `title` field gives the title. Keep the whole result: the packet check below reads it.
    `<name>` is the change's name, which [Claim](#claim) takes from the
    title. On a change's branch, it is `<branch>`.
-2. When the result's `kind` is `Epic`, an epic has no change's branch,
+2. When the result's `kind` field is `Epic`, an epic has no change's branch,
    so look for none: go on to the blocker decision, as for an issue
    with no branch. Otherwise look for the change's branch, here and on
    `origin`, every time:
@@ -450,8 +450,8 @@ says.
      default branch, and stop. On the default branch, sort the epic by
      the sub-issues the result carries. The first of these that matches
      wins:
-     1. **An empty epic:** `subIssues` and `closedSubIssues` are both
-        empty. The epic has no stories yet. When no shape step has run
+     1. **An empty epic:** the `subIssues` field and the
+        `closedSubIssues` field are both empty. The epic has no stories yet. When no shape step has run
         in this run, [run the shape step](#run-the-shape-step) for
         `#<i>`, claiming nothing and creating no branch before it. Its
         `lets-shape` shapes the epic in place. When one has, say that
@@ -461,8 +461,8 @@ says.
         [Name the maps' edits](references/shape.md#name-the-maps-edits)
         says for a run that stops after discovery and before
         [Claim](#claim).
-     2. **A finished epic:** `subIssues` is empty, and
-        `closedSubIssues` is not. Every story under the epic is closed.
+     2. **A finished epic:** the `subIssues` field is empty, and the
+        `closedSubIssues` field is not. Every story under the epic is closed.
         With `<i>` as `<parent>`, print:
 
         ```text
@@ -618,16 +618,16 @@ says.
      and stop, claiming nothing, even for an issue that `next` picked.
    - **`checkpoint-failed`:** report what the check found, and stop.
    - **`claim-failed`:** show its message. Report what may remain by
-     `write`:
+     its `write` field:
 
-     - `assign`: your assignment; no claim token exists.
-     - `claim`: your assignment and possibly a claim comment.
-     - `delete-claim`: claim comments and your assignment. After
+     - `write: assign`: your assignment; no claim token exists.
+     - `write: claim`: your assignment and possibly a claim comment.
+     - `write: delete-claim`: claim comments and your assignment. After
        release, check that no claim comment or assignment of yours
        remains.
-     - `unassign`: your assignment and possibly In Progress Status;
+     - `write: unassign`: your assignment and possibly In Progress Status;
        the user fixes both by hand.
-     - `status`: Status, and possibly your assignment and comment.
+     - `write: status`: Status, and possibly your assignment and comment.
        With no comment left, the user resets Status by hand.
 
      Ask the user to inspect the issue. With a claim comment, they can
@@ -970,7 +970,7 @@ Take the first case that applies:
    lets backlog find 'fix user'\''s $HOME display'
    ```
 
-   The result is `matches`, with the `issues` the search found, or
+   The result is `matches`, with the issues in its `issues` field, or
    `no-match` when it found none.
 3. **Otherwise, take `next`.** List the ready issues, best first:
 
@@ -981,8 +981,8 @@ Take the first case that applies:
    A ready issue is one of this repository's issues on the Project. Its
    Status is Todo, its Kind is not Epic, and its priority is Must,
    Should or Could. Nobody is assigned to it, and no open issue blocks
-   it. A Wont is never a candidate. The `issues` it prints are the
-   candidates, ranked Must, then Should, then Could, then the oldest
+   it. A Wont is never a candidate. The issues in its `issues` field are
+   the candidates, ranked Must, then Should, then Could, then the oldest
    issue first. An epic run narrows the candidates to the current
    wave with `--only`, as *Pick the next story* in
    [Run the epic](#run-the-epic) says. After a lost claim outside an
@@ -1031,11 +1031,11 @@ that result, and run nothing. On an error, act as
 lets backlog item <i>
 ```
 
-- If its `kind` is `null`, the issue is not on the Project, or has no
+- If its `kind` field is `null`, the issue is not on the Project, or has no
   Kind: it is not shaped. The result is `needs-shape`: return it now.
-- If its `kind` is `Epic`, the result is `epic`: return it now, with the
-  open sub-issues in its `subIssues` and the closed ones in its
-  `closedSubIssues`.
+- If its `kind` field is `Epic`, the result is `epic`: return it now,
+  with the open sub-issues in its `subIssues` field and the closed ones
+  in its `closedSubIssues` field.
 
 Read the whole body. Check that every required line for its Kind is
 there and filled in. These are the lines of the `lets-shape` skill's
@@ -1071,7 +1071,7 @@ watermark: its edit date, else its creation date. It carries nothing of
 what a comment says.
 
 For a Story with a parent, read the **Shared decisions** section of the
-`body` in its `parent`, when it has one. Run no other command for it.
+`body` in its `parent` field, when it has one. Run no other command for it.
 [Route](#route) needs it.
 
 It returns one of these results:
@@ -1111,21 +1111,21 @@ return to the part that ran it, with the result.
    lets backlog claim <i>
    ```
 
-   It returns `taken` before any write if someone has the issue. When
-   two sessions claim at once, it normally picks one winner and gives
-   the other `taken`. The
+   It returns `result: taken` before any write if someone has the
+   issue. When two sessions claim at once, it normally picks one winner
+   and gives the other `result: taken`. The
    [claim comment](../lets-shape/references/issue-comments.md#claim-comments)
    reference describes its format and read-lag risk.
 
-   On its `result`:
-   - **`claimed`:** keep its `claim` field as `<claim>` for release,
-     then go on, below.
-   - **`taken`:** another session has the issue. The result is `taken`,
-     with the `assignees` it names. Return it now.
-   - **`failed`:** a write failed. The result is `claim-failed`, with
-     the `write` that failed, its `message` and its `claim` token when
-     present. Return it now, before you create a branch, and undo
-     nothing.
+   On its `result` field:
+   - **`result: claimed`:** keep its `claim` field as `<claim>` for
+     release, then go on, below.
+   - **`result: taken`:** another session has the issue. The result is
+     `taken`, with the names in its `assignees` field. Return it now.
+   - **`result: failed`:** a write failed. The result is
+     `claim-failed`, with its `write` field, which names the write that
+     failed, its `message` field and, when present, its `claim` field.
+     Return it now, before you create a branch, and undo nothing.
 4. Create a branch with the change's name off the default branch. In
    an epic run, create the branch and the story's worktree together,
    so that the epic run's own checkout stays on `<default>`. The
@@ -1155,12 +1155,12 @@ return to the part that ran it, with the result.
    lets backlog release <i> --claim <claim>
    ```
 
-   On `not-found`, ask the user to inspect the issue before retrying.
+   On `result: not-found`, ask the user to inspect the issue before retrying.
    The result is then `branch-failed`, with the branch's error. When the
-   release prints `"result": "failed"`, `branch-failed` also carries
-   the release's `write` and `message`. When it prints an `error`
-   instead, nothing was released: `branch-failed` also carries that
-   error's `message`.
+   release prints `result: failed`, `branch-failed` also carries the
+   release's `write` field and `message` field. When it prints an
+   `error` field instead, nothing was released: `branch-failed` also
+   carries that error's `message` field.
 
 It returns one of these results:
 
@@ -1170,8 +1170,8 @@ It returns one of these results:
   returned: `no-owned-edits`, or `verified` with the checkpoint commits.
 - `taken`: another session has the issue. It carries who has it.
 - `claim-failed`: a write of `lets backlog claim` failed, and no branch
-  exists. It carries the failed `write` and its `message`, plus the
-  claim token when available for recovery.
+  exists. It carries the failed write's `write` field and `message`
+  field, plus the claim token when available for recovery.
 - `unresolved`:
   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
   returned `unresolved`. It carries what is unresolved.
