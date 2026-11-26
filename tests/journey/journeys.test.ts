@@ -44,6 +44,9 @@ const STORY_GH: StandInRow[] = [
   issue({ number: 149 }),
 ];
 
+// A final message whose step report is done, with evidence naming what.
+const done = (what: string) => ending(`outcome: done\nevidence:\n  - "${what}"\n`);
+
 /** What `lets delegate step wait` prints when one of its steps ends. */
 interface Ended {
   name: string;
@@ -79,7 +82,9 @@ function printed(result: LetsResult, command: string, code = 0): any {
  * `story-149-plan`. Throws when the title holds no ` — `.
  */
 function sessionName(title: string, step: string): string {
-  throw new Error('not built yet');
+  const at = title.indexOf(' — ');
+  if (at === -1) throw new Error(`the title ${JSON.stringify(title)} holds no " — ", so it names no session`);
+  return `${title.slice(0, at)}-${step}`;
 }
 
 /**
@@ -117,4 +122,29 @@ test('the story journey: sync, then ready, item and claim, then a plan step on t
   assert.deepEqual(state.status, ['In Progress']);
   const claims = state.pages.flat().filter((comment: { body: string }) => comment.body.includes('Token: '));
   assert.deepEqual(claims.map((comment: { body: string }) => comment.body.split('Token: ')[1]), [claimed.claim]);
+
+  // Each CLI answers only the write-mode call with the model its listing
+  // gives, so other options, or another order, find no row. codex and
+  // claude refuse, by exiting 1 having printed nothing, and agy answers.
+  const session = sessionName(item.title, 'plan');
+  const writes = {
+    codex: codexWrite(repo.cwd, { model: 'gpt-6-luna', name: session }),
+    claude: claudeWrite(),
+    agy: agyWrite('high', '120m', PROMPT, 'gemini-3.8-flash-high'),
+  };
+  const clis = {
+    codex: codex(repo.standIns, [{ slug: 'gpt-6-luna', visibility: 'list' }], { rows: [{ args: writes.codex, code: 1 }] }),
+    claude: claude(repo.standIns, { rows: [{ args: writes.claude, code: 1 }] }),
+    agy: agy(repo.standIns, ['gemini-3.8-flash-high'], { rows: [{ args: writes.agy, stdout: done(`plan of ${item.key}`) }] }),
+  };
+  const { options } = printed(await repo.run(['delegate', 'step', 'instructions', '--for', 'plan']), 'delegate step instructions --for plan');
+  const step = ['delegate', 'step', 'run', '--for', 'plan', '--name', session, '--prompt-file', 'p.md', '--effort', 'high',
+    ...options.flatMap((model: string) => ['--model', model])];
+  const ran = await repo.run(step);
+  assert.equal(printed(ran, step.join(' ')).outcome, 'done');
+  assert.equal(JSON.parse(ran.stderr.trim().split('\n').at(-1)!).family, 'gemini', ran.stderr);
+
+  assert.deepEqual(clis.codex.calls(), [['debug', 'models'], writes.codex]);
+  assert.deepEqual(clis.claude.calls(), [writes.claude]);
+  assert.deepEqual(clis.agy.calls(), [['models'], writes.agy]);
 });
