@@ -11,7 +11,7 @@
 
 **Goals:**
 - `lets go step-prompt` prints, for each step and for the story prompt, the same text that a careful hand fill of today's frames gives (D5).
-- One copy of each shared part of the text: the `## Stack` section, `## Writing`, `## Questions` and `## The report`.
+- One copy of each shared part of the text: the `## Stack` section, shared by the step prompts and the story prompt, and `## Writing`, `## Questions` and `## The report`, shared by the step prompts. The story prompt keeps its own, shorter `## Questions` and `## The report`, as in today's *Start the story run* frame.
 - `lets-go` calls the command in two places, *Run a step* and *Start the story run*, and holds no frame.
 
 **Non-Goals:**
@@ -34,7 +34,7 @@
 
 ### The text lives in `lets/src/go/step-prompt.ts` as code
 
-The frames become functions in one module. A header function gives the first two lines for each form: walk step, shape for an issue, shape for an idea, and story. Constants hold `## Writing` (with the path filled in), `## Questions` and `## The report`. A single `stackSection()` builds `## Stack` for both the step prompts and the story prompt. So the spec's "same text in every prompt of the story" holds by construction. The `## What to run` sentence comes from a map from step to skill: `plan` to `lets-plan`, `review-plan` to `lets-review-plan`, `build` to `lets-build`, `review-build` to `lets-review-build`.
+The frames become functions in one module. A header function gives the first two lines for each form: walk step, shape for an issue, shape for an idea, and story. Constants hold the step prompts' `## Writing` (with the path filled in), `## Questions` and `## The report`. Two more constants hold the story prompt's own `## Questions` and `## The report`, from `references/epic-run.md`; the story prompt does not use the step prompts' versions. A single `stackSection()` builds `## Stack` for both the step prompts and the story prompt. So the spec's "same text in every prompt of the story" holds by construction. The `## What to run` sentence comes from a map from step to skill: `plan` to `lets-plan`, `review-plan` to `lets-review-plan`, `build` to `lets-build`, `review-build` to `lets-review-build`.
 
 Alternative: ship the frames as Markdown files in the `lets` package and fill `<...>` at run time. Rejected: a second place for text with its own lookup path, and a placeholder engine for about ten values.
 
@@ -64,7 +64,7 @@ The flag is `--questions`, after `go.questions` and `lets go questions`, not `--
 
 ### The skill keeps the call and the stacking rule, nothing else
 
-*Run a step*, step 1, becomes: create `.workspace/lets-go`, then run `lets go step-prompt --for <step>` with the values for this step, `> .workspace/lets-go/<session>-prompt.md`. Its text lists which values each kind of step passes, and states the stacking rule that `step-prompt.md` held (D4): pass the three stack flags on every step of a stacked story, and say when a story is stacked. On a non-zero exit, `lets-go` shows stderr, names the step and stops. *Start the story run*, step 1, runs `lets go step-prompt --for story` the same way. Links to *Write the prompt* in `SKILL.md`, `shape.md`, `story-run.md` and `epic-run.md` point at [Run a step](../SKILL.md#run-a-step) instead. The placeholder table drops `<skill>`, `<plain-language-path>` and `<the sentence above>`, which only the frame used.
+*Run a step*, step 1, becomes: create `.workspace/lets-go`, then run `lets go step-prompt --for <step>` with the values for this step, `> .workspace/lets-go/<session>-prompt.md`. Its text lists which values each kind of step passes, and states the stacking rule that `step-prompt.md` held (D4): pass the three stack flags on every step of a stacked story, and say when a story is stacked. On a non-zero exit, `lets-go` shows stderr, names the step and stops. *Start the story run*, step 1, runs `lets go step-prompt --for story` the same way. Links to *Write the prompt* in `SKILL.md`, `shape.md`, `story-run.md` and `epic-run.md` point at *Run a step* instead: `#run-a-step` within `SKILL.md`, and `../SKILL.md#run-a-step` from the reference files. The placeholder table drops `<skill>`, `<plain-language-path>` and `<the sentence above>`, which only the frame used.
 
 The skill tells `lets-go` to quote each value for the shell. A route line holds `#` and spaces, and an idea can hold any character.
 

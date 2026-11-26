@@ -91,7 +91,7 @@ The prompt SHALL name no section of `lets-shape`.
 - **THEN** it exits 2, stdout is empty, and stderr names `--blocker-branch` and `--blocker-pr`
 
 ### Requirement: The step prompt names the plain-language reference
-For every step but `story`, the prompt's `## Writing` section SHALL name, as `Plain-language method: <path>.`, the absolute path of `.agents/skills/lets-shape/references/plain-language.md` under the repository root, which `git rev-parse --show-toplevel` gives from the folder the command runs in. When that file does not exist, the command SHALL exit 2, print nothing on stdout, and name the path on stderr. Outside a git repository, it SHALL exit 2 and print nothing on stdout. `--for story` SHALL not read the file.
+For every step but `story`, the prompt's `## Writing` section SHALL name, as `Plain-language method: <path>.`, the absolute path of `.agents/skills/lets-shape/references/plain-language.md` under the repository root, which `git rev-parse --show-toplevel` gives from the folder the command runs in. When that file does not exist, the command SHALL exit 2, print nothing on stdout, and name the path on stderr. Outside a git repository, it SHALL exit 2, print nothing on stdout, and say on stderr that the folder is not in a git repository. `--for story` SHALL not read the file.
 
 #### Scenario: The installed reference
 - **WHEN** the user runs `lets go step-prompt --for plan` with the required flags in a subfolder of a repository whose root is `/w/repo` and which holds `.agents/skills/lets-shape/references/plain-language.md`
@@ -100,6 +100,10 @@ For every step but `story`, the prompt's `## Writing` section SHALL name, as `Pl
 #### Scenario: No installed reference
 - **WHEN** the user runs `lets go step-prompt --for build` with the required flags in a repository with no `.agents/skills/lets-shape/references/plain-language.md`
 - **THEN** it exits 2, stdout is empty, and stderr names `.agents/skills/lets-shape/references/plain-language.md`
+
+#### Scenario: Outside a git repository
+- **WHEN** the user runs `lets go step-prompt --for plan` with the required flags in a folder that is not in a git repository
+- **THEN** it exits 2, stdout is empty, and stderr says the folder is not in a git repository
 
 #### Scenario: A story prompt needs no reference
 - **WHEN** the user runs `lets go step-prompt --for story` with the required flags in a repository with no plain-language reference
@@ -142,6 +146,10 @@ For every step but `story`, the prompt's `## The report` section SHALL say to en
 - **WHEN** the user runs `lets go step-prompt --for review --name x --issue 1 --issue-url u --schema s --route r --questions ask`
 - **THEN** it exits 2, stdout is empty, and stderr names `--for` and `review`
 
+#### Scenario: No step
+- **WHEN** the user runs `lets go step-prompt --name x --issue 1 --issue-url u --schema s --route r --questions ask` without `--for`
+- **THEN** it exits 2, stdout is empty, and stderr names `--for`
+
 #### Scenario: A missing flag
 - **WHEN** the user runs `lets go step-prompt --for plan` without `--route`
 - **THEN** it exits 2, stdout is empty, and stderr names `--route`
@@ -153,6 +161,18 @@ For every step but `story`, the prompt's `## The report` section SHALL say to en
 #### Scenario: An issue and an idea
 - **WHEN** the user runs `lets go step-prompt --for shape --issue 180 --issue-url u --idea "x" --branch main --questions ask`
 - **THEN** it exits 2, stdout is empty, and stderr names `--issue` and `--idea`
+
+#### Scenario: Neither an issue nor an idea
+- **WHEN** the user runs `lets go step-prompt --for shape --branch main --questions ask`
+- **THEN** it exits 2, stdout is empty, and stderr names `--issue` and `--idea`
+
+#### Scenario: An issue without its URL
+- **WHEN** the user runs `lets go step-prompt --for shape --issue 180 --branch main --questions ask`
+- **THEN** it exits 2, stdout is empty, and stderr names `--issue-url`
+
+#### Scenario: A search without an idea
+- **WHEN** the user runs `lets go step-prompt --for shape --issue 180 --issue-url u --searched --branch main --questions ask`
+- **THEN** it exits 2, stdout is empty, and stderr names `--searched` and `--idea`
 
 #### Scenario: A question mode lets does not know
 - **WHEN** the user runs `lets go step-prompt --for plan` with `--questions loud` and the other required flags
