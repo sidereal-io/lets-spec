@@ -81,14 +81,15 @@ function checkedStep(options: StepPromptOptions): StepStrategyIntent {
   const mode = options.questions;
   if (!MODES.includes(mode as string)) throw new UsageError(`--questions ${mode} is not ask or auto.`);
   for (const flag of given) {
-    if (flag !== 'idea' && typeof options[flag] === 'string' && /[\r\n]/.test(options[flag])) {
+    const text = options[flag];
+    if (flag !== 'idea' && typeof text === 'string' && /[\r\n]/.test(text)) {
       throw new UsageError(`--${flag} holds a line break: give it on one line.`);
     }
   }
   const stack = STACK.filter((flag) => options[flag] !== undefined);
   if (stack.length > 0 && stack.length < STACK.length) {
     const absent = STACK.filter((flag) => options[flag] === undefined);
-    throw new UsageError(`${flags(stack, 'and')} also need ${flags(absent, 'and')}: give all three stack flags, or none.`);
+    throw new UsageError(`${flags(stack, 'and')} also ${stack.length === 1 ? 'needs' : 'need'} ${flags(absent, 'and')}: give all three stack flags, or none.`);
   }
   return step;
 }

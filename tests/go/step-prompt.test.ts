@@ -299,3 +299,63 @@ describe('a stacked story\'s Stack section', () => {
     rejected(await repo.run([...walk('plan'), '--blocker', '279', '--blocker-pr', '290']), '--blocker-branch');
   });
 });
+
+describe('flags that do not fit the step', () => {
+  const rest = ['--name', 'x', '--issue', '1', '--issue-url', 'u', '--schema', 's', '--route', 'r', '--questions', 'ask'];
+  const shape = ['go', 'step-prompt', '--for', 'shape', '--branch', 'main', '--questions', 'ask'];
+
+  test('an unknown step names --for and the value', async (t) => {
+    const repo = promptRepo(t);
+    rejected(await repo.run(['go', 'step-prompt', '--for', 'review', ...rest]), '--for', 'review');
+  });
+
+  test('no step names --for', async (t) => {
+    const repo = promptRepo(t);
+    rejected(await repo.run(['go', 'step-prompt', ...rest]), '--for');
+  });
+
+  test('a missing flag is named', async (t) => {
+    const repo = promptRepo(t);
+    const args = walk('plan');
+    args.splice(args.indexOf('--route'), 2);
+    rejected(await repo.run(args), '--route');
+    rejected(await repo.run(story().slice(0, -4)), '--route', '--questions');
+  });
+
+  test('a flag the step does not take is named', async (t) => {
+    const repo = promptRepo(t);
+    rejected(await repo.run([...shapeIssue, '--schema', 'lets-standard']), '--schema');
+    rejected(await repo.run([...shapeIssue, ...stacked('1', 'b', '2')]), '--blocker');
+    rejected(await repo.run([...walk('plan'), '--idea', 'x']), '--idea');
+    rejected(await repo.run([...walk('build'), '--parent', '278']), '--parent');
+  });
+
+  test('shape with both an issue and an idea, or neither, names both flags', async (t) => {
+    const repo = promptRepo(t);
+    rejected(await repo.run([...shape, '--issue', '180', '--issue-url', 'u', '--idea', 'x']), '--issue', '--idea');
+    rejected(await repo.run(shape), '--issue', '--idea');
+  });
+
+  test('shape with an issue but no URL names --issue-url', async (t) => {
+    const repo = promptRepo(t);
+    rejected(await repo.run([...shape, '--issue', '180']), '--issue-url');
+  });
+
+  test('a search without an idea names --searched and --idea', async (t) => {
+    const repo = promptRepo(t);
+    rejected(await repo.run([...shape, '--issue', '180', '--issue-url', 'u', '--searched']), '--searched', '--idea');
+  });
+
+  test('a question mode lets does not know names --questions and the value', async (t) => {
+    const repo = promptRepo(t);
+    rejected(await repo.run(walk('plan', { questions: 'loud' })), '--questions', 'loud');
+  });
+
+  test('a line break in any value but the idea is named', async (t) => {
+    const repo = promptRepo(t);
+    rejected(await repo.run(walk('plan', { route: 'Route: lets-minimal,\nbecause #149 is a Chore.' })), '--route');
+    rejected(await repo.run(walk('build', { name: 'a\r\nb' })), '--name');
+    const idea = printed(await repo.run([...shape, '--idea', 'two\nlines']));
+    assert.ok(idea.includes('The idea is: two\nlines. Branch: main.'), idea);
+  });
+});
