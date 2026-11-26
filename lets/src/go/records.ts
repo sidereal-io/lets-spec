@@ -72,10 +72,16 @@ const DATED = /^\d{4}-\d{2}-\d{2}-/;
 
 // The archive folder whose whole name is <YYYY-MM-DD>-<name>, or null when
 // there is none, or more than one.
-function archiveFolder(io: Pick<Io, 'exists' | 'listDirs'>, root: string, name: string): string | null {
+function archiveFolder(io: Pick<Io, 'isDir' | 'listDirs'>, root: string, name: string): string | null {
   const dir = `${root}/${ARCHIVE}`;
-  if (!io.exists(dir)) return null;
-  const found = io.listDirs(dir).filter((folder) => DATED.test(folder) && folder.slice(11) === name);
+  if (!io.isDir(dir)) return null;
+  let folders: string[];
+  try {
+    folders = io.listDirs(dir);
+  } catch (error) {
+    throw new SpawnError(`could not read ${ARCHIVE}: ${(error as Error).message}`);
+  }
+  const found = folders.filter((folder) => DATED.test(folder) && folder.slice(11) === name);
   return found.length === 1 ? found[0] : null;
 }
 

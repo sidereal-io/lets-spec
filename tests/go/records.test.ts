@@ -4,7 +4,7 @@
 // from the repository, so no hash is hard-coded.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, test, type TestContext } from 'node:test';
 import { git, type LetsResult, pinnedEnv, runLets, type StandIn, type StandInRow, standIn, tempDir } from '../support/lets.ts';
@@ -221,6 +221,31 @@ describe('review-build record', () => {
     mkdirSync(join(r.root, ARCHIVE), { recursive: true });
     writeFileSync(join(r.root, ARCHIVE, 'tasks.md'), '- [x] 1.1 a\n');
     assert.equal(printed(await r.records())['review-build'], null);
+  });
+});
+
+describe('the archive folder', () => {
+  test('the review-build record is null when openspec/changes/archive is a file', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('chore: odd', { 'openspec/changes/archive': 'not a folder\n' }, '2026-11-06');
+    assert.equal(printed(await r.records())['review-build'], null);
+  });
+
+  test('an archive folder that cannot be read fails, naming it', { skip: process.getuid?.() === 0 && 'root reads any folder' }, async (t) => {
+    const r = repo(t, [noPr()]);
+    const dir = join(r.root, 'openspec/changes/archive');
+    mkdirSync(dir, { recursive: true });
+    chmodSync(dir, 0o000);
+    let result: LetsResult;
+    // Restored here, not in t.after, because the temporary folder's own cleanup runs first.
+    try {
+      result = await r.records();
+    } finally {
+      chmodSync(dir, 0o755);
+    }
+    assert.equal(result.code, 4, result.output);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /^lets go: could not read openspec\/changes\/archive: [^\n]*\n$/);
   });
 });
 
