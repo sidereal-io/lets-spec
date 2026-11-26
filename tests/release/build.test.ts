@@ -17,8 +17,8 @@ function buildFrom(source: string, generated: string, out: string, ...args: stri
 }
 
 /**
- * Runs the release build on this repository, as release.bash's `build`
- * does: `schemas` is comma-separated, and the first is the default.
+ * Runs the release build on this repository, as the flake does:
+ * `schemas` is comma-separated, and the first is the default.
  */
 function build(out: string, schemas: string, ...skills: string[]): Promise<ProgramResult> {
   return buildFrom(repo, generatedSkills(`${out}.generated`), out, schemas, ...skills);

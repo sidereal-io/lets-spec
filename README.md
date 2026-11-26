@@ -706,7 +706,7 @@ have your project's CI run `mise exec -- lets sync --check` on pull requests.
 This section is for you if you want to work on Let's Spec itself.
 
 Enter the dev shell with `nix develop`, or run `mise install`. Both give
-you Node 26, pnpm, bats, `jq`, `yq` and the OpenSpec CLI. Then run
+you Node 26, pnpm and the OpenSpec CLI. Then run
 `pnpm install` once.
 
 ### Layout
@@ -744,11 +744,10 @@ sets up sample projects. In the dev shell:
 
 | Command | What it runs |
 |---|---|
-| `pnpm test` | The Node tests, the type check and the bats tests |
+| `pnpm test` | The Node tests and the type check |
 | `pnpm test:backlog` | The `lets backlog` tests alone |
 | `pnpm check` | The type check alone: `tsc --noEmit` |
 | `pnpm build` | The `lets` bundle, into `lets/dist/lets` |
-| `bats tests` | The bats tests alone |
 
 Node runs the TypeScript source directly, so you do not need to build
 before you test. With mise, `mise run test` runs `pnpm test`, and
