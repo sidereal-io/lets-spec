@@ -39,13 +39,31 @@ async function pullRequest(io: Pick<Io, 'execFile'>, cwd: string, name: string):
   return JSON.parse(result.stdout) as PullRequest;
 }
 
+type StepRecord = { commit: string; date: string };
+
+// The most recent commit, reachable from HEAD, that made a change of kind
+// filter (A added, M modified) to path, or null when none did.
+async function lastCommit(git: Run, filter: 'A' | 'M', path: string): Promise<StepRecord | null> {
+  const out = await git('git', ['log', '-1', `--diff-filter=${filter}`, '--format=%h%x00%as', '--', path]);
+  const line = out.trim();
+  if (line === '') return null;
+  const [commit, date] = line.split('\0');
+  return { commit, date };
+}
+
 // The exit code: 0 ok, 2 a bad name, 4 a failed read.
 export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'stderr'>): Promise<number> {
   return guarded(deps, async () => {
-    const git = runner(deps.io, deps.cwd);
-    const root = (await git('git', ['rev-parse', '--show-toplevel'])).trim();
+    const root = (await runner(deps.io, deps.cwd)('git', ['rev-parse', '--show-toplevel'])).trim();
+    const git = runner(deps.io, root);
+    const change = `openspec/changes/${name}`;
     await pullRequest(deps.io, root, name);
-    const records = { plan: null, 'review-plan': null, build: null, 'review-build': null };
+    const records = {
+      plan: await lastCommit(git, 'A', `${change}/tasks.md`),
+      'review-plan': null,
+      build: null,
+      'review-build': null,
+    };
     deps.stdout(`${JSON.stringify(records)}\n`);
     return EXIT.ok;
   }, 'lets go: ');

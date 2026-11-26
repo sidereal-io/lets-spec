@@ -100,3 +100,34 @@ describe('a new change', () => {
     for (const call of r.gh.calls()) assert.deepEqual(call.slice(0, 2), ['pr', 'view']);
   });
 });
+
+const CHANGE = `openspec/changes/${NAME}`;
+const ARCHIVE = `openspec/changes/archive/2026-11-06-${NAME}`;
+
+describe('plan record', () => {
+  test('the plan record is the commit that added tasks.md, with its date', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('docs: brainstorm', { [`${CHANGE}/brainstorm.md`]: 'b\n' }, '2026-11-02');
+    const sha = r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+    assert.deepEqual(printed(await r.records()).plan, { commit: sha, date: '2026-11-03' });
+  });
+
+  test('the plan record is dated by the author date, not the committer date', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03', '2026-11-20');
+    assert.equal((printed(await r.records()).plan as { date: string }).date, '2026-11-03');
+  });
+
+  test('the plan record is null when no commit added tasks.md', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('docs: brainstorm', { [`${CHANGE}/brainstorm.md`]: 'b\n', [`${CHANGE}/proposal.md`]: 'p\n' }, '2026-11-02');
+    assert.equal(printed(await r.records()).plan, null);
+  });
+
+  test('the plan record stays on the commit that added tasks.md after archive', async (t) => {
+    const r = repo(t, [noPr()]);
+    const sha = r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+    r.move('chore: archive', CHANGE, ARCHIVE, '2026-11-06');
+    assert.deepEqual(printed(await r.records()).plan, { commit: sha, date: '2026-11-03' });
+  });
+});
