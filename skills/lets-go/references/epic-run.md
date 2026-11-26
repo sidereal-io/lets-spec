@@ -539,7 +539,8 @@ answers, report and meta files, stay in this checkout.
 1. **Write the story prompt.** From the repo root, run
    `lets go step-prompt --for story` with the story's values, and send
    its stdout to `.workspace/lets-go/<name>-story-prompt.md` in this
-   checkout. Quote each value for the shell, as
+   checkout, through a new file that moves into place only when the
+   command exits 0, as [Run a step](../SKILL.md#run-a-step) does. Quote each value for the shell, as
    [Run a step](../SKILL.md#run-a-step) says. `<schema>`,
    `<route line>` and `<mode>` are the ones
    [Enter the branch](../SKILL.md#enter-the-branch),
@@ -551,7 +552,8 @@ answers, report and meta files, stay in this checkout.
    lets go step-prompt --for story --name '<name>' --issue '<i>' \
      --issue-url '<issue-url>' --parent '<parent>' --checkout '<path>' \
      --schema '<schema>' --route '<route line>' --questions <mode> \
-     > .workspace/lets-go/<name>-story-prompt.md
+     > .workspace/lets-go/<name>-story-prompt.md.new &&
+     mv .workspace/lets-go/<name>-story-prompt.md.new .workspace/lets-go/<name>-story-prompt.md
    ```
 
    For a stacked story only, add
@@ -559,8 +561,9 @@ answers, report and meta files, stay in this checkout.
    with the same values as the story's step prompts, so that the story
    prompt holds the same `## Stack` section. For a story that is not
    stacked, pass none of the three, and the story prompt holds no
-   `## Stack` section. If the command exits non-zero, show the user its
-   stderr, and stop, as
+   `## Stack` section. If the command exits non-zero, remove
+   `.workspace/lets-go/<name>-story-prompt.md.new`, show the user the
+   command's stderr, and stop, as
    [A stop in an epic run](#a-stop-in-an-epic-run) says: the story's
    reason is its stderr.
 

@@ -1284,14 +1284,20 @@ says.
 
 1. Write the prompt. If the folder is missing, create it first:
    `mkdir -p .workspace/lets-go`. Then, from the repo root, run
-   `lets go step-prompt` with the step's values, and send its stdout to
-   the prompt file:
+   `lets go step-prompt` with the step's values. Send its stdout to a
+   new file, and move that file onto the prompt file only when the
+   command exits 0:
 
    ```bash
    lets go step-prompt --for <step> --name '<name>' --issue '<i>' \
      --issue-url '<issue-url>' --schema '<schema>' --route '<route line>' \
-     --questions <mode> > .workspace/lets-go/<session>-prompt.md
+     --questions <mode> > .workspace/lets-go/<session>-prompt.md.new &&
+     mv .workspace/lets-go/<session>-prompt.md.new .workspace/lets-go/<session>-prompt.md
    ```
+
+   A failed command then leaves an earlier round's prompt as it was.
+   [The shape step](references/shape.md) reads that prompt to tell one
+   idea's answers from another's.
 
    Quote each value for the shell, in single quotes, and write a `'`
    inside a value as `'\''`: a route line holds `#` and spaces, and an
@@ -1327,8 +1333,9 @@ says.
      a story that is not stacked, pass none of the three.
 
    The prompt is all the step gets: it has none of this session's
-   conversation. If the command exits non-zero, show the user its
-   stderr, name the step, and stop. Run neither
+   conversation. If the command exits non-zero, remove
+   `.workspace/lets-go/<session>-prompt.md.new`, show the user the
+   command's stderr, name the step, and stop. Run neither
    `lets delegate step instructions` nor `lets delegate step run` for
    the step.
 2. Ask what can run. From the repo root, run:
