@@ -294,7 +294,8 @@ Every step but shape takes --blocker, --blocker-branch and --blocker-pr,
 all three or none. With them, the prompt holds a ## Stack section.
 
 Every prompt but story's names the installed plain-language reference,
-${PLAIN_LANGUAGE} under the repository root.
+which is this file under the repository root:
+  ${PLAIN_LANGUAGE}
 
 Exit codes:
   0  the prompt is on stdout

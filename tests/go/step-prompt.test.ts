@@ -359,3 +359,33 @@ describe('flags that do not fit the step', () => {
     assert.ok(idea.includes('The idea is: two\nlines. Branch: main.'), idea);
   });
 });
+
+describe('the help', () => {
+  test('lets go --help names questions and step-prompt', async (t) => {
+    const repo = promptRepo(t);
+    const help = printed(await repo.run(['go', '--help']));
+    assert.match(help, /^\s+questions\b/m);
+    assert.match(help, /^\s+step-prompt\b/m);
+  });
+
+  test('lets go step-prompt --help names each step, each flag and the steps it is for, stdout, no file and the exit codes', async (t) => {
+    const repo = promptRepo(t);
+    const help = printed(await repo.run(['go', 'step-prompt', '--help']));
+    for (const step of ['shape', 'plan', 'review-plan', 'build', 'review-build', 'story']) assert.match(help, new RegExp(`\\b${step}\\b`), step);
+    const flags = ['--name', '--issue', '--issue-url', '--branch', '--idea', '--searched', '--parent', '--checkout', '--schema', '--route', '--questions', '--blocker', '--blocker-branch', '--blocker-pr'];
+    // Each option's entry: its line, and the wrapped lines under it.
+    const entries = help.split('\n').reduce<string[]>((found, line) => {
+      if (/^ {2}-/.test(line)) found.push(line.trim());
+      else if (/^ {4,}\S/.test(line) && found.length > 0) found[found.length - 1] += ` ${line.trim()}`;
+      return found;
+    }, []);
+    for (const flag of flags) {
+      const entry = entries.find((text) => text.startsWith(`${flag} `) || text === flag);
+      assert.ok(entry !== undefined, `${flag} in ${help}`);
+      assert.match(entry, /\((every step|shape|plan|story)[^)]*\)$/, `the steps ${flag} is for: ${entry}`);
+    }
+    assert.ok(help.includes('stdout') && help.includes('writes no file'), help);
+    assert.match(help, /^\s+0\s/m);
+    assert.match(help, /^\s+2\s/m);
+  });
+});
