@@ -24,7 +24,7 @@ Before 3.1, write a probe in `.workspace/` that lists every code span in the tex
 
 ## 4. Rule and integration [depends-on: 3]
 
-- [ ] 4.1 [easy] `AGENTS.md` has a *Fields a text reads* section before the lets-spec block, with the rule (D3), the value spans the check reads (D12), the fields and values left in plain code font (D2, D5), the advice to give each field its own word field, and a link to `tests/contracts/fields.test.ts` (D11). The `contracts/` row of the README's *Layout* table names fields and values among what the checks cover (verify: `grep -n 'Fields a text reads' AGENTS.md && node --test tests/contracts/links.test.ts`)
+- [x] 4.1 [easy] `AGENTS.md` has a *Fields a text reads* section before the lets-spec block, with the rule (D3), the value spans the check reads (D12), the fields and values left in plain code font (D2, D5), the advice to give each field its own word field, and a link to `tests/contracts/fields.test.ts` (D11). The `contracts/` row of the README's *Layout* table names fields and values among what the checks cover (verify: `grep -n 'Fields a text reads' AGENTS.md && node --test tests/contracts/links.test.ts`) (✓ `grep -n 'Fields a text reads' AGENTS.md && node --test tests/contracts/links.test.ts` passed)
 - [ ] 4.2 [medium] Every check passes: `pnpm test`, `mise run check` and `nix flake check`. The pull request lists the probe's spans, each marked rewritten or left alone with the program that prints it, and says this story kept no unit test and deleted no test (verify: `nix flake check`)
 
 ## Deviations Ledger
