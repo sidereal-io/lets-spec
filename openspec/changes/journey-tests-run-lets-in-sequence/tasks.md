@@ -23,7 +23,7 @@
 
 ## 4. Integration [depends-on: 3]
 
-- [ ] 4.1 [easy] The `tests/` row of the README's *Development* table says that `journey/` holds tests that run several `lets` commands in sequence, as `lets-go` does, and feed each one what the last one printed (verify: `git grep -n 'journey/' README.md`)
+- [x] 4.1 [easy] The `tests/` row of the README's *Development* table says that `journey/` holds tests that run several `lets` commands in sequence, as `lets-go` does, and feed each one what the last one printed (verify: `git grep -n 'journey/' README.md`) (✓ `git grep -n 'journey/' README.md` found line 728)
 - [ ] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new file in the Nix sandbox. No step process is left running after the journey file ends (verify: `nix flake check`)
 
 ## Deviations Ledger
