@@ -18,7 +18,7 @@ the next release.
 Run all three before you push:
 
 ```bash
-pnpm test          # the Node tests, the type check, then the bats tests
+pnpm test          # the Node tests, then the type check
 nix flake check    # also builds every flow and the release folder
 mise run check     # OpenSpec validation; warnings fail too
 ```

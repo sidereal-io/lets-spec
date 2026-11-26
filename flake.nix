@@ -187,14 +187,13 @@
         flows = pkgs.linkFarmFromDrvs "every-flow"
           (map (flow: (packagesFor pkgs).${flow}) (lib.attrNames flows));
 
-        # No bats file is left to run here, and #313 removes bats from this
-        # check's tools. The smoke test sets up a project with
-        # the packaged commands, to prove the wrappers find the release, and
-        # that the pinned OpenSpec CLI works with the result. The bundle has
-        # no OpenSpec CLI, so the check adds the one the release records.
+        # The smoke test sets up a project with the packaged commands, to
+        # prove the wrappers find the release, and that the pinned OpenSpec
+        # CLI works with the result. The bundle has no OpenSpec CLI, so the
+        # check adds the one the release records.
         commands = pkgs.runCommand "commands-check"
           {
-            nativeBuildInputs = [ pkgs.bats pkgs.git pkgs.yq-go pkgs.jq pkgs.nodejs_26 pkgs.pnpm pkgs.pnpmConfigHook (packagesFor pkgs).default (packagesFor pkgs).openspec ];
+            nativeBuildInputs = [ pkgs.git pkgs.yq-go pkgs.jq pkgs.nodejs_26 pkgs.pnpm pkgs.pnpmConfigHook (packagesFor pkgs).default (packagesFor pkgs).openspec ];
             pnpmDeps = pnpmDepsFor pkgs;
           }
           ''
@@ -397,7 +396,7 @@
 
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
-          packages = [ (packagesFor pkgs).openspec pkgs.bats pkgs.yq-go pkgs.jq pkgs.nodejs_26 pkgs.pnpm ];
+          packages = [ (packagesFor pkgs).openspec pkgs.nodejs_26 pkgs.pnpm ];
         };
       });
     };
