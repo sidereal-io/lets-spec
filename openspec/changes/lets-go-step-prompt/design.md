@@ -52,7 +52,7 @@ Alternative: one subcommand per step, as in `lets go step-prompt plan`, so that 
 
 ### Values go in as given
 
-`--issue` is the key as `lets backlog` prints it, and the prompt writes `#<i>`, as the frame does today. ADR-025 keeps keys opaque, so the command does not check the key's form. `--route` and `--idea` go in word for word. The command adds nothing to a value except the frame's own text around it.
+`--issue` is the key as `lets backlog` prints it, and the prompt writes `#<i>`, as the frame does today. ADR-025 keeps keys opaque, so the command does not check the key's form. On a backlog whose label is not `#` and the key, such as `PROJ-12`, the prompt would read `#PROJ-12`. Today's frame does the same, and D5 keeps the text, so this change leaves it. `--route` and `--idea` go in word for word. The command adds nothing to a value except the frame's own text around it.
 
 ### The prompt ends with one newline
 
