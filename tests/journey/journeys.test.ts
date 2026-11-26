@@ -44,6 +44,29 @@ const STORY_GH: StandInRow[] = [
   issue({ number: 149 }),
 ];
 
+// gh issue view's JSON for a story whose Relevant code names path, as
+// lets backlog waves reads it.
+const waveStory = (n: number, path: string, blockedBy: number[] = []): StandInRow => ({
+  args: ['issue', 'view', String(n)], prefix: true, ...json(viewed(n, {
+    body: `## Context\n\n- **Relevant code**: \`${path}\` (*a section*)\n`,
+    blockedBy: blockedBy.map((b) => ({ number: b, title: title(b), state: 'OPEN', url: url(b), repository: { nameWithOwner: REPO } })),
+  })),
+});
+
+// The stand-in gh of the epic-wave journey: epic 52, whose open stories
+// are 53, 54 and 55. 53 and 54 touch different code, and 55 is blocked by
+// 53, so the first wave is 53 and 54.
+const EPIC_GH: StandInRow[] = [
+  ...LOOKUP_ONE,
+  itemList([{ ...story(52, 'Must'), kind: 'Epic' }]),
+  { args: itemView(52), ...json(viewed(52, {
+    subIssues: { nodes: [53, 54, 55].map((n) => ({ number: n, title: title(n), state: 'OPEN', url: url(n) })), totalCount: 3 },
+  })) },
+  waveStory(53, 'lets/src/one.ts'),
+  waveStory(54, 'lets/src/two.ts'),
+  waveStory(55, 'lets/src/three.ts', [53]),
+];
+
 // A final message whose step report is done, with evidence naming what.
 const done = (what: string) => ending(`outcome: done\nevidence:\n  - "${what}"\n`);
 
@@ -147,4 +170,17 @@ test('the story journey: sync, then ready, item and claim, then a plan step on t
   assert.deepEqual(clis.codex.calls(), [['debug', 'models'], writes.codex]);
   assert.deepEqual(clis.claude.calls(), [writes.claude]);
   assert.deepEqual(clis.agy.calls(), [['models'], writes.agy]);
+});
+
+test('the epic-wave journey: item and waves, then a story step for each story of the first wave, waited on', async (t) => {
+  const repo = delegateRepo(t, { user: CLI });
+  standIn(repo.standIns, 'gh', EPIC_GH);
+
+  const epic = printed(await repo.run(['backlog', 'item', '52']), 'backlog item 52');
+  const keys = epic.subIssues.map((sub: { key: string }) => sub.key);
+  assert.deepEqual(keys, ['53', '54', '55']);
+  const only = keys.join(',');
+  const { waves } = printed(await repo.run(['backlog', 'waves', '--only', only]), `backlog waves --only ${only}`);
+  const wave = waves[0].stories.map((s: { key: string }) => s.key);
+  assert.deepEqual(wave, ['53', '54']);
 });

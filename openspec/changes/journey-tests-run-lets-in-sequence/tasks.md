@@ -18,7 +18,7 @@
 
 ## 3. The epic-wave journey [depends-on: 2]
 
-- [ ] 3.1 [medium] In a second `delegateRepo`, with the stand-in `gh` of design decision 4, `lets backlog item 52` prints the open sub-issues 53, 54 and 55, and `lets backlog waves --only` with those keys, joined by commas in that order, prints a first wave of 53 and 54 (verify: `node --test tests/journey/journeys.test.ts`)
+- [x] 3.1 [medium] In a second `delegateRepo`, with the stand-in `gh` of design decision 4, `lets backlog item 52` prints the open sub-issues 53, 54 and 55, and `lets backlog waves --only` with those keys, joined by commas in that order, prints a first wave of 53 and 54 (verify: `node --test tests/journey/journeys.test.ts`) (✓ `node --test tests/journey/journeys.test.ts` passed)
 - [ ] 3.2 [complex] `lets delegate step start --for story --model gpt` for each story of the first wave, named from its `title` with `-story` added, prints a name and a pid, and the test calls `cleanUpStep(t, pid)` before any assertion. `lets delegate step wait`, run again with the names still running until none is, names each started step once with exit 0. Each story's report file then holds a `done` report whose evidence names that story, and `untilGone(pid)` resolves for each pid (verify: `node --test tests/journey/journeys.test.ts`)
 
 ## 4. Integration [depends-on: 3]
