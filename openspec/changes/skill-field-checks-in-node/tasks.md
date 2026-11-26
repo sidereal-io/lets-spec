@@ -5,7 +5,7 @@
 
 ## 1. Shared contracts
 
-- [ ] 1.1 [medium] In `tests/contracts/texts.ts`, each code span outside fenced code carries `next`: the first word of prose after its closing backticks in the same paragraph, read from the next line when the span ends a line, with punctuation after the word left off, and empty when punctuation follows the span or the next line is blank or opens a fence, as design.md's *The word after a span* says. `Text.spans` becomes a `Span` type with a doc comment; #311's checks still pass unchanged (verify: `node --test "tests/contracts/*.test.ts"`)
+- [x] 1.1 [medium] In `tests/contracts/texts.ts`, each code span outside fenced code carries `next`: the first word of prose after its closing backticks in the same paragraph, read from the next line when the span ends a line, with punctuation after the word left off, and empty when punctuation follows the span or the next line is blank or opens a fence, as design.md's *The word after a span* says. `Text.spans` becomes a `Span` type with a doc comment; #311's checks still pass unchanged (verify: `node --test "tests/contracts/*.test.ts"`) (✓ `node --test "tests/contracts/*.test.ts"` passed, 48 tests)
 - [ ] 1.2 [medium] `backlogFields(help)` in `tests/contracts/fields.test.ts` returns each field and its values from a help text, by design.md's *Reading the help*. A small help text written for the test shows each form it reads: a shape across two lines, `name: a|b` values, a trailing `?`, values after a `:` that are not fields, a name before `: [`, and a `where <name> is a, b (aside) or c.` sentence. A second test shows that the real `lets backlog --help` gives at least one field and one value (verify: `node --test tests/contracts/fields.test.ts`)
 
 ## 2. The check [depends-on: 1]
@@ -30,3 +30,10 @@ Before 3.1, write a probe in `.workspace/` that lists every code span in the tex
 ## Deviations Ledger
 
 <!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-25, task 1.1: added `tests/contracts/texts.test.ts`, eight
+  small tests of the `next` word, one for each way a paragraph can go on
+  after a span. The field check's tests in 2.1 do not reach a blank next
+  line, a fence, the end of the file or a span across a line break, and
+  test-first needs each behavior seen failing. The pull request lists it
+  as a kept test of a pure split, with no fake.

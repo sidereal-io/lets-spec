@@ -16,6 +16,18 @@ export interface Piece {
   text: string;
 }
 
+/**
+ * A code span outside fenced code. `next` is the first word of prose after
+ * its closing backticks in the same paragraph, without the punctuation
+ * after that word, so the field check can tell `` `claim` field `` from a
+ * plain `` `claim` ``. When only spaces follow the span on its line, the
+ * word is the next line's first, unless that line is blank or opens a
+ * fence. It is empty when punctuation or another span comes right after.
+ */
+export interface Span extends Piece {
+  next: string;
+}
+
 /** A heading outside fenced code, with its anchor by GitHub's rule. */
 export interface Heading {
   line: number;
@@ -35,7 +47,7 @@ export interface Text {
   /** Each line outside fenced code, with its code spans taken out. */
   prose: Piece[];
   /** Each code span outside fenced code. A span that crosses a line break holds a space there. */
-  spans: Piece[];
+  spans: Span[];
   /** Each line inside a fenced code block, without the fences. */
   code: Piece[];
   headings: Heading[];
@@ -129,8 +141,15 @@ function splitText(source: string): Parts {
   let span = 0;
   let spanText = '';
   let spanLine = 0;
+  // The spans that ended their line, waiting for the next line's first word.
+  let waiting: Span[] = [];
   source.split('\n').forEach((raw, index) => {
     const line = index + 1;
+    if (fence === '' && waiting.length > 0) {
+      const next = /^ *(?:`{3,}|~{3,})/.test(raw) ? '' : firstWord(raw.trimStart());
+      for (const ended of waiting) ended.next = next;
+      waiting = [];
+    }
     if (fence !== '') {
       const trimmed = raw.trim();
       if (/^(`+|~+)$/.test(trimmed) && trimmed[0] === fence[0] && trimmed.length >= fence.length) fence = '';
@@ -162,7 +181,10 @@ function splitText(source: string): Parts {
           spanText = '';
           spanLine = line;
         } else if (n === span) {
-          text.spans.push({ line: spanLine, text: spanText });
+          const after = raw.slice(i + n);
+          const ended = { line: spanLine, text: spanText, next: firstWord(after.trimStart()) };
+          if (after.trim() === '') waiting.push(ended);
+          text.spans.push(ended);
           span = 0;
         } else {
           spanText += raw.slice(i, i + n);
@@ -182,6 +204,12 @@ function splitText(source: string): Parts {
     }
   });
   return text;
+}
+
+// The word that `text` starts with, or empty when it starts with anything
+// else, such as punctuation, a backtick or a list marker.
+function firstWord(text: string): string {
+  return /^[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/u.exec(text)?.[0] ?? '';
 }
 
 // The text a heading shows keeps a link's words, not its target. The
