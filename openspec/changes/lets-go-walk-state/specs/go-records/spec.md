@@ -77,14 +77,14 @@ For a missing argument, stderr SHALL say that the argument `name` is missing. In
 The `done` key SHALL hold an object with the keys `plan`, `review-plan`, `build` and `review-build`, in this order. Each SHALL be `true` when that step is done and `false` when it is not. In these requirements, an archive folder is a folder in `openspec/changes/archive/` in the working tree whose whole name is a date as `YYYY-MM-DD`, a hyphen, and `<name>`. One such folder or more counts. The change state is the `state` that `openspec instructions apply --change <name> --json` prints. The command SHALL run that command at most once, and only when `openspec/changes/<name>/` exists and no archive folder does. The first of these that matches SHALL decide:
 
 1. When an archive folder exists, every step SHALL be done.
-2. When `openspec/changes/<name>/` does not exist, plan, build and review build SHALL not be done.
+2. When `openspec/changes/<name>/` does not exist, plan, review plan, build and review build SHALL not be done.
 3. Otherwise plan SHALL be done when the change state is `ready` or `all_done`, and not done when it is `blocked`. Build SHALL be done when the change state is `all_done`, and not done when it is `blocked` or `ready`. Review build SHALL not be done.
 
-Review plan's answer SHALL follow *Review plan's done answer applies Check an earlier review* after rule 1.
+Review plan's answer SHALL follow *Review plan's done answer applies Check an earlier review* after rules 1 and 2.
 
 #### Scenario: No change folder
 - **WHEN** the branch `lets-go-chore` has no `openspec/changes/lets-go-chore/` folder and no archive folder
-- **THEN** `done` maps `plan`, `build` and `review-build` to `false`, and the stand-in `openspec` was not called
+- **THEN** `done` maps `plan`, `review-plan`, `build` and `review-build` to `false`, and the stand-in `openspec` was not called
 
 #### Scenario: A plan in progress
 - **WHEN** `openspec/changes/lets-go-chore/` exists and the change state is `blocked`
@@ -111,12 +111,12 @@ Review plan's answer SHALL follow *Review plan's done answer applies Check an ea
 - **THEN** `done` maps all four steps to `true`, the `review-build` record is `null`, and `disagreements` holds a `null-record` entry whose `found` names `review-build`
 
 ### Requirement: Review plan's done answer applies Check an earlier review
-The change's schema SHALL be the `schema:` line of `openspec/changes/<name>/.openspec.yaml`, or, when that file does not exist, of the archive folder's `.openspec.yaml`. When neither exists, the schema is unknown, and is not `lets-minimal`. Review plan SHALL be done when an archive folder exists, or when the change's schema is `lets-minimal`. Otherwise the command SHALL apply the rules of *Check an earlier review* in the `lets-review-plan` skill, reading `<sha>` and `<verdict>` as *Review plan's record comes from the Plan review section only* says. Review plan SHALL be done only when all of these hold:
+The change's schema SHALL be the `schema:` line of `openspec/changes/<name>/.openspec.yaml`, or, when that file does not exist, of the archive folder's `.openspec.yaml`. When neither exists, the schema is unknown, and is not `lets-minimal`. Review plan SHALL be done when an archive folder exists, or when the change's schema is `lets-minimal`. Review plan SHALL not be done when `openspec/changes/<name>/` does not exist and no archive folder does. Otherwise the command SHALL apply the rules of *Check an earlier review* in the `lets-review-plan` skill, reading `<sha>` and `<verdict>` as *Review plan's record comes from the Plan review section only* says. Review plan SHALL be done only when all of these hold:
 
 1. The `review-plan` record is not `null`.
 2. The verdict is `APPROVE` or `APPROVE_WITH_CHANGES`.
 3. `git merge-base --is-ancestor <sha> HEAD` succeeds.
-4. Each commit that `git log <sha>..HEAD -- openspec/changes/<name>/ docs/decisions/` lists is a fix. When the `build` record is not `null`, the log SHALL also leave out `openspec/changes/<name>/tasks.md`, because each task's commit ticks that file and a tick does not change the plan.
+4. Each commit that `git log <sha>..HEAD -- openspec/changes/<name>/ docs/decisions/` lists is a fix. When a task is ticked, the log SHALL also leave out `openspec/changes/<name>/tasks.md`, because each task's commit ticks that file and a tick does not change the plan. A task is ticked when a line of that file in `HEAD`'s tree starts with optional spaces and `- [x] `. The `build` record does not decide this: a planning commit that edits `tasks.md` also sets it.
 5. Under `APPROVE_WITH_CHANGES`, the **Rebuttals** list holds at least as many fix items as the **Required changes** list holds items, and each commit a fix item names is listed by rule 4's `git log` without the `tasks.md` exclusion, and changes only paths under `openspec/changes/<name>/` and `docs/decisions/`.
 
 A fix is a commit that a fix item names and that changes only paths under `openspec/changes/<name>/` and `docs/decisions/`. These words name parts of the **Plan review** section:
@@ -151,8 +151,12 @@ The command SHALL not judge whether a fix's diff makes the required change. The 
 - **THEN** `done` maps `review-plan` to `false`
 
 #### Scenario: A tick before any task is built
-- **WHEN** the `build` record is `null`, the section says `- **Verdict:** APPROVE` for `7d16565`, and a later commit changes only `openspec/changes/lets-go-chore/tasks.md`
+- **WHEN** no line of `openspec/changes/lets-go-chore/tasks.md` in `HEAD`'s tree is a ticked task, the section says `- **Verdict:** APPROVE` for `7d16565`, and a later commit changes only `openspec/changes/lets-go-chore/tasks.md`
 - **THEN** `done` maps `review-plan` to `false`, because the log leaves out `tasks.md` only once a task is ticked
+
+#### Scenario: A tasks.md edited in planning and again after the review
+- **WHEN** a commit before `7d16565` edited `openspec/changes/lets-go-chore/tasks.md`, so the `build` record is not `null`, the section says `- **Verdict:** APPROVE` for `7d16565`, a later commit changes only that file, and no line of it in `HEAD`'s tree is a ticked task
+- **THEN** `done` maps `review-plan` to `false`
 
 #### Scenario: Required changes with their fixes
 - **WHEN** the section says `- **Verdict:** APPROVE_WITH_CHANGES` for `1e0c374`, its **Required changes** list holds one item, its **Rebuttals** list holds `1. Rebutted: ...` and `2. Fixed in cfd377e8: design.md decision 2`, and commit `cfd377e8`, after `1e0c374`, changes only `openspec/changes/lets-go-chore/design.md`

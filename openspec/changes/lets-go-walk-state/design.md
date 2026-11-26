@@ -68,15 +68,15 @@ The line is built as one object literal, in the spec's key order: the four recor
 
 ### 4. Review plan's done test
 
-`plan-review.ts` exports `reviewPlanDone(git, section, facts)`. It runs only when no archive folder exists and the schema is not `lets-minimal`, and returns `false` at the first rule that fails:
+`plan-review.ts` exports `reviewPlanDone(git, section, facts)`. It runs only when `openspec/changes/<name>/` exists, no archive folder exists and the schema is not `lets-minimal`, and returns `false` at the first rule that fails:
 
 1. The `review-plan` record is `null` (no pull request, no section, no `Reviewed:` or `- **Verdict:**` line, or no such commit).
 2. The verdict is neither `APPROVE` nor `APPROVE_WITH_CHANGES`.
 3. `git merge-base --is-ancestor <oid> HEAD` exits 1. Exit 0 passes. Any other exit is exit 4.
-4. `git log --format=%H <oid>..HEAD -- openspec/changes/<name>/ docs/decisions/` lists a commit that is not a fix. When the `build` record is not `null`, the pathspec adds `:(exclude)openspec/changes/<name>/tasks.md`, as *Check an earlier review* says.
+4. `git log --format=%H <oid>..HEAD -- openspec/changes/<name>/ docs/decisions/` lists a commit that is not a fix. When a task is ticked, the pathspec adds `:(exclude)openspec/changes/<name>/tasks.md`, as *Check an earlier review* says. A task is ticked when a line of `tasks.md` in `HEAD`'s tree matches `/^\s*- \[x\] /`. The `build` record is not the test: a planning commit that edits `tasks.md` sets it before any task is ticked.
 5. Under `APPROVE_WITH_CHANGES`: there are fewer fix items than required changes, or a fix item's commit is not in the same `git log` without the exclusion, or it changes a path outside the two folders.
 
-The parse reads lines inside the section. An item is `/^\s*\d+\.\s/`. The **Required changes** list starts after the line that starts `- **Required changes:**` and ends at the next line that starts `- **`. **Rebuttals** works the same way. A fix item matches `/^\s*\d+\.\s+Fixed in ([0-9a-f]{4,40}):/`. `git rev-parse --verify --quiet --end-of-options <hex>^{commit}` turns its hash into a full one; a hash git cannot find names no commit, so the item fails rule 5 under `APPROVE_WITH_CHANGES`.
+The parse reads lines inside the section. An item is `/^\s*\d+\.\s/`. The **Required changes** list starts after the line that starts `- **Required changes:**` and ends at the next line that starts `- **`, or at the end of the section. **Rebuttals** works the same way. A fix item matches `/^\s*\d+\.\s+Fixed in ([0-9a-f]{4,40}):/`. `git rev-parse --verify --quiet --end-of-options <hex>^{commit}` turns its hash into a full one; a hash git cannot find names no commit, so the item fails rule 5 under `APPROVE_WITH_CHANGES`.
 
 The paths a commit changes come from `git diff --name-only --no-renames <oid>^ <oid>`. With `--no-renames`, a move lists both the old and the new path, so a move out of the plan folders fails. A fix is never a root commit; if `<oid>^` does not resolve, the commit is not a fix.
 
