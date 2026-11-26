@@ -139,10 +139,10 @@ export function defaultModel(catalogue: Catalogue, family: Family): string | nul
   return first === undefined ? null : modelId(family, first.slug);
 }
 
-// The model goes as given. A null effort is a start's, and sends no effort option.
-export function t3ModelSelection({ family, model, effort }: { family: Family; model: string | null; effort: Effort | null }): ModelSelection {
+// The model goes as given. A family T3 offers no effort option for sends none.
+export function t3ModelSelection({ family, model, effort }: { family: Family; model: string | null; effort: Effort }): ModelSelection {
   const option = T3_EFFORT_OPTION[family];
-  return { instanceId: T3_INSTANCE[family], model, options: option && effort !== null ? [{ id: option, value: effort }] : [] };
+  return { instanceId: T3_INSTANCE[family], model, options: option ? [{ id: option, value: effort }] : [] };
 }
 
 export function baseDir(env: Io['env'], homedir: string): string {
@@ -458,9 +458,8 @@ export function createAdapter(io: Io): Adapter {
     return runtime;
   }
 
-  // Launch a thread for the request. A null effort is a start's, which
-  // sends no effort option.
-  async function launchThread({ name, prompt, cwd, family, model }: Omit<RunInput, 'effort'>, { effort }: { effort: Effort | null }): Promise<Handle> {
+  // Launch a thread for the request.
+  async function launchThread({ name, prompt, cwd, family, model, effort }: RunInput): Promise<Handle> {
     const { origin } = runningServer();
     // The main checkout, even when cwd is a linked worktree.
     const repoRoot = resolve(await git(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir']), '..');
@@ -537,10 +536,10 @@ export function createAdapter(io: Io): Adapter {
 
   // Launch a thread, wait for its final message, and add what done reads
   // from the finished thread. A review and a step end in the same ways.
-  async function session<T>({ effort, ...input }: RunInput, timeoutMs: number, done: (handle: Handle) => T): Promise<{ handle: Handle; text: string } & T> {
+  async function session<T>(input: RunInput, timeoutMs: number, done: (handle: Handle) => T): Promise<{ handle: Handle; text: string } & T> {
     // An error before the thread exists passes through: there is nothing
     // to archive or name.
-    const handle = await launchThread(input, { effort });
+    const handle = await launchThread(input);
     try {
       const { text } = await waitForText(handle, timeoutMs);
       return { handle, text, ...done(handle) };
