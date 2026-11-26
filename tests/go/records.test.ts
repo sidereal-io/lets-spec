@@ -344,6 +344,17 @@ describe('the command fails', () => {
     }
   });
 
+  test('a git rev-parse killed by a signal fails, and is not read as a missing commit', async (t) => {
+    const r = repo(t, []);
+    const sha = r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-04');
+    const bin = tempDir(t);
+    standIn(bin, 'gh', [pr(167, `## Plan review\n\nReviewed: ${sha}\n- **Verdict:** APPROVE\n`)]);
+    const real = spawnSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).stdout.trim();
+    // The stand-in kills itself for the commit lookup, and hands every other call to the real git.
+    writeFileSync(join(bin, 'git'), `#!/bin/sh\nif [ "$1" = rev-parse ] && [ "$2" = --verify ]; then kill -KILL $$; fi\nexec '${real}' "$@"\n`, { mode: 0o755 });
+    failed(await runLets(['go', 'records', NAME], { cwd: r.root, standIns: bin }), 4, 'git rev-parse', 'SIGKILL');
+  });
+
   test('a folder outside any Git repository fails, naming git', async (t) => {
     const outside = tempDir(t);
     // Stops git looking above the folder, in case the temporary folder is inside a repository.

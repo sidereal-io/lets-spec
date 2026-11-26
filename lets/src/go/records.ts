@@ -21,8 +21,9 @@ function runner(io: Pick<Io, 'execFile'>, cwd: string): Run {
   };
 }
 
-function failure(result: { stderr: string; code: number | null; timedOut?: boolean }, command: string): string {
+function failure(result: { stderr: string; code: number | null; timedOut?: boolean; signal?: string }, command: string): string {
   if (result.timedOut) return `timed out after ${READ_TIMEOUT_MS / 1000} seconds`;
+  if (result.signal) return `killed by ${result.signal}`;
   // One line, so guarded prints one line on stderr.
   const message = result.stderr.trim().replace(/\s*\n\s*/g, ' ');
   return message || (result.code === null ? `${command.split(' ')[0]} could not start` : `exited ${result.code}`);
@@ -106,7 +107,10 @@ async function reviewPlanRecord(io: Pick<Io, 'execFile'>, git: Run, root: string
   const review = planReview(pr.body);
   if (review === null || !HASH.test(review.sha)) return null;
   const found = await io.execFile('git', ['rev-parse', '--verify', '--quiet', '--end-of-options', `${review.sha}^{commit}`], { cwd: root, timeoutMs: READ_TIMEOUT_MS });
-  if (found.code === 1 && found.stdout.trim() === '') return null;
+  // --quiet makes a missing commit exit 1 with no output; a timeout or a
+  // signal also exits 1, and is a failed read, not a missing commit.
+  const missing = found.code === 1 && !found.timedOut && !found.signal && found.stdout.trim() === '' && found.stderr.trim() === '';
+  if (missing) return null;
   if (found.code !== 0) throw new SpawnError(`git rev-parse: ${failure(found, 'git rev-parse')}`);
   const date = (await git('git', ['log', '-1', '--format=%as', found.stdout.trim()])).trim();
   return { commit: review.sha, date, pr: pr.number, verdict: review.verdict };
