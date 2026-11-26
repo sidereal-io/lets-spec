@@ -445,26 +445,3 @@ describe('the delegate section of the lets config', () => {
     assert.ok(!run.result.stderr.includes(run.repoConfig), run.result.stderr);
   });
 });
-
-// #306 retires handoff. Whichever of it and this file's story merges
-// second deletes this block.
-describe('handoff instructions', () => {
-  test('cli answers a review, but declines a handoff without running a CLI, and subagent answers it', async (t) => {
-    const review = await instructions(t, 'review', 'code', { user: CLI_THEN_SUBAGENT, standIns: everyCli });
-    assert.equal(line(review).resolver, 'cli');
-    let clis: ReturnType<typeof everyCli> | undefined;
-    const handoff = await instructions(t, 'handoff', 'apply', { user: CLI_THEN_SUBAGENT, standIns: (dir) => { clis = everyCli(dir); } });
-    assert.deepEqual(line(handoff), { strategy: 'handoff', for: 'apply', resolver: 'subagent', options: [], guidance: null });
-    for (const [name, stand] of Object.entries(clis!)) assert.deepEqual(stand.calls(), [], name);
-  });
-
-  test('the guidance for a handoff comes from delegate.handoff', async (t) => {
-    const run = await instructions(t, 'handoff', 'apply', { user: delegate('handoff:\n  apply:\n    guidance: Prefer claude.\n') });
-    assert.equal(line(run).guidance, 'Prefer claude.');
-  });
-
-  test('a step gets no guidance from delegate.handoff', async (t) => {
-    const run = await instructions(t, 'step', 'build', { user: delegate('handoff:\n  apply:\n    guidance: Prefer claude.\n') });
-    assert.equal(line(run).guidance, null);
-  });
-});
