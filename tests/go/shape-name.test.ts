@@ -83,6 +83,17 @@ describe('an idea', () => {
     const result = await shapeName(tempDir(t), '--idea', `${'a'.repeat(49)} b`);
     assert.match(printed(result).name, /^idea-a{49}-[0-9a-f]{8}$/);
   });
+
+  test('an idea that looks like a lets option is named, not run', async (t) => {
+    const dir = tempDir(t);
+    for (const [idea, name] of [
+      ['--version', /^idea-version-[0-9a-f]{8}$/],
+      ['-V prints wrong version', /^idea-v-prints-wrong-version-[0-9a-f]{8}$/],
+      ['--help', /^idea-help-[0-9a-f]{8}$/],
+    ] as const) {
+      assert.match(printed(await shapeName(dir, '--idea', idea)).name, name, idea);
+    }
+  });
 });
 
 /**

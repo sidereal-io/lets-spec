@@ -357,6 +357,9 @@ const program = new Command()
   .name('lets')
   .description('The lets-spec command.')
   .version(version())
+  // Without this, the root parser reads --version or -V anywhere in argv,
+  // even as the value of a subcommand's option, such as --idea '--version'.
+  .enablePositionalOptions()
   .exitOverride();
 
 program
