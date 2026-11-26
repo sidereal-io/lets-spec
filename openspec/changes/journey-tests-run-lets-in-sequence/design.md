@@ -92,8 +92,12 @@ journey test is (D1) and that it checks the joins, not each command.
 It imports `useRelease` from `tests/sync/project.ts`; `LOOKUP_ONE`,
 `itemList`, `json`, `issue` and `issueState` from
 `tests/backlog/github.ts`; `delegateRepo` and `PROMPT` from
-`tests/delegate/repo.ts`; and the argument builders, `ending`,
-`cleanUpStep` and `untilGone` from `tests/delegate/steps.ts`. Each
+`tests/delegate/repo.ts`; the argument builders, `ending`,
+`cleanUpStep` and `untilGone` from `tests/delegate/steps.ts`; and
+`standIn`, `sharedState`, `tempDir`, `codex`, `claude` and `agy` from
+`tests/support/lets.ts`, which write the stand-ins and keep the `gh`
+stand-in's state. `delegateRepo` gives only a stand-ins folder, so the
+journey makes that state itself. Each
 journey makes one `delegateRepo` with the user config
 `version: 3\ndelegate: { resolvers: [cli] }\n`, and writes every
 stand-in into its `standIns` folder. Every command runs through its
@@ -120,8 +124,12 @@ Stand-ins:
   ready issues, `issue list --search 'is:open no:assignee -is:blocked'`,
   by prefix, with both; the exact `issue view 149 --json …` call of
   `lets backlog item`, with issue 149, titled
-  `story-149 — outcome`; and last `issue()` for 149, from
-  `issueState()`.
+  `story-149 — outcome`; and last `issue()` for 149. The journey makes
+  the issue's state with
+  `sharedState(join(tempDir(t), 'gh-state'), issueState())`, writes the
+  stand-in with `standIn(repo.standIns, 'gh', rows, { shared })`, and
+  reads the state back with `shared.read()`. Without `{ shared }`, the
+  stand-in starts from an empty state, and `claim` fails on it.
 - `codex` lists `gpt-6-luna`, `agy` lists `gemini-3.8-flash-high`, and
   `claude` lists nothing, as `instructions.test.ts` sets them up.
   Each one's write-mode call for the plan step has a row: `codex` and
@@ -134,7 +142,7 @@ message:
 | # | Command | Takes | Keeps |
 |---|---|---|---|
 | 1 | `lets sync`, with `WORKFLOW_RELEASE` set to the file's release | — | — |
-| 2 | `lets sync --check` | the files step 1 wrote | exit 0 |
+| 2 | `lets sync --check`, with the same `WORKFLOW_RELEASE` | the files step 1 wrote | exit 0 |
 | 3 | `lets backlog ready` | — | `issues[0].key` |
 | 4 | `lets backlog item <key>` | the key from 3 | `key`, and the session name: `title` before ` — `, then `-plan` |
 | 5 | `lets backlog claim <key>` | the key from 4 | `result` `claimed`, and `claim`, the token |
@@ -148,7 +156,7 @@ with arguments no row has, and that CLI would exit 127.
 
 At the end, the test checks (D4):
 
-- the stand-in issue's state: `assignees` is `['octocat']`, `status` is
+- the stand-in issue's state, from `shared.read()`: `assignees` is `['octocat']`, `status` is
   `['In Progress']`, and it holds one claim comment, whose token is the
   one step 5 printed;
 - each family got one write-mode call, with the model step 6 listed:
