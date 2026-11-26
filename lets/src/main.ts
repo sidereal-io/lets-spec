@@ -284,6 +284,13 @@ its own. Give exactly one of --issue and --idea.
 For --issue <i>, the name is issue-<i>, with the key unchanged: only the
 backlog provider reads a key.
 
+For --idea <text>, the name is idea-<slug>-<hash>. The idea is cleaned
+into words: split on white space, lower-cased, only letters and digits in
+any script kept, and empty words dropped. <slug> is the first five words
+joined with hyphens, cut to 50 code points. <hash> is the first 8
+hexadecimal digits of the SHA-256 of all the words joined with spaces. An
+idea retyped in another case or with other punctuation gets the same name.
+
 It reads no file, starts no session and asks no resolver, so the same
 input always gives the same line, in any folder.
 
@@ -472,6 +479,7 @@ go
   .summary('print the shape step\'s name and answers file')
   .description('Print the name of lets-go\'s shape step for an issue or an idea, and the path of its answers file.')
   .option('--issue <i>', 'the issue\'s key, as lets backlog prints it')
+  .option('--idea <text>', 'the idea in the user\'s words')
   .addHelpText('after', GO_SHAPE_NAME_HELP)
   .action(async (options: ShapeNameOptions) => {
     process.exitCode = await shapeName(options, realDeps());

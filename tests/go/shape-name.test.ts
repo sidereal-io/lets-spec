@@ -45,3 +45,42 @@ describe('an issue', () => {
     assert.equal(inside.stdout, outside.stdout);
   });
 });
+
+describe('an idea', () => {
+  test('the name is the first five words and a hash of all the words', async (t) => {
+    const result = await shapeName(tempDir(t), '--idea', 'add a --quiet flag to lets sync');
+    assert.deepEqual(printed(result), {
+      name: 'idea-add-a-quiet-flag-to-f1ade72f',
+      answers: '.workspace/lets-go/idea-add-a-quiet-flag-to-f1ade72f-shape-answers.yaml',
+    });
+  });
+
+  test('two ideas that share their first five words get different hashes', async (t) => {
+    const result = await shapeName(tempDir(t), '--idea', 'add a --quiet flag to lets status');
+    assert.equal(printed(result).name, 'idea-add-a-quiet-flag-to-cb62daa9');
+  });
+
+  test('case and punctuation do not change the name', async (t) => {
+    const dir = tempDir(t);
+    const dashed = await shapeName(dir, '--idea', 'fix lets-sync — quiet output');
+    const plain = await shapeName(dir, '--idea', 'Fix letssync quiet output');
+    assert.equal(printed(dashed).name, 'idea-fix-letssync-quiet-output-ef93442d');
+    assert.equal(printed(plain).name, 'idea-fix-letssync-quiet-output-ef93442d');
+  });
+
+  test('letters in another script are kept', async (t) => {
+    const result = await shapeName(tempDir(t), '--idea', 'ログを直す');
+    assert.equal(printed(result).name, 'idea-ログを直す-bffc2164');
+  });
+
+  test('a slug longer than 50 code points is cut, and the hash covers the whole word', async (t) => {
+    const result = await shapeName(tempDir(t), '--idea', 'https://github.com/sidereal-io/lets-spec/issues/180#issuecomment-1234567890');
+    assert.equal(printed(result).name, 'idea-httpsgithubcomsiderealioletsspecissues180issuecomm-48aab992');
+  });
+
+  test('a hyphen left at the end of a cut slug is dropped', async (t) => {
+    // 49 letters, a hyphen, then b: the cut at 50 ends on the hyphen.
+    const result = await shapeName(tempDir(t), '--idea', `${'a'.repeat(49)} b`);
+    assert.match(printed(result).name, /^idea-a{49}-[0-9a-f]{8}$/);
+  });
+});
