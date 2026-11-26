@@ -1372,24 +1372,32 @@ reason is that the shape step named no issue. When it is an `epic` line
 and no `story` line follows, the report is `failed`, and its reason is
 that the shape step named no story.
 
-Once shape reports `done` or `failed`, remove
-`.workspace/lets-go/<shape-name>-shape-answers.yaml`. Nothing resumes a
+Once shape reports `done` or `failed`, remove the step's answers
+file, `.workspace/lets-go/<shape-name>-shape-answers.yaml`. Nothing resumes a
 finished shape. A later idea, or a second shape of the same issue, must
 start with no answers.
 
 On `done` or `failed`, when the step ran for an epic `#<i>` whose
 `Input:` line names another input, remove that input's answers file
-too, under its own `<shape-name>`. For an idea, remove it only when
-`.workspace/lets-go/<shape-name>-shape-prompt.md` holds that idea. A
+too: the `answers` that `lets go shape-name` prints for that input.
+Run it as
+[Find the input's discovery](references/shape.md#find-the-inputs-discovery)
+says: `--issue` with the issue's number, or `--idea` with the idea. A
 stopped round of that input leaves its answers, and
 [Find the input's discovery](references/shape.md#find-the-inputs-discovery)
 would find them when the run goes back to
 [Check the issue](#check-the-issue), and stop the run. On
 `needs-input`, remove neither file: the next round needs them.
 
-On `done` with an `epic #<parent>` line, also remove
-`.workspace/lets-go/issue-<parent>-shape-answers.yaml`, whatever input
-the step ran for. The discovery of `#<parent>` has finished, but a
+On `done` with an `epic #<parent>` line, also remove the epic's own
+answers file, whatever input the step ran for: the `answers` that this
+prints, `.workspace/lets-go/issue-<parent>-shape-answers.yaml`.
+
+```bash
+lets go shape-name --issue <parent>
+```
+
+The discovery of `#<parent>` has finished, but a
 stopped round of `lets-go #<parent>` may have left answers there, and
 the lookup back in [Check the issue](#check-the-issue) would find them
 and stop the run.
