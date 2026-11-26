@@ -57,11 +57,39 @@ export interface RunLetsOptions extends RunOptions {
   lets?: string;
 }
 
+/** What a stand-in prints and how it exits. */
+export interface StandInReply {
+  stdout?: string;
+  stderr?: string;
+  /** The exit code. 0 when absent. */
+  code?: number;
+}
+
+/** A function a module exports, which answers a call in place of a row's fixed reply. */
+export interface StandInAnswerer {
+  /** The module's absolute path or file URL. The stand-in imports it for each call it answers. */
+  module: string;
+  /** The name of the exported function, a `StandInAnswer`. */
+  name: string;
+  /** A JSON value, passed to the function as `data`. */
+  data?: unknown;
+}
+
+/**
+ * The shape of the function a `StandInAnswerer` names. It gets the call's
+ * arguments, the state earlier calls left and the row's `data`, and returns
+ * the reply. It may change `state` in place; the stand-in saves it once the
+ * function returns, and no other call reads or writes the state meanwhile.
+ * When it throws, the stand-in exits 127, saves nothing and says why on
+ * standard error.
+ */
+export type StandInAnswer = (call: { args: string[]; state: any; data: unknown }) => StandInReply | Promise<StandInReply>;
+
 /**
  * One answer of a stand-in, given to the call whose arguments equal `args`,
  * or, with `prefix`, start with `args`.
  */
-export interface StandInRow {
+export interface StandInRow extends StandInReply {
   args: string[];
   /**
    * Match a call whose argument list starts with `args`, element by
@@ -69,10 +97,35 @@ export interface StandInRow {
    * exact match when absent.
    */
   prefix?: boolean;
-  stdout?: string;
-  stderr?: string;
-  /** The exit code. 0 when absent. */
-  code?: number;
+  /** Answer through this function, in place of `stdout`, `stderr` and `code`. */
+  answer?: StandInAnswerer;
+  /**
+   * Hold the call at the gate of this name, a plain file name, until the
+   * test opens it with `SharedState.open`. The call waits before it takes
+   * the state's lock, so a held call never holds up another. It gives up,
+   * exiting 127, after 20 seconds or when the shared folder is gone.
+   */
+  gate?: string;
+}
+
+/** State and gates in one folder, for stand-ins to share. */
+export interface SharedState {
+  /** The folder that holds `state.json` and the gates. */
+  dir: string;
+  /** The state as the stand-ins left it. Throws when `state.json` cannot be read. */
+  read(): any;
+  /**
+   * Resolves once `count` calls have come to `gate`, held or let through.
+   * Rejects after 10 seconds, naming the gate and how many calls came.
+   */
+  waiting(gate: string, count: number): Promise<void>;
+  /** Lets every call at `gate` go on, now and later. */
+  open(gate: string): void;
+}
+
+export interface StandInOptions {
+  /** The state this stand-in shares with others. Its own, in its folder, when absent. */
+  shared?: SharedState;
 }
 
 export interface StandIn {
@@ -344,39 +397,169 @@ export function buildRelease(out: string, schemas: string[], skills: string[]): 
 }
 
 /**
+ * Makes the folder `dir`, if it is missing, with `initial` as the state,
+ * `{}` when absent, in place of any state it held. Throws when `dir`
+ * cannot be written.
+ */
+export function sharedState(dir: string, initial: unknown = {}): SharedState {
+  dir = resolve(dir);
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, 'state.json');
+  // Each call at a gate leaves a file in gates/<gate>/; gates/<gate>.open opens it.
+  const gates = join(dir, 'gates');
+  // Old gates and an old lock are state too: either would let a call pass a
+  // closed gate, or make every answer wait for a lock nobody holds.
+  rmSync(gates, { recursive: true, force: true });
+  rmSync(join(dir, 'lock'), { recursive: true, force: true });
+  writeFileSync(file, JSON.stringify(initial));
+  const arrived = (gate: string) => existsSync(join(gates, gate)) ? readdirSync(join(gates, gate)).length : 0;
+  return {
+    dir,
+    read: () => JSON.parse(readFileSync(file, 'utf8')),
+    waiting: (gate, count) => new Promise((done, fail) => {
+      const deadline = Date.now() + 10_000;
+      const check = () => {
+        const came = arrived(gate);
+        if (came >= count) done();
+        else if (Date.now() > deadline) fail(new Error(`${count} calls were to wait at the gate ${gate}, but ${came} came in 10 seconds`));
+        else setTimeout(check, 10);
+      };
+      check();
+    }),
+    open: (gate) => {
+      mkdirSync(gates, { recursive: true });
+      writeFileSync(join(gates, `${gate}.open`), '');
+    },
+  };
+}
+
+/**
  * Writes an executable program called `name` into `dir`, which must
  * exist. Each call logs its arguments and the folder it ran in, then
  * answers from the first row of `table` that matches the call's argument
  * list: one whose `args` equals it, or, for a row with `prefix`, starts
  * it. A prefix row shadows every row after it that it matches, so put it
  * after the more specific rows. A call that matches no row exits 127 and
- * says so on standard error. Throws when `dir` cannot be written.
+ * says so on standard error.
+ *
+ * A row with `answer` answers through that function, from the state in
+ * `options.shared`, or in a folder of the stand-in's own, which starts as
+ * `{}`. The call holds a lock, a folder in the state's folder, while it
+ * reads the state, runs the function and saves the state, so calls of
+ * several stand-ins never write it at once. A call that finds the lock
+ * taken for 10 seconds exits 127 and says so on standard error. A row
+ * without `answer` never reads the state. A row with `gate` holds its
+ * call first, as `StandInRow.gate` says. Throws when `dir` cannot be
+ * written.
  */
-export function standIn(dir: string, name: string, table: StandInRow[]): StandIn {
+export function standIn(dir: string, name: string, table: StandInRow[], options: StandInOptions = {}): StandIn {
   // The program runs in another folder, so the paths it holds are absolute.
   dir = resolve(dir);
   const tableFile = join(dir, `.${name}.table.json`);
   const log = join(dir, `.${name}.log`);
   writeFileSync(tableFile, JSON.stringify(table));
-  // A stand-in that replaces another starts with no calls.
+  // A stand-in that replaces another starts with no calls, and with new
+  // state when the state is its own.
   rmSync(log, { force: true });
+  const shared = options.shared ?? sharedState(join(dir, `.${name}.state`));
   const program = join(dir, name);
   // A Node script, so the table needs no matching code in shell. It names
   // this Node, because the Nix sandbox may have no /usr/bin/env.
   writeFileSync(program, `#!${process.execPath}
 const fs = process.getBuiltinModule('node:fs');
+const path = process.getBuiltinModule('node:path');
+const { pathToFileURL } = process.getBuiltinModule('node:url');
+const name = ${JSON.stringify(name)};
+const shared = ${JSON.stringify(shared.dir)};
 const args = process.argv.slice(2);
 fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args, cwd: process.cwd() }) + '\\n');
 const row = JSON.parse(fs.readFileSync(${JSON.stringify(tableFile)}, 'utf8'))
   .find((row) => (row.prefix ? row.args.length <= args.length : row.args.length === args.length)
     && row.args.every((arg, i) => arg === args[i]));
-if (row === undefined) {
-  process.stderr.write(${JSON.stringify(name)} + ': stand-in has no answer for ' + JSON.stringify(args) + '\\n');
+
+// A synchronous sleep, so a waiting call needs no timers.
+const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+
+const giveUp = (message) => {
+  process.stderr.write(name + ': stand-in ' + message + '\\n');
   process.exitCode = 127;
-} else {
-  if (row.stdout) process.stdout.write(row.stdout);
-  if (row.stderr) process.stderr.write(row.stderr);
-  process.exitCode = row.code ?? 0;
+};
+
+const reply = (answer) => {
+  if (answer.stdout) process.stdout.write(answer.stdout);
+  if (answer.stderr) process.stderr.write(answer.stderr);
+  process.exitCode = answer.code ?? 0;
+};
+
+// mkdir fails when the folder exists, so only one call holds the lock.
+function lock(dir) {
+  const deadline = Date.now() + 10000;
+  for (;;) {
+    try {
+      fs.mkdirSync(dir);
+      return true;
+    } catch (error) {
+      if (error.code !== 'EEXIST') {
+        giveUp('could not take the lock ' + dir + ' for ' + JSON.stringify(args) + ': ' + error.message);
+        return false;
+      }
+      if (Date.now() > deadline) {
+        giveUp('found the lock ' + dir + ' still taken after 10 seconds, for ' + JSON.stringify(args));
+        return false;
+      }
+      sleep(10);
+    }
+  }
+}
+
+// Wait until the test opens the gate. False, having said why, when it gives up.
+function pass(gate) {
+  const gates = path.join(shared, 'gates');
+  try {
+    fs.mkdirSync(path.join(gates, gate), { recursive: true });
+    fs.writeFileSync(path.join(gates, gate, String(process.pid)), '');
+  } catch (error) {
+    giveUp('could not come to the gate ' + gate + ' for ' + JSON.stringify(args) + ': ' + error.message);
+    return false;
+  }
+  const deadline = Date.now() + 20000;
+  while (!fs.existsSync(path.join(gates, gate + '.open'))) {
+    if (!fs.existsSync(shared)) {
+      giveUp('gave up at the gate ' + gate + ' for ' + JSON.stringify(args) + ': the shared folder ' + shared + ' is gone');
+      return false;
+    }
+    if (Date.now() > deadline) {
+      giveUp('gave up at the gate ' + gate + ' for ' + JSON.stringify(args) + ': nobody opened it in 20 seconds');
+      return false;
+    }
+    sleep(10);
+  }
+  return true;
+}
+
+async function answer({ module, name: exported, data }) {
+  const held = path.join(shared, 'lock');
+  if (!lock(held)) return;
+  let result;
+  try {
+    const file = path.join(shared, 'state.json');
+    const state = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const found = await import(module.startsWith('file:') ? module : pathToFileURL(module).href);
+    result = await found[exported]({ args, state, data });
+    fs.writeFileSync(file + '.new', JSON.stringify(state));
+    fs.renameSync(file + '.new', file);
+  } catch (error) {
+    return giveUp('could not answer ' + JSON.stringify(args) + ' through ' + exported + ' in ' + module + ': ' + (error?.stack ?? error));
+  } finally {
+    fs.rmSync(held, { recursive: true, force: true });
+  }
+  reply(result);
+}
+
+if (row === undefined) giveUp('has no answer for ' + JSON.stringify(args));
+else if (row.gate === undefined || pass(row.gate)) {
+  if (row.answer !== undefined) answer(row.answer);
+  else reply(row);
 }
 `);
   chmodSync(program, 0o755);
