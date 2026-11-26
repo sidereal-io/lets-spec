@@ -172,3 +172,45 @@ describe('how the step asks and reports', () => {
     }
   });
 });
+
+const IDEA = 'add a --quiet flag to lets sync';
+const shapeIssue = ['go', 'step-prompt', '--for', 'shape', '--issue', '180', '--issue-url', 'https://github.com/o/r/issues/180', '--branch', 'main', '--questions', 'ask'];
+const shapeIdea = ['go', 'step-prompt', '--for', 'shape', '--idea', IDEA, '--branch', 'main', '--questions', 'auto'];
+
+describe('the shape prompt', () => {
+  test('for an issue: its header lines and the lets-shape sentence', async (t) => {
+    const repo = promptRepo(t);
+    const prompt = printed(await repo.run(shapeIssue));
+    const [first, second] = prompt.split('\n');
+    assert.equal(first, 'You run one step of a lets-go run: shape, for issue #180.');
+    assert.equal(second, 'Issue: #180, https://github.com/o/r/issues/180. Branch: main.');
+    assert.equal(section(prompt, '## What to run'), 'Invoke the `lets-shape` skill for issue #180, and stop where it stops.');
+    assert.deepEqual(headings(prompt), ['## What to run', '## Writing', '## Questions', '## The report']);
+  });
+
+  test('for an idea: the idea word for word, and no schema or route', async (t) => {
+    const repo = promptRepo(t);
+    const prompt = printed(await repo.run(shapeIdea));
+    const [first, second] = prompt.split('\n');
+    assert.equal(first, 'You run one step of a lets-go run: shape, for an idea.');
+    assert.equal(second, `Issue: none yet. The idea is: ${IDEA}. Branch: main.`);
+    assert.equal(section(prompt, '## What to run'), 'Invoke the `lets-shape` skill for the idea above, and stop where it stops.');
+    assert.ok(!prompt.includes('Schema:') && !prompt.includes('Route:'), prompt);
+  });
+
+  test('for an idea whose search ran, the second line says so', async (t) => {
+    const repo = promptRepo(t);
+    const prompt = printed(await repo.run([...shapeIdea, '--searched']));
+    assert.equal(prompt.split('\n')[1], `Issue: none yet. The idea is: ${IDEA}. Branch: main. Open issues were searched, and none is the same work.`);
+  });
+
+  test('neither form names a part of lets-shape', async (t) => {
+    const repo = promptRepo(t);
+    for (const args of [shapeIssue, shapeIdea]) {
+      const prompt = printed(await repo.run(args));
+      for (const text of ['Resume mode', 'Shape one issue', 'Discovery status: in-progress', 'Run discovery on it?', 'Schema:', 'Route:']) {
+        assert.ok(!prompt.includes(text), `${text} in ${prompt}`);
+      }
+    }
+  });
+});
