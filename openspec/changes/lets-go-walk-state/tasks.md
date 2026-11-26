@@ -19,7 +19,7 @@ Both tasks change `skills/lets-go/`, so they run in order. The spec is `specs/le
 
 ## 3. The code stays tied to the skill's rule
 
-- [ ] 3.1 [parallel] [easy] A new test, `tests/contracts/review-plan-rule.test.ts`, reads `skills/lets-review-plan/SKILL.md`, collapses whitespace, and fails naming each missing string when the text no longer holds `## Plan review`, `Reviewed: `, `- **Verdict:** `, `- **Required changes:**`, `- **Rebuttals:**`, `Fixed in <commit>`, `git merge-base --is-ancestor <sha> HEAD`, `git log --oneline <sha>..HEAD -- openspec/changes/<name>/ docs/decisions/` or `':(exclude)openspec/changes/<name>/tasks.md'` (design.md decision 9, ADR-031) (verify: node --test tests/contracts/review-plan-rule.test.ts)
+- [x] 3.1 [parallel] [easy] A new test, `tests/contracts/review-plan-rule.test.ts`, reads `skills/lets-review-plan/SKILL.md`, collapses whitespace, and fails naming each missing string when the text no longer holds `## Plan review`, `Reviewed: `, `- **Verdict:** `, `- **Required changes:**`, `- **Rebuttals:**`, `Fixed in <commit>`, `git merge-base --is-ancestor <sha> HEAD`, `git log --oneline <sha>..HEAD -- openspec/changes/<name>/ docs/decisions/` or `':(exclude)openspec/changes/<name>/tasks.md'` (design.md decision 9, ADR-031) (verify: node --test tests/contracts/review-plan-rule.test.ts) (✓ node --test tests/contracts/review-plan-rule.test.ts passed; it failed on a copy of the skill without `- **Rebuttals:**`)
 
 ## 4. Check the whole change [depends-on: 2, 3]
 
