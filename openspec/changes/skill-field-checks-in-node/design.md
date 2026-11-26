@@ -77,9 +77,12 @@
 The check runs `lets backlog --help` once, from `repo`, and reads two
 things from what it prints:
 
-- **Fields.** Every name inside a `{ … }` shape, across lines, and every
-  name followed by `: [` or `: {`, such as `projects` in the error
-  sentence. A trailing `?`, as in `claim?`, is not part of the name.
+- **Fields.** Every name inside a `{ … }` shape, across lines, that
+  stands alone, as `claim` does, or comes before a `:`, as `result`
+  does. A name after a `:` is a value, never a field: `claimed`,
+  `assign` and `null` are not fields. Also every name followed by `: [`
+  or `: {`, such as `projects` in the error sentence. A trailing `?`,
+  as in `claim?`, is not part of the name.
 - **Values.** In a shape, `name: v1|v2|…` gives the field `name` each
   value. A sentence `where <name> is v1, v2 … or vn.` gives `<name>`
   each value, after dropping each `( … )` aside.
@@ -93,8 +96,9 @@ is built inside, which D1 rules out. The help is what a caller sees.
 
 ### Which spans the check reads
 
-- **A field span** is a code span outside fenced code that holds only a
-  name, letters, digits and `_`, and is followed in the same paragraph
+- **A field span** is a code span outside fenced code that holds one
+  word with no space, such as `claim` or a mistaken `sub-issues`, and
+  is followed in the same paragraph
   by the word `field` or `fields`, even across a line break. It is a
   finding when the name is not one of the help's fields (D3, D4).
 - **A value span** is a code span holding `<name>: <value>`, with one
@@ -117,8 +121,10 @@ checked.
 ### The word after a span
 
 `texts.ts` gains one property on each code span: `next`, the first
-word of prose after its closing backticks in the same paragraph. When
-the span ends a line, `next` is the first word of the next line, unless
+word of prose after its closing backticks in the same paragraph, with
+any punctuation after the word left off, so "`claim` field." and
+"`claim` field," give `field`. When the span ends a line, or only
+spaces follow it, `next` is the first word of the next line, unless
 that line is blank or opens a fence. Punctuation right after the span,
 such as `,` or `)`, gives an empty `next`, so "`claim`, field" is not a
 field span. The type of `Text.spans` becomes a `Span`, a `Piece` with
