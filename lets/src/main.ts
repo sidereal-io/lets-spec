@@ -18,6 +18,7 @@ import { run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './dele
 import type { StepOptions } from './delegate/step.ts';
 import { STRATEGIES } from './delegate/strategies.ts';
 import { run as questions } from './go/questions.ts';
+import { run as records } from './go/records.ts';
 import type { Intent, Strategy } from './delegate/strategies.ts';
 import { realIo } from './io.ts';
 import type { Deps } from './io.ts';
@@ -275,6 +276,43 @@ Exit codes:
   2  the config is not valid, go is not a mapping, or go.questions is not
      ask or auto. stderr names the file and the key.`;
 
+const GO_RECORDS_HELP = `
+Reads the record each step of the change <name> left, from the current
+branch's history and from the branch's pull request, with git log and
+gh pr view. It writes nothing, does not read the change's schema, and does
+not say whether a step is done.
+
+stdout: one JSON line, an object with four keys, in step order. Each holds
+that step's record, or null when the step left none:
+
+  plan          the last commit that added openspec/changes/<name>/tasks.md
+  review-plan   the commit named by the Reviewed: line of the pull
+                request's Plan review section, with its - **Verdict:**
+                line. Only that section is read. null when there is no
+                pull request, no such section or line, or the value is
+                not a hash git can find
+  build         the last commit that modified openspec/changes/<name>/tasks.md
+  review-build  the last commit that added tasks.md in the one folder
+                openspec/changes/archive/<YYYY-MM-DD>-<name>/. null when
+                there is no such folder, or more than one
+
+Each record holds commit, the short hash (for review-plan, the hash as the
+section writes it), and date, the commit's author date as YYYY-MM-DD.
+review-plan adds pr, the pull request's number, and verdict. review-build
+adds pr, which is null when the branch has no pull request.
+
+  {"plan":{"commit":"2bbc7d0","date":"2026-11-03"},
+   "review-plan":{"commit":"7d16565","date":"2026-11-04","pr":167,"verdict":"APPROVE"},
+   "build":{"commit":"3222c70","date":"2026-11-05"},
+   "review-build":{"commit":"1d253bd","date":"2026-11-06","pr":167}}
+
+Exit codes:
+  0  ok
+  2  the name is missing, or is not lower-case kebab-case
+  4  a read failed: not in a Git repository, git or gh cannot start, or gh
+     fails for a reason other than finding no pull request. stderr names
+     the command and its error.`;
+
 // --timeout-minutes: a whole number of minutes.
 function wholeMinutes(value: string): number {
   if (!/^[1-9][0-9]*$/.test(value)) throw new InvalidArgumentError('Give a whole number of minutes.');
@@ -433,16 +471,28 @@ stepCommand
     process.exitCode = await stepWait({ names: name, timeoutMinutes }, realDeps());
   });
 
-program
+const go = program
   .command('go')
-  .summary('settings for the lets-go skill')
-  .description('Read the settings the lets-go skill uses.')
+  .summary('settings and records for the lets-go skill')
+  .description('Read the settings and records the lets-go skill uses.');
+
+go
   .command('questions')
   .summary('print the default question mode')
   .description('Print the default question mode, from go.questions in the lets config.')
   .addHelpText('after', GO_QUESTIONS_HELP)
   .action(async () => {
     process.exitCode = await questions(realDeps());
+  });
+
+go
+  .command('records')
+  .argument('<name>', 'the change\'s name, which is also its branch')
+  .summary('print the record each step of a change left')
+  .description('Print the record each step of a change left in Git and in its pull request, as one JSON line.')
+  .addHelpText('after', GO_RECORDS_HELP)
+  .action(async (name: string) => {
+    process.exitCode = await records(name, realDeps());
   });
 
 // lets backlog parses its own arguments, so its help and usage errors come
