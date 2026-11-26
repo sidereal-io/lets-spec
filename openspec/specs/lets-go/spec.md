@@ -106,7 +106,7 @@ When *Confirm the packet* returns `complete`, and no shape step ran in this run,
 - **THEN** `lets-go` prints no second `Done shape:` line, and no `Skipped shape:` line for #192
 
 ### Requirement: Review plan runs as a step, or is not in the route
-When the schema is `lets-minimal`, review plan never runs. `lets-go` SHALL print `Skipped review plan: not in the lets-minimal route.` after the plan step is done, and before the build step. That line SHALL carry no date. When the schema is not `lets-minimal`, review plan SHALL be a step of its own. It SHALL run as *Each step runs through lets delegate step* says, with `--for review-plan` and `--name <name>-review-plan`. Its prompt SHALL say to invoke the `lets-review-plan` skill for the change, as *The step prompt says what to run, the question mode, and how to report* says. That skill reviews the plan, or lets its *Check an earlier review* decide, runs its own rounds, and records the review in the pull request description under **Plan review**. When the walk reaches review plan, the first of these that matches SHALL decide whether it is done. First, on `lets-minimal`, review plan is done. Second, when the archive folder exists, review plan is done, and the records disagree when the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line. Third, otherwise, review plan SHALL count as done when that section covers the plan: `lets-review-plan`'s *Check an earlier review* finds no reason to run the skill again, and says the review is finished. When the walk reaches review plan and no section covers the plan, review plan SHALL run, whatever the change's `state`. So a `ready` change with no covering review goes to review plan, not build. `lets-go` SHALL read the pull request's body when it reaches the row, with `gh pr view <name> --json number,body`, because a step in this run can have opened or changed it. When review plan was done before this run, `lets-go` SHALL print `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.` `<pr>` SHALL be the pull request's number. `<sha>` and `<verdict>` SHALL come from the **Plan review** section of the pull request's body. `lets-go` SHALL find the `## Plan review` heading first, and read the section up to the next `## ` heading or the end of the body. Inside it, `<sha>` SHALL come from the line that starts `Reviewed: `, and `<verdict>` from the line that starts `- **Verdict:** `. `<date>` SHALL be `<sha>`'s author date, as `YYYY-MM-DD`, from `git log -1 --format=%as <sha>`. When the review plan step reports `done` in this run, `lets-go` SHALL print `Done review plan: <date>. <evidence>`, with the report's `date` and its `evidence` joined with `; `, as for any other step. The schema SHALL be the `schema:` line of the first of these files that exists: the change's `openspec/changes/<name>/.openspec.yaml`, then the archived change's `openspec/changes/archive/<YYYY-MM-DD>-<name>/.openspec.yaml`. When neither exists, it SHALL be the route's schema. So an archived change keeps the schema it was built with, even when the route would now pick another.
+When the schema is `lets-minimal`, review plan never runs. `lets-go` SHALL print `Skipped review plan: not in the lets-minimal route.` after the plan step is done, and before the build step. That line SHALL carry no date. When the schema is not `lets-minimal`, review plan SHALL be a step of its own. It SHALL run as *Each step runs through lets delegate step* says, with `--for review-plan` and `--name <name>-review-plan`. Its prompt SHALL say to invoke the `lets-review-plan` skill for the change, as *lets go step-prompt prints a walk step's prompt* in the `go-step-prompt` capability says. That skill reviews the plan, or lets its *Check an earlier review* decide, runs its own rounds, and records the review in the pull request description under **Plan review**. When the walk reaches review plan, the first of these that matches SHALL decide whether it is done. First, on `lets-minimal`, review plan is done. Second, when the archive folder exists, review plan is done, and the records disagree when the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line. Third, otherwise, review plan SHALL count as done when that section covers the plan: `lets-review-plan`'s *Check an earlier review* finds no reason to run the skill again, and says the review is finished. When the walk reaches review plan and no section covers the plan, review plan SHALL run, whatever the change's `state`. So a `ready` change with no covering review goes to review plan, not build. `lets-go` SHALL read the pull request's body when it reaches the row, with `gh pr view <name> --json number,body`, because a step in this run can have opened or changed it. When review plan was done before this run, `lets-go` SHALL print `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.` `<pr>` SHALL be the pull request's number. `<sha>` and `<verdict>` SHALL come from the **Plan review** section of the pull request's body. `lets-go` SHALL find the `## Plan review` heading first, and read the section up to the next `## ` heading or the end of the body. Inside it, `<sha>` SHALL come from the line that starts `Reviewed: `, and `<verdict>` from the line that starts `- **Verdict:** `. `<date>` SHALL be `<sha>`'s author date, as `YYYY-MM-DD`, from `git log -1 --format=%as <sha>`. When the review plan step reports `done` in this run, `lets-go` SHALL print `Done review plan: <date>. <evidence>`, with the report's `date` and its `evidence` joined with `; `, as for any other step. The schema SHALL be the `schema:` line of the first of these files that exists: the change's `openspec/changes/<name>/.openspec.yaml`, then the archived change's `openspec/changes/archive/<YYYY-MM-DD>-<name>/.openspec.yaml`. When neither exists, it SHALL be the route's schema. So an archived change keeps the schema it was built with, even when the route would now pick another.
 
 #### Scenario: A chore's route
 - **WHEN** the schema is `lets-minimal` and the plan step reports `done`
@@ -256,53 +256,6 @@ When `step run` exits 3, `lets-go` SHALL run the step in a subagent. The subagen
 #### Scenario: A subagent's marked question
 - **WHEN** the subagent's block holds `outcome: needs-input` and one question with `ask: true`
 - **THEN** `.workspace/lets-go/<session>-report.json` holds that question with `"ask":true`
-
-### Requirement: The step prompt says what to run, the question mode, and how to report
-Each step prompt SHALL name the step, the change, the issue, the branch, the schema and the route line. For the shape step, the issue is `#<i>`, or `none yet` with the idea word for word, and the branch is the default branch. Its schema and route are left out, because *Route* has not run. For an idea whose open issue titles *Start from an idea* searched, the header SHALL also say that the search ran and no open issue is the same work. It SHALL say what to run in one sentence. For every step but shape: invoke the step's skill, as the step table names it, for the change and the issue, and stop where that skill stops. The skills are `lets-plan` for plan, `lets-review-plan` for review plan, `lets-build` for build and `lets-review-build` for review build. For shape, the sentence is ``Invoke the `lets-shape` skill for issue #<i>, and stop where it stops.`` for an issue, and ``Invoke the `lets-shape` skill for the idea above, and stop where it stops.`` for an idea. The prompt SHALL name no other skill, and no section of a skill, for any step. How `lets-shape` picks its path, resumes a discovery and asks its questions is `lets-shape`'s own, as the `discovery-checkpoints` capability says. `lets-plan` takes the route line from the prompt for the proposal's commit message. The prompt SHALL say the question mode, and what the `lets-go` session does with it. At `auto`, that session answers each question that has a recommendation, and asks the user the rest. At `ask`, it puts every question to the user, with the step's recommendation. The step's own rules SHALL be the same in both modes. It SHALL say that the step never asks the user in its session. When the step needs a decision, it ends with a `needs-input` report that lists every open question, with a `recommendation` where it has one. A question that asks the user to confirm something, such as a brainstorm ledger, an issue packet or a discovery phase, SHALL carry no recommendation. The prompt SHALL say how to read an `## Answers` section. Each answer settles its question. An answer marked as accepted by `lets-go` is recorded as `Assumption` in a brainstorm ledger, and any other answer as `User`. An answer of yes to the confirmation question lets the brainstorm set `Confirmed by user: yes`. The prompt SHALL give the report rules: write the report last, quote a line that holds `#` or `: `, and put no other `step-report` block in the message. It SHALL say what a `done` report's evidence holds: the commits made, and the pull request when the step opened or changed it. For shape, the issue comes first, as `issue #<i>: <title>`, or the parent and the stories, as `epic #<parent>: <title>` and `story #<story>: <title>` lines. For review plan, the verdict and the reviewed commit come first, as `Plan review: <verdict> for <sha>`.
-
-#### Scenario: The propose prompt
-- **WHEN** `lets-go` writes the plan prompt for change `lets-go-chore`, issue `#149`, route `lets-minimal`, at `auto`
-- **THEN** the file names `lets-plan`, `lets-go-chore`, `#149`, the route line, `auto`, `needs-input`, `recommendation`, `## Answers`, `Assumption`, `User` and `step-report`, and does not name `openspec-propose`
-
-#### Scenario: The propose prompt at ask
-- **WHEN** `lets-go` writes the plan prompt for change `lets-go-story`, issue `#152`, at `ask`
-- **THEN** the file says the question mode is `ask`, says the `lets-go` session puts every question to the user, and still says to list every open question with a recommendation where the step has one
-
-#### Scenario: The apply prompt stops short of finishing
-- **WHEN** `lets-go` writes the build prompt for a change whose schema is `lets-standard`
-- **THEN** the file names the `lets-build` skill, says to stop where it stops, and names neither `lets-review-plan` nor `lets-review-build`
-
-#### Scenario: The build prompt on lets-minimal
-- **WHEN** `lets-go` writes the build prompt for a change whose schema is `lets-minimal`
-- **THEN** the file names `lets-build` and does not name `lets-review-plan`
-
-#### Scenario: The review build prompt
-- **WHEN** `lets-go` writes the review build prompt
-- **THEN** the file names the `lets-review-build` skill for the change, and names no section of `lets-build`
-
-#### Scenario: The review plan prompt
-- **WHEN** `lets-go` writes the review plan prompt for change `lets-go-story`, issue `#152`
-- **THEN** the file names the `lets-review-plan` skill for `lets-go-story`, names `#152` and the route line, says the first evidence line is `Plan review: <verdict> for <sha>`, and names no `lets-build`
-
-#### Scenario: A confirmation
-- **WHEN** a step's brainstorm needs the user to confirm the ledger
-- **THEN** its `needs-input` report lists that question with no `recommendation`
-
-#### Scenario: A phase confirmation
-- **WHEN** the shape step's discovery needs the user to confirm the journey map
-- **THEN** its `needs-input` report lists that confirmation with no `recommendation`, and `lets-go` asks the user in either mode
-
-#### Scenario: The shape prompt's frame
-- **WHEN** `lets-go` writes the shape prompt for an idea on a repository whose default branch is `main`
-- **THEN** the file says the issue is `none yet`, holds the idea, names `main` as the branch, names no schema and no route, and keeps the `## Questions` and report rules of the other prompts
-
-#### Scenario: The shape prompt for an issue
-- **WHEN** `lets-go` writes the shape prompt for `#180`
-- **THEN** its `## What to run` section holds only ``Invoke the `lets-shape` skill for issue #180, and stop where it stops.``
-
-#### Scenario: The shape prompt names no part of lets-shape
-- **WHEN** `lets-go` writes the shape prompt
-- **THEN** the file names no section of `lets-shape`, such as *Resume mode* or *Shape one issue*, and does not hold `Discovery status: in-progress` or `Run discovery on it?`
 
 ### Requirement: lets-go relays a needs-input report in auto mode
 When a report's outcome is `needs-input`, `lets-go` SHALL go through its questions in order. For a question with a `recommendation`, it SHALL take the recommendation as the answer, and tell the user the question and the answer it gave. It SHALL write that answer as the recommendation followed by ` (lets-go accepted the step's recommendation; the user did not decide)`. For a question without one, it SHALL ask the user that question alone, and wait for the answer before the next. It SHALL append every pair, in order, to `.workspace/lets-go/<session>-answers.yaml`. That file is a YAML list of `question` and `answer` mappings, and keeps the pairs of earlier rounds. `lets-go` SHALL then run the step again with the same `--prompt-file` and `--answers-file <that file>`, through the same `step instructions`, `step run` and exit 3 rules.
@@ -718,7 +671,7 @@ In `ask` mode, when a report's outcome is `needs-input`, `lets-go` SHALL ask the
 - **THEN** `lets-go` shows the error's `message`, claims nothing and runs no step
 
 ### Requirement: The shape step shapes an idea or an unshaped issue
-`lets-go` SHALL run a step named `shape` when the request is an idea that no existing issue matches. It SHALL also run it when *Confirm the packet* returns `needs-shape` for an issue the user named, as *Only an idea or a named issue goes to the shape step* says, and for an epic the user named, as *An epic run shapes an empty epic first* and *An epic run finishes a stopped discovery before it builds* say. For an epic whose stopped Finalize *A stopped discovery resumes from its parent issue* found through another input's answers, the step SHALL run for that input, under that input's `<shape-name>`. It SHALL run that step as *Each step runs through lets delegate step* says, with `--for shape`, on the default branch, before any branch or change exists. The shape step SHALL run at most once per run. After it, a `needs-shape` result SHALL make `lets-go` say to run `lets-shape` on `#<i>`, and stop. `<shape-name>` SHALL be `issue-<i>` for an existing issue, and `idea-<slug>` for an idea. `<slug>` SHALL be built this way: split the idea on white space; lower-case each word; keep only its letters and digits; drop a word left empty; join the first five words with hyphens, or all of them when there are fewer. Once the shape step reports `done` or `failed`, `lets-go` SHALL remove `.workspace/lets-go/<shape-name>-shape-answers.yaml`. When the step ran for an epic `#<i>` whose `Input:` line names another input, `lets-go` SHALL also remove that input's answers file, under its own `<shape-name>`, and, for an idea, only when that input's prompt file holds that idea: otherwise a stopped round of that input leaves answers that *A stopped discovery resumes from its parent issue* finds when the run goes back to *Check the issue*. When the step reports `done` with an `epic #<parent>` line, `lets-go` SHALL also remove `.workspace/lets-go/issue-<parent>-shape-answers.yaml`, whatever input the step ran for: a stopped round of `lets-go #<parent>` may have left answers there. Before it writes the shape prompt for an idea, when `.workspace/lets-go/<shape-name>-shape-prompt.md` exists and holds another idea, `lets-go` SHALL remove that answers file too. The step SHALL run `lets-shape` on the idea or on `#<i>`, with the prompt *The step prompt says what to run, the question mode, and how to report* gives it. `lets-shape` SHALL pick its path as the `discovery-checkpoints` capability says: it shapes the work as one issue, to the end of its comment reads, its reply and its glossary handoff, or runs discovery when the work is too large, as *The shape step runs discovery only after a yes* says. For an idea that the title search already checked, the step SHALL run no second title search. The step SHALL create no change and no change branch, and SHALL end on the default branch with a clean tree, except the discovery maps, `openspec/discovery.md` and the files under `openspec/discovery/`, when discovery ran; a glossary holding branch that `lets-shape` makes is allowed. The packet confirmation, the question about which product an idea belongs to, and the question that moves the map for a second product SHALL reach `lets-go` with no recommendation, so `lets-go` asks the user in either mode. The first evidence line of a `done` report SHALL be `issue #<i>: <title>` for one issue. When discovery filed stories, it SHALL be `epic #<parent>: <title>`, followed by `story #<story>: <title>` lines. When the step reports `done` for one issue, `lets-go` SHALL read `<i>` from that first evidence line. When it reports `done` for a parent and stories, `lets-go` SHALL take the parent as `<i>`, and go on as *A shape step that files a parent goes on as an epic run* says. A `done` report whose first evidence line is in neither form SHALL count as `failed`, with a reason that says the shape step named no issue. After a `done` report, Start SHALL go on from its blocker read with `<i>`, as for an issue number or an epic's number, and the shape line SHALL be `Done shape: <date>. <evidence>`. When the step reports `failed`, `lets-go` SHALL print `Failed shape: <reason>`, say to run `lets-shape` on the idea or the issue, name no branch, and stop. When exit 3 sends the step to a subagent, the subagent SHALL work on the default branch.
+`lets-go` SHALL run a step named `shape` when the request is an idea that no existing issue matches. It SHALL also run it when *Confirm the packet* returns `needs-shape` for an issue the user named, as *Only an idea or a named issue goes to the shape step* says, and for an epic the user named, as *An epic run shapes an empty epic first* and *An epic run finishes a stopped discovery before it builds* say. For an epic whose stopped Finalize *A stopped discovery resumes from its parent issue* found through another input's answers, the step SHALL run for that input, under that input's `<shape-name>`. It SHALL run that step as *Each step runs through lets delegate step* says, with `--for shape`, on the default branch, before any branch or change exists. The shape step SHALL run at most once per run. After it, a `needs-shape` result SHALL make `lets-go` say to run `lets-shape` on `#<i>`, and stop. `<shape-name>` SHALL be `issue-<i>` for an existing issue, and `idea-<slug>` for an idea. `<slug>` SHALL be built this way: split the idea on white space; lower-case each word; keep only its letters and digits; drop a word left empty; join the first five words with hyphens, or all of them when there are fewer. Once the shape step reports `done` or `failed`, `lets-go` SHALL remove `.workspace/lets-go/<shape-name>-shape-answers.yaml`. When the step ran for an epic `#<i>` whose `Input:` line names another input, `lets-go` SHALL also remove that input's answers file, under its own `<shape-name>`, and, for an idea, only when that input's prompt file holds that idea: otherwise a stopped round of that input leaves answers that *A stopped discovery resumes from its parent issue* finds when the run goes back to *Check the issue*. When the step reports `done` with an `epic #<parent>` line, `lets-go` SHALL also remove `.workspace/lets-go/issue-<parent>-shape-answers.yaml`, whatever input the step ran for: a stopped round of `lets-go #<parent>` may have left answers there. Before it writes the shape prompt for an idea, when `.workspace/lets-go/<shape-name>-shape-prompt.md` exists and holds another idea, `lets-go` SHALL remove that answers file too. The step SHALL run `lets-shape` on the idea or on `#<i>`, with the prompt that *lets go step-prompt prints the shape prompt for an issue or an idea* in the `go-step-prompt` capability describes. `lets-shape` SHALL pick its path as the `discovery-checkpoints` capability says: it shapes the work as one issue, to the end of its comment reads, its reply and its glossary handoff, or runs discovery when the work is too large, as *The shape step runs discovery only after a yes* says. For an idea that the title search already checked, the step SHALL run no second title search. The step SHALL create no change and no change branch, and SHALL end on the default branch with a clean tree, except the discovery maps, `openspec/discovery.md` and the files under `openspec/discovery/`, when discovery ran; a glossary holding branch that `lets-shape` makes is allowed. The packet confirmation, the question about which product an idea belongs to, and the question that moves the map for a second product SHALL reach `lets-go` with no recommendation, so `lets-go` asks the user in either mode. The first evidence line of a `done` report SHALL be `issue #<i>: <title>` for one issue. When discovery filed stories, it SHALL be `epic #<parent>: <title>`, followed by `story #<story>: <title>` lines. When the step reports `done` for one issue, `lets-go` SHALL read `<i>` from that first evidence line. When it reports `done` for a parent and stories, `lets-go` SHALL take the parent as `<i>`, and go on as *A shape step that files a parent goes on as an epic run* says. A `done` report whose first evidence line is in neither form SHALL count as `failed`, with a reason that says the shape step named no issue. After a `done` report, Start SHALL go on from its blocker read with `<i>`, as for an issue number or an epic's number, and the shape line SHALL be `Done shape: <date>. <evidence>`. When the step reports `failed`, `lets-go` SHALL print `Failed shape: <reason>`, say to run `lets-shape` on the idea or the issue, name no branch, and stop. When exit 3 sends the step to a subagent, the subagent SHALL work on the default branch.
 
 #### Scenario: An idea no issue matches
 - **WHEN** the user runs `lets-go add a --quiet flag to lets sync`, and the search finds no open issue
@@ -917,8 +870,8 @@ Every placeholder in `skills/lets-go/SKILL.md` and in each file in `skills/lets-
 - **THEN** no text in angle brackets that starts with a letter is left
 
 #### Scenario: A fence inside a longer fence
-- **WHEN** a reader reads the prompt frame, a fence of four backticks that holds fences of three
-- **THEN** the whole frame is code, the text after the inner fences close included, up to the four-backtick line that closes the frame, so a placeholder there renders as written
+- **WHEN** a file of `lets-go` holds a fence of four backticks that holds fences of three
+- **THEN** the whole outer fence is code, the text after the inner fences close included, up to the four-backtick line that closes it, so a placeholder there renders as written
 
 #### Scenario: A stop that names the issue
 - **WHEN** `lets-go` says to run `lets-shape` on the issue
@@ -1313,7 +1266,7 @@ A rule written once MAY run more than once. `next` runs *Check the prerequisite*
 - **THEN** it does not say `When *Claim* ran it, return to *Claim*`
 
 ### Requirement: lets-go keeps what only some runs need in reference files
-`skills/lets-go/references/` SHALL hold these eight files. Each SHALL open with a `#` title and one line that says when a run reads it.
+`skills/lets-go/references/` SHALL hold these seven files, and no other. Each SHALL open with a `#` title and one line that says when a run reads it.
 
 | File | What it holds |
 |---|---|
@@ -1321,7 +1274,6 @@ A rule written once MAY run more than once. `next` runs *Check the prerequisite*
 | `glossary-handoff.md` | *Glossary preflight*, with *Check the prerequisite*, *Check the checkpoint* and *What the preflight returns*, and *Import the glossary checkpoint*, with *Import the commits* and *Recover from a failed import* |
 | `shape.md` | The steps of *Start from an idea* and *Run the shape step*, *Find the input's discovery*, *Commit the discovery map*, and the `<shape-name>` and `<slug>` rules of *The change's name* |
 | `story-run.md` | A story run's child session: how the child takes what the story prompt gives, walks the step table, passes its steps' questions up, and ends with one step report |
-| `step-prompt.md` | *Write the prompt*: the rules that fill the frame, and the frame as one fenced block that the agent copies to `.workspace/lets-go/<session>-prompt.md` and fills |
 | `records.md` | *Read the records* and *Records that disagree* |
 | `subagent.md` | *Run a step in a subagent* |
 | `terms.md` | The glossary's entries for the terms `lets-go` uses, as *lets-go carries the glossary's entries for its own terms* says |
@@ -1330,7 +1282,7 @@ A rule written once MAY run more than once. `next` runs *Check the prerequisite*
 
 #### Scenario: The moved sections are in their files
 - **WHEN** a reader lists the headings of each file of `lets-go`
-- **THEN** the reader finds *Records that disagree* and *Read the records* in `references/records.md`, *Run a step in a subagent* in `references/subagent.md`, *Write the prompt* in `references/step-prompt.md`, *Commit the discovery map* in `references/shape.md`, and *Glossary preflight* and *Import the glossary checkpoint* in `references/glossary-handoff.md`, and none of them in `SKILL.md`; no file of `lets-go` has a heading *What shape runs*
+- **THEN** the reader finds *Records that disagree* and *Read the records* in `references/records.md`, *Run a step in a subagent* in `references/subagent.md`, *Commit the discovery map* in `references/shape.md`, and *Glossary preflight* and *Import the glossary checkpoint* in `references/glossary-handoff.md`, and none of them in `SKILL.md`; no file of `lets-go` has a heading *What shape runs*
 
 #### Scenario: A part whose steps moved
 - **WHEN** a reader reads the *Run the shape step* section of `SKILL.md`
@@ -1341,8 +1293,8 @@ A rule written once MAY run more than once. `next` runs *Check the prerequisite*
 - **THEN** it links `references/epic-run.md#run-the-epic`, its last paragraph starts `Next:`, `references/epic-run.md` has a heading `Run the epic`, and `references/epic-run.md` opens with a `#` title and a line that says a run reads it only in an epic run
 
 #### Scenario: The prompt frame is one block to copy
-- **WHEN** a reader reads `references/step-prompt.md`
-- **THEN** one fenced block holds `## What to run`, `## Questions` and `## The report`, and the text before it names `.workspace/lets-go/<session>-prompt.md`
+- **WHEN** a reader looks for a step's prompt frame in `lets-go`
+- **THEN** no file of `lets-go` holds it: `skills/lets-go/references/` has no `step-prompt.md`, no file has a heading *Write the prompt*, and *Run a step* sends the one block that `lets go step-prompt` prints to `.workspace/lets-go/<session>-prompt.md`
 
 #### Scenario: A section left behind
 - **WHEN** an edit makes `skills/lets-go/SKILL.md` hold a heading `Records that disagree`
@@ -1481,7 +1433,7 @@ No line of `skills/lets-go/SKILL.md` or of a file in `skills/lets-go/references/
 - **THEN** `**3**: no fresh session can run here, for example because no resolver started one` spans more than one line
 
 ### Requirement: lets-go links each section it names
-`skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/` SHALL name a section of a file by a link to its heading, every time, in prose and in table cells, the overview's *Next* column included. A link to a section of another `lets-go` file, or of another skill, SHALL use a path relative to the linking file, as *Every link inside lets-go names one of its headings* says. A section of another skill that a published flow does not install, such as *Check an earlier review* in `lets-review-plan`, which the `minimal` flow leaves out, SHALL stay in italics, so that every link resolves in both flows. A heading inside the step prompt frame, which is not a heading of the file, SHALL be written as it is typed, in a code span, such as `## What to run`. `references/terms.md` is exempt: it copies `openspec/glossary.md` word for word, and the glossary names sections such as *Route* and *Claim* in italics.
+`skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/` SHALL name a section of a file by a link to its heading, every time, in prose and in table cells, the overview's *Next* column included. A link to a section of another `lets-go` file, or of another skill, SHALL use a path relative to the linking file, as *Every link inside lets-go names one of its headings* says. A section of another skill that a published flow does not install, such as *Check an earlier review* in `lets-review-plan`, which the `minimal` flow leaves out, SHALL stay in italics, so that every link resolves in both flows. A heading inside a step's prompt or a story prompt, which is not a heading of the file, SHALL be written as it is typed, in a code span, such as `## Stack`. `references/terms.md` is exempt: it copies `openspec/glossary.md` word for word, and the glossary names sections such as *Route* and *Claim* in italics.
 
 #### Scenario: Every section reference is a link
 - **WHEN** a reader reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`, outside code
@@ -1500,8 +1452,8 @@ No line of `skills/lets-go/SKILL.md` or of a file in `skills/lets-go/references/
 - **THEN** the reader finds `*Check an earlier review*` in italics and the `lets-review-plan` skill named, and no link to `../lets-review-plan/`
 
 #### Scenario: A heading of the prompt frame
-- **WHEN** a reader reads *Write the prompt* in `references/step-prompt.md`
-- **THEN** the reader finds `` `## What to run` `` and no `*What to run*`
+- **WHEN** a reader reads `references/story-run.md`
+- **THEN** the reader finds `` `## Stack` `` and no `*Stack*`
 
 #### Scenario: The glossary's copy keeps its italics
 - **WHEN** a reader reads `references/terms.md`, which says `such as *Route* or *Walk the step table*`
@@ -1874,15 +1826,19 @@ A settle in steps 1 and 3 SHALL claim nothing, count no lost claim and not end t
 - **THEN** `lets-go` says #279 blocks #280, creates no branch, and claims nothing
 
 ### Requirement: A stacked story's pull request targets its blocker's branch
-When `lets-go` writes the prompt for a step of a stacked story, the prompt SHALL hold a `## Stack` section. It SHALL name the blocker, its branch and its pull request. It SHALL tell the step to open the story's draft pull request with `--base <blocker-branch>`, and to put the line `Stacked on #<blocker-pr>; merge that first.` on its own line after `Closes #<i>` in its description. When the pull request exists with another base, the section SHALL tell the step to fix it with `gh pr edit <name> --base <blocker-branch>`. The prompt of a story that is not stacked SHALL hold no `## Stack` section. The brainstorm instruction of the `lets-standard` and `lets-minimal` schemas SHALL say to follow the prompt's `## Stack` section, when it has one, where it opens the draft pull request.
+When `lets-go` writes the prompt for a step of a stacked story, it SHALL pass `--blocker <blocker> --blocker-branch <blocker-branch> --blocker-pr <blocker-pr>` to `lets go step-prompt`, so that the prompt holds the `## Stack` section that *A stacked story's prompt holds a Stack section* in the `go-step-prompt` capability describes. It SHALL pass them for every step of the story, so that a step resumed after `needs-input` still sees them. A story is stacked when *Stack the story* or *Take up a started story* returned `stacked` for it, or, in a story run's child, when the story prompt holds a `## Stack` section, whose blocker, branch and pull request the child passes on. For a story that is not stacked, `lets-go` SHALL pass none of the three flags. The brainstorm instruction of the `lets-standard` and `lets-minimal` schemas SHALL say to follow the prompt's `## Stack` section, when it has one, where it opens the draft pull request.
 
 #### Scenario: The plan step of a stacked story
 - **WHEN** an epic run writes the prompt for the plan step of #280, stacked on #279, whose pull request #290 is from `epic-run-skeleton`
-- **THEN** the prompt's `## Stack` section holds `--base epic-run-skeleton` and `Stacked on #290; merge that first.`
+- **THEN** it runs `lets go step-prompt --for plan` with `--blocker 279 --blocker-branch epic-run-skeleton --blocker-pr 290`, and the prompt's `## Stack` section holds `--base epic-run-skeleton` and `Stacked on #290; merge that first.`
 
 #### Scenario: A story that is not stacked
 - **WHEN** an epic run writes the prompt for a step of #279, which has no open blocker
-- **THEN** the prompt holds no `## Stack` section
+- **THEN** its `lets go step-prompt` command carries no `--blocker`, and the prompt holds no `## Stack` section
+
+#### Scenario: A stacked story in a child
+- **WHEN** a story run's child writes the build prompt, and its story prompt holds a `## Stack` section that names #282, `epic-run-resume` and #293
+- **THEN** the child runs `lets go step-prompt --for build` with `--blocker 282 --blocker-branch epic-run-resume --blocker-pr 293`
 
 #### Scenario: The schemas follow the section
 - **WHEN** a reader reads the brainstorm instruction of `schemas/lets-standard/schema.yaml` and `schemas/lets-minimal/schema.yaml`
@@ -1982,7 +1938,7 @@ When the started story has no pull request and an open blocker, *An epic run sta
 ### Requirement: An epic run runs each story in a child session
 After *Set the question mode* has set `<mode>` for the story the epic run picked, with the story's branch `<name>` checked out in its worktree `<path>`, `lets-go` SHALL start the story's run in a child `lets-go` session, in the background, in this order:
 
-1. Write the story prompt to `.workspace/lets-go/<name>-story-prompt.md` in the epic run's checkout. Its first line SHALL be `You run a story run of a lets-go epic run: #<i>, for the change <name>, under #<parent>.` It SHALL name the issue and its URL, the branch `<name>`, the worktree `<path>` as the child's checkout, `<schema>` and the route line, and SHALL say that the question mode is `<mode>`. It SHALL say that the epic run has already claimed the issue, routed it and checked the branch `<name>` out in that worktree, so the child claims nothing, routes nothing, stays on `<name>` and works only in the worktree. It SHALL tell the child to invoke the `lets-go` skill, and to end with one step report. For a stacked story it SHALL hold the `## Stack` section that the story's step prompts hold, with the same `<blocker>`, `<blocker-branch>` and `<blocker-pr>`. The prompt of a story that is not stacked SHALL hold no `## Stack` section.
+1. Write the story prompt to `.workspace/lets-go/<name>-story-prompt.md` in the epic run's checkout, by running `lets go step-prompt --for story --name <name> --issue <i> --issue-url <issue-url> --parent <parent> --checkout <path> --schema <schema> --route <route line> --questions <mode>` and sending its stdout to that file. The `go-step-prompt` capability says what the story prompt holds. For a stacked story, the command SHALL carry the same `--blocker`, `--blocker-branch` and `--blocker-pr` as the story's step prompts. For a story that is not stacked, it SHALL carry none of them. When the command exits non-zero, the epic run SHALL stop the story's run, with the command's stderr as the story's reason.
 2. Remove `.workspace/lets-go/<name>-story-answers.yaml` in the epic run's checkout, and each `.workspace/lets-go/<name>-<step>-rounds.txt` in the worktree, where the child keeps them, so the story run starts with no answers and no counted rounds. Do this only before the story's first child session in this run, never when relaying its questions.
 3. Run `lets delegate step instructions --for story`, and rank its `options` as *Run a step* ranks a step's: the guidance first, then the order the options came in. When `options` is empty, pass its own family as the one model.
 4. Run `lets delegate step start --for story --name <name>-story --checkout <path> --prompt-file .workspace/lets-go/<name>-story-prompt.md --report-file .workspace/lets-go/<name>-story-report.json --meta-file .workspace/lets-go/<name>-story-meta.txt --effort high`, with one `--model` per ranked option, best first. It returns once the child has started, and the epic run goes on without waiting for it.
@@ -1995,7 +1951,7 @@ While children run, the epic run SHALL print only its own lines: the `Picked` or
 
 #### Scenario: A story that is not stacked
 - **WHEN** the epic run writes the story prompt for #279, which has no open blocker
-- **THEN** the story prompt holds no `## Stack` section
+- **THEN** its `lets go step-prompt --for story` command carries no `--blocker`, and the story prompt holds no `## Stack` section
 
 #### Scenario: The child's command
 - **WHEN** `lets delegate step instructions --for story` lists `claude/claude-opus-5-5` then `gpt/gpt-6-luna`, and its guidance is `null`
@@ -2456,3 +2412,33 @@ When the shape step reports `done` with the first evidence line `epic #<parent>:
 #### Scenario: The three skills say it
 - **WHEN** a reader reads `lets-review-build`, `lets-review-plan` and `lets-go`, each with its reference files
 - **THEN** each says `**3**: no fresh session can run here, for example because no resolver started one`, whatever its line breaks
+
+### Requirement: lets-go writes each step's prompt with lets go step-prompt
+Before it runs a step, *Run a step* SHALL create `.workspace/lets-go` when it is missing, run `lets go step-prompt --for <step>` from the repo root with the step's values, and send its stdout to `.workspace/lets-go/<session>-prompt.md`. The `go-step-prompt` capability says what each prompt holds. The values SHALL be the ones the run holds for the step:
+
+- For every step but shape: `--name <name> --issue <i> --issue-url <issue-url> --schema <schema> --route <route line> --questions <mode>`. In a story run's child, `<schema>`, the route line and `<mode>` are the ones the story prompt gives.
+- For shape on an issue: `--issue <i> --issue-url <issue-url> --branch <default> --questions <mode>`.
+- For shape on an idea: `--idea <idea> --branch <default> --questions <mode>`, and `--searched` only when *Start from an idea* ran its title search and the search or the user found no match.
+- For a stacked story, the stack flags that *A stacked story's pull request targets its blocker's branch* names.
+
+When the command exits non-zero, `lets-go` SHALL show the user its stderr, name the step, and stop, and SHALL run no `lets delegate step` command for that step. No file of `skills/lets-go/` SHALL hold a copy of a prompt's text for `lets-go` to fill in.
+
+#### Scenario: The plan prompt
+- **WHEN** the walk reaches plan for the change `lets-go-chore`, issue `149`, on `lets-minimal`, at the question mode `auto`
+- **THEN** `lets-go` runs `lets go step-prompt --for plan --name lets-go-chore --issue 149` with `--issue-url`, `--schema lets-minimal`, the route line as `--route` and `--questions auto`, sends its stdout to `.workspace/lets-go/lets-go-chore-plan-prompt.md`, and then runs `lets delegate step run --for plan --name lets-go-chore-plan --prompt-file .workspace/lets-go/lets-go-chore-plan-prompt.md`
+
+#### Scenario: The shape prompt for a searched idea
+- **WHEN** *Start from an idea* searched the open issue titles for `add a --quiet flag to lets sync` and found no match, on a repository whose default branch is `main`, at `auto`
+- **THEN** `lets-go` runs `lets go step-prompt --for shape --idea "add a --quiet flag to lets sync" --branch main --questions auto --searched`, and sends its stdout to `.workspace/lets-go/idea-add-a-quiet-flag-to-shape-prompt.md`
+
+#### Scenario: The shape prompt for an issue
+- **WHEN** the shape step runs for `#180` on a repository whose default branch is `main`
+- **THEN** its `lets go step-prompt` command carries `--issue 180`, `--branch main` and no `--idea`, `--schema` or `--route`
+
+#### Scenario: The command fails
+- **WHEN** `lets go step-prompt` exits 2 because the plain-language reference is not installed
+- **THEN** `lets-go` shows the user its stderr, names the step, stops, and runs no `lets delegate step instructions` and no `lets delegate step run` for it
+
+#### Scenario: No prompt frame in the skill
+- **WHEN** a reader reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
+- **THEN** the reader finds `lets go step-prompt` in *Run a step* and in *Start the story run*, and no line `The question mode is <mode>. At auto, the lets-go session answers each` and no line `You run a story run of a lets-go epic run: #<i>, for the change <name>, under #<parent>.`
