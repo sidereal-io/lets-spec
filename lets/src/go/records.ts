@@ -4,7 +4,7 @@
 // process access here; everything comes through deps.
 import { guarded } from '../delegate/guarded.ts';
 import type { Deps, Io } from '../io.ts';
-import { EXIT, SpawnError } from '../resolvers/kit/errors.ts';
+import { EXIT, SpawnError, UsageError } from '../resolvers/kit/errors.ts';
 
 type Run = (cmd: string, args: string[]) => Promise<string>;
 
@@ -23,7 +23,9 @@ function runner(io: Pick<Io, 'execFile'>, cwd: string): Run {
 
 function failure(result: { stderr: string; code: number | null; timedOut?: boolean }, command: string): string {
   if (result.timedOut) return `timed out after ${READ_TIMEOUT_MS / 1000} seconds`;
-  return result.stderr.trim() || (result.code === null ? `${command.split(' ')[0]} could not start` : `exited ${result.code}`);
+  // One line, so guarded prints one line on stderr.
+  const message = result.stderr.trim().replace(/\s*\n\s*/g, ' ');
+  return message || (result.code === null ? `${command.split(' ')[0]} could not start` : `exited ${result.code}`);
 }
 
 type PullRequest = { number: number; body: string };
@@ -36,7 +38,17 @@ async function pullRequest(io: Pick<Io, 'execFile'>, cwd: string, name: string):
     if (!result.timedOut && NO_PR.test(result.stderr)) return null;
     throw new SpawnError(`gh pr view: ${failure(result, 'gh pr view')}`);
   }
-  return JSON.parse(result.stdout) as PullRequest;
+  let value: unknown;
+  try {
+    value = JSON.parse(result.stdout);
+  } catch {
+    value = null;
+  }
+  const { number, body } = (value ?? {}) as Partial<PullRequest>;
+  if (!Number.isInteger(number) || typeof body !== 'string') {
+    throw new SpawnError(`gh pr view printed something other than JSON with a whole-number number and a string body: ${result.stdout.trim().slice(0, 200)}`);
+  }
+  return { number: number as number, body };
 }
 
 type StepRecord = { commit: string; date: string };
@@ -63,6 +75,7 @@ function archiveFolder(io: Pick<Io, 'exists' | 'listDirs'>, root: string, name: 
   return found.length === 1 ? found[0] : null;
 }
 
+const KEBAB = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 const HASH = /^[0-9a-f]{4,40}$/;
 
 // The reviewed commit and verdict in the body's ## Plan review section, up
@@ -99,6 +112,8 @@ async function reviewPlanRecord(io: Pick<Io, 'execFile'>, git: Run, root: string
 // The exit code: 0 ok, 2 a bad name, 4 a failed read.
 export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'stderr'>): Promise<number> {
   return guarded(deps, async () => {
+    // Before any read, so a name such as ../x or --all never reaches a path or gh.
+    if (!KEBAB.test(name)) throw new UsageError(`the change's name must be lower-case kebab-case, such as lets-go-chore: ${name}`);
     const root = (await runner(deps.io, deps.cwd)('git', ['rev-parse', '--show-toplevel'])).trim();
     const git = runner(deps.io, root);
     const change = `openspec/changes/${name}`;

@@ -35,6 +35,8 @@ interface Repo {
   move(message: string, from: string, to: string, date: string): string;
   /** Runs `lets go records <args>`, `NAME` when absent. */
   records(...args: string[]): Promise<LetsResult>;
+  /** Runs `lets <args>` in the repository, with the stand-in `gh`. */
+  lets(...args: string[]): Promise<LetsResult>;
 }
 
 /**
@@ -75,6 +77,7 @@ function repo(t: TestContext, rows: StandInRow[]): Repo {
       return run({}, 'log', '-1', '--format=%h');
     },
     records: (...args) => runLets(['go', 'records', ...(args.length === 0 ? [NAME] : args)], { cwd: root, standIns: bin }),
+    lets: (...args) => runLets(args, { cwd: root, standIns: bin }),
   };
 }
 
@@ -279,4 +282,52 @@ describe('review-plan record', () => {
       assert.equal(record, null);
     });
   }
+});
+
+describe('the command fails', () => {
+  /** Asserts exit `code`, an empty stdout and one stderr line that starts `lets go: ` and holds each of `named`. */
+  function failed(result: LetsResult, code: number, ...named: string[]): void {
+    assert.equal(result.code, code, result.output);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /^lets go: [^\n]*\n$/, `one lets go: line: ${result.stderr}`);
+    for (const text of named) assert.ok(result.stderr.includes(text), `${text} in ${result.stderr}`);
+  }
+
+  test('a missing name fails with a usage error that names the argument', async (t) => {
+    const r = repo(t, [noPr()]);
+    const result = await r.lets('go', 'records');
+    assert.equal(result.code, 2, result.output);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /missing required argument 'name'/);
+  });
+
+  test('a name that is not kebab-case fails before any git or gh call', async (t) => {
+    const r = repo(t, [noPr()]);
+    failed(await r.records('../lets-go-chore'), 2, '../lets-go-chore');
+    assert.deepEqual(r.gh.calls(), []);
+  });
+
+  test('a gh failure other than no pull request fails with gh\'s error', async (t) => {
+    const r = repo(t, [{ args: ['pr', 'view'], prefix: true, stderr: 'To get started with GitHub CLI, please run:  gh auth login\nAlternatively, populate the GH_TOKEN environment variable with a GitHub API authentication token.\n', code: 1 }]);
+    failed(await r.records(), 4, 'gh pr view', 'gh auth login');
+  });
+
+  test('gh output that is not JSON fails', async (t) => {
+    const r = repo(t, [{ args: ['pr', 'view'], prefix: true, stdout: 'not json\n' }]);
+    failed(await r.records(), 4, 'gh pr view');
+  });
+
+  test('gh JSON without a whole-number number and a string body fails', async (t) => {
+    for (const value of [{ number: '167', body: '' }, { number: 1.5, body: '' }, { number: 167 }, null]) {
+      const r = repo(t, [{ args: ['pr', 'view'], prefix: true, stdout: `${JSON.stringify(value)}\n` }]);
+      failed(await r.records(), 4, 'gh pr view');
+    }
+  });
+
+  test('a folder outside any Git repository fails, naming git', async (t) => {
+    const outside = tempDir(t);
+    // Stops git looking above the folder, in case the temporary folder is inside a repository.
+    const result = await runLets(['go', 'records', NAME], { cwd: outside, env: { GIT_CEILING_DIRECTORIES: dirname(outside) } });
+    failed(result, 4, 'git');
+  });
 });
