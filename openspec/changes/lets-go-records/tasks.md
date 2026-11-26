@@ -20,6 +20,6 @@ The spec is `specs/lets-go/spec.md`. Before you start, record `wc -l skills/lets
 
 ## 3. Check the whole change [depends-on: 2]
 
-- [ ] 3.1 [easy] The three project checks pass, and the pull request description gives `wc -l` for `skills/lets-go/SKILL.md` and `skills/lets-go/references/records.md`, before and after (verify: pnpm test && nix flake check && mise run check)
+- [x] 3.1 [easy] The three project checks pass, and the pull request description gives `wc -l` for `skills/lets-go/SKILL.md` and `skills/lets-go/references/records.md`, before and after (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test && nix flake check && mise run check passed)
 
 ## Deviations Ledger
