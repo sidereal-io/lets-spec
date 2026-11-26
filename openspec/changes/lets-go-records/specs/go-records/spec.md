@@ -74,6 +74,10 @@ The command SHALL look in `openspec/changes/archive/` in the working tree for a 
 - **WHEN** the change is `go-chore`, and the archive holds `2026-11-06-lets-go-chore` and no folder `<YYYY-MM-DD>-go-chore`
 - **THEN** `lets go records go-chore` prints `"review-build":null`
 
+#### Scenario: No archive folder
+- **WHEN** the repository has no folder `openspec/changes/archive/`
+- **THEN** `lets go records lets-go-chore` exits 0 and prints `"review-build":null`
+
 #### Scenario: Two archive folders
 - **WHEN** the archive holds both `2026-11-06-lets-go-chore` and `2026-11-09-lets-go-chore`
 - **THEN** the `review-build` record is `null`
