@@ -14,6 +14,8 @@ export const repo = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 
 const ENTRY = join(repo, 'lets', 'bin', 'lets');
 const DEFAULT_TIMEOUT_MS = 30_000;
+// How long a hanging stand-in waits before it ends by itself.
+const HANG_MS = 120_000;
 
 /** What one run of a program left behind. */
 export interface RunResult {
@@ -55,6 +57,13 @@ export interface RunLetsOptions extends RunOptions {
   standIns?: string;
   /** The folder of the lets package whose `bin/lets` runs, such as one `letsPackage` made. `<repo>/lets` when absent. */
   lets?: string;
+  /**
+   * When true, `PATH` is `standIns`, when given, then a folder that holds
+   * only a link named `git` to the `git` on this process's `PATH`, so no
+   * real `codex`, `claude` or `agy` is found. The run rejects, and says
+   * so, when this process has no `git` on its `PATH`.
+   */
+  onlyStandIns?: boolean;
 }
 
 /** What a stand-in prints and how it exits. */
@@ -63,6 +72,37 @@ export interface StandInReply {
   stderr?: string;
   /** The exit code. 0 when absent. */
   code?: number;
+  /**
+   * When true, the call is logged, then never answered: the program
+   * prints nothing and waits, until a signal ends it or, at the latest,
+   * 120 seconds pass, so a stand-in that nothing stops is soon gone.
+   */
+  hang?: boolean;
+  /**
+   * Files to write before the call answers, path to text. A relative path
+   * is from the folder the call ran in. No folder is made: when a file's
+   * folder is missing, or the file cannot be written, the call prints a
+   * line naming the path on stderr and exits 1, and nothing after it in
+   * the row happens.
+   */
+  files?: Record<string, string>;
+  /**
+   * After `files` are written, makes a commit with this message in the
+   * folder the call ran in, with only the paths of `files` staged; a row
+   * with no `files` makes an empty commit. When git fails, the call
+   * prints git's stderr and exits 1.
+   */
+  commit?: string;
+}
+
+export interface StandInOptions {
+  /**
+   * The variables each call logs, by name. A stand-in logs no others, so
+   * no token from the developer's environment is written to disk.
+   */
+  logEnv?: string[];
+  /** The state this stand-in shares with others. Its own, in its folder, when absent. */
+  shared?: SharedState;
 }
 
 /** A function a module exports, which answers a call in place of a row's fixed reply. */
@@ -123,16 +163,46 @@ export interface SharedState {
   open(gate: string): void;
 }
 
-export interface StandInOptions {
-  /** The state this stand-in shares with others. Its own, in its folder, when absent. */
-  shared?: SharedState;
-}
-
 export interface StandIn {
   /** Each call's argument list, in the order the calls came. Empty before the first call. */
   calls(): string[][];
-  /** The folder each call ran in, in the order the calls came. Empty before the first call. */
+  /**
+   * For each call, in order, the value of each variable named in
+   * `logEnv`, or `undefined` when it was not set. Each record is empty
+   * when no `logEnv` was given.
+   */
+  envs(): Record<string, string | undefined>[];
+  /** Each call's standard input, in the order the calls came. Empty text for a call that got none. */
+  inputs(): string[];
+  /** The folder each call ran in, as an absolute path, in the order the calls came. */
+  cwds(): string[];
+  /** The same as `cwds`: the folder each call ran in, in the order the calls came. */
   folders(): string[];
+}
+
+/** One model in what `codex debug models` prints. `lets` shows only `list`. */
+export interface CodexModel {
+  slug: string;
+  visibility: 'list' | 'hide';
+}
+
+/**
+ * How a model listing fails:
+ * - `signed-out`: exits 1 with `not logged in` on stderr;
+ * - `unreadable`: exits 0 and prints `not json`;
+ * - `cannot-start`: the program is on `PATH`, but its `#!` line names an
+ *   interpreter that does not exist, so starting it fails with `ENOENT`;
+ * - `hangs`: logs the call and waits, as a `hang` row does.
+ */
+export type ListingFailure = 'signed-out' | 'unreadable' | 'cannot-start' | 'hangs';
+
+/** Options for `codex`, `agy` and `claude`. `logEnv` is passed on to `standIn`. */
+export interface FamilyOptions extends StandInOptions {
+  /**
+   * More rows, after the model listing's, such as the answer to one
+   * `codex exec`. A `cannot-start` stand-in never runs, so it answers none.
+   */
+  rows?: StandInRow[];
 }
 
 /**
@@ -326,12 +396,19 @@ function isExecutable(path: string): boolean {
 /**
  * Runs `lets/bin/lets <args>`, or `<options.lets>/bin/lets` when that is
  * set, with this Node, through `run`, with `options.standIns` first on
- * `PATH` and `options.env` on top. Resolves and rejects as `run` does;
- * the message then names the command and the folder.
+ * `PATH` and `options.env` on top. With `options.onlyStandIns`, `PATH`
+ * holds only the stand-ins and `git`. Resolves and rejects as `run` does;
+ * the message then names the command and the folder. Also rejects, before
+ * running, when `onlyStandIns` is set and this process has no `git` on
+ * its `PATH`.
  */
 export function runLets(args: string[], options: RunLetsOptions): Promise<LetsResult> {
   const env: EnvChanges = {};
-  if (options.standIns !== undefined) {
+  if (options.onlyStandIns) {
+    const gitDir = gitOnlyDir();
+    if (gitDir === null) return Promise.reject(new Error(`lets ${args.join(' ')} in ${options.cwd} needs git on PATH, and this process has none: ${process.env.PATH ?? '(PATH unset)'}`));
+    env.PATH = options.standIns === undefined ? gitDir : `${options.standIns}${delimiter}${gitDir}`;
+  } else if (options.standIns !== undefined) {
     // An empty PATH entry means the current folder, so add none.
     const path = process.env.PATH;
     env.PATH = path ? `${options.standIns}${delimiter}${path}` : options.standIns;
@@ -435,12 +512,15 @@ export function sharedState(dir: string, initial: unknown = {}): SharedState {
 
 /**
  * Writes an executable program called `name` into `dir`, which must
- * exist. Each call logs its arguments and the folder it ran in, then
- * answers from the first row of `table` that matches the call's argument
- * list: one whose `args` equals it, or, for a row with `prefix`, starts
- * it. A prefix row shadows every row after it that it matches, so put it
- * after the more specific rows. A call that matches no row exits 127 and
- * says so on standard error.
+ * exist. Each call logs its arguments, the variables `options.logEnv`
+ * names and no others, its standard input and the folder it ran in. Then
+ * it answers from the first row of `table` that matches the call's
+ * argument list: one whose `args` equals it, or, for a row with `prefix`,
+ * starts it. A prefix row shadows every row after it that it matches, so
+ * put it after the more specific rows. To answer, the call writes the
+ * row's `files`, makes its `commit`, prints its `stdout` and `stderr`,
+ * and exits with its `code`; a row with `hang` waits instead. A call that
+ * matches no row exits 127 and says so on standard error.
  *
  * A row with `answer` answers through that function, from the state in
  * `options.shared`, or in a folder of the stand-in's own, which starts as
@@ -453,6 +533,7 @@ export function sharedState(dir: string, initial: unknown = {}): SharedState {
  * written.
  */
 export function standIn(dir: string, name: string, table: StandInRow[], options: StandInOptions = {}): StandIn {
+  const logEnv = options.logEnv ?? [];
   // The program runs in another folder, so the paths it holds are absolute.
   dir = resolve(dir);
   const tableFile = join(dir, `.${name}.table.json`);
@@ -467,15 +548,34 @@ export function standIn(dir: string, name: string, table: StandInRow[], options:
   // this Node, because the Nix sandbox may have no /usr/bin/env.
   writeFileSync(program, `#!${process.execPath}
 const fs = process.getBuiltinModule('node:fs');
+const { spawnSync } = process.getBuiltinModule('node:child_process');
 const path = process.getBuiltinModule('node:path');
 const { pathToFileURL } = process.getBuiltinModule('node:url');
 const name = ${JSON.stringify(name)};
 const shared = ${JSON.stringify(shared.dir)};
 const args = process.argv.slice(2);
-fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args, cwd: process.cwd() }) + '\\n');
+const env = {};
+for (const key of ${JSON.stringify(logEnv)}) if (process.env[key] !== undefined) env[key] = process.env[key];
+// lets closes every child's stdin, or gives it /dev/null, so this never waits.
+let stdin = '';
+try {
+  stdin = fs.readFileSync(0, 'utf8');
+} catch {}
+fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args, env, stdin, cwd: process.cwd() }) + '\\n');
 const row = JSON.parse(fs.readFileSync(${JSON.stringify(tableFile)}, 'utf8'))
   .find((row) => (row.prefix ? row.args.length <= args.length : row.args.length === args.length)
     && row.args.every((arg, i) => arg === args[i]));
+
+// Ends the call with exit 1 and why, so a test sees what the stand-in could not do.
+const fail = (why) => {
+  process.stderr.write(name + ': stand-in ' + why + '\\n');
+  process.exit(1);
+};
+const git = (...gitArgs) => {
+  const result = spawnSync('git', gitArgs, { encoding: 'utf8' });
+  if (result.error) fail('cannot run git: ' + result.error.message);
+  if (result.status !== 0) fail('git ' + gitArgs[0] + ' failed: ' + result.stderr.trim());
+};
 
 // A synchronous sleep, so a waiting call needs no timers.
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
@@ -485,7 +585,21 @@ const giveUp = (message) => {
   process.exitCode = 127;
 };
 
+// Writes the answer's files, makes its commit, prints and sets the exit code.
 const reply = (answer) => {
+  const files = Object.keys(answer.files ?? {});
+  for (const file of files) {
+    // No folder is made, so a test can see that lets made it first.
+    try {
+      fs.writeFileSync(file, answer.files[file]);
+    } catch (error) {
+      fail('could not write ' + file + ': ' + error.message);
+    }
+  }
+  if (answer.commit !== undefined) {
+    if (files.length > 0) git('add', '--', ...files);
+    git('commit', '-q', '--allow-empty', '-m', answer.commit);
+  }
   if (answer.stdout) process.stdout.write(answer.stdout);
   if (answer.stderr) process.stderr.write(answer.stderr);
   process.exitCode = answer.code ?? 0;
@@ -557,19 +671,90 @@ async function answer({ module, name: exported, data }) {
 }
 
 if (row === undefined) giveUp('has no answer for ' + JSON.stringify(args));
-else if (row.gate === undefined || pass(row.gate)) {
+else if (row.hang) {
+  // Ends at a signal, as Node does by default, or by itself.
+  setTimeout(() => {}, ${HANG_MS});
+} else if (row.gate === undefined || pass(row.gate)) {
   if (row.answer !== undefined) answer(row.answer);
   else reply(row);
 }
 `);
   chmodSync(program, 0o755);
-  const logged = (): { args: string[]; cwd: string }[] => existsSync(log)
+  const entries = (): { args: string[]; env: Record<string, string>; stdin: string; cwd: string }[] => existsSync(log)
     ? readFileSync(log, 'utf8').split('\n').filter((line) => line !== '').map((line) => JSON.parse(line))
     : [];
   return {
-    calls: () => logged().map((call) => call.args),
-    folders: () => logged().map((call) => call.cwd),
+    calls: () => entries().map(({ args }) => args),
+    envs: () => entries().map(({ env }) => Object.fromEntries(logEnv.map((key) => [key, env[key]]))),
+    inputs: () => entries().map(({ stdin }) => stdin),
+    cwds: () => entries().map(({ cwd }) => cwd),
+    folders: () => entries().map(({ cwd }) => cwd),
   };
+}
+
+/**
+ * Writes a stand-in `codex` into `dir`, which must exist. It answers
+ * `codex debug models` with `{"models":[{"slug","visibility"}…]}`, in the
+ * order of `listing`, or fails as the `ListingFailure` says. The default
+ * listing is empty. Other calls get `options.rows`, after the listing's
+ * row. Throws when `dir` cannot be written.
+ */
+export function codex(dir: string, listing: CodexModel[] | ListingFailure = [], options?: FamilyOptions): StandIn {
+  const answer = typeof listing === 'string' ? listing : { stdout: JSON.stringify({ models: listing.map(({ slug, visibility }) => ({ slug, visibility })) }) };
+  return harnessCli(dir, 'codex', ['debug', 'models'], answer, options);
+}
+
+/**
+ * Writes a stand-in `agy` into `dir`, which must exist. It answers
+ * `agy models` with the line `Fetching available models...`, then one
+ * line per id of `listing`, `<id>\t<label>`, or fails as the
+ * `ListingFailure` says. The default listing is empty. Other calls get
+ * `options.rows`, after the listing's row. `lets` reads only the lines that start `gemini-`, so an
+ * `unreadable` listing gives no gemini model and no warning. Throws when
+ * `dir` cannot be written.
+ */
+export function agy(dir: string, listing: string[] | ListingFailure = [], options?: FamilyOptions): StandIn {
+  const answer = typeof listing === 'string' ? listing : { stdout: `Fetching available models...\n${listing.map((id) => `${id}\t${id.toUpperCase()}\n`).join('')}` };
+  return harnessCli(dir, 'agy', ['models'], answer, options);
+}
+
+/**
+ * Writes a stand-in `claude` into `dir`, which must exist. `claude` has
+ * no model listing, so it answers only `options.rows`. Throws when `dir`
+ * cannot be written.
+ */
+export function claude(dir: string, options?: FamilyOptions): StandIn {
+  return standIn(dir, 'claude', options?.rows ?? [], options);
+}
+
+// What a failing listing answers, by how it fails. cannot-start has no row:
+// its program never runs.
+const FAILURES: Record<Exclude<ListingFailure, 'cannot-start'>, Omit<StandInRow, 'args'>> = {
+  'signed-out': { stderr: 'not logged in\n', code: 1 },
+  unreadable: { stdout: 'not json' },
+  hangs: { hang: true },
+};
+
+// A stand-in harness CLI called name, whose model listing is the call args,
+// answered as answer says.
+function harnessCli(dir: string, name: string, args: string[], answer: Omit<StandInRow, 'args'> | ListingFailure, options?: FamilyOptions): StandIn {
+  if (answer === 'cannot-start') return unstartable(dir, name);
+  return standIn(dir, name, [{ args, ...(typeof answer === 'string' ? FAILURES[answer] : answer) }, ...(options?.rows ?? [])], options);
+}
+
+/**
+ * Writes a program called `name` into `dir`, which must exist, that the
+ * system cannot start: the interpreter its `#!` line names does not exist,
+ * so starting it fails with `ENOENT`. It never runs, so it logs no call.
+ * Throws when `dir` cannot be written.
+ */
+export function unstartable(dir: string, name: string): StandIn {
+  dir = resolve(dir);
+  rmSync(join(dir, `.${name}.log`), { force: true });
+  const program = join(dir, name);
+  writeFileSync(program, `#!${join(dir, '.no-such-interpreter')}\n`);
+  chmodSync(program, 0o755);
+  return { calls: () => [], envs: () => [], inputs: () => [], cwds: () => [], folders: () => [] };
 }
 
 /**
@@ -635,6 +820,27 @@ function walk(dir: string, rel: string, withGit = false): string[] {
     paths.push(...walk(dir, `${rel}/${entry}`, withGit));
   }
   return paths;
+}
+
+let gitOnly: string | null | undefined;
+
+// A folder that holds only a link named git to the git on this process's
+// PATH, made once per process, or null when there is no git.
+function gitOnlyDir(): string | null {
+  if (gitOnly !== undefined) return gitOnly;
+  const found = (process.env.PATH ?? '').split(delimiter).filter((dir) => dir !== '').map((dir) => resolve(dir, 'git')).find((path) => {
+    try {
+      accessSync(path, constants.X_OK);
+      // A folder named git is executable too, but it is not the program.
+      return statSync(path).isFile();
+    } catch {
+      return false;
+    }
+  });
+  if (found === undefined) return (gitOnly = null);
+  const dir = tempDir();
+  symlinkSync(found, join(dir, 'git'));
+  return (gitOnly = dir);
 }
 
 function applyEnv(env: NodeJS.ProcessEnv, changes: EnvChanges | undefined): NodeJS.ProcessEnv {

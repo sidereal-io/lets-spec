@@ -9,13 +9,6 @@ const TRICKY = 'Say "hi".\nIt\'s fine.';
 const DIR = '/r/.workspace/lets-delegate';
 const startInput = { cwd: '/r', name: 'fix-login', prompt: TRICKY, family: 'claude', model: null } as const;
 
-test('the adapter is named subagent, always detects and lists no models', async () => {
-  const adapter = createAdapter(fakeIo({ env: {} }));
-  assert.equal(adapter.name, 'subagent');
-  assert.equal(adapter.detect(), true);
-  assert.deepEqual(await adapter.options(() => assert.fail('no warning')), []);
-});
-
 test('run is refused: no resolver started a session, so use a subagent', async () => {
   await assert.rejects(createAdapter(fakeIo()).run({ ...startInput, effort: 'high' }, { timeoutMs: 1000 }), (error) => {
     assert.ok(error instanceof Refused);

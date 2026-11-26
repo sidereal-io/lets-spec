@@ -1,0 +1,59 @@
+<!-- Build order follows the lets-verify-contracts skill, not test-first:
+     contracts and types, then the implementation, then black-box tests
+     through `lets` run as a program. design.md's Decisions say what
+     each export does, and decision 6 says which test covers each
+     deleted one. -->
+
+## 1. Contracts
+
+- [x] 1.1 [medium] `tests/support/lets.ts` declares the additions from design decisions 1, 2 and 3, with their types and a doc comment on each that states its preconditions, its result and how it fails: `RunLetsOptions.onlyStandIns`, `StandInRow.hang`, the `logEnv` option of `standIn`, `StandIn.envs()`, `CodexModel`, `ListingFailure`, `FamilyOptions`, and the functions `codex`, `agy` and `claude`. Each new function body throws `not built yet`, and the existing exports behave as before (verify: `pnpm check`) (✓ `pnpm check` passed)
+
+## 2. Implementation [depends-on: 1]
+
+- [x] 2.1 [medium] `runLets` with `onlyStandIns: true` gives `lets` a `PATH` of the stand-ins folder, then a folder that holds only a link to `git`, and rejects with a message when no `git` is on this process's `PATH`. A `standIn` row with `hang` logs the call, waits, and exits by itself after 60 seconds. `standIn` logs only the variables named in `logEnv`, and `envs()` returns them per call. The `lets sync` tests still pass (verify: `node --test "tests/sync/*.test.ts"`) (✓ `node --test "tests/sync/*.test.ts"` passed, 67 tests)
+- [x] 2.2 [medium] `codex`, `agy` and `claude` write stand-ins as design decision 2 says: `codex debug models` and `agy models` print the listing given, in the format `lets` reads, or fail as `signed-out`, `unreadable`, `cannot-start` or `hangs` say; `claude` answers no call (verify: `pnpm check`) (✓ `pnpm check` passed)
+
+## 3. Black-box tests [depends-on: 2]
+
+Every new test is in `tests/delegate/instructions.test.ts`, runs `lets`
+with `onlyStandIns: true`, and makes its own folders as design decision
+4 says. Delete each old test in the task that adds its cover (design
+decision 6), never before. The tasks share files, so they run in order.
+
+- [x] 3.1 [complex] Black-box tests show which resolver answers and what it prints: the one JSON line for a review and for a step from `cli`; `[cli, subagent]` with no CLI on `PATH` answering `subagent`; `[subagent, cli]` answering `subagent` without calling `codex`; `[subagent]` with every CLI on `PATH` listing no options and calling none; an instructions run calling only the model listings; and exit 2, naming the right config file, when every resolver declines, in the user's config, in the repository's config, and with an empty chain. The covered tests are deleted from `tests/lets/delegate/instructions.test.ts`, the 9 chain tests from `tests/lets/delegate/lookup.test.ts`, and the first test from `tests/lets/resolvers/subagent/subagent.test.ts` (verify: `node --test tests/delegate/instructions.test.ts tests/lets/delegate/lookup.test.ts tests/lets/resolvers/subagent/subagent.test.ts`) (✓ `node --test tests/delegate/instructions.test.ts tests/lets/delegate/lookup.test.ts tests/lets/resolvers/subagent/subagent.test.ts` passed, 25 tests)
+- [x] 3.2 [complex] Black-box tests show the models `cli` lists: the order `gpt`, `claude`, `gemini`; only codex slugs with `visibility` `list`; each gemini model once without its effort; `claude` bare with no listing run; `cli` answering inside another harness with `T3CODE_HOME` set; no `CLAUDECODE` in a listing's environment; and the bare family with one `lets delegate: ` line on stderr naming the CLI when a listing is `signed-out`, `unreadable` or `cannot-start`, for a review and for a step. The 7 `options` tests are deleted from `tests/lets/resolvers/cli/cli.test.ts`, and the 7 instructions tests from `tests/lets/resolvers/cli/delegate.test.ts` (verify: `node --test tests/delegate/instructions.test.ts tests/lets/resolvers/cli/cli.test.ts tests/lets/resolvers/cli/delegate.test.ts`) (✓ `node --test tests/delegate/instructions.test.ts tests/lets/resolvers/cli/cli.test.ts tests/lets/resolvers/cli/delegate.test.ts` passed)
+- [x] 3.3 [medium] One black-box test, with stand-in `codex` and `agy` both set to `hangs`, a run time limit of 60 seconds and the run timed by the test, shows that the run took less than 40 seconds, that both families are listed bare and that stderr has one line naming `codex` and one naming `agy` (D11, design decision 5) (verify: `node --test --test-name-pattern="hang" tests/delegate/instructions.test.ts`) (✓ `node --test --test-name-pattern="hang" tests/delegate/instructions.test.ts` passed in 20.8 s)
+- [x] 3.4 [medium] Black-box tests show where the guidance comes from: the intent's entry in the user's config; `null` for another intent or another strategy; a multi-line block kept whole; `delegate.step` and `delegate.step.story`, neither reaching the other; the repository's entry winning for one intent while the user's stays for another; only the user's config outside a Git repository; and exit 2 naming the file and the key for a number as guidance, for `review: code`, and for a bad entry in the repository's config, with no listing run. A bad entry for another intent or strategy still exits 0. The covered tests are deleted from `tests/lets/delegate/instructions.test.ts`, rewritten without handoff as design decision 6 says (verify: `node --test tests/delegate/instructions.test.ts tests/lets/delegate/instructions.test.ts`) (✓ `node --test tests/delegate/instructions.test.ts tests/lets/delegate/instructions.test.ts` passed, 30 tests)
+- [x] 3.5 [easy] A `describe('handoff instructions')` block whose comment names #306 holds the 2 tests of D9: `[cli, subagent]` with every CLI on `PATH` answers a review with `cli` and a handoff with `subagent`, calling no CLI for the handoff; and the handoff's guidance comes from `delegate.handoff`. The last handoff tests in `tests/lets/delegate/instructions.test.ts`, among them "a review asks for a resolver that can run, and a handoff for one that can start", are deleted, and so is `tests/lets/delegate/strategies.test.ts` (D7) (verify: `node --test tests/delegate/instructions.test.ts tests/lets/delegate/instructions.test.ts`) (✓ `node --test tests/delegate/instructions.test.ts tests/lets/delegate/instructions.test.ts` passed)
+- [x] 3.6 [easy] `tests/lets/delegate/instructions.test.ts` holds only the 3 fake-adapter tests of D10, under a top comment that says why each needs a fake: a step skips a resolver that runs no step; an `options` call that fails unexpectedly exits 4; a `detect` that throws exits 4, moved from `lookup.test.ts` and written through the command's `run`. `tests/lets/delegate/lookup.test.ts` holds only the 6 `withModels` and `inAdapter` tests of D8 (verify: `node --test tests/lets/delegate/instructions.test.ts tests/lets/delegate/lookup.test.ts`) (✓ `node --test tests/lets/delegate/instructions.test.ts tests/lets/delegate/lookup.test.ts` passed, 9 tests)
+
+## 4. Integration [depends-on: 3]
+
+- [x] 4.1 [easy] The `tests/` row of the README's *Development* table says that `delegate/` holds the black-box tests of the `lets delegate` instructions commands (verify: `git grep -n 'delegate/.: black-box' README.md`) (✓ `git grep -n 'delegate/.: black-box' README.md` matched line 730)
+- [x] 4.2 [medium] Every check passes: `pnpm test`, `mise run check`, and `nix flake check`, whose `node-tests` check runs the new file in the Nix sandbox. The pull request lists the unit and fake-adapter tests this story kept, each with its reason (D8, D10), and the tests it deleted with the test that now covers each (verify: `nix flake check`) (✓ `nix flake check` passed, its `node-tests` ran 943 tests with the new file; `mise run check` passed; `pnpm test` passed its 943 Node tests and the type check, and its bats tests pass in a clean clone, see the ledger)
+
+## Deviations Ledger
+
+<!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-25, task 3.2: three of the 7 `options` tests in
+  `tests/lets/resolvers/cli/cli.test.ts` also check the 20-second limit,
+  that the two listings run at once, or a listing that runs too long. Their
+  cover is the time-limit test of task 3.3, so task 3.3 deletes them, not
+  3.2. For the same reason, "each warning of the resolver is a line on
+  stderr" in `tests/lets/delegate/instructions.test.ts` goes in 3.3, where
+  two warnings first appear.
+- 2026-11-25, task 3.2: "handoff instructions skip cli with codex on PATH"
+  in `tests/lets/resolvers/cli/delegate.test.ts` is one of its 7
+  instructions tests, but its cover is the handoff test of task 3.5, so
+  task 3.5 deletes it.
+- 2026-11-25, task 2.2: the stand-in's `unreadable` listing prints
+  `not json` with no newline, as design decision 2 says. `lets` quotes the
+  output in its warning, so a newline would split the warning over two
+  lines.
+- 2026-11-25, task 4.2: in this worktree, `pnpm test` fails one bats test,
+  "each skill is named for its folder", on `skills/system/`. That folder
+  is not in the repository: a global git ignore hides it, and the tool
+  running this build wrote it before the build began. In a clean clone of
+  this branch, `bats tests/skill-interfaces.bats` passes all 512 tests,
+  and `nix flake check`, which sees only tracked files, passes.
