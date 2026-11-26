@@ -19,7 +19,7 @@ Every task in this section adds tests to `tests/go/step-prompt.test.ts` and code
 
 ## 3. Check the whole change [depends-on: 2]
 
-- [ ] 3.1 [easy] All three project checks pass, and the pull request description records `wc -l` for `skills/lets-go/SKILL.md` and for every file of `skills/lets-go/`, before (on `main`) and after this change (D8). (verify: `pnpm test && nix flake check && mise run check`)
+- [x] 3.1 [easy] All three project checks pass, and the pull request description records `wc -l` for `skills/lets-go/SKILL.md` and for every file of `skills/lets-go/`, before (on `main`) and after this change (D8). (verify: `pnpm test && nix flake check && mise run check`) (✓ `pnpm test` passed, 889 tests; `nix flake check` passed; `mise run check` passed, 19 items; the pull request records `wc -l` under **Size**)
 
 ## Deviations Ledger
 
