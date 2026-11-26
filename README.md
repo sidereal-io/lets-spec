@@ -612,8 +612,6 @@ what `--check` checks, is in [`docs/lets-sync.md`](docs/lets-sync.md).
 This section is for you if your project wants a newer Let's Spec.
 
 Commit what `lets sync` writes in the same pull request as the new pin.
-Moving up from an older release? Read [`docs/upgrading.md`](docs/upgrading.md)
-first: some releases need a step of your own.
 
 ### With Nix
 
@@ -727,7 +725,7 @@ you Node 26, pnpm, bats, `jq`, `yq` and the OpenSpec CLI. Then run
 | `skills/` | The authored skills, one `lets-*` folder each: the entry points, and the flow skills the schemas call |
 | `schemas/` | The OpenSpec schemas, each with its templates |
 | `overlays/` | The rules fragment and the files `lets sync` creates in a project. Each flow has its own `openspec/config.yaml`, in `openspec/config.d/<schema>.yaml` |
-| `tests/` | `sync/`: black-box tests of `lets sync`, which run it as a program in a temporary git repository. `delegate/`: black-box tests of the `lets delegate` instructions, `review run`, `handoff run`, `step run`, `step start` and `step wait` commands, which run `lets` in a temporary git repository with stand-in `codex`, `claude` and `agy`, and start real background steps. `go/`: black-box tests of `lets go questions`, which run it in a temporary git repository with real lets config files. `*.bats`: end-to-end tests of the release build, each schema, and every command, file and skill the prose names. `lets/`: unit tests for `lets` and each resolver, run with fakes. `support/`: the helpers the tests share. |
+| `tests/` | `sync/`: black-box tests of `lets sync`, which run it as a program in a temporary git repository. `backlog/`: black-box tests of `lets backlog`, which run it as a program with a stand-in `gh`. `delegate/`: black-box tests of the `lets delegate` instructions, `review run`, `handoff run`, `step run`, `step start` and `step wait` commands, which run `lets` in a temporary git repository with stand-in `codex`, `claude` and `agy`, and start real background steps. `go/`: black-box tests of `lets go questions`, which run it in a temporary git repository with real lets config files. `release/`: black-box tests of the release build and the `lets` bundle. `openspec/`: tests of each schema under the real OpenSpec CLI on `PATH`. `contracts/`: Node checks that each command, link, skill, template and `gh` command a text names is real: the file, heading, skill or command is there. `lets/`: unit tests for `lets` and each resolver, run with fakes. `support/`: the helpers the tests share. |
 | `.github/workflows/` | `ci.yml` runs `nix flake check`, `mise run check` and a mise smoke test; `release.yml` publishes a release when a `v*` tag is pushed |
 
 ### Releases

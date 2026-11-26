@@ -1,10 +1,10 @@
 // The fixture for the black-box tests of lets sync: a small test release,
 // built once per test file, and a fresh project per test. Not named
 // *.test.ts, so node --test does not run it.
-import { chmodSync, lstatSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { before, type TestContext } from 'node:test';
-import { buildRelease, type EnvChanges, git, type LetsResult, type RunResult, runLets, standIn, tempDir } from '../support/lets.ts';
+import { buildRelease, type EnvChanges, git, type LetsResult, makeReadOnly, type RunResult, runLets, standIn, tempDir } from '../support/lets.ts';
 
 const RULES_BEGIN = '<!-- BEGIN lets-spec rules';
 const RULES_END = '<!-- END lets-spec rules -->';
@@ -28,6 +28,11 @@ export const fixtureSkills = ['lets-build', 'lets-shape', 'lets-verify-contracts
 export interface Project {
   /** The project's root folder. */
   path: string;
+  /**
+   * The folder of the project's stand-ins, first on `PATH`. A test
+   * replaces the `openspec` stand-in with `standIn(p.bin, 'openspec', rows)`.
+   */
+  bin: string;
   /** The text of a file, by its path from the root. Throws when it is missing. */
   read(file: string): string;
   /** Writes a file, by its path from the root, making its folders. */
@@ -37,9 +42,11 @@ export interface Project {
   /**
    * Runs `lets sync <args>` with `WORKFLOW_RELEASE` set to the file's
    * release, unless `env` sets it, and the stand-in `openspec` on `PATH`.
-   * Runs in the root, unless `cwd` names another folder.
+   * Runs in the root, unless `where.cwd` names another folder, and runs
+   * the lets package in `where.lets`, such as one `letsPackage` made,
+   * when it is set.
    */
-  sync(args?: string[], env?: EnvChanges, cwd?: string): Promise<LetsResult>;
+  sync(args?: string[], env?: EnvChanges, where?: { cwd?: string; lets?: string }): Promise<LetsResult>;
   /**
    * Runs `lets sync` once, so the project has its files and a test sees
    * only the problem it sets up. Rejects, with lets's output, unless it
@@ -102,10 +109,11 @@ export function project(t: TestContext): Project {
   const init = git(root, 'init', '--quiet');
   if (init.code !== 0) throw new Error(`git init failed: ${init.stderr}`);
   writeFileSync(join(root, 'openspec', 'config.yaml'), 'schema: lets-standard\n');
-  const sync = (args: string[] = [], env: EnvChanges = {}, cwd = root) =>
-    runLets(['sync', ...args], { cwd, standIns: bin, env: { WORKFLOW_RELEASE: fileRelease(), ...env } });
+  const sync = (args: string[] = [], env: EnvChanges = {}, where: { cwd?: string; lets?: string } = {}) =>
+    runLets(['sync', ...args], { cwd: where.cwd ?? root, lets: where.lets, standIns: bin, env: { WORKFLOW_RELEASE: fileRelease(), ...env } });
   return {
     path: root,
+    bin,
     read: (file) => readFileSync(join(root, file), 'utf8'),
     write: (file, text) => {
       mkdirSync(dirname(join(root, file)), { recursive: true });
@@ -169,12 +177,4 @@ export function setSchema(text: string, value: string | null): string {
   const line = /^schema:.*(\n|$)/m;
   if (value === null) return text.replace(line, '');
   return line.test(text) ? text.replace(line, `schema: ${value}$1`) : `schema: ${value}\n${text}`;
-}
-
-// Read-only, as in the Nix store.
-function makeReadOnly(path: string) {
-  const stat = lstatSync(path);
-  if (stat.isSymbolicLink()) return;
-  if (stat.isDirectory()) for (const entry of readdirSync(path)) makeReadOnly(join(path, entry));
-  chmodSync(path, stat.mode & ~0o222);
 }
