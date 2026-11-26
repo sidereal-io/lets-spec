@@ -190,7 +190,7 @@ test('the story journey: sync, then ready, item and claim, then a plan step on t
   assert.deepEqual(order.read().tried, options.map((option: string) => option.split('/')[0]));
 });
 
-test('the epic-wave journey: item and waves, then a story step for each story of the first wave, waited on', async (t) => {
+test('the epic-wave journey: item and waves, then a story run for each story of the first wave, waited on', async (t) => {
   const repo = delegateRepo(t, { user: CLI });
   standIn(repo.standIns, 'gh', EPIC_GH);
 
