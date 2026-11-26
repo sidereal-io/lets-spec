@@ -534,7 +534,7 @@ mode, is `ask` or `auto`, and is optional. `lets-go` reads it through
 the backlog provider, the backend that holds the backlog. It is optional,
 and `github`, the only one this release ships, when unset. A name this
 release does not ship stops every `lets backlog` command with
-`unknown-backlog-provider`. A repository can set it for every contributor
+`error: unknown-backlog-provider`. A repository can set it for every contributor
 in its own lets config, which the next part explains.
 
 Other keys are ignored, so a later `lets` can add settings beside these.

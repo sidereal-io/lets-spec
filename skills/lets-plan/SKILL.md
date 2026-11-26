@@ -31,11 +31,12 @@ artifact is still needed.
    lets backlog find <branch>
    ```
 
-   Of the `issues` it prints, keep the one whose title starts with
-   `<branch> — `. Its `key` is `<i>`. If none or several match, say
-   that `lets-plan` needs the issue number, and stop. When it prints an
-   `error`, show the user its `message`, and stop. For `no-backlog`, say to run the
-   `lets-setup-backlog` skill.
+   Of the issues in its `issues` field, keep the one whose title starts
+   with `<branch> — `. Its `key` field is `<i>`. If none or several
+   match, say that `lets-plan` needs the issue number, and stop. When it
+   prints an `error` field, show the user its `message` field, and
+   stop. For `error: no-backlog`, say to run the `lets-setup-backlog`
+   skill.
 
 ## Plan
 
