@@ -15,8 +15,7 @@ Says what the `lets-go` skill does for a shaped Chore, Bug or Story, or for an i
 - `gh issue view <i> --json createdAt`, run only when the issue's `lastEditedAt` is null;
 - the issue search of *lets-go takes one issue number or an idea*;
 - `git branch --list <name>` and `git ls-remote --heads origin refs/heads/<name>`, to find the change's branch, and the fetch, switch and fast-forward above;
-- the Git and GitHub reads of *lets-go walks the step table* and *Review plan runs as a step, or is not in the route*. These include the reads of `lets-review-plan`'s *Check an earlier review*, which tell whether review plan is done;
-- `lets go records <name>`, run at each row the walk settles as done before this run, as *A skipped step's line carries its evidence and date* says;
+- `lets go records <name>`, run before the walk and after each `done` report, as *lets-go walks the step table* says. It makes the walk's reads of Git, GitHub and the change state, the reads of `lets-review-plan`'s *Check an earlier review* among them;
 - the parent query of *A stopped discovery resumes from its parent issue*, and its read of the answers and prompt files, run for an idea; for an issue `#<i>` when the discovery maps have uncommitted edits before the shape step, as *lets-go commits the discovery map on the story's branch* says; for an epic with open sub-issues, as *An epic run finishes a stopped discovery before it builds* says; and for a `complete` issue whose `Input:` line names the issue itself, as *An epic run shapes an empty epic first* says;
 - in an epic run only, the reads of *An epic run picks each story as next picks it*, the worktree commands and `lets sync` of *An epic run gives each story run a worktree of its own* and *An epic run reuses a story's clean worktree*, and the fetches and ancestry checks of *An epic run stacks a story on its met blocker*;
 - the `git status --porcelain -uall -- openspec/discovery.md openspec/discovery` before the shape step and after *Claim*, and the commit of the discovery maps it lists, that *lets-go commits the discovery map on the story's branch* says. In an epic run, these include the copy into the story's worktree and the restore of the epic run's checkout that *An epic run commits the discovery map on the first story it claims* says.
@@ -107,7 +106,7 @@ When *Confirm the packet* returns `complete`, and no shape step ran in this run,
 - **THEN** `lets-go` prints no second `Done shape:` line, and no `Skipped shape:` line for #192
 
 ### Requirement: Review plan runs as a step, or is not in the route
-When the schema is `lets-minimal`, review plan never runs. `lets-go` SHALL print `Skipped review plan: not in the lets-minimal route.` after the plan step is done, and before the build step. That line SHALL carry no date. When the schema is not `lets-minimal`, review plan SHALL be a step of its own. It SHALL run as *Each step runs through lets delegate step* says, with `--for review-plan` and `--name <name>-review-plan`. Its prompt SHALL say to invoke the `lets-review-plan` skill for the change, as *The step prompt says what to run, the question mode, and how to report* says. That skill reviews the plan, or lets its *Check an earlier review* decide, runs its own rounds, and records the review in the pull request description under **Plan review**. When the walk reaches review plan, the first of these that matches SHALL decide whether it is done. First, on `lets-minimal`, review plan is done. Second, when the archive folder exists, review plan is done, and the records disagree when the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line. Third, otherwise, review plan SHALL count as done when that section covers the plan: `lets-review-plan`'s *Check an earlier review* finds no reason to run the skill again, and says the review is finished. When the walk reaches review plan and no section covers the plan, review plan SHALL run, whatever the change's `state`. So a `ready` change with no covering review goes to review plan, not build. `lets-go` SHALL read the pull request's body when it reaches the row, with `gh pr view <name> --json number,body`, because a step in this run can have opened or changed it. When review plan was done before this run, `lets-go` SHALL print `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.`, filled from the `review-plan` record that `lets go records <name>` prints, as *A skipped step's line carries its evidence and date* says. `lets-go` SHALL not cut the **Plan review** section out of the body to fill the line, and SHALL not run `git log` for its date. When the review plan step reports `done` in this run, `lets-go` SHALL print `Done review plan: <date>. <evidence>`, with the report's `date` and its `evidence` joined with `; `, as for any other step. The schema SHALL be the `schema:` line of the first of these files that exists: the change's `openspec/changes/<name>/.openspec.yaml`, then the archived change's `openspec/changes/archive/<YYYY-MM-DD>-<name>/.openspec.yaml`. When neither exists, it SHALL be the route's schema. So an archived change keeps the schema it was built with, even when the route would now pick another.
+When the schema is `lets-minimal`, review plan never runs. `lets-go` SHALL print `Skipped review plan: not in the lets-minimal route.` after the plan step is done, and before the build step. That line SHALL carry no date. When the schema is not `lets-minimal`, review plan SHALL be a step of its own. It SHALL run as *Each step runs through lets delegate step* says, with `--for review-plan` and `--name <name>-review-plan`. Its prompt SHALL say to invoke the `lets-review-plan` skill for the change, as *The step prompt says what to run, the question mode, and how to report* says. That skill reviews the plan, or lets its *Check an earlier review* decide, runs its own rounds, and records the review in the pull request description under **Plan review**. When the walk reaches review plan, `lets-go` SHALL take whether it is done from the `review-plan` key of the `done` key that `lets go records <name>` prints. The command applies *Check an earlier review*, as *go-records* says, and `lets-go` SHALL not apply its rules itself. When the answer is `false`, review plan SHALL run, whatever the change's `state`. So a `ready` change with no covering review goes to review plan, not build. The answer SHALL come from the command's latest output, so a pull request that a step in this run opened or changed is read after that step. When review plan was done before this run, `lets-go` SHALL print `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.`, filled from the `review-plan` record, as *A skipped step's line carries its evidence and date* says. `lets-go` SHALL not cut the **Plan review** section out of the body to fill the line, and SHALL not run `git log` for its date. When the review plan step reports `done` in this run, `lets-go` SHALL print `Done review plan: <date>. <evidence>`, with the report's `date` and its `evidence` joined with `; `, as for any other step. The schema that picks the line SHALL be the `schema:` line of the first of these files that exists: the change's `openspec/changes/<name>/.openspec.yaml`, then the archived change's `openspec/changes/archive/<YYYY-MM-DD>-<name>/.openspec.yaml`. When neither exists, it SHALL be the route's schema. So an archived change keeps the schema it was built with, even when the route would now pick another.
 
 #### Scenario: A chore's route
 - **WHEN** the schema is `lets-minimal` and the plan step reports `done`
@@ -118,24 +117,24 @@ When the schema is `lets-minimal`, review plan never runs. `lets-go` SHALL print
 - **THEN** `lets-go` prints `Done review plan: 2026-11-05T10:00:00Z. Plan review: APPROVE for 7d16565; pull request #167` before it runs build
 
 #### Scenario: A schema with a review
-- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, pull request #167's **Plan review** section says `Reviewed: 7d16565` and `- **Verdict:** APPROVE` and covers the plan, and `lets go records lets-go-chore` prints the `review-plan` record `{"commit":"7d16565","date":"2026-11-03","pr":167,"verdict":"APPROVE"}`
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, and `lets go records lets-go-chore` maps `review-plan` to `true` under `done` and prints the `review-plan` record `{"commit":"7d16565","date":"2026-11-03","pr":167,"verdict":"APPROVE"}`
 - **THEN** `lets-go` prints `Skipped review plan: the Plan review in pull request #167 says APPROVE for 7d16565, committed 2026-11-03.` and runs no review plan step
 
 #### Scenario: A ready change with no review
-- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, the state is `ready`, and the pull request's body has no **Plan review** section
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, and `lets go records lets-go-chore` maps `plan` to `true` and `review-plan` to `false` under `done`
 - **THEN** the next step to run is review plan, with `--for review-plan`, and build runs only after it reports `done`
 
 #### Scenario: A stale review
-- **WHEN** the **Plan review** section says `Reviewed: 7d16565` and `- **Verdict:** APPROVE`, and a later commit changed `design.md` that no rebuttal names
+- **WHEN** the **Plan review** section says `Reviewed: 7d16565` and `- **Verdict:** APPROVE`, a later commit changed `design.md` that no rebuttal names, and so `lets go records lets-go-chore` maps `review-plan` to `false`
 - **THEN** `lets-go` runs the review plan step, whose `lets-review-plan` runs a new round
 
 #### Scenario: The body is read when the row is reached
 - **WHEN** the plan step reported `done` in this run, and its brainstorm opened the pull request
-- **THEN** `lets-go` reads the body with `gh pr view <name> --json number,body` when it reaches review plan, not from the read before the plan step
+- **THEN** `lets-go` takes review plan's answer from the output of `lets go records <name>` that it ran after the plan step's `done` report, not from the output before the walk
 
 #### Scenario: An archived change on lets-minimal
 - **WHEN** `openspec/changes/archive/2026-11-04-lets-go-chore/.openspec.yaml` says `schema: lets-minimal`, the issue's Size has since changed to M so that the route would pick `lets-standard`, and pull request #167's body has no **Plan review** section
-- **THEN** `lets-go` prints `Skipped review plan: not in the lets-minimal route.`, and prints no `Records disagree:` line for the missing section
+- **THEN** `lets-go` prints `Skipped review plan: not in the lets-minimal route.`, and prints no `Records disagree:` line, because `lets go records lets-go-chore` reports no disagreement
 
 ### Requirement: lets-go picks the question mode and says why
 In *Read the settings*, before it asks GitHub for anything, `lets-go` SHALL run `lets go questions` from the repo root, once per run. When the command exits non-zero, `lets-go` SHALL show the user its stderr and stop. It SHALL then claim nothing and run no step. Otherwise it SHALL keep the `questions` value the command printed for the whole run. Each time it picks the question mode, it SHALL take the first of these that is set. First, the question mode the user named in the request. Then the kept `questions` value, when it is not `null`. Then the Kind's default: `auto` for a Chore or a Bug, and `ask` for a Story or any other Kind, because *Confirm the packet* reads any other Kind as a Story. It SHALL print the line for the source it used. For the request's question mode: `Questions: <mode>, because you asked for it.` For the config's: `Questions: <mode>, because your lets config sets go.questions.` For the Kind's: `Questions: <mode>, because #<i> is a <Kind>.` Before a shape step, the Kind is not settled. The question mode for the shape step SHALL be the request's, when named; else the config's, when set; else `ask`. In that last case the line SHALL read `Questions: ask, because shape has not run yet.` After the shape step, `lets-go` SHALL pick the question mode again, in the same order, and print its line. *Set the question mode* SHALL hold this rule, and *Run the shape step* SHALL link to it, not write it again. `lets-go` SHALL never ask the user which question mode to use. The question mode SHALL hold for the whole run and SHALL not be kept for a later run. It SHALL put the question mode, and what it means for the step, into every step prompt.
@@ -399,9 +398,8 @@ The review build step SHALL run the `lets-review-build` skill. On `lets-standard
 - `issue-<i>`
 - `idea-<slug>`
 - `--for review-plan`
-- `openspec instructions apply --change <name> --json`
 - `lets go records <name>`
-- `gh pr view <name> --json number,body`
+- `the step reported done, but lets go records <name> says it is not done`
 - `git status --porcelain`
 - `git fetch origin <name>`
 - `git merge --ff-only origin/<name>`
@@ -417,7 +415,7 @@ The review build step SHALL run the `lets-review-build` skill. On `lets-standard
 - `<shape-name>`
 - `<session>`
 
-Below, the skill means `SKILL.md` together with its reference files. The skill SHALL not hold `review.md`, `VERDICT:`, `#152 adds`, `#153 adds` or `#154 adds`. The skill SHALL not say that `lets-go` takes chores only, or that `lets-go` needs an issue number on the default branch. The skill SHALL not say that review plan runs inside plan or inside build, or that `lets-go` reuses the `lets-build` skill. The skill SHALL not hold `Done review plan: the Plan review` or `with a Code review section`. The skill SHALL not hold the in-progress-only discovery query `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`, which matches no parent during Finalize. The skill SHALL not say that a too-large idea ends the shape step with a `failed` report. The skill SHALL not hold `the first ready story under`, and SHALL have no heading *Pick the first ready story*. The skill SHALL not hold `--diff-filter` or `--format=%as`, and SHALL have no heading *Read the records*: `lets go records` makes those reads. The README's `lets-go` section SHALL not say that an idea too large for one issue stops the run, or that review plan runs inside build.
+Below, the skill means `SKILL.md` together with its reference files. The skill SHALL not hold `review.md`, `VERDICT:`, `#152 adds`, `#153 adds` or `#154 adds`. The skill SHALL not say that `lets-go` takes chores only, or that `lets-go` needs an issue number on the default branch. The skill SHALL not say that review plan runs inside plan or inside build, or that `lets-go` reuses the `lets-build` skill. The skill SHALL not hold `Done review plan: the Plan review` or `with a Code review section`. The skill SHALL not hold the in-progress-only discovery query `gh issue list --state open --search '"Discovery status: in-progress" in:body' --json number,title,body`, which matches no parent during Finalize. The skill SHALL not say that a too-large idea ends the shape step with a `failed` report. The skill SHALL not hold `the first ready story under`, and SHALL have no heading *Pick the first ready story*. The skill SHALL not hold `--diff-filter` or `--format=%as`, and SHALL have no heading *Read the records*: `lets go records` makes those reads. The skill SHALL not hold `openspec instructions apply`, `isDraft,body`, `git merge-base --is-ancestor <sha>` or `git show`, because `lets go records` makes the done tests' reads too. The README's `lets-go` section SHALL not say that an idea too large for one issue stops the run, or that review plan runs inside build.
 
 #### Scenario: The fixed lines
 - **WHEN** a reader reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
@@ -438,6 +436,10 @@ Below, the skill means `SKILL.md` together with its reference files. The skill S
 #### Scenario: The record reads are gone
 - **WHEN** a reader reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
 - **THEN** the reader finds `lets go records <name>`, does not find `--diff-filter` or `--format=%as`, and no heading is `Read the records`
+
+#### Scenario: The done tests' reads are gone
+- **WHEN** a reader reads `skills/lets-go/SKILL.md` and every file in `skills/lets-go/references/`
+- **THEN** the reader does not find `openspec instructions apply`, `isDraft,body`, `git merge-base --is-ancestor <sha>` or `git show`
 
 #### Scenario: The step table header changes
 - **WHEN** an edit changes the step table's header from `| Step | Skill | Done when | Record | Skip line |`
@@ -467,53 +469,67 @@ Both flows in `flows.json` SHALL ship `lets-go` and `lets-plan`. The routing tab
 - **THEN** each holds a row whose request is `Take a shaped story, bug or chore, or an idea in words, to a ready pull request in one run` and whose answer names `lets-go`. Each holds its next-story row with the answer `lets-go`. Neither holds the row without the idea, or a row that names `lets-build`
 
 ### Requirement: lets-go walks the step table
-After *Set the question mode*, on the change's branch, `lets-go` SHALL read the records Git and GitHub keep, in this order. First, `git status --porcelain`: a line for a path outside `.workspace/` is a disagreement. Second, the pull request for the branch, with `gh pr view <name> --json number,url,state,isDraft,body`. A missing pull request is noted, not a stop. Third, the archive folder, whose whole name is `<YYYY-MM-DD>-<name>` in `openspec/changes/archive/`. When it exists, every step is done. Then `lets-go` SHALL walk the step table from the top: plan, review plan, build, review build. The step table SHALL have no row for shape: shape runs before the walk, in *Run the shape step*, and *Check the issue* prints its `Skipped shape` or `Done shape` line. When the walk reaches a row, it SHALL read whether that step is done. Each row's done test SHALL be written once, in the walk, as an ordered list: the first item that matches decides. The step table SHALL not restate it. The plan row and the build row each read the change state when the walk reaches them: `openspec instructions apply --change <name> --json`, run when `openspec/changes/<name>/` exists and there is no archive folder. Plan is done when the `state` is `ready` or `all_done`, or the archive folder exists. Build is done when the `state` is `all_done`, or the archive folder exists. The build row SHALL read the state again, even when the plan row read it, because a review plan round can add a task. Any `state` other than `blocked`, `ready` or `all_done` SHALL show the CLI's `instruction` and stop. Review plan is done as *Review plan runs as a step, or is not in the route* says. Review build is done when the archive folder exists. A done step SHALL print its line, as *A skipped step's line carries its evidence and date* says. An unfinished step SHALL run, as *Each step runs through lets delegate step* says. Its report SHALL be read as *A run ends on done, failed, or a repeated question* says. After a `done` report, the walk SHALL check it as *A done report is checked against its record* says, and go on to the next row only when the check passes. `lets-go` SHALL read a row's record when it reaches the row, not before, because a step run in this round changes the records the next row reads.
+After *Set the question mode*, on the change's branch, `lets-go` SHALL run `lets go records <name>` from the repo root, once, before the walk. It SHALL act on what the command prints, in this order:
+
+1. When the command exits non-zero, `lets-go` SHALL show the user its stderr, stop, and run no step.
+2. When the `pull-request` key is `MERGED` or `CLOSED`, `lets-go` SHALL stop as *A closed pull request ends the run* says.
+3. When the `disagreements` key is not empty, `lets-go` SHALL stop as *Records that disagree stop the run* says.
+
+Then `lets-go` SHALL walk the step table from the top: plan, review plan, build, review build. The step table SHALL have no row for shape: shape runs before the walk, in *Run the shape step*, and *Check the issue* prints its `Skipped shape` or `Done shape` line. At each row, the row's step SHALL be done when the `done` key of the command's latest output maps the row's *Step* key to `true`, and not done when it maps it to `false`. `lets-go` SHALL not run `git status`, `gh pr view` or `openspec instructions apply` to decide whether a step is done, and SHALL not restate a done test: *go-records* says each one. The step table SHALL not restate one either. A done step SHALL print its line, as *A skipped step's line carries its evidence and date* says, and run no command. An unfinished step SHALL run, as *Each step runs through lets delegate step* says. Its report SHALL be read as *A run ends on done, failed, or a repeated question* says. After a `done` report, the walk SHALL run `lets go records <name>` again and check the report, as *A done report is checked against its record* says, and go on to the next row only when the check passes. The rows after it SHALL use that newer output, because the step changed the records they read. A row that is done reads the latest output and runs the command no more: no step has run since that output.
 
 #### Scenario: A branch with no change
-- **WHEN** the branch `lets-go-chore` has no `openspec/changes/lets-go-chore/` folder and no archive folder
+- **WHEN** `lets go records lets-go-chore` exits 0 with `"disagreements":[]`, `"pull-request":null` and `done` mapping every step to `false`
 - **THEN** the first step the walk runs is plan, and `lets-go` prints only the shape skip line before it
 
 #### Scenario: A plan in progress
-- **WHEN** `openspec instructions apply --change lets-go-chore --json` says `blocked`
+- **WHEN** the change state is `blocked`, so `lets go records lets-go-chore` maps `plan` to `false`
 - **THEN** the first step the walk runs is plan
 
+#### Scenario: A name that ends another change's name
+- **WHEN** the change is `go-chore`, the archive holds `2026-11-04-lets-go-chore` and no folder `<YYYY-MM-DD>-go-chore`, and `lets go records go-chore` maps `plan` to `false`
+- **THEN** the first step the walk runs for `go-chore` is plan
+
 #### Scenario: A ready plan
-- **WHEN** the state is `ready`, the change's `.openspec.yaml` says `schema: lets-standard`, and the pull request's body has no **Plan review** section
-- **THEN** `lets-go` prints the shape and plan skip lines, runs review plan, and runs build after review plan reports `done`
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, and `done` maps `plan` to `true` and the other steps to `false`
+- **THEN** `lets-go` prints the shape and plan skip lines, runs review plan, runs `lets go records lets-go-chore` again after review plan reports `done`, and runs build when that output maps `build` to `false`
 
 #### Scenario: Every task ticked
-- **WHEN** the state is `all_done`, and the pull request's **Plan review** section covers the plan
+- **WHEN** `done` maps `plan`, `review-plan` and `build` to `true`, and `review-build` to `false`
 - **THEN** `lets-go` prints four skip lines, then runs review build
 
 #### Scenario: An archived change
-- **WHEN** `openspec/changes/archive/2026-11-04-lets-go-chore` exists, and no `openspec/changes/lets-go-chore/` folder does
-- **THEN** every step is done, and `lets-go` runs none
-
-#### Scenario: A name that ends another change's name
-- **WHEN** the change is `go-chore`, and the archive holds `2026-11-04-lets-go-chore` and no folder `<YYYY-MM-DD>-go-chore`
-- **THEN** `lets-go` finds no archive folder for `go-chore`
+- **WHEN** `done` maps every step to `true`, and `disagreements` is `[]`
+- **THEN** `lets-go` prints a skip line for each of the four rows, and runs no step
 
 #### Scenario: A built change whose review is missing
-- **WHEN** the state is `all_done`, the change's `.openspec.yaml` says `schema: lets-standard`, and the pull request's body has no **Plan review** section
-- **THEN** `lets-go` prints the shape and plan skip lines, runs review plan, prints `Skipped build: every task is ticked, last task commit <date> (<sha>).` with the last task commit, and runs review build
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, and `done` maps `plan` and `build` to `true`, and `review-plan` and `review-build` to `false`
+- **THEN** `lets-go` prints the shape and plan skip lines, runs review plan, prints `Skipped build: every task is ticked, last task commit <date> (<sha>).` with the `build` record of the output after review plan's `done` report, and runs review build
 
 #### Scenario: A review round adds a task
-- **WHEN** the plan row read `all_done`, the review plan step ran in this run, and its `REVISE` round added an unticked task to `tasks.md` before its `APPROVE`
-- **THEN** the build row reads the state again, finds `ready`, and runs build instead of printing `Skipped build:`
+- **WHEN** the output before the walk mapped `build` to `true`, the review plan step ran in this run, and its `REVISE` round added an unticked task to `tasks.md` before its `APPROVE`, so the output after its `done` report maps `build` to `false`
+- **THEN** `lets-go` runs build instead of printing `Skipped build:`
+
+#### Scenario: An unknown change state
+- **WHEN** `lets go records lets-go-chore` exits 4, and its stderr names the state `no_tasks` and holds the CLI's `instruction`
+- **THEN** `lets-go` shows that stderr, stops, and runs no step
+
+#### Scenario: The walk runs no done test itself
+- **WHEN** a reader reads *Walk the step table*
+- **THEN** the reader finds `lets go records <name>`, and does not find `gh pr view <name> --json number,url,state,isDraft,body` or `openspec instructions apply`
 
 #### Scenario: The step table has no done column
 - **WHEN** a reader reads the step table of `lets-go`
 - **THEN** its header has no *Done when* column
 
 ### Requirement: A skipped step's line carries its evidence and date
-Each done step SHALL print one line when the walk reaches its row, in step order. When the walk settles a row as done before this run, `lets-go` SHALL run `lets go records <name>` from the repo root, and fill the row's Skip line from the record under the row's *Step* key: `<date>` from the record's `date`, `<sha>` from its `commit`, `<pr>` from its `pr` and `<verdict>` from its `verdict`. It SHALL run the command at each such row, not once for the walk, because a step that runs in this walk changes the records the next row reads. It SHALL not run `git log`, or cut a section out of the pull request's body, to fill a Skip line. The step table names each step's record. The lines and their records are:
+Each done step SHALL print one line when the walk reaches its row, in step order. When the walk settles a row as done before this run, `lets-go` SHALL fill the row's Skip line from the record under the row's *Step* key, in the latest output of `lets go records <name>`: `<date>` from the record's `date`, `<sha>` from its `commit`, `<pr>` from its `pr` and `<verdict>` from its `verdict`. The latest output is the one from before the walk, or from after the last `done` report, so it holds the records as they are when the walk reaches the row. It SHALL not run `git log`, or cut a section out of the pull request's body, to fill a Skip line. The step table names each step's record. The lines and their records are:
 
 - Plan: `Skipped plan: the plan is ready, tasks.md committed <date> (<sha>).`, from the `plan` record, the commit that added `openspec/changes/<name>/tasks.md`.
 - Review plan: `Skipped review plan: the Plan review in pull request #<pr> says <verdict> for <sha>, committed <date>.`, from the `review-plan` record, as *Review plan runs as a step, or is not in the route* says. On `lets-minimal` the line is `Skipped review plan: not in the lets-minimal route.`, and `lets-go` reads no record for it.
 - Build: `Skipped build: every task is ticked, last task commit <date> (<sha>).`, from the `build` record, the last commit that changed `openspec/changes/<name>/tasks.md`.
 - Review build: `Skipped review build: archived <date> (<sha>); pull request #<pr> is ready for review.`, from the `review-build` record, the commit that added the archive folder's `tasks.md`, and the pull request. The line is the same on every flow.
 
-The record of plan and of build SHALL be the same after archive as before, as *go-records* says. When `lets go records` exits non-zero, `lets-go` SHALL show the user its stderr, stop, and run no step. A `null` record for a row the walk settles as done is a disagreement, as *Records that disagree stop the run* says. The shape line is set by its own requirement.
+The record of plan and of build SHALL be the same after archive as before, as *go-records* says. A `null` record for a step that is done is a disagreement that the command reports, as *Records that disagree stop the run* says, so the walk stops before it reaches the row. The shape line is set by its own requirement.
 
 #### Scenario: A skipped propose
 - **WHEN** commit `2bbc7d0` of 2026-11-03 added `openspec/changes/lets-go-chore/tasks.md`, so `lets go records lets-go-chore` prints the `plan` record `{"commit":"2bbc7d0","date":"2026-11-03"}`
@@ -532,88 +548,95 @@ The record of plan and of build SHALL be the same after archive as before, as *g
 - **THEN** the build skip line's date is the `build` record's `date`, the commit's author date, not today
 
 #### Scenario: A skipped review build on the minimal flow
-- **WHEN** `openspec/config.yaml` says `schema: lets-minimal`, the archive folder exists, and pull request #167 is ready for review with no `Code review` section
+- **WHEN** `openspec/config.yaml` says `schema: lets-minimal`, `lets go records lets-go-chore` maps every step to `true` with `"disagreements":[]`, and the `review-build` record is `{"commit":"1d253bd","date":"2026-11-04","pr":167}`
 - **THEN** `lets-go` prints the same `Skipped review build:` line, and no disagreement
 
 #### Scenario: Each row reads the records again
 - **WHEN** the walk settles plan as done, then runs the review plan step in this run, then settles build as done
-- **THEN** `lets-go` runs `lets go records <name>` for the plan row and again for the build row, and runs no `git log` command for either line
+- **THEN** `lets-go` runs `lets go records <name>` twice, before the walk and after review plan's `done` report, fills the build line from the second output, and runs no `git log` command for either line
 
 #### Scenario: The command fails
-- **WHEN** the walk settles plan as done, and `lets go records lets-go-chore` exits 4 with `lets go: gh pr view: HTTP 502` on stderr
+- **WHEN** `lets go records lets-go-chore` exits 4 before the walk, with `lets go: gh pr view: HTTP 502` on stderr
 - **THEN** `lets-go` shows that stderr, stops, and runs no step
 
 ### Requirement: Records that disagree stop the run
-When the records disagree, `lets-go` SHALL print `Records disagree:` and what it found, say what to fix by hand, and stop before any step. It SHALL repair nothing. These are disagreements:
+When the records disagree, `lets-go` SHALL print `Records disagree:` and what it found, say what to fix by hand, and stop before any step. It SHALL repair nothing. `lets-go` SHALL find a disagreement in one of two ways:
 
-- `git status --porcelain` lists a path outside `.workspace/`;
-- the local branch and `origin/<name>` have diverged;
-- a change folder and an archive folder exist for the same name;
-- an archive folder exists but the pull request is missing or is a draft, or, when the `schema:` line of `openspec/config.yaml` is `lets-standard`, has no `Code review` section;
-- an archive folder exists, the schema is not `lets-minimal`, and the pull request's body has no **Plan review** section with a `Reviewed:` line and a `- **Verdict:**` line;
-- `openspec/changes/<name>/brainstorm.md` is committed but the branch has no open pull request;
-- `lets go records <name>` prints `null` for the record of a row the walk settles as done before this run. Review plan on `lets-minimal` reads no record, so it is not one.
+- the local branch and `origin/<name>` have diverged, which `lets-go` finds when `git merge --ff-only origin/<name>` cannot fast-forward;
+- `lets go records <name>` prints an entry under its `disagreements` key, for one of the rows `dirty-tree`, `change-and-archive`, `archive-not-ready`, `brainstorm-without-pull-request`, `archive-without-plan-review` and `null-record`, as *go-records* says.
 
-A built change that is not archived, and whose pull request has no **Plan review** section, is not a disagreement: the walk reaches review plan before build, and runs it. Once the change is archived, no step can write the section.
+For each entry, `lets-go` SHALL print the entry's `found`, and the fix by hand that `references/records.md` gives for the entry's `row`. `references/records.md` SHALL give one fix for each of the six rows, under the row's name, and one for the diverged branch. `lets-go` SHALL not restate when a row matches.
 
 #### Scenario: A dirty tree
-- **WHEN** `git status --porcelain` lists `skills/lets-go/SKILL.md`
-- **THEN** `lets-go` prints `Records disagree:`, names the path, says to commit or discard it, and runs no step
+- **WHEN** `lets go records lets-go-chore` prints the entry `{"row":"dirty-tree","found":"skills/lets-go/SKILL.md"}`
+- **THEN** `lets-go` prints `Records disagree:`, names `skills/lets-go/SKILL.md`, says to commit or discard it, and runs no step
 
 #### Scenario: A diverged branch
 - **WHEN** the local branch `lets-go-chore` and `origin/lets-go-chore` each have a commit the other lacks
 - **THEN** `lets-go` prints `Records disagree:`, says the branch and `origin` have diverged, and runs no step
 
 #### Scenario: Archived, but the pull request is a draft
-- **WHEN** the archive folder exists and `gh pr view` says `isDraft` is `true`
-- **THEN** `lets-go` prints `Records disagree:`, says the change is archived but the pull request is a draft, and runs no step
+- **WHEN** `lets go records lets-go-chore` prints the entry `{"row":"archive-not-ready","found":"isDraft: true"}`
+- **THEN** `lets-go` prints `Records disagree:`, names `isDraft: true`, says to mark the pull request ready as `lets-review-build` does or revert the archive commit, and runs no step
 
 #### Scenario: A committed brainstorm with no pull request
-- **WHEN** `openspec/changes/lets-go-chore/brainstorm.md` is committed, the state is `blocked`, and `gh pr view lets-go-chore` finds no pull request
-- **THEN** `lets-go` prints `Records disagree:`, says the brainstorm is committed but the branch has no pull request, and runs no step
+- **WHEN** `lets go records lets-go-chore` prints the entry `{"row":"brainstorm-without-pull-request","found":"openspec/changes/lets-go-chore/brainstorm.md"}`
+- **THEN** `lets-go` prints `Records disagree:`, names the path, says to push the branch and open the draft pull request, and runs no step
 
 #### Scenario: A read that finds no commit
-- **WHEN** the state is `ready`, the tree is clean, and `lets go records lets-go-chore` prints `"plan":null`
+- **WHEN** `lets go records lets-go-chore` prints the entry `{"row":"null-record","found":"plan"}`
 - **THEN** `lets-go` prints `Records disagree:`, names the `plan` record of `lets go records lets-go-chore`, and runs no step
 
+#### Scenario: Two disagreements
+- **WHEN** `lets go records lets-go-chore` prints a `dirty-tree` entry and a `change-and-archive` entry
+- **THEN** `lets-go` prints `Records disagree:`, names what each entry found with its fix, and runs no step
+
 #### Scenario: No review plan record on the minimal flow
-- **WHEN** the change's `.openspec.yaml` says `schema: lets-minimal`, the state is `all_done`, and `lets go records lets-go-chore` prints `"review-plan":null`
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-minimal`, and `lets go records lets-go-chore` prints `"review-plan":null`, maps `review-plan` to `true` under `done`, and prints `"disagreements":[]`
 - **THEN** `lets-go` prints `Skipped review plan: not in the lets-minimal route.`, and no `Records disagree:` line
 
 #### Scenario: A new branch with no pull request
-- **WHEN** the branch has no change folder and no pull request
+- **WHEN** `lets go records lets-go-chore` prints `"disagreements":[]` and `"pull-request":null`, and maps every step to `false`
 - **THEN** `lets-go` prints no disagreement, and the first step the walk runs is plan
 
 #### Scenario: A built change with no plan review
-- **WHEN** the state is `all_done`, the change's `.openspec.yaml` says `schema: lets-standard`, and the pull request's body has no **Plan review** section
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, and `lets go records lets-go-chore` prints `"disagreements":[]` and maps `plan` and `build` to `true` and `review-plan` to `false`
 - **THEN** `lets-go` prints no `Records disagree:` line, and runs review plan as *lets-go walks the step table* says
 
 #### Scenario: An archived change on the minimal flow
-- **WHEN** `openspec/config.yaml` says `schema: lets-minimal`, the archive folder exists, and the pull request is ready for review with no `Code review` section
+- **WHEN** `openspec/config.yaml` says `schema: lets-minimal`, the archive folder exists, the pull request is ready for review with no `Code review` section, and `lets go records lets-go-chore` prints `"disagreements":[]`
 - **THEN** `lets-go` prints no disagreement, and runs no step
 
 #### Scenario: An archived change with no plan review
-- **WHEN** the change's schema is `lets-standard`, the archive folder exists, and pull request #167 is ready for review with a **Code review** section and no **Plan review** section
+- **WHEN** `lets go records lets-go-chore` prints the entry `{"row":"archive-without-plan-review","found":"no Plan review section"}`
 - **THEN** `lets-go` prints `Records disagree:`, says the pull request has no Plan review section, and runs no step
 
 #### Scenario: An archived change on the standard flow with no code review
-- **WHEN** `openspec/config.yaml` says `schema: lets-standard`, the archive folder exists, and the pull request is ready for review with no `Code review` section
+- **WHEN** `lets go records lets-go-chore` prints the entry `{"row":"archive-not-ready","found":"no Code review section"}`
 - **THEN** `lets-go` prints `Records disagree:`, says the pull request has no Code review section, and runs no step
 
+#### Scenario: Each row has a fix
+- **WHEN** a reader reads `references/records.md`
+- **THEN** the reader finds `dirty-tree`, `change-and-archive`, `archive-not-ready`, `brainstorm-without-pull-request`, `archive-without-plan-review` and `null-record`, each with what to fix by hand, and a fix for a diverged branch
+
 ### Requirement: A closed pull request ends the run
-When the pull request's `state` is `MERGED`, `lets-go` SHALL say the change is merged and the run is finished, and stop. When its `state` is `CLOSED`, `lets-go` SHALL say the change was rejected and there is nothing to resume, and stop. Neither SHALL count as a disagreement, and neither SHALL run a step. The skill SHALL say when these stops run. They run only when the change's branch still exists and the run can find its issue. That happens in three cases: a stacked pull request merged into the branch below it; a pull request closed without merging; or a closed issue the user names on the default branch, whose branch is still there. In the first two cases the issue stays open.
+When the `pull-request` key of `lets go records <name>` is `MERGED`, `lets-go` SHALL say the change is merged and the run is finished, and stop. When it is `CLOSED`, `lets-go` SHALL say the change was rejected and there is nothing to resume, and stop. Neither SHALL count as a disagreement, and neither SHALL run a step. `lets-go` SHALL check the `pull-request` key before the `disagreements` key, so a merged or closed change that also has a disagreement ends with this stop. The skill SHALL say when these stops run. They run only when the change's branch still exists and the run can find its issue. That happens in three cases: a stacked pull request merged into the branch below it; a pull request closed without merging; or a closed issue the user names on the default branch, whose branch is still there. In the first two cases the issue stays open.
 
 #### Scenario: A merged pull request
-- **WHEN** `gh pr view lets-go-chore` says `state` is `MERGED`
+- **WHEN** `lets go records lets-go-chore` prints `"pull-request":"MERGED"`
 - **THEN** `lets-go` says the change is merged, and runs no step
 
 #### Scenario: A rejected pull request
-- **WHEN** `gh pr view lets-go-chore` says `state` is `CLOSED`
+- **WHEN** `lets go records lets-go-chore` prints `"pull-request":"CLOSED"`
 - **THEN** `lets-go` says the change was rejected, and runs no step
+
+#### Scenario: A merged pull request with a dirty tree
+- **WHEN** `lets go records lets-go-chore` prints `"pull-request":"MERGED"` and a `dirty-tree` entry
+- **THEN** `lets-go` says the change is merged, prints no `Records disagree:` line, and runs no step
 
 #### Scenario: A stacked pull request merged into its base
 - **WHEN** pull request #214 for `lets-go-one-rule-once` merged into `lets-go-procedures-return`, its issue #202 is still open, and the user runs `lets-go` on the branch `lets-go-one-rule-once`
-- **THEN** `lets-go` finds #202 by the branch name, reads `MERGED`, says the change is merged, and runs no step
+- **THEN** `lets-go` finds #202 by the branch name, reads `"pull-request":"MERGED"` from `lets go records lets-go-one-rule-once`, says the change is merged, and runs no step
 
 ### Requirement: lets-go runs for a Chore, a Bug or a Story
 `lets-go` SHALL run on the repository's default branch, or on a change's branch. A change's branch is a branch named after the change, whose issue `lets-go` finds as *lets-go takes one issue number or an idea* says. On any other branch it SHALL say that `lets-go` runs on the default branch or on a change's branch, and stop. It SHALL run for an issue whose Kind is Chore, Bug or Story. It SHALL run for an issue of any other Kind but Epic as for a Story. It SHALL also run for an idea or an unshaped issue, which the shape step turns into one. It SHALL add no Kind check of its own: an Epic starts an epic run where *Confirm the packet* returns `epic`, as *An epic run starts on an epic with open stories* says. For a Story with a parent, it SHALL read the parent's **Shared decisions** as *Confirm the packet* says, because *Route* needs them. When a procedure returns a result that ends the run, such as `unresolved` for a glossary prerequisite, `lets-go` SHALL stop as the part that ran it says.
@@ -1276,26 +1299,26 @@ When *Claim* returns `taken` for an issue the user named or confirmed as the sam
 - **THEN** `lets-go` does not say that other sessions keep taking the picked issues, and goes on to pick from the two stories left
 
 ### Requirement: A done report is checked against its record
-After a `done` report from plan, review plan, build or review build, the walk SHALL check the report before it prints the step's line. It SHALL read the three records again, as at the start of the walk: `git status --porcelain`, `gh pr view <name> --json number,url,state,isDraft,body`, and the archive folder. It SHALL apply their disagreement rules, then run the row's done test. When the records disagree, `lets-go` SHALL stop as *Records that disagree stop the run* says. When the test says the step is done, the walk SHALL print the step's `Done` line and go on. When the test says the step is not done, the step has failed. `lets-go` SHALL print its `Failed` line, whose reason starts `the step reported done, but` and names the record and what it holds. It SHALL end the walk as for a `failed` report, and SHALL not run the step again. A shape step's `done` report SHALL need no check of its own: *Check the issue* runs *Confirm the packet* after it, and a second `needs-shape` stops the run.
+After a `done` report from plan, review plan, build or review build, the walk SHALL check the report before it prints the step's line. It SHALL run `lets go records <name>` again, because the step may have changed any record, and act on its output as before the walk: a non-zero exit, a merged or closed pull request, or a disagreement stops the run. When the records disagree, `lets-go` SHALL stop as *Records that disagree stop the run* says. Otherwise, when the `done` key maps the row's step to `true`, the walk SHALL print the step's `Done` line and go on. When it maps the step to `false`, the step has failed. `lets-go` SHALL print its `Failed` line, whose reason is `the step reported done, but lets go records <name> says it is not done`. It SHALL end the walk as for a `failed` report, and SHALL not run the step again. A shape step's `done` report SHALL need no check of its own: *Check the issue* runs *Confirm the packet* after it, and a second `needs-shape` stops the run.
 
 #### Scenario: Plan reports done on a blocked change
-- **WHEN** the plan step reports `done`, and `openspec instructions apply --change lets-go-chore --json` then says `blocked`
-- **THEN** `lets-go` prints a line that starts `Failed plan: the step reported done, but` and names the state `blocked`, prints no `Done plan:` line, and runs no review plan
+- **WHEN** the plan step reports `done`, and `lets go records lets-go-chore` then maps `plan` to `false`
+- **THEN** `lets-go` prints `Failed plan: the step reported done, but lets go records lets-go-chore says it is not done`, prints no `Done plan:` line, and runs no review plan
 
 #### Scenario: Review plan reports done with no section
-- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, the review plan step reports `done`, and pull request #167's body still has no **Plan review** section
-- **THEN** `lets-go` prints a line that starts `Failed review plan: the step reported done, but` and names the missing **Plan review** section, and runs no build
+- **WHEN** the change's `.openspec.yaml` says `schema: lets-standard`, the review plan step reports `done`, and `lets go records lets-go-chore` then maps `review-plan` to `false`
+- **THEN** `lets-go` prints a line that starts `Failed review plan: the step reported done, but`, and runs no build
 
 #### Scenario: Review build reports done on a draft
-- **WHEN** the review build step reports `done`, the archive folder exists, and pull request #167 is still a draft
-- **THEN** `lets-go` prints `Records disagree:`, names the draft, and prints no `Done review build:` line
+- **WHEN** the review build step reports `done`, and `lets go records lets-go-chore` then prints the entry `{"row":"archive-not-ready","found":"isDraft: true"}`
+- **THEN** `lets-go` prints `Records disagree:`, names `isDraft: true`, and prints no `Done review build:` line
 
 #### Scenario: Plan leaves a file uncommitted
-- **WHEN** the plan step reports `done`, and `git status --porcelain` then lists `openspec/changes/lets-go-chore/tasks.md`
+- **WHEN** the plan step reports `done`, and `lets go records lets-go-chore` then prints the entry `{"row":"dirty-tree","found":"openspec/changes/lets-go-chore/tasks.md"}`
 - **THEN** `lets-go` prints `Records disagree:`, names the path, prints no `Done plan:` line, and runs no review plan
 
 #### Scenario: A report the records agree with
-- **WHEN** the build step reports `done`, and the state is then `all_done`
+- **WHEN** the build step reports `done`, and `lets go records lets-go-chore` then maps `build` to `true`
 - **THEN** `lets-go` prints `Done build:` with the report's date and evidence, and goes on to review build
 
 ### Requirement: Each lets-go rule is written once
@@ -1307,13 +1330,17 @@ After a `done` report from plan, review plan, build or review build, the walk SH
 - What a `lets backlog` error does, in *Backlog errors*.
 - The prerequisite check, in *Check the prerequisite*.
 - The packet check, in *Confirm the packet*.
-- Each step's done test, in the walk.
+- Each step's done test, and each disagreement but the diverged branch: in none of `lets-go`'s files. `lets go records <name>` applies them, as *go-records* says, and the walk acts on what it prints.
 
 A rule written once MAY run more than once. `next` runs *Check the prerequisite* and *Confirm the packet* on each candidate, and *Check the issue* runs both again for the picked issue. *Claim*'s *Glossary preflight* SHALL run only *Check the checkpoint*, which runs *Check the prerequisite* again only when the owner of the glossary definitions or the proposed base has changed. *Find the source of demand* SHALL not say that it returns to *Claim*, because *Claim* never runs it.
 
 #### Scenario: Each line form is written once
 - **WHEN** a reader reads `lets-go`
 - **THEN** the reader finds `Done shape: <date>. <evidence>` and `Skipped shape: #<i>'s packet is complete, last edited <date>.` once each
+
+#### Scenario: No done test is restated
+- **WHEN** a reader reads *Walk the step table* and *Read the report*
+- **THEN** the reader finds `lets go records <name>` and no ordered list of the tests that say when plan, review plan, build or review build is done
 
 #### Scenario: Claim looks for no branch
 - **WHEN** a reader reads *Claim* in `lets-go`
