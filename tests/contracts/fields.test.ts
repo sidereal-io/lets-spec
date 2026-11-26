@@ -20,7 +20,7 @@ type Fields = Map<string, Set<string>>;
 /**
  * The fields and values in a `lets backlog --help` text. A field is each
  * name inside a `{ … }` shape that stands alone or comes before a `:`, and
- * each name anywhere before `: [` or `: {`. A trailing `?` is not part of
+ * each name anywhere before `: [`. A trailing `?` is not part of
  * the name. `name: v1|v2` in a shape gives `name` each value, so a value
  * is never a field. A sentence `where <name> is v1, v2 … or vn.` gives
  * `<name>` each value, without the `( … )` asides.
@@ -38,7 +38,9 @@ function backlogFields(help: string): Fields {
   for (const shape of shapes(help)) {
     for (const match of shape.matchAll(/([A-Za-z][\w-]*)\??(?:\s*:\s*([\w-]+(?:\|[\w-]+)*))?/g)) add(match[1], match[2]?.split('|'));
   }
-  for (const match of help.matchAll(/([A-Za-z][\w-]*)\??:\s*[[{]/g)) add(match[1]);
+  // Outside a shape only `: [` marks a field: prose such as `On an error: {`
+  // would otherwise give `error`.
+  for (const match of help.matchAll(/([A-Za-z][\w-]*)\??:\s*\[/g)) add(match[1]);
   const prose = withoutAsides(help.replace(/\s+/g, ' '));
   for (const match of prose.matchAll(/\bwhere ([A-Za-z][\w-]*) is ([^.]*)\./g)) {
     add(match[1], match[2].split(/,|\bor\b/).map((value) => value.trim()).filter((value) => value !== ''));
@@ -134,6 +136,11 @@ test('the help gives each name in a nested shape as a field', () => {
 test('the help gives a name before : [ outside a shape as a field', () => {
   const fields = backlogFields('An error names its projects: [ the projects ].');
   assert.deepEqual(plain(fields), { projects: [] });
+});
+
+test('the help gives no prose word before : { outside a shape as a field', () => {
+  const fields = backlogFields('On an error: { code, message }.');
+  assert.deepEqual(plain(fields), { code: [], message: [] });
 });
 
 test('the help gives a where sentence’s name each value, without its asides', () => {

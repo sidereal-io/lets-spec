@@ -80,8 +80,10 @@ things from what it prints:
 - **Fields.** Every name inside a `{ … }` shape, across lines, that
   stands alone, as `claim` does, or comes before a `:`, as `result`
   does. A name after a `:` is a value, never a field: `claimed`,
-  `assign` and `null` are not fields. Also every name followed by `: [`
-  or `: {`, such as `projects` in the error sentence. A trailing `?`,
+  `assign` and `null` are not fields. Also every name followed by `: [`,
+  such as `projects` in the error sentence. A `: {` outside a shape
+  marks no field, since prose such as "On an error: {" comes before
+  one. A trailing `?`,
   as in `claim?`, is not part of the name.
 - **Values.** In a shape, `name: v1|v2|…` gives the field `name` each
   value. A sentence `where <name> is v1, v2 … or vn.` gives `<name>`
