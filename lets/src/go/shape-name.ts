@@ -45,9 +45,11 @@ export function shapeName(options: ShapeNameOptions): string {
   return `issue-${options.issue}`;
 }
 
-// The exit code: 0 ok, 2 an idea with no letter or digit.
+// The exit code: 0 ok, 2 not exactly one option, or an idea with no letter
+// or digit.
 export function run(options: ShapeNameOptions, deps: Pick<Deps, 'stdout' | 'stderr'>): Promise<number> {
   return guarded(deps, async () => {
+    if ((options.issue === undefined) === (options.idea === undefined)) throw new UsageError('give exactly one of --issue and --idea');
     const name = shapeName(options);
     const answers = `.workspace/lets-go/${name}-shape-answers.yaml`;
     deps.stdout(`${JSON.stringify({ name, answers })}\n`);

@@ -300,7 +300,15 @@ answers file, relative to the repository root.
 
 Exit codes:
   0  ok
-  2  an idea with no letter or digit in any script`;
+  2  not exactly one of --issue and --idea, an option given twice, or an
+     idea with no letter or digit in any script`;
+
+// An option that takes one value, so a second use is a usage error rather
+// than a silent override.
+const once = (flag: string) => (value: string, previous: string | undefined) => {
+  if (previous !== undefined) throw new InvalidArgumentError(`Give ${flag} only once.`);
+  return value;
+};
 
 // --timeout-minutes: a whole number of minutes.
 function wholeMinutes(value: string): number {
@@ -479,8 +487,8 @@ go
   .usage('--issue <i> | --idea <text>')
   .summary('print the shape step\'s name and answers file')
   .description('Print the name of lets-go\'s shape step for an issue or an idea, and the path of its answers file.')
-  .option('--issue <i>', 'the issue\'s key, as lets backlog prints it')
-  .option('--idea <text>', 'the idea in the user\'s words')
+  .option('--issue <i>', 'the issue\'s key, as lets backlog prints it', once('--issue'))
+  .option('--idea <text>', 'the idea in the user\'s words', once('--idea'))
   .addHelpText('after', GO_SHAPE_NAME_HELP)
   .action(async (options: ShapeNameOptions) => {
     process.exitCode = await shapeName(options, realDeps());

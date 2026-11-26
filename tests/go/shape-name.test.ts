@@ -108,3 +108,25 @@ describe('an idea it cannot name', () => {
     assert.equal(rejected(result), 'lets go: an idea needs at least one letter or digit');
   });
 });
+
+describe('options it cannot take', () => {
+  test('no option is rejected, naming --issue and --idea', async (t) => {
+    const line = rejected(await shapeName(tempDir(t)));
+    assert.ok(line.includes('--issue') && line.includes('--idea'), line);
+  });
+
+  test('both options are rejected, naming --issue and --idea', async (t) => {
+    const line = rejected(await shapeName(tempDir(t), '--issue', '180', '--idea', 'fix the typo'));
+    assert.ok(line.includes('--issue') && line.includes('--idea'), line);
+  });
+
+  test('--issue given twice is rejected, naming --issue', async (t) => {
+    const line = rejected(await shapeName(tempDir(t), '--issue', '180', '--issue', '181'));
+    assert.ok(line.includes('--issue'), line);
+  });
+
+  test('--idea given twice is rejected, naming --idea', async (t) => {
+    const line = rejected(await shapeName(tempDir(t), '--idea', 'fix the typo', '--idea', 'fix the link'));
+    assert.ok(line.includes('--idea'), line);
+  });
+});
