@@ -157,3 +157,42 @@ describe('build record', () => {
     assert.deepEqual(printed(await r.records()).build, { commit: sha, date: '2026-11-05' });
   });
 });
+
+describe('review-build record', () => {
+  /** A repository whose change was planned, built and archived into `ARCHIVE`. Returns it and the archive commit. */
+  function archived(t: TestContext, rows: StandInRow[]): { r: Repo; sha: string } {
+    const r = repo(t, rows);
+    r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+    r.commit('feat: a', { [`${CHANGE}/tasks.md`]: '- [x] 1.1 a\n' }, '2026-11-05');
+    return { r, sha: r.move('chore: archive', CHANGE, ARCHIVE, '2026-11-06') };
+  }
+
+  test('the review-build record is the archive commit, with the pull request number', async (t) => {
+    const { r, sha } = archived(t, [pr(167, '')]);
+    assert.deepEqual(printed(await r.records())['review-build'], { commit: sha, date: '2026-11-06', pr: 167 });
+  });
+
+  test('the review-build record has a null pr when gh finds no pull request', async (t) => {
+    const { r, sha } = archived(t, [noPr()]);
+    assert.deepEqual(printed(await r.records())['review-build'], { commit: sha, date: '2026-11-06', pr: null });
+  });
+
+  test('the review-build record is null for a folder that only ends in the name', async (t) => {
+    const r = repo(t, [noPr('go-chore')]);
+    r.commit('chore: archive', { [`${ARCHIVE}/tasks.md`]: '- [x] 1.1 a\n' }, '2026-11-06');
+    assert.equal(printed(await r.records('go-chore'))['review-build'], null);
+  });
+
+  test('the review-build record is null for two matching folders', async (t) => {
+    const { r } = archived(t, [pr(167, '')]);
+    r.commit('chore: archive again', { [`openspec/changes/archive/2026-11-09-${NAME}/tasks.md`]: '- [x] 1.1 a\n' }, '2026-11-09');
+    assert.equal(printed(await r.records())['review-build'], null);
+  });
+
+  test('the review-build record is null for a folder no commit added', async (t) => {
+    const r = repo(t, [pr(167, '')]);
+    mkdirSync(join(r.root, ARCHIVE), { recursive: true });
+    writeFileSync(join(r.root, ARCHIVE, 'tasks.md'), '- [x] 1.1 a\n');
+    assert.equal(printed(await r.records())['review-build'], null);
+  });
+});

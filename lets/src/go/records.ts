@@ -51,18 +51,32 @@ async function lastCommit(git: Run, filter: 'A' | 'M', path: string): Promise<St
   return { commit, date };
 }
 
+const ARCHIVE = 'openspec/changes/archive';
+const DATED = /^\d{4}-\d{2}-\d{2}-/;
+
+// The archive folder whose whole name is <YYYY-MM-DD>-<name>, or null when
+// there is none, or more than one.
+function archiveFolder(io: Pick<Io, 'exists' | 'listDirs'>, root: string, name: string): string | null {
+  const dir = `${root}/${ARCHIVE}`;
+  if (!io.exists(dir)) return null;
+  const found = io.listDirs(dir).filter((folder) => DATED.test(folder) && folder.slice(11) === name);
+  return found.length === 1 ? found[0] : null;
+}
+
 // The exit code: 0 ok, 2 a bad name, 4 a failed read.
 export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'stderr'>): Promise<number> {
   return guarded(deps, async () => {
     const root = (await runner(deps.io, deps.cwd)('git', ['rev-parse', '--show-toplevel'])).trim();
     const git = runner(deps.io, root);
     const change = `openspec/changes/${name}`;
-    await pullRequest(deps.io, root, name);
+    const pr = await pullRequest(deps.io, root, name);
+    const folder = archiveFolder(deps.io, root, name);
+    const archived = folder === null ? null : await lastCommit(git, 'A', `${ARCHIVE}/${folder}/tasks.md`);
     const records = {
       plan: await lastCommit(git, 'A', `${change}/tasks.md`),
       'review-plan': null,
       build: await lastCommit(git, 'M', `${change}/tasks.md`),
-      'review-build': null,
+      'review-build': archived === null ? null : { ...archived, pr: pr?.number ?? null },
     };
     deps.stdout(`${JSON.stringify(records)}\n`);
     return EXIT.ok;
