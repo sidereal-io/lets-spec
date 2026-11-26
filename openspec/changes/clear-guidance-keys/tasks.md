@@ -1,0 +1,32 @@
+<!-- Plain language: Each task must make sense to an agent and reviewer without the planning conversation. Name an observable outcome, its location when needed, and how to verify it. Preserve checkbox syntax and tags. -->
+
+<!-- design.md says how; the delta specs in specs/ say what each command prints. -->
+
+## 1. The config contract
+
+- [ ] 1.1 [medium] The lets config takes `version: 4`, and a wrong version, such as `version: 2`, makes `lets delegate`, `lets go questions` and `lets backlog` fail with a message saying the version must be `4`. Move every test fixture that writes a valid `version: 3` config to `version: 4` in the same commit, so the suite stays green (design: *Fixtures move to version 4 in bulk*) (verify: pnpm test)
+- [ ] 1.2 [medium] `lets delegate review instructions` and `lets delegate step instructions` print `guidance` from the new keys through one table in `lets/src/delegate/strategies.ts`: `--for plan` under review reads `delegate.review-plan`, `--for code` reads `delegate.review-build`, and under step `review-plan` reads `delegate.plan`, `review-build` reads `delegate.build`, and `shape`, `plan`, `build` and `story` read their own key. A wrong type names `delegate.<key>` or `delegate.<key>.guidance` (specs: *delegate-instructions*, *The guidance is the config entry for the intent* and *Malformed guidance stops the command*) (verify: node --test tests/delegate/instructions.test.ts tests/lets/delegate/instructions.test.ts)
+- [ ] 1.3 [medium] A file with `version: 3` fails every reader of the lets config with one message that names the file, says the version must be `4`, and names each old guidance key in that file with its new key, saying when the new key is shared with the plan or build step. `lets backlog` carries it in its `unknown-backlog-provider` message (spec: *delegate-config*, *A version 3 file names each guidance key's new name*) (verify: node --test tests/delegate/instructions.test.ts tests/delegate/run.test.ts tests/go/questions.test.ts tests/backlog/provider.test.ts)
+- [ ] 1.4 [medium] In a `version: 4` file, a present, non-null `delegate.review` or `delegate.step` makes both `instructions` commands exit 2 for any `--for`, ask no resolver, and name on stderr the file, each old key and its new key, or the bare entry when it holds no old key. `review run` and `step run` still ignore it (specs: *delegate-instructions*, *An old guidance key stops instructions*; *delegate-config*, scenario *run ignores an old guidance key*) (verify: node --test tests/delegate/instructions.test.ts tests/delegate/run.test.ts tests/delegate/step.test.ts)
+
+## 2. Help text [depends-on: 1]
+
+- [ ] 2.1 [parallel] [easy] `lets delegate --help` shows a `version: 4` example with the new keys, says in one sentence that `delegate.review-plan` steers the plan reviewer while the review plan step's own session takes `delegate.plan` (and the same for `review-build` and `build`), and points to the README's *Set up delegation*. Each `instructions --help` lists the key for each of its intents, built from the table in 1.2, and `lets go questions --help` shows `version: 4` (specs: *delegate-config*, *The help and the resolvers guide point to the table*) (verify: node --test tests/lets/delegate/cli.test.ts tests/go/questions.test.ts)
+
+## 3. The README and the resolvers guide [depends-on: 1]
+
+- [ ] 3.1 [parallel] [medium] A contract test, `tests/contracts/guidance-table.test.ts`, fails naming each key when the README's *Set up delegation* table lacks a row for a key in the table from 1.2, or has a row for a key `lets` does not read. Then the README gets that table (the key, the session it steers, the command and `--for` that read it, the skill that runs it, a sensible value as ledger row D7 says, and the sentence that guidance only ranks and filters the listed models), and both config examples move to `version: 4` and the new keys (spec: *delegate-config*, *The README explains every guidance key*) (verify: node --test tests/contracts/guidance-table.test.ts tests/contracts/links.test.ts)
+- [ ] 3.2 [parallel] [easy] `docs/resolvers.md` shows `version: 4`, and *The step's guidance* names the keys a step reads, says in one sentence how `delegate.review-plan` and `delegate.plan` differ, and links to `../README.md#set-up-delegation` (verify: node --test tests/contracts/links.test.ts)
+
+## 4. The skills [depends-on: 1]
+
+- [ ] 4.1 [parallel] [easy] In `skills/lets-go/SKILL.md` (*Run a step*), the guidance comes from `delegate.shape.guidance`, `delegate.plan.guidance` or `delegate.build.guidance`, the review plan step reads `delegate.plan` and the review build step reads `delegate.build`, and `delegate.review-plan` and `delegate.review-build` steer the reviewers those steps start. In `skills/lets-go/references/epic-run.md`, the story run reads `delegate.story.guidance` (spec: *lets-go*, *Each step runs through lets delegate step*) (verify: ! grep -rnE 'delegate\.(step|review)\.' skills/lets-go)
+- [ ] 4.2 [parallel] [easy] `lets-review-plan` names `delegate.review-plan.guidance`, `lets-review-build` names `delegate.review-build.guidance`, and `lets-review-pr` names both, as the source of the reviewer's guidance (verify: ! grep -rnE 'delegate\.(step|review)\.' skills/lets-review-plan skills/lets-review-build skills/lets-review-pr)
+
+## 5. Integration [depends-on: 2, 3, 4]
+
+- [ ] 5.1 [easy] No source text outside the rename code and its tests still names an old guidance key or `version: 3` as valid: check `README.md`, `docs/`, `skills/`, `lets/src/` and `schemas/`, and run the project's three checks (verify: pnpm test && nix flake check && mise run check)
+
+## Deviations Ledger
+
+<!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
