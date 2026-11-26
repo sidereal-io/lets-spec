@@ -7,10 +7,10 @@ import { fakeIo } from '../kit/fixtures/fake-io.ts';
 
 const TRICKY = 'Say "hi".\nIt\'s fine.';
 const DIR = '/r/.workspace/lets-delegate';
-const startInput = { cwd: '/r', name: 'fix-login', prompt: TRICKY, family: 'claude', model: null } as const;
+const runInput = { cwd: '/r', name: 'fix-login', prompt: TRICKY, family: 'claude', model: null, effort: 'high' } as const;
 
 test('run is refused: no resolver started a session, so use a subagent', async () => {
-  await assert.rejects(createAdapter(fakeIo()).run({ ...startInput, effort: 'high' }, { timeoutMs: 1000 }), (error) => {
+  await assert.rejects(createAdapter(fakeIo()).run(runInput, { timeoutMs: 1000 }), (error) => {
     assert.ok(error instanceof Refused);
     assert.match(error.message, /no resolver/);
     assert.match(error.message, /subagent\./);
@@ -21,33 +21,11 @@ test('run is refused: no resolver started a session, so use a subagent', async (
 
 test('run starts no process, even with every executor on PATH', async () => {
   const io = fakeIo({ commands: ['codex', 'claude', 'agy'] });
-  await assert.rejects(createAdapter(io).run({ ...startInput, effort: 'high' }, { timeoutMs: 1000 }), Refused);
+  await assert.rejects(createAdapter(io).run(runInput, { timeoutMs: 1000 }), Refused);
   assert.deepEqual(io.calls, []);
 });
 
-test('start saves the prompt in .workspace/lets-delegate under the cwd, and hands it back with where it is saved', async () => {
-  const io = fakeIo();
-  assert.deepEqual(await createAdapter(io).start!(startInput), {
-    instructions: `Start any agent in /r and give it this prompt, which is also saved in .workspace/lets-delegate/fix-login.prompt.md:\n\n${TRICKY}`,
-  });
-  assert.equal(io.files.get(`${DIR}/fix-login.prompt.md`), TRICKY);
-});
-
-test('start answers the same whichever model it is given', async () => {
-  const bare = await createAdapter(fakeIo()).start!(startInput);
-  for (const model of [{ family: 'gpt', model: 'gpt-6-luna' }, { family: 'gemini', model: null }] as const) {
-    assert.deepEqual(await createAdapter(fakeIo()).start!({ ...startInput, ...model }), bare, model.family);
-  }
-});
-
-test('start answers the same, and starts no process, whichever CLIs are on PATH', async () => {
-  const bare = await createAdapter(fakeIo({ commands: [] })).start!(startInput);
-  const io = fakeIo({ commands: ['codex', 'claude', 'agy', 't3', 'some-tool'] });
-  assert.deepEqual(await createAdapter(io).start!(startInput), bare);
-  assert.deepEqual(io.calls, []);
-});
-
-const stepInput = { ...startInput, name: 'plan-x', effort: 'high' } as const;
+const stepInput = { ...runInput, name: 'plan-x' } as const;
 
 test('step saves the prompt in .workspace/lets-delegate under the cwd', async () => {
   const io = fakeIo();

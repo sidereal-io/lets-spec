@@ -28,7 +28,7 @@ import { dirname, join, resolve } from 'node:path';
 import { configDir } from '../../config-dir.ts';
 import { exitCodeOf, Refused, SessionFailed, SpawnError, TimeoutError } from '../kit/errors.ts';
 import { withoutEffort } from '../kit/families.ts';
-import type { Adapter, RunInput, StartInput, StepInput } from '../kit/adapter.ts';
+import type { Adapter, RunInput, StepInput } from '../kit/adapter.ts';
 import type { Db, Io } from '../kit/io.ts';
 import type { Handle, ModelString } from '../kit/adapter.ts';
 import { FAMILIES } from '../kit/families.ts';
@@ -460,7 +460,7 @@ export function createAdapter(io: Io): Adapter {
 
   // Launch a thread for the request. A null effort is a start's, which
   // sends no effort option.
-  async function launchThread({ name, prompt, cwd, family, model }: StartInput, { effort }: { effort: Effort | null }): Promise<Handle> {
+  async function launchThread({ name, prompt, cwd, family, model }: Omit<RunInput, 'effort'>, { effort }: { effort: Effort | null }): Promise<Handle> {
     const { origin } = runningServer();
     // The main checkout, even when cwd is a linked worktree.
     const repoRoot = resolve(await git(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir']), '..');
@@ -591,10 +591,6 @@ export function createAdapter(io: Io): Adapter {
 
     async step(input: StepInput, { timeoutMs }) {
       return session(input, timeoutMs, () => ({}));
-    },
-
-    async start(input: StartInput) {
-      return launchThread(input, { effort: null });
     },
 
     // Archives the thread on ok. A failure throws, and the resolver reports it.

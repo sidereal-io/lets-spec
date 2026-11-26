@@ -3,9 +3,6 @@
 // Each step runs the same way in the CLI's write mode, with the user's own
 // rights. Revived from lets's old built-in default resolver.
 //
-// A handoff needs a session a person can work in. cli has no start, so it
-// declines, and the next resolver in the chain answers.
-//
 // The child is started by this process, so it gets this process's
 // environment without the session markers.
 import { join } from 'node:path';
@@ -145,7 +142,7 @@ export function createAdapter(io: Io): Adapter {
     },
 
     // A review runs the family's CLI read-only, and a step in its write
-    // mode. cli has no start.
+    // mode.
     run: (input, options) => execute(input, options, 'read-only'),
     step: (input, options) => execute(input, options, 'write'),
 

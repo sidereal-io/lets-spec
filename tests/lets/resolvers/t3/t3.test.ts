@@ -8,7 +8,7 @@ import {
   baseDir, buildLaunch, catalogueOf, createAdapter, defaultModel, dispatch, findProject, isAncestor, launch, readCatalogue, readFinalMessage, request,
   optionsFromCatalogue, readRun, readRuntime, readToken, t3ModelSelection,
 } from '../../../../lets/src/resolvers/t3/t3.ts';
-import type { RunInput, StartInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
+import type { RunInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
 import { fakeIo } from '../kit/fixtures/fake-io.ts';
 
 const SCHEMA = readFileSync(new URL('./fixtures/t3-schema.sql', import.meta.url), 'utf8');
@@ -39,9 +39,9 @@ function database() {
 // The adapter closes each handle it opens; keep the in-memory one alive.
 const shared = (db: DatabaseSync): Db => ({ prepare: (sql: string) => db.prepare(sql), close() {} }) as Db;
 
-function addProject(db: DatabaseSync, { id = 'p1', title = 'lets-spec', root = '/r', selection = null as string | null } = {}) {
-  db.prepare(`insert into projection_projects (project_id, title, workspace_root, scripts_json, created_at, updated_at, default_model_selection_json)
-    values (?, ?, ?, '[]', 'now', 'now', ?)`).run(id, title, root, selection);
+function addProject(db: DatabaseSync, { id = 'p1', title = 'lets-spec', root = '/r' } = {}) {
+  db.prepare(`insert into projection_projects (project_id, title, workspace_root, scripts_json, created_at, updated_at)
+    values (?, ?, ?, '[]', 'now', 'now')`).run(id, title, root);
 }
 // A thread of project p1. T3 records its worktree in the payload; a null
 // worktreePath is the project's root, and payload replaces the whole payload.
@@ -987,9 +987,9 @@ test('run is refused when t3 is not running', async () => {
 // checkout, a checkout of /r's repository. t3 answers each request over the
 // WebSocket with LAUNCHED, which names thread T, and logs it.
 function launchingIo(db: DatabaseSync, log: Log, {
-  projectDefault = null as string | null, sleep = async () => {}, statuses = [200, 200], checkout = {} as Parameters<typeof inCheckout>[0],
+  sleep = async () => {}, statuses = [200, 200], checkout = {} as Parameters<typeof inCheckout>[0],
 } = {}) {
-  addProject(db, { root: '/r', selection: projectDefault });
+  addProject(db, { root: '/r' });
   return fakeIo({
     env: {},
     files: RUNNING,
@@ -1001,34 +1001,6 @@ function launchingIo(db: DatabaseSync, log: Log, {
   });
 }
 const launched = (log: Log) => (log[1][1] as { payload: ReturnType<typeof buildLaunch> }).payload;
-
-const startInput: StartInput = { name: 'fix-login', prompt: 'PROMPT', cwd: '/r/sub', family: 'gpt', model: 'gpt-6-luna' };
-
-// Start a session, and answer the model selection t3 was sent.
-async function startedSelection(input: Partial<StartInput>, options: { projectDefault?: string | null } = {}) {
-  const log: Log = [];
-  await createAdapter(launchingIo(database(), log, options)).start!({ ...startInput, ...input });
-  return launched(log).modelSelection;
-}
-
-test('start launches a default-mode thread, and returns its handle', async () => {
-  const log: Log = [];
-  const handle = await createAdapter(launchingIo(database(), log)).start!(startInput);
-  assert.deepEqual(handle, { kind: 'thread', id: 'T', origin: ORIGIN });
-  assert.equal(launched(log).interactionMode, 'default');
-  assert.equal(launched(log).title, 'fix-login');
-});
-
-test('a start runs the request\'s model, not the project default, with no effort option', async () => {
-  const selection = await startedSelection({ family: 'gpt', model: 'gpt-6-luna' },
-    { projectDefault: '{"instanceId":"claudeAgent","model":"claude-opus-5-5","options":[]}' });
-  assert.deepEqual(selection, { instanceId: 'codex', model: 'gpt-6-luna', options: [] });
-});
-
-test('a gemini start sends the model as given, with no effort option', async () => {
-  assert.deepEqual(await startedSelection({ family: 'gemini', model: 'gemini-3.8-flash' }),
-    { instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] });
-});
 
 // Run a review from cwd, in checkout, and answer the launch t3 was sent.
 async function reviewedFrom(cwd: string, checkout: Parameters<typeof inCheckout>[0]) {
@@ -1044,12 +1016,6 @@ test('a review from a linked worktree runs in the worktree, on its branch, in th
   const launch = await reviewedFrom('/w/fix-login', { top: '/w/fix-login', branch: 'fix-login' });
   assert.deepEqual(launch.workspaceStrategy, { type: 'existing_worktree', worktreePath: '/w/fix-login', branch: 'fix-login' });
   assert.equal(launch.projectId, 'p1');
-});
-
-test('a handoff from a linked worktree runs in the worktree, on its branch', async () => {
-  const log: Log = [];
-  await createAdapter(launchingIo(database(), log, { checkout: { top: '/w/fix-login', branch: 'fix-login' } })).start!({ ...startInput, cwd: '/w/fix-login' });
-  assert.deepEqual(launched(log).workspaceStrategy, { type: 'existing_worktree', worktreePath: '/w/fix-login', branch: 'fix-login' });
 });
 
 test('a review from the main checkout runs in the project\'s root, on its branch', async () => {
