@@ -1,47 +1,23 @@
 // lets go records <name>: print the record each step of a change left in
-// Git and in the pull request, so lets-go fills its Skip lines from one
-// read. Reads only, and decides nothing about whether a step is done. No
+// Git and in the pull request, whether each step is done, and which records
+// disagree, so lets-go walks its step table from one read. Reads only. No
 // process access here; everything comes through deps.
 import { guarded } from '../delegate/guarded.ts';
 import type { Deps, Io } from '../io.ts';
 import { EXIT, SpawnError, UsageError } from '../resolvers/kit/errors.ts';
+import { exec, failed, oneLine, type Run, runner } from './read.ts';
+import { disagreements, done, type Facts } from './walk.ts';
 
-type Run = (cmd: string, args: string[]) => Promise<string>;
-
-const READ_TIMEOUT_MS = 60_000;
 const NO_PR = /no pull requests found/i;
 
-// A runner for cmd in cwd: its stdout, or a SpawnError that names it.
-function runner(io: Pick<Io, 'execFile'>, cwd: string): Run {
-  return async (cmd, args) => {
-    const result = await io.execFile(cmd, args, { cwd, timeoutMs: READ_TIMEOUT_MS });
-    if (result.code === 0) return result.stdout;
-    const command = `${cmd} ${args.slice(0, 2).join(' ')}`;
-    throw new SpawnError(`${command}: ${failure(result, command)}`);
-  };
-}
-
-function failure(result: { stderr: string; code: number | null; timedOut?: boolean; signal?: string }, command: string): string {
-  if (result.timedOut) return `timed out after ${READ_TIMEOUT_MS / 1000} seconds`;
-  if (result.signal) return `killed by ${result.signal}`;
-  const message = oneLine(result.stderr);
-  return message || (result.code === null ? `${command.split(' ')[0]} could not start` : `exited ${result.code}`);
-}
-
-// text on one line, so guarded prints one line on stderr.
-function oneLine(text: string): string {
-  return text.trim().replace(/\s*\n\s*/g, ' ');
-}
-
-type PullRequest = { number: number; body: string };
+type PullRequest = { number: number; body: string; state: string; isDraft: boolean };
 
 // The branch's pull request, or null when gh finds none.
 async function pullRequest(io: Pick<Io, 'execFile'>, cwd: string, name: string): Promise<PullRequest | null> {
-  const args = ['pr', 'view', name, '--json', 'number,body'];
-  const result = await io.execFile('gh', args, { cwd, timeoutMs: READ_TIMEOUT_MS });
+  const result = await exec(io, cwd)('gh', ['pr', 'view', name, '--json', 'number,body,state,isDraft']);
   if (result.code !== 0) {
     if (!result.timedOut && NO_PR.test(result.stderr)) return null;
-    throw new SpawnError(`gh pr view: ${failure(result, 'gh pr view')}`);
+    throw failed('gh pr view', result);
   }
   let value: unknown;
   try {
@@ -49,11 +25,11 @@ async function pullRequest(io: Pick<Io, 'execFile'>, cwd: string, name: string):
   } catch {
     value = null;
   }
-  const { number, body } = (value ?? {}) as Partial<PullRequest>;
-  if (!Number.isInteger(number) || typeof body !== 'string') {
-    throw new SpawnError(`gh pr view printed something other than JSON with a whole-number number and a string body: ${oneLine(result.stdout).slice(0, 200)}`);
+  const { number, body, state, isDraft } = (value ?? {}) as Partial<PullRequest>;
+  if (!Number.isInteger(number) || typeof body !== 'string' || typeof state !== 'string' || typeof isDraft !== 'boolean') {
+    throw new SpawnError(`gh pr view printed something other than JSON with a whole-number number, a string body, a string state and a boolean isDraft: ${oneLine(result.stdout).slice(0, 200)}`);
   }
-  return { number: number as number, body };
+  return { number: number as number, body, state, isDraft };
 }
 
 type StepRecord = { commit: string; date: string };
@@ -116,12 +92,12 @@ async function reviewPlanRecord(io: Pick<Io, 'execFile'>, git: Run, root: string
   if (pr === null) return null;
   const review = planReview(pr.body);
   if (review === null || !HASH.test(review.sha)) return null;
-  const found = await io.execFile('git', ['rev-parse', '--verify', '--quiet', '--end-of-options', `${review.sha}^{commit}`], { cwd: root, timeoutMs: READ_TIMEOUT_MS });
+  const found = await exec(io, root)('git', ['rev-parse', '--verify', '--quiet', '--end-of-options', `${review.sha}^{commit}`]);
   // --quiet makes a missing commit exit 1 with no output; a timeout or a
   // signal also exits 1, and is a failed read, not a missing commit.
   const missing = found.code === 1 && !found.timedOut && !found.signal && found.stdout.trim() === '' && found.stderr.trim() === '';
   if (missing) return null;
-  if (found.code !== 0) throw new SpawnError(`git rev-parse: ${failure(found, 'git rev-parse')}`);
+  if (found.code !== 0) throw failed('git rev-parse', found);
   const date = (await git('git', ['log', '-1', '--format=%as', found.stdout.trim()])).trim();
   return { commit: review.sha, date, pr: pr.number, verdict: review.verdict };
 }
@@ -143,7 +119,10 @@ export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'st
       build: await lastCommit(git, 'M', `${change}/tasks.md`),
       'review-build': archived === null ? null : { ...archived, pr: pr?.number ?? null },
     };
-    deps.stdout(`${JSON.stringify(records)}\n`);
+    const facts: Facts = { name };
+    const answers = done(facts);
+    const line = { ...records, done: answers, disagreements: disagreements(facts, answers), 'pull-request': pr?.state ?? null };
+    deps.stdout(`${JSON.stringify(line)}\n`);
     return EXIT.ok;
   }, 'lets go: ');
 }

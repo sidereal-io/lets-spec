@@ -1,5 +1,6 @@
 // lets go records, run as a program in a temporary Git repository, with a
-// stand-in gh on PATH that answers `pr view` from a table. Each commit sets
+// stand-in gh on PATH that answers `pr view` from a table, and a stand-in
+// openspec that answers `instructions apply` with a fixed state. Each commit sets
 // its author and committer dates, and each expected short hash is read back
 // from the repository, so no hash is hard-coded.
 import assert from 'node:assert/strict';
@@ -17,10 +18,16 @@ const noPr = (name = NAME): StandInRow => ({
   stderr: `no pull requests found for branch "${name}"\n`, code: 1,
 });
 
-/** gh's answer for a branch whose pull request is `number`, with `body`. */
-const pr = (number: number, body: string, name = NAME): StandInRow => ({
+/** gh's answer for a branch whose pull request is `number`, with `body`: open and ready for review, unless `more` says otherwise. */
+const pr = (number: number, body: string, name = NAME, more: { state?: string; isDraft?: boolean } = {}): StandInRow => ({
   args: ['pr', 'view', name], prefix: true,
-  stdout: `${JSON.stringify({ number, body })}\n`,
+  stdout: `${JSON.stringify({ number, body, state: 'OPEN', isDraft: false, ...more })}\n`,
+});
+
+/** openspec's answer to `instructions apply`: the change state `state`. */
+const changeState = (state: string, more: Record<string, unknown> = {}): StandInRow => ({
+  args: ['instructions', 'apply'], prefix: true,
+  stdout: `${JSON.stringify({ state, ...more })}\n`,
 });
 
 interface Repo {
@@ -29,6 +36,10 @@ interface Repo {
   gh: StandIn;
   /** Replaces the stand-in `gh`'s table with `rows`, for a body that names a commit made after the repository. */
   answer(rows: StandInRow[]): void;
+  /** The stand-in `openspec`, as the last `state` left it. It says `ready` until then. */
+  openspec: StandIn;
+  /** Replaces the stand-in `openspec`'s table with `rows`. */
+  state(rows: StandInRow[]): void;
   /** Writes `files`, and commits them, authored on `author` and committed on `committer` (the author date when absent). Returns the short hash. */
   commit(message: string, files: Record<string, string>, author: string, committer?: string): string;
   /** Moves `from` to `to` with `git mv`, and commits it on `date`. Returns the short hash. */
@@ -47,6 +58,7 @@ function repo(t: TestContext, rows: StandInRow[]): Repo {
   const root = tempDir(t);
   const bin = tempDir(t);
   let gh = standIn(bin, 'gh', rows);
+  let openspec = standIn(bin, 'openspec', [changeState('ready')]);
   const run = (env: Record<string, string>, ...args: string[]) => {
     const result = spawnSync('git', args, { cwd: root, env: pinnedEnv(env), encoding: 'utf8' });
     assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
@@ -61,6 +73,8 @@ function repo(t: TestContext, rows: StandInRow[]): Repo {
     root,
     get gh() { return gh; },
     answer(next) { gh = standIn(bin, 'gh', next); },
+    get openspec() { return openspec; },
+    state(next) { openspec = standIn(bin, 'openspec', next); },
     commit(message, files, author, committer) {
       for (const [path, text] of Object.entries(files)) {
         mkdirSync(dirname(join(root, path)), { recursive: true });
@@ -90,21 +104,57 @@ function printed(result: LetsResult): Record<string, unknown> {
 }
 
 describe('a new change', () => {
-  test('a change with no commit, no archive and no pull request prints four null records', async (t) => {
+  test('a new change with no commit, no archive and no pull request prints four null records, nothing done and no disagreement', async (t) => {
     const r = repo(t, [noPr()]);
     const result = await r.records();
     assert.equal(result.code, 0, result.output);
     assert.equal(result.stderr, '');
-    assert.equal(result.stdout, '{"plan":null,"review-plan":null,"build":null,"review-build":null}\n');
+    assert.equal(result.stdout, '{"plan":null,"review-plan":null,"build":null,"review-build":null,'
+      + '"done":{"plan":false,"review-plan":false,"build":false,"review-build":false},"disagreements":[],"pull-request":null}\n');
   });
 
-  test('the command leaves the tree, HEAD and the pull request as they were', async (t) => {
+  test('a new change: the command leaves the tree, HEAD and the pull request as they were', async (t) => {
     const r = repo(t, [noPr()]);
+    r.commit('docs: brainstorm', { [`openspec/changes/${NAME}/proposal.md`]: 'p\n' }, '2026-11-02');
     const head = git(r.root, 'rev-parse', 'HEAD').stdout;
     printed(await r.records());
     assert.equal(git(r.root, 'status', '--porcelain').stdout, '');
     assert.equal(git(r.root, 'rev-parse', 'HEAD').stdout, head);
+    assert.equal(r.gh.calls().length, 1);
     for (const call of r.gh.calls()) assert.deepEqual(call.slice(0, 2), ['pr', 'view']);
+    for (const call of r.openspec.calls()) assert.deepEqual(call.slice(0, 2), ['instructions', 'apply']);
+  });
+
+  test('a new change: gh is asked for the number, body, state and draft flag in one call', async (t) => {
+    const r = repo(t, [noPr()]);
+    printed(await r.records());
+    assert.deepEqual(r.gh.calls(), [['pr', 'view', NAME, '--json', 'number,body,state,isDraft']]);
+  });
+});
+
+describe('pull-request key', () => {
+  for (const state of ['OPEN', 'MERGED', 'CLOSED']) {
+    test(`the pull-request key is ${state} when gh says the state is ${state}`, async (t) => {
+      const r = repo(t, [pr(167, '', NAME, { state })]);
+      const records = printed(await r.records());
+      assert.equal(records['pull-request'], state);
+      assert.deepEqual(Object.keys(records), ['plan', 'review-plan', 'build', 'review-build', 'done', 'disagreements', 'pull-request']);
+    });
+  }
+
+  test('the pull-request key is null when gh finds no pull request', async (t) => {
+    const r = repo(t, [noPr()]);
+    assert.equal(printed(await r.records())['pull-request'], null);
+  });
+
+  test('the pull-request key: gh JSON without a string state or a boolean isDraft fails', async (t) => {
+    for (const value of [{ number: 167, body: '', isDraft: false }, { number: 167, body: '', state: 'OPEN', isDraft: 'no' }]) {
+      const r = repo(t, [{ args: ['pr', 'view'], prefix: true, stdout: `${JSON.stringify(value)}\n` }]);
+      const result = await r.records();
+      assert.equal(result.code, 4, result.output);
+      assert.equal(result.stdout, '');
+      assert.match(result.stderr, /^lets go: gh pr view[^\n]*\n$/);
+    }
   });
 });
 
