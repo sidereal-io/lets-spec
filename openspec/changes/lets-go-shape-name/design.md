@@ -90,6 +90,14 @@ never disagree on what counts as a word.
   which ignores the locale, and keep the characters that match
   `/[\p{L}\p{N}]/u`. This is today's rule: letters and digits in any
   script.
+- The slug is cut to its first 50 code points, with a hyphen left at
+  the end dropped. Words are split only on white space, so an idea with
+  no spaces, such as a pasted URL or a sentence in Japanese, is one
+  word, and today's rule would put all of it in the file name. Fifty
+  code points are at most 200 bytes in UTF-8, so the longest file,
+  `idea-<slug>-<hash>-shape-answers.yaml`, stays under the 255-byte
+  limit of ext4 and APFS. The hash still covers every word, so the cut
+  never makes two ideas share a name.
 - An idea with no words is rejected with
   `lets go: an idea needs at least one letter or digit`, through the
   same `lets go: ` prefix that `lets go questions` uses.
@@ -100,6 +108,9 @@ never disagree on what counts as a word.
   Each has an argument parser that rejects a second use, which exits 2
   with Commander's message, as other `lets` options do.
 - `--issue` takes the key unchanged and checks nothing about its form.
+  An epic's `Input:` line can hold an issue's URL; `lets-go` passes the
+  number at the end of that URL, never the URL, because a `/` in the
+  name would make the answers path a folder.
   ADR-025 makes a key opaque to everything but its backlog provider,
   and `lets-go` only passes keys that `lets backlog` printed.
 - The action checks that exactly one option was given. If not, it
@@ -123,8 +134,10 @@ never disagree on what counts as a word.
 - *Read the report*, after an `epic #<parent>` line: `--issue <parent>`.
 
 The four prompt-file checks go, and so do the section *The shape step's
-name* and the `<slug>` placeholder. The `<shape-name>` row says the
-command sets it.
+name* and the `<slug>` placeholder. The `<shape-name>` row's *Where
+the run sets it* cell names the parts that run the command: *Read the
+request*, *Check the issue*, *Find the input's discovery* and *Read the
+report*. The spec requires a part or section there, not a command.
 
 ### The go command's summary
 
@@ -145,9 +158,9 @@ longer covers both subcommands.
 - [This repository's own `lets-go` keeps the old rule until the next
   release] → Expected for every skill change here. Nothing in the old
   rule depends on the new command.
-- [The new name makes file names longer] → 9 characters more. The names
-  stay well under file-system limits, because the slug is capped at five
-  words.
+- [The new name makes file names longer] → 9 characters more. The slug
+  is cut at 50 code points, so a name stays under file-system limits even
+  for an idea with no spaces.
 
 ## Migration & Rollback
 
