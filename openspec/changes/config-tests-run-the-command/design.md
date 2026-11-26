@@ -219,7 +219,7 @@ tests above.
 | guidanceFor gives the guidance for a step | existing *a step's guidance comes from delegate.step* |
 | guidanceFor gives a step no guidance from handoff | I12 |
 | guidanceFor keeps a multi-line block whole | existing *a multi-line block keeps its lines* |
-| guidanceFor gives null when any level is missing | I2 runs print `guidance: null`; I8; existing *guidance for another intent, or for another strategy, is null* |
+| guidanceFor gives null when any level is missing | I2 runs print `guidance: null`; I8; existing *guidance for another intent, or for another strategy, is null*; for no lets config at all, existing *with no config, step instructions prints one JSON line from subagent* in `tests/lets/delegate/cli.test.ts` |
 | guidanceFor rejects a bad level | I9; existing *bad guidance for the intent is exit 2* |
 | guidanceFor ignores a bad entry for another intent or strategy | existing *a bad entry for another intent, or for another strategy, is not checked* |
 | an invalid config is a usage error that names the file and the bad value | I4 |
