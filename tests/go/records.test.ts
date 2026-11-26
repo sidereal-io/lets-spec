@@ -25,7 +25,10 @@ const pr = (number: number, body: string, name = NAME): StandInRow => ({
 
 interface Repo {
   root: string;
+  /** The stand-in `gh`, as the last `answer` left it. */
   gh: StandIn;
+  /** Replaces the stand-in `gh`'s table with `rows`, for a body that names a commit made after the repository. */
+  answer(rows: StandInRow[]): void;
   /** Writes `files`, and commits them, authored on `author` and committed on `committer` (the author date when absent). Returns the short hash. */
   commit(message: string, files: Record<string, string>, author: string, committer?: string): string;
   /** Moves `from` to `to` with `git mv`, and commits it on `date`. Returns the short hash. */
@@ -41,7 +44,7 @@ interface Repo {
 function repo(t: TestContext, rows: StandInRow[]): Repo {
   const root = tempDir(t);
   const bin = tempDir(t);
-  const gh = standIn(bin, 'gh', rows);
+  let gh = standIn(bin, 'gh', rows);
   const run = (env: Record<string, string>, ...args: string[]) => {
     const result = spawnSync('git', args, { cwd: root, env: pinnedEnv(env), encoding: 'utf8' });
     assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
@@ -54,7 +57,8 @@ function repo(t: TestContext, rows: StandInRow[]): Repo {
   run(dated('2026-11-01'), 'commit', '--quiet', '-m', 'chore: start');
   return {
     root,
-    gh,
+    get gh() { return gh; },
+    answer(next) { gh = standIn(bin, 'gh', next); },
     commit(message, files, author, committer) {
       for (const [path, text] of Object.entries(files)) {
         mkdirSync(dirname(join(root, path)), { recursive: true });
@@ -195,4 +199,84 @@ describe('review-build record', () => {
     writeFileSync(join(r.root, ARCHIVE, 'tasks.md'), '- [x] 1.1 a\n');
     assert.equal(printed(await r.records())['review-build'], null);
   });
+});
+
+describe('review-plan record', () => {
+  /** A body with a summary, then a `## Plan review` section that holds `lines`. */
+  const planReview = (...lines: string[]) => ['## Summary', '', 'Closes #265', '', '## Plan review', '', ...lines, ''].join('\n');
+
+  /**
+   * A repository with one planned change, whose tasks.md commit is
+   * authored 2026-11-04 and committed 2026-11-20, and whose pull request
+   * #167 has the body `body(sha)`. Returns the review-plan record it prints.
+   */
+  async function reviewPlan(t: TestContext, body: (sha: string) => string): Promise<{ record: unknown; sha: string }> {
+    const r = repo(t, []);
+    const sha = r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-04', '2026-11-20');
+    r.answer([pr(167, body(sha))]);
+    return { record: printed(await r.records())['review-plan'], sha };
+  }
+
+  test('the review-plan record holds the reviewed commit, its author date, the pull request and the verdict', async (t) => {
+    const { record, sha } = await reviewPlan(t, (sha) => planReview(`Reviewed: ${sha}`, '- **Verdict:** APPROVE'));
+    assert.deepEqual(record, { commit: sha, date: '2026-11-04', pr: 167, verdict: 'APPROVE' });
+  });
+
+  test('the review-plan record keeps a full hash as written', async (t) => {
+    const r = repo(t, []);
+    r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-04');
+    const full = git(r.root, 'rev-parse', 'HEAD').stdout.trim();
+    r.answer([pr(167, planReview(`Reviewed: ${full}`, '- **Verdict:** APPROVE'))]);
+    assert.equal((printed(await r.records())['review-plan'] as { commit: string }).commit, full);
+  });
+
+  test('the review-plan record trims the spaces around each value', async (t) => {
+    const { record, sha } = await reviewPlan(t, (sha) => planReview(`Reviewed:  ${sha}  `, '- **Verdict:**  REQUEST_CHANGES '));
+    assert.deepEqual(record, { commit: sha, date: '2026-11-04', pr: 167, verdict: 'REQUEST_CHANGES' });
+  });
+
+  test('the review-plan record reads the Plan review section, not a Code review section before it', async (t) => {
+    const { record, sha } = await reviewPlan(t, (sha) => ['## Code review', '', 'Reviewed: 9f00ba1', '- **Verdict:** REJECT', '',
+      '## Plan review', '', `Reviewed: ${sha}`, '- **Verdict:** APPROVE', ''].join('\n'));
+    assert.deepEqual(record, { commit: sha, date: '2026-11-04', pr: 167, verdict: 'APPROVE' });
+  });
+
+  test('the review-plan record is null when only a Code review section follows an empty Plan review section', async (t) => {
+    const { record } = await reviewPlan(t, (sha) => ['## Plan review', '', 'Pending.', '',
+      '## Code review', '', `Reviewed: ${sha}`, '- **Verdict:** APPROVE', ''].join('\n'));
+    assert.equal(record, null);
+  });
+
+  test('the review-plan record is null when the body has only a Code review section', async (t) => {
+    const { record } = await reviewPlan(t, (sha) => ['## Code review', '', `Reviewed: ${sha}`, '- **Verdict:** APPROVE', ''].join('\n'));
+    assert.equal(record, null);
+  });
+
+  test('the review-plan record is null with no pull request', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-04');
+    assert.equal(printed(await r.records())['review-plan'], null);
+  });
+
+  test('the review-plan record is null when the section has no verdict line', async (t) => {
+    const { record } = await reviewPlan(t, (sha) => planReview(`Reviewed: ${sha}`));
+    assert.equal(record, null);
+  });
+
+  test('the review-plan record is null when the section has no Reviewed line', async (t) => {
+    const { record } = await reviewPlan(t, () => planReview('- **Verdict:** APPROVE'));
+    assert.equal(record, null);
+  });
+
+  test('the review-plan record is null when a line holds nothing after its start', async (t) => {
+    const { record } = await reviewPlan(t, () => planReview('Reviewed:  ', '- **Verdict:** APPROVE'));
+    assert.equal(record, null);
+  });
+
+  for (const value of ['HEAD', '--all', '0000000']) {
+    test(`the review-plan record is null for Reviewed: ${value}`, async (t) => {
+      const { record } = await reviewPlan(t, () => planReview(`Reviewed: ${value}`, '- **Verdict:** APPROVE'));
+      assert.equal(record, null);
+    });
+  }
 });
