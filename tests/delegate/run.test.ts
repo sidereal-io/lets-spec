@@ -10,6 +10,7 @@ import { dirname, join } from 'node:path';
 import { describe, test } from 'node:test';
 import { agy, claude, codex, git, type LetsResult, snapshot, unstartable } from '../support/lets.ts';
 import { delegateRepo, PROMPT } from './repo.ts';
+import { stepRun } from './steps.ts';
 
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
 const CLI_THEN_SUBAGENT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
@@ -457,6 +458,69 @@ describe('review run', () => {
     const result = await repo.run(review());
     assert.equal(metadata(result).gitClean, true);
     assert.equal(result.stdout, FINDINGS);
+  });
+});
+
+// When the default, subagent, is asked. PATH holds no node in any of
+// these runs, so each also shows the default needs only lets's own Node.
+describe('the default', () => {
+  const instructions = ['delegate', 'review', 'instructions', '--for', 'code'];
+  const savedPrompt = (cwd: string) => join(cwd, '.workspace', 'lets-delegate', 'build-x.prompt.md');
+  const resolverOf = (result: LetsResult) => {
+    assert.equal(result.code, 0, result.output);
+    return JSON.parse(result.stdout).resolver;
+  };
+
+  test('with no chain in the config, subagent answers', async (t) => {
+    for (const user of [undefined, 'version: 3\n', 'version: 3\ndelegate:\n  review:\n    code:\n      guidance: Prefer claude.\n']) {
+      const repo = delegateRepo(t, { user });
+      assert.equal(resolverOf(await repo.run(instructions)), 'subagent', String(user));
+    }
+  });
+
+  test('a resolver that declines leaves the answer to subagent after it', async (t) => {
+    // No CLI on PATH, so cli declines.
+    const repo = delegateRepo(t, { user: CLI_THEN_SUBAGENT });
+    assert.equal(resolverOf(await repo.run(instructions)), 'subagent');
+  });
+
+  test('a chain without subagent never asks it: a step is exit 2, and saves no prompt', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    failed(await repo.run(stepRun()), 2);
+    assert.equal(existsSync(savedPrompt(repo.cwd)), false);
+  });
+
+  test('with no node on PATH, subagent saves a step\'s prompt and is exit 3, naming itself', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent] }\n' });
+    const result = await repo.run(stepRun());
+    failed(result, 3);
+    assert.match(result.stderr, /subagent/);
+    assert.equal(readFileSync(savedPrompt(repo.cwd), 'utf8'), PROMPT);
+  });
+
+  test('an empty chain declines a step: exit 2, naming the config', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [] }\n' });
+    const result = await repo.run(stepRun());
+    failed(result, 2);
+    assert.match(result.stderr, /every resolver declined/);
+    assert.ok(result.stderr.includes(repo.userConfig), result.stderr);
+  });
+
+  test('a bad entry after subagent stops a step with exit 2, and saves no prompt', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent, /opt/r/old-resolver] }\n' });
+    const result = await repo.run(stepRun());
+    failed(result, 2);
+    assert.ok(result.stderr.includes('/opt/r/old-resolver'), result.stderr);
+    assert.equal(existsSync(savedPrompt(repo.cwd)), false);
+  });
+
+  test('a chain that declines names the user\'s lets config when the repository\'s sets no delegate', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [] }\n', repo: 'version: 3\n' });
+    const result = await repo.run(stepRun());
+    failed(result, 2);
+    assert.match(result.stderr, /every resolver declined/);
+    assert.ok(result.stderr.includes(repo.userConfig), result.stderr);
+    assert.ok(!result.stderr.includes(repo.repoConfig), result.stderr);
   });
 });
 
