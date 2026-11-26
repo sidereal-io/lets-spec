@@ -151,8 +151,9 @@ message:
 
 The stand-ins' rows for step 7 name the models the listings give, so
 the test does not assert the options' values: it passes them on. If
-step 6 printed other options, or another order, step 7 would call a CLI
-with arguments no row has, and that CLI would exit 127.
+step 6 printed another model, step 7 would call a CLI with arguments no
+row has. That CLI would exit 127, which `lets` takes as a refusal, and
+the check of that CLI's calls would fail.
 
 At the end, the test checks (D4):
 
@@ -160,10 +161,13 @@ At the end, the test checks (D4):
   `['In Progress']`, and it holds one claim comment, whose token is the
   one step 5 printed;
 - each family got one write-mode call, with the model step 6 listed:
-  `codex` and `agy` after their listing call, `claude` with no listing.
-  Since `step run` stops at the first model that is not refused, all
-  three calls, with `agy` answering, show that the models were tried in
-  the order given;
+  `codex` and `agy` after their listing call, `claude` with no listing;
+- the families came in the order step 6 listed them. Each CLI keeps a
+  log of its own calls only, so those logs cannot show whether `codex`
+  came before `claude`. Each write-mode row instead answers through
+  `noteFamily` in `tests/journey/tried.ts`, which appends its family to
+  a state the three CLIs share, and the test compares that list with
+  the families of `options`;
 - step 7's stdout is one JSON line whose `outcome` is `done`, and its
   record line on stderr names the family `gemini`.
 

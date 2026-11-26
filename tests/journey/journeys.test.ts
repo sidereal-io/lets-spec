@@ -7,13 +7,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { itemList, issue, issueState, json, LOOKUP_ONE, REPO } from '../backlog/github.ts';
 import { type DelegateRepo, delegateRepo, PROMPT } from '../delegate/repo.ts';
 import { agyWrite, claudeWrite, cleanUpStep, codexWrite, ending, stepRun, stepStart, untilGone } from '../delegate/steps.ts';
-import { agy, claude, codex, type LetsResult, sharedState, type StandInRow, standIn, tempDir } from '../support/lets.ts';
+import { agy, claude, codex, type LetsResult, sharedState, type StandInReply, type StandInRow, standIn, tempDir } from '../support/lets.ts';
 import { useRelease } from '../sync/project.ts';
 
 const release = useRelease();
+const TRIED_MODULE = fileURLToPath(new URL('./tried.ts', import.meta.url));
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
 
 const url = (n: number) => `https://github.com/${REPO}/issues/${n}`;
@@ -156,18 +158,25 @@ test('the story journey: sync, then ready, item and claim, then a plan step on t
   assert.deepEqual(claims.map((comment: { body: string }) => comment.body.split('Token: ')[1]), [claimed.claim]);
 
   // Each CLI answers only the write-mode call with the model its listing
-  // gives, so other options, or another order, find no row. codex and
+  // gives. A call with another model finds no row and exits 127, which
+  // lets takes as a refusal, so the calls checks below catch it. codex and
   // claude refuse, by exiting 1 having printed nothing, and agy answers.
+  // Each write notes its family in one shared state, which shows the
+  // order the CLIs were tried in.
   const session = sessionName(item.title, 'plan');
   const writes = {
     codex: codexWrite(repo.cwd, { model: 'gpt-6-luna', name: session }),
     claude: claudeWrite(),
     agy: agyWrite('high', '120m', PROMPT, 'gemini-3.8-flash-high'),
   };
+  const order = sharedState(join(tempDir(t), 'cli-state'));
+  const noting = (args: string[], family: string, reply: StandInReply): StandInRow => ({
+    args, answer: { module: TRIED_MODULE, name: 'noteFamily', data: { family, reply } },
+  });
   const clis = {
-    codex: codex(repo.standIns, [{ slug: 'gpt-6-luna', visibility: 'list' }], { rows: [{ args: writes.codex, code: 1 }] }),
-    claude: claude(repo.standIns, { rows: [{ args: writes.claude, code: 1 }] }),
-    agy: agy(repo.standIns, ['gemini-3.8-flash-high'], { rows: [{ args: writes.agy, stdout: done(`plan of ${item.key}`) }] }),
+    codex: codex(repo.standIns, [{ slug: 'gpt-6-luna', visibility: 'list' }], { rows: [noting(writes.codex, 'gpt', { code: 1 })], shared: order }),
+    claude: claude(repo.standIns, { rows: [noting(writes.claude, 'claude', { code: 1 })], shared: order }),
+    agy: agy(repo.standIns, ['gemini-3.8-flash-high'], { rows: [noting(writes.agy, 'gemini', { stdout: done(`plan of ${item.key}`) })], shared: order }),
   };
   const { options } = printed(await repo.run(['delegate', 'step', 'instructions', '--for', 'plan']), 'delegate step instructions --for plan');
   const step = stepRun({ for: 'plan', name: session, promptFile: 'p.md', effort: 'high', models: options });
@@ -178,6 +187,7 @@ test('the story journey: sync, then ready, item and claim, then a plan step on t
   assert.deepEqual(clis.codex.calls(), [['debug', 'models'], writes.codex]);
   assert.deepEqual(clis.claude.calls(), [writes.claude]);
   assert.deepEqual(clis.agy.calls(), [['models'], writes.agy]);
+  assert.deepEqual(order.read().tried, options.map((option: string) => option.split('/')[0]));
 });
 
 test('the epic-wave journey: item and waves, then a story step for each story of the first wave, waited on', async (t) => {

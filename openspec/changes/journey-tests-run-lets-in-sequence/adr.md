@@ -10,8 +10,9 @@ journeys, and the change follows each of them without changing it:
 
 - [ADR-008: The skill ranks the models, and lets tries them in order](../../../docs/decisions/ADR-008-lets-tries-the-ranked-models.md)
   is what the story journey's last check relies on: the first two
-  models are refused and the third answers, so all three calls show
-  the order (design decision 3).
+  models are refused and the third answers, and each write-mode call
+  notes its family in one shared list, which shows the order (design
+  decision 3).
 - [ADR-006: A resolver reports the models it can run, and the caller chooses one](../../../docs/decisions/ADR-006-the-caller-chooses-the-model.md)
   is the join the story journey tests between `step instructions`,
   whose `options` it reads, and `step run`, which gets them as
