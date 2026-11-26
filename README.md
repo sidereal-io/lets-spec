@@ -706,7 +706,7 @@ have your project's CI run `mise exec -- lets sync --check` on pull requests.
 This section is for you if you want to work on Let's Spec itself.
 
 Enter the dev shell with `nix develop`, or run `mise install`. Both give
-you Node 26, pnpm, bats, `jq`, `yq` and the OpenSpec CLI. Then run
+you Node 26, pnpm and the OpenSpec CLI. Then run
 `pnpm install` once.
 
 ### Layout
@@ -725,7 +725,7 @@ you Node 26, pnpm, bats, `jq`, `yq` and the OpenSpec CLI. Then run
 | `skills/` | The authored skills, one `lets-*` folder each: the entry points, and the flow skills the schemas call |
 | `schemas/` | The OpenSpec schemas, each with its templates |
 | `overlays/` | The rules fragment and the files `lets sync` creates in a project. Each flow has its own `openspec/config.yaml`, in `openspec/config.d/<schema>.yaml` |
-| `tests/` | `sync/`: black-box tests of `lets sync`, which run it as a program in a temporary git repository. `backlog/`: black-box tests of `lets backlog`, which run it as a program with a stand-in `gh`. `delegate/`: black-box tests of the `lets delegate` instructions, `review run`, `handoff run`, `step run`, `step start` and `step wait` commands, which run `lets` in a temporary git repository with stand-in `codex`, `claude` and `agy`, and start real background steps. `go/`: black-box tests of `lets go questions`, which run it in a temporary git repository with real lets config files. `release/`: black-box tests of the release build and the `lets` bundle. `openspec/`: tests of each schema under the real OpenSpec CLI on `PATH`. `contracts/`: Node checks that each command, link, skill, template, `gh` command and `lets backlog` field or value a text names is real: the file, heading, skill or command is there, and `lets backlog --help` prints the field or value. `lets/`: unit tests for `lets` and each resolver, run with fakes. `support/`: the helpers the tests share. |
+| `tests/` | `sync/`: black-box tests of `lets sync`, which run it as a program in a temporary git repository. `backlog/`: black-box tests of `lets backlog`, which run it as a program with a stand-in `gh`. `delegate/`: black-box tests of the `lets delegate` instructions, `review run`, `handoff run`, `step run`, `step start` and `step wait` commands, which run `lets` in a temporary git repository with stand-in `codex`, `claude` and `agy`, and start real background steps. `journey/`: tests that run several `lets` commands in sequence, as `lets-go` does, and feed each one what the last one printed. `go/`: black-box tests of `lets go questions`, which run it in a temporary git repository with real lets config files. `release/`: black-box tests of the release build and the `lets` bundle. `openspec/`: tests of each schema under the real OpenSpec CLI on `PATH`. `contracts/`: Node checks that each command, link, skill, template, `gh` command and `lets backlog` field or value a text names is real: the file, heading, skill or command is there, and `lets backlog --help` prints the field or value. `lets/`: unit tests for `lets` and each resolver, run with fakes. `support/`: the helpers the tests share. |
 | `.github/workflows/` | `ci.yml` runs `nix flake check`, `mise run check` and a mise smoke test; `release.yml` publishes a release when a `v*` tag is pushed |
 
 ### Releases
@@ -744,11 +744,10 @@ sets up sample projects. In the dev shell:
 
 | Command | What it runs |
 |---|---|
-| `pnpm test` | The Node tests, the type check and the bats tests |
+| `pnpm test` | The Node tests and the type check |
 | `pnpm test:backlog` | The `lets backlog` tests alone |
 | `pnpm check` | The type check alone: `tsc --noEmit` |
 | `pnpm build` | The `lets` bundle, into `lets/dist/lets` |
-| `bats tests` | The bats tests alone |
 
 Node runs the TypeScript source directly, so you do not need to build
 before you test. With mise, `mise run test` runs `pnpm test`, and

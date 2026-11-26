@@ -19,8 +19,8 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/determinate-nix-action@v3
 
-      # Runs the bats and Node tests, builds the generated skills, sets
-      # up a project with the commands, and evaluates the flake-parts module.
+      # Runs the Node tests, builds the generated skills, sets up a
+      # project with the commands, and evaluates the flake-parts module.
       - name: Flake check
         run: nix flake check
 
