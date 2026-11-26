@@ -3,7 +3,7 @@
 // PATH. Command-specific fixtures live beside their tests, not here.
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { accessSync, chmodSync, constants, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import type { TestContext } from 'node:test';
@@ -42,9 +42,19 @@ export interface RunOptions {
   timeoutMs?: number;
 }
 
+/** What `letsPackage` puts beside the copied package, where lets looks for it. */
+export interface LetsPackageOptions {
+  /** The text of `release.json`. No file when absent. A string, so a test can write one that is not JSON. */
+  releaseJson?: string;
+  /** Each flow's release folder, by flow name, linked as `releases/<flow>`. */
+  releases?: Record<string, string>;
+}
+
 export interface RunLetsOptions extends RunOptions {
   /** The folder `standIn` wrote to. It goes first on `PATH`. */
   standIns?: string;
+  /** The folder of the lets package whose `bin/lets` runs, such as one `letsPackage` made. `<repo>/lets` when absent. */
+  lets?: string;
 }
 
 /** One answer of a stand-in, given to the call whose arguments equal `args`. */
@@ -59,6 +69,8 @@ export interface StandInRow {
 export interface StandIn {
   /** Each call's argument list, in the order the calls came. Empty before the first call. */
   calls(): string[][];
+  /** The folder each call ran in, in the order the calls came. Empty before the first call. */
+  folders(): string[];
 }
 
 /**
@@ -138,10 +150,63 @@ export function run(program: string, args: string[], options: RunOptions): Promi
 }
 
 /**
- * Runs `lets/bin/lets <args>` with this Node, through `run`, with
- * `options.standIns` first on `PATH` and `options.env` on top. Resolves
- * and rejects as `run` does; the message then names the command and the
- * folder.
+ * Copies the lets package, `lets/bin`, `lets/src` and `lets/package.json`,
+ * into a new temporary folder removed after `t`, with `node_modules`
+ * linked to `lets/node_modules`. lets reads `release.json` and
+ * `releases/<flow>` beside its package, and the source tree has neither,
+ * so a test that needs them runs this copy through `RunLetsOptions.lets`.
+ * Writes `release.json` when `options.releaseJson` is set, and links each
+ * of `options.releases` as `releases/<flow>`. Returns the copy's folder.
+ * Throws when `lets/node_modules` is missing, and says to run pnpm install.
+ */
+export function letsPackage(t: TestContext, options: LetsPackageOptions = {}): string {
+  const source = join(repo, 'lets');
+  const modules = join(source, 'node_modules');
+  if (!existsSync(modules)) throw new Error(`${modules} is missing, so a copy of lets cannot run: run pnpm install`);
+  const dir = join(tempDir(t), 'lets');
+  for (const part of ['bin', 'src', 'package.json']) cpSync(join(source, part), join(dir, part), { recursive: true });
+  // node_modules holds links into the pnpm store, so link it rather than copy it.
+  symlinkSync(modules, join(dir, 'node_modules'));
+  if (options.releaseJson !== undefined) writeFileSync(join(dir, 'release.json'), options.releaseJson);
+  for (const [flow, release] of Object.entries(options.releases ?? {})) {
+    mkdirSync(join(dir, 'releases'), { recursive: true });
+    symlinkSync(resolve(release), join(dir, 'releases', flow));
+  }
+  return dir;
+}
+
+/**
+ * Makes a new folder, removed after `t`, holding a link to each of
+ * `programs` as found on this process's `PATH`. Set `PATH` to the folder
+ * to run lets with only those programs, so no OpenSpec CLI is found
+ * whatever the machine has installed. Returns the folder. Throws, naming
+ * the program, when one is not on `PATH`.
+ */
+export function pathWith(t: TestContext, programs: string[]): string {
+  const dir = tempDir(t);
+  const folders = (process.env.PATH ?? '').split(delimiter).filter((folder) => folder !== '');
+  for (const name of programs) {
+    const found = folders.map((folder) => join(folder, name)).find(isExecutable);
+    if (found === undefined) throw new Error(`${name} is not on PATH, so pathWith cannot link it`);
+    symlinkSync(resolve(found), join(dir, name));
+  }
+  return dir;
+}
+
+function isExecutable(path: string): boolean {
+  try {
+    accessSync(path, constants.X_OK);
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Runs `lets/bin/lets <args>`, or `<options.lets>/bin/lets` when that is
+ * set, with this Node, through `run`, with `options.standIns` first on
+ * `PATH` and `options.env` on top. Resolves and rejects as `run` does;
+ * the message then names the command and the folder.
  */
 export function runLets(args: string[], options: RunLetsOptions): Promise<LetsResult> {
   const env: EnvChanges = {};
@@ -150,7 +215,8 @@ export function runLets(args: string[], options: RunLetsOptions): Promise<LetsRe
     const path = process.env.PATH;
     env.PATH = path ? `${options.standIns}${delimiter}${path}` : options.standIns;
   }
-  return run(process.execPath, [ENTRY, ...args], { cwd: options.cwd, env: { ...env, ...options.env }, timeoutMs: options.timeoutMs });
+  const entry = options.lets === undefined ? ENTRY : join(options.lets, 'bin', 'lets');
+  return run(process.execPath, [entry, ...args], { cwd: options.cwd, env: { ...env, ...options.env }, timeoutMs: options.timeoutMs });
 }
 
 /**
@@ -211,7 +277,7 @@ export function buildRelease(out: string, schemas: string[], skills: string[]): 
 
 /**
  * Writes an executable program called `name` into `dir`, which must
- * exist. Each call logs its arguments, then answers from the first row of
+ * exist. Each call logs its arguments and the folder it ran in, then answers from the first row of
  * `table` whose `args` equals the call's argument list. A call that
  * matches no row exits 127 and says so on standard error. Throws when
  * `dir` cannot be written.
@@ -230,7 +296,7 @@ export function standIn(dir: string, name: string, table: StandInRow[]): StandIn
   writeFileSync(program, `#!${process.execPath}
 const fs = process.getBuiltinModule('node:fs');
 const args = process.argv.slice(2);
-fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify(args) + '\\n');
+fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args, cwd: process.cwd() }) + '\\n');
 const row = JSON.parse(fs.readFileSync(${JSON.stringify(tableFile)}, 'utf8'))
   .find((row) => row.args.length === args.length && row.args.every((arg, i) => arg === args[i]));
 if (row === undefined) {
@@ -243,10 +309,12 @@ if (row === undefined) {
 }
 `);
   chmodSync(program, 0o755);
+  const logged = (): { args: string[]; cwd: string }[] => existsSync(log)
+    ? readFileSync(log, 'utf8').split('\n').filter((line) => line !== '').map((line) => JSON.parse(line))
+    : [];
   return {
-    calls: () => existsSync(log)
-      ? readFileSync(log, 'utf8').split('\n').filter((line) => line !== '').map((line) => JSON.parse(line) as string[])
-      : [],
+    calls: () => logged().map((call) => call.args),
+    folders: () => logged().map((call) => call.cwd),
   };
 }
 

@@ -28,6 +28,11 @@ export const fixtureSkills = ['lets-build', 'lets-shape', 'lets-verify-contracts
 export interface Project {
   /** The project's root folder. */
   path: string;
+  /**
+   * The folder of the project's stand-ins, first on `PATH`. A test
+   * replaces the `openspec` stand-in with `standIn(p.bin, 'openspec', rows)`.
+   */
+  bin: string;
   /** The text of a file, by its path from the root. Throws when it is missing. */
   read(file: string): string;
   /** Writes a file, by its path from the root, making its folders. */
@@ -37,9 +42,11 @@ export interface Project {
   /**
    * Runs `lets sync <args>` with `WORKFLOW_RELEASE` set to the file's
    * release, unless `env` sets it, and the stand-in `openspec` on `PATH`.
-   * Runs in the root, unless `cwd` names another folder.
+   * Runs in the root, unless `where.cwd` names another folder, and runs
+   * the lets package in `where.lets`, such as one `letsPackage` made,
+   * when it is set.
    */
-  sync(args?: string[], env?: EnvChanges, cwd?: string): Promise<LetsResult>;
+  sync(args?: string[], env?: EnvChanges, where?: { cwd?: string; lets?: string }): Promise<LetsResult>;
   /**
    * Runs `lets sync` once, so the project has its files and a test sees
    * only the problem it sets up. Rejects, with lets's output, unless it
@@ -102,10 +109,11 @@ export function project(t: TestContext): Project {
   const init = git(root, 'init', '--quiet');
   if (init.code !== 0) throw new Error(`git init failed: ${init.stderr}`);
   writeFileSync(join(root, 'openspec', 'config.yaml'), 'schema: lets-standard\n');
-  const sync = (args: string[] = [], env: EnvChanges = {}, cwd = root) =>
-    runLets(['sync', ...args], { cwd, standIns: bin, env: { WORKFLOW_RELEASE: fileRelease(), ...env } });
+  const sync = (args: string[] = [], env: EnvChanges = {}, where: { cwd?: string; lets?: string } = {}) =>
+    runLets(['sync', ...args], { cwd: where.cwd ?? root, lets: where.lets, standIns: bin, env: { WORKFLOW_RELEASE: fileRelease(), ...env } });
   return {
     path: root,
+    bin,
     read: (file) => readFileSync(join(root, file), 'utf8'),
     write: (file, text) => {
       mkdirSync(dirname(join(root, file)), { recursive: true });
