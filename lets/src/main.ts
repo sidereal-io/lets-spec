@@ -470,8 +470,8 @@ stepCommand
 
 const go = program
   .command('go')
-  .summary('settings for the lets-go skill')
-  .description('Read the settings the lets-go skill uses.');
+  .summary('helpers for the lets-go skill')
+  .description('Read the settings the lets-go skill uses, and name its steps.');
 
 go
   .command('questions')

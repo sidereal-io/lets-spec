@@ -145,7 +145,7 @@ reads as it always has.
 | `<path>` | A story's git worktree in an epic run: `.workspace/lets-go/worktrees/<name>` in the epic run's checkout for a worktree the epic run creates, or the path `git worktree list --porcelain` prints for one it reuses | [Claim](#claim) or [The story's worktree](#the-storys-worktree) |
 | `<shape-name>` | The shape step's name: the `name` that `lets go shape-name` prints for the step's input | [Read the request](#read-the-request) for an idea, [Check the issue](#check-the-issue) for an issue, [Find the input's discovery](references/shape.md#find-the-inputs-discovery) for the input an epic's `Input:` line names, and [Read the report](#read-the-report) for the inputs whose answers it removes |
 | `<claim>` | The unique token of this session's claim | [Claim](#claim), from the command's `claim` field |
-| `<idea>` | The idea, in the user's words | [Read the request](#read-the-request), or, for an epic's stopped discovery, the epic's `Input:` line in [Run the shape step](#run-the-shape-step) |
+| `<idea>` | The idea, in the user's words | [Read the request](#read-the-request), or, for an epic's stopped discovery, the epic's `Input:` line in [Find the input's discovery](references/shape.md#find-the-inputs-discovery) and [Run the shape step](#run-the-shape-step) |
 | `<word>` | The one word left of the request, before `lets backlog key` says whether it names an issue | [Read the request](#read-the-request) |
 | `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs, or `shape` in [Run the shape step](#run-the-shape-step) |
 | `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
@@ -1301,7 +1301,7 @@ files. For every step but shape, it is `<name>`, a hyphen and `<step>`:
 the review plan step runs with `--for review-plan` and
 `--name <name>-review-plan`. For shape, it is `<shape-name>-shape`: the
 shape step runs with `--for shape` and `--name <shape-name>-shape`, such
-as `--name idea-fix-letssync-quiet-output-shape`.
+as `--name idea-fix-letssync-quiet-output-ef93442d-shape`.
 
 ## Run a step
 
