@@ -18,6 +18,11 @@ export type Facts = {
   // The change state openspec printed: null when it was not read, because
   // there is no change folder or there is an archive folder.
   state: string | null;
+  // The schema: line of the change's .openspec.yaml, then of the first
+  // archive folder's; null when neither file names one.
+  changeSchema: string | null;
+  // The schema: line of openspec/config.yaml, or null.
+  flowSchema: string | null;
 };
 
 // Each step's answer, by the first rule that matches: an archived change is

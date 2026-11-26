@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, test, type TestContext } from 'node:test';
-import { git, type LetsResult, pinnedEnv, runLets, type StandIn, type StandInRow, standIn, tempDir } from '../support/lets.ts';
+import { git, type LetsResult, pinnedEnv, runLets, type StandIn, type StandInRow, standIn, tempDir, unstartable } from '../support/lets.ts';
 
 const NAME = 'lets-go-chore';
 
@@ -32,6 +32,8 @@ const changeState = (state: string, more: Record<string, unknown> = {}): StandIn
 
 interface Repo {
   root: string;
+  /** The folder of the stand-ins, first on `PATH`. */
+  bin: string;
   /** The stand-in `gh`, as the last `answer` left it. */
   gh: StandIn;
   /** Replaces the stand-in `gh`'s table with `rows`, for a body that names a commit made after the repository. */
@@ -71,6 +73,7 @@ function repo(t: TestContext, rows: StandInRow[]): Repo {
   run(dated('2026-11-01'), 'commit', '--quiet', '-m', 'chore: start');
   return {
     root,
+    bin,
     get gh() { return gh; },
     answer(next) { gh = standIn(bin, 'gh', next); },
     get openspec() { return openspec; },
@@ -490,11 +493,63 @@ describe('the command fails', () => {
     const sha = r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-04');
     const bin = tempDir(t);
     standIn(bin, 'gh', [pr(167, `## Plan review\n\nReviewed: ${sha}\n- **Verdict:** APPROVE\n`)]);
+    standIn(bin, 'openspec', [changeState('ready')]);
     const real = spawnSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).stdout.trim();
     // The stand-in kills itself for the commit lookup, and hands every other call to the real git.
     writeFileSync(join(bin, 'git'), `#!/bin/sh\nif [ "$1" = rev-parse ] && [ "$2" = --verify ]; then kill -KILL $$; fi\nexec '${real}' "$@"\n`, { mode: 0o755 });
     failed(await runLets(['go', 'records', NAME], { cwd: r.root, standIns: bin }), 4, 'git rev-parse', 'SIGKILL');
   });
+
+  /** A repository whose change folder holds a committed tasks.md, so lets go records reads the change state. */
+  function planned(t: TestContext, rows: StandInRow[] = [noPr()]): Repo {
+    const r = repo(t, rows);
+    r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+    return r;
+  }
+
+  test('openspec fails: a non-zero exit fails with its error', async (t) => {
+    const r = planned(t);
+    r.state([{ args: ['instructions', 'apply'], prefix: true, stderr: 'Change not found\n', code: 1 }]);
+    failed(await r.records(), 4, 'openspec instructions', 'Change not found');
+  });
+
+  test('openspec fails: an openspec that cannot start fails, naming openspec', async (t) => {
+    const r = planned(t);
+    unstartable(r.bin, 'openspec');
+    // Only the stand-ins and git on PATH, so no real openspec is found after the one that cannot start.
+    failed(await runLets(['go', 'records', NAME], { cwd: r.root, standIns: r.bin, onlyStandIns: true }), 4, 'openspec');
+  });
+
+  for (const stdout of ['not json\n', '{"state":3}\n', 'null\n', '["ready"]\n']) {
+    test(`openspec fails: output that is not JSON with a string state fails: ${stdout.trim()}`, async (t) => {
+      const r = planned(t);
+      r.state([{ args: ['instructions', 'apply'], prefix: true, stdout }]);
+      failed(await r.records(), 4, 'openspec instructions apply');
+    });
+  }
+
+  test('openspec fails: a change state it does not know fails, naming the state and the instruction on one line', async (t) => {
+    const r = planned(t);
+    r.state([changeState('no_tasks', { instruction: 'Run openspec status\nfirst.' })]);
+    failed(await r.records(), 4, 'no_tasks', 'Run openspec status first.');
+  });
+
+  const unreadable = { skip: process.getuid?.() === 0 && 'root reads any file' };
+  for (const path of [`${CHANGE}/.openspec.yaml`, 'openspec/config.yaml']) {
+    test(`a ${path} that exists but cannot be read fails, naming it`, unreadable, async (t) => {
+      const r = planned(t);
+      r.commit('docs: schema', { [path]: 'schema: lets-standard\n' }, '2026-11-03');
+      const file = join(r.root, path);
+      chmodSync(file, 0o000);
+      let result: LetsResult;
+      try {
+        result = await r.records();
+      } finally {
+        chmodSync(file, 0o644);
+      }
+      failed(result, 4, path);
+    });
+  }
 
   test('a folder outside any Git repository fails, naming git', async (t) => {
     const outside = tempDir(t);

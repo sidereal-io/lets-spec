@@ -63,10 +63,42 @@ function archiveFolders(io: Pick<Io, 'isDir' | 'listDirs'>, root: string, name: 
   return folders.filter((folder) => DATED.test(folder) && folder.slice(11) === name).sort();
 }
 
-// The change state that openspec instructions apply prints.
+const STATES = new Set(['blocked', 'ready', 'all_done']);
+
+// The change state that openspec instructions apply prints. A state the
+// walk does not know fails, with the CLI's instruction, so lets-go can show it.
 async function changeState(openspec: Run, name: string): Promise<string> {
+  const command = 'openspec instructions apply';
   const out = await openspec('openspec', ['instructions', 'apply', '--change', name, '--json']);
-  return (JSON.parse(out) as { state: string }).state;
+  let value: unknown;
+  try {
+    value = JSON.parse(out);
+  } catch {
+    value = null;
+  }
+  const { state, instruction } = (value !== null && typeof value === 'object' && !Array.isArray(value) ? value : {}) as { state?: unknown; instruction?: unknown };
+  if (typeof state !== 'string') throw new SpawnError(`${command} printed something other than JSON with a string state: ${oneLine(out).slice(0, 200)}`);
+  if (!STATES.has(state)) {
+    const how = typeof instruction === 'string' && instruction.trim() !== '' ? `: ${oneLine(instruction)}` : '';
+    throw new SpawnError(`${command}: the change state is ${oneLine(state)}${how}`);
+  }
+  return state;
+}
+
+// The value of the first schema: line of the file at path, or null when the
+// file does not exist or has no such line. Read as lets-go reads it by hand,
+// not as YAML, so a stray character elsewhere in the file fails nothing.
+function schemaLine(io: Pick<Io, 'exists' | 'readFile'>, root: string, path: string): string | null {
+  const full = `${root}/${path}`;
+  if (!io.exists(full)) return null;
+  let text: string | null;
+  try {
+    text = io.readFile(full);
+  } catch (error) {
+    throw new SpawnError(`could not read ${path}: ${(error as Error).message}`);
+  }
+  if (text === null) throw new SpawnError(`could not read ${path}`);
+  return /^schema:\s*(\S+)/m.exec(text)?.[1] ?? null;
 }
 
 const KEBAB = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
@@ -117,7 +149,13 @@ export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'st
     const pr = await pullRequest(deps.io, root, name);
     const archives = archiveFolders(deps.io, root, name);
     const changeFolder = deps.io.isDir(`${root}/${change}`);
-    const state = changeFolder && archives.length === 0 ? await changeState(git, name) : null;
+    // The change's own file when it exists, so an archived change keeps the schema it was built with.
+    const ownSchema = `${change}/.openspec.yaml`;
+    const changeSchema = deps.io.exists(`${root}/${ownSchema}`) || archives.length === 0
+      ? schemaLine(deps.io, root, ownSchema)
+      : schemaLine(deps.io, root, `${ARCHIVE}/${archives[0]}/.openspec.yaml`);
+    const flowSchema = schemaLine(deps.io, root, 'openspec/config.yaml');
+    const state = changeFolder && archives.length === 0 ? await changeState(runner(deps.io, root), name) : null;
     // The record needs the one archive folder; two leave it null.
     const archived = archives.length === 1 ? await lastCommit(git, 'A', `${ARCHIVE}/${archives[0]}/tasks.md`) : null;
     const records = {
@@ -126,7 +164,7 @@ export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'st
       build: await lastCommit(git, 'M', `${change}/tasks.md`),
       'review-build': archived === null ? null : { ...archived, pr: pr?.number ?? null },
     };
-    const facts: Facts = { name, archives, changeFolder, state };
+    const facts: Facts = { name, archives, changeFolder, state, changeSchema, flowSchema };
     const answers = done(facts);
     const line = { ...records, done: answers, disagreements: disagreements(facts, answers), 'pull-request': pr?.state ?? null };
     deps.stdout(`${JSON.stringify(line)}\n`);
