@@ -351,9 +351,13 @@ describe('the delegate section of the lets config', () => {
     assert.deepEqual(line(run), SUBAGENT_REVIEW);
   });
 
+  // Every family CLI is on PATH, so a chain that held cli would answer from cli.
   test('a config with no delegate, a null or empty one, or no resolvers, has no chain, so subagent answers', async (t) => {
     for (const user of ['version: 3\n', 'version: 3\ndelegate:\n', 'version: 3\ndelegate: null\n', 'version: 3\ndelegate: {}\n', 'version: 3\ndelegate:\n  resolvers:\n']) {
-      assert.deepEqual(line(await instructions(t, 'review', 'code', { user })), SUBAGENT_REVIEW, user);
+      let clis: ReturnType<typeof everyCli> | undefined;
+      const run = await instructions(t, 'review', 'code', { user, standIns: (dir) => { clis = everyCli(dir); } });
+      assert.deepEqual(line(run), SUBAGENT_REVIEW, user);
+      for (const [name, stand] of Object.entries(clis!)) assert.deepEqual(stand.calls(), [], `${name} for ${user}`);
     }
   });
 
