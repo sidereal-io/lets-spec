@@ -324,11 +324,12 @@
           '';
 
         # The Node tests and the type check. The unit tests use fakes, so
-        # no harness and no real gh run here. The OpenSpec tests run the
-        # real OpenSpec CLI on each schema.
+        # no harness runs here. The OpenSpec tests run the real OpenSpec
+        # CLI on each schema. The contract checks run the real gh's --help,
+        # to see that each gh command the texts name is one it knows.
         node-tests = pkgs.runCommand "node-tests"
           {
-            nativeBuildInputs = [ pkgs.nodejs_26 pkgs.pnpm pkgs.pnpmConfigHook pkgs.git (packagesFor pkgs).openspec ];
+            nativeBuildInputs = [ pkgs.nodejs_26 pkgs.pnpm pkgs.pnpmConfigHook pkgs.git pkgs.gh (packagesFor pkgs).openspec ];
             pnpmDeps = pnpmDepsFor pkgs;
           }
           ''

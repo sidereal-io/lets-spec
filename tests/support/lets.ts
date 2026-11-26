@@ -149,6 +149,65 @@ export function run(program: string, args: string[], options: RunOptions): Promi
   });
 }
 
+/** One command of lets, as its `--help` lists it. */
+export interface LetsCommand {
+  /** The words after `lets`. Empty for `lets` itself. */
+  path: string[];
+  /** The names of its subcommands, without commander's built-in `help`. */
+  subcommands: string[];
+  /** Each option's short and long names, such as `-h` and `--help`. */
+  options: string[];
+}
+
+/** Every command of lets, keyed by its path joined with spaces; `''` is `lets` itself. */
+export type LetsCommandTree = Map<string, LetsCommand>;
+
+/**
+ * Runs `lets --help`, then `lets <path> --help` for each command it lists,
+ * level by level, the commands of a level in parallel. Leaves out
+ * commander's built-in `help [command]`, whose help is the root's again.
+ * Rejects when a `--help` run exits other than 0, naming the command.
+ */
+export async function letsCommandTree(): Promise<LetsCommandTree> {
+  const tree: LetsCommandTree = new Map();
+  let level: string[][] = [[]];
+  while (level.length > 0) {
+    const commands = await Promise.all(level.map(readLetsCommand));
+    for (const command of commands) tree.set(command.path.join(' '), command);
+    level = commands.flatMap((command) => command.subcommands.map((name) => [...command.path, name]));
+  }
+  return tree;
+}
+
+async function readLetsCommand(path: string[]): Promise<LetsCommand> {
+  const result = await runLets([...path, '--help'], { cwd: repo });
+  if (result.code !== 0) throw new Error(`lets ${[...path, '--help'].join(' ')} exited ${result.code}:\n${result.output}`);
+  return {
+    path,
+    subcommands: helpList(result.stdout, 'Commands:')
+      .map((term) => term.split(' ')[0])
+      .filter((name) => name !== 'help'),
+    options: helpList(result.stdout, 'Options:')
+      .flatMap((term) => term.split(', ').map((name) => name.split(' ')[0])),
+  };
+}
+
+// The terms of one list in commander's help: the lines after the heading,
+// up to a blank line, that start with two spaces and then a term. A longer
+// indent carries on the description above it.
+function helpList(help: string, heading: string): string[] {
+  const lines = help.split('\n');
+  const start = lines.indexOf(heading);
+  if (start === -1) return [];
+  const terms: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (line.trim() === '') break;
+    const term = /^ {2}(\S.*?)(?: {2,}|$)/.exec(line);
+    if (term) terms.push(term[1]);
+  }
+  return terms;
+}
+
 /**
  * Copies the lets package, `lets/bin`, `lets/src` and `lets/package.json`,
  * into a new temporary folder removed after `t`, with `node_modules`
