@@ -214,3 +214,43 @@ describe('the shape prompt', () => {
     }
   });
 });
+
+const WORKTREE = '.workspace/lets-go/worktrees/story-run-child-sessions';
+
+/** The flags the story prompt requires, for #284 under #278. */
+function story(overrides: Record<string, string> = {}): string[] {
+  const values: Record<string, string> = {
+    name: 'story-run-child-sessions', issue: '284', 'issue-url': 'https://github.com/o/r/issues/284', parent: '278',
+    checkout: WORKTREE, schema: 'lets-standard', route: 'Route: lets-standard, because #284 is a Size M Story.', questions: 'auto', ...overrides,
+  };
+  return ['go', 'step-prompt', '--for', 'story', ...Object.entries(values).flatMap(([flag, value]) => [`--${flag}`, value])];
+}
+
+describe('the story prompt', () => {
+  test('its header lines, the worktree, the schema and the question mode', async (t) => {
+    const repo = promptRepo(t);
+    const prompt = printed(await repo.run(story()));
+    const [first, second] = prompt.split('\n');
+    assert.equal(first, 'You run a story run of a lets-go epic run: #284, for the change story-run-child-sessions, under #278.');
+    assert.equal(second, 'Issue: #284, https://github.com/o/r/issues/284. Branch: story-run-child-sessions. Schema: lets-standard. Route: lets-standard, because #284 is a Size M Story.');
+    const what = section(prompt, '## What to run');
+    for (const text of ['`lets-go`', 'already claimed #284', `\`${WORKTREE}\``, 'Claim nothing, route nothing']) {
+      assert.ok(what.includes(text), `${text} in ${what}`);
+    }
+    const questions = section(prompt, '## Questions');
+    assert.ok(questions.startsWith('The question mode is auto. The epic run applies it'), questions);
+    assert.ok(questions.includes('Never ask the user in\nthis session'), questions);
+    const report = section(prompt, '## The report');
+    assert.ok(report.includes('Its outcome is done, with the pull request as its first\nevidence line; needs-input'), report);
+  });
+
+  test('its sections are What to run, Questions and The report, with no Writing', async (t) => {
+    const repo = promptRepo(t);
+    assert.deepEqual(headings(printed(await repo.run(story()))), ['## What to run', '## Questions', '## The report']);
+  });
+
+  test('it needs no plain-language reference', async (t) => {
+    const repo = promptRepo(t, { reference: false });
+    printed(await repo.run(story()));
+  });
+});
