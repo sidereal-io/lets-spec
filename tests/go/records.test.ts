@@ -131,3 +131,29 @@ describe('plan record', () => {
     assert.deepEqual(printed(await r.records()).plan, { commit: sha, date: '2026-11-03' });
   });
 });
+
+describe('build record', () => {
+  test('the build record is the last commit that changed tasks.md', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n- [ ] 1.2 b\n' }, '2026-11-03');
+    r.commit('feat: a', { [`${CHANGE}/tasks.md`]: '- [x] 1.1 a\n- [ ] 1.2 b\n' }, '2026-11-04');
+    const sha = r.commit('feat: b', { [`${CHANGE}/tasks.md`]: '- [x] 1.1 a\n- [x] 1.2 b\n' }, '2026-11-05');
+    assert.deepEqual(printed(await r.records()).build, { commit: sha, date: '2026-11-05' });
+  });
+
+  test('the build record is null when no commit changed tasks.md after adding it', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+    const records = printed(await r.records());
+    assert.equal(records.build, null);
+    assert.notEqual(records.plan, null);
+  });
+
+  test('the build record is not the archive move', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('docs: tasks', { [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+    const sha = r.commit('feat: a', { [`${CHANGE}/tasks.md`]: '- [x] 1.1 a\n' }, '2026-11-05');
+    r.move('chore: archive', CHANGE, ARCHIVE, '2026-11-06');
+    assert.deepEqual(printed(await r.records()).build, { commit: sha, date: '2026-11-05' });
+  });
+});

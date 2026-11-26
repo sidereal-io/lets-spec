@@ -61,7 +61,7 @@ export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'st
     const records = {
       plan: await lastCommit(git, 'A', `${change}/tasks.md`),
       'review-plan': null,
-      build: null,
+      build: await lastCommit(git, 'M', `${change}/tasks.md`),
       'review-build': null,
     };
     deps.stdout(`${JSON.stringify(records)}\n`);
