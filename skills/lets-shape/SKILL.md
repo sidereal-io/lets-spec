@@ -208,8 +208,9 @@ At the start:
       recommendation. Never pick one yourself. When none is left, go on to the next item. Start no
       second discovery for an input that already has a parent.
    2. **The input is an empty epic.** For an issue input `#<i>`, read
-      `lets backlog item <i>`. It is an empty epic when its `kind` is
-      `Epic` and both `subIssues` and `closedSubIssues` are empty: the
+      `lets backlog item <i>`. It is an empty epic when its `kind` field is
+      `Epic` and both its `subIssues` field and its `closedSubIssues`
+      field are empty: the
       epic has no sub-issues, open or closed. Run discovery from
       [Phase 1: Ingest](#phase-1-ingest) with the epic as its parent. Ask no `Run discovery on it?`, and do not size the work. Making the
       issue an epic already decided to split the work, and the user

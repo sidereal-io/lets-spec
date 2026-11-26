@@ -23,6 +23,39 @@ nix flake check    # also builds every flow and the release folder
 mise run check     # OpenSpec validation; warnings fail too
 ```
 
+## Fields a text reads
+
+When a skill or document tells an agent to read a field or a value from
+`lets backlog` output, write it in one of two forms. Then
+[`tests/contracts/fields.test.ts`](tests/contracts/fields.test.ts)
+checks it against what `lets backlog --help` prints, and a rename in
+`lets` fails a test instead of misleading an agent.
+
+- **A field:** a code span holding the name, then the word field, as in
+  "keep its `claim` field". The word fields counts too, but only for the
+  span right before it. To have each field checked, give each its own
+  word: "the `write` field and the `message` field", not "the `write`
+  and `message` fields".
+- **A value:** one code span holding the field, a colon, one space and
+  the value, as in `result: taken` or `error: no-backlog`. A placeholder
+  value, as in `result: <result>`, names no value and is not checked.
+
+The check reads a value span only when its field is one that
+`lets backlog` prints, such as `result`, `error` or `write`. Any other
+span of that shape passes, such as `ask: true` or `skip_specs: true`.
+So a rename of the field itself is not caught there; a field span on
+the old name still fails.
+
+Leave these in plain code font, without the word field:
+
+- **Other programs' fields and values:** those of `gh`, OpenSpec,
+  `lets delegate`, `lets go questions` and step reports. Many share a
+  name with a `lets backlog` field, such as `state` or `reason`, and
+  would pass the check for the wrong reason.
+- **What the `lets backlog` help does not list:** the entries of
+  `blockedBy`, `parent` and `subIssues`, and backend values such as
+  `OPEN` or `Epic`. Review checks these.
+
 
 <!-- BEGIN lets-spec rules. lets sync rewrites this block: change lets-spec, not this text. -->
 ## Workflow
