@@ -77,7 +77,7 @@ procedure ranks it.
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
 | [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch | this session | [Read the request](#read-the-request) | `lets go questions` fails |
-| [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea; [Take up the story run](references/story-run.md#take-up-the-story-run) in a story run's child | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
+| [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea; [Take up the story run](references/story-run.md#take-up-the-story-run) in a story run's child | An idea on a change's branch, an idea `lets go shape-name` rejects, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run; [Run the epic](#run-the-epic) for any other epic on the default branch, after [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run; or the epic is a finished epic, or an epic with no stories after shaping, or its discovery stopped when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) | The discovery map has edits of its own, or the step fails or asks a settled question again |
@@ -275,15 +275,28 @@ is left of the request:
 
 | The branch | A number | An idea | Nothing |
 |---|---|---|---|
-| The default branch | The number is `<i>`. Go to [Check the issue](#check-the-issue) | With no letter or digit, stop. Otherwise go to [Start from an idea](#start-from-an-idea) | Run `next`. Its pick is `<i>`: print the `Picked` line, and go to [Check the issue](#check-the-issue). When nothing is ready, stop |
+| The default branch | The number is `<i>`. Go to [Check the issue](#check-the-issue) | Run `lets go shape-name --idea`. When it fails, stop. Otherwise go to [Start from an idea](#start-from-an-idea) | Run `next`. Its pick is `<i>`: print the `Picked` line, and go to [Check the issue](#check-the-issue). When nothing is ready, stop |
 | Another branch, `<branch>` | When the number is one of the matches, it is `<i>`: go to [Check the issue](#check-the-issue). Otherwise stop | Stop: an idea needs the default branch | When exactly one issue matches, it is `<i>`: go to [Check the issue](#check-the-issue). When none or several do, stop |
 
-With an idea on the default branch, read its characters first. When
-the idea holds no letter or digit, in any script, say that an idea
-needs at least one letter or digit, and stop, claiming nothing and
-running no step. This comes before the discovery query and the title
-search, which an idea like `???` gives nothing to work with. A letter
-in any script counts: `ログを直す` is an idea.
+With an idea on the default branch, name its shape step first. Pass
+the idea as one argument in single quotes, and write each `'` in it as
+`'\''`, as for `lets backlog key`:
+
+```bash
+lets go shape-name --idea '<idea>'
+# example
+lets go shape-name --idea 'fix lets-sync — quiet output'
+```
+
+When it exits non-zero, show the user its stderr, and stop, claiming
+nothing and running no step. For an idea with no letter or digit in
+any script, such as `???`, it says that an idea needs at least one
+letter or digit. This comes before the discovery query and the title
+search, which such an idea gives nothing to work with. Otherwise it
+prints one JSON line: keep its `name` as the idea's `<shape-name>`,
+and its `answers` as the idea's answers file. A letter in any script
+counts: `ログを直す` is an idea, and its `<shape-name>` is
+`idea-ログを直す-bffc2164`.
 
 With nothing on the default branch, run the `next` case of
 [Find the source of demand](#find-the-source-of-demand), over the
