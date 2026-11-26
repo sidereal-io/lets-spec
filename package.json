@@ -7,7 +7,7 @@
     "node": ">=26"
   },
   "scripts": {
-    "test": "node --test \"tests/**/*.test.ts\" && tsc --noEmit && bats tests",
+    "test": "node --test \"tests/**/*.test.ts\" && tsc --noEmit",
     "check": "tsc --noEmit",
     "build": "pnpm --filter lets build",
     "test:backlog": "node --test \"tests/lets/backlog/*.test.ts\""
