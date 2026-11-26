@@ -18,6 +18,8 @@ import { run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './dele
 import type { StepOptions } from './delegate/step.ts';
 import { STRATEGIES } from './delegate/strategies.ts';
 import { run as questions } from './go/questions.ts';
+import { run as shapeName } from './go/shape-name.ts';
+import type { ShapeNameOptions } from './go/shape-name.ts';
 import type { Intent, Strategy } from './delegate/strategies.ts';
 import { realIo } from './io.ts';
 import type { Deps } from './io.ts';
@@ -275,6 +277,23 @@ Exit codes:
   2  the config is not valid, go is not a mapping, or go.questions is not
      ask or auto. stderr names the file and the key.`;
 
+const GO_SHAPE_NAME_HELP = `
+Names lets-go's shape step for one input, so the skill builds no name of
+its own. Give exactly one of --issue and --idea.
+
+For --issue <i>, the name is issue-<i>, with the key unchanged: only the
+backlog provider reads a key.
+
+It reads no file, starts no session and asks no resolver, so the same
+input always gives the same line, in any folder.
+
+stdout: one JSON line, { name, answers }. name is the shape step's name.
+answers is .workspace/lets-go/<name>-shape-answers.yaml, the step's
+answers file, relative to the repository root.
+
+Exit codes:
+  0  ok`;
+
 // --timeout-minutes: a whole number of minutes.
 function wholeMinutes(value: string): number {
   if (!/^[1-9][0-9]*$/.test(value)) throw new InvalidArgumentError('Give a whole number of minutes.');
@@ -433,16 +452,29 @@ stepCommand
     process.exitCode = await stepWait({ names: name, timeoutMinutes }, realDeps());
   });
 
-program
+const go = program
   .command('go')
   .summary('settings for the lets-go skill')
-  .description('Read the settings the lets-go skill uses.')
+  .description('Read the settings the lets-go skill uses.');
+
+go
   .command('questions')
   .summary('print the default question mode')
   .description('Print the default question mode, from go.questions in the lets config.')
   .addHelpText('after', GO_QUESTIONS_HELP)
   .action(async () => {
     process.exitCode = await questions(realDeps());
+  });
+
+go
+  .command('shape-name')
+  .usage('--issue <i> | --idea <text>')
+  .summary('print the shape step\'s name and answers file')
+  .description('Print the name of lets-go\'s shape step for an issue or an idea, and the path of its answers file.')
+  .option('--issue <i>', 'the issue\'s key, as lets backlog prints it')
+  .addHelpText('after', GO_SHAPE_NAME_HELP)
+  .action(async (options: ShapeNameOptions) => {
+    process.exitCode = await shapeName(options, realDeps());
   });
 
 // lets backlog parses its own arguments, so its help and usage errors come
