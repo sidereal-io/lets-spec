@@ -283,15 +283,16 @@ writes no file: lets-go sends stdout to the prompt file it gives lets
 delegate step run. It reads neither the backlog nor the lets config, and
 runs no command but git rev-parse --show-toplevel.
 
-The steps and what each one takes:
+The steps, the story run, and what each one takes:
   shape                  --branch, --questions, and --issue with --issue-url,
                          or --idea, with --searched when the search ran
   plan, review-plan,     --name, --issue, --issue-url, --schema, --route,
   build, review-build    --questions
   story                  the same, with --parent and --checkout
 
-Every step but shape takes --blocker, --blocker-branch and --blocker-pr,
-all three or none. With them, the prompt holds a ## Stack section.
+Every step but shape, and story, takes --blocker, --blocker-branch and
+--blocker-pr, all three or none. With them, the prompt holds a ## Stack
+section.
 
 Every prompt but story's names the installed plain-language reference,
 which is this file under the repository root:
@@ -482,10 +483,10 @@ go
   .command('step-prompt')
   .summary('print the prompt for a lets-go step')
   .description('Print the prompt for one step of a lets-go run, or for an epic run\'s story run, from the values given as flags.')
-  .option('--for <step>', 'the step: shape, plan, review-plan, build, review-build or story')
+  .option('--for <step>', 'the step, or story for a story run: shape, plan, review-plan, build, review-build or story')
   .option('--name <name>', 'the change, which is also its branch (plan, review-plan, build, review-build, story)')
-  .option('--issue <i>', 'the issue\'s key, as lets backlog prints it (every step; for shape, this or --idea)')
-  .option('--issue-url <issue-url>', 'the issue\'s URL (every step that takes --issue)')
+  .option('--issue <i>', 'the issue\'s key, as lets backlog prints it (every step and story; for shape, this or --idea)')
+  .option('--issue-url <issue-url>', 'the issue\'s URL (every step, and story, that takes --issue)')
   .option('--branch <default>', 'the default branch (shape)')
   .option('--idea <idea>', 'the idea, word for word, when there is no issue yet (shape)')
   .option('--searched', 'the open issues were searched for the idea, and none is the same work (shape, with --idea)')
@@ -493,10 +494,10 @@ go
   .option('--checkout <path>', 'the story\'s worktree (story)')
   .option('--schema <schema>', 'the change\'s schema (plan, review-plan, build, review-build, story)')
   .option('--route <route line>', 'the route line, word for word (plan, review-plan, build, review-build, story)')
-  .option('--questions <mode>', 'the question mode, ask or auto (every step)')
-  .option('--blocker <blocker>', 'for a stacked story, the blocker\'s key (every step but shape)')
-  .option('--blocker-branch <blocker-branch>', 'for a stacked story, the blocker\'s branch (every step but shape)')
-  .option('--blocker-pr <blocker-pr>', 'for a stacked story, the blocker\'s pull request number (every step but shape)')
+  .option('--questions <mode>', 'the question mode, ask or auto (every step and story)')
+  .option('--blocker <blocker>', 'for a stacked story, the blocker\'s key (every step but shape, and story)')
+  .option('--blocker-branch <blocker-branch>', 'for a stacked story, the blocker\'s branch (every step but shape, and story)')
+  .option('--blocker-pr <blocker-pr>', 'for a stacked story, the blocker\'s pull request number (every step but shape, and story)')
   .addHelpText('after', GO_STEP_PROMPT_HELP)
   .action(async (options: Record<string, string | boolean | undefined>) => {
     const flags: StepPromptOptions = { for: options.for as string | undefined };

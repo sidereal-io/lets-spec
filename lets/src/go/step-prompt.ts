@@ -63,7 +63,7 @@ function checkedStep(options: StepPromptOptions): StepStrategyIntent {
   const steps = `give one of ${list(STEP_STRATEGY_INTENTS, 'or')}`;
   if (options.for === undefined) throw new UsageError(`--for is missing: ${steps}.`);
   const step = STEP_STRATEGY_INTENTS.find((name) => name === options.for);
-  if (step === undefined) throw new UsageError(`--for ${options.for} is not a step: ${steps}.`);
+  if (step === undefined) throw new UsageError(`--for ${options.for} is not a step or story: ${steps}.`);
   const given = STEP_PROMPT_FLAGS.filter((flag) => options[flag] !== undefined);
   const { required, allowed } = STEP_FLAGS[step];
   const extra = given.filter((flag) => !allowed.includes(flag));
