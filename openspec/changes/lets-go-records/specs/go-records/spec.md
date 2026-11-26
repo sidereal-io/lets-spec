@@ -90,6 +90,7 @@ The `review-plan` record SHALL be `null` in each of these cases:
 - the branch has no pull request;
 - the body has no `## Plan review` line;
 - the section has no `Reviewed: ` line, or no `- **Verdict:** ` line, or either holds nothing after its start;
+- `<sha>` is not 4 to 40 hexadecimal characters, such as `HEAD` or `--all`;
 - git cannot find a commit by `<sha>` in the repository.
 
 A `Reviewed:` line outside the section, such as the one in a **Code review** section, SHALL not be read.
@@ -120,6 +121,10 @@ A `Reviewed:` line outside the section, such as the one in a **Code review** sec
 
 #### Scenario: A reviewed value that looks like an option
 - **WHEN** the section says `Reviewed: --all` and `- **Verdict:** APPROVE`
+- **THEN** the `review-plan` record is `null`, and the command exits 0
+
+#### Scenario: A reviewed value that names no hash
+- **WHEN** the section says `Reviewed: HEAD` and `- **Verdict:** APPROVE`
 - **THEN** the `review-plan` record is `null`, and the command exits 0
 
 #### Scenario: No pull request
