@@ -800,115 +800,59 @@ In an epic run, each stop in this part ends only its story's run, as
 says.
 
 After [Set the question mode](#set-the-question-mode), on the branch
-`<name>`, read three records first, in this order:
+`<name>`, run this once from the repo root, before the first row:
 
-1. **The tree.** Run `git status --porcelain`. A line for a path outside
-   `.workspace/` means the records disagree.
-2. **The pull request.** Run:
+```bash
+lets go records <name>
+```
 
-   ```bash
-   gh pr view <name> --json number,url,state,isDraft,body
-   ```
+It reads the tree, the pull request, the archive folder, the change
+state and the schema, and prints one JSON object. Each step's record is
+under the step's key, as [The step table](#the-step-table) says. `done`
+maps each step's key to `true` or `false`. `disagreements` lists the
+records that disagree, and `pull-request` holds the pull request's
+state. The command's `--help` says how it decides each one.
 
-   When it finds none, note that the branch has no pull request, and go
-   on. A new branch has none yet. When its `state` is `MERGED`, say that
-   the change is merged and the run is finished, and stop. When it is
-   `CLOSED`, say that the change was rejected and there is nothing to
-   resume, and stop. These two stops run only when the branch still
-   exists and the run finds its issue. That happens for a stacked pull
-   request merged into the branch below it, for a pull request closed
-   without merging, and for a closed issue the user names on the default
+Act on the output in this order. These are the walk's three stops:
+
+1. **The command exits non-zero.** Show the user its stderr, and stop.
+   Run no step. A change state that the walk does not know stops here
+   too: stderr names it and holds the CLI's instruction.
+2. **`pull-request` is `MERGED` or `CLOSED`.** For `MERGED`, say that
+   the change is merged and the run is finished. For `CLOSED`, say that
+   the change was rejected and there is nothing to resume. Stop, and
+   run no step. These stops run only when the branch still exists and
+   the run finds its issue. That happens for a stacked pull request
+   merged into the branch below it, for a pull request closed without
+   merging, and for a closed issue the user names on the default
    branch. In the first two cases the issue stays open.
-3. **The archive folder.** Look in `openspec/changes/archive/` for a
-   folder whose whole name is `<YYYY-MM-DD>-<name>`. A folder whose name
-   only ends in `-<name>` belongs to another change. When the folder
-   exists, every step is done, and the records disagree if any of these
-   is true:
-   - `openspec/changes/<name>/` exists too;
-   - the pull request is missing or is a draft;
-   - the flow's schema, the `schema:` line of `openspec/config.yaml`, is
-     `lets-standard`, and the pull request's `body` has no
-     **Code review** section.
+3. **`disagreements` is not empty.** The
+   [records disagree](references/records.md#records-that-disagree).
+   Stop as that section says.
 
 Then walk [The step table](#the-step-table) from the top row.
 [Check the issue](#check-the-issue) has printed shape's line already. At
-each row, find out whether the step is done: the first of these that
-matches decides. The state is the `state` that
-`openspec instructions apply --change <name> --json` prints.
-
-- **Plan.**
-  1. When the archive folder exists, plan is done.
-  2. When `openspec/changes/<name>/` does not exist, plan is not done.
-  3. Otherwise run `openspec instructions apply --change <name> --json`,
-     and read its `state`. When the `state` is `ready` or `all_done`,
-     plan is done. When the `state` is `blocked`, plan is not done. For
-     any other `state`, show the user the CLI's `instruction`, and stop.
-
-  When `openspec/changes/<name>/brainstorm.md` exists and the branch has
-  no pull request, the records disagree. The tree is clean, so the file
-  is committed.
-- **Review plan.**
-  1. On `lets-minimal`, review plan is done.
-  2. When the archive folder exists, review plan is done. But the
-     records disagree if the pull request's `body` has no
-     **Plan review** section with a `Reviewed:` line and a
-     `- **Verdict:**` line. No step can write the section once the
-     change is archived.
-  3. Otherwise read the pull request's body again, because a step in
-     this run can have opened or changed it:
-
-     ```bash
-     gh pr view <name> --json number,body
-     ```
-
-     Review plan is done when the **Plan review** section covers the
-     plan. Follow *Check an earlier review* in the `lets-review-plan`
-     skill. Its four rules say when a new round is needed. It then says
-     when the review is finished, with the fix commits under
-     `APPROVE_WITH_CHANGES`. When no rule calls for a new round and the
-     review is finished, review plan is done. Its reads change nothing:
-     `git merge-base --is-ancestor`, `git log` and `git show`. When
-     review plan is not done, run it, whatever the state.
-- **Build.**
-  1. When the archive folder exists, build is done.
-  2. Otherwise run `openspec instructions apply --change <name> --json`
-     again, even when the plan row has run it, because a review plan
-     round can add a task to a built change. When the `state` is
-     `all_done`, build is done. When it is `blocked` or `ready`, build
-     is not done. Any other `state` stops the run, as for plan.
-- **Review build.**
-  1. When the archive folder exists, review build is done.
-  2. Otherwise review build is not done.
-
-Read a row's record when you reach the row, not before. A step that runs
-in this walk changes the records the next row reads.
+each row, read the row's answer from `done`, in the latest output of
+`lets go records <name>`: the one from before the walk, or the one from
+after the last `done` report. Run no other read to decide it. For review
+plan, the command applies *Check an earlier review* in the
+`lets-review-plan` skill, so do not apply that rule here.
 
 Then settle the row:
 
-- **Done:** the step was done before this run. Print its Skip line from
-  the table. Review plan on `lets-minimal` has a fixed line: print it,
-  read no record for it, and go on to the next row. For any other row,
-  fill the line from the row's record. Run this at the row, from the
-  repo root:
-
-  ```bash
-  lets go records <name>
-  ```
-
-  It prints one JSON object, with a record under each step's key. Take
-  the record under the row's *Step* key, and fill the Skip line from it:
-  `<date>` from its `date`, `<sha>` from its `commit`, `<pr>` from its
-  `pr` and `<verdict>` from its `verdict`. Do not run `git log`, or cut
-  a section out of the pull request's body, to fill the line.
-  - When the command exits non-zero, show the user its stderr, and
-    stop. Run no step.
-  - When the row's record is `null`, the
-    [records disagree](references/records.md#records-that-disagree).
-
-  Then go on to the next row.
-- **Not done:** run the step, as [Run a step](#run-a-step) says. Then
-  [read its report](#read-the-report). It checks a `done` report against
-  the records, and says what to print and whether the walk goes on.
+- **Done (`true`):** the step was done before this run. Print its Skip
+  line from the table, and run nothing. Review plan on `lets-minimal`
+  has a fixed line: print it, and fill nothing. For any other row, fill
+  the line from the record under the row's *Step* key, in the same
+  output: `<date>` from its `date`, `<sha>` from its `commit`, `<pr>`
+  from its `pr` and `<verdict>` from its `verdict`. Do not run
+  `git log`, or cut a section out of the pull request's body, to fill
+  the line. Then go on to the next row.
+- **Not done (`false`):** run the step, as [Run a step](#run-a-step)
+  says. Then [read its report](#read-the-report). After a `done` report,
+  it runs `lets go records <name>` again, checks the report, and says
+  what to print and whether the walk goes on. The rows after it read
+  that newer output, because the step changed the records.
 
 Next: [End of the run](#end-of-the-run), when no row is left; in an
 epic run, [Run the epic](#run-the-epic) instead, which settles the
@@ -1219,9 +1163,9 @@ plan never runs.
 
 Each row says which skill the step runs, which record shows the step
 was done, and the line to print when it was done before this run.
-`lets go records <name>` prints each record under the row's *Step* key.
-[Walk the step table](#walk-the-step-table) says when each step is
-done, and how to fill the line.
+`lets go records <name>` prints each record under the row's *Step* key,
+and says whether each step is done.
+[Walk the step table](#walk-the-step-table) says how to fill the line.
 
 | Step | Skill | Record | Skip line |
 |---|---|---|---|
@@ -1395,29 +1339,17 @@ and stop the run.
 - **`done`**: after shape, go on as
   [Run the shape step](#run-the-shape-step) says. After any other step,
   check the report against the records first. The step may have changed
-  any of them, so a read from before the step cannot answer. Read the
-  three records again, as the [walk](#walk-the-step-table) does before
-  its first row: the tree, the pull request and the archive folder.
-
-  ```bash
-  git status --porcelain
-  gh pr view <name> --json number,url,state,isDraft,body
-  ```
-
-  Apply their rules for records that disagree, then run the row's done
-  test from the walk:
-  - **Done:** print the step's `Done` line, as
+  any of them, so the output from before the step cannot answer. Run
+  `lets go records <name>` again, and act on it as the
+  [walk](#walk-the-step-table) does before its first row: its three
+  stops come first. Then read the row's answer from `done` in this
+  output:
+  - **`true`:** print the step's `Done` line, as
     [The step lines](#the-step-lines) says, and go on to the next row of
     the walk.
-  - **The records disagree:** stop, as
-    [Records that disagree](references/records.md#records-that-disagree)
-    says.
-  - **Not done:** the step failed. Its reason starts
-    `the step reported done, but`, then names the record and what it
-    holds, such as
-    `the step reported done, but the change state is blocked` or
-    `the step reported done, but the branch has no pull request`. Go on
-    as for `failed`, below.
+  - **`false`:** the step failed. Its reason is
+    `the step reported done, but lets go records <name> says it is not done`.
+    Go on as for `failed`, below.
 - **`needs-input`**: [relay its questions](#relay-the-questions). In a
   story run's child,
   [pass them up](references/story-run.md#pass-the-questions-up)
