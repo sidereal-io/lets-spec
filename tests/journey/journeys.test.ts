@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { itemList, issue, issueState, json, LOOKUP_ONE } from '../backlog/github.ts';
+import { itemList, issue, issueState, json, LOOKUP_ONE, REPO } from '../backlog/github.ts';
 import { type DelegateRepo, delegateRepo, PROMPT } from '../delegate/repo.ts';
 import { agyWrite, claudeWrite, cleanUpStep, codexWrite, ending, untilGone } from '../delegate/steps.ts';
 import { agy, claude, codex, type LetsResult, sharedState, type StandInRow, standIn, tempDir } from '../support/lets.ts';
@@ -15,6 +15,34 @@ import { useRelease } from '../sync/project.ts';
 
 const release = useRelease();
 const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
+
+const url = (n: number) => `https://github.com/${REPO}/issues/${n}`;
+const title = (n: number) => `story-${n} — outcome`;
+
+// A story on the Project, Todo, as gh project item-list prints it.
+const story = (n: number, priority: string) => ({
+  id: `PVTI_${n}`, title: title(n), kind: 'Story', priority, size: 'S', status: 'Todo',
+  content: { type: 'Issue', number: n, title: title(n), url: url(n), repository: REPO, body: '' },
+});
+
+// The exact call lets backlog item makes, so the row never answers the
+// other issue view calls on the same issue.
+const itemView = (n: number) => ['issue', 'view', String(n), '--json', 'number,title,body,url,state,assignees,parent,blockedBy,subIssues'];
+
+// gh issue view's JSON for an open issue with no assignee, parent or blocker.
+const viewed = (n: number, extra: Record<string, unknown> = {}) => ({
+  number: n, title: title(n), body: `body of ${n}`, url: url(n), state: 'OPEN', assignees: [], parent: null, blockedBy: [], subIssues: [], ...extra,
+});
+
+// The stand-in gh of the story journey: two stories ready, 149 (Must) and
+// 150 (Should), and 149 the stand-in issue that claim writes to.
+const STORY_GH: StandInRow[] = [
+  ...LOOKUP_ONE,
+  itemList([story(149, 'Must'), story(150, 'Should')]),
+  { args: ['issue', 'list', '--search', 'is:open no:assignee -is:blocked'], prefix: true, ...json([149, 150].map((n) => ({ number: n, createdAt: new Date(Date.UTC(2026, 0, 1, 0, n)).toISOString() }))) },
+  { args: itemView(149), ...json(viewed(149)) },
+  issue({ number: 149 }),
+];
 
 /** What `lets delegate step wait` prints when one of its steps ends. */
 interface Ended {
@@ -73,4 +101,20 @@ test('the story journey: sync, then ready, item and claim, then a plan step on t
 
   exited(await repo.run(['sync'], { env }), 'sync');
   exited(await repo.run(['sync', '--check'], { env }), 'sync --check');
+
+  const shared = sharedState(join(tempDir(t), 'gh-state'), issueState());
+  standIn(repo.standIns, 'gh', STORY_GH, { shared });
+  const { key } = printed(await repo.run(['backlog', 'ready']), 'backlog ready').issues[0];
+  assert.equal(key, '149');
+  const item = printed(await repo.run(['backlog', 'item', key]), `backlog item ${key}`);
+  assert.equal(item.title, title(149));
+  const claimed = printed(await repo.run(['backlog', 'claim', item.key]), `backlog claim ${item.key}`);
+  assert.equal(claimed.result, 'claimed', JSON.stringify(claimed));
+  assert.equal(typeof claimed.claim, 'string', JSON.stringify(claimed));
+
+  const state = shared.read();
+  assert.deepEqual(state.assignees, ['octocat']);
+  assert.deepEqual(state.status, ['In Progress']);
+  const claims = state.pages.flat().filter((comment: { body: string }) => comment.body.includes('Token: '));
+  assert.deepEqual(claims.map((comment: { body: string }) => comment.body.split('Token: ')[1]), [claimed.claim]);
 });
