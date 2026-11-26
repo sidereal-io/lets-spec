@@ -8,7 +8,7 @@
 
 ## 1. Contracts
 
-- [ ] 1.1 [easy] `tests/journey/journeys.test.ts` opens with a comment saying what a journey test is (D1) and that it checks the joins between commands, not each command. It imports the fixtures design decision 2 names, from `tests/sync/project.ts`, `tests/backlog/github.ts`, `tests/delegate/repo.ts`, `tests/delegate/steps.ts` and `tests/support/lets.ts` (`standIn`, `sharedState`, `tempDir`, `codex`, `claude`, `agy`), and declares its own helpers, such as one that reads the one JSON line of a result and one that turns an item's `title` into a session name (the text before ` — `), each with a doc comment on what it needs, what it gives and how it fails. Each body throws `not built yet` (verify: `pnpm check`)
+- [x] 1.1 [easy] `tests/journey/journeys.test.ts` opens with a comment saying what a journey test is (D1) and that it checks the joins between commands, not each command. It imports the fixtures design decision 2 names, from `tests/sync/project.ts`, `tests/backlog/github.ts`, `tests/delegate/repo.ts`, `tests/delegate/steps.ts` and `tests/support/lets.ts` (`standIn`, `sharedState`, `tempDir`, `codex`, `claude`, `agy`), and declares its own helpers, such as one that reads the one JSON line of a result and one that turns an item's `title` into a session name (the text before ` — `), each with a doc comment on what it needs, what it gives and how it fails. Each body throws `not built yet` (verify: `pnpm check`) (✓ `pnpm check` passed)
 
 ## 2. The story journey [depends-on: 1]
 
