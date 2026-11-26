@@ -1382,8 +1382,9 @@ On `done` or `failed`, when the step ran for an epic `#<i>` whose
 too: the `answers` that `lets go shape-name` prints for that input.
 Run it as
 [Find the input's discovery](references/shape.md#find-the-inputs-discovery)
-says: `--issue` with the issue's number, or `--idea` with the idea. A
-stopped round of that input leaves its answers, and
+says: `--issue` with the issue's number, or `--idea` with the idea.
+When it exits non-zero, that input has no answers file: remove nothing
+for it, and go on. A stopped round of that input leaves its answers, and
 [Find the input's discovery](references/shape.md#find-the-inputs-discovery)
 would find them when the run goes back to
 [Check the issue](#check-the-issue), and stop the run. On
