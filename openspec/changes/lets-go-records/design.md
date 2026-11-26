@@ -47,15 +47,15 @@ Every `git` command runs at the repository root, found with `git rev-parse --sho
 
 | Record | Read |
 |---|---|
-| `plan` | `git log -1 --diff-filter=A --format=%h%x00%as -- openspec/changes/<name>/tasks.md` |
-| `build` | `git log -1 --diff-filter=M --format=%h%x00%as -- openspec/changes/<name>/tasks.md` |
-| `review-build` | List `<root>/openspec/changes/archive/`, and keep the names that match `^\d{4}-\d{2}-\d{2}-<name>$`. With exactly one, `git log -1 --diff-filter=A --format=%h%x00%as -- openspec/changes/archive/<folder>/tasks.md`. `io.listDirs` throws when the folder is missing, as in a repository that has archived nothing, so the command checks with `io.exists` first, and a missing folder is a `null` record |
+| `plan` | `git log -1 --full-history --diff-filter=A --format=%h%x00%as -- openspec/changes/<name>/tasks.md` |
+| `build` | `git log -1 --full-history --diff-filter=M --format=%h%x00%as -- openspec/changes/<name>/tasks.md` |
+| `review-build` | List `<root>/openspec/changes/archive/`, and keep the names that match `^\d{4}-\d{2}-\d{2}-<name>$`. With exactly one, `git log -1 --diff-filter=A --format=%h%x00%as -- openspec/changes/archive/<folder>/tasks.md`. `io.listDirs` throws when the folder is missing, as in a repository that has archived nothing, so the command checks with `io.isDir` first, and a missing folder, or a file at that path, is a `null` record. A folder that cannot be read is exit 4 |
 | `review-plan` | `gh pr view <name> --json number,body`, then the section parse below, then `git rev-parse --verify --quiet --end-of-options <sha>^{commit}` and `git log -1 --format=%as <oid>` |
 | `pr` | The `number` from the same `gh pr view`, run once for both records |
 
-`git log` printing nothing is a `null` record, not a failure. `git rev-parse --verify --quiet` exits 1 and prints nothing for a commit it cannot find, which is a `null` review plan record. Any other non-zero exit from `git` is exit 4.
+`git log` printing nothing is a `null` record, not a failure. `git rev-parse --verify --quiet` exits 1 and prints nothing for a commit it cannot find, which is a `null` review plan record. A timeout or a signal also exits 1 with no output, and is exit 4. Any other non-zero exit from `git` is exit 4.
 
-These are the commands `references/records.md` gives the agent today, so the Skip lines print what they print now.
+These are the commands `references/records.md` gives the agent today, so the Skip lines print what they print now. `--full-history` is the one addition: after archive the old path is absent on both sides of a merge, and git's default simplification would follow only the first parent, so a change merged in through the second parent would have no `plan` or `build` record.
 
 ### 3. The section parse is a pure function
 
