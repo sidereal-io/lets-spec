@@ -187,8 +187,8 @@
         flows = pkgs.linkFarmFromDrvs "every-flow"
           (map (flow: (packagesFor pkgs).${flow}) (lib.attrNames flows));
 
-        # The bats tests run the scripts directly, so they need the
-        # workspace's node_modules. The smoke test then sets up a project with
+        # No bats file is left to run here, and #313 removes bats from this
+        # check's tools. The smoke test sets up a project with
         # the packaged commands, to prove the wrappers find the release, and
         # that the pinned OpenSpec CLI works with the result. The bundle has
         # no OpenSpec CLI, so the check adds the one the release records.
@@ -202,8 +202,6 @@
             cp -R ${self} repo
             chmod -R u+w repo
             (cd repo && pnpmConfigHook)
-            bats repo/tests
-
             mkdir project
             cd project
             git init --quiet
