@@ -24,9 +24,13 @@ function runner(io: Pick<Io, 'execFile'>, cwd: string): Run {
 function failure(result: { stderr: string; code: number | null; timedOut?: boolean; signal?: string }, command: string): string {
   if (result.timedOut) return `timed out after ${READ_TIMEOUT_MS / 1000} seconds`;
   if (result.signal) return `killed by ${result.signal}`;
-  // One line, so guarded prints one line on stderr.
-  const message = result.stderr.trim().replace(/\s*\n\s*/g, ' ');
+  const message = oneLine(result.stderr);
   return message || (result.code === null ? `${command.split(' ')[0]} could not start` : `exited ${result.code}`);
+}
+
+// text on one line, so guarded prints one line on stderr.
+function oneLine(text: string): string {
+  return text.trim().replace(/\s*\n\s*/g, ' ');
 }
 
 type PullRequest = { number: number; body: string };
@@ -47,7 +51,7 @@ async function pullRequest(io: Pick<Io, 'execFile'>, cwd: string, name: string):
   }
   const { number, body } = (value ?? {}) as Partial<PullRequest>;
   if (!Number.isInteger(number) || typeof body !== 'string') {
-    throw new SpawnError(`gh pr view printed something other than JSON with a whole-number number and a string body: ${result.stdout.trim().slice(0, 200)}`);
+    throw new SpawnError(`gh pr view printed something other than JSON with a whole-number number and a string body: ${oneLine(result.stdout).slice(0, 200)}`);
   }
   return { number: number as number, body };
 }
@@ -126,7 +130,7 @@ async function reviewPlanRecord(io: Pick<Io, 'execFile'>, git: Run, root: string
 export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'stderr'>): Promise<number> {
   return guarded(deps, async () => {
     // Before any read, so a name such as ../x or --all never reaches a path or gh.
-    if (!KEBAB.test(name)) throw new UsageError(`the change's name must be lower-case kebab-case, such as lets-go-chore: ${name}`);
+    if (!KEBAB.test(name)) throw new UsageError(`the change's name must be lower-case kebab-case, such as lets-go-chore: ${oneLine(name)}`);
     const root = (await runner(deps.io, deps.cwd)('git', ['rev-parse', '--show-toplevel'])).trim();
     const git = runner(deps.io, root);
     const change = `openspec/changes/${name}`;

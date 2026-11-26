@@ -357,6 +357,16 @@ describe('the command fails', () => {
     failed(await r.records(), 4, 'gh pr view', 'gh auth login');
   });
 
+  test('a name that holds a line break fails on one stderr line', async (t) => {
+    const r = repo(t, [noPr()]);
+    failed(await r.records('lets-go\nchore'), 2, 'lets-go chore');
+  });
+
+  test('gh output over several lines fails on one stderr line', async (t) => {
+    const r = repo(t, [{ args: ['pr', 'view'], prefix: true, stdout: '{\n  "number": 167\n}\n' }]);
+    failed(await r.records(), 4, 'gh pr view', '{ "number": 167 }');
+  });
+
   test('gh output that is not JSON fails', async (t) => {
     const r = repo(t, [{ args: ['pr', 'view'], prefix: true, stdout: 'not json\n' }]);
     failed(await r.records(), 4, 'gh pr view');
