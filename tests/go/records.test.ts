@@ -663,6 +663,167 @@ describe('required changes', () => {
   });
 });
 
+describe('disagreements', () => {
+  /** The disagreements a run printed. */
+  const found = async (r: Repo, name = NAME) => printed(await r.records(name)).disagreements as { row: string; found: string }[];
+  const rows = (list: { row: string }[]) => list.map((entry) => entry.row);
+
+  /**
+   * A repository whose change, on `schema`, was planned, built and
+   * archived into `ARCHIVE`, with `config` as the schema of
+   * openspec/config.yaml, or no such file when absent.
+   */
+  function archived(t: TestContext, rowsOfGh: StandInRow[], { schema = 'lets-standard', config }: { schema?: string; config?: string } = {}): Repo {
+    const r = repo(t, rowsOfGh);
+    if (config !== undefined) r.commit('chore: config', { 'openspec/config.yaml': `schema: ${config}\ncontext: |\n  x\n` }, '2026-11-02');
+    r.commit('docs: plan', { [`${CHANGE}/.openspec.yaml`]: `schema: ${schema}\n`, [`${CHANGE}/tasks.md`]: '- [ ] 1.1 a\n' }, '2026-11-03');
+    r.commit('feat: a', { [`${CHANGE}/tasks.md`]: '- [x] 1.1 a\n' }, '2026-11-05');
+    r.move('chore: archive', CHANGE, ARCHIVE, '2026-11-06');
+    return r;
+  }
+
+  /** A ready pull request #167 whose body holds a Plan review section, then a Code review section unless `codeReview` is false. */
+  const finished = (r: Repo, { codeReview = true, isDraft = false } = {}) => {
+    const sha = git(r.root, 'log', '-1', '--format=%h', '--', `${ARCHIVE}/tasks.md`).stdout.trim();
+    const body = ['## Plan review', '', `Reviewed: ${sha}`, '- **Verdict:** APPROVE', '', ...(codeReview ? ['## Code review', '', 'Reviewed: x', ''] : [])].join('\n');
+    r.answer([pr(167, body, NAME, { isDraft })]);
+  };
+
+  test('no disagreement for a clean change whose draft pull request has no Plan review section', async (t) => {
+    const { r } = reviewed(t);
+    r.answer([pr(167, 'Closes #268\n', NAME, { isDraft: true })]);
+    assert.deepEqual(await found(r), []);
+  });
+
+  test('a dirty-tree disagreement names each changed path outside .workspace/', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('docs: skill', { 'skills/lets-go/SKILL.md': 's\n' }, '2026-11-02');
+    writeFileSync(join(r.root, 'skills/lets-go/SKILL.md'), 's2\n');
+    mkdirSync(join(r.root, '.workspace'));
+    writeFileSync(join(r.root, '.workspace/notes.md'), 'n\n');
+    assert.deepEqual(await found(r), [{ row: 'dirty-tree', found: 'skills/lets-go/SKILL.md' }]);
+  });
+
+  test('no dirty-tree disagreement when only .workspace/ is untracked', async (t) => {
+    const r = repo(t, [noPr()]);
+    mkdirSync(join(r.root, '.workspace'));
+    writeFileSync(join(r.root, '.workspace/notes.md'), 'n\n');
+    assert.deepEqual(await found(r), []);
+  });
+
+  test('a dirty-tree disagreement joins several paths, and names a rename by its new path', async (t) => {
+    const r = repo(t, [noPr()]);
+    assert.equal(git(r.root, 'mv', 'README.md', 'READ.md').code, 0);
+    writeFileSync(join(r.root, 'new.md'), 'n\n');
+    assert.deepEqual(await found(r), [{ row: 'dirty-tree', found: 'READ.md, new.md' }]);
+  });
+
+  test('a change-and-archive disagreement names the change folder and each archive folder', async (t) => {
+    const r = archived(t, [pr(167, '')]);
+    r.commit('docs: again', { [`${CHANGE}/proposal.md`]: 'p\n' }, '2026-11-07');
+    const list = await found(r);
+    assert.deepEqual(list.find((entry) => entry.row === 'change-and-archive'),
+      { row: 'change-and-archive', found: `${CHANGE}/, ${ARCHIVE}/` });
+  });
+
+  test('disagreement rows come in order: dirty-tree before change-and-archive', async (t) => {
+    const r = archived(t, [pr(167, '')]);
+    r.commit('docs: again', { [`${CHANGE}/proposal.md`]: 'p\n' }, '2026-11-07');
+    writeFileSync(join(r.root, 'README.md'), 'changed\n');
+    assert.deepEqual(rows(await found(r)).slice(0, 2), ['dirty-tree', 'change-and-archive']);
+  });
+
+  test('an archive-not-ready disagreement for an archived change whose pull request is a draft', async (t) => {
+    const r = archived(t, [], { config: 'lets-standard' });
+    finished(r, { isDraft: true });
+    assert.deepEqual(await found(r), [{ row: 'archive-not-ready', found: 'isDraft: true' }]);
+  });
+
+  test('an archive-not-ready disagreement on the standard flow with no Code review section', async (t) => {
+    const r = archived(t, [], { config: 'lets-standard' });
+    finished(r, { codeReview: false });
+    assert.deepEqual(await found(r), [{ row: 'archive-not-ready', found: 'no Code review section' }]);
+  });
+
+  test('an archive-not-ready disagreement joins a draft and a missing Code review section', async (t) => {
+    const r = archived(t, [], { config: 'lets-standard' });
+    finished(r, { codeReview: false, isDraft: true });
+    assert.deepEqual(await found(r), [{ row: 'archive-not-ready', found: 'isDraft: true, no Code review section' }]);
+  });
+
+  test('no disagreement on the minimal flow with no Code review section', async (t) => {
+    const r = archived(t, [], { schema: 'lets-minimal', config: 'lets-minimal' });
+    r.answer([pr(167, 'Closes #268\n')]);
+    assert.deepEqual(await found(r), []);
+  });
+
+  test('a lets-minimal change archived in a lets-standard repository: archive-not-ready disagreement, and no archive-without-plan-review', async (t) => {
+    const r = archived(t, [], { schema: 'lets-minimal', config: 'lets-standard' });
+    r.answer([pr(167, 'Closes #268\n')]);
+    assert.deepEqual(await found(r), [{ row: 'archive-not-ready', found: 'no Code review section' }]);
+  });
+
+  test('disagreements for an archived change with no pull request: archive-not-ready, then archive-without-plan-review, and no null-record for review-plan', async (t) => {
+    const r = archived(t, [noPr()]);
+    assert.deepEqual(await found(r), [
+      { row: 'archive-not-ready', found: 'no pull request' },
+      { row: 'archive-without-plan-review', found: 'no Plan review section' },
+    ]);
+  });
+
+  test('an archive-without-plan-review disagreement when the ready pull request has a Code review section and no Plan review section', async (t) => {
+    const r = archived(t, [pr(167, 'Closes #268\n\n## Code review\n\nReviewed: x\n')]);
+    assert.deepEqual(await found(r), [{ row: 'archive-without-plan-review', found: 'no Plan review section' }]);
+  });
+
+  test('a null-record disagreement, not archive-without-plan-review, when the archived Plan review names no commit git can find', async (t) => {
+    const r = archived(t, [pr(167, '## Plan review\n\nReviewed: 0000000\n- **Verdict:** APPROVE\n\n## Code review\n\nx\n')]);
+    assert.deepEqual(await found(r), [{ row: 'null-record', found: 'review-plan' }]);
+  });
+
+  test('a brainstorm-without-pull-request disagreement for a committed brainstorm and no pull request', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('docs: brainstorm', { [`${CHANGE}/brainstorm.md`]: 'b\n' }, '2026-11-02');
+    r.state([changeState('blocked')]);
+    assert.deepEqual(await found(r), [{ row: 'brainstorm-without-pull-request', found: `${CHANGE}/brainstorm.md` }]);
+  });
+
+  test('a brainstorm not yet committed is a dirty-tree disagreement, not brainstorm-without-pull-request', async (t) => {
+    const r = repo(t, [noPr()]);
+    r.commit('docs: proposal', { [`${CHANGE}/proposal.md`]: 'p\n' }, '2026-11-02');
+    writeFileSync(join(r.root, CHANGE, 'brainstorm.md'), 'b\n');
+    r.state([changeState('blocked')]);
+    assert.deepEqual(rows(await found(r)), ['dirty-tree']);
+  });
+
+  test('a null-record disagreement for a done step whose record is null', async (t) => {
+    const r = repo(t, [pr(167, 'Closes #268\n')]);
+    // As in a shallow clone whose history starts after the commit that added tasks.md: no commit added it.
+    r.commit('docs: proposal', { [`${CHANGE}/proposal.md`]: 'p\n' }, '2026-11-02');
+    r.state([changeState('ready')]);
+    assert.deepEqual(await found(r), [{ row: 'null-record', found: 'plan' }]);
+  });
+
+  test('a null-record disagreement names review-build for two archive folders', async (t) => {
+    const r = archived(t, [], { config: 'lets-standard' });
+    r.commit('chore: archive again', { [`openspec/changes/archive/2026-11-09-${NAME}/tasks.md`]: '- [x] 1.1 a\n' }, '2026-11-09');
+    finished(r);
+    const records = printed(await r.records());
+    assert.equal(records['review-build'], null);
+    const nulls = (records.disagreements as { row: string; found: string }[]).find((entry) => entry.row === 'null-record');
+    assert.ok(nulls?.found.split(', ').includes('review-build'), JSON.stringify(records.disagreements));
+  });
+
+  test('no disagreement for a built change with no plan review: review plan is not done, and build is', async (t) => {
+    const { r } = reviewed(t, { state: 'all_done' });
+    r.commit('feat: a', { [`${CHANGE}/tasks.md`]: '- [x] 1.1 a\n- [x] 1.2 b\n' }, '2026-11-05');
+    r.answer([pr(167, 'Closes #268\n')]);
+    const records = printed(await r.records());
+    assert.deepEqual(records.disagreements, []);
+    assert.deepEqual(records.done, { plan: true, 'review-plan': false, build: true, 'review-build': false });
+  });
+});
+
 describe('the command fails', () => {
   /** Asserts exit `code`, an empty stdout and one stderr line that starts `lets go: ` and holds each of `named`. */
   function failed(result: LetsResult, code: number, ...named: string[]): void {

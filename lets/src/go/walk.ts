@@ -10,6 +10,8 @@ export type Disagreement = { row: string; found: string };
 
 export type Facts = {
   name: string;
+  // The paths git status lists outside .workspace/.
+  dirty: string[];
   // The folders in openspec/changes/archive/ whose whole name is
   // <YYYY-MM-DD>-<name>, by name.
   archives: string[];
@@ -26,6 +28,13 @@ export type Facts = {
   // Review plan's answer by the rules of Check an earlier review, for a
   // change folder with no archive folder on a schema other than lets-minimal.
   reviewPlan: boolean;
+  // The branch's pull request, or null when it has none. planReview: the
+  // body has a Plan review section with a Reviewed: and a - **Verdict:** line.
+  pr: { isDraft: boolean; codeReview: boolean; planReview: boolean } | null;
+  // HEAD's tree holds openspec/changes/<name>/brainstorm.md.
+  brainstorm: boolean;
+  // Each step's record is not null.
+  recorded: Record<Step, boolean>;
 };
 
 // Each step's answer, by the first rule that matches: an archived change is
@@ -41,6 +50,32 @@ export function done(facts: Facts): Done {
   };
 }
 
-export function disagreements(_facts: Facts, _done: Done): Disagreement[] {
-  return [];
+// The rows of lets-go's Records that disagree that match, in the table's
+// order. A branch that has diverged from origin is not here: lets-go finds
+// it when it fast-forwards the branch.
+export function disagreements(facts: Facts, answers: Done): Disagreement[] {
+  const { name, pr } = facts;
+  const change = `openspec/changes/${name}/`;
+  const archived = facts.archives.length > 0;
+  const minimal = facts.changeSchema === 'lets-minimal';
+  const found: Disagreement[] = [];
+  const add = (row: string, things: string[]) => {
+    if (things.length > 0) found.push({ row, found: things.join(', ') });
+  };
+  add('dirty-tree', facts.dirty);
+  if (archived && facts.changeFolder) add('change-and-archive', [change, ...facts.archives.map((folder) => `openspec/changes/archive/${folder}/`)]);
+  if (archived) {
+    if (pr === null) add('archive-not-ready', ['no pull request']);
+    else add('archive-not-ready', [
+      ...(pr.isDraft ? ['isDraft: true'] : []),
+      ...(facts.flowSchema === 'lets-standard' && !pr.codeReview ? ['no Code review section'] : []),
+    ]);
+  }
+  if (facts.brainstorm && pr === null) add('brainstorm-without-pull-request', [`${change}brainstorm.md`]);
+  const noPlanReview = archived && !minimal && (pr === null || !pr.planReview);
+  if (noPlanReview) add('archive-without-plan-review', ['no Plan review section']);
+  // On lets-minimal, review plan never runs, so it leaves no record.
+  const skip = (step: Step) => step === 'review-plan' && (minimal || noPlanReview);
+  add('null-record', STEPS.filter((step) => answers[step] && !facts.recorded[step] && !skip(step)));
+  return found;
 }

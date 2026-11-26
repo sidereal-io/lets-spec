@@ -117,6 +117,27 @@ async function reviewPlanRecord(git: Run, read: Exec, pr: PullRequest | null, re
   return { oid, record: { commit: review.sha, date, pr: pr.number, verdict: review.verdict } };
 }
 
+// The paths git status lists outside .workspace/. A rename or copy entry
+// is followed by its old path, which is skipped.
+async function dirtyPaths(git: Run): Promise<string[]> {
+  const entries = (await git('git', ['status', '--porcelain=v1', '-z'])).split('\0');
+  const paths: string[] = [];
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    if (entry === '') continue;
+    const status = entry.slice(0, 2);
+    const path = entry.slice(3);
+    if (/[RC]/.test(status)) i++;
+    if (path !== '.workspace/' && !path.startsWith('.workspace/')) paths.push(path);
+  }
+  return paths;
+}
+
+// The body holds a ## Code review line.
+function hasCodeReview(body: string): boolean {
+  return body.split(/\r?\n/).some((line) => line.trimEnd() === '## Code review');
+}
+
 // The paths of HEAD's tree, among paths, that exist.
 async function inHead(git: Run, paths: string[]): Promise<Set<string>> {
   const out = await git('git', ['ls-tree', '--name-only', '-z', 'HEAD', '--', ...paths]);
@@ -132,6 +153,7 @@ export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'st
     const git = runner(deps.io, root);
     const read = exec(deps.io, root);
     const change = `openspec/changes/${name}`;
+    const dirty = await dirtyPaths(git);
     const pr = await pullRequest(deps.io, root, name);
     const archives = archiveFolders(deps.io, root, name);
     const changeFolder = deps.io.isDir(`${root}/${change}`);
@@ -157,7 +179,12 @@ export function run(name: string, deps: Pick<Deps, 'io' | 'cwd' | 'stdout' | 'st
       build: await lastCommit(git, 'M', `${change}/tasks.md`),
       'review-build': archived === null ? null : { ...archived, pr: pr?.number ?? null },
     };
-    const facts: Facts = { name, archives, changeFolder, state, changeSchema, flowSchema, reviewPlan };
+    const facts: Facts = {
+      name, dirty, archives, changeFolder, state, changeSchema, flowSchema, reviewPlan,
+      pr: pr === null ? null : { isDraft: pr.isDraft, codeReview: hasCodeReview(pr.body), planReview: review !== null },
+      brainstorm: head.has(`${change}/brainstorm.md`),
+      recorded: { plan: records.plan !== null, 'review-plan': records['review-plan'] !== null, build: records.build !== null, 'review-build': records['review-build'] !== null },
+    };
     const answers = done(facts);
     const line = { ...records, done: answers, disagreements: disagreements(facts, answers), 'pull-request': pr?.state ?? null };
     deps.stdout(`${JSON.stringify(line)}\n`);
