@@ -152,8 +152,7 @@ transfer and no new claim.
    branch to keep the checkpoint commits until a story's branch imports
    them. Keep it until the destination holds the edits.
 
-When the import succeeds, the result is `imported`. Return to the part
-that ran it, with the result.
+When the import succeeds, the result is `imported`.
 
 ### Recover from a failed import
 
@@ -168,12 +167,24 @@ If the import fails:
    and never reset unrelated commits.
 4. Release with `lets backlog release <i> --claim <claim>`, using the
    token kept by [Claim](../SKILL.md#claim). It releases only this
-   session's claim. Do this even if the Git cleanup failed. When it
-   prints `result: failed`, keep its `write` field and `message` field.
-   When it prints an `error` field, nothing was released: keep the
-   error's `message` field. Handle `result: not-found` as
-   [Claim](../SKILL.md#claim) does.
-5. The result is `import-failed`. It carries every cleanup failure, and
-   anything kept: the branch, commits or claim, with how to recover.
+   session's claim. Do this even if the Git cleanup failed. Handle
+   `result: not-found` as [Claim](../SKILL.md#claim) does.
+5. The result is `import-failed`.
+
+### What the import returns
+
+It returns one of these results:
+
+- `imported`: the import succeeded. The new branch holds each verified
+  checkpoint commit the rehearsal did not find already present, and the
+  issue's **Glossary handoff** records the destination.
+- `import-failed`: the import failed, and
+  [Recover from a failed import](#recover-from-a-failed-import) ran. It
+  carries every cleanup failure, and anything kept: the branch, commits
+  or claim, with how to recover. When the release prints
+  `result: failed`, it also carries the release's `write` field and
+  `message` field. When the release prints an `error` field instead,
+  nothing was released, and it also carries that error's `message`
+  field.
 
 Return to the part that ran it, with the result.
