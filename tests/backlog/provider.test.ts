@@ -148,6 +148,17 @@ test('a bad backlog.provider in the user\'s lets config names that file, even wh
   assert.deepEqual(b.calls(), []);
 });
 
+test('a version 3 repository\'s lets config is unknown-backlog-provider, naming its old guidance keys', async (t) => {
+  const b = backlog(t, [...LOOKUP_ONE, FIND], { repoConfig: 'version: 3\ndelegate:\n  step:\n    build:\n      guidance: Prefer claude.\n' });
+  const result = await b.lets('ready');
+  assert.equal(result.code, 1, result.output);
+  const out = b.json(result);
+  assert.equal(out.error, 'unknown-backlog-provider');
+  assert.ok(out.message.includes(b.repoConfigFile), out.message);
+  assert.match(out.message, /version must be 4, got 3\. Rename delegate\.step\.build to delegate\.build\./);
+  assert.deepEqual(b.calls(), []);
+});
+
 test('a repository\'s lets config with the old version is unknown-backlog-provider, naming it', async (t) => {
   const b = backlog(t, [...LOOKUP_ONE, FIND], { repoConfig: 'version: 2\nbacklog:\n  provider: github\n' });
   const result = await b.lets('ready');

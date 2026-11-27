@@ -10,7 +10,7 @@ import { configDir } from '../config-dir.ts';
 import type { Deps, Io } from '../io.ts';
 import { findRepoRoot } from './git.ts';
 import { UsageError } from '../resolvers/kit/errors.ts';
-import { GUIDANCE_KEY_NAMES, guidanceKey } from './strategies.ts';
+import { GUIDANCE_KEY_NAMES, GUIDANCE_KEYS, guidanceKey, STEP_STRATEGY_INTENTS } from './strategies.ts';
 import type { Intent, Strategy } from './strategies.ts';
 
 export const CONFIG_VERSION = 4;
@@ -78,7 +78,8 @@ export async function readConfig(deps: ConfigDeps & { cwd: string }): Promise<{ 
 
 // The document in text, read from path, with every key as written. Throws a
 // UsageError that names the file when it is not YAML, not a mapping, or not
-// version 4. Each command group checks only its own section of it.
+// version 4. A version 3 file's message also says which keys to rename.
+// Each command group checks only its own section of it.
 export function parseDocument(text: string, path: string): Record<string, unknown> {
   const fail = (message: string) => new UsageError(`${path}: ${message}.`);
   let value: unknown;
@@ -88,8 +89,43 @@ export function parseDocument(text: string, path: string): Record<string, unknow
     throw fail(`is not YAML: ${(error as Error).message.split('\n')[0].replace(/:$/, '')}`);
   }
   if (!isObject(value)) throw fail(`must be a mapping with version, got ${show(value)}`);
+  if (value.version === 3) throw new UsageError(`${path}: ${version3Message(value.delegate)}`);
   if (value.version !== CONFIG_VERSION) throw fail(`version must be ${CONFIG_VERSION}, got ${show(value.version)}`);
   return value;
+}
+
+// What a version 3 file must change: each old guidance key it holds, with
+// its new key, then the version.
+function version3Message(delegate: unknown): string {
+  const renames = oldGuidanceKeys(delegate).map(({ from, to, sharedWith }) =>
+    `${from} to ${to}${sharedWith === undefined ? '' : `, which the ${sharedWith} step shares`}`);
+  const rename = renames.length === 0 ? '' : ` Rename ${renames.length === 1 ? renames[0] : `${renames.slice(0, -1).join(', ')}, and ${renames.at(-1)}`}.`;
+  return `version must be ${CONFIG_VERSION}, got 3.${rename} Then set version: ${CONFIG_VERSION}. See "Set up delegation" in the lets-spec README.`;
+}
+
+// The intents review took before version 4, and the intent each became.
+// They cannot be derived from STRATEGIES, which holds only the new ones.
+const OLD_REVIEW_KEYS = [['plan', 'review-plan'], ['code', 'review-build']] as const;
+
+// An old guidance key: where it sat before version 4, the key that took
+// its place, and, when that key is the plan or build step's own, that step.
+export type OldGuidanceKey = { from: string; to: string; sharedWith?: string };
+
+// Each old guidance key a delegate mapping holds, present and not null:
+// the reviewers' first, then the steps' in the order the steps run.
+export function oldGuidanceKeys(delegate: unknown): OldGuidanceKey[] {
+  if (!isObject(delegate)) return [];
+  const held = (strategy: 'review' | 'step', intent: string) => {
+    const entry = delegate[strategy];
+    return isObject(entry) && entry[intent] !== undefined && entry[intent] !== null;
+  };
+  const review = OLD_REVIEW_KEYS.filter(([old]) => held('review', old))
+    .map(([old, intent]) => ({ from: `delegate.review.${old}`, to: `delegate.${GUIDANCE_KEYS.review[intent]}` }));
+  const step = STEP_STRATEGY_INTENTS.filter((intent) => held('step', intent)).map((intent) => {
+    const key = GUIDANCE_KEYS.step[intent];
+    return { from: `delegate.step.${intent}`, to: `delegate.${key}`, ...(key === intent ? {} : { sharedWith: key }) };
+  });
+  return [...review, ...step];
 }
 
 // The delegate section of a document parseDocument checked, or of the two

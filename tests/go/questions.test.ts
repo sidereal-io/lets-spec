@@ -111,6 +111,11 @@ describe('what a file must be', () => {
     rejected(await repo.run(questions), repo.repoConfig, 'cannot be read', 'EISDIR');
   });
 
+  test('a version 3 file exits 2, naming its old guidance keys and their new keys', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ngo:\n  questions: auto\ndelegate:\n  step:\n    story:\n      guidance: Prefer claude.\n' });
+    rejected(await repo.run(questions), repo.userConfig, 'version must be 4, got 3', 'delegate.step.story to delegate.story');
+  });
+
   test('a repository\'s lets config with version 2 exits 2, naming it', async (t) => {
     const repo = delegateRepo(t, { user: ASK, repo: 'version: 2\n' });
     rejected(await repo.run(questions), repo.repoConfig, 'version must be 4, got 2');

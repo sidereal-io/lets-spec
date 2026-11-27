@@ -307,6 +307,24 @@ describe('review run', () => {
     assert.match(result.stderr, /version must be 4/);
   });
 
+  test('a version 3 file is exit 2 before any resolver, naming each old guidance key and its new key', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: Prefer gpt.\n' });
+    const stand = codex(repo.standIns, []);
+    const result = await repo.run(review());
+    failed(result, 2);
+    assert.ok(result.stderr.includes(`${repo.userConfig}: `), result.stderr);
+    assert.match(result.stderr, /version must be 4, got 3\. Rename delegate\.review\.code to delegate\.review-build\./);
+    assert.deepEqual(stand.calls(), []);
+  });
+
+  test('a version 3 file with no guidance names only the version', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [cli] }\n' });
+    const result = await repo.run(review());
+    failed(result, 2);
+    assert.ok(result.stderr.includes(`${repo.userConfig}: version must be 4, got 3. Then set version: 4.`), result.stderr);
+    assert.doesNotMatch(result.stderr, /delegate\.review/);
+  });
+
   test('a repository\'s lets config that is a folder is exit 2, naming it', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     mkdirSync(repo.repoConfig, { recursive: true });

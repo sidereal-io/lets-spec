@@ -413,6 +413,20 @@ describe('the delegate section of the lets config', () => {
     }
   });
 
+  test('a version 3 file names each old guidance key with its new key, and the key the plan step shares', async (t) => {
+    const user = 'version: 3\ndelegate:\n  review:\n    plan:\n      guidance: Prefer gpt.\n  step:\n    review-plan:\n      guidance: Prefer claude.\n';
+    const run = await instructions(t, 'review', 'review-plan', { user });
+    refused(run, run.userConfig);
+    assert.equal(run.result.stderr, `lets delegate: ${run.userConfig}: version must be 4, got 3. Rename delegate.review.plan to delegate.review-plan, and delegate.step.review-plan to delegate.plan, which the plan step shares. Then set version: 4. See "Set up delegation" in the lets-spec README.\n`);
+  });
+
+  test('a version 3 file names every old guidance key it holds, reviewers first, and skips a null one', async (t) => {
+    const keys = 'review:\n    code:\n      guidance: a\n    plan: null\n  step:\n    shape:\n      guidance: b\n    plan:\n      guidance: c\n    build: {}\n    review-build:\n      guidance: d\n    story:\n      guidance: e\n';
+    const run = await instructions(t, 'step', 'build', { user: `version: 3\ndelegate:\n  ${keys}` });
+    refused(run, run.userConfig);
+    assert.match(run.result.stderr, /Rename delegate\.review\.code to delegate\.review-build, delegate\.step\.shape to delegate\.shape, delegate\.step\.plan to delegate\.plan, delegate\.step\.build to delegate\.build, delegate\.step\.review-build to delegate\.build, which the build step shares, and delegate\.step\.story to delegate\.story\. Then/);
+  });
+
   test('a key lets does not know, at the top level and under delegate, is ignored', async (t) => {
     const run = await instructions(t, 'review', 'review-build', { user: 'version: 4\nsync: true\ndelegate:\n  resolvers: [subagent]\n  telemetry: true\n' });
     assert.deepEqual(line(run), SUBAGENT_REVIEW);
