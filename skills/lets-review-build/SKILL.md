@@ -65,9 +65,9 @@ Commit first. The review covers commits, not the working tree.
    `HEAD`. Then resolve vocabulary as below, and write the prompt to
    `.workspace/<branch>-code-review-prompt.md`. [The prompt](#the-prompt)
    says what goes in it.
-2. Ask what can run. From the repo root, run `lets delegate review instructions --for code`. It prints one JSON line. `options` is the **listed models**: the
+2. Ask what can run. From the repo root, run `lets delegate review instructions --for review-build`. It prints one JSON line. `options` is the **listed models**: the
    models the resolver can run now. `guidance` is the user's prose for code
-   reviews, from `delegate.review.code.guidance` in the `lets` config, or
+   reviews, from `delegate.review-build.guidance` in the `lets` config, or
    `null`. If it exits non-zero, stop, and show the user its stderr.
 3. Keep the **allowed models**: the listed models left after guidance
    exclusions. Rank the allowed models: the guidance first, then families
@@ -92,7 +92,7 @@ Commit first. The review covers commits, not the working tree.
    alone; it does not establish independence from the author families.
 
    ```bash
-   lets delegate review run --for code --name <branch>-code-review \
+   lets delegate review run --for review-build --name <branch>-code-review \
      --prompt-file .workspace/<branch>-code-review-prompt.md \
      --source-family <family> --effort high --model <first> --model <second> \
      > .workspace/<branch>-code-review-raw.md 2> .workspace/<branch>-code-review-meta.txt
