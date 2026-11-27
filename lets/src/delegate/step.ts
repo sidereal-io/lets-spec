@@ -16,7 +16,7 @@ import { normalizeName } from '../resolvers/kit/adapter.ts';
 import type { Handle } from '../resolvers/kit/adapter.ts';
 import { parseModel } from '../resolvers/kit/families.ts';
 import type { Effort } from '../resolvers/kit/families.ts';
-import type { StepStrategyIntent } from './strategies.ts';
+import type { Intent } from './strategies.ts';
 
 // How long a step may run, in minutes, at every effort. A step such as
 // build runs far longer than a review.
@@ -30,7 +30,7 @@ export const STORY_TIMEOUT_MINUTES = 600;
 // needs-input report, which lets appends to the prompt. exitFile: where to
 // record the exit code once it is known, for lets delegate step wait; a
 // hidden option, which lets delegate step start gives.
-export type StepOptions = { for: StepStrategyIntent; name: string; promptFile: string; effort: Effort; models: string[]; timeoutMinutes?: number; answersFile?: string; exitFile?: string };
+export type StepOptions = { for: Intent; name: string; promptFile: string; effort: Effort; models: string[]; timeoutMinutes?: number; answersFile?: string; exitFile?: string };
 
 // The exit code: 0 a report is on stdout, whatever its outcome, 2 usage,
 // 3 every model refused, 4 the outcome is unknown, 6 timeout.

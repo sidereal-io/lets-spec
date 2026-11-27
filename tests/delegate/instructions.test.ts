@@ -288,12 +288,12 @@ test('a step\'s guidance comes from its own key, and the story intent\'s from de
 });
 
 // Each key holds its own name as guidance, so the guidance shows which key was read.
-test('each step reads the key the guidance table gives it, so a review step reads the plan or build key', async (t) => {
-  const user = delegate(['shape', 'plan', 'review-plan', 'build', 'review-build', 'story'].map((key) => `${key}:\n  guidance: ${key}\n`).join(''));
-  const expected: [string, string][] = [['shape', 'shape'], ['plan', 'plan'], ['review-plan', 'plan'], ['build', 'build'], ['review-build', 'build'], ['story', 'story']];
-  for (const [intent, key] of expected) {
+test('each intent reads the guidance key of its own name', async (t) => {
+  const intents = ['shape', 'plan', 'review-plan', 'build', 'review-build', 'story'];
+  const user = delegate(intents.map((key) => `${key}:\n  guidance: ${key}\n`).join(''));
+  for (const intent of intents) {
     const read = line(await instructions(t, 'step', intent, { user }));
-    assert.deepEqual([read.for, read.guidance], [intent, key], intent);
+    assert.deepEqual([read.for, read.guidance], [intent, intent], intent);
   }
 });
 
@@ -328,7 +328,7 @@ test('bad guidance for the intent is exit 2, naming the file and the key, and ru
     { what: 'a number as guidance', setup: { user: cliDelegate('review-build:\n  guidance: 42\n') }, file: 'userConfig', message: /delegate\.review-build\.guidance must be a string/ },
     { what: 'a guidance entry that is not a mapping', setup: { user: cliDelegate('review-build: code\n') }, file: 'userConfig', message: /delegate\.review-build must be a mapping/ },
     { what: 'a number in the repository\'s config', setup: { user: cliDelegate(''), repo: delegate('review-build:\n  guidance: 42\n') }, file: 'repoConfig', message: /delegate\.review-build\.guidance must be a string/ },
-    { what: 'a bad entry the review plan step reads', strategy: 'step', intent: 'review-plan', setup: { user: cliDelegate('plan:\n  guidance: 42\n') }, file: 'userConfig', message: /delegate\.plan\.guidance must be a string/ },
+    { what: 'a bad entry the review plan step reads', strategy: 'step', intent: 'plan', setup: { user: cliDelegate('plan:\n  guidance: 42\n') }, file: 'userConfig', message: /delegate\.plan\.guidance must be a string/ },
   ];
   for (const { what, strategy = 'review', intent = 'review-build', setup, file, message } of cases) {
     let stand: ReturnType<typeof codex> | undefined;

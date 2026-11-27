@@ -30,6 +30,14 @@ test('step instructions skip a resolver that runs no step', async () => {
   assert.equal(JSON.parse(r.stdout()).resolver, 'cli');
 });
 
+test('step instructions for a reviewer answer from a resolver that runs no step', async () => {
+  for (const intent of ['review-plan', 'review-build'] as const) {
+    const t = commandDeps({ config: 'version: 4\ndelegate: { resolvers: [cli, t3] }\n', adapters: { cli: { steps: false }, t3: {} } });
+    assert.equal(await run({ strategy: 'step', for: intent }, t.deps), 0, intent);
+    assert.equal(JSON.parse(t.stdout()).resolver, 'cli', intent);
+  }
+});
+
 test('a resolver whose options fail unexpectedly is exit 4 with the message', async () => {
   const t = withT3();
   t.deps.resolvers.t3.options = async () => {

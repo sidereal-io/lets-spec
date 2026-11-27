@@ -15,7 +15,7 @@ import type { StartOptions } from './delegate/background.ts';
 import { run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './delegate/step.ts';
 import type { StepOptions } from './delegate/step.ts';
 import { run as questions } from './go/questions.ts';
-import { GUIDANCE_KEYS, STRATEGIES } from './delegate/strategies.ts';
+import { GUIDANCE_KEYS, INTENTS, REVIEWER_INTENTS } from './delegate/strategies.ts';
 import type { Intent, Strategy } from './delegate/strategies.ts';
 import { realIo } from './io.ts';
 import type { Deps } from './io.ts';
@@ -228,7 +228,7 @@ resolver and options come from the first resolver that does not decline
 this strategy: options are the models it can run now, in its order.
 guidance is the guidance for the intent from the config, or null:
 
-${Object.entries(GUIDANCE_KEYS[strategy]).map(([intent, key]) => `  --for ${intent}: delegate.${key}.guidance`).join('\n')}
+${Object.entries(GUIDANCE_KEYS).filter(([intent]) => intentsOf(strategy).includes(intent as Intent)).map(([intent, key]) => `  --for ${intent}: delegate.${key}.guidance`).join('\n')}
 
 It starts no session.
 
@@ -277,9 +277,11 @@ function modelString(value: string): string {
 const modelOption = () => new Option('--model <family[/model]>', 'a model to run, such as gpt/gpt-6-luna, or a bare family for the harness\'s default; repeat it to rank more, best first')
   .argParser((value: string, previous: string[] = []) => [...previous, modelString(value)]).makeOptionMandatory();
 
-// --for: what the delegation is for, one of the strategy's intents.
+// The intents a command group takes: review starts only a reviewer.
+const intentsOf = (strategy: Strategy): readonly Intent[] => (strategy === 'review' ? REVIEWER_INTENTS : INTENTS);
+// --for: what the delegation is for, one of the command group's intents.
 const forOption = (strategy: Strategy) => new Option('--for <intent>', 'what the delegation is for')
-  .choices(STRATEGIES[strategy].intents).makeOptionMandatory();
+  .choices(intentsOf(strategy)).makeOptionMandatory();
 
 // The release's version from its release.json, else 0.0.0-dev.
 function version(): string {

@@ -257,8 +257,8 @@ test('instructions --help names its output and exit codes', async () => {
 test('each instructions --help names the guidance key for each of its intents', async () => {
   const cases: [string, string[]][] = [
     ['review', ['--for review-plan: delegate.review-plan.guidance', '--for review-build: delegate.review-build.guidance']],
-    ['step', ['--for shape: delegate.shape.guidance', '--for plan: delegate.plan.guidance', '--for review-plan: delegate.plan.guidance',
-      '--for build: delegate.build.guidance', '--for review-build: delegate.build.guidance', '--for story: delegate.story.guidance']],
+    ['step', ['--for shape: delegate.shape.guidance', '--for plan: delegate.plan.guidance', '--for review-plan: delegate.review-plan.guidance',
+      '--for build: delegate.build.guidance', '--for review-build: delegate.review-build.guidance', '--for story: delegate.story.guidance']],
   ];
   for (const [strategy, lines] of cases) {
     const text = (await lets('delegate', strategy, 'instructions', '--help')).stdout;
