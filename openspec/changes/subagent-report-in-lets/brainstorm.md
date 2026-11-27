@@ -22,7 +22,7 @@ wording, and the pull request records `wc -l` for the skill.
 | D7 | Does an epic run's walk change? | No. When a step in a story's worktree `<path>` runs in a subagent, lets-go runs `step read` from `<path>`, as it runs every other walk command there. | Evidence: `skills/lets-go/references/epic-run.md`, *Wait for the wave* |
 | D8 | Do the review skills' subagent paths change? | No. A review's subagent returns a final message, not a step report, and the epic leaves skills other than `lets-go` and `lets-shape` alone. | Evidence: #263 *Scope*, Out |
 | D9 | How do the `lets-go` requirement *Exit 3 runs the step in a subagent* and its tests change? | They check what a run does: lets-go runs the subagent with the saved prompt, then `lets delegate step read`, and saves its stdout as the report. The rule list moves out of the `lets-go` spec, because `delegate-step` already holds it. | Evidence: #263 *Shared decisions* |
-| D10 | Does the glossary change? | Yes: the *Step report* entry in `openspec/glossary.md` says that `lets delegate step run` and `lets delegate step read` each print it as one JSON line. The meaning does not change. | Assumption |
+| D10 | Does the glossary change? | Yes: the *Step report* entry says that `lets delegate step run` and `lets delegate step read` each print it as one JSON line. The meaning does not change. The build writes it, with its copy in `skills/lets-go/references/terms.md`, once the command exists: the contract tests reject a copy that differs and a command `lets` lacks. | Assumption |
 | D11 | What does the pull request record? | `wc -l` for `skills/lets-go/SKILL.md` and for the whole skill, before and after. | Evidence: #263 *Shared decisions*; #266 packet, *Scope* |
 
 ## Changes from the story
