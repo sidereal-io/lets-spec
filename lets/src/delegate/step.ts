@@ -57,10 +57,23 @@ type Session = { adapter: Adapter; models: string[]; input: (model: string) => R
 // of the record line between model and durationSeconds.
 type Outcome = { report: Report; sent: string; fields: Record<string, unknown> };
 
+// Throws a UsageError naming the option when it does not fit the intent:
+// only a reviewer takes --source-family, and needs it, and a reviewer,
+// which never reports needs-input, has no questions to answer.
+export function checkIntentOptions({ for: intent, sourceFamily, answersFile }: Pick<StepOptions, 'for' | 'sourceFamily' | 'answersFile'>): void {
+  if (isReviewer(intent)) {
+    if (sourceFamily === undefined) throw new UsageError(`--for ${intent} needs --source-family, the family that wrote the work under review.`);
+    if (answersFile !== undefined) throw new UsageError(`--for ${intent} takes no --answers-file: a reviewer never asks questions.`);
+  } else if (sourceFamily !== undefined) {
+    throw new UsageError(`--for ${intent} takes no --source-family: only review-plan and review-build do.`);
+  }
+}
+
 async function step(options: StepOptions, deps: Deps) {
   const { for: intent, name, promptFile, effort, models, timeoutMinutes, answersFile } = options;
   const { io } = deps;
   const started = io.now();
+  checkIntentOptions(options);
   checkModels(models);
   const { config, fileOf } = await readConfig(deps);
   const written = readPromptFile(promptFile, deps);

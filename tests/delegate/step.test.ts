@@ -540,6 +540,25 @@ describe('step run for a reviewer', () => {
     assert.equal(readFileSync(lastMessage(repo.cwd, REVIEWER), 'utf8'), FINDINGS, 'the session was finished without ok');
   });
 
+  test('a reviewer with no --source-family, a step with one, or a reviewer with --answers-file is exit 2, naming the option, and no CLI runs', async (t) => {
+    const cases: [StepArgs, RegExp][] = [
+      [{ for: 'review-build' }, /--source-family/],
+      [{ for: 'review-plan' }, /--source-family/],
+      [{ for: 'build', sourceFamily: 'claude' }, /--source-family/],
+      [{ for: 'story', sourceFamily: 'gpt' }, /--source-family/],
+      [{ for: 'review-plan', sourceFamily: 'claude', answersFile: 'a.yaml' }, /--answers-file/],
+    ];
+    for (const [over, named] of cases) {
+      const repo = delegateRepo(t, { user: CLI });
+      writeFileSync(join(repo.cwd, 'a.yaml'), ANSWERS);
+      const clis = everyCli(repo.standIns);
+      const result = await repo.run(stepRun(over));
+      failed(result, 2);
+      assert.match(result.stderr, named, JSON.stringify(over));
+      noCalls(clis);
+    }
+  });
+
   test('the user\'s own changes from before the run, and the reviewer\'s scratch files, do not count', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     writeFileSync(join(repo.cwd, 'b.md'), 'mine\n');
