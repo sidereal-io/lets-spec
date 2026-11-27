@@ -8,7 +8,7 @@
 - **THEN** the command exits 0 at once, prints one JSON line starting `{"name":"fix-x","pid":`, and the resolver is asked for a `step` session named `fix-x` whose working directory is the root of `.workspace/lets-go/worktrees/fix-x`
 
 #### Scenario: A story run started inside T3 Code
-- **WHEN** the config's `delegate.resolvers` is `[t3, subagent]`, the running T3 server is an ancestor of the process, and the user runs `lets delegate step start --for story --name fix-x --prompt-file p.md --report-file r.json --meta-file m.txt --model claude/claude-opus-5-5`, then exits that process before the background step picks its resolver
+- **WHEN** the config's `delegate.resolvers` is `[t3, subagent]`, the running T3 server is an ancestor of the process, and the user runs `lets delegate step start --for story --name fix-x --prompt-file p.md --report-file r.json --meta-file m.txt --effort high --model claude/claude-opus-5-5`, then exits that process before the background step picks its resolver
 - **THEN** `t3` is asked for the `step` session, and `subagent` is not asked
 
 #### Scenario: A resolver listed before t3 inside T3 Code
