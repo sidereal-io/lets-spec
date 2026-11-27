@@ -245,6 +245,12 @@ describe('step run', () => {
     assert.equal(reportOf(await repo.run(stepRun())).outcome, 'done');
   });
 
+  test('a step ignores an old guidance key', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: Prefer gpt.\n  step:\n    build:\n      guidance: Prefer claude.\n' });
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
+    assert.equal(reportOf(await repo.run(stepRun())).outcome, 'done');
+  });
+
   test('a bad --model is exit 2, naming it, and no CLI runs', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     const clis = everyCli(repo.standIns);

@@ -486,3 +486,47 @@ describe('the delegate section of the lets config', () => {
     assert.ok(!run.result.stderr.includes(run.repoConfig), run.result.stderr);
   });
 });
+
+describe('an old guidance key in a version 4 file', () => {
+  test('a reviewer\'s old key stops step instructions, naming the file, the old key and its new key, and runs no listing', async (t) => {
+    let stand: ReturnType<typeof codex> | undefined;
+    const run = await instructions(t, 'step', 'build', { user: cliDelegate('review:\n  code:\n    guidance: Prefer gpt.\n'), standIns: (dir) => { stand = codex(dir, [...LUNA]); } });
+    refused(run, run.userConfig, 'delegate.review.code', 'delegate.review-build');
+    assert.deepEqual(stand!.calls(), []);
+  });
+
+  test('a review step\'s old key stops review instructions, naming the build key it now shares', async (t) => {
+    const run = await instructions(t, 'review', 'review-build', { user: delegate('step:\n  review-build:\n    guidance: Prefer claude.\n') });
+    refused(run, run.userConfig, 'delegate.step.review-build', 'delegate.build');
+  });
+
+  test('each old key gets its own line, naming the file that holds it', async (t) => {
+    const run = await instructions(t, 'step', 'plan', {
+      user: delegate('review:\n  plan:\n    guidance: Prefer gpt.\n'),
+      repo: delegate('step:\n  plan:\n    guidance: Prefer claude.\n'),
+    });
+    assert.equal(run.result.code, 2, run.result.output);
+    assert.equal(run.result.stdout, '');
+    assert.equal(run.result.stderr, [
+      `lets delegate: ${run.userConfig}: delegate.review.plan is no longer read; rename it to delegate.review-plan.`,
+      `${run.repoConfig}: delegate.step.plan is no longer read; rename it to delegate.plan.`,
+      '',
+    ].join('\n'));
+  });
+
+  test('an old entry that holds no old key stops instructions, naming the entry', async (t) => {
+    const run = await instructions(t, 'step', 'plan', { user: delegate('step: 42\n') });
+    refused(run, run.userConfig, 'delegate.step is no longer read');
+  });
+
+  test('an old key in the repository\'s lets config names that file, not the user\'s', async (t) => {
+    const run = await instructions(t, 'step', 'build', { user: 'version: 4\n', repo: delegate('step:\n  build:\n    guidance: Prefer claude.\n') });
+    refused(run, run.repoConfig, 'delegate.step.build', 'delegate.build');
+    assert.ok(!run.result.stderr.includes(run.userConfig), run.result.stderr);
+  });
+
+  test('a null old entry is no old key', async (t) => {
+    const run = await instructions(t, 'review', 'review-build', { user: delegate('review: null\nreview-build:\n  guidance: Prefer gpt.\n') });
+    assert.equal(line(run).guidance, 'Prefer gpt.');
+  });
+});

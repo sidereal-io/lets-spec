@@ -169,6 +169,24 @@ export function guidanceFor(config: Config | null, strategy: Strategy, intent: I
   return guidance;
 }
 
+// Throws a UsageError, with one line per old guidance key the config in
+// effect holds, each naming the file fileOf gives for it, the key and its
+// new key. A review or step entry that holds no old key gets one line that
+// names the entry. Does nothing when there is no config, or neither entry.
+export function checkNoOldGuidance(config: Config | null, fileOf: FileOf): void {
+  if (config === null) return;
+  const found = oldGuidanceKeys(config.delegate);
+  const lines = found.map(({ from, to, sharedWith }) =>
+    `${fileOf(from)}: ${from} is no longer read; rename it to ${to}${sharedWith === undefined ? '' : `, which the ${sharedWith} step shares`}.`);
+  for (const entry of ['review', 'step'] as const) {
+    const held = config.delegate[entry] !== undefined && config.delegate[entry] !== null;
+    if (held && !found.some(({ from }) => from.startsWith(`delegate.${entry}.`))) {
+      lines.push(`${fileOf(`delegate.${entry}`)}: delegate.${entry} is no longer read; see "Set up delegation" in the lets-spec README.`);
+    }
+  }
+  if (lines.length > 0) throw new UsageError(lines.join('\n'));
+}
+
 // The default question mode, from go.questions in a document parseDocument
 // checked, or null when go or go.questions is missing or null. Throws a
 // UsageError that names the file fileOf gives for the key, and the key,

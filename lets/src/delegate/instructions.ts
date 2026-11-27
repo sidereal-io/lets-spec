@@ -4,7 +4,7 @@
 // the guidance for the intent. It starts no session. No process
 // access here; everything comes through deps.
 import type { Deps } from '../io.ts';
-import { guidanceFor, readConfig } from './config.ts';
+import { checkNoOldGuidance, guidanceFor, readConfig } from './config.ts';
 import { EXIT } from '../resolvers/kit/errors.ts';
 import { guarded } from './guarded.ts';
 import { inAdapter, pick } from './lookup.ts';
@@ -18,7 +18,8 @@ export type InstructionsOptions = { strategy: Strategy; for: Intent };
 export function run({ strategy, for: intent }: InstructionsOptions, deps: Deps): Promise<number> {
   return guarded(deps, async () => {
     const { config, fileOf } = await readConfig(deps);
-    // Checked first, so a bad guidance asks no resolver.
+    // Checked first, so an old or bad guidance asks no resolver.
+    checkNoOldGuidance(config, fileOf);
     const guidance = guidanceFor(config, strategy, intent, fileOf);
     const adapter = await pick(STRATEGIES[strategy].verb, { ...deps, config, fileOf });
     const options = await inAdapter(() => adapter.options((message) => deps.stderr(`lets delegate: ${message}\n`)));

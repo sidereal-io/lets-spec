@@ -220,6 +220,12 @@ describe('review run', () => {
     assert.doesNotMatch(result.stderr, /handoff/);
   });
 
+  test('a review ignores an old guidance key', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: Prefer gpt.\n  step:\n    build:\n      guidance: Prefer claude.\n' });
+    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
+    assert.equal(metadata(await repo.run(review())).resolver, 'cli');
+  });
+
   test('a review ignores the guidance, even one that is not a string', async (t) => {
     const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  review-build:\n    guidance: 42\n' });
     const stand = codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
