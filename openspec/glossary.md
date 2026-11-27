@@ -110,7 +110,8 @@ What a step returns to its caller, such as `lets-go`. It has one of three
 outcomes: `done`, with the step's evidence and date; `needs-input`, with the
 step's questions, each with a recommendation when the step has one; or
 `failed`, with the reason. `lets delegate step run` prints it as one JSON
-line.
+line, and so does `lets delegate step read`, which reads it from a
+subagent's final message.
 
 ## Question mode
 
