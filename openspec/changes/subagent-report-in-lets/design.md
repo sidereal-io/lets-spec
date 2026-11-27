@@ -54,13 +54,17 @@
   `tests/delegate/read.test.ts` writes a message file, runs
   `lets delegate step read --message-file`, and checks the exit code,
   stdout and stderr. It covers every scenario of the two new
-  `delegate-step` requirements, with `assertClockDate` for the date.
+  `delegate-step` requirements but *The same report as step run*, with
+  `assertClockDate` for the date.
+- **Second seam:** `tests/lets/delegate/`, with `commandDeps` and a fake
+  adapter, for *The same report as step run*. There the clock is the
+  test's, so `step run` on a session that ends with a message and
+  `step read` on that message can be checked to print the same line.
 - **Existing seams reused:**
   - `tests/journey/journeys.test.ts` for the join lets-go relies on:
     `step run` with no config exits 3 and names the saved prompt and
     `step read`; a message file then goes through `step read`, and its
-    stdout is the report. This also checks the scenario *The same report
-    as step run* at the level that matters to lets-go.
+    stdout is the report.
   - `tests/lets/delegate/cli.test.ts` for the help texts of `step read`
     and `step run`.
   - `tests/lets/resolvers/subagent/subagent.test.ts` and
@@ -98,7 +102,10 @@ It runs under `guarded`, like every other delegate command, so a
 `UsageError` becomes exit 2 with one line on stderr. It reads the file
 with `deps.io.readFile(resolve(deps.cwd, messageFile))`. A `null` result
 throws `UsageError('cannot read --message-file <path>')`, the same form
-`readAnswersFile` uses. It calls neither `readConfig` nor `repoRoot`, so
+`readAnswersFile` uses. `io.readFile` gives `null` only for a path that
+does not exist, and throws for others, such as a directory (`EISDIR`).
+`read.ts` turns any error from the read into that same `UsageError`, so
+every file it cannot read is exit 2, as the spec says. It calls neither `readConfig` nor `repoRoot`, so
 a broken config or a folder outside Git does not stop it.
 
 An empty file is readable: it gives the `failed` report for a final

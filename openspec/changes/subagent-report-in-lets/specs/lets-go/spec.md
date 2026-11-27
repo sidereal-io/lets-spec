@@ -11,10 +11,6 @@ When `step run` exits 3 and its meta file names the prompt `lets` saved, `.works
 - **WHEN** a reader reads *Run a step in a subagent*
 - **THEN** it says that the subagent follows the saved prompt, works only in this repository on the branch `<name>`, and makes only the changes that the step calls for, and it does not say `may write files`
 
-#### Scenario: The skill holds no copy of the report rules
-- **WHEN** a reader reads `skills/lets-go/references/subagent.md`
-- **THEN** it names `lets delegate step read --message-file`, and does not name `recommendation`, `evidence`, `date -u` or the number of backticks that open a block
-
 #### Scenario: A subagent with no block
 - **WHEN** the subagent's final message holds no `step-report` block
 - **THEN** the report file holds the `failed` report that `lets delegate step read` prints, whose reason names `step-report`, and `lets-go` treats the step as `failed` and stops
