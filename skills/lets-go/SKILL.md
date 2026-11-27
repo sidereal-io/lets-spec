@@ -148,7 +148,7 @@ reads as it always has.
 | `<claim>` | The unique token of this session's claim | [Claim](#claim), from the command's `claim` field |
 | `<idea>` | The idea, in the user's words | [Read the request](#read-the-request), or, for an epic's stopped discovery, the epic's `Input:` line in [Run the shape step](#run-the-shape-step) |
 | `<word>` | The one word left of the request, before `lets backlog key` says whether it names an issue | [Read the request](#read-the-request) |
-| `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs, or `shape` in [Run the shape step](#run-the-shape-step) |
+| `<step>` | One step, as `--name`, file names and the *Step* column name it: `shape`, `plan`, `review-plan`, `build` or `review-build`. A review step's own session runs with `<for>`, not `<step>` | [The step table](#the-step-table), at the row the walk runs, or `shape` in [Run the shape step](#run-the-shape-step) |
 | `<for>` | The `--for` value that starts a step's own session: `<step>` for shape, plan and build, `plan` for review plan, and `build` for review build | [The change's name](#the-changes-name) |
 | `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
 | `<mode>` | The question mode, `ask` or `auto` | [Set the question mode](#set-the-question-mode), or [Run the shape step](#run-the-shape-step), before shape. In a story run's child, [Take up the story run](references/story-run.md#take-up-the-story-run), from the story prompt |
