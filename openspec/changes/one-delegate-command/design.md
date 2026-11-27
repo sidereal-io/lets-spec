@@ -160,6 +160,14 @@ throws `SessionFailed`, such as `options()`, is turned into a
 `SessionFailed` class stays, because the adapters use it to say a
 session failed.
 
+`lets/src/resolvers/t3/t3.ts` adds ` (thread <id>)` to an error's message
+only when `exitCodeOf(error) !== null`. Once `SessionFailed` has no exit
+code, that test must become
+`error instanceof SessionFailed || exitCodeOf(error) !== null`. Otherwise
+a thread that stops to ask or returns a plan gives a `failed` report whose
+`reason` no longer names the thread, against *delegate-resolvers* and
+`tests/lets/resolvers/t3/delegate.test.ts`.
+
 ### Options that only a reviewer takes
 
 `--source-family` becomes an optional commander option with the three
