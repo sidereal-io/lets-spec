@@ -258,7 +258,7 @@
             [ -f .agents/skills/lets-setup-backlog/SKILL.md ]
             # With no delegate config, the packaged lets answers as the
             # default it carries.
-            [ "$(lets delegate review instructions --for review-build | jq -r .resolver)" = subagent ]
+            [ "$(lets delegate step instructions --for review-build | jq -r .resolver)" = subagent ]
 
             # A minimal project gets the minimal schema and only its skills.
             cd ..
@@ -314,7 +314,7 @@
             node ${dist}/bin/lets sync --check
             # With nothing else installed or configured, the tarball's lets
             # answers as the default, which is part of it.
-            [ "$(node ${dist}/bin/lets delegate review instructions --for review-build | jq -r .resolver)" = subagent ]
+            [ "$(node ${dist}/bin/lets delegate step instructions --for review-build | jq -r .resolver)" = subagent ]
             touch "$out"
           '';
 

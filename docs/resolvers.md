@@ -43,15 +43,16 @@ own checkout. Either way, a detached HEAD gives the session no branch.
 A review opens in T3's default mode, not in plan mode, so the model works
 through to a result instead of stopping on a plan. It can run the tests.
 The tree check still keeps it read-only: a review that changes files
-outside `.workspace/` exits 7
+outside `.workspace/` gives a `failed` report at exit 0
 ([ADR-024](decisions/ADR-024-the-tree-check-keeps-a-review-read-only.md)).
-A review whose run ends holding a proposed plan exits 5, and stderr says
-`the session returned a plan, not a result (thread <id>)`. The thread
-stays, so you can read it.
+A review whose run ends holding a proposed plan gives a `failed` report
+whose `reason` is `the session returned a plan, not a result (thread <id>)`.
+The thread stays, so you can read it.
 
-A review also exits 5 when the session asks a question and waits for an
-answer. Stderr then says `the session stopped to ask (thread <id>)`. The
-thread stays, so you can answer it in T3 Code. A run that T3 shows as
+A review also gives a `failed` report when the session asks a question
+and waits for an answer. Its `reason` is then
+`the session stopped to ask (thread <id>)`. The thread stays, so you can
+answer it in T3 Code. A run that T3 shows as
 `waiting` for a moment, with no question, does not count: `t3` waits for
 it to end, up to the review's time limit.
 
@@ -92,7 +93,7 @@ To run steps somewhere else inside T3 Code, list `cli` before `t3`.
 
 The caller chooses the model, and `t3` runs exactly that one:
 
-- `lets delegate review instructions` and `step instructions` list the
+- `lets delegate step instructions` lists the
   models that T3 Code's model picker offers, as `<family>/<model>`.
   `t3` asks the running T3 server for its live catalogue each time.
 - They list a provider only when it is enabled, its status is ready or
@@ -149,13 +150,13 @@ in a project that T3 knows:
 
 ```sh
 printf 'Reply with the single word READY and nothing else.\n' > .workspace/p.md
-lets delegate review run --for review-build --name smoke-review --prompt-file .workspace/p.md \
+lets delegate step run --for review-build --name smoke-review --prompt-file .workspace/p.md \
   --source-family claude --effort low --model gpt
 ```
 
 Expect:
 
-1. `READY` on stdout.
+1. A `done` report on stdout, whose `findings` is `READY`.
 2. A JSON line on stderr with `"resolver":"t3"`, `"independent":true`, and
    `"checkout"` set to the top level of the checkout you ran it from.
 3. An archived thread for the review.
@@ -174,7 +175,7 @@ Expect `"outcome":"done"` on stdout, a JSON line on stderr with
 Then check that `t3` still reads T3 Code's model catalogue:
 
 ```sh
-lets delegate review instructions --for review-build
+lets delegate step instructions --for review-build
 ```
 
 Its `options` should list the same models as the model picker in a new
@@ -195,8 +196,7 @@ three is on your `PATH`.
 
 ### Which models it lists
 
-`lets delegate review instructions` and `lets delegate step instructions`
-list the models each CLI on your `PATH` reports, in the order `gpt`,
+`lets delegate step instructions` lists the models each CLI on your `PATH` reports, in the order `gpt`,
 `claude`, `gemini`:
 
 | Family | Listed from | What it lists |
@@ -237,14 +237,15 @@ seconds later get `SIGKILL`, and `lets` exits 6. `lets` cannot stop a
 process that moves itself out of the CLI's process group, such as a
 daemon. Ctrl-C reaches the CLI and every process it started.
 
-Each failure has its own exit code:
+Each failure has its own result:
 
-| What happened | Exit |
+| What happened | Result |
 |---|---|
-| The CLI cannot start | 3 |
-| The CLI exits non-zero having printed nothing, such as for a model it cannot run | 3 |
-| The CLI prints and then exits non-zero, or ends with an empty message | 5 |
-| The CLI runs past the time limit | 6 |
+| The CLI cannot start | Exit 3 |
+| The CLI exits non-zero having printed nothing, such as for a model it cannot run | Exit 3 |
+| The CLI prints and then exits non-zero, or ends with an empty message | A `failed` report at exit 0 |
+| The session changes a file outside `.workspace/` | A `failed` report at exit 0 |
+| The CLI runs past the time limit | Exit 6 |
 
 Exit 3 is a refusal: the caller can try another model.
 
@@ -279,7 +280,7 @@ run no model, and it starts no session.
 
 | Request | What it does |
 |---|---|
-| A review | Starts nothing, and the command exits 3. The review skill then runs the review in a subagent. |
+| A reviewer | Starts nothing, saves no prompt, and the command exits 3. The review skill then runs the review in a subagent. |
 | A step | Saves the prompt, with any answers added, to `.workspace/lets-delegate/<name>.prompt.md`. Then the command exits 3, and stderr names that file. The caller runs the step in a subagent with it. |
 | `instructions` | Lists no models. |
 
@@ -396,13 +397,11 @@ root where `step start` ran, so run them from the same root.
 
 ### The step's guidance
 
-`lets delegate step instructions --for <step>` gives the guidance at
-`delegate.<key>.guidance` in your `lets` config. The key is the step's
-own name for `shape`, `plan` and `build`, such as
-`delegate.build.guidance`, and `story` for a story run. The review plan
-step reads `delegate.plan`, and the review build step reads
-`delegate.build`. `delegate.review-plan` steers the read-only plan
-reviewer that the review plan step starts, while that step's own session
-takes `delegate.plan`; `delegate.review-build` and `delegate.build` pair
-the same way. [Set up delegation](../README.md#set-up-delegation) lists
+`lets delegate step instructions --for <intent>` gives the guidance at
+`delegate.<key>.guidance` in your `lets` config. The key is the `--for`
+value's own name, such as `delegate.build.guidance` for `--for build`,
+and `delegate.review-plan.guidance` for `--for review-plan`, the
+read-only plan reviewer. `lets-go` runs the review plan step's own
+session with `--for plan`, so it takes `delegate.plan`;
+`delegate.review-build` and `delegate.build` pair the same way. [Set up delegation](../README.md#set-up-delegation) lists
 every key.

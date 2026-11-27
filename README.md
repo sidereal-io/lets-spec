@@ -415,17 +415,19 @@ with the author. These words come up:
 - **Harness:** the agent app you work in, such as Claude Code or T3 Code.
 - **Family:** the models from one maker: `gpt`, `claude` or `gemini`.
 - **Chain:** the resolvers your config lists, which `lets` asks in order.
-- **Review:** a read-only session. `lets` waits for its final message.
+- **Reviewer:** a read-only session that reviews a plan or a branch's
+  code. `lets` waits for its final message.
 - **Step:** one stage of the workflow that `lets-go` runs, such as plan
   or build, in a session that may write files. `lets` waits for its step report.
 - **Decline:** a resolver cannot work here, so the next one is asked.
 - **Refuse:** a resolver will not run the model it was given, so `lets`
   sends it the next model.
 
-Skills call `lets delegate review run` and `lets delegate step run`,
-where `--for` names what the session is for.
-Each first asks the matching `instructions` command which models it can
-use, and passes them to `run` best first. `lets delegate review run --help`
+Skills call `lets delegate step run`, where `--for` names what the
+session is for: `--for review-plan` and `--for review-build` start a
+reviewer, and every other value a session that may write files. Each
+skill first asks `lets delegate step instructions` which models it can
+use, and passes them to `run` best first. `lets delegate step run --help`
 lists the options.
 
 ### What a review gets
@@ -441,10 +443,29 @@ The skill falls back when the resolver lists no models, or refuses them
 all. The review's section in the pull request records which ran, such
 as `fresh context, other family`.
 
+### What a reviewer returns
+
+`lets delegate step run --for review-plan` or `--for review-build` starts
+a reviewer. It needs `--source-family`, the family that wrote the work,
+and has 30 minutes, or 45 at `--effort high`, unless `--timeout-minutes`
+says otherwise. After the session, `lets` checks that it changed no file
+outside `.workspace/`, then prints one JSON line:
+
+- `done`, with `findings`: the reviewer's final message, unchanged.
+  `lets` adds the `date`.
+- `failed`, with the `reason`: the session failed, gave an empty final
+  message, or changed files outside `.workspace/`. The session is kept
+  for a person to read.
+
+A reviewer never reports `needs-input`, so it takes no `--answers-file`.
+The record line on stderr also says whether the review was independent,
+and names the checkout and commit the session read.
+
 ### What a step returns
 
-`lets delegate step run --for <step>` runs one step: `shape`, `plan`,
-`review-plan`, `build` or `review-build`. The session may change files,
+`lets delegate step run --for shape`, `--for plan` or `--for build` runs
+one step's session. `lets-go` runs the review plan and review build
+steps' own sessions with `--for plan` and `--for build`. The session may change files,
 and has 120 minutes unless `--timeout-minutes` says otherwise. It ends its
 final message with a step report, a fenced `step-report` block of YAML,
 and `lets` prints that report as one JSON line:
@@ -520,10 +541,10 @@ value that is not a string makes `instructions` exit 2.
 | Key | Session it steers | Read by | Run by | A sensible value |
 |---|---|---|---|---|
 | `delegate.shape` | The shape step's session | `lets delegate step instructions --for shape` | `lets-go` | The model you want shaping. |
-| `delegate.plan` | The plan step's session, and the review plan step's own session | `lets delegate step instructions --for plan` and `--for review-plan` | `lets-go` | The model you want planning. It also runs the review plan step, which fixes or rebuts the reviewer's findings, so a strong model, often the author's family. |
-| `delegate.review-plan` | The read-only plan reviewer | `lets delegate review instructions --for review-plan` | `lets-review-plan`, and `lets-review-pr` for decisions | A family other than the one that writes the change. Guidance outranks the review skills' own rule to pick another family. |
-| `delegate.build` | The build step's session, and the review build step's own session | `lets delegate step instructions --for build` and `--for review-build` | `lets-go` | The model you want building. It also runs the review build step, which fixes or rebuts the reviewer's findings, so a strong model, often the author's family. |
-| `delegate.review-build` | The read-only code reviewer | `lets delegate review instructions --for review-build` | `lets-review-build`, and `lets-review-pr` for implementation | A family other than the one that writes the change. Guidance outranks the review skills' own rule to pick another family. |
+| `delegate.plan` | The plan step's session, and the review plan step's own session | `lets delegate step instructions --for plan`, which `lets-go` runs for both | `lets-go` | The model you want planning. It also runs the review plan step, which fixes or rebuts the reviewer's findings, so a strong model, often the author's family. |
+| `delegate.review-plan` | The read-only plan reviewer | `lets delegate step instructions --for review-plan` | `lets-review-plan`, and `lets-review-pr` for decisions | A family other than the one that writes the change. Guidance outranks the review skills' own rule to pick another family. |
+| `delegate.build` | The build step's session, and the review build step's own session | `lets delegate step instructions --for build`, which `lets-go` runs for both | `lets-go` | The model you want building. It also runs the review build step, which fixes or rebuts the reviewer's findings, so a strong model, often the author's family. |
+| `delegate.review-build` | The read-only code reviewer | `lets delegate step instructions --for review-build` | `lets-review-build`, and `lets-review-pr` for implementation | A family other than the one that writes the change. Guidance outranks the review skills' own rule to pick another family. |
 | `delegate.story` | The child `lets-go` session of a story run | `lets delegate step instructions --for story` | `lets-go`, in an epic run | The model that should run a child `lets-go` session. |
 
 The review plan step's own session takes `delegate.plan`, and the review
