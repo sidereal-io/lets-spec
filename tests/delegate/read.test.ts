@@ -29,6 +29,14 @@ function reportOf(result: LetsResult): Record<string, unknown> {
   return JSON.parse(result.stdout);
 }
 
+// A run that failed with exit 2: nothing on stdout, and stderr that names
+// --message-file and each of names.
+function usageError(result: LetsResult, ...names: string[]) {
+  assert.equal(result.code, 2, result.output);
+  assert.equal(result.stdout, '');
+  for (const name of ['--message-file', ...names]) assert.ok(result.stderr.includes(name), result.stderr);
+}
+
 describe('step read', () => {
   test('a done report is printed with its evidence and the date it was printed', async (t) => {
     const repo = withMessage(t, `First paragraph.\n\nSecond paragraph.\n\n${DONE}`);
@@ -83,5 +91,19 @@ describe('step read', () => {
   test('a lets config that is not valid YAML does not stop it', async (t) => {
     const repo = withMessage(t, DONE, { repo: 'delegate: [unclosed\n' });
     assert.equal(reportOf(await repo.run(READ)).outcome, 'done');
+  });
+
+  test('no --message-file is a usage error', async (t) => {
+    usageError(await delegateRepo(t).run(['delegate', 'step', 'read']));
+  });
+
+  test('a --message-file that does not exist is a usage error that names it', async (t) => {
+    usageError(await delegateRepo(t).run(['delegate', 'step', 'read', '--message-file', 'missing.md']), 'missing.md');
+  });
+
+  test('a --message-file that is a folder is a usage error that names it', async (t) => {
+    const repo = delegateRepo(t);
+    mkdirSync(join(repo.cwd, 'notes'));
+    usageError(await repo.run(['delegate', 'step', 'read', '--message-file', 'notes']), 'notes');
   });
 });
