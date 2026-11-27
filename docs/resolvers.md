@@ -16,7 +16,7 @@ Each one declines where it cannot work, and the next in your config is
 asked. List them in this order, and leave out any you do not use:
 
 ```yaml
-version: 3
+version: 4
 delegate:
   resolvers:
     - t3
@@ -149,7 +149,7 @@ in a project that T3 knows:
 
 ```sh
 printf 'Reply with the single word READY and nothing else.\n' > .workspace/p.md
-lets delegate review run --for code --name smoke-review --prompt-file .workspace/p.md \
+lets delegate review run --for review-build --name smoke-review --prompt-file .workspace/p.md \
   --source-family claude --effort low --model gpt
 ```
 
@@ -174,7 +174,7 @@ Expect `"outcome":"done"` on stdout, a JSON line on stderr with
 Then check that `t3` still reads T3 Code's model catalogue:
 
 ```sh
-lets delegate review instructions --for code
+lets delegate review instructions --for review-build
 ```
 
 Its `options` should list the same models as the model picker in a new
@@ -397,5 +397,12 @@ root where `step start` ran, so run them from the same root.
 ### The step's guidance
 
 `lets delegate step instructions --for <step>` gives the guidance at
-`delegate.step.<step>.guidance` in your `lets` config, such as
-`delegate.step.build.guidance`.
+`delegate.<key>.guidance` in your `lets` config. The key is the step's
+own name for `shape`, `plan` and `build`, such as
+`delegate.build.guidance`, and `story` for a story run. The review plan
+step reads `delegate.plan`, and the review build step reads
+`delegate.build`. `delegate.review-plan` steers the read-only plan
+reviewer that the review plan step starts, while that step's own session
+takes `delegate.plan`; `delegate.review-build` and `delegate.build` pair
+the same way. [Set up delegation](../README.md#set-up-delegation) lists
+every key.
