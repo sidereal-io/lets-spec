@@ -31,7 +31,7 @@ in every text that still names it.
 
 ## 4. Check the whole change [depends-on: 3]
 
-- [ ] 4.1 [easy] No text outside `openspec/changes/` and `docs/decisions/` names `lets delegate review`, exit 5 or 7 of `lets delegate`, or a delegate strategy: check `README.md`, `docs/`, `skills/`, `lets/src/`, `schemas/` and `flake.nix`, then run the project's three checks (verify: pnpm test && nix flake check && mise run check)
+- [x] 4.1 [easy] No text outside `openspec/changes/` and `docs/decisions/` names `lets delegate review`, exit 5 or 7 of `lets delegate`, or a delegate strategy: check `README.md`, `docs/`, `skills/`, `lets/src/`, `schemas/` and `flake.nix`, then run the project's three checks (verify: pnpm test && nix flake check && mise run check) (✓ the sweep found no such text, and pnpm test, nix flake check and mise run check passed)
 
 ## Deviations Ledger
 
