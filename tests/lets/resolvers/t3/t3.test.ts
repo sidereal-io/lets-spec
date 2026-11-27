@@ -155,6 +155,11 @@ test('detect is false for a detached step whose T3 server has stopped', () => {
   assert.equal(createAdapter(detached({ processAlive: () => false })).detect(), false);
 });
 
+test('detect is false for a detached step whose marker names a T3 server that has since restarted', () => {
+  const restarted = { [RUNTIME]: JSON.stringify({ pid: 8, origin: ORIGIN }) };
+  assert.equal(createAdapter(detached({ files: restarted, processAlive: (pid: number) => pid === 8 })).detect(), false);
+});
+
 // An entry of server.getConfig's providers[], enabled and ready unless told otherwise.
 const provider = (instanceId: string, models: unknown, over: Record<string, unknown> = {}) =>
   ({ instanceId, driver: instanceId, enabled: true, status: 'ready', models, ...over });
