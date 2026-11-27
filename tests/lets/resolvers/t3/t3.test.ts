@@ -160,6 +160,26 @@ test('detect is false for a detached step whose marker names a T3 server that ha
   assert.equal(createAdapter(detached({ files: restarted, processAlive: (pid: number) => pid === 8 })).detect(), false);
 });
 
+test('detachedEnv names the running T3 server inside T3 Code', () => {
+  const chain: Record<number, number> = { 100: 7, 7: 1 };
+  const inside = fakeIo({ files: { [RUNTIME]: JSON.stringify({ pid: 7, origin: ORIGIN }) }, pid: 100, parentPid: (pid) => chain[pid] ?? null, processAlive: (pid) => pid === 7, env: {} });
+  assert.deepEqual(createAdapter(inside).detachedEnv!(), { LETS_T3_SERVER_PID: '7' });
+});
+
+test('detachedEnv is empty outside T3 Code', () => {
+  assert.deepEqual(createAdapter(detached({ env: {} })).detachedEnv!(), {});
+});
+
+test('detachedEnv is empty when the parent processes cannot be read', () => {
+  const broken = detached({ env: {}, parentPid: () => { throw new Error('ps failed'); } });
+  assert.deepEqual(createAdapter(broken).detachedEnv!(), {});
+});
+
+test('detachedEnv is empty when the runtime file cannot be read', () => {
+  const broken = detached({ env: {}, exists: () => { throw new Error('EACCES'); } });
+  assert.deepEqual(createAdapter(broken).detachedEnv!(), {});
+});
+
 // An entry of server.getConfig's providers[], enabled and ready unless told otherwise.
 const provider = (instanceId: string, models: unknown, over: Record<string, unknown> = {}) =>
   ({ instanceId, driver: instanceId, enabled: true, status: 'ready', models, ...over });
