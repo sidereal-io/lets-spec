@@ -28,6 +28,19 @@ export function readReport(text: string): Report {
   }
 }
 
+// The line lets prints for report at now: one JSON line, with outcome
+// first. A done report also carries date, the time it was printed, so the
+// caller knows when the step finished.
+export function printedReport(report: Report, now: number): string {
+  const printed = report.outcome === 'done' ? { ...report, date: isoSeconds(now) } : report;
+  return `${JSON.stringify(printed)}\n`;
+}
+
+// ms as ISO 8601 UTC, to the second, such as 2026-11-04T09:30:00Z.
+function isoSeconds(ms: number): string {
+  return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
 class Unreadable extends Error {}
 
 function checked(block: string | null): Report {

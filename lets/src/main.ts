@@ -14,6 +14,8 @@ import { run as review } from './delegate/review.ts';
 import type { ReviewOptions } from './delegate/review.ts';
 import { start as stepStart, wait as stepWait } from './delegate/background.ts';
 import type { StartOptions } from './delegate/background.ts';
+import { read as stepRead } from './delegate/read.ts';
+import type { ReadOptions } from './delegate/read.ts';
 import { run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './delegate/step.ts';
 import type { StepOptions } from './delegate/step.ts';
 import { STRATEGIES } from './delegate/strategies.ts';
@@ -194,10 +196,29 @@ Exit codes:
   2  usage error, or every resolver in the config declined
   3  no fresh session can run here on any model given: the harness or the
      account said no before the model gave any output, or no resolver
-     started a session. stderr names each model and why.
+     started a session. stderr names each model and why. When no resolver
+     started a session, the step can run in a subagent with the prompt
+     lets saved, and lets delegate step read reads its step report.
   4  the outcome is unknown, such as no reply from the harness, or the
      resolver failed in a way it could not report
   6  the session did not finish in time`;
+
+const STEP_READ_HELP = `
+Reads a session's final message from --message-file, such as the final
+message of a subagent that ran a step after lets delegate step run exited
+3. A relative path is read from the working directory.
+
+stdout: the step report the message ends with, as one JSON line, by the
+rules lets delegate step run uses: lets adds date to a done report, and a
+message with no valid report is a failed report whose reason says what is
+wrong, and whose message holds the final message.
+
+It starts no session, asks no resolver and reads no lets config.
+
+Exit codes:
+  0  a step report is on stdout, whatever its outcome
+  2  usage error, such as no --message-file, or a file that cannot be
+     read. stderr names it.`;
 
 const STEP_START_HELP = `
 Starts lets delegate step run with the same options in the background, and
@@ -419,6 +440,16 @@ stepRunOptions(stepCommand
   .addHelpText('after', STEP_START_HELP)
   .action(async ({ model, ...options }: Omit<StartOptions, 'models'> & { model: string[] }) => {
     process.exitCode = await stepStart({ ...options, models: model }, realDeps());
+  });
+
+stepCommand
+  .command('read')
+  .summary('print the step report a final message ends with')
+  .description('Read a session\'s final message from a file, and print its step report as lets delegate step run does. Starts no session.')
+  .requiredOption('--message-file <path>', 'the file that holds the final message')
+  .addHelpText('after', STEP_READ_HELP)
+  .action(async (options: ReadOptions) => {
+    process.exitCode = await stepRead(options, realDeps());
   });
 
 stepCommand

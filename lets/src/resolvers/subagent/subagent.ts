@@ -37,7 +37,7 @@ export function createAdapter(io: Io): Adapter {
     // Asked again for the next model, it writes the same file again.
     step: async ({ cwd, name, prompt }) => {
       save(cwd, name, prompt);
-      throw new Refused(`no resolver started a session here, so no fresh session can run. Run the step in a subagent with the prompt saved in ${promptFile(name)}.`);
+      throw new Refused(`no resolver started a session here, so no fresh session can run. Run the step in a subagent with the prompt saved in ${promptFile(name)}. Then run lets delegate step read --message-file <file> on its final message.`);
     },
     // It issues no handle, so it has nothing to finish.
     finish: async () => {},

@@ -296,6 +296,24 @@ test('step run --help lists exit codes 0, 2, 3, 4 and 6, and says exit 0 carries
   assert.doesNotMatch(text, / [57] {1,2}the session/);
 });
 
+test('step run --help says at exit 3 that the step can run in a subagent, and that step read reads its report', async () => {
+  const text = (await lets('delegate', 'step', 'run', '--help')).stdout.replace(/\s+/g, ' ');
+  const exit3 = /3 no fresh session can run here.*? 4 the outcome is unknown/.exec(text)?.[0] ?? '';
+  assert.match(exit3, /subagent/);
+  assert.match(exit3, /lets delegate step read/);
+});
+
+test('step read --help names --message-file, lists exit codes 0 and 2, and reads by the rules of step run', async () => {
+  const { code, stdout } = await lets('delegate', 'step', 'read', '--help');
+  assert.equal(code, 0);
+  const text = stdout.replace(/\s+/g, ' ');
+  assert.match(text, /--message-file <path>/);
+  assert.match(text, /0 a step report is on stdout, whatever its outcome/);
+  assert.match(text, /2 usage error/);
+  assert.match(text, /lets delegate step run/);
+  assert.doesNotMatch(text, / [3-6] {1,2}[a-z]/);
+});
+
 test('review run --help gives the 30-minute default, and 45 at effort high', async () => {
   const text = (await lets('delegate', 'review', 'run', '--help')).stdout.replace(/\s+/g, ' ');
   assert.match(text, /--timeout-minutes <minutes> .*\(default: 30, or 45 with --effort high\)/);

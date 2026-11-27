@@ -4,13 +4,13 @@
 // between the commands, not each command: the tests beside each command
 // group do that.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { itemList, issue, issueState, json, LOOKUP_ONE, REPO } from '../backlog/github.ts';
 import { type DelegateRepo, delegateRepo, PROMPT } from '../delegate/repo.ts';
-import { agyWrite, claudeWrite, cleanUpStep, codexWrite, ending, stepRun, stepStart, untilGone } from '../delegate/steps.ts';
+import { agyWrite, assertClockDate, claudeWrite, cleanUpStep, codexWrite, ending, stepRun, stepStart, untilGone } from '../delegate/steps.ts';
 import { agy, claude, codex, type LetsResult, sharedState, type StandInReply, type StandInRow, standIn, tempDir } from '../support/lets.ts';
 import { useRelease } from '../sync/project.ts';
 
@@ -188,6 +188,33 @@ test('the story journey: sync, then ready, item and claim, then a plan step on t
   assert.deepEqual(clis.claude.calls(), [writes.claude]);
   assert.deepEqual(clis.agy.calls(), [['models'], writes.agy]);
   assert.deepEqual(order.read().tried, options.map((option: string) => option.split('/')[0]));
+});
+
+test('the subagent journey: step run with no config exits 3 and saves the prompt, then step read reads the subagent\'s message', async (t) => {
+  const repo = delegateRepo(t);
+  const session = 'story-149-build';
+  const step = stepRun({ for: 'build', name: session });
+  const refused = await repo.run(step);
+  exited(refused, step.join(' '), 3);
+  assert.equal(refused.stdout, '');
+  assert.match(refused.stderr, /lets delegate step read/);
+  // The subagent runs the prompt that stderr names.
+  const saved = /(\.workspace\/lets-delegate\/\S+\.prompt\.md)/.exec(refused.stderr)?.[1];
+  assert.ok(saved !== undefined, `stderr names no saved prompt:\n${refused.stderr}`);
+  assert.equal(readFileSync(join(repo.cwd, saved), 'utf8'), PROMPT);
+
+  // lets-go saves the subagent's final message, then has lets read it.
+  const message = join('.workspace', 'lets-go', `${session}-message.md`);
+  mkdirSync(join(repo.cwd, '.workspace', 'lets-go'), { recursive: true });
+  writeFileSync(join(repo.cwd, message), `Built it.\n\n${done('commit 3f2a1c0')}`);
+  const args = ['delegate', 'step', 'read', '--message-file', message];
+  const before = Date.now();
+  const read = await repo.run(args);
+  const after = Date.now();
+  const { date, ...report } = printed(read, args.join(' '));
+  assert.deepEqual(report, { outcome: 'done', evidence: ['commit 3f2a1c0'] });
+  assertClockDate(date, before, after);
+  assert.equal(read.stderr, '');
 });
 
 test('the epic-wave journey: item and waves, then a story run for each story of the first wave, waited on', async (t) => {

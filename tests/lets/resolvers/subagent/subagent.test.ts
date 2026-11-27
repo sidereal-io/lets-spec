@@ -66,6 +66,14 @@ test('step is refused with where the prompt is saved, so run the step in a subag
   });
 });
 
+test('step is refused with lets delegate step read, the command that reads the subagent\'s report', async () => {
+  await assert.rejects(createAdapter(fakeIo()).step!(stepInput, { timeoutMs: 1000 }), (error) => {
+    assert.ok(error instanceof Refused);
+    assert.match(error.message, /lets delegate step read --message-file/);
+    return true;
+  });
+});
+
 test('step starts no process, even with every executor on PATH', async () => {
   const io = fakeIo({ commands: ['codex', 'claude', 'agy'] });
   await assert.rejects(createAdapter(io).step!(stepInput, { timeoutMs: 1000 }), Refused);
