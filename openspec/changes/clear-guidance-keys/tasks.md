@@ -26,8 +26,11 @@
 
 ## 5. Integration [depends-on: 2, 3, 4]
 
-- [ ] 5.1 [easy] No source text outside the rename code and its tests still names an old guidance key or `version: 3` as valid, or runs `lets delegate review` with `--for plan` or `--for code`: check `README.md`, `docs/`, `skills/`, `lets/src/` and `schemas/`, and run the project's three checks (verify: pnpm test && nix flake check && mise run check)
+- [x] 5.1 [easy] No source text outside the rename code and its tests still names an old guidance key or `version: 3` as valid, or runs `lets delegate review` with `--for plan` or `--for code`: check `README.md`, `docs/`, `skills/`, `lets/src/` and `schemas/`, and run the project's three checks (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test passed, 871 tests; nix flake check passed; mise run check passed, 19 items)
 
 ## Deviations Ledger
 
 <!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-26, task 5.1: `flake.nix` also ran `lets delegate review instructions --for code`, in two smoke checks, which the task's list of places to check left out. `nix flake check` failed on it. Both checks now pass `--for review-build`.
+- 2026-11-26, task 1.5: the tests that `review run` and `step run` ignore an old guidance key, and that a null old entry is no old key, passed before the code changed. They guard behavior the new check must not break, so they stay.
