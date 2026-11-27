@@ -96,7 +96,7 @@
 and the `Intent` type drops `code`. `--for` takes its choices from
 `STRATEGIES`, so `review --for plan` or `--for code` exits 2 with
 commander's message, which names `--for` and the two new values. The
-review record's `for` field is the value given, so it now reads
+review record's `for` is the value given, so it now reads
 `review-plan` or `review-build`. `step` keeps its intents, so
 `review-plan` and `review-build` are now intents of both strategies:
 under `review` they start the read-only reviewer, and under `step` the
@@ -136,17 +136,28 @@ Alternative: the key is the intent, with no table. Rejected: under
 #354 and #355 ship, so a name rule needs exceptions that a table states
 plainly. Once both have shipped, the table could give way to that rule.
 
-### The old keys and their new names are derived, not listed
+### The old step keys are derived; the old review keys are listed
 
-The old key for each pair is `delegate.<strategy>.<intent>`, and its
-new key is `delegate.<guidanceKey(strategy, intent)>`. A function
+`step` keeps its intents, so each old step key is
+`delegate.step.<intent>`, and its new key is
+`delegate.<guidanceKey('step', intent)>`. `review` loses its old
+intents, so its two old keys cannot be derived from `STRATEGIES`.
+`OLD_REVIEW_KEYS` lists them: `plan` becomes `review-plan` and `code`
+becomes `review-build`, and each new key is
+`delegate.<guidanceKey('review', <new intent>)>`. A function
 `oldGuidanceKeys(delegate)` returns, for a `delegate` mapping, each
-present, non-null old key with its new key, in `STRATEGIES` order. For
-`step` with `review-plan` or `review-build`, it marks the new key as
-shared with the plan step or the build step, so the message can say so.
+present, non-null old key with its new key: the two review keys first,
+then the step keys in `STRATEGIES` order. For `step` with `review-plan`
+or `review-build`, it marks the new key as shared with the plan step or
+the build step, so the message can say so.
 
-Alternative: a hand-written rename table. Rejected: it would be a
-second copy of the mapping that could drift.
+Alternative: derive the review keys too, as `delegate.review.<intent>`.
+Rejected: once `review`'s intents are `review-plan` and `review-build`,
+that finds `delegate.review.review-plan` and misses
+`delegate.review.plan` and `delegate.review.code`, the keys users
+actually hold. Alternative: a hand-written table for every old key.
+Rejected: the step half would be a second copy of the mapping that
+could drift.
 
 ### parseDocument writes the version 3 message
 

@@ -303,7 +303,7 @@ When a resolver fails in a way it does not report as a decline, a refusal, a fai
 ## ADDED Requirements
 
 ### Requirement: A version 3 file names each guidance key's new name
-When either file of the lets config holds `version: 3`, every `lets delegate`, `lets go questions` and `lets backlog` command SHALL fail as it does for any other wrong version, before it asks any resolver or runs any backend command. Its message SHALL name the file and say that the version must be `4`. For each old guidance key that file holds, the message SHALL also name that key and its new key. An old guidance key is an entry under `delegate.review` or `delegate.step` that names an intent of that strategy, present and not null. Each old key's new key SHALL be:
+When either file of the lets config holds `version: 3`, every `lets delegate`, `lets go questions` and `lets backlog` command SHALL fail as it does for any other wrong version, before it asks any resolver or runs any backend command. Its message SHALL name the file and say that the version must be `4`. For each old guidance key that file holds, the message SHALL also name that key and its new key. An old guidance key is one of the entries listed below, present and not null. Each old key's new key SHALL be:
 
 - `delegate.review.plan`: `delegate.review-plan`
 - `delegate.review.code`: `delegate.review-build`

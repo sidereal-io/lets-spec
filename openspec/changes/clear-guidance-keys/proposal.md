@@ -71,7 +71,7 @@ None.
   stops `instructions` with a message naming the new key.
 - `delegate-default`: its scenarios use `version: 4`, a new guidance
   key and `--for review-build`.
-- `delegate-review`: the review record's `for` field holds
+- `delegate-review`: the review record's `for` holds
   `review-plan` or `review-build`.
 - `delegate-resolvers`: its scenarios run `lets delegate review` with
   `--for review-plan` or `--for review-build`. No resolver behavior
