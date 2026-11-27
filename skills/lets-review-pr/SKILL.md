@@ -158,8 +158,8 @@ absolute path too. Include that path and its criteria in every role prompt,
 as [the role prompt](references/role-prompt.md) shows. Reviewers receive the
 criteria in their own session; reading them here does not supply them there.
 
-For decisions use `lets delegate review instructions --for review-plan`; for
-implementation use `lets delegate review instructions --for review-build`.
+For decisions use `lets delegate step instructions --for review-plan`; for
+implementation use `lets delegate step instructions --for review-build`.
 Their `guidance` comes from `delegate.review-plan.guidance` or
 `delegate.review-build.guidance`.
 
@@ -186,14 +186,20 @@ template. Run one fresh session per examiner, challenger and examiner
 response. For each, use the appropriate existing intent with ranked models:
 
 ```bash
-lets delegate review run --for <review-plan-or-review-build> --name <run-pass-role-model> \
+lets delegate step run --for <review-plan-or-review-build> --name <run-pass-role-model> \
   --prompt-file <absolute-prompt-path> --source-family <compatibility-family> \
   --effort high --model <first> --model <second> \
-  > <absolute-role-output-path> 2> <absolute-role-metadata-path>
+  > <absolute-role-report-path> 2> <absolute-role-metadata-path>
 ```
 
-Exit 0 supplies output and a final JSON metadata line identifying the actual
-model/resolver. Empty output is incomplete.
+Exit 0 writes one JSON line, the report, to the report path, and a final
+JSON metadata line identifying the actual model/resolver. Read the report's
+`outcome`. For `done`, the role's output is the report's `findings`, the
+reviewer's final message unchanged; save it as the role output. For
+`failed`, the role session failed, gave an empty final message, or changed
+files outside `.workspace/`: record no review for that role, show the
+user the report's `reason` and the metadata file, and stop. The review is
+incomplete.
 
 When discovery options are empty or the run exits 3 (all models refused),
 use an available fresh read-only subagent with no inherited context and the
