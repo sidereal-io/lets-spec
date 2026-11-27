@@ -8,7 +8,7 @@
 import { resolve } from 'node:path';
 import type { Deps } from '../io.ts';
 import { readConfig } from './config.ts';
-import { EXIT, SessionFailed, UsageError } from '../resolvers/kit/errors.ts';
+import { EXIT, SessionFailed, SpawnError, UsageError } from '../resolvers/kit/errors.ts';
 import { headCommit, isTreeClean, repoRoot, treeStatus } from './git.ts';
 import { guarded } from './guarded.ts';
 import { checkModels, finishSession, pick, withModels } from './lookup.ts';
@@ -108,14 +108,41 @@ async function stepSession({ adapter, models, input, cwd, timeoutMs, deps }: Ses
 
 // A reviewer: a read-only session, whose final message is the findings.
 // before: the tree's entries before the session, which are the user's.
+// Only a done reviewer is cleaned up. Any other is kept for a person to
+// read. Throws a SpawnError when the tree cannot be checked after the
+// session, since lets cannot tell whether the reviewer kept to read-only.
 async function reviewerSession({ adapter, models, input, cwd, timeoutMs, deps }: Session, sourceFamily: Family | undefined, before: string[]): Promise<Outcome> {
   const { io } = deps;
-  const { value: { handle, text, checkout }, model: sent } = await withModels(models, (model) => adapter.run(input(model), { timeoutMs }));
+  type Ran = { handle: Handle; text: string; checkout: string | null } | { handle: null; reason: string; checkout: null };
+  // As for a step, a session the resolver reports failed gives no handle.
+  const { value: ran, model: sent } = await withModels(models, async (model): Promise<Ran> => {
+    try {
+      return await adapter.run(input(model), { timeoutMs });
+    } catch (error) {
+      if (!(error instanceof SessionFailed)) throw error;
+      return { handle: null, reason: error.message, checkout: null };
+    }
+  });
+  const { handle, checkout } = ran;
+  const where = handle === null ? '' : ` (${handle.kind} ${handle.id})`;
+  const finish = (ok: boolean) => (handle === null ? undefined : finishSession(adapter, handle, { cwd, ok, deps }));
   // Read after the session, so a commit it made shows.
   const commit = checkout === null ? null : await headCommit(checkout, io);
-  const gitClean = await isTreeClean(cwd, io, before);
-  const report: Report = { outcome: 'done', findings: text };
-  await finishSession(adapter, handle, { cwd, ok: true, deps });
+
+  let gitClean;
+  try {
+    gitClean = await isTreeClean(cwd, io, before);
+  } catch (error) {
+    if (!(error instanceof SpawnError)) throw error;
+    await finish(false);
+    throw new SpawnError(`could not check the tree after the session: ${error.message}${where}`);
+  }
+  let report: Report;
+  if (!('text' in ran)) report = { outcome: 'failed', reason: ran.reason };
+  else if (ran.text.trim() === '') report = { outcome: 'failed', reason: `${adapter.name} gave an empty final message${where}` };
+  else if (!gitClean) report = { outcome: 'failed', reason: `the session changed files outside .workspace/${where}` };
+  else report = { outcome: 'done', findings: ran.text };
+  await finish(report.outcome === 'done');
   const independent = parseModel(sent)!.family !== sourceFamily;
   return { report, sent, fields: { independent, handle, checkout, commit, gitClean } };
 }

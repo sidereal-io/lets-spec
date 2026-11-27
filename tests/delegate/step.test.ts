@@ -485,6 +485,61 @@ describe('step run for a reviewer', () => {
     assert.equal(existsSync(lastMessage(repo.cwd, REVIEWER)), false);
   });
 
+  test('a reviewer with a blank final message is a failed report naming the session, and its session is kept', async (t) => {
+    const blankClaude = delegateRepo(t, { user: CLI });
+    claude(blankClaude.standIns, { rows: [{ args: claudeRead(), stdout: ' \n' }] });
+    const fromClaude = await blankClaude.run(reviewer({ models: ['claude'] }));
+    assert.deepEqual(reportOf(fromClaude), { outcome: 'failed', reason: `cli gave an empty final message (process ${REVIEWER})` });
+    const blankCodex = delegateRepo(t, { user: CLI });
+    codex(blankCodex.standIns, [], { rows: [codexReviews(blankCodex.cwd, ' \n')] });
+    assert.equal(reportOf(await blankCodex.run(reviewer())).outcome, 'failed');
+    assert.equal(readFileSync(lastMessage(blankCodex.cwd, REVIEWER), 'utf8'), ' \n', 'the session was finished without ok');
+  });
+
+  test('a codex reviewer that writes no last message is a failed report: the final message was empty', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    codex(repo.standIns, [], { rows: [{ args: codexRead(repo.cwd, { model: 'gpt-6-luna', name: REVIEWER }), stdout: 'working...\n' }] });
+    const { outcome, reason } = reportOf(await repo.run(reviewer()));
+    assert.equal(outcome, 'failed');
+    assert.match(String(reason), /empty final message/);
+  });
+
+  test('a reviewer that changes a file outside .workspace/ is a failed report naming the session, with gitClean false', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    codex(repo.standIns, [], { rows: [codexReviews(repo.cwd, FINDINGS, { 'notes.md': 'a note\n' })] });
+    const result = await repo.run(reviewer());
+    assert.deepEqual(reportOf(result), { outcome: 'failed', reason: `the session changed files outside .workspace/ (process ${REVIEWER})` });
+    assert.equal(recordOf(result).gitClean, false);
+    assert.equal(readFileSync(lastMessage(repo.cwd, REVIEWER), 'utf8'), FINDINGS, 'the session was finished without ok');
+  });
+
+  test('a reviewer session that prints and then fails is a failed report with its reason, a null handle, checkout and commit, and the next model is not asked', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    const clis = {
+      claude: claude(repo.standIns, { rows: [{ args: claudeRead(), stdout: 'half a review', stderr: 'rate limited\n', code: 2 }] }),
+      codex: codex(repo.standIns, [], { rows: [codexReviews(repo.cwd)] }),
+    };
+    const result = await repo.run(reviewer({ models: ['claude', 'gpt/gpt-6-luna'] }));
+    const { outcome, reason } = reportOf(result);
+    assert.equal(outcome, 'failed');
+    assert.match(String(reason), /claude failed: exit 2: rate limited/);
+    const { handle, checkout, commit, gitClean } = recordOf(result);
+    assert.deepEqual({ handle, checkout, commit, gitClean }, { handle: null, checkout: null, commit: null, gitClean: true });
+    assert.equal(clis.claude.calls().length, 1);
+    assert.deepEqual(clis.codex.calls(), []);
+  });
+
+  test('a tree that cannot be checked after a reviewer is exit 4, naming the session, with nothing on stdout', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    // git rev-parse HEAD still works; git status cannot read the index.
+    codex(repo.standIns, [], { rows: [codexReviews(repo.cwd, FINDINGS, { '.git/index': 'not an index\n' })] });
+    const result = await repo.run(reviewer());
+    failed(result, 4);
+    assert.ok(result.stderr.includes(`could not check the tree after the session: git status failed in ${repo.cwd}`), result.stderr);
+    assert.ok(result.stderr.includes(`(process ${REVIEWER})`), result.stderr);
+    assert.equal(readFileSync(lastMessage(repo.cwd, REVIEWER), 'utf8'), FINDINGS, 'the session was finished without ok');
+  });
+
   test('the user\'s own changes from before the run, and the reviewer\'s scratch files, do not count', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     writeFileSync(join(repo.cwd, 'b.md'), 'mine\n');

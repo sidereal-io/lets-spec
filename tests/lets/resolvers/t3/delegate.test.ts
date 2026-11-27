@@ -522,6 +522,35 @@ test('a step thread that stops to ask is a failed report naming the thread, and 
   assert.deepEqual(asked(sent), ['launch']);
 });
 
+// A code reviewer named x on gpt/gpt-6-astra, from a claude author, as step run takes it.
+const astraReviewer: StepOptions = { for: 'review-build', name: 'x', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', timeoutMinutes: 1, models: ['gpt/gpt-6-astra'] };
+
+test('a reviewer thread that returns a plan is a failed report naming the thread, and keeps it', async () => {
+  const { db, sent, t } = runningT3();
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'codex', 'completed', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_turn_items (turn_item_id, thread_id, run_id, ordinal, type, status, updated_at, payload_json)
+    values ('plan', 'T', 'run-1', 1, 'proposed_plan', 'completed', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_messages (message_id, thread_id, run_id, role, streaming, created_at, updated_at, payload_json)
+    values ('a1', 'T', 'run-1', 'assistant', 0, 'now', 'now', ?)`).run(JSON.stringify({ text: 'Here is my plan.' }));
+  assert.equal(await step(astraReviewer, t.deps), 0, t.stderr());
+  assert.deepEqual(JSON.parse(t.stdout()), { outcome: 'failed', reason: 'the session returned a plan, not a result (thread T)' });
+  const { handle, checkout, commit } = JSON.parse(t.stderr());
+  assert.deepEqual({ handle, checkout, commit }, { handle: null, checkout: null, commit: null });
+  assert.deepEqual(asked(sent), ['launch']);
+});
+
+test('a reviewer thread that stops to ask is a failed report naming the thread, and keeps it', async () => {
+  const { db, sent, t } = runningT3();
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'codex', 'waiting', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_runtime_requests (runtime_request_id, thread_id, node_id, kind, status, created_at, payload_json)
+    values ('rq1', 'T', 'n1', 'user_input', 'pending', 'now', '{}')`).run();
+  assert.equal(await step(astraReviewer, t.deps), 0, t.stderr());
+  assert.deepEqual(JSON.parse(t.stdout()), { outcome: 'failed', reason: 'the session stopped to ask (thread T)' });
+  assert.deepEqual(asked(sent), ['launch']);
+});
+
 test('step instructions inside T3 Code list the catalogue\'s models', async () => {
   const t = withT3(insideT3({ config: { providers: [provider('codex', ['gpt-6-luna'])] } }));
   assert.equal(await instructions({ strategy: 'step', for: 'plan' }, t.deps), 0, t.stderr());
