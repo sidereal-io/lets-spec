@@ -350,7 +350,7 @@ describe('step run', () => {
     failed(result, 3);
     const saved = readFileSync(join(repo.cwd, '.workspace', 'lets-delegate', 'plan-x.prompt.md'), 'utf8');
     assert.ok(saved.startsWith(PROMPT) && saved.includes('Which schema?') && saved.includes('lets-minimal'), saved);
-    assert.match(result.stderr, /no resolver.*subagent.*\.workspace\/lets-delegate\/plan-x\.prompt\.md/);
+    assert.match(result.stderr, /no resolver.*subagent.*\.workspace\/lets-delegate\/plan-x\.prompt\.md.*lets delegate step read/);
     assert.doesNotMatch(result.stderr, /installed/);
     noCalls(clis);
   });
