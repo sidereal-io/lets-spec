@@ -55,8 +55,9 @@ None.
   lets-go names one thing*, *lets-go opens with an overview of its
   parts*, *Each part ends by saying what comes next*, *Each lets-go
   procedure returns a result*, *Each part names the action for each
-  result*, *Each lets-go rule is written once* and *lets-go keeps what
-  only some runs need in reference files*.
+  result*, *Each lets-go rule is written once*, *lets-go keeps what
+  only some runs need in reference files* and *An epic run starts on an
+  epic with open stories*.
 
 ## Impact
 

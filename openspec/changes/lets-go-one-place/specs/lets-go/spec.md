@@ -271,3 +271,29 @@ A rule written once MAY run more than once. `next` runs *Check the prerequisite*
 #### Scenario: The child's part is in its file
 - **WHEN** a reader lists the headings of each file of `lets-go`
 - **THEN** `references/story-run.md` opens with a `#` title and a line that says a run reads it only in a story run's child session, and `SKILL.md` holds none of its headings
+
+### Requirement: An epic run starts on an epic with open stories
+When *Confirm the packet* returns `epic` for the run's issue, the run started on the default branch, the epic has open sub-issues, and *An epic run finishes a stopped discovery before it builds* found no discovery in progress, `lets-go` SHALL start an epic run on that epic, `#<parent>`. On a change's branch it SHALL say that an epic run needs the default branch, and stop: an epic has no change's branch. The epic's stories SHALL be the open sub-issues that `lets backlog item <parent>` printed in *Check the issue*, in the order it printed them. They SHALL stay the same set for the whole epic run: a sub-issue added or closed during the run does not change it. `lets-go` SHALL claim nothing on the epic, and create no branch for it: it claims each story it builds, as for any picked issue. Before the epic run starts, *Check the issue* SHALL run only these checks on the epic:
+
+- the blocker read and the open-blocker decision, as for any issue. An epic has no change's branch, so `lets-go` SHALL not look for one. An open blocker on the epic SHALL stop the run, as for an issue with no branch;
+- *Confirm the packet*, which returns `epic` from the Kind alone.
+
+It SHALL not run *Find the source of demand* or *Check the prerequisite* on the epic. Each story's own *Check the prerequisite* runs when the epic run ranks it.
+
+Each story run SHALL run in a child `lets-go` session, as *An epic run runs each story in a child session* says. An empty epic SHALL go as *An epic run shapes an empty epic first* says, and an epic whose sub-issues are all closed as *A finished epic stops the run* says.
+
+#### Scenario: An epic with open stories
+- **WHEN** the user runs `lets-go #278` on the default branch, #278's Kind is Epic, it has no open blocker, and it has the open sub-issues #279 to #287
+- **THEN** `lets-go` starts an epic run whose stories are #279 to #287, in that order, and claims nothing on #278
+
+#### Scenario: An epic with an open blocker
+- **WHEN** the user runs `lets-go #278` on the default branch, and #278 is blocked by the open issue #263
+- **THEN** `lets-go` says that #263 blocks #278, starts no epic run, and claims nothing
+
+#### Scenario: The epic's own glossary handoff is not checked
+- **WHEN** #278's body has a **Glossary handoff** that names #279 as the owner of its definitions, and #279's pull request has not merged
+- **THEN** `lets-go` runs no *Check the prerequisite* on #278, and starts the epic run
+
+#### Scenario: The checks on the epic come before the epic run
+- **WHEN** a reader reads *Check the issue* in `skills/lets-go/SKILL.md`
+- **THEN** it says that an epic has no change's branch to look for, and that *Find the source of demand* does not run for an epic, and its `epic` case links `references/epic-run.md#run-the-epic`
