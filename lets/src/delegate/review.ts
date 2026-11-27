@@ -9,7 +9,8 @@ import { headCommit, isTreeClean, repoRoot, treeStatus } from './git.ts';
 import { guarded } from './guarded.ts';
 import { checkModels, finishSession, pick, withModels } from './lookup.ts';
 import { readPromptFile } from './prompt-file.ts';
-import { DEFAULT_TIMEOUT_MINUTES, normalizeName } from '../resolvers/kit/adapter.ts';
+import { normalizeName } from '../resolvers/kit/adapter.ts';
+import { REVIEW_TIMEOUT_MINUTES } from './step.ts';
 import { parseModel } from '../resolvers/kit/families.ts';
 import type { Effort, Family } from '../resolvers/kit/families.ts';
 import type { Intent } from './strategies.ts';
@@ -36,7 +37,7 @@ async function review({ for: intent, name, promptFile, sourceFamily, effort, mod
   const before = await treeStatus(cwd, io);
 
   const adapter = await pick('run', { ...deps, config, fileOf });
-  const timeoutMs = (timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES[effort]) * 60000;
+  const timeoutMs = (timeoutMinutes ?? REVIEW_TIMEOUT_MINUTES[effort]) * 60000;
   const { value: { handle, text, checkout }, model: sent } = await withModels(models, (model) =>
     adapter.run({ name: normalizeName(name), prompt, cwd, ...parseModel(model)!, effort }, { timeoutMs }));
   const { family, model } = parseModel(sent)!;

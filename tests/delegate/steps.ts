@@ -133,6 +133,16 @@ export function agyWrite(effort: Effort, timeout: string, prompt: string, model?
 }
 
 /**
+ * The read-only arguments lets gives agy for a reviewer: plan mode, the
+ * effort, `--model` when given (with the effort already added),
+ * `--print-timeout` `timeout` (such as `30m`), and `prompt` as the argument
+ * of `-p`. Never fails.
+ */
+export function agyRead(effort: Effort, timeout: string, prompt: string, model?: string): string[] {
+  return ['--mode', 'plan', '--effort', effort, ...optional('--model', model), '--print-timeout', timeout, '-p', prompt];
+}
+
+/**
  * Resolves once `stand` has logged at least `count` calls (1 when absent).
  * Rejects after `ms` milliseconds (10 seconds when absent), saying how
  * many calls it saw.

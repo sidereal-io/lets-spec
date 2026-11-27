@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import { agy, claude, codex, git, type LetsResult, unstartable } from '../support/lets.ts';
 import { delegateRepo, PROMPT } from './repo.ts';
-import { agyWrite, assertClockDate, assertClockMs, claudeRead, claudeWrite, codexRead, codexWrite, ending, stepRun, type StepArgs } from './steps.ts';
+import { agyRead, agyWrite, assertClockDate, assertClockMs, claudeRead, claudeWrite, codexRead, codexWrite, ending, stepRun, type StepArgs } from './steps.ts';
 
 // text, matched as itself in a RegExp, so a temporary path holds no pattern.
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -557,6 +557,24 @@ describe('step run for a reviewer', () => {
       assert.match(result.stderr, named, JSON.stringify(over));
       noCalls(clis);
     }
+  });
+
+  test('a reviewer has 30 minutes at low and medium effort, 45 at high, and --timeout-minutes sets another', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    // agy is told the time limit lets chose, so its arguments show it.
+    const cases: [StepArgs, string][] = [
+      [{ effort: 'low' }, '30m'],
+      [{ effort: 'medium' }, '30m'],
+      [{ effort: 'high' }, '45m'],
+      [{ effort: 'medium', timeoutMinutes: 7 }, '7m'],
+      [{ for: 'review-plan', effort: 'high' }, '45m'],
+    ];
+    const rows = cases.map(([over, timeout]) => ({ args: agyRead(over.effort!, timeout, PROMPT), stdout: FINDINGS }));
+    const stand = agy(repo.standIns, [], { rows });
+    for (const [over] of cases) {
+      assert.equal(reportOf(await repo.run(reviewer({ ...over, models: ['gemini'] }))).outcome, 'done', JSON.stringify(over));
+    }
+    assert.deepEqual(stand.calls(), rows.map(({ args }) => args));
   });
 
   test('the user\'s own changes from before the run, and the reviewer\'s scratch files, do not count', async (t) => {

@@ -27,6 +27,15 @@ import type { Intent } from './strategies.ts';
 export const STEP_TIMEOUT_MINUTES = 120;
 // How long a story run may take: it runs up to five steps in turn.
 export const STORY_TIMEOUT_MINUTES = 600;
+// How long a reviewer may run, in minutes, for each effort.
+export const REVIEW_TIMEOUT_MINUTES: Record<Effort, number> = { low: 30, medium: 30, high: 45 };
+
+// The time limit in minutes: the one given, else the intent's own.
+export function timeoutFor(intent: Intent, effort: Effort, timeoutMinutes: number | undefined): number {
+  if (timeoutMinutes !== undefined) return timeoutMinutes;
+  if (isReviewer(intent)) return REVIEW_TIMEOUT_MINUTES[effort];
+  return intent === 'story' ? STORY_TIMEOUT_MINUTES : STEP_TIMEOUT_MINUTES;
+}
 
 // for: the intent, recorded in the record line. models: each <family> or
 // <family>/<model>, best first, asked for one at a time until one is not
@@ -83,7 +92,7 @@ async function step(options: StepOptions, deps: Deps) {
   const before = isReviewer(intent) ? await treeStatus(cwd, io) : [];
 
   const adapter = await pick(kindFor(intent), { ...deps, config, fileOf });
-  const timeoutMs = (timeoutMinutes ?? (intent === 'story' ? STORY_TIMEOUT_MINUTES : STEP_TIMEOUT_MINUTES)) * 60000;
+  const timeoutMs = timeoutFor(intent, effort, timeoutMinutes) * 60000;
   const input = (model: string) => ({ name: normalizeName(name), prompt, cwd, ...parseModel(model)!, effort });
   const session: Session = { adapter, models, input, cwd, timeoutMs, deps };
   const { report, sent, fields } = isReviewer(intent)
