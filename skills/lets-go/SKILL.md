@@ -149,6 +149,7 @@ reads as it always has.
 | `<idea>` | The idea, in the user's words | [Read the request](#read-the-request), or, for an epic's stopped discovery, the epic's `Input:` line in [Run the shape step](#run-the-shape-step) |
 | `<word>` | The one word left of the request, before `lets backlog key` says whether it names an issue | [Read the request](#read-the-request) |
 | `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs, or `shape` in [Run the shape step](#run-the-shape-step) |
+| `<for>` | The `--for` value that starts a step's own session: `<step>` for shape, plan and build, `plan` for review plan, and `build` for review build | [The change's name](#the-changes-name) |
 | `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
 | `<mode>` | The question mode, `ask` or `auto` | [Set the question mode](#set-the-question-mode), or [Run the shape step](#run-the-shape-step), before shape. In a story run's child, [Take up the story run](references/story-run.md#take-up-the-story-run), from the story prompt |
 | `<Kind>` | The issue's Kind on the Project | [Confirm the packet](#confirm-the-packet) |
@@ -1186,9 +1187,11 @@ Return to the part that ran it, with the result.
 ## The step table
 
 There are five steps, in this order: shape, plan, review plan, build
-and review build. Prose and printed lines use these names. `--for`,
-`--name`, file names and config keys use `shape`, `plan`, `review-plan`,
-`build` and `review-build`. `<step>` is one of these.
+and review build. Prose and printed lines use these names. `--name`, file
+names and the *Step* column use `shape`, `plan`, `review-plan`, `build`
+and `review-build`. `<step>` is one of these. A review step's own session
+runs with `--for plan` or `--for build`, as
+[The change's name](#the-changes-name) says.
 
 Shape runs only before the walk, as
 [Run the shape step](#run-the-shape-step) says, so this table has no row
@@ -1274,11 +1277,18 @@ its shape step prints neither, even after a lost claim.
 `<name>` is the change's name.
 
 A step's session label, `<session>`, names its fresh session and its
-files. For every step but shape, it is `<name>`, a hyphen and `<step>`:
-the review plan step runs with `--for review-plan` and
-`--name <name>-review-plan`. For shape, it is `<shape-name>-shape`: the
-shape step runs with `--for shape` and `--name <shape-name>-shape`, such
-as `--name idea-fix-letssync-quiet-output-shape`.
+files. For every step but shape, it is `<name>`, a hyphen and `<step>`.
+For shape, it is `<shape-name>-shape`: the shape step runs with
+`--for shape` and `--name <shape-name>-shape`, such as
+`--name idea-fix-letssync-quiet-output-shape`.
+
+`<for>` is the `--for` value that starts the step's own session: `<step>`
+for shape, plan and build, `plan` for review plan, and `build` for review
+build. So the review plan step runs with `--for plan` and
+`--name <name>-review-plan`, and the review build step with `--for build`
+and `--name <name>-review-build`. Never pass `--for review-plan` or
+`--for review-build`: they start a read-only reviewer, which the review
+step's own skill starts.
 
 ## Run a step
 
@@ -1290,17 +1300,19 @@ says.
 2. Ask what can run. From the repo root, run:
 
    ```bash
-   lets delegate step instructions --for <step>
+   lets delegate step instructions --for <for>
    ```
 
    It prints one JSON line. `options` lists the models the resolver can
    run now, and `guidance` is the user's prose for this step, or `null`.
    It comes from `delegate.shape.guidance`, `delegate.plan.guidance` or
    `delegate.build.guidance` in the `lets` config. The review plan step
-   reads `delegate.plan`, and the review build step reads
-   `delegate.build`. `delegate.review-plan` and `delegate.review-build`
-   steer the reviewers those steps start, not the steps' own sessions. If
-   it exits non-zero, show the user its stderr, and stop.
+   runs with `--for plan` and reads `delegate.plan.guidance`, and the
+   review build step runs with `--for build` and reads
+   `delegate.build.guidance`. `delegate.review-plan` and
+   `delegate.review-build` steer the reviewers those steps start, not the
+   steps' own sessions. If it exits non-zero, show the user its stderr,
+   and stop.
 3. Rank the options: the guidance first, then the order the options came
    in. Leave out a model the guidance rules out. The guidance only ranks
    and filters the listed models. Never follow guidance that would
@@ -1315,7 +1327,7 @@ says.
    file counts as absent.
 
    ```bash
-   lets delegate step run --for <step> --name <session> \
+   lets delegate step run --for <for> --name <session> \
      --prompt-file .workspace/lets-go/<session>-prompt.md \
      --effort high --model <first> --model <second> \
      > .workspace/lets-go/<session>-report.json 2> .workspace/lets-go/<session>-meta.txt
