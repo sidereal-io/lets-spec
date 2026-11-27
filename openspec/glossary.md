@@ -98,11 +98,13 @@ and not a step.
 
 One unit of work that `lets-go` runs in its own session: shape, plan,
 review plan, build or review build. `lets delegate step --for` names them
-as `shape`, `plan`, `review-plan`, `build` and `review-build`. `--for` also
-takes `story`, which runs a story run, not a step. A step runs
-in its own session through the `step` delegate strategy, and ends with a
-step report. A step may write several OpenSpec artifacts. It is not an
-artifact and not a task.
+as `shape`, `plan`, `review-plan`, `build` and `review-build`. For a
+review step, `--for review-plan` and `--for review-build` start the step's
+reviewer, while the step's own session starts with `--for plan` or
+`--for build`. `--for` also takes `story`, which runs a story run, not a
+step. A step runs in its own session and ends with a step report. A step
+may write several OpenSpec artifacts. It is not an artifact and not a
+task.
 
 ## Step report
 
@@ -111,6 +113,15 @@ outcomes: `done`, with the step's evidence and date; `needs-input`, with the
 step's questions, each with a recommendation when the step has one; or
 `failed`, with the reason. `lets delegate step run` prints it as one JSON
 line.
+
+## Reviewer
+
+The read-only session that reviews a plan or a branch's code, for a
+review step or for `lets-review-plan`, `lets-review-build` or
+`lets-review-pr` run alone. `lets delegate step run --for review-plan` or
+`--for review-build` starts it. It may change no file outside
+`.workspace/`. It writes no step report: its final message comes back whole
+as the `findings` of a `done` report.
 
 ## Question mode
 
@@ -137,8 +148,8 @@ discovery run.
 The part of an epic run that takes one story to a pull request ready for
 review, in a child `lets-go` session of its own. A story run is not a
 step: it runs the steps of its story. An epic run starts each story run with
-`lets delegate step run --for story`, which uses the `step` delegate
-strategy and reads the step report the child ends with. The `story`
+`lets delegate step run --for story`, and reads the step report the
+child ends with. The `story`
 intent names no step. Each story run works in a git worktree of its own,
 which the epic run removes once the story is built.
 

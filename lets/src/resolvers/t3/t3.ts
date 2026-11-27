@@ -558,7 +558,7 @@ export function createAdapter(io: Io): Adapter {
         });
       }
       // A kit error names the thread, so a person can find it.
-      if (error instanceof Error && exitCodeOf(error) !== null) error.message += ` (thread ${handle.id})`;
+      if (error instanceof SessionFailed || (error instanceof Error && exitCodeOf(error) !== null)) error.message += ` (thread ${handle.id})`;
       throw error;
     }
   }

@@ -87,7 +87,7 @@ In a `lets-go` step, return `needs-input` whenever this skill asks the user.
 2. Ask what can run. From the repo root, run:
 
    ```bash
-   lets delegate review instructions --for review-plan
+   lets delegate step instructions --for review-plan
    ```
 
    It prints one JSON line. `options` is the **listed models**, the ones the
@@ -116,25 +116,34 @@ In a `lets-go` step, return `needs-input` whenever this skill asks the user.
    `gpt`, `claude` or `gemini`.
 
    ```bash
-   lets delegate review run --for review-plan --name <change>-plan-review \
+   lets delegate step run --for review-plan --name <change>-plan-review \
      --prompt-file .workspace/<change>-review-prompt.md \
      --source-family <family> --effort <tier> --model <first> --model <second> \
-     > .workspace/<change>-review-raw.md 2> .workspace/<change>-review-meta.txt
+     > .workspace/<change>-review-report.json 2> .workspace/<change>-review-meta.txt
    ```
 
 5. Act on its exit code:
-   - **0**: the findings are in the raw file. The meta file's last line is
-     JSON. It names what the review was for, the resolver, the family and
-     model that answered, and whether the review was independent. Then
-     read on below this list: note the commit, and check what the review
-     read.
+   - **0**: the report file holds one JSON line, the report. Read its
+     `outcome`:
+     - `done`: the findings are the report's `findings`, the reviewer's
+       final message unchanged. Save them to
+       `.workspace/<change>-review-raw.md`, the file the subagent step
+       writes too. The meta file's last line is JSON. It names what the
+       review was for, the resolver, the family and model that answered,
+       and whether the review was independent. Then read on below this
+       list: note the commit, and check what the review read.
+     - `failed`: the reviewer did not finish its review. Its session
+       failed, gave an empty final message, or changed files outside
+       `.workspace/`. Record no review. Show the user the report's
+       `reason` and the meta file, and stop. Do not run the command again
+       until something has changed.
    - **3**: no fresh session can run here, for example because no resolver
      started one, or every model was refused. Take the [subagent
      step](#review-in-a-subagent).
    - **Anything else**: stop. Show the user the meta file and the exit code.
      Do not run the command again until something has changed.
 
-`lets delegate review run` sends the first model to the resolver, and the
+`lets delegate step run` sends the first model to the resolver, and the
 next one each time a model is refused. When only the author's family can
 run, the review still runs, and the meta line says `"independent": false`.
 Never review in the author's own session.
@@ -159,7 +168,8 @@ commit. Either way, the review read other code than yours. After exit 0,
 check that:
 
 - the meta line's `checkout` is `<checkout>` and its `commit` is `<head>`;
-- the raw file's last line is `Read: <checkout> <head>`.
+- the last line of the findings, in the raw file, is
+  `Read: <checkout> <head>`.
 
 After the [subagent step](#review-in-a-subagent) there is no meta line, so
 check only its `Read:` line.
@@ -172,7 +182,7 @@ When everything matches, go on to [Check the findings](#check-the-findings).
 
 ### Review in a subagent
 
-Take this step only when `lets delegate review run` exits 3, when the
+Take this step only when `lets delegate step run` exits 3, when the
 listed models are empty, or when the user explicitly chooses it after the
 excluded-all stop. A fallback must respect the guidance exclusions. If no
 permitted subagent can run, stop and ask the user. Run the prompt at the selected effort in a

@@ -5,9 +5,7 @@ import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 import { run as instructions } from '../../../../lets/src/delegate/instructions.ts';
-import { run as review } from '../../../../lets/src/delegate/review.ts';
 import { run as step } from '../../../../lets/src/delegate/step.ts';
-import type { ReviewOptions } from '../../../../lets/src/delegate/review.ts';
 import type { StepOptions } from '../../../../lets/src/delegate/step.ts';
 import { parentPid } from '../../../../lets/src/resolvers/kit/io.ts';
 import type { Db, Io } from '../../../../lets/src/resolvers/kit/io.ts';
@@ -80,9 +78,9 @@ const insideT3 = (options: Parameters<typeof io>[1] = {}) => io(CHAIN, options);
 
 const SCHEMA = readFileSync(new URL('./fixtures/t3-schema.sql', import.meta.url), 'utf8');
 
-const reviewInstructions = { strategy: 'review', for: 'review-build' } as const;
+const reviewInstructions = { for: 'review-build' } as const;
 
-// Review instructions inside T3 Code: the command's exit, the options it
+// Reviewer instructions inside T3 Code: the command's exit, the options it
 // lists, and its stderr.
 async function listed(adapterIo: Io) {
   const t = withT3(adapterIo);
@@ -92,11 +90,11 @@ async function listed(adapterIo: Io) {
   return { code, options: answer.options, stderr: t.stderr() };
 }
 
-test('review instructions inside T3 Code with only disabled instances list no options, with no warning', async () => {
+test('reviewer instructions inside T3 Code with only disabled instances list no options, with no warning', async () => {
   assert.deepEqual(await listed(insideT3()), { code: 0, options: [], stderr: '' });
 });
 
-test('review instructions inside T3 Code on a system with no /proc find the T3 server with ps', async () => {
+test('reviewer instructions inside T3 Code on a system with no /proc find the T3 server with ps', async () => {
   const parents: Record<string, string> = { 100: '   50\n', 50: '    7\n', 7: '    1\n' };
   // No file exists, as on macOS, and ps prints each process's parent.
   const sys = {
@@ -109,7 +107,7 @@ test('review instructions inside T3 Code on a system with no /proc find the T3 s
   assert.deepEqual(await listed({ ...insideT3(), parentPid: (pid: number) => parentPid(pid, sys) }), { code: 0, options: [], stderr: '' });
 });
 
-test('review instructions list the catalogue\'s models, each instance in order, its default first', async () => {
+test('reviewer instructions list the catalogue\'s models, each instance in order, its default first', async () => {
   const config = { providers: [
     provider('codex', ['gpt-6-luna', { slug: 'gpt-5.6-terra', isDefault: true }]),
     provider('claudeAgent', ['claude-opus-5-5', { slug: 'claude-fable-5-1', isDefault: true }]),
@@ -119,7 +117,7 @@ test('review instructions list the catalogue\'s models, each instance in order, 
     ['gpt/gpt-5.6-terra', 'gpt/gpt-6-luna', 'claude/claude-fable-5-1', 'claude/claude-opus-5-5', 'gemini/gemini-4-argon', 'gemini/gemini-3.8-flash']);
 });
 
-test('review instructions list only the instances t3 can run now', async () => {
+test('reviewer instructions list only the instances t3 can run now', async () => {
   const config = { providers: [
     provider('codex', ['gpt-6-luna'], { enabled: false }),
     provider('claudeAgent', ['claude-opus-5-5'], { status: 'error' }),
@@ -128,17 +126,17 @@ test('review instructions list only the instances t3 can run now', async () => {
   assert.deepEqual((await listed(insideT3({ config }))).options, ['gemini/gemini-4-argon']);
 });
 
-test('review instructions leave out an unavailable instance', async () => {
+test('reviewer instructions leave out an unavailable instance', async () => {
   const config = { providers: [provider('antigravity', ['gemini-4-argon'], { availability: 'unavailable' })] };
   assert.deepEqual((await listed(insideT3({ config }))).options, []);
 });
 
-test('review instructions leave out a model id that cannot run', async () => {
+test('reviewer instructions leave out a model id that cannot run', async () => {
   const config = { providers: [provider('codex', [{ slug: 'my model', isCustom: true }, { slug: '', isCustom: true }, 'gpt-6-luna'])] };
   assert.deepEqual((await listed(insideT3({ config }))).options, ['gpt/gpt-6-luna']);
 });
 
-test('review instructions leave out the models the user hid, but not a custom one', async () => {
+test('reviewer instructions leave out the models the user hid, but not a custom one', async () => {
   const config = {
     providers: [provider('claudeAgent', ['claude-opus-5-5', { slug: 'claude-opus-4-5', isDefault: true }, { slug: 'claude-lab', isCustom: true }])],
     settings: { providerModelPreferences: { claudeAgent: { hiddenModels: ['claude-opus-4-5', 'claude-lab'] } } },
@@ -146,17 +144,17 @@ test('review instructions leave out the models the user hid, but not a custom on
   assert.deepEqual((await listed(insideT3({ config }))).options, ['claude/claude-opus-5-5', 'claude/claude-lab']);
 });
 
-test('review instructions leave out an instance t3 does not run', async () => {
+test('reviewer instructions leave out an instance t3 does not run', async () => {
   const config = { providers: [provider('cursor', ['auto']), provider('codex_work', ['gpt-6-astra']), provider('codex', ['gpt-6-luna'])] };
   assert.deepEqual((await listed(insideT3({ config }))).options, ['gpt/gpt-6-luna']);
 });
 
-test('review instructions list each gemini model once, without its effort', async () => {
+test('reviewer instructions list each gemini model once, without its effort', async () => {
   const config = { providers: [provider('antigravity', ['gemini-3.8-flash-high', 'gemini-3.8-flash-low'])] };
   assert.deepEqual((await listed(insideT3({ config }))).options, ['gemini/gemini-3.8-flash']);
 });
 
-test('review instructions never read T3\'s model manifest', async () => {
+test('reviewer instructions never read T3\'s model manifest', async () => {
   const manifest = { manifest: { currentModels: { codex: ['gpt-6-astra'] } } };
   const config = { providers: [provider('codex', ['gpt-6-luna'])] };
   assert.deepEqual((await listed(insideT3({ config, files: { [MANIFEST]: JSON.stringify(manifest) } }))).options, ['gpt/gpt-6-luna']);
@@ -165,7 +163,7 @@ test('review instructions never read T3\'s model manifest', async () => {
 // Let every pending callback but the mocked timers run.
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 
-// What review instructions answer when T3 gives no catalogue: exit 0, no
+// What reviewer instructions answer when T3 gives no catalogue: exit 0, no
 // options, and a warning that says so.
 function listsNoneBecause(answer: { code: number; options: unknown; stderr: string }, why: RegExp) {
   assert.equal(answer.code, 0);
@@ -174,7 +172,7 @@ function listsNoneBecause(answer: { code: number; options: unknown; stderr: stri
   assert.match(answer.stderr, why);
 }
 
-test('review instructions list no options when T3 never replies, within 15 s', async (t) => {
+test('reviewer instructions list no options when T3 never replies, within 15 s', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
   const pending = listed(insideT3({ config: SILENT }));
   await settle();
@@ -182,7 +180,7 @@ test('review instructions list no options when T3 never replies, within 15 s', a
   listsNoneBecause(await pending, /no reply from t3/);
 });
 
-test('review instructions list no options when T3 never answers the ticket request, within 15 s', async (t) => {
+test('reviewer instructions list no options when T3 never answers the ticket request, within 15 s', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
   const fetch = ((_url: string, init?: RequestInit) =>
     new Promise((_, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))))) as unknown as typeof globalThis.fetch;
@@ -192,7 +190,7 @@ test('review instructions list no options when T3 never answers the ticket reque
   listsNoneBecause(await pending, /did not answer in time/);
 });
 
-test('review instructions list no options when T3 refuses the request, saying why', async () => {
+test('reviewer instructions list no options when T3 refuses the request, saying why', async () => {
   // t3 fails and closes the socket without opening it, and says why at /ws.
   const WebSocket = class {
     listeners: Record<string, ((event: unknown) => void)[]> = {};
@@ -212,11 +210,11 @@ test('review instructions list no options when T3 refuses the request, saying wh
   listsNoneBecause(await listed(insideT3({ fetch, WebSocket })), /unsupported orchestration protocol/);
 });
 
-test('review instructions list no options when T3\'s reply has another shape', async () => {
+test('reviewer instructions list no options when T3\'s reply has another shape', async () => {
   listsNoneBecause(await listed(insideT3({ config: { instances: [] } })), /no list of providers/);
 });
 
-test('review instructions decline when the running T3 server is not an ancestor', async () => {
+test('reviewer instructions decline when the running T3 server is not an ancestor', async () => {
   const t = withT3(io({ 100: 50, 50: 1 }));
   assert.equal(await instructions(reviewInstructions, t.deps), 2);
   assert.equal(t.stdout(), '');
@@ -273,7 +271,7 @@ function runningT3({ projectRoot = '/repo', projectModel = null, config = ONLY_D
   return { db, sent, adapterIo, t: withT3(adapterIo) };
 }
 // A review named x on gpt/gpt-6-astra, from a claude author.
-const astraReview: ReviewOptions = { for: 'review-build', name: 'x', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', timeoutMinutes: 1, models: ['gpt/gpt-6-astra'] };
+const astraReview: StepOptions = { for: 'review-build', name: 'x', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', timeoutMinutes: 1, models: ['gpt/gpt-6-astra'] };
 
 test('a review T3 fails before any message is exit 3 with its failure, and archives the thread', async () => {
   const { db, sent, t } = runningT3();
@@ -281,25 +279,11 @@ test('a review T3 fails before any message is exit 3 with its failure, and archi
     values ('run-1', 'T', 1, 'codex', 'failed', 'now', '{}')`).run();
   db.prepare(`insert into orchestration_v2_projection_turn_items (turn_item_id, thread_id, run_id, ordinal, type, status, updated_at, payload_json)
     values ('e1', 'T', 'run-1', 1, 'error', 'failed', 'now', ?)`).run(JSON.stringify({ failure: { message: 'gpt-6-astra is not available' } }));
-  assert.equal(await review(astraReview, t.deps), 3, t.stderr());
+  assert.equal(await step(astraReview, t.deps), 3, t.stderr());
   assert.equal(t.stdout(), '');
   assert.match(t.stderr(), /gpt-6-astra is not available \(thread T\)\n$/);
   assert.deepEqual(sent.map(({ payload }) => payload.type ?? 'launch'), ['launch', 'thread.archive']);
   assert.equal(sent[1].payload.threadId, 'T');
-});
-
-test('a review whose run returns a plan is exit 5 with nothing on stdout, and keeps the thread', async () => {
-  const { db, sent, t } = runningT3();
-  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
-    values ('run-1', 'T', 1, 'codex', 'completed', 'now', '{}')`).run();
-  db.prepare(`insert into orchestration_v2_projection_turn_items (turn_item_id, thread_id, run_id, ordinal, type, status, updated_at, payload_json)
-    values ('plan', 'T', 'run-1', 1, 'proposed_plan', 'completed', 'now', '{}')`).run();
-  db.prepare(`insert into orchestration_v2_projection_messages (message_id, thread_id, run_id, role, streaming, created_at, updated_at, payload_json)
-    values ('a1', 'T', 'run-1', 'assistant', 0, 'now', 'now', ?)`).run(JSON.stringify({ text: 'Here is my plan.' }));
-  assert.equal(await review(astraReview, t.deps), 5, t.stderr());
-  assert.equal(t.stdout(), '');
-  assert.match(t.stderr(), /the session returned a plan, not a result \(thread T\)\n$/);
-  assert.deepEqual(sent.map(({ payload }) => payload.type ?? 'launch'), ['launch']);
 });
 
 // A review whose run T3 completes with findings, in a thread T3 records in
@@ -313,7 +297,7 @@ async function recordedReview(worktreePath: string | null, top: string) {
     values ('run-1', 'T', 1, 'codex', 'completed', 'now', '{}')`).run();
   db.prepare(`insert into orchestration_v2_projection_messages (message_id, thread_id, run_id, role, streaming, created_at, updated_at, payload_json)
     values ('a1', 'T', 'run-1', 'assistant', 0, 'now', 'now', ?)`).run(JSON.stringify({ text: 'FINDINGS' }));
-  assert.equal(await review(astraReview, t.deps), 0, t.stderr());
+  assert.equal(await step(astraReview, t.deps), 0, t.stderr());
   const { checkout, commit } = JSON.parse(t.stderr());
   return { checkout, commit };
 }
@@ -328,7 +312,7 @@ test('a review T3 runs in the project\'s root instead names the root', async () 
 
 test('a review in a repository T3 has no project for is exit 3, naming it, and creates no thread', async () => {
   const { sent, t } = runningT3({ projectRoot: '/elsewhere' });
-  assert.equal(await review(astraReview, t.deps), 3, t.stderr());
+  assert.equal(await step(astraReview, t.deps), 3, t.stderr());
   assert.match(t.stderr(), /t3 has no project for \/repo/);
   assert.doesNotMatch(t.stderr(), /\(thread /);
   assert.deepEqual(sent, []);
@@ -336,7 +320,7 @@ test('a review in a repository T3 has no project for is exit 3, naming it, and c
 
 test('a review from a linked worktree of a repository T3 has no project for is exit 3, naming the main checkout', async () => {
   const { sent, t } = runningT3({ projectRoot: '/elsewhere', top: '/w/fix-login' });
-  assert.equal(await review(astraReview, t.deps), 3, t.stderr());
+  assert.equal(await step(astraReview, t.deps), 3, t.stderr());
   assert.match(t.stderr(), /t3 has no project for \/repo;/);
   assert.deepEqual(sent, []);
 });
@@ -345,7 +329,7 @@ test('a review from a linked worktree of a repository T3 has no project for is e
 const launches = (sent: Sent) => sent.filter(({ tag }) => tag === 'orchestration.launchThread').map(({ payload }) => payload.modelSelection);
 // A review like astraReview on models, which T3 completes with findings
 // in db when it launches the thread.
-const reviewOn = (...models: string[]): ReviewOptions => ({ ...astraReview, models });
+const reviewOn = (...models: string[]): StepOptions => ({ ...astraReview, models });
 const findingsOnLaunch = (db: DatabaseSync) => completes(db, 'FINDINGS');
 // The model of each thread T3 was asked to start.
 const modelsLaunched = (sent: Sent) => launches(sent).map((selection) => selection?.model);
@@ -356,7 +340,7 @@ test('a review runs its --model, not the project\'s default model, and names the
   const { sent, t } = runningT3({
     projectModel: '{"instanceId":"codex","model":"gpt-6-luna","options":[]}', onLaunch: findingsOnLaunch,
   });
-  assert.equal(await review(reviewOn('claude/claude-opus-5-5'), t.deps), 0, t.stderr());
+  assert.equal(await step(reviewOn('claude/claude-opus-5-5'), t.deps), 0, t.stderr());
   assert.deepEqual(modelsLaunched(sent), ['claude-opus-5-5']);
   const { family, handle } = JSON.parse(t.stderr());
   assert.deepEqual({ family, kind: handle.kind }, { family: 'claude', kind: 'thread' });
@@ -364,7 +348,7 @@ test('a review runs its --model, not the project\'s default model, and names the
 
 test('a bare-family review runs the catalogue\'s default', async () => {
   const { sent, t } = runningT3({ config: { providers: [CODEX] }, onLaunch: findingsOnLaunch });
-  assert.equal(await review(reviewOn('gpt'), t.deps), 0, t.stderr());
+  assert.equal(await step(reviewOn('gpt'), t.deps), 0, t.stderr());
   assert.deepEqual(modelsLaunched(sent), ['gpt-5.6-terra']);
 });
 
@@ -372,7 +356,7 @@ test('a bare-family review runs the first visible model when the default is hidd
   const config = { providers: [provider('codex', [{ slug: 'gpt-5.6-terra', isDefault: true }, 'gpt-6-luna'])],
     settings: { providerModelPreferences: { codex: { hiddenModels: ['gpt-5.6-terra'] } } } };
   const { sent, t } = runningT3({ config, onLaunch: findingsOnLaunch });
-  assert.equal(await review(reviewOn('gpt'), t.deps), 0, t.stderr());
+  assert.equal(await step(reviewOn('gpt'), t.deps), 0, t.stderr());
   assert.deepEqual(modelsLaunched(sent), ['gpt-6-luna']);
 });
 
@@ -380,13 +364,13 @@ const GEMINI = { providers: [provider('antigravity', ['gemini-4-argon', { slug: 
 
 test('a bare gemini review runs the default without its effort', async () => {
   const { sent, t } = runningT3({ config: GEMINI, onLaunch: findingsOnLaunch });
-  await review({ ...astraReview, for: 'review-plan', effort: 'low', models: ['gemini'] }, t.deps);
+  await step({ ...astraReview, for: 'review-plan', effort: 'low', models: ['gemini'] }, t.deps);
   assert.deepEqual(launches(sent), [{ instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] }]);
 });
 
 test('a bare-family review on an instance with no visible model is exit 3, naming it, and starts no thread', async () => {
   const { sent, t } = runningT3({ config: { providers: [provider('codex', [])] } });
-  assert.equal(await review(reviewOn('gpt'), t.deps), 3);
+  assert.equal(await step(reviewOn('gpt'), t.deps), 3);
   assert.match(t.stderr(), /codex/);
   assert.deepEqual(launches(sent), []);
 });
@@ -394,14 +378,14 @@ test('a bare-family review on an instance with no visible model is exit 3, namin
 test('a bare-family review on a failing instance tries the next model', async () => {
   const config = { providers: [provider('claudeAgent', [{ slug: 'claude-fable-5-1', isDefault: true }], { status: 'error' }), provider('codex', ['gpt-6-luna'])] };
   const { sent, t } = runningT3({ config, onLaunch: findingsOnLaunch });
-  assert.equal(await review(reviewOn('claude', 'gpt'), t.deps), 0, t.stderr());
+  assert.equal(await step(reviewOn('claude', 'gpt'), t.deps), 0, t.stderr());
   assert.deepEqual(modelsLaunched(sent), ['gpt-6-luna']);
 });
 
 test('a bare-family review with no catalogue is exit 3 within 15 s, and starts no thread', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
   const { sent, t: command } = runningT3({ config: SILENT });
-  const pending = review(reviewOn('claude'), command.deps);
+  const pending = step(reviewOn('claude'), command.deps);
   await settle();
   t.mock.timers.tick(10_000);
   assert.equal(await pending, 3);
@@ -420,7 +404,7 @@ test('a bare-family review launches with the token the catalogue request issued'
     return { status, ok: status === 200, json: async () => ({ ticket: 'TICKET' }) };
   }) as unknown as typeof globalThis.fetch;
   const { adapterIo, t } = runningT3({ config: { providers: [CODEX] }, fetch, results: [{ stdout: 'fresh\n', stderr: '', code: 0 }], onLaunch: findingsOnLaunch });
-  assert.equal(await review(reviewOn('gpt'), t.deps), 0, t.stderr());
+  assert.equal(await step(reviewOn('gpt'), t.deps), 0, t.stderr());
   assert.deepEqual(tokens, ['Bearer tok', 'Bearer fresh', 'Bearer fresh', 'Bearer fresh']);
   assert.equal((adapterIo as ReturnType<typeof fakeIo>).calls.filter(([cmd]) => cmd === 't3').length, 1);
 });
@@ -522,11 +506,37 @@ test('a step thread that stops to ask is a failed report naming the thread, and 
   assert.deepEqual(asked(sent), ['launch']);
 });
 
+test('a reviewer thread that returns a plan is a failed report naming the thread, and keeps it', async () => {
+  const { db, sent, t } = runningT3();
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'codex', 'completed', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_turn_items (turn_item_id, thread_id, run_id, ordinal, type, status, updated_at, payload_json)
+    values ('plan', 'T', 'run-1', 1, 'proposed_plan', 'completed', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_messages (message_id, thread_id, run_id, role, streaming, created_at, updated_at, payload_json)
+    values ('a1', 'T', 'run-1', 'assistant', 0, 'now', 'now', ?)`).run(JSON.stringify({ text: 'Here is my plan.' }));
+  assert.equal(await step(astraReview, t.deps), 0, t.stderr());
+  assert.deepEqual(JSON.parse(t.stdout()), { outcome: 'failed', reason: 'the session returned a plan, not a result (thread T)' });
+  const { handle, checkout, commit } = JSON.parse(t.stderr());
+  assert.deepEqual({ handle, checkout, commit }, { handle: null, checkout: null, commit: null });
+  assert.deepEqual(asked(sent), ['launch']);
+});
+
+test('a reviewer thread that stops to ask is a failed report naming the thread, and keeps it', async () => {
+  const { db, sent, t } = runningT3();
+  db.prepare(`insert into orchestration_v2_projection_runs (run_id, thread_id, ordinal, provider, status, requested_at, payload_json)
+    values ('run-1', 'T', 1, 'codex', 'waiting', 'now', '{}')`).run();
+  db.prepare(`insert into orchestration_v2_projection_runtime_requests (runtime_request_id, thread_id, node_id, kind, status, created_at, payload_json)
+    values ('rq1', 'T', 'n1', 'user_input', 'pending', 'now', '{}')`).run();
+  assert.equal(await step(astraReview, t.deps), 0, t.stderr());
+  assert.deepEqual(JSON.parse(t.stdout()), { outcome: 'failed', reason: 'the session stopped to ask (thread T)' });
+  assert.deepEqual(asked(sent), ['launch']);
+});
+
 test('step instructions inside T3 Code list the catalogue\'s models', async () => {
   const t = withT3(insideT3({ config: { providers: [provider('codex', ['gpt-6-luna'])] } }));
-  assert.equal(await instructions({ strategy: 'step', for: 'plan' }, t.deps), 0, t.stderr());
-  const { strategy, resolver, options } = JSON.parse(t.stdout());
-  assert.deepEqual({ strategy, resolver, options }, { strategy: 'step', resolver: 't3', options: ['gpt/gpt-6-luna'] });
+  assert.equal(await instructions({ for: 'plan' }, t.deps), 0, t.stderr());
+  const { for: intent, resolver, options } = JSON.parse(t.stdout());
+  assert.deepEqual({ intent, resolver, options }, { intent: 'plan', resolver: 't3', options: ['gpt/gpt-6-luna'] });
 });
 
 test('a step outside T3 Code opens no thread, and the default answers', async () => {

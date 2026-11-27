@@ -13,7 +13,7 @@ import { repoRoot } from './git.ts';
 import { guarded } from './guarded.ts';
 import { checkModels } from './lookup.ts';
 import { readPromptFile } from './prompt-file.ts';
-import { readAnswersFile } from './step.ts';
+import { checkIntentOptions, readAnswersFile } from './step.ts';
 import type { StepOptions } from './step.ts';
 
 // A background step's name, normalized as a session's but not cut short:
@@ -37,10 +37,11 @@ export function start(options: StartOptions, deps: Deps): Promise<number> {
 
 async function startStep(options: StartOptions, deps: Deps): Promise<number> {
   const { io, cwd } = deps;
-  const { for: intent, promptFile, effort, models, timeoutMinutes, answersFile, reportFile, metaFile, checkout } = options;
+  const { for: intent, promptFile, effort, sourceFamily, models, timeoutMinutes, answersFile, reportFile, metaFile, checkout } = options;
   // Every check runs before anything starts, as step run would make them.
   if (!reportFile) throw new UsageError('give --report-file.');
   if (!metaFile) throw new UsageError('give --meta-file.');
+  checkIntentOptions(options);
   checkModels(models);
   readPromptFile(promptFile, deps);
   if (answersFile !== undefined) readAnswersFile(answersFile, deps);
@@ -57,6 +58,7 @@ async function startStep(options: StartOptions, deps: Deps): Promise<number> {
   const absolute = (path: string) => resolve(cwd, path);
   const args = [
     'delegate', 'step', 'run', '--for', intent, '--name', name, '--prompt-file', absolute(promptFile), '--effort', effort,
+    ...(sourceFamily === undefined ? [] : ['--source-family', sourceFamily]),
     ...models.flatMap((model) => ['--model', model]),
     ...(timeoutMinutes === undefined ? [] : ['--timeout-minutes', String(timeoutMinutes)]),
     ...(answersFile === undefined ? [] : ['--answers-file', absolute(answersFile)]),

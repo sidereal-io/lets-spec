@@ -10,8 +10,8 @@ import { configDir } from '../config-dir.ts';
 import type { Deps, Io } from '../io.ts';
 import { findRepoRoot } from './git.ts';
 import { UsageError } from '../resolvers/kit/errors.ts';
-import { GUIDANCE_KEY_NAMES, GUIDANCE_KEYS, guidanceKey, STEP_STRATEGY_INTENTS } from './strategies.ts';
-import type { Intent, Strategy } from './strategies.ts';
+import { GUIDANCE_KEY_NAMES, GUIDANCE_KEYS } from './intents.ts';
+import type { Intent } from './intents.ts';
 
 export const CONFIG_VERSION = 4;
 // The resolvers built into lets, by the names the chain lists them under.
@@ -24,8 +24,8 @@ export type QuestionMode = (typeof QUESTION_MODES)[number];
 // The file's shape, with the keys this lets does not know dropped. delegate
 // is {} when the file has none. Each resolver is one of RESOLVER_NAMES. The
 // guidance keys, and the review and step entries of an earlier lets, are as
-// the user wrote them: only lets delegate <strategy> instructions reads
-// them, so a bad entry never stops a run.
+// the user wrote them: only lets delegate step instructions reads them, so
+// a bad entry never stops a run.
 export type Config = {
   version: typeof CONFIG_VERSION;
   delegate: { resolvers?: ResolverName[] } & Record<string, unknown>;
@@ -103,9 +103,21 @@ function version3Message(delegate: unknown): string {
   return `version must be ${CONFIG_VERSION}, got 3.${rename} Then set version: ${CONFIG_VERSION}. See "Set up delegation" in the lets-spec README.`;
 }
 
-// The intents review took before version 4, and the intent each became.
-// They cannot be derived from STRATEGIES, which holds only the new ones.
-const OLD_REVIEW_KEYS = [['plan', 'review-plan'], ['code', 'review-build']] as const;
+// Each guidance key before version 4, in the order the message lists them,
+// with the key that took its place, and, when that key is the plan or build
+// step's own, that step. Written out, not derived from GUIDANCE_KEYS: a
+// review step's own session read delegate.step.review-plan, which became
+// delegate.plan, while --for review-plan now reads delegate.review-plan.
+const OLD_GUIDANCE_KEYS: readonly OldGuidanceKey[] = [
+  { from: 'delegate.review.plan', to: 'delegate.review-plan' },
+  { from: 'delegate.review.code', to: 'delegate.review-build' },
+  { from: 'delegate.step.shape', to: 'delegate.shape' },
+  { from: 'delegate.step.plan', to: 'delegate.plan' },
+  { from: 'delegate.step.review-plan', to: 'delegate.plan', sharedWith: 'plan' },
+  { from: 'delegate.step.build', to: 'delegate.build' },
+  { from: 'delegate.step.review-build', to: 'delegate.build', sharedWith: 'build' },
+  { from: 'delegate.step.story', to: 'delegate.story' },
+];
 
 // An old guidance key: where it sat before version 4, the key that took
 // its place, and, when that key is the plan or build step's own, that step.
@@ -115,17 +127,11 @@ export type OldGuidanceKey = { from: string; to: string; sharedWith?: string };
 // the reviewers' first, then the steps' in the order the steps run.
 export function oldGuidanceKeys(delegate: unknown): OldGuidanceKey[] {
   if (!isObject(delegate)) return [];
-  const held = (strategy: 'review' | 'step', intent: string) => {
-    const entry = delegate[strategy];
-    return isObject(entry) && entry[intent] !== undefined && entry[intent] !== null;
-  };
-  const review = OLD_REVIEW_KEYS.filter(([old]) => held('review', old))
-    .map(([old, intent]) => ({ from: `delegate.review.${old}`, to: `delegate.${GUIDANCE_KEYS.review[intent]}` }));
-  const step = STEP_STRATEGY_INTENTS.filter((intent) => held('step', intent)).map((intent) => {
-    const key = GUIDANCE_KEYS.step[intent];
-    return { from: `delegate.step.${intent}`, to: `delegate.${key}`, ...(key === intent ? {} : { sharedWith: key }) };
+  return OLD_GUIDANCE_KEYS.filter(({ from }) => {
+    const [, entry, key] = from.split('.');
+    const held = delegate[entry];
+    return isObject(held) && held[key] !== undefined && held[key] !== null;
   });
-  return [...review, ...step];
 }
 
 // The delegate section of a document parseDocument checked, or of the two
@@ -151,15 +157,14 @@ export function checkConfig(value: Record<string, unknown>, fileOf: FileOf): Con
 }
 
 // The guidance for an intent, from delegate.<key>.guidance, where
-// guidanceKey gives the key for the strategy and intent, or null when there
+// GUIDANCE_KEYS gives the key for the intent, or null when there
 // is no config or any level is missing. Throws a UsageError that names the
 // file fileOf gives for the dotted key, and the key, when a level has the
 // wrong type. Other keys' entries are not checked.
-export function guidanceFor(config: Config | null, strategy: Strategy, intent: Intent, fileOf: FileOf): string | null {
+export function guidanceFor(config: Config | null, intent: Intent, fileOf: FileOf): string | null {
   const fail = (key: string, expected: string, value: unknown) =>
     new UsageError(`${fileOf(key)}: ${key} must be ${expected}, got ${JSON.stringify(value) ?? String(value)}.`);
-  const key = guidanceKey(strategy, intent);
-  if (key === undefined) return null;
+  const key = GUIDANCE_KEYS[intent];
   const entry = config?.delegate[key];
   if (entry === undefined || entry === null) return null;
   if (!isObject(entry)) throw fail(`delegate.${key}`, 'a mapping', entry);

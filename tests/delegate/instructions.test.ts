@@ -1,4 +1,4 @@
-// lets delegate <strategy> instructions, run as a program. The cli and
+// lets delegate step instructions, run as a program. The cli and
 // subagent resolvers are chosen by a real lets config, and PATH holds only
 // the stand-in codex, claude and agy a test writes, and git, so no real
 // CLI on the developer's machine changes a result.
@@ -33,9 +33,9 @@ interface Run {
   repoConfig: string;
 }
 
-// Runs lets delegate <strategy> instructions --for <intent> in a folder of
-// its own, as setup says.
-async function instructions(t: TestContext, strategy: string, intent: string, setup: Setup = {}): Promise<Run> {
+// Runs lets delegate step instructions --for <intent> in a folder of its
+// own, as setup says.
+async function instructions(t: TestContext, intent: string, setup: Setup = {}): Promise<Run> {
   const home = tempDir(t);
   const userConfig = join(home, 'lets', 'config.yaml');
   if (setup.user !== undefined) {
@@ -57,7 +57,7 @@ async function instructions(t: TestContext, strategy: string, intent: string, se
   }
   const standIns = tempDir(t);
   setup.standIns?.(standIns);
-  const result = await runLets(['delegate', strategy, 'instructions', '--for', intent], {
+  const result = await runLets(['delegate', 'step', 'instructions', '--for', intent], {
     cwd, standIns, onlyStandIns: true, env: { ...env, ...setup.env }, timeoutMs: setup.timeoutMs,
   });
   return { result, userConfig, repoConfig };
@@ -82,27 +82,27 @@ function declined({ result }: Run, file: string) {
 // Every family CLI on PATH, each listing nothing.
 const everyCli = (dir: string) => ({ codex: codex(dir), claude: claude(dir), agy: agy(dir) });
 
-test('review instructions from cli print the strategy, the intent, the resolver and its options as one JSON line', async (t) => {
-  const run = await instructions(t, 'review', 'review-build', { user: CLI, standIns: (dir) => claude(dir) });
-  assert.deepEqual(line(run), { strategy: 'review', for: 'review-build', resolver: 'cli', options: ['claude'], guidance: null });
+test('reviewer instructions from cli print the intent, the resolver and its options as one JSON line', async (t) => {
+  const run = await instructions(t, 'review-build', { user: CLI, standIns: (dir) => claude(dir) });
+  assert.equal(run.result.stdout, '{"for":"review-build","resolver":"cli","options":["claude"],"guidance":null}\n');
   assert.equal(run.result.stderr, '');
 });
 
-test('step instructions from cli print the step strategy and the models codex lists', async (t) => {
-  const run = await instructions(t, 'step', 'build', { user: CLI_THEN_SUBAGENT, standIns: (dir) => codex(dir, [...LUNA]) });
-  assert.deepEqual(line(run), { strategy: 'step', for: 'build', resolver: 'cli', options: ['gpt/gpt-6-luna'], guidance: null });
+test('step instructions from cli print the models codex lists', async (t) => {
+  const run = await instructions(t, 'build', { user: CLI_THEN_SUBAGENT, standIns: (dir) => codex(dir, [...LUNA]) });
+  assert.deepEqual(line(run), { for: 'build', resolver: 'cli', options: ['gpt/gpt-6-luna'], guidance: null });
 });
 
 test('with no family CLI on PATH, cli declines and subagent answers next', async (t) => {
-  for (const [strategy, intent] of [['review', 'review-build'], ['step', 'build']]) {
-    const run = await instructions(t, strategy, intent, { user: CLI_THEN_SUBAGENT });
-    assert.deepEqual(line(run), { strategy, for: intent, resolver: 'subagent', options: [], guidance: null }, strategy);
+  for (const intent of ['review-build', 'build']) {
+    const run = await instructions(t, intent, { user: CLI_THEN_SUBAGENT });
+    assert.deepEqual(line(run), { for: intent, resolver: 'subagent', options: [], guidance: null }, intent);
   }
 });
 
 test('when subagent comes first, it answers, and cli is never asked', async (t) => {
   let stand: ReturnType<typeof codex> | undefined;
-  const run = await instructions(t, 'review', 'review-build', {
+  const run = await instructions(t, 'review-build', {
     user: 'version: 4\ndelegate: { resolvers: [subagent, cli] }\n',
     standIns: (dir) => { stand = codex(dir, [...LUNA]); },
   });
@@ -112,42 +112,42 @@ test('when subagent comes first, it answers, and cli is never asked', async (t) 
 
 test('subagent lists no models and runs no program, even with every family CLI on PATH', async (t) => {
   let clis: ReturnType<typeof everyCli> | undefined;
-  const run = await instructions(t, 'review', 'review-build', {
+  const run = await instructions(t, 'review-build', {
     user: 'version: 4\ndelegate: { resolvers: [subagent] }\n',
     standIns: (dir) => { clis = everyCli(dir); },
   });
-  assert.deepEqual(line(run), { strategy: 'review', for: 'review-build', resolver: 'subagent', options: [], guidance: null });
+  assert.deepEqual(line(run), { for: 'review-build', resolver: 'subagent', options: [], guidance: null });
   for (const [name, stand] of Object.entries(clis!)) assert.deepEqual(stand.calls(), [], name);
 });
 
 test('instructions run only the model listings, and start no session', async (t) => {
-  for (const [strategy, intent] of [['review', 'review-build'], ['review', 'review-plan'], ['step', 'build']]) {
+  for (const intent of ['review-build', 'review-plan', 'build']) {
     let clis: ReturnType<typeof everyCli> | undefined;
-    const run = await instructions(t, strategy, intent, { user: CLI, standIns: (dir) => { clis = everyCli(dir); } });
-    assert.equal(line(run).resolver, 'cli', `${strategy} ${intent}`);
-    assert.deepEqual(clis!.codex.calls(), [['debug', 'models']], `${strategy} ${intent}`);
-    assert.deepEqual(clis!.agy.calls(), [['models']], `${strategy} ${intent}`);
-    assert.deepEqual(clis!.claude.calls(), [], `${strategy} ${intent}`);
+    const run = await instructions(t, intent, { user: CLI, standIns: (dir) => { clis = everyCli(dir); } });
+    assert.equal(line(run).resolver, 'cli', intent);
+    assert.deepEqual(clis!.codex.calls(), [['debug', 'models']], intent);
+    assert.deepEqual(clis!.agy.calls(), [['models']], intent);
+    assert.deepEqual(clis!.claude.calls(), [], intent);
   }
 });
 
 test('when every resolver in the user\'s lets config declines, it is exit 2, naming that file', async (t) => {
-  const run = await instructions(t, 'review', 'review-build', { user: CLI });
+  const run = await instructions(t, 'review-build', { user: CLI });
   declined(run, run.userConfig);
 });
 
 test('when every resolver in the repository\'s lets config declines, it is exit 2, naming that file', async (t) => {
-  const run = await instructions(t, 'step', 'build', { user: CLI_THEN_SUBAGENT, repo: CLI });
+  const run = await instructions(t, 'build', { user: CLI_THEN_SUBAGENT, repo: CLI });
   declined(run, run.repoConfig);
 });
 
 test('an empty chain declines every delegation, and is exit 2, naming the config file', async (t) => {
-  const run = await instructions(t, 'review', 'review-build', { user: 'version: 4\ndelegate: { resolvers: [] }\n', standIns: everyCli });
+  const run = await instructions(t, 'review-build', { user: 'version: 4\ndelegate: { resolvers: [] }\n', standIns: everyCli });
   declined(run, run.userConfig);
 });
 
 test('cli lists the families in the order gpt, claude, gemini', async (t) => {
-  const run = await instructions(t, 'review', 'review-build', {
+  const run = await instructions(t, 'review-build', {
     user: CLI,
     standIns: (dir) => { agy(dir, ['gemini-3.8-flash-high']); claude(dir); codex(dir, [...LUNA]); },
   });
@@ -155,7 +155,7 @@ test('cli lists the families in the order gpt, claude, gemini', async (t) => {
 });
 
 test('cli lists only the codex slugs whose visibility is list, in codex\'s order', async (t) => {
-  const run = await instructions(t, 'review', 'review-build', {
+  const run = await instructions(t, 'review-build', {
     user: CLI,
     standIns: (dir) => codex(dir, [{ slug: 'gpt-reserve', visibility: 'hide' }, { slug: 'gpt-6-luna', visibility: 'list' }, { slug: 'gpt-6.1-sol', visibility: 'list' }]),
   });
@@ -163,7 +163,7 @@ test('cli lists only the codex slugs whose visibility is list, in codex\'s order
 });
 
 test('cli lists each gemini model once, without its effort, and no other maker\'s model', async (t) => {
-  const run = await instructions(t, 'review', 'review-build', {
+  const run = await instructions(t, 'review-build', {
     user: CLI,
     standIns: (dir) => agy(dir, ['gemini-3.8-flash-high', 'gemini-3.8-flash-low', 'claude-sonnet-4-6', 'gemini-3.8-pro-medium']),
   });
@@ -172,13 +172,13 @@ test('cli lists each gemini model once, without its effort, and no other maker\'
 
 test('cli lists claude as its bare family, and runs no listing for it', async (t) => {
   let stand: ReturnType<typeof claude> | undefined;
-  const run = await instructions(t, 'review', 'review-build', { user: CLI, standIns: (dir) => { stand = claude(dir); } });
+  const run = await instructions(t, 'review-build', { user: CLI, standIns: (dir) => { stand = claude(dir); } });
   assert.deepEqual(line(run).options, ['claude']);
   assert.deepEqual(stand!.calls(), []);
 });
 
 test('cli answers inside another harness', async (t) => {
-  const run = await instructions(t, 'review', 'review-build', {
+  const run = await instructions(t, 'review-build', {
     user: CLI,
     standIns: (dir) => codex(dir, [...LUNA]),
     env: { T3CODE_HOME: join(tempDir(t), '.t3') },
@@ -189,7 +189,7 @@ test('cli answers inside another harness', async (t) => {
 
 test('a model listing runs without the session markers, and with the rest of the environment', async (t) => {
   let stand: ReturnType<typeof codex> | undefined;
-  const run = await instructions(t, 'review', 'review-build', {
+  const run = await instructions(t, 'review-build', {
     user: CLI,
     standIns: (dir) => { stand = codex(dir, [...LUNA], { logEnv: ['CLAUDECODE', 'LETS_TEST_KEPT'] }); },
     env: { CLAUDECODE: '1', LETS_TEST_KEPT: 'kept' },
@@ -207,9 +207,9 @@ const FAILURE_TEXT = {
 
 test('a codex listing that fails lists the bare gpt family, with one warning that names codex', async (t) => {
   for (const failure of ['signed-out', 'unreadable', 'cannot-start'] as const) {
-    for (const [strategy, intent] of [['review', 'review-build'], ['step', 'build']]) {
-      const what = `${failure}, ${strategy}`;
-      const run = await instructions(t, strategy, intent, { user: CLI, standIns: (dir) => { codex(dir, failure); claude(dir); } });
+    for (const intent of ['review-build', 'build']) {
+      const what = `${failure}, ${intent}`;
+      const run = await instructions(t, intent, { user: CLI, standIns: (dir) => { codex(dir, failure); claude(dir); } });
       assert.deepEqual(line(run).options, ['gpt', 'claude'], what);
       const warnings = run.result.stderr.split('\n').filter((text) => text !== '');
       assert.equal(warnings.length, 1, `${what}: ${run.result.stderr}`);
@@ -230,7 +230,7 @@ test('a codex listing that fails lists the bare gpt family, with one warning tha
 test('two listings that hang are both stopped at their limit, at the same time, and their families listed bare', async (t) => {
   let clis: { codex: ReturnType<typeof codex>; agy: ReturnType<typeof agy> } | undefined;
   const started = performance.now();
-  const run = await instructions(t, 'review', 'review-build', {
+  const run = await instructions(t, 'review-build', {
     user: CLI,
     standIns: (dir) => { clis = { codex: codex(dir, 'hangs'), agy: agy(dir, 'hangs') }; },
     timeoutMs: 60_000,
@@ -255,67 +255,67 @@ const delegate = (body: string) => `version: 4\ndelegate:\n${body.replace(/^(?=.
 const cliDelegate = (body: string) => delegate(`resolvers: [cli]\n${body}`);
 
 test('the guidance for the intent comes from the user\'s lets config', async (t) => {
-  const run = await instructions(t, 'review', 'review-build', { user: delegate('review-build:\n  guidance: Use the strongest gpt model.\n') });
+  const run = await instructions(t, 'review-build', { user: delegate('review-build:\n  guidance: Use the strongest gpt model.\n') });
   assert.equal(line(run).guidance, 'Use the strongest gpt model.');
 });
 
 test('the plan reviewer\'s guidance comes from delegate.review-plan', async (t) => {
-  const run = await instructions(t, 'review', 'review-plan', { user: delegate('review-plan:\n  guidance: Prefer gpt.\n') });
+  const run = await instructions(t, 'review-plan', { user: delegate('review-plan:\n  guidance: Prefer gpt.\n') });
   assert.equal(line(run).guidance, 'Prefer gpt.');
 });
 
-test('guidance for another intent, or for another strategy, is null', async (t) => {
-  const otherIntent = await instructions(t, 'review', 'review-plan', { user: delegate('review-build:\n  guidance: Use gpt.\n') });
+test('guidance for another intent, or for the step a reviewer reviews, is null', async (t) => {
+  const otherIntent = await instructions(t, 'review-plan', { user: delegate('review-build:\n  guidance: Use gpt.\n') });
   assert.equal(line(otherIntent).guidance, null);
-  const otherStrategy = await instructions(t, 'review', 'review-build', { user: delegate('build:\n  guidance: Use gpt.\n') });
-  assert.equal(line(otherStrategy).guidance, null);
+  const theStep = await instructions(t, 'review-build', { user: delegate('build:\n  guidance: Use gpt.\n') });
+  assert.equal(line(theStep).guidance, null);
 });
 
 test('the plan step\'s guidance does not reach the plan reviewer', async (t) => {
-  const run = await instructions(t, 'review', 'review-plan', { user: delegate('plan:\n  guidance: Prefer claude.\n') });
+  const run = await instructions(t, 'review-plan', { user: delegate('plan:\n  guidance: Prefer claude.\n') });
   assert.equal(line(run).guidance, null);
 });
 
 test('a multi-line block keeps its lines', async (t) => {
-  const run = await instructions(t, 'review', 'review-build', { user: delegate('review-build:\n  guidance: |\n    Prefer claude.\n    Never gemini.\n') });
+  const run = await instructions(t, 'review-build', { user: delegate('review-build:\n  guidance: |\n    Prefer claude.\n    Never gemini.\n') });
   assert.equal(line(run).guidance, 'Prefer claude.\nNever gemini.\n');
 });
 
 test('a step\'s guidance comes from its own key, and the story intent\'s from delegate.story', async (t) => {
   const both = delegate('story:\n  guidance: Prefer claude.\nbuild:\n  guidance: Use gpt.\n');
-  assert.equal(line(await instructions(t, 'step', 'build', { user: both })).guidance, 'Use gpt.');
-  assert.equal(line(await instructions(t, 'step', 'story', { user: both })).guidance, 'Prefer claude.');
+  assert.equal(line(await instructions(t, 'build', { user: both })).guidance, 'Use gpt.');
+  assert.equal(line(await instructions(t, 'story', { user: both })).guidance, 'Prefer claude.');
 });
 
 // Each key holds its own name as guidance, so the guidance shows which key was read.
-test('each step reads the key the guidance table gives it, so a review step reads the plan or build key', async (t) => {
-  const user = delegate(['shape', 'plan', 'review-plan', 'build', 'review-build', 'story'].map((key) => `${key}:\n  guidance: ${key}\n`).join(''));
-  const expected: [string, string][] = [['shape', 'shape'], ['plan', 'plan'], ['review-plan', 'plan'], ['build', 'build'], ['review-build', 'build'], ['story', 'story']];
-  for (const [intent, key] of expected) {
-    const read = line(await instructions(t, 'step', intent, { user }));
-    assert.deepEqual([read.for, read.guidance], [intent, key], intent);
+test('each intent reads the guidance key of its own name', async (t) => {
+  const intents = ['shape', 'plan', 'review-plan', 'build', 'review-build', 'story'];
+  const user = delegate(intents.map((key) => `${key}:\n  guidance: ${key}\n`).join(''));
+  for (const intent of intents) {
+    const read = line(await instructions(t, intent, { user }));
+    assert.deepEqual([read.for, read.guidance], [intent, intent], intent);
   }
 });
 
 test('a step\'s guidance does not reach the story intent, nor the story\'s a step', async (t) => {
-  assert.equal(line(await instructions(t, 'step', 'story', { user: delegate('build:\n  guidance: Use gpt.\n') })).guidance, null);
-  assert.equal(line(await instructions(t, 'step', 'build', { user: delegate('story:\n  guidance: Prefer claude.\n') })).guidance, null);
+  assert.equal(line(await instructions(t, 'story', { user: delegate('build:\n  guidance: Use gpt.\n') })).guidance, null);
+  assert.equal(line(await instructions(t, 'build', { user: delegate('story:\n  guidance: Prefer claude.\n') })).guidance, null);
 });
 
 test('review guidance does not reach a step', async (t) => {
-  const run = await instructions(t, 'step', 'build', { user: delegate('review-build:\n  guidance: Prefer claude.\n') });
+  const run = await instructions(t, 'build', { user: delegate('review-build:\n  guidance: Prefer claude.\n') });
   assert.equal(line(run).guidance, null);
 });
 
 test('the repository\'s guidance for one intent wins, and the user\'s guidance for another stays', async (t) => {
   const user = delegate('review-plan:\n  guidance: Prefer gpt.\nreview-build:\n  guidance: Prefer claude.\n');
   const repo = delegate('review-build:\n  guidance: Use gemini.\n');
-  assert.equal(line(await instructions(t, 'review', 'review-build', { user, repo })).guidance, 'Use gemini.');
-  assert.equal(line(await instructions(t, 'review', 'review-plan', { user, repo })).guidance, 'Prefer gpt.');
+  assert.equal(line(await instructions(t, 'review-build', { user, repo })).guidance, 'Use gemini.');
+  assert.equal(line(await instructions(t, 'review-plan', { user, repo })).guidance, 'Prefer gpt.');
 });
 
 test('outside a Git repository, instructions read only the user\'s lets config', async (t) => {
-  const run = await instructions(t, 'review', 'review-build', {
+  const run = await instructions(t, 'review-build', {
     user: delegate('review-build:\n  guidance: Prefer claude.\n'),
     repo: delegate('review-build:\n  guidance: Use gemini.\n'),
     notInRepo: true,
@@ -324,15 +324,15 @@ test('outside a Git repository, instructions read only the user\'s lets config',
 });
 
 test('bad guidance for the intent is exit 2, naming the file and the key, and runs no listing', async (t) => {
-  const cases: { what: string; strategy?: string; intent?: string; setup: Setup; file: keyof Omit<Run, 'result'>; message: RegExp }[] = [
+  const cases: { what: string; intent?: string; setup: Setup; file: keyof Omit<Run, 'result'>; message: RegExp }[] = [
     { what: 'a number as guidance', setup: { user: cliDelegate('review-build:\n  guidance: 42\n') }, file: 'userConfig', message: /delegate\.review-build\.guidance must be a string/ },
     { what: 'a guidance entry that is not a mapping', setup: { user: cliDelegate('review-build: code\n') }, file: 'userConfig', message: /delegate\.review-build must be a mapping/ },
     { what: 'a number in the repository\'s config', setup: { user: cliDelegate(''), repo: delegate('review-build:\n  guidance: 42\n') }, file: 'repoConfig', message: /delegate\.review-build\.guidance must be a string/ },
-    { what: 'a bad entry the review plan step reads', strategy: 'step', intent: 'review-plan', setup: { user: cliDelegate('plan:\n  guidance: 42\n') }, file: 'userConfig', message: /delegate\.plan\.guidance must be a string/ },
+    { what: 'a bad entry the review plan step reads', intent: 'plan', setup: { user: cliDelegate('plan:\n  guidance: 42\n') }, file: 'userConfig', message: /delegate\.plan\.guidance must be a string/ },
   ];
-  for (const { what, strategy = 'review', intent = 'review-build', setup, file, message } of cases) {
+  for (const { what, intent = 'review-build', setup, file, message } of cases) {
     let stand: ReturnType<typeof codex> | undefined;
-    const run = await instructions(t, strategy, intent, { ...setup, standIns: (dir) => { stand = codex(dir, [...LUNA]); } });
+    const run = await instructions(t, intent, { ...setup, standIns: (dir) => { stand = codex(dir, [...LUNA]); } });
     assert.equal(run.result.code, 2, `${what}: ${run.result.output}`);
     assert.equal(run.result.stdout, '', what);
     assert.ok(run.result.stderr.includes(`${run[file]}: `), `${what}: ${run.result.stderr}`);
@@ -341,11 +341,11 @@ test('bad guidance for the intent is exit 2, naming the file and the key, and ru
   }
 });
 
-test('a bad entry for another intent, or for another strategy, is not checked', async (t) => {
-  const otherIntent = await instructions(t, 'review', 'review-build', { user: delegate('review-plan:\n  guidance: [a, b]\n') });
+test('a bad entry for another intent, or for the step a reviewer reviews, is not checked', async (t) => {
+  const otherIntent = await instructions(t, 'review-build', { user: delegate('review-plan:\n  guidance: [a, b]\n') });
   assert.equal(line(otherIntent).guidance, null);
-  const otherStrategy = await instructions(t, 'review', 'review-build', { user: delegate('build: 42\n') });
-  assert.equal(line(otherStrategy).guidance, null);
+  const theStep = await instructions(t, 'review-build', { user: delegate('build: 42\n') });
+  assert.equal(line(theStep).guidance, null);
 });
 
 // A run rejected for a bad lets config: exit 2, nothing on stdout, and one
@@ -361,14 +361,14 @@ function refused({ result }: Run, file: string, ...named: string[]) {
   for (const text of named) assert.ok(message.includes(text), `${text} in ${result.stderr}`);
 }
 
-// subagent's answer to review instructions for code, when nothing else answers.
-const SUBAGENT_REVIEW = { strategy: 'review', for: 'review-build', resolver: 'subagent', options: [], guidance: null };
+// subagent's answer to instructions for the code reviewer, when nothing else answers.
+const SUBAGENT_REVIEW = { for: 'review-build', resolver: 'subagent', options: [], guidance: null };
 
 describe('the delegate section of the lets config', () => {
   // The one chain asked here that lists t3. An empty T3CODE_HOME holds no
   // running server, so t3 declines, whatever the developer runs.
   test('t3, cli and subagent are each a valid entry of the chain', async (t) => {
-    const run = await instructions(t, 'review', 'review-build', {
+    const run = await instructions(t, 'review-build', {
       user: 'version: 4\ndelegate:\n  resolvers:\n    - t3\n    - cli\n    - subagent\n',
       env: { T3CODE_HOME: tempDir(t) },
     });
@@ -379,7 +379,7 @@ describe('the delegate section of the lets config', () => {
   test('a config with no delegate, a null or empty one, or no resolvers, has no chain, so subagent answers', async (t) => {
     for (const user of ['version: 4\n', 'version: 4\ndelegate:\n', 'version: 4\ndelegate: null\n', 'version: 4\ndelegate: {}\n', 'version: 4\ndelegate:\n  resolvers:\n']) {
       let clis: ReturnType<typeof everyCli> | undefined;
-      const run = await instructions(t, 'review', 'review-build', { user, standIns: (dir) => { clis = everyCli(dir); } });
+      const run = await instructions(t, 'review-build', { user, standIns: (dir) => { clis = everyCli(dir); } });
       assert.deepEqual(line(run), SUBAGENT_REVIEW, user);
       for (const [name, stand] of Object.entries(clis!)) assert.deepEqual(stand.calls(), [], `${name} for ${user}`);
     }
@@ -387,7 +387,7 @@ describe('the delegate section of the lets config', () => {
 
   test('an entry that is not t3, cli or subagent exits 2, naming the file, the entry and the three names', async (t) => {
     for (const entry of ['codex', 'T3', '7', '/opt/r/old-resolver']) {
-      const run = await instructions(t, 'review', 'review-build', { user: `version: 4\ndelegate:\n  resolvers:\n    - t3\n    - ${entry}\n` });
+      const run = await instructions(t, 'review-build', { user: `version: 4\ndelegate:\n  resolvers:\n    - t3\n    - ${entry}\n` });
       refused(run, run.userConfig, 'delegate.resolvers[1]', entry, 't3, cli or subagent');
     }
   });
@@ -408,51 +408,51 @@ describe('the delegate section of the lets config', () => {
       ['version: 4\ndelegate:\n  resolvers:\n    - 7\n', 'delegate.resolvers[0] must be t3, cli or subagent, got 7'],
     ];
     for (const [user, named] of cases) {
-      const run = await instructions(t, 'review', 'review-build', { user });
+      const run = await instructions(t, 'review-build', { user });
       refused(run, run.userConfig, named);
     }
   });
 
   test('a version 3 file names each old guidance key with its new key, and the key the plan step shares', async (t) => {
     const user = 'version: 3\ndelegate:\n  review:\n    plan:\n      guidance: Prefer gpt.\n  step:\n    review-plan:\n      guidance: Prefer claude.\n';
-    const run = await instructions(t, 'review', 'review-plan', { user });
+    const run = await instructions(t, 'review-plan', { user });
     refused(run, run.userConfig);
     assert.equal(run.result.stderr, `lets delegate: ${run.userConfig}: version must be 4, got 3. Rename delegate.review.plan to delegate.review-plan, and delegate.step.review-plan to delegate.plan, which the plan step shares. Then set version: 4. See "Set up delegation" in the lets-spec README.\n`);
   });
 
   test('a version 3 file names every old guidance key it holds, reviewers first, and skips a null one', async (t) => {
     const keys = 'review:\n    code:\n      guidance: a\n    plan: null\n  step:\n    shape:\n      guidance: b\n    plan:\n      guidance: c\n    build: {}\n    review-build:\n      guidance: d\n    story:\n      guidance: e\n';
-    const run = await instructions(t, 'step', 'build', { user: `version: 3\ndelegate:\n  ${keys}` });
+    const run = await instructions(t, 'build', { user: `version: 3\ndelegate:\n  ${keys}` });
     refused(run, run.userConfig);
     assert.match(run.result.stderr, /Rename delegate\.review\.code to delegate\.review-build, delegate\.step\.shape to delegate\.shape, delegate\.step\.plan to delegate\.plan, delegate\.step\.build to delegate\.build, delegate\.step\.review-build to delegate\.build, which the build step shares, and delegate\.step\.story to delegate\.story\. Then/);
   });
 
   test('a key lets does not know, at the top level and under delegate, is ignored', async (t) => {
-    const run = await instructions(t, 'review', 'review-build', { user: 'version: 4\nsync: true\ndelegate:\n  resolvers: [subagent]\n  telemetry: true\n' });
+    const run = await instructions(t, 'review-build', { user: 'version: 4\nsync: true\ndelegate:\n  resolvers: [subagent]\n  telemetry: true\n' });
     assert.deepEqual(line(run), SUBAGENT_REVIEW);
   });
 
   test('a go.questions the delegate commands do not read is ignored, even one lets go would reject', async (t) => {
-    const run = await instructions(t, 'review', 'review-build', { user: 'version: 4\ndelegate:\n  resolvers: [subagent]\ngo:\n  questions: loud\n' });
+    const run = await instructions(t, 'review-build', { user: 'version: 4\ndelegate:\n  resolvers: [subagent]\ngo:\n  questions: loud\n' });
     assert.deepEqual(line(run), SUBAGENT_REVIEW);
   });
 
   test('a step ignores a bad reviewer entry', async (t) => {
-    const run = await instructions(t, 'step', 'build', {
+    const run = await instructions(t, 'build', {
       user: 'version: 4\ndelegate:\n  resolvers: [subagent]\n  review-build:\n    guidance: 42\n',
     });
-    assert.deepEqual(line(run), { strategy: 'step', for: 'build', resolver: 'subagent', options: [], guidance: null });
+    assert.deepEqual(line(run), { for: 'build', resolver: 'subagent', options: [], guidance: null });
   });
 
   test('a handoff entry from an earlier lets is not checked, and draws no message', async (t) => {
-    const run = await instructions(t, 'step', 'build', { user: 'version: 4\ndelegate:\n  resolvers: [subagent]\n  handoff: 42\n' });
-    assert.deepEqual(line(run), { strategy: 'step', for: 'build', resolver: 'subagent', options: [], guidance: null });
+    const run = await instructions(t, 'build', { user: 'version: 4\ndelegate:\n  resolvers: [subagent]\n  handoff: 42\n' });
+    assert.deepEqual(line(run), { for: 'build', resolver: 'subagent', options: [], guidance: null });
     assert.doesNotMatch(run.result.stderr, /handoff/);
   });
 
   test('the guidance is null when a level is missing', async (t) => {
     for (const body of ['review-build:\n', 'review-build:\n  other: x\n', 'review-build: {}\n', 'handoff:\n  apply:\n    guidance: x\n']) {
-      assert.equal(line(await instructions(t, 'review', 'review-build', { user: delegate(body) })).guidance, null, body);
+      assert.equal(line(await instructions(t, 'review-build', { user: delegate(body) })).guidance, null, body);
     }
   });
 
@@ -463,14 +463,14 @@ describe('the delegate section of the lets config', () => {
     ];
     for (const [body, named] of cases) {
       let stand: ReturnType<typeof codex> | undefined;
-      const run = await instructions(t, 'review', 'review-build', { user: cliDelegate(body), standIns: (dir) => { stand = codex(dir, [...LUNA]); } });
+      const run = await instructions(t, 'review-build', { user: cliDelegate(body), standIns: (dir) => { stand = codex(dir, [...LUNA]); } });
       refused(run, run.userConfig, named);
       assert.deepEqual(stand!.calls(), [], `${body}: no listing ran`);
     }
   });
 
   test('a repository\'s list over the user\'s guidance replaces it whole, and exits 2 naming the repository\'s file', async (t) => {
-    const run = await instructions(t, 'review', 'review-build', {
+    const run = await instructions(t, 'review-build', {
       user: delegate('review-build:\n  guidance: Prefer claude.\n'),
       repo: delegate('review-build: [a]\n'),
     });
@@ -478,7 +478,7 @@ describe('the delegate section of the lets config', () => {
   });
 
   test('the user\'s chain stays under a repository\'s null resolvers, and its decline names the user\'s file', async (t) => {
-    const run = await instructions(t, 'review', 'review-build', {
+    const run = await instructions(t, 'review-build', {
       user: CLI,
       repo: delegate('resolvers: null\nreview-build:\n  guidance: Use gemini.\n'),
     });
@@ -490,18 +490,18 @@ describe('the delegate section of the lets config', () => {
 describe('an old guidance key in a version 4 file', () => {
   test('a reviewer\'s old key stops step instructions, naming the file, the old key and its new key, and runs no listing', async (t) => {
     let stand: ReturnType<typeof codex> | undefined;
-    const run = await instructions(t, 'step', 'build', { user: cliDelegate('review:\n  code:\n    guidance: Prefer gpt.\n'), standIns: (dir) => { stand = codex(dir, [...LUNA]); } });
+    const run = await instructions(t, 'build', { user: cliDelegate('review:\n  code:\n    guidance: Prefer gpt.\n'), standIns: (dir) => { stand = codex(dir, [...LUNA]); } });
     refused(run, run.userConfig, 'delegate.review.code', 'delegate.review-build');
     assert.deepEqual(stand!.calls(), []);
   });
 
-  test('a review step\'s old key stops review instructions, naming the build key it now shares', async (t) => {
-    const run = await instructions(t, 'review', 'review-build', { user: delegate('step:\n  review-build:\n    guidance: Prefer claude.\n') });
+  test('a review step\'s old key stops reviewer instructions, naming the build key it now shares', async (t) => {
+    const run = await instructions(t, 'review-build', { user: delegate('step:\n  review-build:\n    guidance: Prefer claude.\n') });
     refused(run, run.userConfig, 'delegate.step.review-build', 'delegate.build');
   });
 
   test('each old key gets its own line, naming the file that holds it', async (t) => {
-    const run = await instructions(t, 'step', 'plan', {
+    const run = await instructions(t, 'plan', {
       user: delegate('review:\n  plan:\n    guidance: Prefer gpt.\n'),
       repo: delegate('step:\n  plan:\n    guidance: Prefer claude.\n'),
     });
@@ -515,18 +515,18 @@ describe('an old guidance key in a version 4 file', () => {
   });
 
   test('an old entry that holds no old key stops instructions, naming the entry', async (t) => {
-    const run = await instructions(t, 'step', 'plan', { user: delegate('step: 42\n') });
+    const run = await instructions(t, 'plan', { user: delegate('step: 42\n') });
     refused(run, run.userConfig, 'delegate.step is no longer read');
   });
 
   test('an old key in the repository\'s lets config names that file, not the user\'s', async (t) => {
-    const run = await instructions(t, 'step', 'build', { user: 'version: 4\n', repo: delegate('step:\n  build:\n    guidance: Prefer claude.\n') });
+    const run = await instructions(t, 'build', { user: 'version: 4\n', repo: delegate('step:\n  build:\n    guidance: Prefer claude.\n') });
     refused(run, run.repoConfig, 'delegate.step.build', 'delegate.build');
     assert.ok(!run.result.stderr.includes(run.userConfig), run.result.stderr);
   });
 
   test('a null old entry is no old key', async (t) => {
-    const run = await instructions(t, 'review', 'review-build', { user: delegate('review: null\nreview-build:\n  guidance: Prefer gpt.\n') });
+    const run = await instructions(t, 'review-build', { user: delegate('review: null\nreview-build:\n  guidance: Prefer gpt.\n') });
     assert.equal(line(run).guidance, 'Prefer gpt.');
   });
 });

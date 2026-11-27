@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { GUIDANCE_KEY_NAMES } from '../../lets/src/delegate/strategies.ts';
+import { GUIDANCE_KEY_NAMES } from '../../lets/src/delegate/intents.ts';
 import { repo, tempDir } from '../support/lets.ts';
 import { type Finding, readText } from './texts.ts';
 

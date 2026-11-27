@@ -65,7 +65,7 @@ Commit first. The review covers commits, not the working tree.
    `HEAD`. Then resolve vocabulary as below, and write the prompt to
    `.workspace/<branch>-code-review-prompt.md`. [The prompt](#the-prompt)
    says what goes in it.
-2. Ask what can run. From the repo root, run `lets delegate review instructions --for review-build`. It prints one JSON line. `options` is the **listed models**: the
+2. Ask what can run. From the repo root, run `lets delegate step instructions --for review-build`. It prints one JSON line. `options` is the **listed models**: the
    models the resolver can run now. `guidance` is the user's prose for code
    reviews, from `delegate.review-build.guidance` in the `lets` config, or
    `null`. If it exits non-zero, stop, and show the user its stderr.
@@ -92,17 +92,26 @@ Commit first. The review covers commits, not the working tree.
    alone; it does not establish independence from the author families.
 
    ```bash
-   lets delegate review run --for review-build --name <branch>-code-review \
+   lets delegate step run --for review-build --name <branch>-code-review \
      --prompt-file .workspace/<branch>-code-review-prompt.md \
      --source-family <family> --effort high --model <first> --model <second> \
-     > .workspace/<branch>-code-review-raw.md 2> .workspace/<branch>-code-review-meta.txt
+     > .workspace/<branch>-code-review-report.json 2> .workspace/<branch>-code-review-meta.txt
    ```
 
 5. Act on its exit code:
-   - **0**: the findings are in the raw file. The meta file's last line is
-     JSON: the resolver, the model that answered, and the `independent` value.
-     Then read on below this list: note the range, and check what the review
-     read.
+   - **0**: the report file holds one JSON line, the report. Read its
+     `outcome`:
+     - `done`: the findings are the report's `findings`, the reviewer's
+       final message unchanged. Save them to
+       `.workspace/<branch>-code-review-raw.md`, the file the subagent step
+       writes too. The meta file's last line is JSON: the resolver, the
+       model that answered, and the `independent` value. Then read on below
+       this list: note the range, and check what the review read.
+     - `failed`: the reviewer did not finish its review. Its session
+       failed, gave an empty final message, or changed files outside
+       `.workspace/`. Record no **Code review**. Show the user the report's
+       `reason` and the meta file, and stop. Do not run the command again
+       until something has changed.
    - **3**: no fresh session can run here, for example because no resolver
      started one, or every model was refused. Take the [subagent
      step](#review-in-a-subagent).
@@ -124,7 +133,8 @@ commit. Either way, the review read other code than yours. After exit 0,
 check that:
 
 - the meta line's `checkout` is `<checkout>` and its `commit` is `<head>`;
-- the raw file's last line is `Read: <checkout> <head>`.
+- the last line of the findings, in the raw file, is
+  `Read: <checkout> <head>`.
 
 After the [subagent step](#review-in-a-subagent) there is no meta line, so
 check only its `Read:` line.

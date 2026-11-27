@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { describe, test, type TestContext } from 'node:test';
 import { claude, codex, agy, git, type LetsResult } from '../support/lets.ts';
 import { type DelegateRepo, delegateRepo, PROMPT } from './repo.ts';
-import { agyWrite, assertClockMs, claudeWrite, cleanUpStep, codexWrite, ending, stepStart, type StartArgs, stopStep, untilCalled, untilGone } from './steps.ts';
+import { agyWrite, assertClockMs, claudeRead, claudeWrite, cleanUpStep, codexWrite, ending, stepStart, type StartArgs, stopStep, untilCalled, untilGone } from './steps.ts';
 
 const CLI = 'version: 4\ndelegate: { resolvers: [cli] }\n';
 const DONE = ending('outcome: done\nevidence:\n  - "commit 3f2a1c0"\n');
@@ -132,6 +132,33 @@ describe('step start', () => {
       assert.match(result.stderr, named, JSON.stringify(over));
       assert.deepEqual(stand.calls(), [], JSON.stringify(over));
     }
+  });
+
+  test('a reviewer with no --source-family, a step with one, or a reviewer with --answers-file is exit 2, naming the option, and starts nothing', async (t) => {
+    const cases: [StartArgs, RegExp][] = [
+      [{ for: 'review-plan' }, /--source-family/],
+      [{ for: 'build', sourceFamily: 'claude' }, /--source-family/],
+      [{ for: 'review-build', sourceFamily: 'claude', answersFile: 'a.yaml' }, /--answers-file/],
+    ];
+    for (const [over, named] of cases) {
+      const repo = delegateRepo(t, { user: CLI });
+      writeFileSync(join(repo.cwd, 'a.yaml'), ANSWERS);
+      const stand = claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
+      const result = await repo.run(stepStart(over));
+      notStarted(repo, result, 2);
+      assert.match(result.stderr, named, JSON.stringify(over));
+      assert.deepEqual(stand.calls(), [], JSON.stringify(over));
+    }
+  });
+
+  test('a background reviewer is given its --source-family', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    claude(repo.standIns, { rows: [{ args: claudeRead(), stdout: 'FINDINGS\n' }] });
+    await started(t, repo, { for: 'review-plan', sourceFamily: 'claude' });
+    assert.deepEqual(ended(await waitFor(repo, ['build-x'])), { name: 'build-x', exit: 0 });
+    assert.equal(JSON.parse(readFileSync(join(repo.cwd, 'r.json'), 'utf8')).findings, 'FINDINGS\n');
+    const record = JSON.parse(readFileSync(join(repo.cwd, 'm.txt'), 'utf8').trim().split('\n').at(-1)!);
+    assert.deepEqual([record.for, record.independent], ['review-plan', false]);
   });
 
   test('a name that still runs is exit 2, naming the step and its pid, and starts no second process', async (t) => {

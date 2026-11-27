@@ -235,3 +235,47 @@ test("the required-skills check lets a flow leave out a skill that only another 
   smallText(dir, 'skills/lets-go/references/steps.md', ['# Steps', '', 'Then the `lets-review-plan` skill reviews the plan.']);
   assert.deepEqual(requiredSkillFindings(dir), []);
 });
+
+// The skills that start a reviewer through lets delegate.
+const REVIEW_SKILLS = ['lets-review-plan', 'lets-review-build', 'lets-review-pr'];
+
+/**
+ * Each review skill under `root` that still names `lets delegate review`,
+ * a command lets no longer has, or that never names
+ * `lets delegate step run --for`, the command that starts its reviewer.
+ * Each finding names the skill's `SKILL.md` and the command.
+ */
+function reviewerCommandFindings(root: string): Finding[] {
+  return REVIEW_SKILLS.flatMap((skill) => {
+    const text = readText(root, `skills/${skill}/SKILL.md`);
+    return [
+      ...(text.source.includes('lets delegate review') ? ['lets delegate review'] : []),
+      ...(text.source.includes('lets delegate step run --for') ? [] : ['lets delegate step run --for']),
+    ].map((name) => ({ file: text.path, name }));
+  });
+}
+
+// The three review skills, each starting its reviewer with line.
+function reviewSkills(dir: string, line: string) {
+  for (const skill of REVIEW_SKILLS) smallText(dir, `skills/${skill}/SKILL.md`, ['---', `name: ${skill}`, '---', '', '```bash', line, '```']);
+}
+
+test('each review skill starts its reviewer with lets delegate step run, and never names lets delegate review', () => {
+  assert.deepEqual(reviewerCommandFindings(repo), []);
+});
+
+test('the reviewer command check passes review skills that run lets delegate step run', (t) => {
+  const dir = tempDir(t);
+  reviewSkills(dir, 'lets delegate step run --for review-build --name x');
+  assert.deepEqual(reviewerCommandFindings(dir), []);
+});
+
+test('the reviewer command check names a review skill that still runs lets delegate review', (t) => {
+  const dir = tempDir(t);
+  reviewSkills(dir, 'lets delegate step run --for review-build --name x');
+  smallText(dir, 'skills/lets-review-pr/SKILL.md', ['---', 'name: lets-review-pr', '---', '', 'Run `lets delegate review run --for review-build`.']);
+  assert.deepEqual(reviewerCommandFindings(dir), [
+    { file: 'skills/lets-review-pr/SKILL.md', name: 'lets delegate review' },
+    { file: 'skills/lets-review-pr/SKILL.md', name: 'lets delegate step run --for' },
+  ]);
+});
