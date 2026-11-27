@@ -75,7 +75,7 @@ describe('where the user\'s lets config is', () => {
     const none = delegateRepo(t);
     assert.equal(printed(await none.run(questions, { env: { HOME: tempDir(t) } })), null);
     const json = delegateRepo(t);
-    write(join(json.home, 'lets', 'config.json'), '{"version":3,"go":{"questions":"ask"}}');
+    write(join(json.home, 'lets', 'config.json'), '{"version":4,"go":{"questions":"ask"}}');
     assert.equal(printed(await json.run(questions, { env: { HOME: tempDir(t) } })), null);
   });
 });
@@ -235,4 +235,10 @@ describe('the repository\'s lets config', () => {
     });
     assert.equal(printed(await shared.run(questions)), 'auto', 'both files hold the key');
   });
+});
+
+test('lets go questions --help shows a version 4 example', async (t) => {
+  const result = await delegateRepo(t).run(['go', 'questions', '--help']);
+  assert.equal(result.code, 0, result.output);
+  assert.match(result.stdout, /^ +version: 4$/m);
 });

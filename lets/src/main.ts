@@ -14,8 +14,8 @@ import { start as stepStart, wait as stepWait } from './delegate/background.ts';
 import type { StartOptions } from './delegate/background.ts';
 import { run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './delegate/step.ts';
 import type { StepOptions } from './delegate/step.ts';
-import { STRATEGIES } from './delegate/strategies.ts';
 import { run as questions } from './go/questions.ts';
+import { GUIDANCE_KEYS, STRATEGIES } from './delegate/strategies.ts';
 import type { Intent, Strategy } from './delegate/strategies.ts';
 import { realIo } from './io.ts';
 import type { Deps } from './io.ts';
@@ -69,8 +69,8 @@ const DELEGATE_HELP = `
 Each delegation has a strategy and an intent. The strategy is how the
 session runs: review runs it read-only and waits for its answer, and step
 runs a session that may write files and waits for its step report. The
-intent is what it is for: plan or code for a review, and one of the five
-steps, or story for a story run, for a step. Each strategy has two
+intent is what it is for: review-plan or review-build for a review, and
+one of the five steps, or story for a story run, for a step. Each strategy has two
 commands: instructions says what can run and gives the user's guidance,
 and run runs it.
 
@@ -88,25 +88,27 @@ by leaf: mappings merge, and any other value, such as the delegate.resolvers
 list, replaces the user's whole. A null or absent key keeps the user's
 value. You write both by hand:
 
-  version: 3
+  version: 4
   delegate:
     resolvers:
       - t3
       - subagent
-    review:
-      code:
-        guidance: Prefer the strongest gpt model.
-    step:
-      build:
-        guidance: Prefer claude/claude-opus-5-5.
+    review-build:
+      guidance: Prefer the strongest gpt model.
+    build:
+      guidance: Prefer claude/claude-opus-5-5.
 
 Each entry under delegate.resolvers is t3, cli or subagent. With no
 config, or no delegate.resolvers, only subagent is asked. It starts no
 session: a review exits 3, and a step saves the prompt and exits 3, for a
 subagent to run it.
 
-review and step are optional. delegate.<strategy>.<intent>.guidance is
-prose that the skill reads to rank the models; only instructions reads it.
+Each guidance key is optional. Its guidance is prose that the skill reads
+to rank the models; only instructions reads it. Each instructions --help
+names the key for each intent. delegate.review-plan steers the plan
+reviewer, while the review plan step's own session takes delegate.plan;
+delegate.review-build and delegate.build pair the same way. See "Set up
+delegation" in the lets-spec README for every key.
 
 Run lets delegate from the repo root.`;
 
@@ -218,17 +220,23 @@ Exit codes:
      did not start here. stderr names it.
   6  none of the steps ended within --timeout-minutes. Each still runs.`;
 
-const INSTRUCTIONS_HELP = `
+// The help of lets delegate <strategy> instructions, which names the
+// guidance key for each intent from GUIDANCE_KEYS.
+const instructionsHelp = (strategy: Strategy) => `
 stdout: one JSON line with strategy, for, resolver, options and guidance.
 resolver and options come from the first resolver that does not decline
 this strategy: options are the models it can run now, in its order.
-guidance is delegate.<strategy>.<intent>.guidance from the config, or null.
+guidance is the guidance for the intent from the config, or null:
+
+${Object.entries(GUIDANCE_KEYS[strategy]).map(([intent, key]) => `  --for ${intent}: delegate.${key}.guidance`).join('\n')}
+
 It starts no session.
 
 Exit codes:
   0  ok
   2  usage error, or every resolver in the config declined. A guidance
-     that is not a string is a usage error.
+     that is not a string, or a guidance key from before version 4, is a
+     usage error.
   4  the outcome is unknown, such as no reply from the harness`;
 
 const GO_QUESTIONS_HELP = `
@@ -238,7 +246,7 @@ when XDG_CONFIG_HOME is unset or empty, and the repository's
 .lets/config.yaml at the repository root. The repository's value wins, leaf
 by leaf. go.questions is ask or auto:
 
-  version: 3
+  version: 4
   go:
     questions: auto
 
@@ -328,7 +336,7 @@ function strategyCommand(strategy: Strategy, summary: string) {
     .summary('say what can run, and the user\'s guidance')
     .description('Ask the resolvers which models can run now, and give the user\'s guidance for the intent. Starts no session.')
     .addOption(forOption(strategy))
-    .addHelpText('after', INSTRUCTIONS_HELP)
+    .addHelpText('after', instructionsHelp(strategy))
     .action(async ({ for: intent }: { for: Intent }) => {
       process.exitCode = await instructions({ strategy, for: intent }, realDeps());
     });

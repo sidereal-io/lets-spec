@@ -117,13 +117,23 @@ test('delegate --help describes the chain in config.yaml, and names neither setu
   assert.doesNotMatch(text, /lets-delegate-resolver/);
 });
 
-test('delegate --help gives the lets config path and a version 3 example', async () => {
+test('delegate --help gives the lets config path and a version 4 example', async () => {
   const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
   assert.match(text, /\$XDG_CONFIG_HOME\/lets\/config\.yaml/);
   assert.match(text, /~\/\.config\/lets\/config\.yaml/);
-  assert.match(text, /version: 3 delegate: resolvers: - t3 - subagent review: code: guidance: .* step: build: guidance: /);
-  assert.match(text, /delegate\.<strategy>\.<intent>\.guidance/);
-  assert.doesNotMatch(text, /lets-delegate\/|version: 2|delegations/);
+  assert.match(text, /version: 4 delegate: resolvers: - t3 - subagent review-build: guidance: .* build: guidance: /);
+  assert.doesNotMatch(text, /lets-delegate\/|version: [23]|delegations|delegate\.step|delegate\.<strategy>/);
+});
+
+test('delegate --help says the plan reviewer and the review plan step take different keys, and points to the README', async () => {
+  const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /delegate\.review-plan steers the plan reviewer, while the review plan step's own session takes delegate\.plan; delegate\.review-build and delegate\.build pair the same way\./);
+  assert.match(text, /"Set up delegation" in the lets-spec README/);
+});
+
+test('delegate --help names the review intents', async () => {
+  const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /review-plan or review-build for a review/);
 });
 
 test('delegate --help names story among the step intents', async () => {
@@ -241,7 +251,20 @@ test('each strategy\'s --help names its intents', async () => {
 test('instructions --help names its output and exit codes', async () => {
   const text = (await lets('delegate', 'review', 'instructions', '--help')).stdout.replace(/\s+/g, ' ');
   assert.match(text, /strategy, for, resolver, options and guidance/);
-  assert.match(text, /delegate\.<strategy>\.<intent>\.guidance/);
+  assert.match(text, /Exit codes: 0 ok 2 usage error/);
+});
+
+test('each instructions --help names the guidance key for each of its intents', async () => {
+  const cases: [string, string[]][] = [
+    ['review', ['--for review-plan: delegate.review-plan.guidance', '--for review-build: delegate.review-build.guidance']],
+    ['step', ['--for shape: delegate.shape.guidance', '--for plan: delegate.plan.guidance', '--for review-plan: delegate.plan.guidance',
+      '--for build: delegate.build.guidance', '--for review-build: delegate.build.guidance', '--for story: delegate.story.guidance']],
+  ];
+  for (const [strategy, lines] of cases) {
+    const text = (await lets('delegate', strategy, 'instructions', '--help')).stdout;
+    for (const named of lines) assert.match(text, new RegExp(`^ +${named.replaceAll('.', '\\.')}$`, 'm'), `${strategy}: ${named}`);
+    assert.doesNotMatch(text, /delegate\.<strategy>/, strategy);
+  }
 });
 
 test('step --help names instructions and run', async () => {
@@ -353,11 +376,6 @@ test('the handoff command is gone: exit 2, naming it as unknown, and no prompt i
   assert.equal(stdout, '');
   assert.match(stderr, /unknown command 'handoff'/);
   assert.equal(existsSync(join(r.cwd, '.workspace', 'lets-delegate')), false);
-});
-
-test('delegate --help shows a step guidance in its example', async () => {
-  const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
-  assert.match(text, /review: code: guidance: .* step: build: guidance: /);
 });
 
 test('with no config, step run saves the prompt and is exit 3', async () => {

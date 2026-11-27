@@ -12,7 +12,7 @@
 
 ## 2. Help text [depends-on: 1]
 
-- [ ] 2.1 [parallel] [easy] `lets delegate --help` shows a `version: 4` example with the new keys, says in one sentence that `delegate.review-plan` steers the plan reviewer while the review plan step's own session takes `delegate.plan` (and the same for `review-build` and `build`), and points to the README's *Set up delegation*. Each `instructions --help` lists the key for each of its intents, built from the table in 1.3, and `lets go questions --help` shows `version: 4` (specs: *delegate-config*, *The help and the resolvers guide point to the table*) (verify: node --test tests/lets/delegate/cli.test.ts tests/go/questions.test.ts)
+- [x] 2.1 [parallel] [easy] `lets delegate --help` shows a `version: 4` example with the new keys, says in one sentence that `delegate.review-plan` steers the plan reviewer while the review plan step's own session takes `delegate.plan` (and the same for `review-build` and `build`), and points to the README's *Set up delegation*. Each `instructions --help` lists the key for each of its intents, built from the table in 1.3, and `lets go questions --help` shows `version: 4` (specs: *delegate-config*, *The help and the resolvers guide point to the table*) (verify: node --test tests/lets/delegate/cli.test.ts tests/go/questions.test.ts) (✓ that command passed, 84 tests; tsc --noEmit passed)
 
 ## 3. The README and the resolvers guide [depends-on: 1]
 
