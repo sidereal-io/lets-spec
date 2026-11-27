@@ -96,14 +96,14 @@ The caller chooses the model, and `t3` runs exactly that one:
 - `lets delegate step instructions` lists the
   models that T3 Code's model picker offers, as `<family>/<model>`.
   `t3` asks the running T3 server for its live catalogue each time.
-- They list a provider only when it is enabled, its status is ready or
+- It lists a provider only when it is enabled, its status is ready or
   warning, and T3 Code does not mark it unavailable. A provider in
   warning is one T3 Code has not checked yet.
-- They take each provider in the catalogue's order, with its default
-  model first. They leave out the models you hid in T3 Code, but never a
-  custom model. They list each Gemini model once, without its effort.
-- When T3 Code gives no catalogue within 10 seconds, or refuses to, they
-  list no models, say why on stderr, and still exit 0.
+- It takes each provider in the catalogue's order, with its default
+  model first. It leaves out the models you hid in T3 Code, but never a
+  custom model. It lists each Gemini model once, without its effort.
+- When T3 Code gives no catalogue within 10 seconds, or refuses to, it
+  lists no models, says why on stderr, and still exits 0.
 - A review or a step runs the model that `--model` names. A bare
   family, such as `claude`, runs that provider's default model in the
   catalogue. When you hid the default, it runs the first model you did
