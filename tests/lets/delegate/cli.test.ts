@@ -281,7 +281,7 @@ test('step run --help lists exit codes 0, 2, 3, 4 and 6, and says exit 0 carries
   const { code, stdout } = await lets('delegate', 'step', 'run', '--help');
   assert.equal(code, 0);
   const text = stdout.replace(/\s+/g, ' ');
-  assert.match(text, /0 a step report is on stdout, whatever its outcome/);
+  assert.match(text, /0 a report is on stdout, whatever its outcome/);
   assert.match(text, /2 usage error, or every resolver in the config declined/);
   assert.match(text, /3 no fresh session can run here on any model given/);
   assert.match(text, /4 the outcome is unknown/);
@@ -300,10 +300,17 @@ test('step run --help names the optional ask on a question', async () => {
   assert.match(text, /an optional ask: true/);
 });
 
-test('step run --help says a step has 120 minutes and a story 600', async () => {
+test('step run --help describes a reviewer\'s done and failed reports, and its record line', async () => {
   const text = (await lets('delegate', 'step', 'run', '--help')).stdout.replace(/\s+/g, ' ');
-  assert.match(text, /--timeout-minutes <minutes> .*\(default: 120 for a step, 600 for a story\)/);
-  assert.match(text, /A step has 120 minutes and a story 600, unless --timeout-minutes says otherwise/);
+  assert.match(text, /A reviewer's done report holds findings: its final message, unchanged/);
+  assert.match(text, /A reviewer that fails, gives an empty final message, or changes files outside \.workspace\/ is a failed report/);
+  assert.match(text, /for, resolver, family, model, independent, handle, checkout, commit, gitClean and durationSeconds/);
+});
+
+test('step run --help gives a reviewer 30 minutes, or 45 at effort high', async () => {
+  const text = (await lets('delegate', 'step', 'run', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /A step has 120 minutes, a story 600, and a reviewer 30, or 45 at effort high, unless --timeout-minutes says otherwise/);
+  assert.match(text, /--timeout-minutes <minutes> .*\(default: 120 for a step, 600 for a story, 30 for a reviewer, or 45 at --effort high\)/);
 });
 
 test('step run without --model or with a bad one is a usage error that names it', async () => {

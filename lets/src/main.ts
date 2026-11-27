@@ -10,7 +10,7 @@ import { run as instructions } from './delegate/instructions.ts';
 import { EFFORTS, FAMILIES, parseModel } from './resolvers/kit/families.ts';
 import { start as stepStart, wait as stepWait } from './delegate/background.ts';
 import type { StartOptions } from './delegate/background.ts';
-import { run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './delegate/step.ts';
+import { REVIEW_TIMEOUT_MINUTES, run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './delegate/step.ts';
 import type { StepOptions } from './delegate/step.ts';
 import { run as questions } from './go/questions.ts';
 import { GUIDANCE_KEYS, INTENTS } from './delegate/intents.ts';
@@ -119,7 +119,8 @@ story run, not a step: a child lets-go session that walks one story's
 steps and ends with a step report.`;
 
 const STEP_HELP = `
-The session ends its final message with a step report: a fenced block
+For every intent but review-plan and review-build, the session may write
+files, and ends its final message with a step report: a fenced block
 tagged step-report, holding YAML. outcome is done, with evidence, a list of
 lines; needs-input, with questions, each with question, an optional
 recommendation and an optional ask: true, which marks a question to put to
@@ -131,10 +132,23 @@ done report. A final message with no valid report is a failed report whose
 reason says what is wrong, and whose message holds the final message.
 stderr: one JSON line with for, resolver, family, model, handle and
 durationSeconds. handle is null when the session failed before it gave a
-final message.
+final message. lets does not check the tree after a step: a step may
+change files.
 
-A step has ${STEP_TIMEOUT_MINUTES} minutes and a story ${STORY_TIMEOUT_MINUTES}, unless --timeout-minutes says
-otherwise.
+review-plan and review-build start a reviewer: a read-only session, which
+needs --source-family, the family that wrote the work, and takes no
+--answers-file. lets checks the tree after it. A reviewer's done report
+holds findings: its final message, unchanged, and date. A reviewer that
+fails, gives an empty final message, or changes files outside .workspace/
+is a failed report whose reason says so, and its session is kept.
+stderr: one JSON line with for, resolver, family, model, independent,
+handle, checkout, commit, gitClean and durationSeconds. independent is true
+when the family that answered is not the source family. checkout is the
+checkout the session ran in, and commit the full hash at its HEAD after
+the session; each is null when lets cannot tell.
+
+A step has ${STEP_TIMEOUT_MINUTES} minutes, a story ${STORY_TIMEOUT_MINUTES}, and a reviewer ${REVIEW_TIMEOUT_MINUTES.medium}, or ${REVIEW_TIMEOUT_MINUTES.high} at effort high,
+unless --timeout-minutes says otherwise.
 
 --answers-file resumes a step that reported needs-input: a YAML list of
 question and answer pairs, which lets appends to the prompt. Give the same
@@ -143,16 +157,15 @@ question and answer pairs, which lets appends to the prompt. Give the same
 --model may be given more than once, best first. When the resolver
 refuses a model, lets asks the same resolver for the next one.
 
-lets does not check the tree after a step: a step may change files.
-
 Exit codes:
-  0  a step report is on stdout, whatever its outcome
+  0  a report is on stdout, whatever its outcome
   2  usage error, or every resolver in the config declined
   3  no fresh session can run here on any model given: the harness or the
      account said no before the model gave any output, or no resolver
      started a session. stderr names each model and why.
-  4  the outcome is unknown, such as no reply from the harness, or the
-     resolver failed in a way it could not report
+  4  the outcome is unknown, such as no reply from the harness, a tree
+     that git cannot check after a reviewer, or the resolver failed in a
+     way it could not report
   6  the session did not finish in time`;
 
 const STEP_START_HELP = `
@@ -312,7 +325,7 @@ const stepRunOptions = (command: Command) => command
   .addOption(new Option('--effort <effort>', 'how hard the session thinks').choices(EFFORTS).makeOptionMandatory())
   .addOption(new Option('--source-family <family>', 'for review-plan and review-build only: the model family that wrote the work').choices(FAMILIES))
   .addOption(modelOption())
-  .option('--timeout-minutes <minutes>', `how long to wait (default: ${STEP_TIMEOUT_MINUTES} for a step, ${STORY_TIMEOUT_MINUTES} for a story)`, wholeMinutes)
+  .option('--timeout-minutes <minutes>', `how long to wait (default: ${STEP_TIMEOUT_MINUTES} for a step, ${STORY_TIMEOUT_MINUTES} for a story, ${REVIEW_TIMEOUT_MINUTES.medium} for a reviewer, or ${REVIEW_TIMEOUT_MINUTES.high} at --effort high)`, wholeMinutes)
   .option('--answers-file <path>', 'the answers to the last report\'s questions, as a YAML list of question and answer pairs');
 
 const stepCommand = delegate
@@ -333,8 +346,8 @@ stepCommand
 
 stepRunOptions(stepCommand
   .command('run')
-  .summary('run the step')
-  .description('Run a prompt in a fresh session that may write files, on the first model --model names that is not refused, wait for its final message, and print its step report.'))
+  .summary('run the session')
+  .description('Run a prompt in a fresh session on the first model --model names that is not refused, wait for its final message, and print its report. A reviewer\'s session is read-only; any other may write files.'))
   // lets delegate step start gives it; a person never needs it.
   .addOption(new Option('--exit-file <path>', 'where to record the exit code').hideHelp())
   .addHelpText('after', STEP_HELP)

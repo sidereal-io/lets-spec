@@ -12,6 +12,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/instructions.ts';
+import { SessionFailed } from '../../../lets/src/resolvers/kit/errors.ts';
 import { commandDeps } from './fixtures/command-deps.ts';
 
 const review = { for: 'review-build' } as const;
@@ -57,4 +58,14 @@ test('a resolver whose detect throws is exit 4 with the message', async () => {
   assert.equal(await run(review, t.deps), 4);
   assert.equal(t.stdout(), '');
   assert.match(t.stderr(), /no \/proc/);
+});
+
+test('a resolver whose options say a session failed is exit 4: lets cannot tell what that means there', async () => {
+  const t = withT3();
+  t.deps.resolvers.t3.options = async () => {
+    throw new SessionFailed('the session stopped to ask');
+  };
+  assert.equal(await run(review, t.deps), 4);
+  assert.equal(t.stdout(), '');
+  assert.match(t.stderr(), /the session stopped to ask/);
 });
