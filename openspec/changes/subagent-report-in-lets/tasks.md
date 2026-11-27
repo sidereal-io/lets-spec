@@ -19,7 +19,7 @@
 
 ## 4. Finish [depends-on: 2, 3]
 
-- [ ] 4.1 [easy] The pull request description records `wc -l` for `skills/lets-go/SKILL.md` and for every file of `skills/lets-go/`, on `main` and on this branch (D11) (verify: gh pr view subagent-report-in-lets --json body --jq .body | grep -q 'wc -l')
+- [x] 4.1 [easy] The pull request description records `wc -l` for `skills/lets-go/SKILL.md` and for every file of `skills/lets-go/`, on `main` and on this branch (D11) (verify: gh pr view subagent-report-in-lets --json body --jq .body | grep -q 'wc -l') (✓ gh pr view subagent-report-in-lets --json body --jq .body | grep -q 'wc -l' passed)
 - [ ] 4.2 [easy] Every project check passes (verify: pnpm test && nix flake check && mise run check)
 
 ## Deviations Ledger
