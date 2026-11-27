@@ -847,11 +847,11 @@ It returns one of these results:
   `## Stack` section, and its line ends `, stacked on #<blocker>`.
 - `not-stacked`: the story is not stacked. When its pull request's base
   was a merged blocker's branch, the base is now `<default>`.
-- `settled`: [Stack the story](#stack-the-story) settled the story.
-- `fetch-failed`: [Stack the story](#stack-the-story) could not fetch a
-  blocker's branch. It carries `<blocker-branch>` and Git's error.
-- `edit-failed`: the pull request's base could not be moved. It carries
-  gh's error.
+- `settled` and `fetch-failed`: [Stack the story](#stack-the-story)
+  returned it, as that section's list says.
+- `edit-failed`:
+  [Read a pull request's base](#read-a-pull-requests-base) returned it,
+  as that section's list says.
 - `read-failed`: the story's pull request could not be read. It carries
   gh's error.
 
