@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { readAnswers, readReport, withAnswers } from '../../../lets/src/delegate/report.ts';
+import { printedReport, readAnswers, readReport, withAnswers } from '../../../lets/src/delegate/report.ts';
 import { UsageError } from '../../../lets/src/resolvers/kit/errors.ts';
 
 // A final message that ends with a step-report block holding yaml.
@@ -137,4 +137,21 @@ test('withAnswers keeps a multi-line answer inside its item', () => {
 test('withAnswers keeps a multi-line question inside its item', () => {
   const prompt = withAnswers('P', [{ question: 'Which\nschema?', answer: 'x' }]);
   assert.ok(prompt.endsWith('- Q: Which\n  schema?\n  A: x\n'), prompt);
+});
+
+// 2026-11-04T09:30:00.250Z, a time with milliseconds.
+const NOW = Date.UTC(2026, 10, 4, 9, 30, 0, 250);
+
+test('a printed done report carries the date to the second, after its evidence', () => {
+  assert.equal(printedReport({ outcome: 'done', evidence: ['commit 3f2a1c0'] }, NOW),
+    '{"outcome":"done","evidence":["commit 3f2a1c0"],"date":"2026-11-04T09:30:00Z"}\n');
+});
+
+test('a printed needs-input report carries no date', () => {
+  assert.equal(printedReport({ outcome: 'needs-input', questions: [{ question: 'Which?', ask: true }] }, NOW),
+    '{"outcome":"needs-input","questions":[{"question":"Which?","ask":true}]}\n');
+});
+
+test('a printed failed report carries no date', () => {
+  assert.equal(printedReport({ outcome: 'failed', reason: 'no' }, NOW), '{"outcome":"failed","reason":"no"}\n');
 });

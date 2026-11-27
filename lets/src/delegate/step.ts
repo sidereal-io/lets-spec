@@ -10,7 +10,7 @@ import { repoRoot } from './git.ts';
 import { guarded } from './guarded.ts';
 import { checkModels, finishSession, pick, withModels } from './lookup.ts';
 import { readPromptFile } from './prompt-file.ts';
-import { readAnswers, readReport, withAnswers } from './report.ts';
+import { printedReport, readAnswers, readReport, withAnswers } from './report.ts';
 import type { Report } from './report.ts';
 import { normalizeName } from '../resolvers/kit/adapter.ts';
 import type { Handle } from '../resolvers/kit/adapter.ts';
@@ -71,8 +71,7 @@ async function step({ for: intent, name, promptFile, effort, models, timeoutMinu
   // Only a done step is cleaned up. Any other is kept for a person to read.
   if (handle !== null) await finishSession(adapter, handle, { cwd, ok: report.outcome === 'done', deps });
 
-  const printed = report.outcome === 'done' ? { ...report, date: isoSeconds(io.now()) } : report;
-  deps.stdout(`${JSON.stringify(printed)}\n`);
+  deps.stdout(printedReport(report, io.now()));
   const durationSeconds = Math.round((io.now() - started) / 1000);
   // The model that ran, else the --model value, when it names only a family.
   deps.stderr(`${JSON.stringify({ for: intent, resolver: adapter.name, family, model: model ?? sent, handle, durationSeconds })}\n`);
@@ -84,9 +83,4 @@ export function readAnswersFile(answersFile: string, { cwd, io }: Pick<Deps, 'cw
   const text = io.readFile(resolve(cwd, answersFile));
   if (text === null) throw new UsageError(`cannot read --answers-file ${answersFile}`);
   return readAnswers(text, answersFile);
-}
-
-// ms as ISO 8601 UTC, to the second, such as 2026-11-04T09:30:00Z.
-function isoSeconds(ms: number): string {
-  return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
