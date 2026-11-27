@@ -240,7 +240,7 @@ describe('step run', () => {
   });
 
   test('a step ignores the guidance, even one that is not a string', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  step:\n    build:\n      guidance: 42\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  build:\n    guidance: 42\n' });
     claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
     assert.equal(reportOf(await repo.run(stepRun())).outcome, 'done');
   });

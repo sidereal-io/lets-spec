@@ -22,3 +22,29 @@ export const STRATEGIES: Record<Strategy, { intents: readonly Intent[]; verb: Ki
   // May write files, waits for the final message, and reads its step report.
   step: { intents: STEP_STRATEGY_INTENTS, verb: 'step' },
 };
+
+// The guidance key each strategy reads for each of its intents: the user's
+// guidance for that session sits at delegate.<key>.guidance. Typed so that
+// a strategy cannot gain an intent without a key.
+export const GUIDANCE_KEYS: { review: Record<ReviewIntent, string>; step: Record<StepStrategyIntent, string> } = {
+  review: { 'review-plan': 'review-plan', 'review-build': 'review-build' },
+  step: {
+    shape: 'shape',
+    plan: 'plan',
+    // Until lets-go starts each reviewer itself (#354, #355), a review
+    // step's own session shares the key of the step whose work it reviews.
+    'review-plan': 'plan',
+    build: 'build',
+    'review-build': 'build',
+    story: 'story',
+  },
+};
+
+// Every guidance key lets reads, each once: the steps' keys, then the reviewers'.
+export const GUIDANCE_KEY_NAMES: readonly string[] = [...new Set([...Object.values(GUIDANCE_KEYS.step), ...Object.values(GUIDANCE_KEYS.review)])];
+
+// The guidance key a strategy reads for an intent, or undefined when the
+// strategy does not take that intent.
+export function guidanceKey(strategy: Strategy, intent: Intent): string | undefined {
+  return (GUIDANCE_KEYS[strategy] as Record<string, string>)[intent];
+}

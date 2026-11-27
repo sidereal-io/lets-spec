@@ -1,7 +1,7 @@
 // The lets config: the user's lets config, merged with the repository's
 // lets config, .lets/config.yaml at the repository root, whose values win.
 // It holds the chain, the resolvers lets asks, in order, the guidance for
-// each kind of delegation, and the settings of lets go and lets backlog.
+// each step's sessions, and the settings of lets go and lets backlog.
 // People write both files by hand, and lets is the only reader. Keys this
 // lets does not know are ignored, so a later lets can add one beside them.
 import { join } from 'node:path';
@@ -10,6 +10,7 @@ import { configDir } from '../config-dir.ts';
 import type { Deps, Io } from '../io.ts';
 import { findRepoRoot } from './git.ts';
 import { UsageError } from '../resolvers/kit/errors.ts';
+import { GUIDANCE_KEY_NAMES, guidanceKey } from './strategies.ts';
 import type { Intent, Strategy } from './strategies.ts';
 
 export const CONFIG_VERSION = 4;
@@ -21,13 +22,13 @@ export const QUESTION_MODES = ['ask', 'auto'] as const;
 export type QuestionMode = (typeof QUESTION_MODES)[number];
 
 // The file's shape, with the keys this lets does not know dropped. delegate
-// is {} when the file has none. Each resolver is one of RESOLVER_NAMES.
-// review and step are as the user wrote them: only lets delegate
-// <strategy> instructions reads them, through guidanceFor, so a bad entry
-// never stops a run.
+// is {} when the file has none. Each resolver is one of RESOLVER_NAMES. The
+// guidance keys, and the review and step entries of an earlier lets, are as
+// the user wrote them: only lets delegate <strategy> instructions reads
+// them, so a bad entry never stops a run.
 export type Config = {
   version: typeof CONFIG_VERSION;
-  delegate: { resolvers?: ResolverName[]; review?: unknown; step?: unknown };
+  delegate: { resolvers?: ResolverName[] } & Record<string, unknown>;
 };
 
 export type ConfigDeps = { env: Deps['env']; io: Io };
@@ -107,29 +108,28 @@ export function checkConfig(value: Record<string, unknown>, fileOf: FileOf): Con
     });
     config.delegate.resolvers = resolvers;
   }
-  for (const strategy of ['review', 'step'] as const) {
-    if (delegate[strategy] !== undefined) config.delegate[strategy] = delegate[strategy];
+  for (const key of [...GUIDANCE_KEY_NAMES, 'review', 'step']) {
+    if (delegate[key] !== undefined) config.delegate[key] = delegate[key];
   }
   return config;
 }
 
-// The guidance for an intent, from delegate.<strategy>.<intent>.guidance,
-// or null when there is no config or any level is missing. Throws a
-// UsageError that names the file fileOf gives for the dotted key, and the
-// key, when a level has the wrong type. Other strategies' and other
-// intents' entries are not checked.
+// The guidance for an intent, from delegate.<key>.guidance, where
+// guidanceKey gives the key for the strategy and intent, or null when there
+// is no config or any level is missing. Throws a UsageError that names the
+// file fileOf gives for the dotted key, and the key, when a level has the
+// wrong type. Other keys' entries are not checked.
 export function guidanceFor(config: Config | null, strategy: Strategy, intent: Intent, fileOf: FileOf): string | null {
   const fail = (key: string, expected: string, value: unknown) =>
     new UsageError(`${fileOf(key)}: ${key} must be ${expected}, got ${JSON.stringify(value) ?? String(value)}.`);
-  const entry = config?.delegate[strategy];
+  const key = guidanceKey(strategy, intent);
+  if (key === undefined) return null;
+  const entry = config?.delegate[key];
   if (entry === undefined || entry === null) return null;
-  if (!isObject(entry)) throw fail(`delegate.${strategy}`, 'a mapping', entry);
-  const forIntent = entry[intent];
-  if (forIntent === undefined || forIntent === null) return null;
-  if (!isObject(forIntent)) throw fail(`delegate.${strategy}.${intent}`, 'a mapping', forIntent);
-  const { guidance } = forIntent;
+  if (!isObject(entry)) throw fail(`delegate.${key}`, 'a mapping', entry);
+  const { guidance } = entry;
   if (guidance === undefined || guidance === null) return null;
-  if (typeof guidance !== 'string') throw fail(`delegate.${strategy}.${intent}.guidance`, 'a string', guidance);
+  if (typeof guidance !== 'string') throw fail(`delegate.${key}.guidance`, 'a string', guidance);
   return guidance;
 }
 

@@ -221,7 +221,7 @@ describe('review run', () => {
   });
 
   test('a review ignores the guidance, even one that is not a string', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  review:\n    review-build:\n      guidance: 42\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  review-build:\n    guidance: 42\n' });
     const stand = codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
     const result = await repo.run(review());
     assert.equal(metadata(result).resolver, 'cli');
@@ -480,7 +480,7 @@ describe('the default', () => {
   };
 
   test('with no chain in the config, subagent answers', async (t) => {
-    for (const user of [undefined, 'version: 4\n', 'version: 4\ndelegate:\n  review:\n    review-build:\n      guidance: Prefer claude.\n']) {
+    for (const user of [undefined, 'version: 4\n', 'version: 4\ndelegate:\n  review-build:\n    guidance: Prefer claude.\n']) {
       const repo = delegateRepo(t, { user });
       assert.equal(resolverOf(await repo.run(instructions)), 'subagent', String(user));
     }
