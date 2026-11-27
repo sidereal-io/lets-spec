@@ -15,27 +15,25 @@ prompt, with any answers added.
    on the branch `<name>`, or on the default branch for shape, and makes
    only the changes that the step calls for. In an epic run's walk, this
    repository is the story's worktree, `<path>`, as
-   [Wait for the wave](epic-run.md#wait-for-the-wave) says.
-2. Read the last `step-report` block in the subagent's final message, by
-   the rules `lets` uses:
-   - The block opens with a line of three or more backticks followed by
-     `step-report`. It closes with a line of at least as many backticks,
-     and nothing else.
-   - It holds one YAML mapping, whose `outcome` is `done`, `needs-input`
-     or `failed`.
-   - A `done` report holds `evidence`, a non-empty list of strings.
-   - A `needs-input` report holds `questions`, a non-empty list of
-     mappings. Each has a string `question`, and may have a string
-     `recommendation` and a boolean `ask`. `ask: true` is kept,
-     `ask: false` is dropped, and any other value breaks the report,
-     whose reason names the question, such as `questions[0].ask` for
-     the first.
-   - A `failed` report holds a string `reason`.
-3. A final message that breaks any of these rules is a `failed` report.
-   Its `reason` says what is missing or wrong, such as no `step-report`
-   block, or a `done` report with no `evidence`.
-4. Add `date` to a `done` report: the current time in ISO 8601 UTC, from
-   `date -u +%Y-%m-%dT%H:%M:%SZ`.
-5. Write the report as one JSON line, `outcome` first, keeping
-   `"ask":true` on each question marked `ask: true`, to
-   `.workspace/lets-go/<session>-report.json`.
+   [Wait for the wave](epic-run.md#wait-for-the-wave) says, and the
+   commands below run from `<path>` too.
+2. Save the subagent's final message, unchanged and in full, to
+   `.workspace/lets-go/<session>-message.md`. Write it with your file
+   writing tool, not with a shell command such as a heredoc or `echo`:
+   quotes and backticks in the message would break the command.
+3. Have `lets` read the step report from that message:
+
+   ```bash
+   lets delegate step read --message-file .workspace/lets-go/<session>-message.md \
+     > .workspace/lets-go/<session>-report.json
+   ```
+
+   `lets` reads the last `step-report` block and checks it, as it does
+   for `lets delegate step run`. Do not read the block, check it or add
+   its date yourself.
+4. Act on its exit code:
+   - **0**: the report file holds the report, one JSON line, whatever
+     its outcome. Read it as you read a report from
+     `lets delegate step run` at exit 0.
+   - **Anything else**: show the user its stderr, name the step, and
+     stop. Do not read a report.
