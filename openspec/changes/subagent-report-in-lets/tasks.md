@@ -11,7 +11,7 @@
 ## 2. lets-go and the glossary [depends-on: 1]
 
 - [x] 2.1 [parallel] [medium] `skills/lets-go/references/subagent.md` says how to run the subagent, as today, then to save its final message unchanged to `.workspace/lets-go/<session>-message.md` with the file tool, run `lets delegate step read --message-file .workspace/lets-go/<session>-message.md > .workspace/lets-go/<session>-report.json`, and, at any exit but 0, show stderr, name the step and stop. The old steps 2 to 5 and their report rules are gone (design D-5) (verify: node --test tests/contracts/commands.test.ts tests/contracts/links.test.ts) (✓ node --test tests/contracts/commands.test.ts tests/contracts/links.test.ts passed)
-- [ ] 2.2 [parallel] [easy] The *Step report* entry in `openspec/glossary.md` says that `lets delegate step run` and `lets delegate step read` each print it as one JSON line, and `skills/lets-go/references/terms.md` copies the entry word for word, in the same commit (design D-6) (verify: node --test tests/contracts/terms.test.ts tests/contracts/commands.test.ts)
+- [x] 2.2 [parallel] [easy] The *Step report* entry in `openspec/glossary.md` says that `lets delegate step run` and `lets delegate step read` each print it as one JSON line, and `skills/lets-go/references/terms.md` copies the entry word for word, in the same commit (design D-6) (verify: node --test tests/contracts/terms.test.ts tests/contracts/commands.test.ts) (✓ node --test tests/contracts/terms.test.ts tests/contracts/commands.test.ts passed)
 
 ## 3. The subagent journey [depends-on: 1]
 
