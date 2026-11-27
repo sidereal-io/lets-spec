@@ -368,8 +368,7 @@ says.
    whether or not the story has an open blocker: a resumed story whose
    blockers have all closed still needs its pull request's base read.
    On its result:
-   - **`stacked`:** go on, below. The story is stacked on the
-     `<blocker>` it carries.
+   - **`stacked`:** go on, below, with the `<blocker>` it carries.
    - **`not-stacked`:** go on, below.
    - **`settled`:** go back to [Run the epic](#run-the-epic), which
      picks again. Do not go on with the story.
@@ -396,8 +395,7 @@ says.
      In an epic run, for the story the epic run picked, run
      [Stack the story](references/epic-run.md#stack-the-story) instead
      of stopping. On its result:
-     - **`stacked`:** go on, below. The story is stacked on the
-       `<blocker>` it carries.
+     - **`stacked`:** go on, below, with the `<blocker>` it carries.
      - **`settled`:** go back to [Run the epic](#run-the-epic), which
        picks again. Do not go on with the story.
      - **`fetch-failed`:** say which branch could not be fetched, with
@@ -431,9 +429,7 @@ says.
      [Find the input's discovery](references/shape.md#find-the-inputs-discovery)
      for `#<i>`. When it finds `#<i>`, act on the result as on
      `needs-shape`, below, with the reason that its discovery of `#<i>`
-     is in progress. Otherwise, go on to the shape line, below. For a
-     Story with a parent, the result carries the parent's **Shared
-     decisions**: [Route](#route) needs them.
+     is in progress. Otherwise, go on to the shape line, below.
    - **`needs-shape`:** [run the shape step](#run-the-shape-step) for
      `#<i>` when all of these hold:
      - the user named `<i>`, or said in
@@ -590,8 +586,7 @@ says.
      - **`committed`:** go on.
      - **`commit-failed`:** say Git's error, and stop, as
        [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
-       says: the story's reason is Git's error. The maps' edits stay in
-       the epic run's checkout.
+       says: the story's reason is Git's error.
      - **`restore-failed`:** say Git's error, and that the story's
        branch holds the maps' edits, so the copies left in the epic
        run's checkout can be discarded. Then stop, as
@@ -633,10 +628,9 @@ says.
      Ask the user to inspect the issue. With a claim comment, they can
      run `lets backlog release <i> --claim <claim>`. Do not release it
      yourself. Stop, and run no step.
-   - **`branch-failed`:** [Claim](#claim) attempted release. Show
-     the branch's error it carries. When it carries a release error
-     too, show it, and say the issue may still hold your assignment or
-     its In Progress Status. Then stop.
+   - **`branch-failed`:** show the branch's error it carries. When it
+     carries a release error too, show it, and say the issue may still
+     hold your assignment or its In Progress Status. Then stop.
 3. When you ran
    [Import the glossary checkpoint](references/glossary-handoff.md#import-the-glossary-checkpoint),
    act on its result:
