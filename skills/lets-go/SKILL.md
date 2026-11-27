@@ -1294,8 +1294,12 @@ says.
    ```
 
    It prints one JSON line. `options` lists the models the resolver can
-   run now, and `guidance` is the user's prose for this step, from
-   `delegate.step.<step>.guidance` in the `lets` config, or `null`. If
+   run now, and `guidance` is the user's prose for this step, or `null`.
+   It comes from `delegate.shape.guidance`, `delegate.plan.guidance` or
+   `delegate.build.guidance` in the `lets` config. The review plan step
+   reads `delegate.plan`, and the review build step reads
+   `delegate.build`. `delegate.review-plan` and `delegate.review-build`
+   steer the reviewers those steps start, not the steps' own sessions. If
    it exits non-zero, show the user its stderr, and stop.
 3. Rank the options: the guidance first, then the order the options came
    in. Leave out a model the guidance rules out. The guidance only ranks
