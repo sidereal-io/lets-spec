@@ -54,7 +54,7 @@ An environment variable is inherited by every process the child starts, such as 
 
 ### 3. A generic adapter hook, `detachedEnv`
 
-`Adapter` gains an optional member, `detachedEnv?(): Record<string, string>`: the environment a detached child needs to stay in this harness. `t3` returns `{ LETS_T3_SERVER_PID: String(runtime.pid) }` when `detect()` is true, and `{}` otherwise. `startStep` calls `detachedEnv` on every adapter in `deps.resolvers` and merges the results over `deps.env` for `spawnDetached`. It asks every built-in adapter, not only the configured chain, because `startStep` loads no config today and the child does its own pick. A hook that throws counts as `{}`: a failed hint must not stop the step from starting, and the child's pick still runs.
+`Adapter` gains an optional member, `detachedEnv?(): Record<string, string>`: the environment a detached child needs to stay in this harness. `t3` returns `{ LETS_T3_SERVER_PID: String(runtime.pid) }` when `detect()` is true, and `{}` otherwise. `startStep` calls `detachedEnv` on every adapter in `deps.resolvers` and merges the results over `deps.env` for `spawnDetached`. It asks every built-in adapter, not only the configured chain, because `startStep` loads no config today and the child does its own pick. The hook never throws: `t3`'s returns `{}` when reading the runtime file or the parent processes fails, because a failed hint must not stop the step from starting, and the child's pick still runs.
 
 Alternative: have `background.ts` call `readRuntime` and `isAncestor` itself. Rejected: it would tie the background code to one resolver.
 
