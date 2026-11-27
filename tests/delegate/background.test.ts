@@ -222,27 +222,34 @@ describe('step start', () => {
 });
 
 describe('step start inside T3 Code', () => {
-  test('a background step started inside T3 Code is answered by t3, after step start has exited', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [t3, cli] }\n' });
+  // Starts a step with the chain resolvers and T3CODE_HOME t3Home, and
+  // waits for it to end. The record lines of its meta file, and the meta
+  // file's text.
+  async function startedWith(t: TestContext, resolvers: string, t3Home: string) {
+    const repo = delegateRepo(t, { user: `version: 3\ndelegate: { resolvers: ${resolvers} }\n` });
     claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
-    const env = { T3CODE_HOME: standInT3(t) };
-    const result = await repo.run(stepStart(), { env });
+    const result = await repo.run(stepStart(), { env: { T3CODE_HOME: t3Home } });
     assert.equal(result.code, 0, result.output);
     cleanUpStep(t, JSON.parse(result.stdout).pid);
     ended(await waitFor(repo, ['build-x']));
     const meta = join(repo.cwd, 'm.txt');
-    assert.match(readFileSync(meta, 'utf8'), /t3 has no project for/);
-    assert.deepEqual(recordLines(meta).filter((line) => line.resolver === 'cli'), []);
+    return { records: recordLines(meta), text: readFileSync(meta, 'utf8') };
+  }
+
+  test('a background step started inside T3 Code is answered by t3, after step start has exited', async (t) => {
+    const { records, text } = await startedWith(t, '[t3, cli]', standInT3(t));
+    assert.match(text, /t3 has no project for/);
+    assert.deepEqual(records.filter((line) => line.resolver === 'cli'), []);
   });
 
   test('a background step started outside T3 Code is answered by the next resolver after t3', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [t3, cli] }\n' });
-    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
-    const result = await repo.run(stepStart(), { env: { T3CODE_HOME: tempDir(t) } });
-    assert.equal(result.code, 0, result.output);
-    cleanUpStep(t, JSON.parse(result.stdout).pid);
-    assert.equal(ended(await waitFor(repo, ['build-x'])).exit, 0);
-    assert.deepEqual(recordLines(join(repo.cwd, 'm.txt')).map((line) => line.resolver), ['cli']);
+    const { records } = await startedWith(t, '[t3, cli]', tempDir(t));
+    assert.deepEqual(records.map((line) => line.resolver), ['cli']);
+  });
+
+  test('a background step started inside T3 Code is answered by a resolver listed before t3', async (t) => {
+    const { records } = await startedWith(t, '[cli, t3]', standInT3(t));
+    assert.deepEqual(records.map((line) => line.resolver), ['cli']);
   });
 });
 
