@@ -39,6 +39,11 @@ export type Adapter = {
   // True when this process runs inside the adapter's harness. When false,
   // the resolver declines.
   detect(): boolean;
+  // The environment a detached child of this process needs to count as
+  // inside the adapter's harness, as lets delegate step start's background
+  // step does. Empty outside the harness. Never throws: a failed hint must
+  // not stop the child from starting, and the child still runs detect().
+  detachedEnv?(): Record<string, string>;
   // The models this harness can run now, in its own order. It never
   // chooses one: the caller does. warn adds a line to stderr.
   options(warn: (message: string) => void): Promise<ModelString[]>;

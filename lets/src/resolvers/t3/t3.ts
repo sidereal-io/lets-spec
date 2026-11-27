@@ -23,6 +23,12 @@
 //   does for ACP agents and not for Claude Code.
 // - The state database (userdata/statev2.sqlite) is the only place to read a
 //   finished run without holding a subscription open.
+//
+// A process is inside T3 Code when the T3 server is one of its ancestors.
+// A background step that lets delegate step start leaves running is not,
+// once step start exits, so step start sets LETS_T3_SERVER_PID to the
+// server's pid in its environment, and detect() accepts that while the same
+// server runs. Only step start sets the variable; it is not for users.
 import { randomUUID } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { configDir } from '../../config-dir.ts';
@@ -34,6 +40,9 @@ import type { Handle, ModelString } from '../kit/adapter.ts';
 import { FAMILIES } from '../kit/families.ts';
 import type { Effort, Family } from '../kit/families.ts';
 import { pollUntil } from '../kit/wait.ts';
+
+// Set only by lets delegate step start; see the header.
+const SERVER_PID_VAR = 'LETS_T3_SERVER_PID';
 
 // The protocol this adapter speaks. t3 refuses a WebSocket that names another.
 export const ORCHESTRATION_PROTOCOL = 2;
@@ -564,12 +573,28 @@ export function createAdapter(io: Io): Adapter {
     }
   }
 
+  // The pid of the T3 server this process runs inside, or null outside T3 Code.
+  function insideServer(): number | null {
+    const runtime = readRuntime(io);
+    const inside = runtime !== null && io.processAlive(runtime.pid)
+      && (isAncestor(io, runtime.pid) || io.env[SERVER_PID_VAR] === String(runtime.pid));
+    return inside ? runtime.pid : null;
+  }
+
   return {
     name: 't3',
 
     detect() {
-      const runtime = readRuntime(io);
-      return runtime !== null && io.processAlive(runtime.pid) && isAncestor(io, runtime.pid);
+      return insideServer() !== null;
+    },
+
+    detachedEnv(): Record<string, string> {
+      try {
+        const pid = insideServer();
+        return pid === null ? {} : { [SERVER_PID_VAR]: String(pid) };
+      } catch {
+        return {};
+      }
     },
 
     async options(warn) {

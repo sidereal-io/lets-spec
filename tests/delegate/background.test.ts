@@ -6,9 +6,10 @@
 // end of that test, even when it fails.
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { delimiter, join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { describe, test, type TestContext } from 'node:test';
-import { claude, codex, agy, git, type LetsResult } from '../support/lets.ts';
+import { claude, codex, agy, git, type LetsResult, pathWith, tempDir } from '../support/lets.ts';
 import { type DelegateRepo, delegateRepo, PROMPT } from './repo.ts';
 import { agyWrite, assertClockMs, claudeWrite, cleanUpStep, codexWrite, ending, stepStart, type StartArgs, stopStep, untilCalled, untilGone } from './steps.ts';
 
@@ -30,6 +31,24 @@ const runs = (root: string) => join(root, '.workspace', 'lets-delegate');
 const runRecordFile = (root: string, name = 'build-x') => join(runs(root), `${name}.run.json`);
 const exitFile = (root: string, name = 'build-x') => join(runs(root), `${name}.exit.json`);
 const runRecord = (root: string, name = 'build-x') => JSON.parse(readFileSync(runRecordFile(root, name), 'utf8'));
+
+// A T3 home in which this test's process plays the running T3 server: its
+// runtime file names this process, and its state database knows no
+// project, so t3 refuses before it opens a WebSocket. The T3CODE_HOME to
+// run lets with.
+function standInT3(t: TestContext): string {
+  const home = tempDir(t);
+  mkdirSync(join(home, 'userdata'));
+  writeFileSync(join(home, 'userdata', 'server-runtime.json'), JSON.stringify({ pid: process.pid, origin: 'http://127.0.0.1:1' }));
+  const db = new DatabaseSync(join(home, 'userdata', 'statev2.sqlite'));
+  db.exec(readFileSync(new URL('../lets/resolvers/t3/fixtures/t3-schema.sql', import.meta.url), 'utf8'));
+  db.close();
+  return home;
+}
+
+// The record lines step run wrote in the meta file at path, parsed.
+const recordLines = (path: string) =>
+  readFileSync(path, 'utf8').split('\n').filter((line) => line.startsWith('{')).map((line) => JSON.parse(line));
 
 // Starts a step with stepStart's arguments and over, and checks that it
 // started: exit 0 and one line, {name, pid}. Stops the step at the end of
@@ -199,6 +218,41 @@ describe('step start', () => {
     assert.equal(result.code, 2, result.output);
     assert.equal(result.stdout, '');
     assert.match(result.stderr, /build-x/);
+  });
+});
+
+describe('step start inside T3 Code', () => {
+  // Starts a step with the chain resolvers and T3CODE_HOME t3Home, and
+  // waits for it to end. The record lines of its meta file, and the meta
+  // file's text.
+  async function startedWith(t: TestContext, resolvers: string, t3Home: string) {
+    const repo = delegateRepo(t, { user: `version: 3\ndelegate: { resolvers: ${resolvers} }\n` });
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
+    // Without /proc, as on macOS, lets finds a parent process with ps, which
+    // the stand-ins-and-git PATH leaves out. macOS keeps ps in /bin.
+    const path = existsSync('/proc/self') ? {} : { PATH: [repo.standIns, pathWith(t, ['git']), '/bin'].join(delimiter) };
+    const result = await repo.run(stepStart(), { env: { T3CODE_HOME: t3Home, ...path } });
+    assert.equal(result.code, 0, result.output);
+    cleanUpStep(t, JSON.parse(result.stdout).pid);
+    ended(await waitFor(repo, ['build-x']));
+    const meta = join(repo.cwd, 'm.txt');
+    return { records: recordLines(meta), text: readFileSync(meta, 'utf8') };
+  }
+
+  test('a background step started inside T3 Code is answered by t3, after step start has exited', async (t) => {
+    const { records, text } = await startedWith(t, '[t3, cli]', standInT3(t));
+    assert.match(text, /t3 has no project for/);
+    assert.deepEqual(records.filter((line) => line.resolver === 'cli'), []);
+  });
+
+  test('a background step started outside T3 Code is answered by the next resolver after t3', async (t) => {
+    const { records } = await startedWith(t, '[t3, cli]', tempDir(t));
+    assert.deepEqual(records.map((line) => line.resolver), ['cli']);
+  });
+
+  test('a background step started inside T3 Code is answered by a resolver listed before t3', async (t) => {
+    const { records } = await startedWith(t, '[cli, t3]', standInT3(t));
+    assert.deepEqual(records.map((line) => line.resolver), ['cli']);
   });
 });
 

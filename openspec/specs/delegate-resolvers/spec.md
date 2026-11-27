@@ -85,7 +85,7 @@ When a review that `cli` answered ends with a clean tree and a final message, `c
 - **THEN** it exits 7, and `.workspace/lets-delegate/cli-resolver.last-message.md` still exists
 
 ### Requirement: T3 Code has its own resolver
-`lets` SHALL have a resolver named `t3`, which answers only for T3 Code. Inside T3 Code, it SHALL answer with `resolver` `t3` and its `options`. It SHALL find the process's parents both on a system with `/proc`, such as Linux, and on one without, such as macOS. `lets` SHALL NOT have a resolver for herdr.
+`lets` SHALL have a resolver named `t3`, which answers only for T3 Code. Inside T3 Code, it SHALL answer with `resolver` `t3` and its `options`. A process is inside T3 Code when the running T3 server is one of its ancestors. A background step that `lets delegate step start` started from inside T3 Code, and every process that step starts, is inside T3 Code too, for as long as the T3 server that was an ancestor of `step start` still runs. It SHALL find the process's parents both on a system with `/proc`, such as Linux, and on one without, such as macOS. `lets` SHALL NOT have a resolver for herdr.
 
 #### Scenario: Inside T3 Code
 - **WHEN** the config's `delegate.resolvers` is `[t3]` and the command runs in a process whose ancestor is the running T3 server
@@ -95,6 +95,10 @@ When a review that `cli` answered ends with a clean tree and a final message, `c
 #### Scenario: Inside T3 Code on a system with no /proc
 - **WHEN** the same command runs on a system with no `/proc`, where `ps -o ppid= -p <pid>` shows that the running T3 server is the process's ancestor
 - **THEN** it exits 0, its JSON line has `"resolver":"t3"` and `"options":[]`, and stderr is empty
+
+#### Scenario: A background step started inside T3 Code
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, the user runs `lets delegate step start --for plan` with every required option in a process whose ancestor is the running T3 server, and `step start` has exited before the background step picks its resolver
+- **THEN** `t3` answers the background step, and its meta file does not say that every resolver declined
 
 ### Requirement: The T3 resolver opens a session in a T3 thread
 Inside T3 Code, when `t3` answers `lets delegate review run` or `lets delegate handoff run`, it SHALL open a session in a T3 thread that runs the `--model`. It SHALL send the model part of `--model` to T3 unchanged. For a `gemini` model, it SHALL send no effort, because T3 offers no effort option for Gemini; a review's `--effort` does not apply.
@@ -138,7 +142,7 @@ A visible model is one the user has not hidden in T3 Code. A custom model is alw
 - **THEN** the thread runs `gemini-3.8-flash`, with no effort option
 
 ### Requirement: The T3 resolver declines outside T3 Code
-When the process is not inside T3 Code, `t3` SHALL decline every review, handoff and step, and the instructions for each, and SHALL start no session. It SHALL NOT look for any other harness. The next resolver in the chain answers, or the command exits 2 when none is left.
+When the process is not inside T3 Code, `t3` SHALL decline every review, handoff and step, and the instructions for each, and SHALL start no session. It SHALL NOT look for any other harness. A background step that `lets delegate step start` started from inside T3 Code, and every process that step starts, is no longer inside T3 Code once the T3 server that was an ancestor of `step start` has stopped, even when another T3 server has started since. The next resolver in the chain answers, or the command exits 2 when none is left.
 
 #### Scenario: Inside herdr
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, the user runs `lets delegate review run --for code` with every required option inside herdr, and no T3 server is its ancestor
@@ -151,6 +155,10 @@ When the process is not inside T3 Code, `t3` SHALL decline every review, handoff
 #### Scenario: A step outside T3 Code
 - **WHEN** the config's `delegate.resolvers` is `[t3, subagent]`, no T3 server is the process's ancestor, and the user runs `lets delegate step run --for build` with every required option
 - **THEN** no thread is created, and the default answers
+
+#### Scenario: A background step whose T3 server has stopped
+- **WHEN** the config's `delegate.resolvers` is `[t3, subagent]`, the user runs `lets delegate step start --for build` with every required option inside T3 Code, and the T3 server that was the ancestor of `step start` stops before the background step picks its resolver
+- **THEN** `t3` declines and creates no thread, and the default answers the background step, as it would answer `lets delegate step run` outside T3 Code
 
 ### Requirement: The cli resolver lists the models each CLI reports
 `cli` SHALL list its `options` family by family, in the order `gpt`, `claude`, `gemini`, for each family whose CLI is on `PATH`:
