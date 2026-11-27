@@ -1024,9 +1024,10 @@ It returns one of these results:
 - `needs-shape`: the issue is not on the Project or has no Kind, a line
   is missing or holds a placeholder, or comments are unread. It carries
   which. For a line, it carries the line. For unread comments, it
-  carries how many there are, and each one's author as the reference
-  shows it and the date that put it past the watermark: its edit date,
-  else its creation date. It carries nothing of what a comment says.
+  carries how many there are, each one's author as
+  [Issue comments](../lets-shape/references/issue-comments.md) shows
+  it, and the date that put it past the watermark: its edit date, else
+  its creation date. It carries nothing of what a comment says.
 - `epic`: the Kind is Epic. It carries the open sub-issues in the
   item's `subIssues` field and the closed ones in its
   `closedSubIssues` field.
