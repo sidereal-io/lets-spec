@@ -1,7 +1,7 @@
 # delegate-step Specification
 
 ## Purpose
-Says what `lets delegate step run` does: the kind of session it asks a resolver for, the step report it reads from that session and prints, its exit codes, and how a caller resumes a step with answers.
+Says what `lets delegate step` does: the kind of session it asks a resolver for, a step's report or a reviewer's findings, which it prints, its exit codes, its record line, and how a caller runs a step in the background or resumes it with answers.
 
 ## Requirements
 

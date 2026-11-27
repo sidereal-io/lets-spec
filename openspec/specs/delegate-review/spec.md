@@ -1,7 +1,7 @@
 # delegate-review Specification
 
 ## Purpose
-Says what `lets delegate review run` records about a finished review, so a skill can report who reviewed the work and what the review was for.
+Says what the review skills do when they review a plan or a branch's code: how they pick and rank the reviewer, how they record who reviewed the work, how they set a plan verdict, how they prepare a review, and when a review still covers an archived change.
 
 ## Requirements
 
