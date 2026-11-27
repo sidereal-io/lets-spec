@@ -15,13 +15,15 @@ prompt, with any answers added.
    on the branch `<name>`, or on the default branch for shape, and makes
    only the changes that the step calls for. In an epic run's walk, this
    repository is the story's worktree, `<path>`, as
-   [Wait for the wave](epic-run.md#wait-for-the-wave) says, and the
-   commands below run from `<path>` too.
+   [Wait for the wave](epic-run.md#wait-for-the-wave) says.
 2. Save the subagent's final message, unchanged and in full, to
-   `.workspace/lets-go/<session>-message.md`. Write it with your file
-   writing tool, not with a shell command such as a heredoc or `echo`:
-   quotes and backticks in the message would break the command.
-3. Have `lets` read the step report from that message:
+   `.workspace/lets-go/<session>-message.md`. In an epic run's walk,
+   that is `<path>/.workspace/lets-go/<session>-message.md`. Write it
+   with your file writing tool, not with a shell command such as a
+   heredoc or `echo`: quotes and backticks in the message would break
+   the command.
+3. Have `lets` read the step report from that message. In an epic run's
+   walk, run this from `<path>`:
 
    ```bash
    lets delegate step read --message-file .workspace/lets-go/<session>-message.md \
