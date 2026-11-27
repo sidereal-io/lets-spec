@@ -19,7 +19,7 @@ const FINDINGS = 'FINDINGS\n';
 const SESSION = 'x-plan-review';
 
 interface Review {
-  for?: 'code' | 'plan';
+  for?: 'review-build' | 'review-plan';
   name?: string;
   promptFile?: string;
   sourceFamily?: string;
@@ -32,7 +32,7 @@ interface Review {
 // X Plan Review of claude's work, at high effort, on gpt/gpt-6-luna,
 // unless over says otherwise.
 function review(over: Review = {}): string[] {
-  const { for: intent = 'code', name = 'X Plan Review', promptFile = 'p.md', sourceFamily = 'claude', effort = 'high', models = ['gpt/gpt-6-luna'], timeoutMinutes } = over;
+  const { for: intent = 'review-build', name = 'X Plan Review', promptFile = 'p.md', sourceFamily = 'claude', effort = 'high', models = ['gpt/gpt-6-luna'], timeoutMinutes } = over;
   return ['delegate', 'review', 'run', '--for', intent, '--name', name, '--prompt-file', promptFile, '--source-family', sourceFamily, '--effort', effort,
     ...models.flatMap((model) => ['--model', model]), ...(timeoutMinutes === undefined ? [] : ['--timeout-minutes', String(timeoutMinutes)])];
 }
@@ -86,7 +86,7 @@ describe('review run', () => {
     assert.deepEqual(Object.keys(meta), KEYS);
     const { durationSeconds, ...rest } = meta;
     assert.deepEqual(rest, {
-      for: 'code', resolver: 'cli', family: 'gpt', model: 'gpt-6-luna', independent: true,
+      for: 'review-build', resolver: 'cli', family: 'gpt', model: 'gpt-6-luna', independent: true,
       handle: { kind: 'process', id: SESSION }, checkout: repo.cwd, commit: repo.head, gitClean: true,
     });
     assert.equal(typeof durationSeconds, 'number');
@@ -98,10 +98,10 @@ describe('review run', () => {
     assert.deepEqual(stand.cwds(), [repo.cwd]);
   });
 
-  test('a plan review\'s metadata line says for: plan', async (t) => {
+  test('a plan review\'s metadata line says for: review-plan', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
-    assert.equal(metadata(await repo.run(review({ for: 'plan' }))).for, 'plan');
+    assert.equal(metadata(await repo.run(review({ for: 'review-plan' }))).for, 'review-plan');
   });
 
   test('a session that commits gives the commit it made, not the one before it', async (t) => {
@@ -221,7 +221,7 @@ describe('review run', () => {
   });
 
   test('a review ignores the guidance, even one that is not a string', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: 42\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  review:\n    review-build:\n      guidance: 42\n' });
     const stand = codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
     const result = await repo.run(review());
     assert.equal(metadata(result).resolver, 'cli');
@@ -472,7 +472,7 @@ describe('review run', () => {
 // When the default, subagent, is asked. PATH holds no node in any of
 // these runs, so each also shows the default needs only lets's own Node.
 describe('the default', () => {
-  const instructions = ['delegate', 'review', 'instructions', '--for', 'code'];
+  const instructions = ['delegate', 'review', 'instructions', '--for', 'review-build'];
   const savedPrompt = (cwd: string) => join(cwd, '.workspace', 'lets-delegate', 'build-x.prompt.md');
   const resolverOf = (result: LetsResult) => {
     assert.equal(result.code, 0, result.output);
@@ -480,7 +480,7 @@ describe('the default', () => {
   };
 
   test('with no chain in the config, subagent answers', async (t) => {
-    for (const user of [undefined, 'version: 4\n', 'version: 4\ndelegate:\n  review:\n    code:\n      guidance: Prefer claude.\n']) {
+    for (const user of [undefined, 'version: 4\n', 'version: 4\ndelegate:\n  review:\n    review-build:\n      guidance: Prefer claude.\n']) {
       const repo = delegateRepo(t, { user });
       assert.equal(resolverOf(await repo.run(instructions)), 'subagent', String(user));
     }

@@ -11,7 +11,7 @@ import { SpawnError } from '../../../lets/src/resolvers/kit/errors.ts';
 import { commandDeps, HEAD } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<ReviewOptions> = {}): ReviewOptions =>
-  ({ for: 'code', name: 'X Plan Review', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
+  ({ for: 'review-build', name: 'X Plan Review', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
 
 // commandDeps whose config lists t3, which answers, and more as given.
 const withT3 = (over: Parameters<typeof commandDeps>[0] = {}) =>

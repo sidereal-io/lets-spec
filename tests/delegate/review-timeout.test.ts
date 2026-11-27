@@ -10,7 +10,7 @@ test('a session past its time is stopped, and is exit 6 with no findings', async
   const repo = delegateRepo(t, { user: 'version: 4\ndelegate: { resolvers: [cli] }\n' });
   claude(repo.standIns, { rows: [{ args: ['-p', '--permission-mode', 'plan', '--effort', 'low'], hang: true }] });
   const started = performance.now();
-  const result = await repo.run(['delegate', 'review', 'run', '--for', 'code', '--name', 'slow', '--prompt-file', 'p.md',
+  const result = await repo.run(['delegate', 'review', 'run', '--for', 'review-build', '--name', 'slow', '--prompt-file', 'p.md',
     '--source-family', 'gpt', '--effort', 'low', '--model', 'claude', '--timeout-minutes', '1'], { timeoutMs: 100_000 });
   const elapsed = performance.now() - started;
   assert.equal(result.code, 6, result.output);

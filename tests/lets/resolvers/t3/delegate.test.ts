@@ -80,7 +80,7 @@ const insideT3 = (options: Parameters<typeof io>[1] = {}) => io(CHAIN, options);
 
 const SCHEMA = readFileSync(new URL('./fixtures/t3-schema.sql', import.meta.url), 'utf8');
 
-const reviewInstructions = { strategy: 'review', for: 'code' } as const;
+const reviewInstructions = { strategy: 'review', for: 'review-build' } as const;
 
 // Review instructions inside T3 Code: the command's exit, the options it
 // lists, and its stderr.
@@ -273,7 +273,7 @@ function runningT3({ projectRoot = '/repo', projectModel = null, config = ONLY_D
   return { db, sent, adapterIo, t: withT3(adapterIo) };
 }
 // A review named x on gpt/gpt-6-astra, from a claude author.
-const astraReview: ReviewOptions = { for: 'code', name: 'x', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', timeoutMinutes: 1, models: ['gpt/gpt-6-astra'] };
+const astraReview: ReviewOptions = { for: 'review-build', name: 'x', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', timeoutMinutes: 1, models: ['gpt/gpt-6-astra'] };
 
 test('a review T3 fails before any message is exit 3 with its failure, and archives the thread', async () => {
   const { db, sent, t } = runningT3();
@@ -380,7 +380,7 @@ const GEMINI = { providers: [provider('antigravity', ['gemini-4-argon', { slug: 
 
 test('a bare gemini review runs the default without its effort', async () => {
   const { sent, t } = runningT3({ config: GEMINI, onLaunch: findingsOnLaunch });
-  await review({ ...astraReview, for: 'plan', effort: 'low', models: ['gemini'] }, t.deps);
+  await review({ ...astraReview, for: 'review-plan', effort: 'low', models: ['gemini'] }, t.deps);
   assert.deepEqual(launches(sent), [{ instanceId: 'antigravity', model: 'gemini-3.8-flash', options: [] }]);
 });
 

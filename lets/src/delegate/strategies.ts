@@ -10,11 +10,15 @@ export const STEP_INTENTS = ['shape', 'plan', 'review-plan', 'build', 'review-bu
 // story run in a child lets-go session. A story run is not a step.
 export const STEP_STRATEGY_INTENTS = [...STEP_INTENTS, 'story'] as const;
 export type StepStrategyIntent = (typeof STEP_STRATEGY_INTENTS)[number];
-export type Intent = 'code' | StepStrategyIntent;
+// The review strategy's intents: the two review steps whose read-only
+// reviewer it starts.
+export const REVIEW_INTENTS = ['review-plan', 'review-build'] as const;
+export type ReviewIntent = (typeof REVIEW_INTENTS)[number];
+export type Intent = ReviewIntent | StepStrategyIntent;
 
 export const STRATEGIES: Record<Strategy, { intents: readonly Intent[]; verb: Kind }> = {
   // Read-only, and waits for the final message.
-  review: { intents: ['plan', 'code'], verb: 'run' },
+  review: { intents: REVIEW_INTENTS, verb: 'run' },
   // May write files, waits for the final message, and reads its step report.
   step: { intents: STEP_STRATEGY_INTENTS, verb: 'step' },
 };

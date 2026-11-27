@@ -41,7 +41,7 @@ test('lets exits within 15 s when T3 accepts the WebSocket and never replies', {
   writeFileSync(join(home, 'config', 'lets', 't3-token'), 'tok');
   const started = Date.now();
   const { code, stdout, stderr } = await new Promise<{ code: number | null; stdout: string; stderr: string }>((done) => {
-    execFile(process.execPath, [ENTRY, 'delegate', 'review', 'instructions', '--for', 'code'], {
+    execFile(process.execPath, [ENTRY, 'delegate', 'review', 'instructions', '--for', 'review-build'], {
       env: { ...process.env, T3CODE_HOME: join(home, 't3'), XDG_CONFIG_HOME: join(home, 'config') },
       timeout: 20_000,
     }, (error, out, err) => done({ code: error ? (typeof error.code === 'number' ? error.code : null) : 0, stdout: out, stderr: err }));
