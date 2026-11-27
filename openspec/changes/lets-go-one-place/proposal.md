@@ -31,7 +31,9 @@ changes.
 - **The placeholder table keeps only shared placeholders** (D8). 12
   placeholders that one section uses leave the table, and that section
   explains each. `<word>`, `<kebab-name>` and `<one-line outcome>` keep
-  their rows as named exceptions until the cleanup.
+  their rows as named exceptions until the cleanup. `<skill>`,
+  `<plain-language-path>` and `<the sentence above>` keep theirs
+  until #349 removes them.
 - **Left alone:** the text that five open pull requests change in
   `skills/lets-go/` and `openspec/glossary.md` (D1). The parts of
   #270 that need that text wait for them (D2), and the pull request

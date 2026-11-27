@@ -136,7 +136,8 @@ says what it stands for, at or before its first use. Most already do:
 
 | Placeholder | Section | Already explained there? |
 |---|---|---|
-| `<other-branch>`, `<c>` | *Stack the story* | Yes |
+| `<other-branch>` | *Stack the story* | Yes |
+| `<c>` | *Stack the story*, step 5 | No: add that it is the third such open blocker, as its key, as `<a>` and `<b>` are the first and second |
 | `<keys>`, `<wave>`, `<wave-stories>`, `<other>` | *Run the epic* | Yes |
 | `<map>`, `<copied paths>`, `<tracked paths>` | *Commit the map in an epic run* | Yes |
 | `<evidence>` | *The step lines* | Yes |
