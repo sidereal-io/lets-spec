@@ -222,7 +222,7 @@ It SHALL start no thread, and SHALL say why on stderr. When it refuses every `--
 - **THEN** codex runs with `-m gpt-6-astra`
 
 ### Requirement: A refusal exits 3
-When `t3` or `cli` answers, the harness or the account can say no before the model gives any output. `lets delegate step run` SHALL treat that as a refusal, for every `--for` value,, and SHALL say why on stderr. A refusal covers a harness that cannot start the session, and a missing harness setup, such as a T3 project. It also covers an account with no access or no tokens left, and a model the harness cannot run. When every `--model` is refused, the command exits 3. The command SHALL exit 4 for `t3` or `cli` only for an outcome it cannot know, such as no reply from T3.
+When `t3` or `cli` answers, the harness or the account can say no before the model gives any output. `lets delegate step run` SHALL treat that as a refusal, for every `--for` value, and SHALL say why on stderr. A refusal covers a harness that cannot start the session, and a missing harness setup, such as a T3 project. It also covers an account with no access or no tokens left, and a model the harness cannot run. When every `--model` is refused, the command exits 3. The command SHALL exit 4 for `t3` or `cli` only for an outcome it cannot know, such as no reply from T3.
 
 #### Scenario: The CLI refuses the model
 - **WHEN** the config's `delegate.resolvers` is `[cli]`, the user runs `lets delegate step run --for review-build --model gpt/gpt-6-astra`, and codex exits 1 with nothing on stdout
@@ -262,7 +262,7 @@ When `t3` refuses a model for a thread it started, it SHALL archive that thread 
 - **THEN** the thread is archived, and the command exits 3
 
 ### Requirement: The cli resolver lists the same models for a step as for a review
-`lets delegate step instructions` SHALL answer with `resolver` `cli` and the same `options` as `lets delegate step instructions`, wherever at least one of `codex`, `claude` or `agy` is on `PATH`.
+`lets delegate step instructions --for review-plan` and `--for review-build` SHALL answer with `resolver` `cli` and the same `options` as every other `--for` value, wherever at least one of `codex`, `claude` or `agy` is on `PATH`.
 
 #### Scenario: Step instructions with codex on PATH
 - **WHEN** the config's `delegate.resolvers` is `[cli, subagent]`, `codex` is on `PATH`, `codex debug models` lists `gpt-6-luna` with `visibility` `list`, and the user runs `lets delegate step instructions --for build`
@@ -345,11 +345,11 @@ When a step or a review that `t3` answered is still running at its time limit, `
 - **THEN** T3 is asked to stop that thread, the thread is not archived, the command exits 6, and stdout is empty
 
 ### Requirement: The T3 resolver lists the same models for a step as for a review
-Inside T3 Code, `lets delegate step instructions` SHALL answer with `resolver` `t3` and the same `options` as `lets delegate step instructions`.
+Inside T3 Code, `lets delegate step instructions --for review-plan` and `--for review-build` SHALL answer with `resolver` `t3` and the same `options` as every other `--for` value.
 
 #### Scenario: Step instructions inside T3 Code
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, the command runs inside T3 Code, the catalogue lists `codex`, enabled and `ready`, with `gpt-6-luna`, and the user runs `lets delegate step instructions --for plan`
-- **THEN** it exits 0, and its JSON line has `"for":"build"`, `"resolver":"t3"` and `"options":["gpt/gpt-6-luna"]`
+- **THEN** it exits 0, and its JSON line has `"for":"plan"`, `"resolver":"t3"` and `"options":["gpt/gpt-6-luna"]`
 
 ### Requirement: The T3 resolver runs a review in a T3 thread
 Inside T3 Code, when `t3` answers a reviewer, `lets delegate step run --for review-plan` or `--for review-build`, it SHALL open a session in a T3 thread that runs the `--model`. It SHALL send the model part of `--model` to T3 unchanged. For a `gemini` model, it SHALL send no effort, because T3 offers no effort option for Gemini; a review's `--effort` does not apply.
