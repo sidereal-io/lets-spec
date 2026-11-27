@@ -19,6 +19,10 @@ When `step run` exits 3 and its meta file names the prompt `lets` saved, `.works
 - **WHEN** the subagent's final message holds no `step-report` block
 - **THEN** the report file holds the `failed` report that `lets delegate step read` prints, whose reason names `step-report`, and `lets-go` treats the step as `failed` and stops
 
+#### Scenario: A done report with no evidence
+- **WHEN** the subagent's block holds `outcome: done` and no `evidence`
+- **THEN** the report file holds the `failed` report that `lets delegate step read` prints, whose reason names `evidence`, and `lets-go` treats the step as `failed` and stops
+
 #### Scenario: A subagent's marked question
 - **WHEN** the subagent's block holds `outcome: needs-input` and one question with `ask: true`
 - **THEN** `.workspace/lets-go/<session>-report.json` holds that question with `"ask":true`, as `lets delegate step read` printed it
