@@ -5,17 +5,6 @@ Says what the review skills do when they review a plan or a branch's code: how t
 
 ## Requirements
 
-### Requirement: The review record says what the review was for
-When `lets delegate review run` exits 0, the JSON line it prints on stderr SHALL hold `for`, the intent that `--for` gives, as its first field. The line SHALL still hold `resolver`, `family`, `model`, `independent`, `handle`, `gitClean` and `durationSeconds`.
-
-#### Scenario: A code review
-- **WHEN** a resolver answers a run, and the user runs `lets delegate review run --for review-build`
-- **THEN** the command exits 0, and its stderr ends with one JSON line that starts `{"for":"review-build",` and holds `resolver`, `family`, `model`, `independent`, `handle`, `gitClean` and `durationSeconds`
-
-#### Scenario: A plan review
-- **WHEN** a resolver answers a run, and the user runs `lets delegate review run --for review-plan`
-- **THEN** the command exits 0, and its stderr ends with one JSON line that starts `{"for":"review-plan",` and holds `resolver`, `family`, `model`, `independent`, `handle`, `gitClean` and `durationSeconds`
-
 ### Requirement: Review skills distinguish listed models from allowed models
 
 Both review skills SHALL distinguish listed models from allowed models after guidance exclusions. With listed models but none allowed, they SHALL stop, show the guidance and listed models, and ask which listed model to allow for this run. They SHALL offer the subagent step only if a permitted subagent can run. The user's model choice SHALL change exclusions for this run without editing config. Fallbacks SHALL respect the resulting exclusions. Existing discovery-error stops, exit handling and required reviews SHALL remain.
@@ -128,45 +117,17 @@ at `<head-sha>`.
 - **WHEN** an archive commit merges spec text that differs from the delta specs at `<head-sha>`
 - **THEN** a new review is required
 
-### Requirement: The review record names the checkout and commit the session read
-When `lets delegate review run` exits 0, its JSON line on stderr SHALL hold `checkout` and `commit`, for every resolver that runs a review:
-- `checkout` SHALL be the absolute path of the top level of the git checkout the session ran in, as the resolver reports it.
-- `commit` SHALL be the full hash at that checkout's `HEAD`, read after the session ended.
+### Requirement: The review skills start their reviewer with lets delegate step
+`lets-review-plan`, `lets-review-build` and `lets-review-pr` SHALL ask what can run with `lets delegate step instructions --for review-plan` or `--for review-build`, and SHALL start the reviewer with `lets delegate step run` and the same `--for` value. None of them SHALL name `lets delegate review`. After exit 0, each SHALL read the stdout report's `outcome`. For `done`, it SHALL read the findings from the report's `findings`; `lets-review-plan` and `lets-review-build` SHALL also read the `Read: <checkout> <head>` line from there. For `failed`, it SHALL record no review, show the user the report's `reason` and the meta file, and stop. Each skill's reviewer prompt SHALL keep its finding format, and SHALL NOT ask the reviewer for a `step-report` block. The prompts of `lets-review-plan` and `lets-review-build` SHALL keep their `Read:` line; `lets-review-pr`'s role prompts ask for none, and this change adds none.
 
-When `lets` cannot tell the checkout, or cannot read its `HEAD`, the field SHALL be `null`, and the command SHALL still exit 0 and print the final message.
+#### Scenario: The skills name the one command
+- **WHEN** a reader reads `skills/lets-review-plan/SKILL.md`, `skills/lets-review-build/SKILL.md` and `skills/lets-review-pr/SKILL.md`
+- **THEN** the reader finds `lets delegate step instructions --for review-plan` or `--for review-build`, and `lets delegate step run --for`, in each, and does not find `lets delegate review` in any
 
-#### Scenario: A review through the cli resolver
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, the user runs `lets delegate review run --for review-build` with every required option in the checkout `/r`, and `/r`'s `HEAD` is `0123456789abcdef0123456789abcdef01234567` when the session ends
-- **THEN** the command exits 0, and its JSON line has `"checkout":"/r"` and `"commit":"0123456789abcdef0123456789abcdef01234567"`
+#### Scenario: A done report
+- **WHEN** `lets delegate step run --for review-plan` exits 0 with a `done` report whose `findings` ends with `Read: /r 0123456789abcdef0123456789abcdef01234567`
+- **THEN** `lets-review-plan` checks the findings and that `Read:` line, as *Check what the review read* says
 
-#### Scenario: A reviewer that commits
-- **WHEN** a resolver answers a review in `/r`, whose `HEAD` is `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` when the command starts, and the session makes the commit `bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb` and leaves the tree clean
-- **THEN** the command exits 0, and its JSON line has `"commit":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"`
-
-#### Scenario: The checkout's HEAD cannot be read
-- **WHEN** a resolver answers a review and reports the checkout `/gone`, where `git rev-parse HEAD` fails
-- **THEN** the command exits 0, prints the final message, and its JSON line has `"checkout":"/gone"` and `"commit":null`
-
-### Requirement: A review has time to finish
-`lets delegate review run` SHALL give the session 30 minutes at effort `low` and `medium`, and 45 minutes at effort `high`, unless `--timeout-minutes` gives another whole number of minutes. This SHALL hold for every resolver. When the session has not finished in that time, the command SHALL exit 6.
-
-#### Scenario: A medium review
-- **WHEN** the user runs `lets delegate review run --effort medium` with every other required option, and no `--timeout-minutes`
-- **THEN** the resolver is given 30 minutes
-
-#### Scenario: A low review
-- **WHEN** the user runs `lets delegate review run --effort low` with no `--timeout-minutes`
-- **THEN** the resolver is given 30 minutes
-
-#### Scenario: A high review
-- **WHEN** the user runs `lets delegate review run --effort high` with no `--timeout-minutes`
-- **THEN** the resolver is given 45 minutes
-
-#### Scenario: The user sets the limit
-- **WHEN** the user runs `lets delegate review run --effort medium --timeout-minutes 7`
-- **THEN** the resolver is given 7 minutes
-
-#### Scenario: The session runs past the limit
-- **WHEN** the user runs `lets delegate review run --effort medium` with no `--timeout-minutes`
-- **AND** the session has not finished after 30 minutes
-- **THEN** the command exits 6, stdout is empty, and stderr says that no result came in time
+#### Scenario: A failed report
+- **WHEN** `lets delegate step run --for review-build` exits 0 with a `failed` report whose `reason` says the session changed files outside `.workspace/`
+- **THEN** `lets-review-build` records no **Code review**, shows the user that reason and the meta file, and stops
