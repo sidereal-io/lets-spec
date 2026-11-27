@@ -912,8 +912,9 @@ for the story. The open blockers are the entries of the story's
 5. When no open blocker's branch contains all the others, settle the
    story with
    `not built, blocked by #<a> and #<b>, on different branches`, naming
-   every open blocker. Name three or more as `#<a>, #<b> and #<c>`.
-   Return `settled`.
+   every open blocker. Name three or more as `#<a>, #<b> and #<c>`:
+   `<c>` is the third such open blocker, as its key, as `<a>` and `<b>`
+   are the first and second. Return `settled`.
 6. With a base, `<blocker>` is the base, `<blocker-branch>` its branch
    and `<blocker-pr>` the number of its pull request. Print:
 

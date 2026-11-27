@@ -121,21 +121,12 @@ reads as it always has.
 | `<blocker>` | An open issue that blocks a story, as its key. For a stacked story, the blocker it stacks on | The story's `blockedBy` field, from `lets backlog item <story>` in [Run the epic](references/epic-run.md#run-the-epic), the blocker read in [Stack the story](references/epic-run.md#stack-the-story), or a pull request's base in [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) |
 | `<blocker-branch>` | A met blocker's branch, the `headRefName` of its pull request. For a stacked story, the branch it stacks on | [Stack the story](references/epic-run.md#stack-the-story), from the `gh pr list` read, or [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base), from `<pr-base>` |
 | `<blocker-pr>` | The number of a stacked story's blocker's pull request | [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from the `gh pr list` read |
-| `<other-branch>` | The branch of another open blocker of the same story, which the base's branch must contain | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<a>` | The first open blocker of a story whose blockers' branches no one branch contains, as its key. The line that names them all shows it | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<b>` | The second such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
-| `<c>` | The third such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
-| `<keys>` | The keys of the stories an epic run sorts into waves, in the epic's order, joined by commas, such as `283,285` | [Run the epic](references/epic-run.md#run-the-epic), from the stories not settled when it starts |
-| `<wave>` | A wave's number in an epic run, counted from 1 | [Run the epic](references/epic-run.md#run-the-epic), from the order of the waves file's `waves` field |
-| `<wave-stories>` | The `label` field of each story of a wave, in the order `lets backlog waves` gives, joined by `, ` | [Run the epic](references/epic-run.md#run-the-epic), from the wave's `stories` field in the waves file |
-| `<other>` | The story that a story of an epic run waits for, as its key | [Run the epic](references/epic-run.md#run-the-epic), from the story's `waitsFor` field in the waves file |
 | `<login>` | The login of a person assigned to a story | The story's `assignees` field, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](references/epic-run.md#run-the-epic) |
 | `<failed>` | The story whose run failed or stopped, as its key, in the line of a story that depends on it | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<step name>` | A step's name in plain words, as its `Failed` line names it, such as `review build` | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), from the failed step, or, in a story run's child, [Story run](references/story-run.md), from the step the walk is on |
 | `<story-name>` | The part of a story's title before ` — `, or the whole title when it has none | [Run the epic](references/epic-run.md#run-the-epic), when it settles the story |
-| `<map>` | One changed discovery map, as a path, in an epic run | [Commit the map in an epic run](references/shape.md#commit-the-map-in-an-epic-run), from its `git status` command |
-| `<copied paths>` | The changed discovery maps that still exist, which an epic run copies into the story's worktree | [Commit the map in an epic run](references/shape.md#commit-the-map-in-an-epic-run) |
-| `<tracked paths>` | The changed discovery maps that Git tracks, every one not marked `??` | [Commit the map in an epic run](references/shape.md#commit-the-map-in-an-epic-run) |
 | `<paths>` | The changed discovery maps, one path each | [Commit the discovery map](references/shape.md#commit-the-discovery-map), from its `git status` command |
 | `<pr-base>` | The base branch of a story's pull request, its `baseRefName` | [Run the epic](references/epic-run.md#run-the-epic) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr list` read |
 | `<story-pr>` | The number of a story's pull request, which [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) edits by | [Run the epic](references/epic-run.md#run-the-epic) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr list` read |
@@ -153,16 +144,13 @@ reads as it always has.
 | `<step>` | One step, as `--for` names it: `shape`, `plan`, `review-plan`, `build` or `review-build` | [The step table](#the-step-table), at the row the walk runs, or `shape` in [Run the shape step](#run-the-shape-step) |
 | `<session>` | A step's session label: `<name>`, a hyphen and `<step>`, or `<shape-name>-shape` for shape | [The change's name](#the-changes-name) |
 | `<mode>` | The question mode, `ask` or `auto` | [Set the question mode](#set-the-question-mode), or [Run the shape step](#run-the-shape-step), before shape. In a story run's child, [Take up the story run](references/story-run.md#take-up-the-story-run), from the story prompt |
-| `<Kind>` | The issue's Kind on the Project | [Confirm the packet](#confirm-the-packet) |
 | `<schema>` | The change's schema | [Enter the branch](#enter-the-branch). In a story run's child, [Take up the story run](references/story-run.md#take-up-the-story-run), from the story prompt |
 | `<route line>` | The line [Route](#route) says, such as `Route: lets-minimal, because #<i> is a Chore.` | [Route](#route). In a story run's child, [Take up the story run](references/story-run.md#take-up-the-story-run), from the story prompt |
 | `<title>` | The title of the issue the line names | The command or report line that names the issue |
 | `<date>` | The date on a printed line | [The step lines](#the-step-lines), for each kind of line |
 | `<sha>` | A commit's short hash, or the commit a review names | `lets go records <name>`, from the row's record's `commit`, in [Walk the step table](#walk-the-step-table), or the review plan report |
 | `<verdict>` | A plan review's verdict | `lets go records <name>`, from the `review-plan` record's `verdict`, in [Walk the step table](#walk-the-step-table), or the review plan report |
-| `<evidence>` | What a `done` report's `evidence` lists | [The step lines](#the-step-lines) |
 | `<reason>` | Why a step failed, or, in a story's line in an epic run, why the story was not built or its walk stopped, or, in a wave's line, why a story waits for `#<other>` | [The step lines](#the-step-lines), from a `failed` report's `reason`, or from [Read the report](#read-the-report) when a `done` report fails its check. In a story's line, [Run the epic](references/epic-run.md#run-the-epic). In a wave's line, the story's `reason` field in the waves file, from [Run the epic](references/epic-run.md#run-the-epic) |
-| `<YYYY-MM-DD>` | The date in an archive folder's name | The folder's name in `openspec/changes/archive/` |
 | `<first>` | The first model of the ranked options | [Run a step](#run-a-step) or [Start the story run](references/epic-run.md#start-the-story-run), when it ranks the options |
 | `<second>` | The second model of the ranked options | [Run a step](#run-a-step) or [Start the story run](references/epic-run.md#start-the-story-run), when it ranks the options |
 | `<skill>` | The skill in the step's row of the step table | [Write the prompt](references/step-prompt.md#write-the-prompt) |
@@ -663,7 +651,8 @@ says.
    - the change's `openspec/changes/<name>/.openspec.yaml`;
    - the archived change's
      `openspec/changes/archive/<YYYY-MM-DD>-<name>/.openspec.yaml`, in
-     the folder whose whole name is `<YYYY-MM-DD>-<name>`.
+     the folder whose whole name is `<YYYY-MM-DD>-<name>`. `<YYYY-MM-DD>`
+     is the date in the archive folder's name.
 
    When neither exists, it is the schema [Route](#route) picked. Archive
    keeps the file, so an archived change keeps the schema it was built
@@ -769,8 +758,9 @@ Set `<mode>`, the question mode. Take the first of these that is set:
 
 Never ask the user which question mode to use. The question mode holds
 for this run only. Do not run `lets go questions` again. Print the line
-for the source you used. The last line is for the third source, before
-a shape step:
+for the source you used. `<Kind>` is the issue's Kind on the Project,
+which [Confirm the packet](#confirm-the-packet) carries. The last line
+is for the third source, before a shape step:
 
 ```text
 Questions: <mode>, because you asked for it.
