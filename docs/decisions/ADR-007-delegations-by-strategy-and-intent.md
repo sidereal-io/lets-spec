@@ -12,6 +12,8 @@ description: Architecture decision record (ADR) for organizing lets delegate com
 
 > Amended again by [ADR-031](ADR-031-each-guidance-key-names-the-step-it-steers.md): each guidance key names the step it steers, such as `delegate.review-build.guidance` for `lets delegate review --for review-build`, and `review`'s intents are `review-plan` and `review-build`, in place of `plan` and `code`. The commands, their grouping and the required `--for` still hold.
 
+> Amended again by [ADR-032](ADR-032-one-delegate-command-starts-every-session.md): there are no strategies left. `lets delegate step` starts every session, and its `--for` value decides the kind of session, its options, its output and its time limit. The required `--for` still holds.
+
 ## Context
 
 `lets delegate` runs a prompt in a fresh session for three kinds of work: a plan review, a code review, and handing a planned change to a new session to build it. A delegation has three independent parts. The **command** says what `lets` does: report what can run (`instructions`), or start the session (`run`). The **strategy** says what kind of session it is. A `review` is read-only and waits for the final message. A `handoff` is interactive and returns at once. The **intent** says what the work is for: `plan`, `code` or `apply`.

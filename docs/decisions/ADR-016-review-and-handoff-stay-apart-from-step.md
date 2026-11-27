@@ -1,12 +1,14 @@
 ---
 id: adr-016
 date: 2026-11-04
-status: accepted
+status: superseded by ADR-032
 title: 'ADR-016: Review and handoff stay their own strategies, apart from step'
 description: Architecture decision record (ADR) for keeping the review and handoff strategies of lets delegate separate from step, with one adapter method per kind of session
 ---
 
 # ADR-016: Review and handoff stay their own strategies, apart from step
+
+> Superseded by [ADR-032](ADR-032-one-delegate-command-starts-every-session.md): `review` folds into `step`, and the `--for` value decides whether a session is a read-only reviewer. The adapter contract, one method per kind of session, still holds.
 
 > Builds on [ADR-007](ADR-007-delegations-by-strategy-and-intent.md): a strategy fixes a session's options, output and exit codes, and this record keeps three of them.
 

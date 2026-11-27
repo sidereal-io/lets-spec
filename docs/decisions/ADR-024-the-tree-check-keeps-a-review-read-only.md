@@ -10,6 +10,8 @@ description: Architecture decision record (ADR) for letting a resolver run a rev
 
 > Builds on [ADR-016](ADR-016-review-and-handoff-stay-apart-from-step.md): a review keeps its guarantees, and `lets` prints a review only after it checks that the session changed no file.
 
+> Amended by [ADR-032](ADR-032-one-delegate-command-starts-every-session.md): the reviewer runs through `lets delegate step run --for review-plan` or `--for review-build`, and a tree it changed is a `failed` report at exit 0, not exit 7. The tree check itself still holds.
+
 ## Context
 
 A review must not change the code it reviews. `lets` checks this after every review: it compares `git status` before and after the session, and exits 7 when a file outside `.workspace/` changed. Each resolver also picks a session mode in its harness. Some harnesses have a read-only mode that still answers headless with a final message, such as `codex exec` with its read-only sandbox. Others do not. In T3 Code, plan mode makes the model stop to ask a question, or answer with a plan for work it will do later, instead of the findings. `lets` then exits 5, or exits 0 with a plan that looks like a review. A reviewer also needs to run commands, such as the tests, to check its findings.

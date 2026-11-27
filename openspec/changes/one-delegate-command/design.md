@@ -99,6 +99,8 @@ Constraints:
 
 ### The `--for` value is the only switch
 
+[ADR-032](../../../docs/decisions/ADR-032-one-delegate-command-starts-every-session.md) records this decision and the alternatives to it.
+
 Replace `STRATEGIES` with one list of intents and one function that says
 what each needs:
 
