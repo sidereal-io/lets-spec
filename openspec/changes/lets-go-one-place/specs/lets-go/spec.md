@@ -214,7 +214,7 @@ A rule written once MAY run more than once. `next` runs *Check the prerequisite*
 
 #### Scenario: Each preflight result is described once
 - **WHEN** a reader reads `skills/lets-go/references/glossary-handoff.md` and *Claim*
-- **THEN** the reader finds what `verified`, `checkpoint-failed` and `unresolved` carry once, in the closing list of *Check the checkpoint*
+- **THEN** the reader finds what `verified` and `checkpoint-failed` carry once, in the closing list of *Check the checkpoint*, and what `unresolved` carries once, in the closing list of *Check the prerequisite*
 
 #### Scenario: No done test is restated
 - **WHEN** a reader reads *Walk the step table* and *Read the report*
