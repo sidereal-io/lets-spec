@@ -1064,8 +1064,8 @@ return to the part that ran it, with the result.
    against the proposed base, the branch the change's branch is
    created from below: the default branch. For a stacked story, the
    proposed base is `origin/<blocker-branch>`. When it returns
-   `unresolved` or `checkpoint-failed`, return that result now, with
-   what it carries, before you assign the issue.
+   `unresolved` or `checkpoint-failed`, return that result now, before
+   you assign the issue.
 3. Claim the issue. On an error, act as
    [Backlog errors](#backlog-errors) says.
 
@@ -1083,11 +1083,10 @@ return to the part that ran it, with the result.
    - **`result: claimed`:** keep its `claim` field as `<claim>` for
      release, then go on, below.
    - **`result: taken`:** another session has the issue. The result is
-     `taken`, with the names in its `assignees` field. Return it now.
+     `taken`. Return it now.
    - **`result: failed`:** a write failed. The result is
-     `claim-failed`, with its `write` field, which names the write that
-     failed, its `message` field and, when present, its `claim` field.
-     Return it now, before you create a branch, and undo nothing.
+     `claim-failed`. Return it now, before you create a branch, and
+     undo nothing.
 4. Create a branch with the change's name off the default branch. In
    an epic run, create the branch and the story's worktree together,
    so that the epic run's own checkout stays on `<default>`. The
@@ -1118,11 +1117,7 @@ return to the part that ran it, with the result.
    ```
 
    On `result: not-found`, ask the user to inspect the issue before retrying.
-   The result is then `branch-failed`, with the branch's error. When the
-   release prints `result: failed`, `branch-failed` also carries the
-   release's `write` field and `message` field. When it prints an
-   `error` field instead, nothing was released: `branch-failed` also
-   carries that error's `message` field.
+   The result is then `branch-failed`.
 
 It returns one of these results:
 
@@ -1130,18 +1125,20 @@ It returns one of these results:
   claim token and what
   [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
   returned: `no-owned-edits`, or `verified` with the checkpoint commits.
-- `taken`: another session has the issue. It carries who has it.
+- `taken`: another session has the issue. It carries who has it: the
+  names in the claim's `assignees` field.
 - `claim-failed`: a write of `lets backlog claim` failed, and no branch
-  exists. It carries the failed write's `write` field and `message`
-  field, plus the claim token when available for recovery.
-- `unresolved`:
-  [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
-  returned `unresolved`. It carries what is unresolved.
-- `checkpoint-failed`:
-  [Glossary preflight](references/glossary-handoff.md#glossary-preflight)
-  returned it. It carries what the check found.
+  exists. It carries the claim's `write` field, which names the write
+  that failed, its `message` field and, when present, its `claim`
+  field: the claim token, for recovery.
+- `unresolved` and `checkpoint-failed`:
+  [Glossary preflight](references/glossary-handoff.md#what-the-preflight-returns)
+  returned it, as its list says.
 - `branch-failed`: creating the branch failed. It carries the branch's
-  error and any release failure.
+  error. When the release prints `result: failed`, it also carries the
+  release's `write` field and `message` field. When the release prints
+  an `error` field instead, nothing was released, and it also carries
+  that error's `message` field.
 
 Return to the part that ran it, with the result.
 
