@@ -10,7 +10,7 @@ description: Architecture decision record (ADR) for organizing lets delegate com
 
 > Amended by [ADR-011](ADR-011-one-config-file-shaped-like-the-commands.md): the guidance key follows the strategy as well as the intent, `delegate.<strategy>.<intent>.guidance`, such as `delegate.review.code.guidance`. The commands, their grouping and the required `--for` still hold.
 
-> Amended again by [ADR-031](ADR-031-each-guidance-key-names-the-step-it-steers.md): the intent no longer names the guidance key. Each guidance key names the step it steers, such as `delegate.review-build.guidance` for `lets delegate review --for code`. The commands, their grouping and the required `--for` still hold.
+> Amended again by [ADR-031](ADR-031-each-guidance-key-names-the-step-it-steers.md): each guidance key names the step it steers, such as `delegate.review-build.guidance` for `lets delegate review --for review-build`, and `review`'s intents are `review-plan` and `review-build`, in place of `plan` and `code`. The commands, their grouping and the required `--for` still hold.
 
 ## Context
 
