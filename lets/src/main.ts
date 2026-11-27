@@ -14,6 +14,8 @@ import { run as review } from './delegate/review.ts';
 import type { ReviewOptions } from './delegate/review.ts';
 import { start as stepStart, wait as stepWait } from './delegate/background.ts';
 import type { StartOptions } from './delegate/background.ts';
+import { read as stepRead } from './delegate/read.ts';
+import type { ReadOptions } from './delegate/read.ts';
 import { run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './delegate/step.ts';
 import type { StepOptions } from './delegate/step.ts';
 import { STRATEGIES } from './delegate/strategies.ts';
@@ -419,6 +421,15 @@ stepRunOptions(stepCommand
   .addHelpText('after', STEP_START_HELP)
   .action(async ({ model, ...options }: Omit<StartOptions, 'models'> & { model: string[] }) => {
     process.exitCode = await stepStart({ ...options, models: model }, realDeps());
+  });
+
+stepCommand
+  .command('read')
+  .summary('print the step report a final message ends with')
+  .description('Read a session\'s final message from a file, and print its step report as lets delegate step run does. Starts no session.')
+  .requiredOption('--message-file <path>', 'the file that holds the final message')
+  .action(async (options: ReadOptions) => {
+    process.exitCode = await stepRead(options, realDeps());
   });
 
 stepCommand
