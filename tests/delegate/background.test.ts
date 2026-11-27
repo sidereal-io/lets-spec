@@ -234,6 +234,16 @@ describe('step start inside T3 Code', () => {
     assert.match(readFileSync(meta, 'utf8'), /t3 has no project for/);
     assert.deepEqual(recordLines(meta).filter((line) => line.resolver === 'cli'), []);
   });
+
+  test('a background step started outside T3 Code is answered by the next resolver after t3', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [t3, cli] }\n' });
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
+    const result = await repo.run(stepStart(), { env: { T3CODE_HOME: tempDir(t) } });
+    assert.equal(result.code, 0, result.output);
+    cleanUpStep(t, JSON.parse(result.stdout).pid);
+    assert.equal(ended(await waitFor(repo, ['build-x'])).exit, 0);
+    assert.deepEqual(recordLines(join(repo.cwd, 'm.txt')).map((line) => line.resolver), ['cli']);
+  });
 });
 
 describe('step wait', () => {
