@@ -516,6 +516,28 @@ describe('the default', () => {
     assert.equal(resolverOf(await repo.run(instructions)), 'subagent');
   });
 
+  test('subagent answers a reviewer with exit 3, saying the review runs in a subagent, and saves no prompt', async (t) => {
+    for (const intent of ['review-plan', 'review-build']) {
+      const repo = delegateRepo(t);
+      const clis = everyCli(repo.standIns);
+      const result = await repo.run(stepRun({ for: intent, name: 'x-plan-review', sourceFamily: 'claude', models: ['gpt'] }));
+      failed(result, 3);
+      assert.match(result.stderr, /no resolver started a session/, intent);
+      assert.match(result.stderr, /Run the review in a subagent/, intent);
+      assert.doesNotMatch(result.stderr, /installed/, intent);
+      assert.equal(existsSync(join(repo.cwd, '.workspace', 'lets-delegate', 'x-plan-review.prompt.md')), false, intent);
+      for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], `${intent}: ${name}`);
+    }
+  });
+
+  test('subagent saves the prompt for every intent that is not a reviewer', async (t) => {
+    for (const intent of ['shape', 'plan', 'build', 'story']) {
+      const repo = delegateRepo(t);
+      failed(await repo.run(stepRun({ for: intent })), 3);
+      assert.equal(readFileSync(savedPrompt(repo.cwd), 'utf8'), PROMPT, intent);
+    }
+  });
+
   test('a chain without subagent never asks it: a step is exit 2, and saves no prompt', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     failed(await repo.run(stepRun()), 2);
