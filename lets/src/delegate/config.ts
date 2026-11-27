@@ -12,7 +12,7 @@ import { findRepoRoot } from './git.ts';
 import { UsageError } from '../resolvers/kit/errors.ts';
 import type { Intent, Strategy } from './strategies.ts';
 
-export const CONFIG_VERSION = 3;
+export const CONFIG_VERSION = 4;
 // The resolvers built into lets, by the names the chain lists them under.
 export const RESOLVER_NAMES = ['t3', 'cli', 'subagent'] as const;
 export type ResolverName = (typeof RESOLVER_NAMES)[number];
@@ -77,7 +77,7 @@ export async function readConfig(deps: ConfigDeps & { cwd: string }): Promise<{ 
 
 // The document in text, read from path, with every key as written. Throws a
 // UsageError that names the file when it is not YAML, not a mapping, or not
-// version 3. Each command group checks only its own section of it.
+// version 4. Each command group checks only its own section of it.
 export function parseDocument(text: string, path: string): Record<string, unknown> {
   const fail = (message: string) => new UsageError(`${path}: ${message}.`);
   let value: unknown;

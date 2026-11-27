@@ -8,8 +8,8 @@ import { dirname, join } from 'node:path';
 import { describe, type TestContext, test } from 'node:test';
 import { agy, claude, codex, type EnvChanges, git, type LetsResult, runLets, tempDir } from '../support/lets.ts';
 
-const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
-const CLI_THEN_SUBAGENT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
+const CLI = 'version: 4\ndelegate: { resolvers: [cli] }\n';
+const CLI_THEN_SUBAGENT = 'version: 4\ndelegate: { resolvers: [cli, subagent] }\n';
 const LUNA = [{ slug: 'gpt-6-luna', visibility: 'list' }] as const;
 
 interface Setup {
@@ -103,7 +103,7 @@ test('with no family CLI on PATH, cli declines and subagent answers next', async
 test('when subagent comes first, it answers, and cli is never asked', async (t) => {
   let stand: ReturnType<typeof codex> | undefined;
   const run = await instructions(t, 'review', 'code', {
-    user: 'version: 3\ndelegate: { resolvers: [subagent, cli] }\n',
+    user: 'version: 4\ndelegate: { resolvers: [subagent, cli] }\n',
     standIns: (dir) => { stand = codex(dir, [...LUNA]); },
   });
   assert.equal(line(run).resolver, 'subagent');
@@ -113,7 +113,7 @@ test('when subagent comes first, it answers, and cli is never asked', async (t) 
 test('subagent lists no models and runs no program, even with every family CLI on PATH', async (t) => {
   let clis: ReturnType<typeof everyCli> | undefined;
   const run = await instructions(t, 'review', 'code', {
-    user: 'version: 3\ndelegate: { resolvers: [subagent] }\n',
+    user: 'version: 4\ndelegate: { resolvers: [subagent] }\n',
     standIns: (dir) => { clis = everyCli(dir); },
   });
   assert.deepEqual(line(run), { strategy: 'review', for: 'code', resolver: 'subagent', options: [], guidance: null });
@@ -142,7 +142,7 @@ test('when every resolver in the repository\'s lets config declines, it is exit 
 });
 
 test('an empty chain declines every delegation, and is exit 2, naming the config file', async (t) => {
-  const run = await instructions(t, 'review', 'code', { user: 'version: 3\ndelegate: { resolvers: [] }\n', standIns: everyCli });
+  const run = await instructions(t, 'review', 'code', { user: 'version: 4\ndelegate: { resolvers: [] }\n', standIns: everyCli });
   declined(run, run.userConfig);
 });
 
@@ -249,7 +249,7 @@ test('two listings that hang are both stopped at their limit, at the same time, 
 
 // A lets config with body under delegate, indented for it. With no chain,
 // subagent answers, which runs no program.
-const delegate = (body: string) => `version: 3\ndelegate:\n${body.replace(/^(?=.)/gm, '  ')}`;
+const delegate = (body: string) => `version: 4\ndelegate:\n${body.replace(/^(?=.)/gm, '  ')}`;
 // The same, with cli first in the chain, so a test can see that no
 // listing ran.
 const cliDelegate = (body: string) => delegate(`resolvers: [cli]\n${body}`);
@@ -348,7 +348,7 @@ describe('the delegate section of the lets config', () => {
   // running server, so t3 declines, whatever the developer runs.
   test('t3, cli and subagent are each a valid entry of the chain', async (t) => {
     const run = await instructions(t, 'review', 'code', {
-      user: 'version: 3\ndelegate:\n  resolvers:\n    - t3\n    - cli\n    - subagent\n',
+      user: 'version: 4\ndelegate:\n  resolvers:\n    - t3\n    - cli\n    - subagent\n',
       env: { T3CODE_HOME: tempDir(t) },
     });
     assert.deepEqual(line(run), SUBAGENT_REVIEW);
@@ -356,7 +356,7 @@ describe('the delegate section of the lets config', () => {
 
   // Every family CLI is on PATH, so a chain that held cli would answer from cli.
   test('a config with no delegate, a null or empty one, or no resolvers, has no chain, so subagent answers', async (t) => {
-    for (const user of ['version: 3\n', 'version: 3\ndelegate:\n', 'version: 3\ndelegate: null\n', 'version: 3\ndelegate: {}\n', 'version: 3\ndelegate:\n  resolvers:\n']) {
+    for (const user of ['version: 4\n', 'version: 4\ndelegate:\n', 'version: 4\ndelegate: null\n', 'version: 4\ndelegate: {}\n', 'version: 4\ndelegate:\n  resolvers:\n']) {
       let clis: ReturnType<typeof everyCli> | undefined;
       const run = await instructions(t, 'review', 'code', { user, standIns: (dir) => { clis = everyCli(dir); } });
       assert.deepEqual(line(run), SUBAGENT_REVIEW, user);
@@ -366,25 +366,25 @@ describe('the delegate section of the lets config', () => {
 
   test('an entry that is not t3, cli or subagent exits 2, naming the file, the entry and the three names', async (t) => {
     for (const entry of ['codex', 'T3', '7', '/opt/r/old-resolver']) {
-      const run = await instructions(t, 'review', 'code', { user: `version: 3\ndelegate:\n  resolvers:\n    - t3\n    - ${entry}\n` });
+      const run = await instructions(t, 'review', 'code', { user: `version: 4\ndelegate:\n  resolvers:\n    - t3\n    - ${entry}\n` });
       refused(run, run.userConfig, 'delegate.resolvers[1]', entry, 't3, cli or subagent');
     }
   });
 
   test('a lets config that is not valid exits 2, naming the user\'s file and the bad value', async (t) => {
     const cases: [string, string][] = [
-      ['version: 3\ndelegate: { resolvers: [unclosed\n', 'is not YAML'],
+      ['version: 4\ndelegate: { resolvers: [unclosed\n', 'is not YAML'],
       ['- just\n- a list\n', 'must be a mapping with version'],
-      ['version: 2\nresolvers: []\n', 'version must be 3, got 2'],
-      ['version: 2\ndelegate: [t3]\n', 'version must be 3, got 2'],
-      ['version: "3"\n', 'version must be 3, got "3"'],
-      ['delegate: { resolvers: [] }\n', 'version must be 3'],
-      ['version: 3\ndelegate: [t3]\n', 'delegate must be a mapping, got ["t3"]'],
-      ['version: 3\ndelegate: t3\n', 'delegate must be a mapping, got "t3"'],
-      ['version: 3\ndelegate: { resolvers: t3 }\n', 'delegate.resolvers must be a list, got "t3"'],
-      ['version: 3\ndelegate:\n  resolvers:\n    - bin/old-resolver\n', '"bin/old-resolver"'],
-      ['version: 3\ndelegate:\n  resolvers:\n    - ~/bin/old-resolver\n', '"~/bin/old-resolver"'],
-      ['version: 3\ndelegate:\n  resolvers:\n    - 7\n', 'delegate.resolvers[0] must be t3, cli or subagent, got 7'],
+      ['version: 2\nresolvers: []\n', 'version must be 4, got 2'],
+      ['version: 2\ndelegate: [t3]\n', 'version must be 4, got 2'],
+      ['version: "4"\n', 'version must be 4, got "4"'],
+      ['delegate: { resolvers: [] }\n', 'version must be 4'],
+      ['version: 4\ndelegate: [t3]\n', 'delegate must be a mapping, got ["t3"]'],
+      ['version: 4\ndelegate: t3\n', 'delegate must be a mapping, got "t3"'],
+      ['version: 4\ndelegate: { resolvers: t3 }\n', 'delegate.resolvers must be a list, got "t3"'],
+      ['version: 4\ndelegate:\n  resolvers:\n    - bin/old-resolver\n', '"bin/old-resolver"'],
+      ['version: 4\ndelegate:\n  resolvers:\n    - ~/bin/old-resolver\n', '"~/bin/old-resolver"'],
+      ['version: 4\ndelegate:\n  resolvers:\n    - 7\n', 'delegate.resolvers[0] must be t3, cli or subagent, got 7'],
     ];
     for (const [user, named] of cases) {
       const run = await instructions(t, 'review', 'code', { user });
@@ -393,24 +393,24 @@ describe('the delegate section of the lets config', () => {
   });
 
   test('a key lets does not know, at the top level and under delegate, is ignored', async (t) => {
-    const run = await instructions(t, 'review', 'code', { user: 'version: 3\nsync: true\ndelegate:\n  resolvers: [subagent]\n  telemetry: true\n' });
+    const run = await instructions(t, 'review', 'code', { user: 'version: 4\nsync: true\ndelegate:\n  resolvers: [subagent]\n  telemetry: true\n' });
     assert.deepEqual(line(run), SUBAGENT_REVIEW);
   });
 
   test('a go.questions the delegate commands do not read is ignored, even one lets go would reject', async (t) => {
-    const run = await instructions(t, 'review', 'code', { user: 'version: 3\ndelegate:\n  resolvers: [subagent]\ngo:\n  questions: loud\n' });
+    const run = await instructions(t, 'review', 'code', { user: 'version: 4\ndelegate:\n  resolvers: [subagent]\ngo:\n  questions: loud\n' });
     assert.deepEqual(line(run), SUBAGENT_REVIEW);
   });
 
   test('a step ignores a bad review entry', async (t) => {
     const run = await instructions(t, 'step', 'build', {
-      user: 'version: 3\ndelegate:\n  resolvers: [subagent]\n  review:\n    code:\n      guidance: 42\n',
+      user: 'version: 4\ndelegate:\n  resolvers: [subagent]\n  review:\n    code:\n      guidance: 42\n',
     });
     assert.deepEqual(line(run), { strategy: 'step', for: 'build', resolver: 'subagent', options: [], guidance: null });
   });
 
   test('a handoff entry from an earlier lets is not checked, and draws no message', async (t) => {
-    const run = await instructions(t, 'step', 'build', { user: 'version: 3\ndelegate:\n  resolvers: [subagent]\n  handoff: 42\n' });
+    const run = await instructions(t, 'step', 'build', { user: 'version: 4\ndelegate:\n  resolvers: [subagent]\n  handoff: 42\n' });
     assert.deepEqual(line(run), { strategy: 'step', for: 'build', resolver: 'subagent', options: [], guidance: null });
     assert.doesNotMatch(run.result.stderr, /handoff/);
   });

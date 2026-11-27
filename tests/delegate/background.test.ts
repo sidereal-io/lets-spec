@@ -12,7 +12,7 @@ import { claude, codex, agy, git, type LetsResult } from '../support/lets.ts';
 import { type DelegateRepo, delegateRepo, PROMPT } from './repo.ts';
 import { agyWrite, assertClockMs, claudeWrite, cleanUpStep, codexWrite, ending, stepStart, type StartArgs, stopStep, untilCalled, untilGone } from './steps.ts';
 
-const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
+const CLI = 'version: 4\ndelegate: { resolvers: [cli] }\n';
 const DONE = ending('outcome: done\nevidence:\n  - "commit 3f2a1c0"\n');
 const ANSWERS = '- question: Which schema?\n  answer: lets-minimal\n';
 // The prompt lets composes from PROMPT and ANSWERS.

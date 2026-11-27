@@ -15,7 +15,7 @@ import { createAdapter } from '../../../../lets/src/resolvers/t3/t3.ts';
 import { commandDeps, HEAD } from '../../delegate/fixtures/command-deps.ts';
 import { fakeIo } from '../kit/fixtures/fake-io.ts';
 
-const ONLY_T3 = 'version: 3\ndelegate: { resolvers: [t3] }\n';
+const ONLY_T3 = 'version: 4\ndelegate: { resolvers: [t3] }\n';
 const ORIGIN = 'http://127.0.0.1:3773';
 const RUNTIME = '/home/u/.t3/userdata/server-runtime.json';
 const MANIFEST = '/home/u/.t3/userdata/model-manifest.json';
@@ -531,7 +531,7 @@ test('step instructions inside T3 Code list the catalogue\'s models', async () =
 
 test('a step outside T3 Code opens no thread, and the default answers', async () => {
   const sent: Sent = [];
-  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3, subagent] }\n', real: { t3: createAdapter(io({ 100: 50, 50: 1 }, { sent })) } });
+  const t = commandDeps({ config: 'version: 4\ndelegate: { resolvers: [t3, subagent] }\n', real: { t3: createAdapter(io({ 100: 50, 50: 1 }, { sent })) } });
   assert.equal(await step({ ...lunaStep, models: ['claude'] }, t.deps), 3);
   assert.deepEqual(sent, []);
   assert.ok(t.savedFile('.workspace/lets-delegate/build-x.prompt.md'), 'the default saved the prompt');

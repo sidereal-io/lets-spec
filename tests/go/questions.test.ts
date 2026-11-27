@@ -9,8 +9,8 @@ import { describe, test } from 'node:test';
 import { delegateRepo } from '../delegate/repo.ts';
 import { agy, claude, codex, type LetsResult, tempDir } from '../support/lets.ts';
 
-const ASK = 'version: 3\ngo:\n  questions: ask\n';
-const AUTO = 'version: 3\ngo:\n  questions: auto\n';
+const ASK = 'version: 4\ngo:\n  questions: ask\n';
+const AUTO = 'version: 4\ngo:\n  questions: auto\n';
 
 /**
  * The `questions` value of a run that succeeded. Asserts exit 0, an empty
@@ -81,13 +81,13 @@ describe('where the user\'s lets config is', () => {
 });
 
 describe('what a file must be', () => {
-  test('a file that is not YAML, not a mapping or not version 3 exits 2, naming the user\'s file and the reason', async (t) => {
+  test('a file that is not YAML, not a mapping or not version 4 exits 2, naming the user\'s file and the reason', async (t) => {
     const cases: [string, string][] = [
-      ['version: 3\ngo: { questions: [unclosed\n', 'is not YAML'],
+      ['version: 4\ngo: { questions: [unclosed\n', 'is not YAML'],
       ['- just\n- a list\n', 'must be a mapping with version, got ["just","a list"]'],
-      ['version: 2\ngo:\n  questions: ask\n', 'version must be 3, got 2'],
-      ['version: "3"\n', 'version must be 3, got "3"'],
-      ['go:\n  questions: ask\n', 'version must be 3, got undefined'],
+      ['version: 2\ngo:\n  questions: ask\n', 'version must be 4, got 2'],
+      ['version: "4"\n', 'version must be 4, got "4"'],
+      ['go:\n  questions: ask\n', 'version must be 4, got undefined'],
     ];
     for (const [user, reason] of cases) {
       const repo = delegateRepo(t, { user });
@@ -96,7 +96,7 @@ describe('what a file must be', () => {
   });
 
   test('a YAML error ends with where the parser stopped, as one sentence', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ngo: { questions: [/x\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ngo: { questions: [/x\n' });
     const result = await repo.run(questions);
     rejected(result, repo.userConfig, 'is not YAML');
     assert.match(result.stderr, /line 3, column 1\.\n$/);
@@ -113,14 +113,14 @@ describe('what a file must be', () => {
 
   test('a repository\'s lets config with version 2 exits 2, naming it', async (t) => {
     const repo = delegateRepo(t, { user: ASK, repo: 'version: 2\n' });
-    rejected(await repo.run(questions), repo.repoConfig, 'version must be 3, got 2');
+    rejected(await repo.run(questions), repo.repoConfig, 'version must be 4, got 2');
   });
 });
 
 describe('go.questions', () => {
   test('ask and auto each print as one JSON line', async (t) => {
     for (const mode of ['ask', 'auto']) {
-      const result = await delegateRepo(t, { user: `version: 3\ngo:\n  questions: ${mode}\n` }).run(questions);
+      const result = await delegateRepo(t, { user: `version: 4\ngo:\n  questions: ${mode}\n` }).run(questions);
       assert.equal(printed(result), mode);
       assert.equal(result.stdout, `{"questions":"${mode}"}\n`);
     }
@@ -129,12 +129,12 @@ describe('go.questions', () => {
   test('a config that sets no question mode prints null', async (t) => {
     const bodies = ['', 'go:\n', 'go: null\n', 'go: {}\n', 'go:\n  questions:\n', 'go:\n  questions: null\n', 'go:\n  verbose: true\n', 'go:\n  level: recommend\n'];
     for (const body of bodies) {
-      assert.equal(printed(await delegateRepo(t, { user: `version: 3\n${body}` }).run(questions)), null, body);
+      assert.equal(printed(await delegateRepo(t, { user: `version: 4\n${body}` }).run(questions)), null, body);
     }
   });
 
   test('the old go.level beside go.questions is ignored', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ngo:\n  level: loud\n  questions: auto\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ngo:\n  level: loud\n  questions: auto\n' });
     assert.equal(printed(await repo.run(questions)), 'auto');
   });
 
@@ -149,20 +149,20 @@ describe('go.questions', () => {
       ['go:\n  questions: recommend\n', 'go.questions must be ask or auto, got "recommend"'],
     ];
     for (const [body, named] of cases) {
-      const repo = delegateRepo(t, { user: `version: 3\n${body}` });
+      const repo = delegateRepo(t, { user: `version: 4\n${body}` });
       rejected(await repo.run(questions), repo.userConfig, named);
     }
   });
 
   test('a delegate section the delegate commands reject, and other top-level keys, do not stop it', async (t) => {
     for (const other of ['delegate:\n  resolvers: [codex]\n', 'delegate: [t3]\n', 'sync: true\nbacklog: 7\n']) {
-      const repo = delegateRepo(t, { user: `version: 3\n${other}go:\n  questions: ask\n  verbose: true\n` });
+      const repo = delegateRepo(t, { user: `version: 4\n${other}go:\n  questions: ask\n  verbose: true\n` });
       assert.equal(printed(await repo.run(questions)), 'ask', other);
     }
   });
 
   test('it asks no resolver: with cli as the chain, no codex, claude or agy is called', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate:\n  resolvers: [cli]\ngo:\n  questions: auto\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\ngo:\n  questions: auto\n' });
     const clis = { codex: codex(repo.standIns), claude: claude(repo.standIns), agy: agy(repo.standIns) };
     assert.equal(printed(await repo.run(questions)), 'auto');
     for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], name);
@@ -175,7 +175,7 @@ describe('the repository\'s lets config', () => {
   });
 
   test('the user\'s value stays when the repository\'s lets config has no go, or go: null', async (t) => {
-    for (const repo of ['version: 3\n', 'version: 3\ngo: null\n']) {
+    for (const repo of ['version: 4\n', 'version: 4\ngo: null\n']) {
       assert.equal(printed(await delegateRepo(t, { user: ASK, repo }).run(questions)), 'ask', repo);
     }
   });
@@ -198,35 +198,35 @@ describe('the repository\'s lets config', () => {
   });
 
   test('a bad go.questions in the repository\'s lets config exits 2, naming that file, not the user\'s', async (t) => {
-    const repo = delegateRepo(t, { user: ASK, repo: 'version: 3\ngo:\n  questions: loud\n' });
+    const repo = delegateRepo(t, { user: ASK, repo: 'version: 4\ngo:\n  questions: loud\n' });
     const result = await repo.run(questions);
     rejected(result, repo.repoConfig, 'go.questions', '"loud"');
     assert.ok(!result.stderr.includes(repo.userConfig), result.stderr);
   });
 
   test('a mapping at go.questions in the repository\'s lets config exits 2, naming that file, alone and over the user\'s ask', async (t) => {
-    const alone = delegateRepo(t, { repo: 'version: 3\ngo:\n  questions: {}\n' });
+    const alone = delegateRepo(t, { repo: 'version: 4\ngo:\n  questions: {}\n' });
     rejected(await alone.run(questions), alone.repoConfig, 'go.questions must be ask or auto, got {}');
-    const over = delegateRepo(t, { user: ASK, repo: 'version: 3\ngo:\n  questions: { a: 1 }\n' });
+    const over = delegateRepo(t, { user: ASK, repo: 'version: 4\ngo:\n  questions: { a: 1 }\n' });
     rejected(await over.run(questions), over.repoConfig, 'go.questions must be ask or auto, got {"a":1}');
   });
 
   test('a go that is a number in the repository\'s lets config replaces the user\'s go whole, and exits 2 naming that file', async (t) => {
-    const repo = delegateRepo(t, { user: ASK, repo: 'version: 3\ngo: 7\n' });
+    const repo = delegateRepo(t, { user: ASK, repo: 'version: 4\ngo: 7\n' });
     rejected(await repo.run(questions), repo.repoConfig, 'go must be a mapping, got 7');
   });
 
   test('a bad user\'s go.questions under a go: {} the repository merges into names the user\'s file', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ngo:\n  questions: loud\n', repo: 'version: 3\ngo: {}\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ngo:\n  questions: loud\n', repo: 'version: 4\ngo: {}\n' });
     rejected(await repo.run(questions), repo.userConfig, 'go.questions', '"loud"');
   });
 
   test('a YAML alias that holds itself prints the value in effect, and does not loop', async (t) => {
-    const alone = delegateRepo(t, { user: AUTO, repo: 'version: 3\ngo:\n  questions: ask\nunused: &u { self: *u }\n' });
+    const alone = delegateRepo(t, { user: AUTO, repo: 'version: 4\ngo:\n  questions: ask\nunused: &u { self: *u }\n' });
     assert.equal(printed(await alone.run(questions)), 'ask', 'only the repository holds the alias');
     const shared = delegateRepo(t, {
-      user: 'version: 3\ngo:\n  questions: auto\nunused: &a { self: *a, x: 1 }\n',
-      repo: 'version: 3\nunused: &u { self: *u }\n',
+      user: 'version: 4\ngo:\n  questions: auto\nunused: &a { self: *a, x: 1 }\n',
+      repo: 'version: 4\nunused: &u { self: *u }\n',
     });
     assert.equal(printed(await shared.run(questions)), 'auto', 'both files hold the key');
   });

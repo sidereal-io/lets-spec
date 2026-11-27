@@ -201,7 +201,7 @@ test('the retired handoff intent under review is a usage error that names --for'
 
 test('a resolver listed by path is exit 2, naming it and the config file', async () => {
   const example = '/opt/r/old-resolver';
-  const r = repo(`version: 3\ndelegate:\n  resolvers:\n    - ${example}\n    - subagent\n`);
+  const r = repo(`version: 4\ndelegate:\n  resolvers:\n    - ${example}\n    - subagent\n`);
   const { code, stdout, stderr } = await letsIn(r, 'delegate', 'review', 'instructions', '--for', 'code');
   assert.equal(code, 2);
   assert.equal(stdout, '');
@@ -210,7 +210,7 @@ test('a resolver listed by path is exit 2, naming it and the config file', async
 });
 
 test('a name lets does not know is exit 2, naming it and the three names', async () => {
-  const { code, stdout, stderr } = await letsIn(repo('version: 3\ndelegate: { resolvers: [codex] }\n'), ...REVIEW);
+  const { code, stdout, stderr } = await letsIn(repo('version: 4\ndelegate: { resolvers: [codex] }\n'), ...REVIEW);
   assert.equal(code, 2);
   assert.equal(stdout, '');
   assert.match(stderr, /codex/);
@@ -389,7 +389,7 @@ test('go questions --help names the config file, the key, its two values and the
 });
 
 test('go questions with a question mode lets does not know is exit 2, naming the config file and go.questions', async () => {
-  const r = repo('version: 3\ngo:\n  questions: loud\n');
+  const r = repo('version: 4\ngo:\n  questions: loud\n');
   const { code, stdout, stderr } = await letsIn(r, 'go', 'questions');
   assert.equal(code, 2);
   assert.equal(stdout, '');

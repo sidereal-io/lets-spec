@@ -16,7 +16,7 @@ import { useRelease } from '../sync/project.ts';
 
 const release = useRelease();
 const TRIED_MODULE = fileURLToPath(new URL('./tried.ts', import.meta.url));
-const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
+const CLI = 'version: 4\ndelegate: { resolvers: [cli] }\n';
 
 const url = (n: number) => `https://github.com/${REPO}/issues/${n}`;
 const title = (n: number) => `story-${n} — outcome`;

@@ -37,7 +37,7 @@ test('lets exits within 15 s when T3 accepts the WebSocket and never replies', {
   mkdirSync(join(home, 't3', 'userdata'), { recursive: true });
   writeFileSync(join(home, 't3', 'userdata', 'server-runtime.json'), JSON.stringify({ pid: process.pid, origin }));
   mkdirSync(join(home, 'config', 'lets'), { recursive: true });
-  writeFileSync(join(home, 'config', 'lets', 'config.yaml'), 'version: 3\ndelegate: { resolvers: [t3] }\n');
+  writeFileSync(join(home, 'config', 'lets', 'config.yaml'), 'version: 4\ndelegate: { resolvers: [t3] }\n');
   writeFileSync(join(home, 'config', 'lets', 't3-token'), 'tok');
   const started = Date.now();
   const { code, stdout, stderr } = await new Promise<{ code: number | null; stdout: string; stderr: string }>((done) => {
