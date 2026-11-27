@@ -15,7 +15,7 @@
 
 ## 3. The subagent journey [depends-on: 1]
 
-- [ ] 3.1 [parallel] [medium] A journey test in `tests/journey/journeys.test.ts`: with no lets config, `lets delegate step run --for build` exits 3, and its stderr names the saved prompt and `lets delegate step read`; a message file that ends with a `done` report then goes through `lets delegate step read --message-file`, which exits 0 and prints that report with its `date` (verify: node --test tests/journey/journeys.test.ts)
+- [x] 3.1 [parallel] [medium] A journey test in `tests/journey/journeys.test.ts`: with no lets config, `lets delegate step run --for build` exits 3, and its stderr names the saved prompt and `lets delegate step read`; a message file that ends with a `done` report then goes through `lets delegate step read --message-file`, which exits 0 and prints that report with its `date` (verify: node --test tests/journey/journeys.test.ts) (✓ node --test tests/journey/journeys.test.ts passed)
 
 ## 4. Finish [depends-on: 2, 3]
 
