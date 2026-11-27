@@ -48,8 +48,9 @@ against one command, so this story comes first.
   session's record line says `for: plan` or `for: build` (D1).
 - `lets-review-plan`, `lets-review-build` and `lets-review-pr` start their
   reviewer with `lets delegate step`, read the findings from the done
-  report, and keep their finding formats and the `Read: <checkout> <head>`
-  line.
+  report, and keep their finding formats. `lets-review-plan` and
+  `lets-review-build` also keep the `Read: <checkout> <head>` line;
+  `lets-review-pr`'s role prompts have none.
 - The README, `docs/resolvers.md` and the command help describe the one
   command.
 

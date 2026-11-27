@@ -227,8 +227,9 @@ where they call the command and read its output:
   `--for review-build`;
 - `lets delegate step run` with the same options, stdout to
   `.workspace/<…>-review-report.json` in place of the raw file;
-- after exit 0, read `outcome`. For `done`, the findings and the
-  `Read:` line come from `findings`. For `failed`, record no review,
+- after exit 0, read `outcome`. For `done`, the findings come from
+  `findings`, and for `lets-review-plan` and `lets-review-build` the
+  `Read:` line too; `lets-review-pr`'s role prompts have no `Read:` line. For `failed`, record no review,
   show the `reason` and the meta file, and stop;
 - the exit list loses 5 and 7.
 
