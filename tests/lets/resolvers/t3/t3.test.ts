@@ -151,6 +151,10 @@ test('detect is true for a detached step whose marker names the running T3 serve
   assert.equal(createAdapter(detached()).detect(), true);
 });
 
+test('detect is false for a detached step whose T3 server has stopped', () => {
+  assert.equal(createAdapter(detached({ processAlive: () => false })).detect(), false);
+});
+
 // An entry of server.getConfig's providers[], enabled and ready unless told otherwise.
 const provider = (instanceId: string, models: unknown, over: Record<string, unknown> = {}) =>
   ({ instanceId, driver: instanceId, enabled: true, status: 'ready', models, ...over });
