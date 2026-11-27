@@ -569,7 +569,8 @@ export function createAdapter(io: Io): Adapter {
 
     detect() {
       const runtime = readRuntime(io);
-      return runtime !== null && io.processAlive(runtime.pid) && isAncestor(io, runtime.pid);
+      return runtime !== null && io.processAlive(runtime.pid)
+        && (isAncestor(io, runtime.pid) || io.env.LETS_T3_SERVER_PID === String(runtime.pid));
     },
 
     async options(warn) {

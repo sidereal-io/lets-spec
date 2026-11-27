@@ -136,6 +136,21 @@ test('detect needs a runtime file, a live server, and the server among this proc
   assert.equal(createAdapter(io({ parentPid: (pid: number) => stale[pid] ?? null })).detect(), false);
 });
 
+// A step that lets delegate step start left running: the T3 server is alive
+// but is no longer among its ancestors.
+const detached = (over = {}) => fakeIo({
+  files: { [RUNTIME]: JSON.stringify({ pid: 7, origin: ORIGIN }) },
+  pid: 100,
+  parentPid: (pid) => ({ 100: 1 } as Record<number, number>)[pid] ?? null,
+  processAlive: (pid) => pid === 7,
+  env: { LETS_T3_SERVER_PID: '7' },
+  ...over,
+});
+
+test('detect is true for a detached step whose marker names the running T3 server', () => {
+  assert.equal(createAdapter(detached()).detect(), true);
+});
+
 // An entry of server.getConfig's providers[], enabled and ready unless told otherwise.
 const provider = (instanceId: string, models: unknown, over: Record<string, unknown> = {}) =>
   ({ instanceId, driver: instanceId, enabled: true, status: 'ready', models, ...over });
