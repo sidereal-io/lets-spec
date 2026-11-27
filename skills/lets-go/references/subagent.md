@@ -5,6 +5,9 @@ names a saved prompt.
 
 ## Run a step in a subagent
 
+In an epic run, each stop in this section ends only its story's run, as
+[A stop in an epic run](epic-run.md#a-stop-in-an-epic-run) says.
+
 Take this step only when `lets delegate step run` exits 3, and the meta
 file names the prompt `lets` saved,
 `.workspace/lets-delegate/<session>.prompt.md`. That file holds the
