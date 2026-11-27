@@ -651,8 +651,8 @@ says.
    - the change's `openspec/changes/<name>/.openspec.yaml`;
    - the archived change's
      `openspec/changes/archive/<YYYY-MM-DD>-<name>/.openspec.yaml`, in
-     the folder whose whole name is `<YYYY-MM-DD>-<name>`. `<YYYY-MM-DD>`
-     is the date in the archive folder's name.
+     the folder whose whole name is `<YYYY-MM-DD>-<name>`.
+     `<YYYY-MM-DD>` is the date in the archive folder's name.
 
    When neither exists, it is the schema [Route](#route) picked. Archive
    keeps the file, so an archived change keeps the schema it was built
