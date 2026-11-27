@@ -125,22 +125,32 @@ keeps a word the glossary dropped and buys nothing.
 `step()` reads the config, the prompt and the repo root as today, then
 branches once:
 
-- **Reviewer** (`isReviewer(intent)`): note `treeStatus` before; call
-  `adapter.run`; on a `SessionFailed` in the call, a `failed` report
-  with a `null` handle, as a step does; otherwise read `headCommit` of
-  the reported checkout, then `isTreeClean`. The report is `failed`
-  when the message is blank (reason names the handle) or the tree
-  changed (reason names the handle); otherwise
-  `{ outcome: 'done', findings: text, date }`. Finish with ok only for
-  `done`. Print the record line with `independent`, `checkout`,
-  `commit` and `gitClean` on every exit 0. When `git status` itself
-  fails afterwards, finish without ok and exit 4, as `review run` does
-  today.
-- **Step**: unchanged.
+- **Reviewer** (`isReviewer(intent)`), in this order:
+  1. Note `treeStatus` before the session.
+  2. Call `adapter.run`. A `SessionFailed` in the call, caught inside the
+     model loop as a step does, gives a `failed` report whose `reason` is
+     the resolver's message, with a `null` handle, `checkout` and
+     `commit`.
+  3. When the call gave a handle, read `headCommit` of the reported
+     checkout.
+  4. Run `isTreeClean` after every call, the failed one included, so
+     `gitClean` is true or false on every reviewer record.
+  5. When the call gave a message: the report is `failed` when the
+     message is blank (reason names the handle) or the tree changed
+     (reason names the handle); otherwise
+     `{ outcome: 'done', findings: text, date }`. After a
+     `SessionFailed`, the tree check changes only `gitClean`, not the
+     reason.
+  6. Finish the session with ok only for `done`, and never when the
+     handle is `null`.
+  7. Print the record line with `independent`, `checkout`, `commit` and
+     `gitClean` on every exit 0.
 
-The tree check still runs after a failed session, so `gitClean` is true
-or false on every reviewer record. Its result only changes the reason
-when the session gave a message.
+  When `git status` itself fails in step 4, exit 4 with stdout empty,
+  as `review run` does today. With a handle, finish without ok and name
+  the handle on stderr. With a `null` handle, finish nothing and name no
+  handle: no code reads `handle.kind` or `handle.id` then.
+- **Step**: unchanged.
 
 `Report` gains a fourth member, `{ outcome: 'done'; findings: string }`,
 so one printer writes both done shapes and adds `date`.
