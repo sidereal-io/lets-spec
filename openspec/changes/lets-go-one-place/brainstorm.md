@@ -34,4 +34,4 @@ holds #265 and #268 too. The issue's thread has no comments.
 - **No test changes** (D4): the packet's **Relevant code** names
   `tests/skill-interfaces.bats`, which #313 deleted.
 
-Confirmed by user: no
+Confirmed by user: yes
