@@ -69,9 +69,13 @@ async function startStep(options: StartOptions, deps: Deps): Promise<number> {
   // left behind by a start that fails would say a run was killed.
   io.remove(exitFile);
   io.remove(runFile);
+  // The child outlives this process, so it is no longer a descendant of
+  // the harness that ran it. Each adapter says what the child needs to
+  // count as inside its harness all the same; the child still picks.
+  const env = Object.assign({ ...deps.env }, ...Object.values(deps.resolvers).map((adapter) => adapter.detachedEnv?.() ?? {}));
   let pid: number | null;
   try {
-    pid = io.spawnDetached(cmd, [...letsArgs, ...args], { cwd: runRoot, env: deps.env, ...outputs });
+    pid = io.spawnDetached(cmd, [...letsArgs, ...args], { cwd: runRoot, env, ...outputs });
   } catch (error) {
     throw new SpawnError(`the background step ${name} could not start: ${(error as Error).message}`);
   }

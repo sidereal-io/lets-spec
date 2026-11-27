@@ -7,8 +7,9 @@
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { describe, test, type TestContext } from 'node:test';
-import { claude, codex, agy, git, type LetsResult } from '../support/lets.ts';
+import { claude, codex, agy, git, type LetsResult, tempDir } from '../support/lets.ts';
 import { type DelegateRepo, delegateRepo, PROMPT } from './repo.ts';
 import { agyWrite, assertClockMs, claudeWrite, cleanUpStep, codexWrite, ending, stepStart, type StartArgs, stopStep, untilCalled, untilGone } from './steps.ts';
 
@@ -30,6 +31,24 @@ const runs = (root: string) => join(root, '.workspace', 'lets-delegate');
 const runRecordFile = (root: string, name = 'build-x') => join(runs(root), `${name}.run.json`);
 const exitFile = (root: string, name = 'build-x') => join(runs(root), `${name}.exit.json`);
 const runRecord = (root: string, name = 'build-x') => JSON.parse(readFileSync(runRecordFile(root, name), 'utf8'));
+
+// A T3 home in which this test's process plays the running T3 server: its
+// runtime file names this process, and its state database knows no
+// project, so t3 refuses before it opens a WebSocket. The T3CODE_HOME to
+// run lets with.
+function standInT3(t: TestContext): string {
+  const home = tempDir(t);
+  mkdirSync(join(home, 'userdata'));
+  writeFileSync(join(home, 'userdata', 'server-runtime.json'), JSON.stringify({ pid: process.pid, origin: 'http://127.0.0.1:1' }));
+  const db = new DatabaseSync(join(home, 'userdata', 'statev2.sqlite'));
+  db.exec(readFileSync(new URL('../lets/resolvers/t3/fixtures/t3-schema.sql', import.meta.url), 'utf8'));
+  db.close();
+  return home;
+}
+
+// The record lines step run wrote in the meta file at path, parsed.
+const recordLines = (path: string) =>
+  readFileSync(path, 'utf8').split('\n').filter((line) => line.startsWith('{')).map((line) => JSON.parse(line));
 
 // Starts a step with stepStart's arguments and over, and checks that it
 // started: exit 0 and one line, {name, pid}. Stops the step at the end of
@@ -199,6 +218,21 @@ describe('step start', () => {
     assert.equal(result.code, 2, result.output);
     assert.equal(result.stdout, '');
     assert.match(result.stderr, /build-x/);
+  });
+});
+
+describe('step start inside T3 Code', () => {
+  test('a background step started inside T3 Code is answered by t3, after step start has exited', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [t3, cli] }\n' });
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
+    const env = { T3CODE_HOME: standInT3(t) };
+    const result = await repo.run(stepStart(), { env });
+    assert.equal(result.code, 0, result.output);
+    cleanUpStep(t, JSON.parse(result.stdout).pid);
+    ended(await waitFor(repo, ['build-x']));
+    const meta = join(repo.cwd, 'm.txt');
+    assert.match(readFileSync(meta, 'utf8'), /t3 has no project for/);
+    assert.deepEqual(recordLines(meta).filter((line) => line.resolver === 'cli'), []);
   });
 });
 
