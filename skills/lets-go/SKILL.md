@@ -932,8 +932,8 @@ Take the first case that applies:
    lets backlog find 'fix user'\''s $HOME display'
    ```
 
-   The result is `matches`, with the issues in its `issues` field, or
-   `no-match` when it found none.
+   The result is `matches` when it found issues, or `no-match` when it
+   found none.
 3. **Otherwise, take `next`.** List the ready issues, best first:
 
    ```bash
@@ -969,10 +969,9 @@ It returns one of these results:
   carries `<i>`.
 - `unresolved`:
   [Check the prerequisite](references/glossary-handoff.md#check-the-prerequisite)
-  returned `unresolved` for the run's issue. It carries the unresolved
-  owner or checkpoint.
+  returned it for the run's issue, as its list says.
 - `matches`: the search for described work found issues. It carries
-  each one's key, label and title.
+  each one's key, label and title, from the search's `issues` field.
 - `no-match`: the search found no issue.
 - `picked`: `next` took a candidate. It carries the candidate's key,
   label and title.
@@ -995,9 +994,7 @@ lets backlog item <i>
 
 - If its `kind` field is `null`, the issue is not on the Project, or has no
   Kind: it is not shaped. The result is `needs-shape`: return it now.
-- If its `kind` field is `Epic`, the result is `epic`: return it now,
-  with the open sub-issues in its `subIssues` field and the closed ones
-  in its `closedSubIssues` field.
+- If its `kind` field is `Epic`, the result is `epic`: return it now.
 
 Read the whole body. Check that every required line for its Kind is
 there and filled in. These are the lines of the `lets-shape` skill's
@@ -1010,8 +1007,8 @@ issue templates:
 | Story, and any Kind this table does not name | the one-line outcome, **Persona served**, **Journey segment**, **MoSCoW**, **Why this story / why now**, **Depends on**, **Scope**, **Relevant code** |
 
 If a line is missing, or still holds a placeholder in angle brackets,
-the result is `needs-shape`: return it now, naming the line. Never
-write or fix the packet yourself.
+the result is `needs-shape`: return it now. Never write or fix the
+packet yourself.
 
 Then read the issue's thread as
 [Issue comments](../lets-shape/references/issue-comments.md) says. A
@@ -1026,11 +1023,7 @@ the newest read marker: after the watermark. An unread comment makes the
 result `needs-shape`, whoever wrote it. A read marker or a valid claim
 comment never does. Recognize claim comments as
 [Claim comments](../lets-shape/references/issue-comments.md#claim-comments)
-says; they never advance the watermark. The result then carries how
-many comments shaping has not read, each one's author as the reference
-shows it, and the date that put it past the
-watermark: its edit date, else its creation date. It carries nothing of
-what a comment says.
+says; they never advance the watermark.
 
 For a Story with a parent, read the **Shared decisions** section of the
 `body` in its `parent` field, when it has one. Run no other command for it.
@@ -1043,9 +1036,13 @@ It returns one of these results:
   carries the Kind, the Size, and the parent's **Shared decisions**.
 - `needs-shape`: the issue is not on the Project or has no Kind, a line
   is missing or holds a placeholder, or comments are unread. It carries
-  which, with each unread comment's author and date.
-- `epic`: the Kind is Epic. It carries the open and the closed
-  sub-issues.
+  which. For a line, it carries the line. For unread comments, it
+  carries how many there are, and each one's author as the reference
+  shows it and the date that put it past the watermark: its edit date,
+  else its creation date. It carries nothing of what a comment says.
+- `epic`: the Kind is Epic. It carries the open sub-issues in the
+  item's `subIssues` field and the closed ones in its
+  `closedSubIssues` field.
 
 When [Find the source of demand](#find-the-source-of-demand) ran it, for
 a candidate of `next`, return to
