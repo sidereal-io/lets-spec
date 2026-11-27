@@ -204,7 +204,11 @@ In *Read the settings*, before it asks GitHub for anything, `lets-go` SHALL run 
 
 #### Scenario: The skill names both commands
 - **WHEN** a reader reads `skills/lets-go/SKILL.md`
-- **THEN** the reader finds `lets delegate step instructions --for <step>`, `lets delegate step run --for <step>`, `delegate.step.<step>.guidance`, `the guidance first, then the order the options came in`, `The guidance only ranks and filters the listed models` and `When \`options\` is empty, pass your own family`
+- **THEN** the reader finds `lets delegate step instructions --for <step>`, `lets delegate step run --for <step>`, `delegate.plan.guidance`, `delegate.build.guidance`, `the guidance first, then the order the options came in`, `The guidance only ranks and filters the listed models` and `When \`options\` is empty, pass your own family`, and does not find `delegate.step.`
+
+#### Scenario: The skill names the key each review step reads
+- **WHEN** a reader reads *Run a step* in `skills/lets-go/SKILL.md`
+- **THEN** it says that the review plan step reads `delegate.plan.guidance` and the review build step reads `delegate.build.guidance`, and that `delegate.review-plan` and `delegate.review-build` steer the reviewers those steps start
 
 #### Scenario: A step with a resolver
 - **WHEN** `step instructions --for plan` lists `claude/claude-opus-5-5` and `gpt/gpt-6-luna`, and the guidance prefers `gpt`
