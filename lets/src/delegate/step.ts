@@ -19,8 +19,8 @@ import { normalizeName } from '../resolvers/kit/adapter.ts';
 import type { Adapter, Handle, RunInput } from '../resolvers/kit/adapter.ts';
 import { parseModel } from '../resolvers/kit/families.ts';
 import type { Effort, Family } from '../resolvers/kit/families.ts';
-import { isReviewer, kindFor } from './strategies.ts';
-import type { Intent } from './strategies.ts';
+import { isReviewer, kindFor } from './intents.ts';
+import type { Intent } from './intents.ts';
 
 // How long a step may run, in minutes, at every effort. A step such as
 // build runs far longer than a review.

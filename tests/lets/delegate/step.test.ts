@@ -2,11 +2,17 @@
 // can show. tests/delegate/step.test.ts tests step run through lets, with
 // the cli and subagent resolvers.
 //
-// - A step skips a resolver that runs no step: cli, subagent and t3 all
-//   run steps (ADR-016), so only a fake adapter can leave step out.
+// - A step skips a resolver that runs no step, and a reviewer does not:
+//   cli, subagent and t3 all run steps, so only a fake adapter can leave
+//   step out.
 // - A finish that fails: cli's finish only removes a file the session
 //   wrote, and subagent gives no handle to finish, so only a fake t3
 //   adapter's finish can throw.
+// - A reviewer in another checkout, or in none: cli always runs in the
+//   repository root, so only a fake adapter reports another checkout.
+// - A tree check that fails after a reviewer with no handle: a real git
+//   fails the same way before and after, so only a fake io can tell them
+//   apart.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/step.ts';

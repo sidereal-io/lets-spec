@@ -10,8 +10,8 @@ import { configDir } from '../config-dir.ts';
 import type { Deps, Io } from '../io.ts';
 import { findRepoRoot } from './git.ts';
 import { UsageError } from '../resolvers/kit/errors.ts';
-import { GUIDANCE_KEY_NAMES, GUIDANCE_KEYS } from './strategies.ts';
-import type { Intent } from './strategies.ts';
+import { GUIDANCE_KEY_NAMES, GUIDANCE_KEYS } from './intents.ts';
+import type { Intent } from './intents.ts';
 
 export const CONFIG_VERSION = 4;
 // The resolvers built into lets, by the names the chain lists them under.
@@ -24,8 +24,8 @@ export type QuestionMode = (typeof QUESTION_MODES)[number];
 // The file's shape, with the keys this lets does not know dropped. delegate
 // is {} when the file has none. Each resolver is one of RESOLVER_NAMES. The
 // guidance keys, and the review and step entries of an earlier lets, are as
-// the user wrote them: only lets delegate <strategy> instructions reads
-// them, so a bad entry never stops a run.
+// the user wrote them: only lets delegate step instructions reads them, so
+// a bad entry never stops a run.
 export type Config = {
   version: typeof CONFIG_VERSION;
   delegate: { resolvers?: ResolverName[] } & Record<string, unknown>;

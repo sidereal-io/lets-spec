@@ -1,9 +1,10 @@
-// The few behaviours of lets delegate <strategy> instructions that no real
+// The few behaviours of lets delegate step instructions that no real
 // resolver reaches, so they need fake adapters. Every other behaviour is
 // tested through lets itself, in tests/delegate/instructions.test.ts.
 //
-// - A step skips a resolver that runs no step: cli and subagent both run
-//   steps (ADR-016), so only a fake adapter can leave step out.
+// - A step skips a resolver that runs no step, and a reviewer does not:
+//   cli and subagent both run steps, so only a fake adapter can leave step
+//   out.
 // - An options call that fails unexpectedly exits 4: cli and subagent catch
 //   every failure of their listings, so only a fake adapter can throw.
 // - A detect that throws exits 4: cli and subagent only look at PATH, or
@@ -13,8 +14,8 @@ import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/instructions.ts';
 import { commandDeps } from './fixtures/command-deps.ts';
 
-const review = { strategy: 'review', for: 'review-build' } as const;
-const step = { strategy: 'step', for: 'plan' } as const;
+const review = { for: 'review-build' } as const;
+const step = { for: 'plan' } as const;
 // commandDeps whose config lists only t3, which detects, as a fake adapter.
 const withT3 = () => commandDeps({ config: 'version: 4\ndelegate:\n  resolvers: [t3]\n', adapters: { t3: {} } });
 
@@ -33,7 +34,7 @@ test('step instructions skip a resolver that runs no step', async () => {
 test('step instructions for a reviewer answer from a resolver that runs no step', async () => {
   for (const intent of ['review-plan', 'review-build'] as const) {
     const t = commandDeps({ config: 'version: 4\ndelegate: { resolvers: [cli, t3] }\n', adapters: { cli: { steps: false }, t3: {} } });
-    assert.equal(await run({ strategy: 'step', for: intent }, t.deps), 0, intent);
+    assert.equal(await run({ for: intent }, t.deps), 0, intent);
     assert.equal(JSON.parse(t.stdout()).resolver, 'cli', intent);
   }
 });

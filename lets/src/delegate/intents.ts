@@ -2,7 +2,6 @@
 // decides the kind of session asked for, and picks the user's guidance.
 import type { Kind } from './lookup.ts';
 
-export type Strategy = 'review' | 'step';
 // The five steps, in the order they run.
 export const STEP_INTENTS = ['shape', 'plan', 'review-plan', 'build', 'review-build'] as const;
 // Every intent: the five steps, then story, which runs a story run in a

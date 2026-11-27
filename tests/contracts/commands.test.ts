@@ -59,7 +59,7 @@ function checkMention(mention: string, file: string, tree: LetsCommandTree): Fin
   const finding = { file, name: mention };
   const hasSubcommands = command.subcommands.length > 0;
   if (hasSubcommands && at < words.length && /^[a-z][a-z-]*$/.test(words[at])) return finding;
-  // lets delegate names a family of commands; lets delegate review names
+  // lets delegate names a family of commands; lets delegate step names
   // no command that runs.
   if (hasSubcommands && command.path.length > 1 && file !== GLOSSARY_COPY) return finding;
   // Only the glossary copy names a subcommand's flag on its family; lets
@@ -115,8 +115,8 @@ test('the commands check names each lets command after a shell operator, not onl
 
 test('the commands check names a mention that stops at a family of commands below the top level', async (t) => {
   const dir = tempDir(t);
-  smallText(dir, 'README.md', ['# Demo', '', 'Then `lets delegate review --for plan` runs.']);
-  assert.deepEqual(await commandFindings(dir), [{ file: 'README.md', name: 'lets delegate review --for plan' }]);
+  smallText(dir, 'README.md', ['# Demo', '', 'Then `lets delegate step --for plan` runs.']);
+  assert.deepEqual(await commandFindings(dir), [{ file: 'README.md', name: 'lets delegate step --for plan' }]);
 });
 
 test("the commands check names a subcommand's flag on its family", async (t) => {

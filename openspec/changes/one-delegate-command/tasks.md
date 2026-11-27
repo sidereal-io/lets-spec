@@ -26,7 +26,7 @@ in every text that still names it.
 
 ## 3. Remove lets delegate review [depends-on: 2]
 
-- [ ] 3.1 [complex] `lets delegate review` is gone: `lets delegate review run …` and `lets delegate review instructions …` exit 2 with `unknown command 'review'` and ask no resolver; `lets/src/delegate/review.ts` and the `Strategy` type are removed; `lets delegate step instructions` prints `{for, resolver, options, guidance}` with no `strategy`; `lets delegate --help` names `step` and not the word `strategy`; `lets delegate step --help` names `instructions`, `run`, `start` and `wait` and says `review-plan` and `review-build` start a read-only reviewer. Every remaining test that runs `review run` or `review instructions`, in `tests/delegate/`, `tests/lets/delegate/` and `tests/lets/resolvers/`, moves to `step` with the same `--for` value (specs: *delegate-config*, *One command starts every session* and *Every session names its intent*; *delegate-instructions*, *The instructions command*; *delegate-resolvers*, the requirements that name `lets delegate step run --for review-build`) (verify: node --test "tests/delegate/*.test.ts" "tests/lets/**/*.test.ts" tests/contracts/commands.test.ts)
+- [x] 3.1 [complex] `lets delegate review` is gone: `lets delegate review run …` and `lets delegate review instructions …` exit 2 with `unknown command 'review'` and ask no resolver; `lets/src/delegate/review.ts` and the `Strategy` type are removed; `lets delegate step instructions` prints `{for, resolver, options, guidance}` with no `strategy`; `lets delegate --help` names `step` and not the word `strategy`; `lets delegate step --help` names `instructions`, `run`, `start` and `wait` and says `review-plan` and `review-build` start a read-only reviewer. Every remaining test that runs `review run` or `review instructions`, in `tests/delegate/`, `tests/lets/delegate/` and `tests/lets/resolvers/`, moves to `step` with the same `--for` value (specs: *delegate-config*, *One command starts every session* and *Every session names its intent*; *delegate-instructions*, *The instructions command*; *delegate-resolvers*, the requirements that name `lets delegate step run --for review-build`) (verify: node --test "tests/delegate/*.test.ts" "tests/lets/**/*.test.ts" tests/contracts/commands.test.ts) (✓ node --test "tests/delegate/*.test.ts" "tests/lets/**/*.test.ts" tests/contracts/commands.test.ts passed)
 - [ ] 3.2 [medium] Exits 5 and 7 are gone from `lets delegate`: `EXIT.session` and `EXIT.dirty` leave `lets/src/resolvers/kit/errors.ts`, and `exitCodeOf` no longer maps `SessionFailed`, so a stray one exits 4. `lets/src/resolvers/t3/t3.ts` still adds ` (thread <id>)` to a `SessionFailed` message, by testing `error instanceof SessionFailed || exitCodeOf(error) !== null`, so a `t3` thread that stops to ask still gives the reason `the session stopped to ask (thread T)`. `lets delegate step run --help` lists exit codes 0, 2, 3, 4 and 6 and neither 5 nor 7, describes a reviewer's `done` and `failed` reports and record line, and says a step has 120 minutes, a story 600, and a reviewer 30, or 45 at effort `high` (specs: *delegate-step*, *The step's exit codes* and *The step's time limit*; design: *Exits 5 and 7 leave the code*) (verify: node --test tests/lets/delegate/cli.test.ts tests/lets/delegate/guarded.test.ts tests/delegate/step.test.ts tests/lets/resolvers/t3/delegate.test.ts)
 
 ## 4. Check the whole change [depends-on: 3]
@@ -36,3 +36,12 @@ in every text that still names it.
 ## Deviations Ledger
 
 <!-- Dated notes on small departures from the plan, written during apply. Stop and ask the user about a large one. -->
+
+- 2026-11-26, task 3.1: `lets/src/delegate/strategies.ts` is renamed
+  `lets/src/delegate/intents.ts`, since it no longer holds strategies and
+  task 4.1 asks that no text in `lets/src/` name a delegate strategy. Its
+  contents are as task 1.2 planned.
+- 2026-11-26, task 3.1: the `review run` cases of
+  `tests/delegate/run.test.ts` that task 1.4 had already written for
+  `step run` in `tests/delegate/step.test.ts` were removed rather than
+  moved, so each behaviour has one test.

@@ -1,5 +1,5 @@
-// lets delegate review run, and the default's answer to reviews and
-// steps, run as a program in a real Git repository. The cli and subagent
+// lets delegate step run for a reviewer, and the default's answer to
+// reviewers and steps, run as a program in a real Git repository. The cli and subagent
 // resolvers are chosen by a real lets config, and PATH holds only the stand-in codex, claude and agy a test
 // writes, and git, so no real CLI on the developer's machine changes a
 // result. Each test gives a stand-in the exact command it expects, so the
@@ -28,12 +28,12 @@ interface Review {
   timeoutMinutes?: number;
 }
 
-// The arguments of lets delegate review run: a code review named
-// X Plan Review of claude's work, at high effort, on gpt/gpt-6-luna,
+// The arguments of lets delegate step run for a reviewer: a code review
+// named X Plan Review of claude's work, at high effort, on gpt/gpt-6-luna,
 // unless over says otherwise.
 function review(over: Review = {}): string[] {
   const { for: intent = 'review-build', name = 'X Plan Review', promptFile = 'p.md', sourceFamily = 'claude', effort = 'high', models = ['gpt/gpt-6-luna'], timeoutMinutes } = over;
-  return ['delegate', 'review', 'run', '--for', intent, '--name', name, '--prompt-file', promptFile, '--source-family', sourceFamily, '--effort', effort,
+  return ['delegate', 'step', 'run', '--for', intent, '--name', name, '--prompt-file', promptFile, '--source-family', sourceFamily, '--effort', effort,
     ...models.flatMap((model) => ['--model', model]), ...(timeoutMinutes === undefined ? [] : ['--timeout-minutes', String(timeoutMinutes)])];
 }
 
@@ -63,6 +63,14 @@ function metadata(result: LetsResult): Record<string, unknown> {
   return JSON.parse(lines.at(-1)!);
 }
 
+// The findings of a reviewer that exited 0 with a done report.
+function findingsOf(result: LetsResult): unknown {
+  assert.equal(result.code, 0, result.output);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.outcome, 'done', result.stdout);
+  return report.findings;
+}
+
 // A run that failed with code: nothing on stdout, and stderr that starts
 // with lets's prefix.
 function failed(result: LetsResult, code: number) {
@@ -74,15 +82,15 @@ function failed(result: LetsResult, code: number) {
 // Every family CLI on PATH, each answering only its model listing.
 const everyCli = (dir: string) => ({ codex: codex(dir), claude: claude(dir), agy: agy(dir) });
 
-describe('review run', () => {
-  test('a codex review prints the last message, then one metadata line with its 10 keys in order', async (t) => {
+describe('step run for a reviewer', () => {
+  test('a codex review prints the last message as its findings, then one metadata line with its 10 keys in order', async (t) => {
     // reviewers: is the old config's, and the run request never carries it.
     const repo = delegateRepo(t, { user: `${CLI}reviewers:\n  - family: gpt\n    model: gpt-6-luna\n` });
     // The default listing is empty: lets runs a model codex never listed.
     const stand = codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
     const result = await repo.run(review());
     const meta = metadata(result);
-    assert.equal(result.stdout, FINDINGS);
+    assert.equal(findingsOf(result), FINDINGS);
     assert.deepEqual(Object.keys(meta), KEYS);
     const { durationSeconds, ...rest } = meta;
     assert.deepEqual(rest, {
@@ -104,29 +112,13 @@ describe('review run', () => {
     assert.equal(metadata(await repo.run(review({ for: 'review-plan' }))).for, 'review-plan');
   });
 
-  test('a session that commits gives the commit it made, not the one before it', async (t) => {
-    const repo = delegateRepo(t, { user: CLI });
-    claude(repo.standIns, { rows: [{ args: claudeP(), commit: 'a session commit', stdout: FINDINGS }] });
-    const { commit } = metadata(await repo.run(review({ models: ['claude'] })));
-    assert.notEqual(commit, repo.head);
-    assert.match(String(commit), /^[0-9a-f]{40}$/);
-  });
-
-  test('a repository with no commit gives a null commit, and the review still succeeds', async (t) => {
-    const repo = delegateRepo(t, { user: CLI, noCommit: true });
-    claude(repo.standIns, { rows: [{ args: claudeP(), stdout: FINDINGS }] });
-    const result = await repo.run(review({ models: ['claude'] }));
-    assert.equal(metadata(result).commit, null);
-    assert.equal(result.stdout, FINDINGS);
-  });
-
   test('claude runs -p in plan mode in the repository, with the prompt on stdin and no session markers', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     const stand = claude(repo.standIns, { logEnv: ['CLAUDECODE'], rows: [{ args: claudeP('low', 'claude-fable-5-1'), stdout: FINDINGS }] });
     const result = await repo.run(review({ effort: 'low', models: ['claude/claude-fable-5-1'], sourceFamily: 'gpt' }), { env: { CLAUDECODE: '1' } });
     const { family, model, independent } = metadata(result);
     assert.deepEqual({ family, model, independent }, { family: 'claude', model: 'claude-fable-5-1', independent: true });
-    assert.equal(result.stdout, FINDINGS);
+    assert.equal(findingsOf(result), FINDINGS);
     assert.deepEqual(stand.calls(), [claudeP('low', 'claude-fable-5-1')]);
     assert.deepEqual(stand.inputs(), [PROMPT]);
     assert.deepEqual(stand.cwds(), [repo.cwd]);
@@ -160,7 +152,7 @@ describe('review run', () => {
     ] as const) {
       const result = await repo.run(review(over));
       assert.equal(metadata(result).model, model, JSON.stringify(over));
-      assert.equal(result.stdout, FINDINGS);
+      assert.equal(findingsOf(result), FINDINGS);
     }
     assert.deepEqual(stand.calls(), rows.map(({ args }) => args));
     assert.deepEqual(stand.inputs(), ['', '', '']);
@@ -231,7 +223,7 @@ describe('review run', () => {
     const stand = codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
     const result = await repo.run(review());
     assert.equal(metadata(result).resolver, 'cli');
-    assert.equal(result.stdout, FINDINGS);
+    assert.equal(findingsOf(result), FINDINGS);
     assert.deepEqual(stand.inputs(), [PROMPT]);
   });
 
@@ -239,7 +231,7 @@ describe('review run', () => {
     const repo = delegateRepo(t, { user: CLI });
     const clis = everyCli(repo.standIns);
     const result = await repo.run(review({ models: ['gpt', 'llama/llama-4'] }));
-    // lets's option parser rejects it, before review run starts.
+    // lets's option parser rejects it, before step run starts.
     assert.equal(result.code, 2, result.output);
     assert.equal(result.stdout, '');
     assert.match(result.stderr, /--model .*llama\/llama-4/);
@@ -358,7 +350,7 @@ describe('review run', () => {
     const result = await repo.run(review({ models: ['gpt/gpt-6-astra', 'gemini/gemini-3-pro'] }));
     const { family, model } = metadata(result);
     assert.deepEqual({ family, model }, { family: 'gemini', model: 'gemini-3-pro' });
-    assert.equal(result.stdout, FINDINGS);
+    assert.equal(findingsOf(result), FINDINGS);
     assert.equal(clis.codex.calls().length, 1);
     assert.equal(clis.agy.calls().length, 1);
   });
@@ -374,7 +366,7 @@ describe('review run', () => {
     assert.doesNotMatch(result.stderr, /no resolver started a session/);
   });
 
-  test('a codex refusal after an earlier review with the same name is exit 3, not 5', async (t) => {
+  test('a codex refusal after an earlier review with the same name is exit 3, not the earlier findings', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     mkdirSync(dirname(lastMessage(repo.cwd)), { recursive: true });
     writeFileSync(lastMessage(repo.cwd), 'OLD FINDINGS\n');
@@ -386,47 +378,12 @@ describe('review run', () => {
     assert.match(result.stderr, /codex refused: exit 1: model not available/);
   });
 
-  test('a session that prints and then fails is exit 5, and the next model is not asked', async (t) => {
-    const repo = delegateRepo(t, { user: CLI });
-    const clis = {
-      claude: claude(repo.standIns, { rows: [{ args: claudeP(), stdout: 'half a review', stderr: 'rate limited\n', code: 2 }] }),
-      codex: codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] }),
-    };
-    const result = await repo.run(review({ models: ['claude', 'gpt/gpt-6-luna'] }));
-    failed(result, 5);
-    assert.match(result.stderr, /claude failed: exit 2: rate limited/);
-    assert.equal(clis.claude.calls().length, 1);
-    assert.deepEqual(clis.codex.calls(), []);
-  });
-
   test('a CLI that cannot start is a refusal, exit 3, naming the CLI', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     unstartable(repo.standIns, 'claude');
     const result = await repo.run(review({ models: ['claude'] }));
     failed(result, 3);
     assert.match(result.stderr, /^lets delegate: claude: cannot run claude: /m);
-  });
-
-  test('a blank final message is exit 5, and codex\'s last-message file stays', async (t) => {
-    const blankClaude = delegateRepo(t, { user: CLI });
-    claude(blankClaude.standIns, { rows: [{ args: claudeP(), stdout: ' \n' }] });
-    const fromClaude = await blankClaude.run(review({ models: ['claude'] }));
-    failed(fromClaude, 5);
-    assert.match(fromClaude.stderr, new RegExp(`cli gave an empty final message \\(process ${SESSION}\\)`));
-    const blankCodex = delegateRepo(t, { user: CLI });
-    codex(blankCodex.standIns, [], { rows: [codexAnswers(blankCodex.cwd, ' \n')] });
-    const fromCodex = await blankCodex.run(review());
-    failed(fromCodex, 5);
-    assert.match(fromCodex.stderr, /empty final message/);
-    assert.equal(readFileSync(lastMessage(blankCodex.cwd), 'utf8'), ' \n');
-  });
-
-  test('a codex review that writes no last message is exit 5', async (t) => {
-    const repo = delegateRepo(t, { user: CLI });
-    codex(repo.standIns, [], { rows: [{ args: codexExec(repo.cwd), stdout: 'working...\n' }] });
-    const result = await repo.run(review());
-    failed(result, 5);
-    assert.match(result.stderr, /empty final message/);
   });
 
   test('a folder where the last message goes is exit 4, with the error, and codex does not run', async (t) => {
@@ -439,13 +396,6 @@ describe('review run', () => {
     assert.deepEqual(stand.calls(), []);
   });
 
-  test('a clean codex review removes its last-message file', async (t) => {
-    const repo = delegateRepo(t, { user: CLI });
-    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
-    assert.equal((await repo.run(review())).code, 0);
-    assert.equal(existsSync(lastMessage(repo.cwd)), false);
-  });
-
   test('a clean claude review adds only the scratch folder to the repository', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     claude(repo.standIns, { rows: [{ args: claudeP(), stdout: FINDINGS }] });
@@ -454,27 +404,6 @@ describe('review run', () => {
     const after = snapshot(repo.cwd).split('\n');
     assert.deepEqual(before.filter((line) => !after.includes(line)), [], 'nothing changed or went');
     assert.deepEqual(after.filter((line) => !before.includes(line)).map((line) => line.split(' ')[0]), ['./.workspace/', './.workspace/lets-delegate/']);
-  });
-
-  test('a session that changes a file outside .workspace/ is exit 7, with no findings, and its last-message file stays', async (t) => {
-    const repo = delegateRepo(t, { user: CLI });
-    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd, FINDINGS, { 'notes.md': 'a note\n' })] });
-    const result = await repo.run(review());
-    failed(result, 7);
-    assert.match(result.stderr, new RegExp(`the session changed files outside \\.workspace/ \\(process ${SESSION}\\)`));
-    assert.equal(readFileSync(lastMessage(repo.cwd), 'utf8'), FINDINGS);
-  });
-
-  test('a tree that cannot be checked after the session is exit 4, with no findings', async (t) => {
-    const repo = delegateRepo(t, { user: CLI });
-    // git rev-parse HEAD still works; git status cannot read the index.
-    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd, FINDINGS, { '.git/index': 'not an index\n' })] });
-    const result = await repo.run(review());
-    failed(result, 4);
-    assert.ok(result.stderr.includes(`could not check the tree after the session: git status failed in ${repo.cwd}`), result.stderr);
-    assert.ok(result.stderr.includes(`(process ${SESSION})`), result.stderr);
-    // The session did not finish clean, so lets keeps its last message.
-    assert.equal(readFileSync(lastMessage(repo.cwd), 'utf8'), FINDINGS);
   });
 
   test('the user\'s own changes from before the run, and the session\'s scratch files, do not count', async (t) => {
@@ -489,14 +418,14 @@ describe('review run', () => {
     codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd, FINDINGS, { '.workspace/scratch notes.md': 'scratch\n' })] });
     const result = await repo.run(review());
     assert.equal(metadata(result).gitClean, true);
-    assert.equal(result.stdout, FINDINGS);
+    assert.equal(findingsOf(result), FINDINGS);
   });
 });
 
 // When the default, subagent, is asked. PATH holds no node in any of
 // these runs, so each also shows the default needs only lets's own Node.
 describe('the default', () => {
-  const instructions = ['delegate', 'review', 'instructions', '--for', 'review-build'];
+  const instructions = ['delegate', 'step', 'instructions', '--for', 'review-build'];
   const savedPrompt = (cwd: string) => join(cwd, '.workspace', 'lets-delegate', 'build-x.prompt.md');
   const resolverOf = (result: LetsResult) => {
     assert.equal(result.code, 0, result.output);

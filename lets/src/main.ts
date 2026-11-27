@@ -8,15 +8,13 @@ import { Command, CommanderError, InvalidArgumentError, Option } from 'commander
 import { BACKLOG_HELP, run as backlog } from './backlog/commands.ts';
 import { run as instructions } from './delegate/instructions.ts';
 import { EFFORTS, FAMILIES, parseModel } from './resolvers/kit/families.ts';
-import { run as review } from './delegate/review.ts';
-import type { ReviewOptions } from './delegate/review.ts';
 import { start as stepStart, wait as stepWait } from './delegate/background.ts';
 import type { StartOptions } from './delegate/background.ts';
 import { run as step, STEP_TIMEOUT_MINUTES, STORY_TIMEOUT_MINUTES } from './delegate/step.ts';
 import type { StepOptions } from './delegate/step.ts';
 import { run as questions } from './go/questions.ts';
-import { GUIDANCE_KEYS, INTENTS, REVIEWER_INTENTS } from './delegate/strategies.ts';
-import type { Intent, Strategy } from './delegate/strategies.ts';
+import { GUIDANCE_KEYS, INTENTS } from './delegate/intents.ts';
+import type { Intent } from './delegate/intents.ts';
 import { realIo } from './io.ts';
 import type { Deps } from './io.ts';
 import { createAdapter as cli } from './resolvers/cli/cli.ts';
@@ -66,13 +64,14 @@ WORKFLOW_RELEASE names the release folder. Without it, LETS_SPEC_FLOW
 The Nix wrapper sets WORKFLOW_RELEASE.`;
 
 const DELEGATE_HELP = `
-Each delegation has a strategy and an intent. The strategy is how the
-session runs: review runs it read-only and waits for its answer, and step
-runs a session that may write files and waits for its step report. The
-intent is what it is for: review-plan or review-build for a review, and
-one of the five steps, or story for a story run, for a step. Each strategy has two
-commands: instructions says what can run and gives the user's guidance,
-and run runs it.
+Every session starts with lets delegate step. Its --for value, the intent,
+says what the session is for: one of the five steps, or story for a story
+run. The intent alone decides how the session runs. --for review-plan and
+--for review-build start a reviewer: a read-only session that reviews a
+plan or a branch's code, whose final message lets returns whole as its
+findings. Every other intent starts a session that may write files, and
+lets reads the step report its final message ends with. instructions says
+what can run and gives the user's guidance, and run runs the session.
 
 A resolver turns each request into a real session. Three are built into
 lets: t3 starts sessions in T3 Code, cli runs a family's CLI headless, and
@@ -100,11 +99,11 @@ value. You write both by hand:
 
 Each entry under delegate.resolvers is t3, cli or subagent. With no
 config, or no delegate.resolvers, only subagent is asked. It starts no
-session: a review exits 3, and a step saves the prompt and exits 3, for a
-subagent to run it.
+session: a reviewer exits 3, and any other session saves the prompt and
+exits 3, for a subagent to run it.
 
 Each guidance key is optional. Its guidance is prose that the skill reads
-to rank the models; only instructions reads it. Each instructions --help
+to rank the models; only instructions reads it. instructions --help
 names the key for each intent. delegate.review-plan steers the plan
 reviewer, while the review plan step's own session takes delegate.plan;
 delegate.review-build and delegate.build pair the same way. See "Set up
@@ -112,36 +111,12 @@ delegation" in the lets-spec README for every key.
 
 Run lets delegate from the repo root.`;
 
-const REVIEW_HELP = `
-stdout: the session's final message.
-stderr: one JSON line with for, resolver, family, model, independent,
-handle, checkout, commit, gitClean and durationSeconds. for is the intent
---for gave. independent is true when the family that answered is not the
-source family. checkout is the checkout the session ran in, and commit the
-full hash at its HEAD after the session; each is null when lets cannot
-tell.
-
---model may be given more than once, best first. When the resolver
-refuses a model, lets asks the same resolver for the next one.
-
-Exit codes:
-  0  the final message is on stdout
-  2  usage error, or every resolver in the config declined
-  3  no fresh session can run here on any model given: the harness or the
-     account said no before the model gave any output. The harness is not
-     running or not set up, there are no tokens left, it cannot run the
-     model, or no resolver started a session. stderr names each model and
-     why.
-  4  the outcome is unknown, such as no reply from the harness, or the
-     resolver failed in a way it could not report
-  5  the session failed: an error, it stopped to ask, or an empty message
-  6  the session did not finish in time
-  7  the session changed files outside .workspace/`;
-
-const STEP_STRATEGY_HELP = `
+const STEP_GROUP_HELP = `
 The intents are the five steps: shape, plan, review-plan, build and
-review-build. The intent story runs a story run, not a step: a child
-lets-go session that walks one story's steps and ends with a step report.`;
+review-build. review-plan and review-build start a reviewer: a read-only
+session that reviews a plan or a branch's code. The intent story runs a
+story run, not a step: a child lets-go session that walks one story's
+steps and ends with a step report.`;
 
 const STEP_HELP = `
 The session ends its final message with a step report: a fenced block
@@ -220,15 +195,16 @@ Exit codes:
      did not start here. stderr names it.
   6  none of the steps ended within --timeout-minutes. Each still runs.`;
 
-// The help of lets delegate <strategy> instructions, which names the
-// guidance key for each intent from GUIDANCE_KEYS.
-const instructionsHelp = (strategy: Strategy) => `
-stdout: one JSON line with strategy, for, resolver, options and guidance.
+// The help of lets delegate step instructions, which names the guidance key
+// for each intent from GUIDANCE_KEYS.
+const INSTRUCTIONS_HELP = `
+stdout: one JSON line with for, resolver, options and guidance.
 resolver and options come from the first resolver that does not decline
-this strategy: options are the models it can run now, in its order.
-guidance is the guidance for the intent from the config, or null:
+the kind of session the intent runs: options are the models it can run
+now, in its order. guidance is the guidance for the intent from the
+config, or null:
 
-${Object.entries(GUIDANCE_KEYS).filter(([intent]) => intentsOf(strategy).includes(intent as Intent)).map(([intent, key]) => `  --for ${intent}: delegate.${key}.guidance`).join('\n')}
+${Object.entries(GUIDANCE_KEYS).map(([intent, key]) => `  --for ${intent}: delegate.${key}.guidance`).join('\n')}
 
 It starts no session.
 
@@ -277,11 +253,9 @@ function modelString(value: string): string {
 const modelOption = () => new Option('--model <family[/model]>', 'a model to run, such as gpt/gpt-6-luna, or a bare family for the harness\'s default; repeat it to rank more, best first')
   .argParser((value: string, previous: string[] = []) => [...previous, modelString(value)]).makeOptionMandatory();
 
-// The intents a command group takes: review starts only a reviewer.
-const intentsOf = (strategy: Strategy): readonly Intent[] => (strategy === 'review' ? REVIEWER_INTENTS : INTENTS);
-// --for: what the delegation is for, one of the command group's intents.
-const forOption = (strategy: Strategy) => new Option('--for <intent>', 'what the delegation is for')
-  .choices(intentsOf(strategy)).makeOptionMandatory();
+// --for: what the session is for, one of the intents.
+const forOption = () => new Option('--for <intent>', 'what the session is for')
+  .choices(INTENTS).makeOptionMandatory();
 
 // The release's version from its release.json, else 0.0.0-dev.
 function version(): string {
@@ -330,40 +304,9 @@ const delegate = program
   .description('Run a prompt in a fresh session. A resolver makes the session; lets checks the result.')
   .addHelpText('after', DELEGATE_HELP);
 
-// A strategy: a command that only holds instructions and run.
-function strategyCommand(strategy: Strategy, summary: string) {
-  const command = delegate.command(strategy).summary(summary).description(`${summary[0].toUpperCase()}${summary.slice(1)}.`);
-  command
-    .command('instructions')
-    .summary('say what can run, and the user\'s guidance')
-    .description('Ask the resolvers which models can run now, and give the user\'s guidance for the intent. Starts no session.')
-    .addOption(forOption(strategy))
-    .addHelpText('after', instructionsHelp(strategy))
-    .action(async ({ for: intent }: { for: Intent }) => {
-      process.exitCode = await instructions({ strategy, for: intent }, realDeps());
-    });
-  return command;
-}
-
-strategyCommand('review', 'run a prompt in a fresh, read-only session and wait for its answer')
-  .command('run')
-  .summary('run the review')
-  .description('Run a prompt in a fresh, read-only session on the first model --model names that is not refused, and wait for its final message.')
-  .addOption(forOption('review'))
-  .requiredOption('--name <name>', 'a label for the session, normalized to lowercase kebab-case')
-  .requiredOption('--prompt-file <path>', 'the file that holds the prompt')
-  .addOption(new Option('--source-family <family>', 'the model family that wrote the work').choices(FAMILIES).makeOptionMandatory())
-  .addOption(new Option('--effort <effort>', 'how hard the session thinks').choices(EFFORTS).makeOptionMandatory())
-  .addOption(modelOption())
-  .option('--timeout-minutes <minutes>', 'how long to wait (default: 30, or 45 with --effort high)', wholeMinutes)
-  .addHelpText('after', REVIEW_HELP)
-  .action(async ({ model, ...options }: Omit<ReviewOptions, 'models'> & { model: string[] }) => {
-    process.exitCode = await review({ ...options, models: model }, realDeps());
-  });
-
 // The options of step run, which step start takes too.
 const stepRunOptions = (command: Command) => command
-  .addOption(forOption('step'))
+  .addOption(forOption())
   .requiredOption('--name <name>', 'a label for the session, normalized to lowercase kebab-case')
   .requiredOption('--prompt-file <path>', 'the file that holds the prompt')
   .addOption(new Option('--effort <effort>', 'how hard the session thinks').choices(EFFORTS).makeOptionMandatory())
@@ -372,8 +315,21 @@ const stepRunOptions = (command: Command) => command
   .option('--timeout-minutes <minutes>', `how long to wait (default: ${STEP_TIMEOUT_MINUTES} for a step, ${STORY_TIMEOUT_MINUTES} for a story)`, wholeMinutes)
   .option('--answers-file <path>', 'the answers to the last report\'s questions, as a YAML list of question and answer pairs');
 
-const stepCommand = strategyCommand('step', 'run a step in a fresh session that may write files, and read its step report')
-  .addHelpText('after', STEP_STRATEGY_HELP);
+const stepCommand = delegate
+  .command('step')
+  .summary('run a prompt in a fresh session, and print its report')
+  .description('Run a prompt in a fresh session, and print its report. The intent decides the kind of session.')
+  .addHelpText('after', STEP_GROUP_HELP);
+
+stepCommand
+  .command('instructions')
+  .summary('say what can run, and the user\'s guidance')
+  .description('Ask the resolvers which models can run now, and give the user\'s guidance for the intent. Starts no session.')
+  .addOption(forOption())
+  .addHelpText('after', INSTRUCTIONS_HELP)
+  .action(async ({ for: intent }: { for: Intent }) => {
+    process.exitCode = await instructions({ for: intent }, realDeps());
+  });
 
 stepRunOptions(stepCommand
   .command('run')
