@@ -367,6 +367,7 @@ const stepRunOptions = (command: Command) => command
   .requiredOption('--name <name>', 'a label for the session, normalized to lowercase kebab-case')
   .requiredOption('--prompt-file <path>', 'the file that holds the prompt')
   .addOption(new Option('--effort <effort>', 'how hard the session thinks').choices(EFFORTS).makeOptionMandatory())
+  .addOption(new Option('--source-family <family>', 'for review-plan and review-build only: the model family that wrote the work').choices(FAMILIES))
   .addOption(modelOption())
   .option('--timeout-minutes <minutes>', `how long to wait (default: ${STEP_TIMEOUT_MINUTES} for a step, ${STORY_TIMEOUT_MINUTES} for a story)`, wholeMinutes)
   .option('--answers-file <path>', 'the answers to the last report\'s questions, as a YAML list of question and answer pairs');

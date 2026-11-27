@@ -342,12 +342,6 @@ test('step run --help says a step has 120 minutes and a story 600', async () => 
   assert.match(text, /A step has 120 minutes and a story 600, unless --timeout-minutes says otherwise/);
 });
 
-test('step run takes no --source-family', async () => {
-  const { code, stderr } = await lets(...STEP, '--source-family', 'claude');
-  assert.equal(code, 2);
-  assert.match(stderr, /unknown option '--source-family'/);
-});
-
 test('step run without --model or with a bad one is a usage error that names it', async () => {
   for (const extra of [[], ['--model', 'llama/llama-4']]) {
     const { code, stderr } = await lets(...STEP.slice(0, -2), ...extra);

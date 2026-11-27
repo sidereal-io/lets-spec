@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import { agy, claude, codex, git, type LetsResult, unstartable } from '../support/lets.ts';
 import { delegateRepo, PROMPT } from './repo.ts';
-import { agyWrite, assertClockDate, assertClockMs, claudeWrite, codexWrite, ending, stepRun, type StepArgs } from './steps.ts';
+import { agyWrite, assertClockDate, assertClockMs, claudeRead, claudeWrite, codexRead, codexWrite, ending, stepRun, type StepArgs } from './steps.ts';
 
 // text, matched as itself in a RegExp, so a temporary path holds no pattern.
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -22,6 +22,12 @@ const NEEDS_INPUT = ending('outcome: needs-input\nquestions:\n  - question: Whic
 const FAILED = ending('outcome: failed\nreason: tests fail on main\n');
 const ANSWERS = '- question: Which schema?\n  answer: lets-minimal\n';
 const RECORD_KEYS = ['for', 'resolver', 'family', 'model', 'handle', 'durationSeconds'];
+const REVIEWER_KEYS = ['for', 'resolver', 'family', 'model', 'independent', 'handle', 'checkout', 'commit', 'gitClean', 'durationSeconds'];
+// A reviewer's final message: findings over three paragraphs, then the line
+// that names what the review read.
+const FINDINGS = 'One finding.\n\nAnother, with "quotes".\n\nNo more.\nRead: /r 0123456789abcdef0123456789abcdef01234567\n';
+// The session name lets makes of a reviewer's --name, X Plan Review.
+const REVIEWER = 'x-plan-review';
 
 // Where codex writes the last message of the step named name, in the root.
 const lastMessage = (root: string, name = 'build-x') => join(root, '.workspace', 'lets-delegate', `${name}.last-message.md`);
@@ -402,5 +408,89 @@ describe('step run', () => {
     assert.equal(result.code, 0, result.output);
     assert.match(result.stdout, /--answers-file/);
     assert.doesNotMatch(result.output, /exit-file/);
+  });
+});
+
+// A code review named X Plan Review of claude's work, on gpt/gpt-6-luna,
+// unless over says otherwise.
+const reviewer = (over: StepArgs = {}) => stepRun({ for: 'review-build', name: 'X Plan Review', sourceFamily: 'claude', models: ['gpt/gpt-6-luna'], ...over });
+// A codex row for a reviewer that writes message as its last message, and the files given.
+const codexReviews = (cwd: string, message = FINDINGS, files: Record<string, string> = {}) =>
+  ({ args: codexRead(cwd, { model: 'gpt-6-luna', name: REVIEWER }), files: { [lastMessage(cwd, REVIEWER)]: message, ...files } });
+
+describe('step run for a reviewer', () => {
+  test('a reviewer runs codex read-only, and prints its final message unchanged as the findings of a done report', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    const stand = codex(repo.standIns, [], { rows: [codexReviews(repo.cwd)] });
+    const before = Date.now();
+    const result = await repo.run(reviewer());
+    const after = Date.now();
+    assert.ok(result.stdout.startsWith('{"outcome":"done",'), result.stdout);
+    const { date, ...rest } = reportOf(result);
+    assert.deepEqual(rest, { outcome: 'done', findings: FINDINGS });
+    assertClockDate(date, before, after);
+    assert.deepEqual(stand.calls(), [codexRead(repo.cwd, { model: 'gpt-6-luna', name: REVIEWER })]);
+    assert.deepEqual(stand.inputs(), [PROMPT]);
+  });
+
+  test('a reviewer\'s record line names the review, the checkout and the commit, its keys in order', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    codex(repo.standIns, [], { rows: [codexReviews(repo.cwd)] });
+    const result = await repo.run(reviewer());
+    assert.match(result.stderr, /^[^\n]+\n$/, 'stderr is exactly one line');
+    const record = recordOf(result);
+    assert.deepEqual(Object.keys(record), REVIEWER_KEYS);
+    const { durationSeconds, ...rest } = record;
+    assert.deepEqual(rest, {
+      for: 'review-build', resolver: 'cli', family: 'gpt', model: 'gpt-6-luna', independent: true,
+      handle: { kind: 'process', id: REVIEWER }, checkout: repo.cwd, commit: repo.head, gitClean: true,
+    });
+    assert.ok(Number.isInteger(durationSeconds) && (durationSeconds as number) >= 0, String(durationSeconds));
+  });
+
+  test('a plan reviewer of the same family as the work is not independent', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    claude(repo.standIns, { rows: [{ args: claudeRead(), stdout: FINDINGS }] });
+    const { for: intent, independent } = recordOf(await repo.run(reviewer({ for: 'review-plan', sourceFamily: 'claude', models: ['claude'] })));
+    assert.deepEqual({ intent, independent }, { intent: 'review-plan', independent: false });
+  });
+
+  test('a reviewer that writes a step-report block is done, with the block in its findings', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    claude(repo.standIns, { rows: [{ args: claudeRead(), stdout: NEEDS_INPUT }] });
+    const { outcome, findings } = reportOf(await repo.run(reviewer({ models: ['claude'] })));
+    assert.deepEqual({ outcome, findings }, { outcome: 'done', findings: NEEDS_INPUT });
+  });
+
+  test('a reviewer that commits gives the commit it made, read after the session', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    claude(repo.standIns, { rows: [{ args: claudeRead(), commit: 'a session commit', stdout: FINDINGS }] });
+    const { commit } = recordOf(await repo.run(reviewer({ models: ['claude'] })));
+    assert.equal(commit, git(repo.cwd, 'rev-parse', 'HEAD').stdout.trim());
+    assert.notEqual(commit, repo.head);
+  });
+
+  test('a reviewer in a repository with no commit gives a null commit, and is still done', async (t) => {
+    const repo = delegateRepo(t, { user: CLI, noCommit: true });
+    claude(repo.standIns, { rows: [{ args: claudeRead(), stdout: FINDINGS }] });
+    const result = await repo.run(reviewer({ models: ['claude'] }));
+    assert.equal(reportOf(result).outcome, 'done');
+    assert.equal(recordOf(result).commit, null);
+  });
+
+  test('a done reviewer\'s session is finished with ok, so codex\'s last-message file goes', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    codex(repo.standIns, [], { rows: [codexReviews(repo.cwd)] });
+    assert.equal(reportOf(await repo.run(reviewer())).outcome, 'done');
+    assert.equal(existsSync(lastMessage(repo.cwd, REVIEWER)), false);
+  });
+
+  test('the user\'s own changes from before the run, and the reviewer\'s scratch files, do not count', async (t) => {
+    const repo = delegateRepo(t, { user: CLI });
+    writeFileSync(join(repo.cwd, 'b.md'), 'mine\n');
+    codex(repo.standIns, [], { rows: [codexReviews(repo.cwd, FINDINGS, { '.workspace/notes.md': 'scratch\n' })] });
+    const result = await repo.run(reviewer());
+    assert.equal(reportOf(result).outcome, 'done');
+    assert.equal(recordOf(result).gitClean, true);
   });
 });

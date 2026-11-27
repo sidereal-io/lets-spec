@@ -9,9 +9,11 @@ import { UsageError } from '../resolvers/kit/errors.ts';
 export type Question = { question: string; recommendation?: string; ask?: true };
 
 // A failed report that lets wrote, because the session gave none it could
-// read, also holds the session's final message as message.
+// read, also holds the session's final message as message. A reviewer's
+// done report holds its final message whole as findings.
 export type Report =
   | { outcome: 'done'; evidence: string[] }
+  | { outcome: 'done'; findings: string }
   | { outcome: 'needs-input'; questions: Question[] }
   | { outcome: 'failed'; reason: string; message?: string };
 

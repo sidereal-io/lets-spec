@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/step.ts';
 import type { StepOptions } from '../../../lets/src/delegate/step.ts';
-import { commandDeps } from './fixtures/command-deps.ts';
+import { commandDeps, HEAD } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<StepOptions> = {}): StepOptions =>
   ({ for: 'build', name: 'Build X', promptFile: 'p.md', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
@@ -40,4 +40,36 @@ test('a finish that fails is reported, and the report stands', async () => {
   assert.equal(report(t).outcome, 'done');
   assert.match(t.stderr(), /could not finish thread t-1: thread gone/);
   assert.equal(JSON.parse(t.stderr().trim().split('\n').at(-1)!).for, 'build', 'the record still ends stderr');
+});
+
+// A code review of claude's work, as step run takes it.
+const reviewer = (over: Partial<StepOptions> = {}) => options({ for: 'review-build', name: 'X Plan Review', sourceFamily: 'claude', ...over });
+
+test('a reviewer asks a resolver that runs no step for a read-only session', async () => {
+  const t = commandDeps({ config: 'version: 4\ndelegate: { resolvers: [t3] }\n', adapters: { t3: { steps: false } } });
+  assert.equal(await run(reviewer(), t.deps), 0);
+  assert.deepEqual(t.adapterCalls('run').map(([name]) => name), ['t3']);
+  assert.deepEqual(report(t).findings, 'FINDINGS');
+});
+
+test('a reviewer\'s record names the checkout the resolver ran in, and the commit at its HEAD', async () => {
+  const t = withT3({ adapters: { t3: { run: { checkout: '/w/elsewhere' } } } });
+  assert.equal(await run(reviewer(), t.deps), 0);
+  const { checkout, commit } = JSON.parse(t.stderr());
+  assert.deepEqual({ checkout, commit }, { checkout: '/w/elsewhere', commit: HEAD });
+  assert.ok(t.io.calls.some(([cmd, args, opts]) => cmd === 'git' && args.join(' ') === 'rev-parse HEAD' && opts.cwd === '/w/elsewhere'), 'HEAD was read in the checkout');
+});
+
+test('a resolver that cannot tell a reviewer\'s checkout gives a null commit, and the review is still done', async () => {
+  const t = withT3({ adapters: { t3: { run: { checkout: null } } } });
+  assert.equal(await run(reviewer(), t.deps), 0);
+  assert.equal(report(t).outcome, 'done');
+  const { checkout, commit } = JSON.parse(t.stderr());
+  assert.deepEqual({ checkout, commit }, { checkout: null, commit: null });
+});
+
+test('a done reviewer\'s session is finished with ok', async () => {
+  const t = withT3();
+  assert.equal(await run(reviewer(), t.deps), 0);
+  assert.deepEqual(t.adapterCalls('finish').map(([, , input]) => (input as { ok: boolean }).ok), [true]);
 });

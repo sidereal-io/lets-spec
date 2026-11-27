@@ -24,6 +24,8 @@ export interface StepArgs {
   promptFile?: string;
   /** `--effort`. `high` when absent. */
   effort?: Effort;
+  /** `--source-family`. None when absent. */
+  sourceFamily?: string;
   /** One `--model` for each, in order. `['claude']` when absent. */
   models?: readonly string[];
   /** `--timeout-minutes`. None when absent. */
@@ -60,8 +62,9 @@ export interface CodexWriteArgs {
  * fails.
  */
 export function stepRun(over: StepArgs = {}): string[] {
-  const { for: intent = 'build', name = 'Build X', promptFile = 'p.md', effort = 'high', models = ['claude'], timeoutMinutes, answersFile, exitFile } = over;
+  const { for: intent = 'build', name = 'Build X', promptFile = 'p.md', effort = 'high', sourceFamily, models = ['claude'], timeoutMinutes, answersFile, exitFile } = over;
   return ['delegate', 'step', 'run', '--for', intent, '--name', name, '--prompt-file', promptFile, '--effort', effort,
+    ...optional('--source-family', sourceFamily),
     ...models.flatMap((model) => ['--model', model]),
     ...optional('--timeout-minutes', timeoutMinutes === undefined ? undefined : String(timeoutMinutes)),
     ...optional('--answers-file', answersFile), ...optional('--exit-file', exitFile)];
@@ -94,6 +97,23 @@ export function codexWrite(cwd: string, over: CodexWriteArgs = {}): string[] {
   const { effort = 'high', model = null, name = 'build-x' } = over;
   return ['exec', '--dangerously-bypass-approvals-and-sandbox', '-c', `model_reasoning_effort="${effort}"`, ...optional('-m', model ?? undefined),
     '-o', join(cwd, '.workspace', 'lets-delegate', `${name}.last-message.md`), '-'];
+}
+
+/**
+ * The read-only arguments lets gives codex for a reviewer run in `cwd`, the
+ * repository root: the read-only sandbox, the effort, `-m` when a model is
+ * given, and the last message in
+ * `<cwd>/.workspace/lets-delegate/<name>.last-message.md`. Never fails.
+ */
+export function codexRead(cwd: string, over: CodexWriteArgs = {}): string[] {
+  const { effort = 'high', model = null, name = 'build-x' } = over;
+  return ['exec', '-s', 'read-only', '-c', `model_reasoning_effort="${effort}"`, ...optional('-m', model ?? undefined),
+    '-o', join(cwd, '.workspace', 'lets-delegate', `${name}.last-message.md`), '-'];
+}
+
+/** The read-only arguments lets gives claude for a reviewer: plan mode, the effort (`high` when absent), and `--model` when given. Never fails. */
+export function claudeRead(effort: Effort = 'high', model?: string): string[] {
+  return ['-p', '--permission-mode', 'plan', '--effort', effort, ...optional('--model', model)];
 }
 
 /** The write-mode arguments lets gives claude for a step: bypassPermissions, the effort (`high` when absent), and `--model` when given. Never fails. */
