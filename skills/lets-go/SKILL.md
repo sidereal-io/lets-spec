@@ -56,9 +56,11 @@ the route through the run; each linked part gives its detailed actions.
 A run goes through these parts, in this order.
 [Start from an idea](#start-from-an-idea),
 [Run the shape step](#run-the-shape-step) and
-[Run the epic](#run-the-epic) run only when the request or the
+[Run the epic](references/epic-run.md#run-the-epic) run only when the
+request or the
 [packet](references/terms.md#packet) needs them.
-[Run the epic](#run-the-epic) runs only in an epic run, when the run's
+[Run the epic](references/epic-run.md#run-the-epic) runs only in an epic
+run, when the run's
 issue is an epic. An epic run builds the stories of one wave at the
 same time, each in a git worktree of its own, and starts the next wave
 once every story of this one is settled. Each
@@ -79,13 +81,13 @@ procedure ranks it.
 | [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch | this session | [Read the request](#read-the-request) | `lets go questions` fails |
 | [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea; [Take up the story run](references/story-run.md#take-up-the-story-run) in a story run's child | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
-| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run; [Run the epic](#run-the-epic) for any other epic on the default branch, after [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run; or the epic is a finished epic, or an epic with no stories after shaping, or its discovery stopped when shape cannot run |
+| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run; [Run the epic](references/epic-run.md#run-the-epic) for any other epic on the default branch, after [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run; or the epic is a finished epic, or an epic with no stories after shaping, or its discovery stopped when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) | The discovery map has edits of its own, or the step fails or asks a settled question again |
-| [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, waits for the children of a wave, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | `lets delegate step wait` fails, so the epic run cannot wait for its children |
+| [Run the epic](references/epic-run.md#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, waits for the children of a wave, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | `lets delegate step wait` fails, so the epic run cannot wait for its children |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
-| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema. In an epic run, it checks the branch out in the story's own worktree instead | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) after a lost claim; [Run the epic](#run-the-epic) after a lost claim in an epic run, or when a stop ends a story's run | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time outside an epic run; the import returns `import-failed`; the epic-run map commit returns `commit-failed` or `restore-failed`; or the branch has diverged |
+| [Enter the branch](#enter-the-branch) | Claims the issue and creates the branch, or switches to the branch and brings it up to date, then sets the schema. In an epic run, it checks the branch out in the story's own worktree instead | this session | [Set the question mode](#set-the-question-mode); [Read the request](#read-the-request) after a lost claim; [Run the epic](references/epic-run.md#run-the-epic) after a lost claim in an epic run, or when a stop ends a story's run | [Claim](#claim) returns `unresolved`, `checkpoint-failed`, `claim-failed` or `branch-failed`, or `taken` for a named issue or for the third time outside an epic run; the import returns `import-failed`; the epic-run map commit returns `commit-failed` or `restore-failed`; or the branch has diverged |
 | [Set the question mode](#set-the-question-mode) | Picks `ask` or `auto`, and says why | this session | [Walk the step table](#walk-the-step-table); [Start the story run](references/epic-run.md#start-the-story-run) in an epic run | Never |
-| [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run); [Run the epic](#run-the-epic) in an epic run, also when a stop ends a story's run; [End the story run](references/story-run.md#end-the-story-run) in a story run's child, also when the walk stops | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
+| [Walk the step table](#walk-the-step-table) | Reads the records, then runs each step that is not done | this session; its step runs in a fresh one | [End of the run](#end-of-the-run); [Run the epic](references/epic-run.md#run-the-epic) in an epic run, also when a stop ends a story's run; [End the story run](references/story-run.md#end-the-story-run) in a story run's child, also when the walk stops | The records disagree, the pull request is merged or closed, or a step fails, reports done when its record says otherwise, or asks a settled question again |
 | [End of the run](#end-of-the-run) | Prints the pull request's URL, or each story's line in an epic run | this session | Nothing: the run is over | Always |
 
 Any part also stops when a `lets backlog` command returns an error, as
@@ -112,32 +114,32 @@ reads as it always has.
 
 | Placeholder | What it stands for | Where the run sets it |
 |---|---|---|
-| `<i>` | The run's issue, as its key: the key the user named, the issue `next` or [Run the epic](#run-the-epic) picked, or the issue or parent a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
+| `<i>` | The run's issue, as its key: the key the user named, the issue `next` or [Run the epic](references/epic-run.md#run-the-epic) picked, or the issue or parent a shape step shaped. Or, inside `next`, the candidate it is checking | [Read the request](#read-the-request), the shape step's report, or `next`, for each candidate |
 | `<issue-url>` | The URL of `<i>` | [Confirm the packet](#confirm-the-packet), from the `url` field that `lets backlog item <i>` prints |
-| `<parent>` | A parent issue, as its key: an epic that discovery filed, a discovery in progress, or the epic of an epic run | The shape report's `epic` line, [Find the input's discovery](references/shape.md#find-the-inputs-discovery), or, for an epic run, [Check the issue](#check-the-issue) before [Run the epic](#run-the-epic) |
-| `<story>` | One story, as its key: a story that a shape step's report names, or a story of an epic run | Each `story` line of the shape report, or [Run the epic](#run-the-epic), for the story it picks or settles |
-| `<blocker>` | An open issue that blocks a story, as its key. For a stacked story, the blocker it stacks on | The story's `blockedBy` field, from `lets backlog item <story>` in [Run the epic](#run-the-epic), the blocker read in [Stack the story](references/epic-run.md#stack-the-story), or a pull request's base in [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) |
+| `<parent>` | A parent issue, as its key: an epic that discovery filed, a discovery in progress, or the epic of an epic run | The shape report's `epic` line, [Find the input's discovery](references/shape.md#find-the-inputs-discovery), or, for an epic run, [Check the issue](#check-the-issue) before [Run the epic](references/epic-run.md#run-the-epic) |
+| `<story>` | One story, as its key: a story that a shape step's report names, or a story of an epic run | Each `story` line of the shape report, or [Run the epic](references/epic-run.md#run-the-epic), for the story it picks or settles |
+| `<blocker>` | An open issue that blocks a story, as its key. For a stacked story, the blocker it stacks on | The story's `blockedBy` field, from `lets backlog item <story>` in [Run the epic](references/epic-run.md#run-the-epic), the blocker read in [Stack the story](references/epic-run.md#stack-the-story), or a pull request's base in [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) |
 | `<blocker-branch>` | A met blocker's branch, the `headRefName` of its pull request. For a stacked story, the branch it stacks on | [Stack the story](references/epic-run.md#stack-the-story), from the `gh pr list` read, or [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base), from `<pr-base>` |
 | `<blocker-pr>` | The number of a stacked story's blocker's pull request | [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from the `gh pr list` read |
 | `<other-branch>` | The branch of another open blocker of the same story, which the base's branch must contain | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<a>` | The first open blocker of a story whose blockers' branches no one branch contains, as its key. The line that names them all shows it | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<b>` | The second such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
 | `<c>` | The third such open blocker, as its key, in the same line | [Stack the story](references/epic-run.md#stack-the-story) |
-| `<keys>` | The keys of the stories an epic run sorts into waves, in the epic's order, joined by commas, such as `283,285` | [Run the epic](#run-the-epic), from the stories not settled when it starts |
-| `<wave>` | A wave's number in an epic run, counted from 1 | [Run the epic](#run-the-epic), from the order of the waves file's `waves` field |
-| `<wave-stories>` | The `label` field of each story of a wave, in the order `lets backlog waves` gives, joined by `, ` | [Run the epic](#run-the-epic), from the wave's `stories` field in the waves file |
-| `<other>` | The story that a story of an epic run waits for, as its key | [Run the epic](#run-the-epic), from the story's `waitsFor` field in the waves file |
-| `<login>` | The login of a person assigned to a story | The story's `assignees` field, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](#run-the-epic) |
+| `<keys>` | The keys of the stories an epic run sorts into waves, in the epic's order, joined by commas, such as `283,285` | [Run the epic](references/epic-run.md#run-the-epic), from the stories not settled when it starts |
+| `<wave>` | A wave's number in an epic run, counted from 1 | [Run the epic](references/epic-run.md#run-the-epic), from the order of the waves file's `waves` field |
+| `<wave-stories>` | The `label` field of each story of a wave, in the order `lets backlog waves` gives, joined by `, ` | [Run the epic](references/epic-run.md#run-the-epic), from the wave's `stories` field in the waves file |
+| `<other>` | The story that a story of an epic run waits for, as its key | [Run the epic](references/epic-run.md#run-the-epic), from the story's `waitsFor` field in the waves file |
+| `<login>` | The login of a person assigned to a story | The story's `assignees` field, from `lets backlog item <story>` or [Claim](#claim), in [Run the epic](references/epic-run.md#run-the-epic) |
 | `<failed>` | The story whose run failed or stopped, as its key, in the line of a story that depends on it | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run) |
 | `<step name>` | A step's name in plain words, as its `Failed` line names it, such as `review build` | [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run), from the failed step, or, in a story run's child, [Story run](references/story-run.md), from the step the walk is on |
-| `<story-name>` | The part of a story's title before ` — `, or the whole title when it has none | [Run the epic](#run-the-epic), when it settles the story |
+| `<story-name>` | The part of a story's title before ` — `, or the whole title when it has none | [Run the epic](references/epic-run.md#run-the-epic), when it settles the story |
 | `<map>` | One changed discovery map, as a path, in an epic run | [Commit the map in an epic run](references/shape.md#commit-the-map-in-an-epic-run), from its `git status` command |
 | `<copied paths>` | The changed discovery maps that still exist, which an epic run copies into the story's worktree | [Commit the map in an epic run](references/shape.md#commit-the-map-in-an-epic-run) |
 | `<tracked paths>` | The changed discovery maps that Git tracks, every one not marked `??` | [Commit the map in an epic run](references/shape.md#commit-the-map-in-an-epic-run) |
 | `<paths>` | The changed discovery maps, one path each | [Commit the discovery map](references/shape.md#commit-the-discovery-map), from its `git status` command |
-| `<pr-base>` | The base branch of a story's pull request, its `baseRefName` | [Run the epic](#run-the-epic) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr list` read |
-| `<story-pr>` | The number of a story's pull request, which [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) edits by | [Run the epic](#run-the-epic) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr list` read |
-| `<pr-url>` | The URL of a story's pull request, in an epic run | [Run the epic](#run-the-epic), when it settles a built story, or [End the story run](references/story-run.md#end-the-story-run), in a story run's child |
+| `<pr-base>` | The base branch of a story's pull request, its `baseRefName` | [Run the epic](references/epic-run.md#run-the-epic) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr list` read |
+| `<story-pr>` | The number of a story's pull request, which [Read a pull request's base](references/epic-run.md#read-a-pull-requests-base) edits by | [Run the epic](references/epic-run.md#run-the-epic) or [Take up a started story](references/epic-run.md#take-up-a-started-story), from its `gh pr list` read |
+| `<pr-url>` | The URL of a story's pull request, in an epic run | [Run the epic](references/epic-run.md#run-the-epic), when it settles a built story, or [End the story run](references/story-run.md#end-the-story-run), in a story run's child |
 | `<pr>` | The number of the change's pull request | `lets go records <name>`, from the row's record's `pr`, in [Walk the step table](#walk-the-step-table) |
 | `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | [Check the issue](#check-the-issue), from the blocker read's title. After a shape step, [Check the issue](#check-the-issue) sets it again from the shaped issue's title |
 | `<branch>` | The branch the run started on, when it is not the default branch. In a story run's child, the branch it started on, whatever it is | [Read the settings](#read-the-settings), from `git branch --show-current` |
@@ -159,7 +161,7 @@ reads as it always has.
 | `<sha>` | A commit's short hash, or the commit a review names | `lets go records <name>`, from the row's record's `commit`, in [Walk the step table](#walk-the-step-table), or the review plan report |
 | `<verdict>` | A plan review's verdict | `lets go records <name>`, from the `review-plan` record's `verdict`, in [Walk the step table](#walk-the-step-table), or the review plan report |
 | `<evidence>` | What a `done` report's `evidence` lists | [The step lines](#the-step-lines) |
-| `<reason>` | Why a step failed, or, in a story's line in an epic run, why the story was not built or its walk stopped, or, in a wave's line, why a story waits for `#<other>` | [The step lines](#the-step-lines), from a `failed` report's `reason`, or from [Read the report](#read-the-report) when a `done` report fails its check. In a story's line, [Run the epic](#run-the-epic). In a wave's line, the story's `reason` field in the waves file, from [Run the epic](#run-the-epic) |
+| `<reason>` | Why a step failed, or, in a story's line in an epic run, why the story was not built or its walk stopped, or, in a wave's line, why a story waits for `#<other>` | [The step lines](#the-step-lines), from a `failed` report's `reason`, or from [Read the report](#read-the-report) when a `done` report fails its check. In a story's line, [Run the epic](references/epic-run.md#run-the-epic). In a wave's line, the story's `reason` field in the waves file, from [Run the epic](references/epic-run.md#run-the-epic) |
 | `<YYYY-MM-DD>` | The date in an archive folder's name | The folder's name in `openspec/changes/archive/` |
 | `<first>` | The first model of the ranked options | [Run a step](#run-a-step) or [Start the story run](references/epic-run.md#start-the-story-run), when it ranks the options |
 | `<second>` | The second model of the ranked options | [Run a step](#run-a-step) or [Start the story run](references/epic-run.md#start-the-story-run), when it ranks the options |
@@ -370,7 +372,8 @@ says.
    On its result:
    - **`stacked`:** go on, below, with the `<blocker>` it carries.
    - **`not-stacked`:** go on, below.
-   - **`settled`:** go back to [Run the epic](#run-the-epic), which
+   - **`settled`:** go back to
+     [Run the epic](references/epic-run.md#run-the-epic), which
      picks again. Do not go on with the story.
    - **`fetch-failed`:** say which branch could not be fetched, with
      Git's error, and stop, as
@@ -396,7 +399,8 @@ says.
      [Stack the story](references/epic-run.md#stack-the-story) instead
      of stopping. On its result:
      - **`stacked`:** go on, below, with the `<blocker>` it carries.
-     - **`settled`:** go back to [Run the epic](#run-the-epic), which
+     - **`settled`:** go back to
+       [Run the epic](references/epic-run.md#run-the-epic), which
        picks again. Do not go on with the story.
      - **`fetch-failed`:** say which branch could not be fetched, with
        Git's error, and stop, as
@@ -491,7 +495,8 @@ says.
      4. **Any other epic:** When a shape step reported `done` in this
         run, and the run has not printed the `Done shape` line, print it
         first, as [The step lines](#the-step-lines) says. Then go to
-        [Run the epic](#run-the-epic) with `<i>` as `<parent>`, and the
+        [Run the epic](references/epic-run.md#run-the-epic) with `<i>`
+        as `<parent>`, and the
         open sub-issues the result carries.
 6. When [Confirm the packet](#confirm-the-packet) returns `complete`,
    shape is done. Print shape's line, as
@@ -500,7 +505,8 @@ says.
 Next: [Run the shape step](#run-the-shape-step) when
 [Confirm the packet](#confirm-the-packet) returned `needs-shape`, or
 `epic` for an empty epic or one whose discovery stopped, and shape can
-run; [Run the epic](#run-the-epic) when it returned `epic` for any other
+run; [Run the epic](references/epic-run.md#run-the-epic) when it
+returned `epic` for any other
 epic on the default branch, or when
 [Stack the story](references/epic-run.md#stack-the-story) settled the
 story, or
@@ -514,14 +520,6 @@ Follow its steps in
 
 Next: [Check the issue](#check-the-issue), with the issue or the parent
 the step shaped.
-
-## Run the epic
-
-Follow its steps in
-[the epic run file](references/epic-run.md#run-the-epic).
-
-Next: [Check the issue](#check-the-issue), with the story the epic run
-picked; [End of the run](#end-of-the-run) when no story is left.
 
 ## Route
 
@@ -599,7 +597,8 @@ says.
      `not built, taken by <login>`, naming each assignee the result
      carries, as
      [Settle a story](references/epic-run.md#settle-a-story) says.
-     Count no lost claim, and go back to [Run the epic](#run-the-epic),
+     Count no lost claim, and go back to
+     [Run the epic](references/epic-run.md#run-the-epic),
      which picks again. Otherwise, when the user named `<i>` or
      confirmed it, say who has it, and stop. Otherwise `next` picked it:
      count the lost claim. After the third lost claim in this run,
@@ -673,7 +672,8 @@ says.
 
 Next: [Set the question mode](#set-the-question-mode);
 [Read the request](#read-the-request) after a lost claim; in an epic
-run, [Run the epic](#run-the-epic) after a lost claim.
+run, [Run the epic](references/epic-run.md#run-the-epic) after a lost
+claim.
 
 ### The story's worktree
 
@@ -849,7 +849,8 @@ Then settle the row:
   that newer output, because the step changed the records.
 
 Next: [End of the run](#end-of-the-run), when no row is left; in an
-epic run, [Run the epic](#run-the-epic) instead, which settles the
+epic run, [Run the epic](references/epic-run.md#run-the-epic) instead,
+which settles the
 story and picks the next one; in a story run's child,
 [End the story run](references/story-run.md#end-the-story-run), also
 when the walk stops.
@@ -873,7 +874,8 @@ gh pr view <name> --json url --jq .url
 
 In an epic run, print every line of
 `.workspace/lets-go/epic-<parent>-lines.txt`, in order, instead of a
-pull request's URL: [Run the epic](#run-the-epic) has settled every
+pull request's URL:
+[Run the epic](references/epic-run.md#run-the-epic) has settled every
 story, and each built story's line holds its pull request's URL.
 
 `lets-go` keeps no state of its own. Its files in `.workspace/lets-go/`
@@ -941,7 +943,8 @@ Take the first case that applies:
    the candidates, ranked Must, then Should, then Could, then the oldest
    issue first. An epic run narrows the candidates to the current
    wave with `--only`, as *Pick the next story* in
-   [Run the epic](#run-the-epic) says. After a lost claim outside an
+   [Run the epic](references/epic-run.md#run-the-epic) says. After a
+   lost claim outside an
    epic run, leave out every issue lost in this run: each one for which
    [Claim](#claim) returned `taken`. Pass their keys with `--exclude`,
    such as `lets backlog ready --exclude 149`.
@@ -1214,7 +1217,8 @@ Failed shape: <reason>
 Shape's line prints at most once for an issue. Print `Done shape` after
 a shape step reported `done`, once per run, when this run has not
 printed it yet: [Check the issue](#check-the-issue) prints it, for
-one issue, or before [Run the epic](#run-the-epic) for the epic it
+one issue, or before
+[Run the epic](references/epic-run.md#run-the-epic) for the epic it
 shaped, or [Run the shape step](#run-the-shape-step) when it stops on
 the discovery maps' edits. Print `Skipped shape` once for each issue
 whose packet [Check the issue](#check-the-issue) finds complete, and

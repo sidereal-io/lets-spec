@@ -344,6 +344,10 @@ as for any picked issue.
      give no `not built` line to a story that the children file lists.
      Then go to [Wait for the wave](#wait-for-the-wave).
 
+Next: [Check the issue](../SKILL.md#check-the-issue), with the story the
+epic run picked; [End of the run](../SKILL.md#end-of-the-run) when no
+story is left.
+
 ### Settle a story
 
 A story is settled once the epic run has given it its line. To settle a

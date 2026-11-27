@@ -15,7 +15,7 @@
 
 ## 3. *Run the epic* lives in its reference file [depends-on: 1]
 
-- [ ] 3.1 [medium] `SKILL.md` holds no `## Run the epic` section; every link to the part, in the overview and the text, is `references/epic-run.md#run-the-epic`; *Run the epic* in `references/epic-run.md` ends its own text, before `### Settle a story`, with the stub's `Next:` line, its links made `../SKILL.md#check-the-issue` and `../SKILL.md#end-of-the-run` (verify: `! grep -nE '^## Run the epic|\]\(#run-the-epic\)' skills/lets-go/SKILL.md && node --test tests/contracts/links.test.ts`)
+- [x] 3.1 [medium] `SKILL.md` holds no `## Run the epic` section; every link to the part, in the overview and the text, is `references/epic-run.md#run-the-epic`; *Run the epic* in `references/epic-run.md` ends its own text, before `### Settle a story`, with the stub's `Next:` line, its links made `../SKILL.md#check-the-issue` and `../SKILL.md#end-of-the-run` (verify: `! grep -nE '^## Run the epic|\]\(#run-the-epic\)' skills/lets-go/SKILL.md && node --test tests/contracts/links.test.ts`) (✓ grep and node --test links passed: 10/10)
 
 ## 4. Shared placeholders only in the table [depends-on: 3]
 
