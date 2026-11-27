@@ -344,6 +344,10 @@ as for any picked issue.
      give no `not built` line to a story that the children file lists.
      Then go to [Wait for the wave](#wait-for-the-wave).
 
+Next: [Check the issue](../SKILL.md#check-the-issue), with the story the
+epic run picked; [End of the run](../SKILL.md#end-of-the-run) when no
+story is left.
+
 ### Settle a story
 
 A story is settled once the epic run has given it its line. To settle a
@@ -847,11 +851,11 @@ It returns one of these results:
   `## Stack` section, and its line ends `, stacked on #<blocker>`.
 - `not-stacked`: the story is not stacked. When its pull request's base
   was a merged blocker's branch, the base is now `<default>`.
-- `settled`: [Stack the story](#stack-the-story) settled the story.
-- `fetch-failed`: [Stack the story](#stack-the-story) could not fetch a
-  blocker's branch. It carries `<blocker-branch>` and Git's error.
-- `edit-failed`: the pull request's base could not be moved. It carries
-  gh's error.
+- `settled` and `fetch-failed`: [Stack the story](#stack-the-story)
+  returned it, as that section's list says.
+- `edit-failed`:
+  [Read a pull request's base](#read-a-pull-requests-base) returned it,
+  as that section's list says.
 - `read-failed`: the story's pull request could not be read. It carries
   gh's error.
 
@@ -908,8 +912,9 @@ for the story. The open blockers are the entries of the story's
 5. When no open blocker's branch contains all the others, settle the
    story with
    `not built, blocked by #<a> and #<b>, on different branches`, naming
-   every open blocker. Name three or more as `#<a>, #<b> and #<c>`.
-   Return `settled`.
+   every open blocker. Name three or more as `#<a>, #<b> and #<c>`:
+   `<c>` is the third such open blocker, as its key, as `<a>` and `<b>`
+   are the first and second. Return `settled`.
 6. With a base, `<blocker>` is the base, `<blocker-branch>` its branch
    and `<blocker-pr>` the number of its pull request. Print:
 

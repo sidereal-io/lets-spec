@@ -272,7 +272,7 @@ later one.
    ```
 
    When a command fails, leave the checkout's edits as they are, and
-   return `commit-failed`, with Git's error.
+   return `commit-failed`.
 4. Only once the commit succeeds, return the epic run's checkout to its
    committed state, so it stays clean on `<default>`. The paths not
    marked `??` are `<tracked paths>`: restore them, when there are any.
@@ -284,9 +284,8 @@ later one.
    ```
 
    The edits are safe in the story's commit, so the restore loses
-   nothing. When a command fails, return `restore-failed`, with Git's
-   error: the story's commit already holds the edits. Otherwise return
-   `committed`.
+   nothing. When a command fails, return `restore-failed`. Otherwise
+   return `committed`.
 
 Never pass the `openspec/discovery` folder itself to a Git command.
 `<parent>` is the epic's number.
