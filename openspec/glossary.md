@@ -120,8 +120,8 @@ The read-only session that reviews a plan or a branch's code, for a
 review step or for `lets-review-plan`, `lets-review-build` or
 `lets-review-pr` run alone. `lets delegate step run --for review-plan` or
 `--for review-build` starts it. It may change no file outside
-`.workspace/`. Its final message comes back whole as the findings of a
-`done` step report.
+`.workspace/`. It writes no step report: its final message comes back whole
+as the `findings` of a `done` report.
 
 ## Question mode
 
