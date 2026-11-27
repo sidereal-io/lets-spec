@@ -38,8 +38,10 @@ It returns one of these results:
 - `resolved`: nothing is unresolved. The story needs no definitions
   that another issue owns, or each owner's pull request has merged and
   its definitions are on the proposed base.
-- `unresolved`: something in step 3 is unresolved. It carries the owner
-  or the definitions that are unresolved.
+- `unresolved`: anything else. An owner is undecided, an owner's pull
+  request has not merged, or its definitions are missing from the
+  proposed base. It carries the owner or the definitions that are
+  unresolved.
 
 Return to the section that ran it, with the result.
 
