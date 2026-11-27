@@ -6,10 +6,10 @@
 // end of that test, even when it fails.
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { delimiter, join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { describe, test, type TestContext } from 'node:test';
-import { claude, codex, agy, git, type LetsResult, tempDir } from '../support/lets.ts';
+import { claude, codex, agy, git, type LetsResult, pathWith, tempDir } from '../support/lets.ts';
 import { type DelegateRepo, delegateRepo, PROMPT } from './repo.ts';
 import { agyWrite, assertClockMs, claudeWrite, cleanUpStep, codexWrite, ending, stepStart, type StartArgs, stopStep, untilCalled, untilGone } from './steps.ts';
 
@@ -228,7 +228,10 @@ describe('step start inside T3 Code', () => {
   async function startedWith(t: TestContext, resolvers: string, t3Home: string) {
     const repo = delegateRepo(t, { user: `version: 3\ndelegate: { resolvers: ${resolvers} }\n` });
     claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
-    const result = await repo.run(stepStart(), { env: { T3CODE_HOME: t3Home } });
+    // Without /proc, as on macOS, lets finds a parent process with ps, which
+    // the stand-ins-and-git PATH leaves out. macOS keeps ps in /bin.
+    const path = existsSync('/proc/self') ? {} : { PATH: [repo.standIns, pathWith(t, ['git']), '/bin'].join(delimiter) };
+    const result = await repo.run(stepStart(), { env: { T3CODE_HOME: t3Home, ...path } });
     assert.equal(result.code, 0, result.output);
     cleanUpStep(t, JSON.parse(result.stdout).pid);
     ended(await waitFor(repo, ['build-x']));
