@@ -601,7 +601,7 @@ answers, report and meta files, stay in this checkout.
    ```
 
    It prints one JSON line, as for a step. Its `guidance` comes from
-   `delegate.step.story.guidance` in the `lets` config. If it exits
+   `delegate.story.guidance` in the `lets` config. If it exits
    non-zero, show the user its stderr, and stop, as
    [A stop in an epic run](#a-stop-in-an-epic-run) says: the story's
    reason is its stderr. Rank its `options` as

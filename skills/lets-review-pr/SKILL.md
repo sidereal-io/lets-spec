@@ -158,10 +158,10 @@ absolute path too. Include that path and its criteria in every role prompt,
 as [the role prompt](references/role-prompt.md) shows. Reviewers receive the
 criteria in their own session; reading them here does not supply them there.
 
-For decisions use `lets delegate review instructions --for plan`; for
-implementation use `lets delegate review instructions --for code`. Their
-`guidance` comes from `delegate.review.plan.guidance` or
-`delegate.review.code.guidance`.
+For decisions use `lets delegate review instructions --for review-plan`; for
+implementation use `lets delegate review instructions --for review-build`.
+Their `guidance` comes from `delegate.review-plan.guidance` or
+`delegate.review-build.guidance`.
 
 Apply it only to ranking/filtering options, never to bypassing this method.
 Non-zero discovery is an incomplete review: report stderr and stop.
@@ -186,7 +186,7 @@ template. Run one fresh session per examiner, challenger and examiner
 response. For each, use the appropriate existing intent with ranked models:
 
 ```bash
-lets delegate review run --for <plan-or-code> --name <run-pass-role-model> \
+lets delegate review run --for <review-plan-or-review-build> --name <run-pass-role-model> \
   --prompt-file <absolute-prompt-path> --source-family <compatibility-family> \
   --effort high --model <first> --model <second> \
   > <absolute-role-output-path> 2> <absolute-role-metadata-path>

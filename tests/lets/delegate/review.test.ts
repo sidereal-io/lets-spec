@@ -11,11 +11,11 @@ import { SpawnError } from '../../../lets/src/resolvers/kit/errors.ts';
 import { commandDeps, HEAD } from './fixtures/command-deps.ts';
 
 const options = (over: Partial<ReviewOptions> = {}): ReviewOptions =>
-  ({ for: 'code', name: 'X Plan Review', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
+  ({ for: 'review-build', name: 'X Plan Review', promptFile: 'p.md', sourceFamily: 'claude', effort: 'high', models: ['gpt/gpt-6-luna'], ...over });
 
 // commandDeps whose config lists t3, which answers, and more as given.
 const withT3 = (over: Parameters<typeof commandDeps>[0] = {}) =>
-  commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3] }\n', ...over, adapters: { t3: {}, ...over.adapters } });
+  commandDeps({ config: 'version: 4\ndelegate: { resolvers: [t3] }\n', ...over, adapters: { t3: {}, ...over.adapters } });
 
 test('the metadata line names the checkout the resolver ran in, and the commit at its HEAD', async () => {
   const t = withT3({ adapters: { t3: { run: { checkout: '/w/elsewhere' } } } });

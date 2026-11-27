@@ -10,7 +10,7 @@ import { claude } from '../support/lets.ts';
 import { delegateRepo } from './repo.ts';
 import { claudeWrite, cleanUpStep, stepRun, stepStart, stopStep, untilCalled, untilGone } from './steps.ts';
 
-const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
+const CLI = 'version: 4\ndelegate: { resolvers: [cli] }\n';
 const LETS_LIMIT_MS = 100_000;
 
 // A hanging stand-in ends by itself after 120 seconds, so a run this short

@@ -22,7 +22,7 @@ function letsIn({ cwd, env = {} }: { cwd?: string; env?: Record<string, string> 
   });
 }
 
-const REVIEW = ['delegate', 'review', 'run', '--for', 'code', '--name', 'x', '--prompt-file', 'p.md', '--source-family', 'claude', '--effort', 'low', '--model', 'gpt'];
+const REVIEW = ['delegate', 'review', 'run', '--for', 'review-build', '--name', 'x', '--prompt-file', 'p.md', '--source-family', 'claude', '--effort', 'low', '--model', 'gpt'];
 // The retired handoff command, as a caller of an earlier lets ran it.
 const HANDOFF = ['delegate', 'handoff', 'run', '--for', 'apply', '--name', 'build-x', '--prompt-file', 'p.md', '--model', 'claude'];
 const STEP = ['delegate', 'step', 'run', '--for', 'plan', '--name', 'x', '--prompt-file', 'p.md', '--effort', 'high', '--model', 'claude'];
@@ -77,7 +77,7 @@ test('a --model that is not <family> or <family>/<model> is a usage error that n
 });
 
 test('a missing option is a usage error that names it', async () => {
-  const { code, stderr } = await lets('delegate', 'review', 'run', '--for', 'code', '--name', 'x');
+  const { code, stderr } = await lets('delegate', 'review', 'run', '--for', 'review-build', '--name', 'x');
   assert.equal(code, 2);
   assert.match(stderr, /--prompt-file|--source-family|--effort/);
 });
@@ -117,13 +117,23 @@ test('delegate --help describes the chain in config.yaml, and names neither setu
   assert.doesNotMatch(text, /lets-delegate-resolver/);
 });
 
-test('delegate --help gives the lets config path and a version 3 example', async () => {
+test('delegate --help gives the lets config path and a version 4 example', async () => {
   const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
   assert.match(text, /\$XDG_CONFIG_HOME\/lets\/config\.yaml/);
   assert.match(text, /~\/\.config\/lets\/config\.yaml/);
-  assert.match(text, /version: 3 delegate: resolvers: - t3 - subagent review: code: guidance: .* step: build: guidance: /);
-  assert.match(text, /delegate\.<strategy>\.<intent>\.guidance/);
-  assert.doesNotMatch(text, /lets-delegate\/|version: 2|delegations/);
+  assert.match(text, /version: 4 delegate: resolvers: - t3 - subagent review-build: guidance: .* build: guidance: /);
+  assert.doesNotMatch(text, /lets-delegate\/|version: [23]|delegations|delegate\.step|delegate\.<strategy>/);
+});
+
+test('delegate --help says the plan reviewer and the review plan step take different keys, and points to the README', async () => {
+  const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /delegate\.review-plan steers the plan reviewer, while the review plan step's own session takes delegate\.plan; delegate\.review-build and delegate\.build pair the same way\./);
+  assert.match(text, /"Set up delegation" in the lets-spec README/);
+});
+
+test('delegate --help names the review intents', async () => {
+  const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
+  assert.match(text, /review-plan or review-build for a review/);
 });
 
 test('delegate --help names story among the step intents', async () => {
@@ -173,10 +183,10 @@ test('review --help names instructions and run', async () => {
   assert.match(stdout, /^ {2}run\b/m);
 });
 
-test('with no config, review instructions --for plan prints one JSON line from subagent', async () => {
-  const { code, stdout } = await letsIn(repo(), 'delegate', 'review', 'instructions', '--for', 'plan');
+test('with no config, review instructions --for review-plan prints one JSON line from subagent', async () => {
+  const { code, stdout } = await letsIn(repo(), 'delegate', 'review', 'instructions', '--for', 'review-plan');
   assert.equal(code, 0);
-  assert.deepEqual(JSON.parse(stdout), { strategy: 'review', for: 'plan', resolver: 'subagent', options: [], guidance: null });
+  assert.deepEqual(JSON.parse(stdout), { strategy: 'review', for: 'review-plan', resolver: 'subagent', options: [], guidance: null });
 });
 
 test('run takes --model more than once, in order', async () => {
@@ -199,10 +209,21 @@ test('the retired handoff intent under review is a usage error that names --for'
   assert.match(stderr, /--for/);
 });
 
+test('the old review intents are a usage error that names --for and the new intents', async () => {
+  for (const argv of [['delegate', 'review', 'instructions', '--for', 'code'], [...REVIEW.slice(0, 3), '--for', 'plan', ...REVIEW.slice(5)]]) {
+    const { code, stdout, stderr } = await letsIn(repo(), ...argv);
+    assert.equal(code, 2, argv.join(' '));
+    assert.equal(stdout, '', argv.join(' '));
+    assert.match(stderr, /--for/, argv.join(' '));
+    assert.match(stderr, /review-plan/, argv.join(' '));
+    assert.match(stderr, /review-build/, argv.join(' '));
+  }
+});
+
 test('a resolver listed by path is exit 2, naming it and the config file', async () => {
   const example = '/opt/r/old-resolver';
-  const r = repo(`version: 3\ndelegate:\n  resolvers:\n    - ${example}\n    - subagent\n`);
-  const { code, stdout, stderr } = await letsIn(r, 'delegate', 'review', 'instructions', '--for', 'code');
+  const r = repo(`version: 4\ndelegate:\n  resolvers:\n    - ${example}\n    - subagent\n`);
+  const { code, stdout, stderr } = await letsIn(r, 'delegate', 'review', 'instructions', '--for', 'review-build');
   assert.equal(code, 2);
   assert.equal(stdout, '');
   assert.ok(stderr.includes(example), stderr);
@@ -210,7 +231,7 @@ test('a resolver listed by path is exit 2, naming it and the config file', async
 });
 
 test('a name lets does not know is exit 2, naming it and the three names', async () => {
-  const { code, stdout, stderr } = await letsIn(repo('version: 3\ndelegate: { resolvers: [codex] }\n'), ...REVIEW);
+  const { code, stdout, stderr } = await letsIn(repo('version: 4\ndelegate: { resolvers: [codex] }\n'), ...REVIEW);
   assert.equal(code, 2);
   assert.equal(stdout, '');
   assert.match(stderr, /codex/);
@@ -219,8 +240,8 @@ test('a name lets does not know is exit 2, naming it and the three names', async
 
 test('each strategy\'s --help names its intents', async () => {
   const cases: [string[], RegExp][] = [
-    [['delegate', 'review', 'run', '--help'], /choices: "plan", "code"/],
-    [['delegate', 'review', 'instructions', '--help'], /choices: "plan", "code"/],
+    [['delegate', 'review', 'run', '--help'], /choices: "review-plan", "review-build"/],
+    [['delegate', 'review', 'instructions', '--help'], /choices: "review-plan", "review-build"/],
   ];
   for (const [argv, intents] of cases) {
     assert.match((await lets(...argv)).stdout.replace(/\s+/g, ' '), intents, argv.join(' '));
@@ -230,7 +251,20 @@ test('each strategy\'s --help names its intents', async () => {
 test('instructions --help names its output and exit codes', async () => {
   const text = (await lets('delegate', 'review', 'instructions', '--help')).stdout.replace(/\s+/g, ' ');
   assert.match(text, /strategy, for, resolver, options and guidance/);
-  assert.match(text, /delegate\.<strategy>\.<intent>\.guidance/);
+  assert.match(text, /Exit codes: 0 ok 2 usage error/);
+});
+
+test('each instructions --help names the guidance key for each of its intents', async () => {
+  const cases: [string, string[]][] = [
+    ['review', ['--for review-plan: delegate.review-plan.guidance', '--for review-build: delegate.review-build.guidance']],
+    ['step', ['--for shape: delegate.shape.guidance', '--for plan: delegate.plan.guidance', '--for review-plan: delegate.plan.guidance',
+      '--for build: delegate.build.guidance', '--for review-build: delegate.build.guidance', '--for story: delegate.story.guidance']],
+  ];
+  for (const [strategy, lines] of cases) {
+    const text = (await lets('delegate', strategy, 'instructions', '--help')).stdout;
+    for (const named of lines) assert.match(text, new RegExp(`^ +${named.replaceAll('.', '\\.')}$`, 'm'), `${strategy}: ${named}`);
+    assert.doesNotMatch(text, /delegate\.<strategy>/, strategy);
+  }
 });
 
 test('step --help names instructions and run', async () => {
@@ -344,11 +378,6 @@ test('the handoff command is gone: exit 2, naming it as unknown, and no prompt i
   assert.equal(existsSync(join(r.cwd, '.workspace', 'lets-delegate')), false);
 });
 
-test('delegate --help shows a step guidance in its example', async () => {
-  const text = (await lets('delegate', '--help')).stdout.replace(/\s+/g, ' ');
-  assert.match(text, /review: code: guidance: .* step: build: guidance: /);
-});
-
 test('with no config, step run saves the prompt and is exit 3', async () => {
   const r = repo();
   const { code, stdout, stderr } = await letsIn(r, ...STEP.slice(0, 6), 'plan-x', ...STEP.slice(7));
@@ -389,7 +418,7 @@ test('go questions --help names the config file, the key, its two values and the
 });
 
 test('go questions with a question mode lets does not know is exit 2, naming the config file and go.questions', async () => {
-  const r = repo('version: 3\ngo:\n  questions: loud\n');
+  const r = repo('version: 4\ngo:\n  questions: loud\n');
   const { code, stdout, stderr } = await letsIn(r, 'go', 'questions');
   assert.equal(code, 2);
   assert.equal(stdout, '');

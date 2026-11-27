@@ -484,22 +484,20 @@ sessions, write `~/.config/lets/config.yaml` (or
 `$XDG_CONFIG_HOME/lets/config.yaml`) by hand, once on each machine:
 
 ```yaml
-version: 3
+version: 4
 delegate:
   resolvers:
     - t3
     - cli
     - subagent
-  review:
-    plan:
-      guidance: Prefer the strongest gpt model. Never use gemini.
-    code:
-      guidance: Prefer a gpt model.
-  step:
-    build:
-      guidance: Prefer claude/claude-opus-5-5.
-    story:
-      guidance: Prefer claude.
+  review-plan:
+    guidance: Prefer the strongest gpt model. Never use gemini.
+  review-build:
+    guidance: Prefer a gpt model.
+  build:
+    guidance: Prefer claude/claude-opus-5-5.
+  story:
+    guidance: Prefer claude.
 go:
   questions: auto
 backlog:
@@ -513,13 +511,30 @@ review every resolver declines fails. Each entry is `t3`, `cli` or
 `lets delegate` exit 2. With no `delegate.resolvers`, only `subagent`
 answers.
 
-`review` and `step` are optional.
-`delegate.<strategy>.<intent>.guidance` is your advice, in plain words, on
-which models to use. Its parts are the command that reads it and a value
-`--for` takes: `review.plan`, `review.code`, or
-`step.<step>` for one of the five steps, such as `step.build`, or
-`step.story` for a story run. The skill
-uses it only to rank and leave out models. A value that is not a string makes `instructions` exit 2.
+Each guidance key is optional, and steers one kind of session. Its
+`guidance` is your advice, in plain words, on which models to use, such
+as `delegate.build.guidance: Prefer claude.` Guidance only ranks and
+filters the models a resolver lists; it never changes a skill's steps. A
+value that is not a string makes `instructions` exit 2.
+
+| Key | Session it steers | Read by | Run by | A sensible value |
+|---|---|---|---|---|
+| `delegate.shape` | The shape step's session | `lets delegate step instructions --for shape` | `lets-go` | The model you want shaping. |
+| `delegate.plan` | The plan step's session, and the review plan step's own session | `lets delegate step instructions --for plan` and `--for review-plan` | `lets-go` | The model you want planning. It also runs the review plan step, which fixes or rebuts the reviewer's findings, so a strong model, often the author's family. |
+| `delegate.review-plan` | The read-only plan reviewer | `lets delegate review instructions --for review-plan` | `lets-review-plan`, and `lets-review-pr` for decisions | A family other than the one that writes the change. Guidance outranks the review skills' own rule to pick another family. |
+| `delegate.build` | The build step's session, and the review build step's own session | `lets delegate step instructions --for build` and `--for review-build` | `lets-go` | The model you want building. It also runs the review build step, which fixes or rebuts the reviewer's findings, so a strong model, often the author's family. |
+| `delegate.review-build` | The read-only code reviewer | `lets delegate review instructions --for review-build` | `lets-review-build`, and `lets-review-pr` for implementation | A family other than the one that writes the change. Guidance outranks the review skills' own rule to pick another family. |
+| `delegate.story` | The child `lets-go` session of a story run | `lets delegate step instructions --for story` | `lets-go`, in an epic run | The model that should run a child `lets-go` session. |
+
+The review plan step's own session takes `delegate.plan`, and the review
+build step's own session takes `delegate.build`, only until `lets-go`
+starts each reviewer itself, as stories #354 and #355 plan. Until then,
+choose the `delegate.plan` and `delegate.build` values for both sessions.
+
+A lets config from before version 4 kept guidance under `delegate.review`
+and `delegate.step`. `lets` names each old key and its new one: a
+`version: 3` file stops every command, and an old key in a `version: 4`
+file stops `instructions`. Rename the keys, then set `version: 4`.
 
 `go` holds the settings for `lets-go`. `go.questions`, the question
 mode, is `ask` or `auto`, and is optional. `lets-go` reads it through
@@ -540,7 +555,7 @@ Other keys are ignored, so a later `lets` can add settings beside these.
 A repository can commit its own lets config, `.lets/config.yaml` at the
 repository root, so every contributor and every clone gets the same
 settings. It takes the same keys as your lets config, and it also needs
-`version: 3`. `lets` finds the root with `git rev-parse --show-toplevel`,
+`version: 4`. `lets` finds the root with `git rev-parse --show-toplevel`,
 so it reads the file from any folder in the repository. Outside a Git
 repository, `lets` reads only your lets config.
 
@@ -552,13 +567,12 @@ file sets the backlog provider and the code review guidance, and keeps
 your chain and your other guidance:
 
 ```yaml
-version: 3
+version: 4
 backlog:
   provider: github
 delegate:
-  review:
-    code:
-      guidance: Prefer a gpt model.
+  review-build:
+    guidance: Prefer a gpt model.
 ```
 
 If a repository commits `delegate.resolvers`, end the list with

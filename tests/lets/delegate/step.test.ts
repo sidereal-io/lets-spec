@@ -18,7 +18,7 @@ const options = (over: Partial<StepOptions> = {}): StepOptions =>
 
 // commandDeps whose config lists t3, which runs steps, and more as given.
 const withT3 = (over: Parameters<typeof commandDeps>[0] = {}) =>
-  commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3] }\n', ...over, adapters: { t3: {}, ...over.adapters } });
+  commandDeps({ config: 'version: 4\ndelegate: { resolvers: [t3] }\n', ...over, adapters: { t3: {}, ...over.adapters } });
 // The resolvers asked to run a step, in order.
 const stepsBy = (t: ReturnType<typeof commandDeps>) => t.adapterCalls('step').map(([name]) => name);
 // stdout's one line, read as JSON.
@@ -28,7 +28,7 @@ const report = (t: ReturnType<typeof commandDeps>) => {
 };
 
 test('a resolver that runs no step passes it down the chain', async () => {
-  const t = commandDeps({ config: 'version: 3\ndelegate: { resolvers: [t3, cli] }\n', adapters: { t3: { steps: false }, cli: {} } });
+  const t = commandDeps({ config: 'version: 4\ndelegate: { resolvers: [t3, cli] }\n', adapters: { t3: { steps: false }, cli: {} } });
   assert.equal(await run(options(), t.deps), 0);
   assert.deepEqual(stepsBy(t), ['cli']);
   assert.equal(report(t).outcome, 'done');

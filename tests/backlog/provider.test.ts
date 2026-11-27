@@ -13,13 +13,13 @@ const FIND: StandInRow = { args: ['issue', 'list', '--state', 'open', '--search'
 test('with no backlog provider in the user\'s lets config, the backlog provider is GitHub', async (t) => {
   const configs = [
     undefined,
-    'version: 3\n',
-    'version: 3\ndelegate:\n  resolvers: [t3]\n',
-    'version: 3\nbacklog:\n',
-    'version: 3\nbacklog: {}\n',
-    'version: 3\nbacklog:\n  provider:\n',
-    'version: 3\nbacklog:\n  provider: github\n',
-    'version: 3\nbacklog:\n  provider: github\n  other: 1\n',
+    'version: 4\n',
+    'version: 4\ndelegate:\n  resolvers: [t3]\n',
+    'version: 4\nbacklog:\n',
+    'version: 4\nbacklog: {}\n',
+    'version: 4\nbacklog:\n  provider:\n',
+    'version: 4\nbacklog:\n  provider: github\n',
+    'version: 4\nbacklog:\n  provider: github\n  other: 1\n',
   ];
   for (const config of configs) {
     const b = backlog(t, [...LOOKUP_ONE, FIND], { config });
@@ -30,7 +30,7 @@ test('with no backlog provider in the user\'s lets config, the backlog provider 
 });
 
 test('an unknown backlog provider is unknown-backlog-provider, names the value, the file and github, and runs no gh command', async (t) => {
-  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 3\nbacklog:\n  provider: jria\n' });
+  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 4\nbacklog:\n  provider: jria\n' });
   const result = await b.lets('item', '136');
   assert.equal(result.code, 1, result.output);
   const out = b.json(result);
@@ -42,7 +42,7 @@ test('an unknown backlog provider is unknown-backlog-provider, names the value, 
 });
 
 test('a lets config lets cannot read is unknown-backlog-provider, names the file, and runs no gh command', async (t) => {
-  for (const config of ['version: 3\nbacklog:\n  provider: [jira]\n', 'version: 3\nbacklog: jira\n', 'backlog: {provider: [\n', 'backlog:\n  provider: jira\n']) {
+  for (const config of ['version: 4\nbacklog:\n  provider: [jira]\n', 'version: 4\nbacklog: jira\n', 'backlog: {provider: [\n', 'backlog:\n  provider: jira\n']) {
     const b = backlog(t, [...LOOKUP_ONE, { args: ['issue'], prefix: true, ...json({}) }], { config });
     const result = await b.lets('claim', '136');
     assert.equal(result.code, 1, `${config}\n${result.output}`);
@@ -62,7 +62,7 @@ test('a backlog that is not a mapping, or a provider that is not a name, is unkn
     ['backlog:\n  provider: \'\'', /backlog\.provider/],
   ];
   for (const [yaml, pattern] of cases) {
-    const b = backlog(t, [...LOOKUP_ONE, FIND], { config: `version: 3\n${yaml}\n` });
+    const b = backlog(t, [...LOOKUP_ONE, FIND], { config: `version: 4\n${yaml}\n` });
     const result = await b.lets('find', 'x');
     assert.equal(result.code, 1, `${yaml}\n${result.output}`);
     const out = b.json(result);
@@ -97,7 +97,7 @@ test('a lets config that lets may not read is unknown-backlog-provider, names th
     t.skip('root reads a file with mode 000, so the file cannot be made unreadable');
     return;
   }
-  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 3\n' });
+  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 4\n' });
   chmodSync(b.configFile, 0o000);
   const result = await b.lets('find', 'x');
   assert.equal(result.code, 1, result.output);
@@ -109,14 +109,14 @@ test('a lets config that lets may not read is unknown-backlog-provider, names th
 });
 
 test('the repository\'s backlog provider wins over the user\'s, with no error', async (t) => {
-  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 3\nbacklog:\n  provider: jria\n', repoConfig: 'version: 3\nbacklog:\n  provider: github\n' });
+  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 4\nbacklog:\n  provider: jria\n', repoConfig: 'version: 4\nbacklog:\n  provider: github\n' });
   const result = await b.lets('find', 'x');
   assert.equal(result.code, 0, result.output);
   assert.deepEqual(b.json(result), { issues: [] });
 });
 
 test('an unknown backlog provider in the repository\'s lets config names that file, and runs no gh command', async (t) => {
-  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 3\nbacklog:\n  provider: github\n', repoConfig: 'version: 3\nbacklog:\n  provider: jria\n' });
+  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 4\nbacklog:\n  provider: github\n', repoConfig: 'version: 4\nbacklog:\n  provider: jria\n' });
   const result = await b.lets('item', '136');
   assert.equal(result.code, 1, result.output);
   const out = b.json(result);
@@ -127,7 +127,7 @@ test('an unknown backlog provider in the repository\'s lets config names that fi
 });
 
 test('a bad backlog.provider in the repository\'s lets config names that file first', async (t) => {
-  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 3\nbacklog:\n  provider: github\n', repoConfig: 'version: 3\nbacklog:\n  provider: 7\n' });
+  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 4\nbacklog:\n  provider: github\n', repoConfig: 'version: 4\nbacklog:\n  provider: 7\n' });
   const result = await b.lets('find', 'x');
   assert.equal(result.code, 1, result.output);
   const out = b.json(result);
@@ -139,12 +139,23 @@ test('a bad backlog.provider in the repository\'s lets config names that file fi
 test('a bad backlog.provider in the user\'s lets config names that file, even when the repository\'s sets another backlog key', async (t) => {
   // The repository's file sets backlog but not backlog.provider, so naming
   // the file for backlog instead would blame the wrong one.
-  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 3\nbacklog:\n  provider: 7\n', repoConfig: 'version: 3\nbacklog:\n  other: 1\n' });
+  const b = backlog(t, [...LOOKUP_ONE, FIND], { config: 'version: 4\nbacklog:\n  provider: 7\n', repoConfig: 'version: 4\nbacklog:\n  other: 1\n' });
   const result = await b.lets('find', 'x');
   assert.equal(result.code, 1, result.output);
   const out = b.json(result);
   assert.equal(out.error, 'unknown-backlog-provider');
   assert.ok(out.message.startsWith(`${b.configFile}: `), out.message);
+  assert.deepEqual(b.calls(), []);
+});
+
+test('a version 3 repository\'s lets config is unknown-backlog-provider, naming its old guidance keys', async (t) => {
+  const b = backlog(t, [...LOOKUP_ONE, FIND], { repoConfig: 'version: 3\ndelegate:\n  step:\n    build:\n      guidance: Prefer claude.\n' });
+  const result = await b.lets('ready');
+  assert.equal(result.code, 1, result.output);
+  const out = b.json(result);
+  assert.equal(out.error, 'unknown-backlog-provider');
+  assert.ok(out.message.includes(b.repoConfigFile), out.message);
+  assert.match(out.message, /version must be 4, got 3\. Rename delegate\.step\.build to delegate\.build\./);
   assert.deepEqual(b.calls(), []);
 });
 
@@ -155,6 +166,6 @@ test('a repository\'s lets config with the old version is unknown-backlog-provid
   const out = b.json(result);
   assert.equal(out.error, 'unknown-backlog-provider');
   assert.ok(out.message.includes(b.repoConfigFile), out.message);
-  assert.match(out.message, /version/);
+  assert.match(out.message, /version must be 4/);
   assert.deepEqual(b.calls(), []);
 });

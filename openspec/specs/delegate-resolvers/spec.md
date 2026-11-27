@@ -9,22 +9,22 @@ Says what the `t3` and `cli` resolvers built into `lets` do when a `lets delegat
 `lets` SHALL have a resolver named `cli`. When the config lists it, it SHALL answer with `resolver` `cli` and its `options` wherever at least one of `codex`, `claude` or `agy` is on `PATH`. It SHALL NOT check which harness it runs in.
 
 #### Scenario: One CLI on PATH
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, `claude` is on `PATH`, and neither `codex` nor `agy` is, and the user runs `lets delegate review instructions --for code`
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, `claude` is on `PATH`, and neither `codex` nor `agy` is, and the user runs `lets delegate review instructions --for review-build`
 - **THEN** it exits 0, and its JSON line has `"resolver":"cli"` and `"options":["claude"]`
 
 #### Scenario: Inside T3 Code
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, the command runs inside T3 Code with `codex` on `PATH`, `codex debug models` lists `gpt-6-luna` with `visibility` `list`, and the user runs `lets delegate review instructions --for code`
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, the command runs inside T3 Code with `codex` on `PATH`, `codex debug models` lists `gpt-6-luna` with `visibility` `list`, and the user runs `lets delegate review instructions --for review-build`
 - **THEN** it exits 0, and its JSON line has `"resolver":"cli"` and `"options":["gpt/gpt-6-luna"]`
 
 ### Requirement: The cli resolver declines when no family CLI is on PATH
 When none of `codex`, `claude` or `agy` is on `PATH`, `cli` SHALL decline every review, every step and their instructions, and SHALL start no process. The next resolver in the chain answers, or the command exits 2 when none is left.
 
 #### Scenario: No family CLI
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, none of `codex`, `claude` or `agy` is on `PATH`, and the user runs `lets delegate review run --for code` with every required option
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, none of `codex`, `claude` or `agy` is on `PATH`, and the user runs `lets delegate review run --for review-build` with every required option
 - **THEN** it exits 2, stdout is empty, stderr says every resolver declined, and no process is started
 
 #### Scenario: No family CLI, and the default next
-- **WHEN** the config's `delegate.resolvers` is `[cli, subagent]`, none of `codex`, `claude` or `agy` is on `PATH`, and the user runs `lets delegate review instructions --for code`
+- **WHEN** the config's `delegate.resolvers` is `[cli, subagent]`, none of `codex`, `claude` or `agy` is on `PATH`, and the user runs `lets delegate review instructions --for review-build`
 - **THEN** its JSON line has `"resolver":"subagent"`, and no process is started
 
 #### Scenario: No family CLI, and a step
@@ -35,15 +35,15 @@ When none of `codex`, `claude` or `agy` is on `PATH`, `cli` SHALL decline every 
 When `cli` answers `lets delegate review run`, it SHALL run the CLI of the `--model` family as a child process in its read-only mode. That is `codex exec` with the read-only sandbox for `gpt`, `claude -p` in plan mode for `claude`, or `agy -p` in plan mode for `gemini`. It SHALL pass the review's effort. It SHALL pass the model part of `--model` unchanged, and SHALL add the effort to a `gemini` model as `<model>-<effort>`. It SHALL pass no model when `--model` is a bare family. The command SHALL print the CLI's final message. Its JSON line on stderr SHALL have the `--model` family as `family`, and a handle of kind `process`.
 
 #### Scenario: A review with codex
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex` is on `PATH`, the user runs `lets delegate review run --for code --model gpt/gpt-6-luna`, and codex ends with a final message
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex` is on `PATH`, the user runs `lets delegate review run --for review-build --model gpt/gpt-6-luna`, and codex ends with a final message
 - **THEN** codex runs with `-m gpt-6-luna`, the command exits 0 and prints codex's final message, and its JSON line on stderr has `"family":"gpt"`, `"model":"gpt-6-luna"` and a `handle` of kind `process`
 
 #### Scenario: A bare family
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, `claude` is on `PATH`, and the user runs `lets delegate review run --for code --model claude`
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, `claude` is on `PATH`, and the user runs `lets delegate review run --for review-build --model claude`
 - **THEN** claude runs with no `--model` argument, and the JSON line on stderr has `"family":"claude"`
 
 #### Scenario: A gemini model at high effort
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, `agy` is on `PATH`, and the user runs `lets delegate review run --for code --effort high --model gemini/gemini-3.8-flash`
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, `agy` is on `PATH`, and the user runs `lets delegate review run --for review-build --effort high --model gemini/gemini-3.8-flash`
 - **THEN** agy runs with `--model gemini-3.8-flash-high`
 
 #### Scenario: A review leaves the tree unchanged
@@ -66,7 +66,7 @@ When `cli` answers `lets delegate review run`, it SHALL run the CLI of the `--mo
 When a review that `cli` answered ends with a clean tree and a final message, `cli` SHALL remove the files it wrote for that session in `.workspace/lets-delegate/`. When the review ends otherwise, it SHALL leave them.
 
 #### Scenario: Finishing a review with codex
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, and `lets delegate review run --for code --name cli-resolver --model gpt` ends with a clean tree and codex's final message
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, and `lets delegate review run --for review-build --name cli-resolver --model gpt` ends with a clean tree and codex's final message
 - **THEN** it exits 0, and `.workspace/lets-delegate/cli-resolver.last-message.md` no longer exists
 
 #### Scenario: Finishing a review that changed the tree
@@ -78,7 +78,7 @@ When a review that `cli` answered ends with a clean tree and a final message, `c
 
 #### Scenario: Inside T3 Code
 - **WHEN** the config's `delegate.resolvers` is `[t3]` and the command runs in a process whose ancestor is the running T3 server
-- **AND** T3's catalogue lists only disabled provider instances, and the user runs `lets delegate review instructions --for code`
+- **AND** T3's catalogue lists only disabled provider instances, and the user runs `lets delegate review instructions --for review-build`
 - **THEN** it exits 0, its JSON line has `"resolver":"t3"` and `"options":[]`, and stderr is empty
 
 #### Scenario: Inside T3 Code on a system with no /proc
@@ -89,11 +89,11 @@ When a review that `cli` answered ends with a clean tree and a final message, `c
 When the process is not inside T3 Code, `t3` SHALL decline every review and step, and the instructions for each, and SHALL start no session. It SHALL NOT look for any other harness. The next resolver in the chain answers, or the command exits 2 when none is left.
 
 #### Scenario: Inside herdr
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, the user runs `lets delegate review run --for code` with every required option inside herdr, and no T3 server is its ancestor
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, the user runs `lets delegate review run --for review-build` with every required option inside herdr, and no T3 server is its ancestor
 - **THEN** it exits 2, stdout is empty, stderr says every resolver declined, and no thread is created
 
 #### Scenario: While T3 Code runs elsewhere
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, the T3 server is running, and the user runs `lets delegate review instructions --for code` in a terminal that the server did not start
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, the T3 server is running, and the user runs `lets delegate review instructions --for review-build` in a terminal that the server did not start
 - **THEN** it exits 2, stdout is empty, and stderr says every resolver declined
 
 #### Scenario: A step outside T3 Code
@@ -107,14 +107,14 @@ When the process is not inside T3 Code, `t3` SHALL decline every review and step
 - `gemini`: `gemini/<model>` for each id that `agy models` reports starting with `gemini-`, with its `-low`, `-medium` or `-high` suffix removed, once per model, in the order agy first reports them.
 
 #### Scenario: Every CLI on PATH
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex debug models` reports `gpt-reserve` with `visibility` `hide` and `gpt-6-luna` with `visibility` `list`, `agy models` reports `gemini-3.8-flash-high`, `gemini-3.8-flash-low` and `claude-sonnet-4-6`, and the user runs `lets delegate review instructions --for code`
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex debug models` reports `gpt-reserve` with `visibility` `hide` and `gpt-6-luna` with `visibility` `list`, `agy models` reports `gemini-3.8-flash-high`, `gemini-3.8-flash-low` and `claude-sonnet-4-6`, and the user runs `lets delegate review instructions --for review-build`
 - **THEN** its JSON line has `"options":["gpt/gpt-6-luna","claude","gemini/gemini-3.8-flash"]`
 
 ### Requirement: The cli resolver lists the bare family when a listing fails
 A family's model listing can fail: it exits non-zero, runs past its time limit, or prints what `cli` cannot read. Then `lets delegate review instructions` and `lets delegate step instructions` SHALL list the bare family in that family's place in `options`, and still exit 0. They SHALL name the CLI and the failure on stderr.
 
 #### Scenario: codex is signed out
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex` and `claude` are on `PATH`, `codex debug models` exits 1, and the user runs `lets delegate review instructions --for code`
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex` and `claude` are on `PATH`, `codex debug models` exits 1, and the user runs `lets delegate review instructions --for review-build`
 - **THEN** it exits 0, its JSON line has `"options":["gpt","claude"]`, and stderr names `codex`
 
 #### Scenario: codex is signed out, and the user asks for a step
@@ -135,42 +135,42 @@ It SHALL list the instances in the catalogue's order. For each one, it SHALL lis
 #### Scenario: Reading the catalogue
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and every instance in the catalogue is enabled and `ready`
 - **AND** the catalogue lists `codex` with `gpt-6-luna` and a default of `gpt-5.6-terra`, then `claudeAgent` with `claude-opus-5-5` and a default of `claude-fable-5-1`, then `antigravity` with `gemini-4-argon` and `gemini-3.8-flash`
-- **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
+- **AND** the user runs `lets delegate review instructions --for review-build` inside T3 Code
 - **THEN** its JSON line has `"options":["gpt/gpt-5.6-terra","gpt/gpt-6-luna","claude/claude-fable-5-1","claude/claude-opus-5-5","gemini/gemini-4-argon","gemini/gemini-3.8-flash"]`
 
 #### Scenario: Disabled and failing instances
 - **WHEN** the catalogue lists `codex` disabled with `gpt-6-luna`, `claudeAgent` with status `error` and `claude-opus-5-5`, and `antigravity` with status `warning` and `gemini-4-argon`
-- **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
+- **AND** the user runs `lets delegate review instructions --for review-build` inside T3 Code
 - **THEN** its JSON line has `"options":["gemini/gemini-4-argon"]`
 
 #### Scenario: An unavailable instance
 - **WHEN** the catalogue lists `antigravity`, enabled and `ready`, with `gemini-4-argon`, and T3 marks it `unavailable`
-- **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
+- **AND** the user runs `lets delegate review instructions --for review-build` inside T3 Code
 - **THEN** its JSON line has `"options":[]`
 
 #### Scenario: Model ids that cannot run
 - **WHEN** the catalogue lists `codex`, `ready`, with the custom models `my model` and `""`, then `gpt-6-luna`
-- **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
+- **AND** the user runs `lets delegate review instructions --for review-build` inside T3 Code
 - **THEN** its JSON line has `"options":["gpt/gpt-6-luna"]`
 
 #### Scenario: Hidden models
 - **WHEN** the catalogue lists `claudeAgent`, `ready`, with `claude-opus-5-5`, the default `claude-opus-4-5`, and the custom model `claude-lab`
-- **AND** the user has hidden `claude-opus-4-5` and `claude-lab` in T3 Code, and runs `lets delegate review instructions --for code` inside T3 Code
+- **AND** the user has hidden `claude-opus-4-5` and `claude-lab` in T3 Code, and runs `lets delegate review instructions --for review-build` inside T3 Code
 - **THEN** its JSON line has `"options":["claude/claude-opus-5-5","claude/claude-lab"]`
 
 #### Scenario: An instance t3 does not run
 - **WHEN** the catalogue lists `cursor`, then a second Codex instance `codex_work`, then `codex`, each enabled and `ready` with one model
-- **AND** `codex` lists `gpt-6-luna`, and the user runs `lets delegate review instructions --for code` inside T3 Code
+- **AND** `codex` lists `gpt-6-luna`, and the user runs `lets delegate review instructions --for review-build` inside T3 Code
 - **THEN** its JSON line has `"options":["gpt/gpt-6-luna"]`
 
 #### Scenario: Gemini models with an effort suffix
 - **WHEN** the catalogue lists `antigravity`, `ready`, with `gemini-3.8-flash-high` and `gemini-3.8-flash-low`
-- **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
+- **AND** the user runs `lets delegate review instructions --for review-build` inside T3 Code
 - **THEN** its JSON line has `"options":["gemini/gemini-3.8-flash"]`
 
 #### Scenario: The manifest lists a model the catalogue lacks
 - **WHEN** T3's `model-manifest.json` lists `codex` with `gpt-6-astra`, and the catalogue lists `codex`, `ready`, with only `gpt-6-luna`
-- **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
+- **AND** the user runs `lets delegate review instructions --for review-build` inside T3 Code
 - **THEN** its JSON line has `"options":["gpt/gpt-6-luna"]`
 
 ### Requirement: The T3 resolver lists no models when T3 gives no catalogue
@@ -178,22 +178,22 @@ Inside T3 Code, `t3` SHALL list no `options` when it has no catalogue 10 seconds
 
 #### Scenario: T3 does not reply
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the T3 server accepts the WebSocket but never replies
-- **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
+- **AND** the user runs `lets delegate review instructions --for review-build` inside T3 Code
 - **THEN** within 15 seconds it exits 0, its JSON line has `"options":[]`, and stderr says that T3 gave no model catalogue
 
 #### Scenario: T3 does not answer the ticket request
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the T3 server never answers the request for a WebSocket ticket
-- **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
+- **AND** the user runs `lets delegate review instructions --for review-build` inside T3 Code
 - **THEN** within 15 seconds it exits 0, its JSON line has `"options":[]`, and stderr says that T3 gave no model catalogue
 
 #### Scenario: T3 refuses the request
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 refuses the WebSocket with the message `unsupported orchestration protocol`
-- **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
+- **AND** the user runs `lets delegate review instructions --for review-build` inside T3 Code
 - **THEN** it exits 0, its JSON line has `"options":[]`, and stderr contains `unsupported orchestration protocol`
 
 #### Scenario: The reply has another shape
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 answers the catalogue request with `{"instances":[]}`
-- **AND** the user runs `lets delegate review instructions --for code` inside T3 Code
+- **AND** the user runs `lets delegate review instructions --for review-build` inside T3 Code
 - **THEN** it exits 0, its JSON line has `"options":[]`, and stderr says that T3 gave no model catalogue
 
 ### Requirement: The T3 resolver refuses a bare family T3 lists no model for
@@ -206,31 +206,31 @@ It SHALL start no thread, and SHALL say why on stderr. When it refuses every `--
 
 #### Scenario: No visible model
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `codex` with no models
-- **AND** the user runs `lets delegate review run --for code --model gpt` inside T3 Code
+- **AND** the user runs `lets delegate review run --for review-build --model gpt` inside T3 Code
 - **THEN** it exits 3, stderr names `codex`, and T3 receives no request to start a thread
 
 #### Scenario: A failing instance
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `claudeAgent` with status `error` and a default of `claude-fable-5-1`
-- **AND** the user runs `lets delegate review run --for code --model claude --model gpt` inside T3 Code, and the catalogue lists `codex`, `ready`, with `gpt-6-luna`
+- **AND** the user runs `lets delegate review run --for review-build --model claude --model gpt` inside T3 Code, and the catalogue lists `codex`, `ready`, with `gpt-6-luna`
 - **THEN** T3 receives one request to start a thread, and that thread runs `gpt-6-luna`
 
 #### Scenario: No catalogue
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the T3 server never replies to the catalogue request
-- **AND** the user runs `lets delegate review run --for code --model claude` inside T3 Code
+- **AND** the user runs `lets delegate review run --for review-build --model claude` inside T3 Code
 - **THEN** within 15 seconds it exits 3, stderr says that T3 gave no model catalogue, and T3 receives no request to start a thread
 
 ### Requirement: A resolver runs a model it never listed
 `t3` and `cli` SHALL try a `--model` that is not in their `options`, and SHALL NOT refuse it for that reason alone.
 
 #### Scenario: A model the listing lacks
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex debug models` does not list `gpt-6-astra`, and the user runs `lets delegate review run --for code --model gpt/gpt-6-astra`
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, `codex debug models` does not list `gpt-6-astra`, and the user runs `lets delegate review run --for review-build --model gpt/gpt-6-astra`
 - **THEN** codex runs with `-m gpt-6-astra`
 
 ### Requirement: A refusal exits 3
 When `t3` or `cli` answers, the harness or the account can say no before the model gives any output. `lets delegate review run` and `lets delegate step run` SHALL treat that as a refusal, and SHALL say why on stderr. A refusal covers a harness that cannot start the session, and a missing harness setup, such as a T3 project. It also covers an account with no access or no tokens left, and a model the harness cannot run. When every `--model` is refused, the command exits 3. The command SHALL exit 4 for `t3` or `cli` only for an outcome it cannot know, such as no reply from T3.
 
 #### Scenario: The CLI refuses the model
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, the user runs `lets delegate review run --for code --model gpt/gpt-6-astra`, and codex exits 1 with nothing on stdout
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, the user runs `lets delegate review run --for review-build --model gpt/gpt-6-astra`, and codex exits 1 with nothing on stdout
 - **THEN** it exits 3, and stderr holds the end of codex's stderr
 
 #### Scenario: The CLI refuses the model for a step
@@ -244,11 +244,11 @@ When `t3` or `cli` answers, the harness or the account can say no before the mod
 - **THEN** it exits 3, stdout is empty, and stderr names `claude`
 
 #### Scenario: A refusal after an earlier run with the same name
-- **WHEN** an earlier `gpt` review named `x` left `.workspace/lets-delegate/x.last-message.md`, and a new `lets delegate review run --for code --name x --model gpt/gpt-6-astra` that `cli` answers gets a codex that exits 1 without writing that file
+- **WHEN** an earlier `gpt` review named `x` left `.workspace/lets-delegate/x.last-message.md`, and a new `lets delegate review run --for review-build --name x --model gpt/gpt-6-astra` that `cli` answers gets a codex that exits 1 without writing that file
 - **THEN** it exits 3, not 5
 
 #### Scenario: T3 has no project for the repository
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for code` with every required option inside T3 Code in a repository that T3 has no project for
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for review-build` with every required option inside T3 Code in a repository that T3 has no project for
 - **THEN** it exits 3, no thread is created, and stderr names the repository
 
 #### Scenario: T3 fails the run before any message
@@ -263,7 +263,7 @@ When `t3` or `cli` answers, the harness or the account can say no before the mod
 When `t3` refuses a model for a thread it started, it SHALL archive that thread first. When it cannot, it SHALL still refuse, and stderr SHALL name the thread.
 
 #### Scenario: A refused model
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 fails the run of the thread that `lets delegate review run --for code`, with every required option, started, before any assistant message
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 fails the run of the thread that `lets delegate review run --for review-build`, with every required option, started, before any assistant message
 - **THEN** the thread is archived, and the command exits 3
 
 ### Requirement: The T3 resolver keeps its token beside the lets config
@@ -344,18 +344,18 @@ When a step that `cli` answered ends with a `done` report, `cli` SHALL remove th
 When `t3` answers `lets delegate review run`, it SHALL open the thread in T3's default interaction mode, never in plan mode, whatever `--for` says. A review that changes files outside `.workspace/` SHALL still exit 7, as for every resolver.
 
 #### Scenario: A plan review opens in default mode
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for plan --effort medium --model gemini/gemini-4-argon` with every required option inside T3 Code
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for review-plan --effort medium --model gemini/gemini-4-argon` with every required option inside T3 Code
 - **THEN** the thread opens with interaction mode `default`
 
 #### Scenario: A code review opens in default mode
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for code --model gpt/gpt-6-luna` with every required option inside T3 Code
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for review-build --model gpt/gpt-6-luna` with every required option inside T3 Code
 - **THEN** the thread opens with interaction mode `default`
 
 ### Requirement: A T3 review that returns a plan exits 5
 A run can end holding a proposed plan. Then `lets delegate review run` SHALL exit 5 and print nothing on stdout. Its stderr SHALL say `the session returned a plan, not a result`, followed by the thread's id. `t3` SHALL NOT archive the thread, so a person can read it. A run that holds no proposed plan SHALL be read as it is today.
 
 #### Scenario: The run ends with a proposed plan
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for code` with every required option inside T3 Code
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for review-build` with every required option inside T3 Code
 - **AND** the thread's run completes holding a proposed plan and a final message
 - **THEN** the command exits 5, stdout is empty, stderr says `the session returned a plan, not a result (thread <id>)`, and the thread is not archived
 
@@ -367,18 +367,18 @@ A run can end holding a proposed plan. Then `lets delegate review run` SHALL exi
 When `t3` answers `lets delegate review run`, the review's `checkout` SHALL be the checkout T3 records for the thread: the thread's worktree when T3 records one, or else the T3 project's root. It SHALL NOT be the checkout `t3` asked for, when T3 records another.
 
 #### Scenario: T3 runs the review in the worktree it was asked for
-- **WHEN** the user runs `lets delegate review run --for code` that `t3` answers in the linked worktree `/w/fix-login`, and T3 records the thread in `/w/fix-login`
+- **WHEN** the user runs `lets delegate review run --for review-build` that `t3` answers in the linked worktree `/w/fix-login`, and T3 records the thread in `/w/fix-login`
 - **THEN** the JSON line on stderr has `"checkout":"/w/fix-login"`
 
 #### Scenario: T3 runs the review in the project's root instead
-- **WHEN** the user runs `lets delegate review run --for code` that `t3` answers in the linked worktree `/w/fix-login`, and T3 records the thread with no worktree, in the project whose root is `/r`
+- **WHEN** the user runs `lets delegate review run --for review-build` that `t3` answers in the linked worktree `/w/fix-login`, and T3 records the thread with no worktree, in the project whose root is `/r`
 - **THEN** the JSON line on stderr has `"checkout":"/r"`
 
 ### Requirement: A T3 review stops to ask only with a pending request
 When `t3` answers `lets delegate review run`, it SHALL treat the session as stopped to ask only when T3 holds a pending request for the thread. Then the command SHALL exit 5 at once, print nothing on stdout, and say `the session stopped to ask` on stderr, followed by the thread's id. A run that T3 shows as `waiting` with no pending request SHALL NOT end the review. `t3` SHALL keep waiting for that run to end, until the review's time limit.
 
 #### Scenario: The run shows waiting for a moment, then completes
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for code --model gpt/gpt-6-luna` with every required option inside T3 Code
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, and the user runs `lets delegate review run --for review-build --model gpt/gpt-6-luna` with every required option inside T3 Code
 - **AND** T3 shows the thread's run as `waiting`, with no pending request, and then as completed with a final message and no proposed plan
 - **THEN** the command exits 0 and prints the final message
 
@@ -505,26 +505,26 @@ A bare family SHALL run a model from T3's catalogue, chosen from that family's p
 A visible model is one the user has not hidden in T3 Code. A custom model is always visible. For `gemini`, the chosen model SHALL have its `-low`, `-medium` or `-high` suffix removed.
 
 #### Scenario: A review inside T3 Code
-- **WHEN** the config's `delegate.resolvers` is `[t3]`, the user runs `lets delegate review run --for code --model claude/claude-opus-5-5` inside T3 Code, the project has a default model of `gpt-6-luna`, and the session ends with a final message
+- **WHEN** the config's `delegate.resolvers` is `[t3]`, the user runs `lets delegate review run --for review-build --model claude/claude-opus-5-5` inside T3 Code, the project has a default model of `gpt-6-luna`, and the session ends with a final message
 - **THEN** the thread runs `claude-opus-5-5`, the command exits 0, and its JSON line on stderr has `"family":"claude"` and a `handle` of kind `thread`
 
 #### Scenario: A gemini review runs the model as given
-- **WHEN** the config's `delegate.resolvers` is `[t3]` and the user runs `lets delegate review run --for plan --effort medium --model gemini/gemini-4-argon` inside T3 Code
+- **WHEN** the config's `delegate.resolvers` is `[t3]` and the user runs `lets delegate review run --for review-plan --effort medium --model gemini/gemini-4-argon` inside T3 Code
 - **THEN** the thread runs `gemini-4-argon`, with no effort option
 
 #### Scenario: A bare family runs the catalogue's default
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `codex` with `gpt-6-luna` and a default of `gpt-5.6-terra`
-- **AND** T3's `model-manifest.json` gives `codex` no default, and the user runs `lets delegate review run --for code --model gpt` inside T3 Code
+- **AND** T3's `model-manifest.json` gives `codex` no default, and the user runs `lets delegate review run --for review-build --model gpt` inside T3 Code
 - **THEN** the thread runs `gpt-5.6-terra`
 
 #### Scenario: A bare family with no default runs the first visible model
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `codex` with `gpt-5.6-terra` as its default, then `gpt-6-luna`
-- **AND** the user has hidden `gpt-5.6-terra` in T3 Code, and runs `lets delegate review run --for code --model gpt` inside T3 Code
+- **AND** the user has hidden `gpt-5.6-terra` in T3 Code, and runs `lets delegate review run --for review-build --model gpt` inside T3 Code
 - **THEN** the thread runs `gpt-6-luna`
 
 #### Scenario: A bare gemini review runs the default without its effort
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and the catalogue lists `antigravity` with a default of `gemini-3.8-flash-high`
-- **AND** the user runs `lets delegate review run --for plan --effort low --model gemini` inside T3 Code
+- **AND** the user runs `lets delegate review run --for review-plan --effort low --model gemini` inside T3 Code
 - **THEN** the thread runs `gemini-3.8-flash`, with no effort option
 
 ### Requirement: The T3 resolver opens a review in the checkout that asked for it
@@ -537,23 +537,23 @@ In every case, the thread SHALL belong to the T3 project for the main checkout. 
 
 #### Scenario: A review from a linked worktree
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 has a project for the main checkout `/r`
-- **AND** the user runs `lets delegate review run --for code` with every required option inside T3 Code, in the linked worktree `/w/fix-login` on branch `fix-login`
+- **AND** the user runs `lets delegate review run --for review-build` with every required option inside T3 Code, in the linked worktree `/w/fix-login` on branch `fix-login`
 - **THEN** the thread runs in `/w/fix-login`, on branch `fix-login`, in the project for `/r`
 
 #### Scenario: A review from a subdirectory of a linked worktree
-- **WHEN** the user runs `lets delegate review run --for code` that `t3` answers from `/w/fix-login/lets`, inside the linked worktree `/w/fix-login`
+- **WHEN** the user runs `lets delegate review run --for review-build` that `t3` answers from `/w/fix-login/lets`, inside the linked worktree `/w/fix-login`
 - **THEN** the thread runs in `/w/fix-login`, not in `/w/fix-login/lets`
 
 #### Scenario: A linked worktree with a detached HEAD
-- **WHEN** the user runs `lets delegate review run --for code` that `t3` answers in the linked worktree `/w/fix-login`, which has a detached HEAD
+- **WHEN** the user runs `lets delegate review run --for review-build` that `t3` answers in the linked worktree `/w/fix-login`, which has a detached HEAD
 - **THEN** the thread runs in `/w/fix-login`, with no branch
 
 #### Scenario: A review from the main checkout
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 has a project for `/r`
-- **AND** the user runs `lets delegate review run --for code` with every required option inside T3 Code, in `/r` on branch `main`
+- **AND** the user runs `lets delegate review run --for review-build` with every required option inside T3 Code, in `/r` on branch `main`
 - **THEN** the thread runs in the project checkout, on branch `main`, with no worktree
 
 #### Scenario: A linked worktree of a repository T3 has no project for
 - **WHEN** the config's `delegate.resolvers` is `[t3]`, and T3 has no project for the main checkout `/r`
-- **AND** the user runs `lets delegate review run --for code` with every required option inside T3 Code, in the linked worktree `/w/fix-login`
+- **AND** the user runs `lets delegate review run --for review-build` with every required option inside T3 Code, in the linked worktree `/w/fix-login`
 - **THEN** it exits 3, `t3` creates no thread, and stderr names `/r`

@@ -87,12 +87,12 @@ In a `lets-go` step, return `needs-input` whenever this skill asks the user.
 2. Ask what can run. From the repo root, run:
 
    ```bash
-   lets delegate review instructions --for plan
+   lets delegate review instructions --for review-plan
    ```
 
    It prints one JSON line. `options` is the **listed models**, the ones the
    resolver can run now. `guidance` is the user's prose for plan reviews,
-   from `delegate.review.plan.guidance` in the `lets` config, or `null`.
+   from `delegate.review-plan.guidance` in the `lets` config, or `null`.
    If it exits non-zero, stop, and show the user its stderr.
 3. Keep the **allowed models**: the listed models left after guidance
    exclusions. Rank the allowed models: the guidance first, then families
@@ -116,7 +116,7 @@ In a `lets-go` step, return `needs-input` whenever this skill asks the user.
    `gpt`, `claude` or `gemini`.
 
    ```bash
-   lets delegate review run --for plan --name <change>-plan-review \
+   lets delegate review run --for review-plan --name <change>-plan-review \
      --prompt-file .workspace/<change>-review-prompt.md \
      --source-family <family> --effort <tier> --model <first> --model <second> \
      > .workspace/<change>-review-raw.md 2> .workspace/<change>-review-meta.txt

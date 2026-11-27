@@ -15,8 +15,8 @@ import { agyWrite, assertClockDate, assertClockMs, claudeWrite, codexWrite, endi
 // text, matched as itself in a RegExp, so a temporary path holds no pattern.
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
-const CLI_THEN_SUBAGENT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
+const CLI = 'version: 4\ndelegate: { resolvers: [cli] }\n';
+const CLI_THEN_SUBAGENT = 'version: 4\ndelegate: { resolvers: [cli, subagent] }\n';
 const DONE = ending('outcome: done\nevidence:\n  - "commit 3f2a1c0"\n');
 const NEEDS_INPUT = ending('outcome: needs-input\nquestions:\n  - question: Which schema?\n');
 const FAILED = ending('outcome: failed\nreason: tests fail on main\n');
@@ -231,7 +231,7 @@ describe('step run', () => {
   });
 
   test('a resolver lets does not know is exit 2, naming the file and the entry, and no CLI runs', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [codex] }\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate: { resolvers: [codex] }\n' });
     const clis = everyCli(repo.standIns);
     const result = await repo.run(stepRun());
     failed(result, 2);
@@ -240,7 +240,13 @@ describe('step run', () => {
   });
 
   test('a step ignores the guidance, even one that is not a string', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate:\n  resolvers: [cli]\n  step:\n    build:\n      guidance: 42\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  build:\n    guidance: 42\n' });
+    claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
+    assert.equal(reportOf(await repo.run(stepRun())).outcome, 'done');
+  });
+
+  test('a step ignores an old guidance key', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: Prefer gpt.\n  step:\n    build:\n      guidance: Prefer claude.\n' });
     claude(repo.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
     assert.equal(reportOf(await repo.run(stepRun())).outcome, 'done');
   });
@@ -307,10 +313,10 @@ describe('step run', () => {
   });
 
   test('the repository\'s chain replaces the user\'s, and a bad resolver there is exit 2, naming that file', async (t) => {
-    const wins = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent] }\n', repo: CLI });
+    const wins = delegateRepo(t, { user: 'version: 4\ndelegate: { resolvers: [subagent] }\n', repo: CLI });
     claude(wins.standIns, { rows: [{ args: claudeWrite(), stdout: DONE }] });
     assert.equal(recordOf(await wins.run(stepRun())).resolver, 'cli');
-    const bad = delegateRepo(t, { user: CLI, repo: 'version: 3\ndelegate: { resolvers: [codex] }\n' });
+    const bad = delegateRepo(t, { user: CLI, repo: 'version: 4\ndelegate: { resolvers: [codex] }\n' });
     const clis = everyCli(bad.standIns);
     const result = await bad.run(stepRun());
     failed(result, 2);

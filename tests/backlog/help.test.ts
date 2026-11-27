@@ -52,7 +52,7 @@ test('lets backlog --help lists waves and its result', async (t) => {
 });
 
 test('lets backlog --help names the repository\'s lets config when it sets the backlog provider', async (t) => {
-  const { stdout, b } = await help(t, ['--help'], { repoConfig: 'version: 3\nbacklog:\n  provider: github\n' });
+  const { stdout, b } = await help(t, ['--help'], { repoConfig: 'version: 4\nbacklog:\n  provider: github\n' });
   assert.ok(stdout.includes(`The backlog provider is github, set in ${b.repoConfigFile}`), stdout);
 });
 

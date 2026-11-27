@@ -12,14 +12,14 @@ import { agy, claude, codex, git, type LetsResult, snapshot, unstartable } from 
 import { delegateRepo, PROMPT } from './repo.ts';
 import { stepRun } from './steps.ts';
 
-const CLI = 'version: 3\ndelegate: { resolvers: [cli] }\n';
-const CLI_THEN_SUBAGENT = 'version: 3\ndelegate: { resolvers: [cli, subagent] }\n';
+const CLI = 'version: 4\ndelegate: { resolvers: [cli] }\n';
+const CLI_THEN_SUBAGENT = 'version: 4\ndelegate: { resolvers: [cli, subagent] }\n';
 const FINDINGS = 'FINDINGS\n';
 // The session name lets makes of the review's --name.
 const SESSION = 'x-plan-review';
 
 interface Review {
-  for?: 'code' | 'plan';
+  for?: 'review-build' | 'review-plan';
   name?: string;
   promptFile?: string;
   sourceFamily?: string;
@@ -32,7 +32,7 @@ interface Review {
 // X Plan Review of claude's work, at high effort, on gpt/gpt-6-luna,
 // unless over says otherwise.
 function review(over: Review = {}): string[] {
-  const { for: intent = 'code', name = 'X Plan Review', promptFile = 'p.md', sourceFamily = 'claude', effort = 'high', models = ['gpt/gpt-6-luna'], timeoutMinutes } = over;
+  const { for: intent = 'review-build', name = 'X Plan Review', promptFile = 'p.md', sourceFamily = 'claude', effort = 'high', models = ['gpt/gpt-6-luna'], timeoutMinutes } = over;
   return ['delegate', 'review', 'run', '--for', intent, '--name', name, '--prompt-file', promptFile, '--source-family', sourceFamily, '--effort', effort,
     ...models.flatMap((model) => ['--model', model]), ...(timeoutMinutes === undefined ? [] : ['--timeout-minutes', String(timeoutMinutes)])];
 }
@@ -86,7 +86,7 @@ describe('review run', () => {
     assert.deepEqual(Object.keys(meta), KEYS);
     const { durationSeconds, ...rest } = meta;
     assert.deepEqual(rest, {
-      for: 'code', resolver: 'cli', family: 'gpt', model: 'gpt-6-luna', independent: true,
+      for: 'review-build', resolver: 'cli', family: 'gpt', model: 'gpt-6-luna', independent: true,
       handle: { kind: 'process', id: SESSION }, checkout: repo.cwd, commit: repo.head, gitClean: true,
     });
     assert.equal(typeof durationSeconds, 'number');
@@ -98,10 +98,10 @@ describe('review run', () => {
     assert.deepEqual(stand.cwds(), [repo.cwd]);
   });
 
-  test('a plan review\'s metadata line says for: plan', async (t) => {
+  test('a plan review\'s metadata line says for: review-plan', async (t) => {
     const repo = delegateRepo(t, { user: CLI });
     codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
-    assert.equal(metadata(await repo.run(review({ for: 'plan' }))).for, 'plan');
+    assert.equal(metadata(await repo.run(review({ for: 'review-plan' }))).for, 'review-plan');
   });
 
   test('a session that commits gives the commit it made, not the one before it', async (t) => {
@@ -206,22 +206,28 @@ describe('review run', () => {
   });
 
   test('subagent runs no program but git, even with every family CLI on PATH', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent] }\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate: { resolvers: [subagent] }\n' });
     const clis = everyCli(repo.standIns);
     failed(await repo.run(review()), 3);
     for (const [name, stand] of Object.entries(clis)) assert.deepEqual(stand.calls(), [], name);
   });
 
   test('a handoff key from an earlier lets is ignored, with no message about it', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate:\n  resolvers: [cli]\n  handoff:\n    apply:\n      guidance: Prefer claude.\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  handoff:\n    apply:\n      guidance: Prefer claude.\n' });
     codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
     const result = await repo.run(review());
     assert.equal(metadata(result).resolver, 'cli');
     assert.doesNotMatch(result.stderr, /handoff/);
   });
 
+  test('a review ignores an old guidance key', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: Prefer gpt.\n  step:\n    build:\n      guidance: Prefer claude.\n' });
+    codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
+    assert.equal(metadata(await repo.run(review())).resolver, 'cli');
+  });
+
   test('a review ignores the guidance, even one that is not a string', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: 42\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate:\n  resolvers: [cli]\n  review-build:\n    guidance: 42\n' });
     const stand = codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
     const result = await repo.run(review());
     assert.equal(metadata(result).resolver, 'cli');
@@ -242,7 +248,7 @@ describe('review run', () => {
 
   test('a resolver lets does not know is exit 2, naming the file, the entry and the three names', async (t) => {
     for (const entry of ['/opt/r/old-resolver', 'bin/old-resolver']) {
-      const repo = delegateRepo(t, { user: `version: 3\ndelegate:\n  resolvers:\n    - ${entry}\n` });
+      const repo = delegateRepo(t, { user: `version: 4\ndelegate:\n  resolvers:\n    - ${entry}\n` });
       const clis = everyCli(repo.standIns);
       const result = await repo.run(review());
       failed(result, 2);
@@ -271,7 +277,7 @@ describe('review run', () => {
 
   test('the repository\'s chain replaces the user\'s whole', async (t) => {
     // Merged, the user's subagent would answer with exit 3.
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent] }\n', repo: CLI });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate: { resolvers: [subagent] }\n', repo: CLI });
     const result = await repo.run(review());
     failed(result, 2);
     assert.match(result.stderr, /every resolver declined/);
@@ -279,19 +285,19 @@ describe('review run', () => {
   });
 
   test('a null chain in the repository\'s lets config keeps the user\'s chain', async (t) => {
-    const repo = delegateRepo(t, { user: CLI, repo: 'version: 3\ndelegate: { resolvers: null }\n' });
+    const repo = delegateRepo(t, { user: CLI, repo: 'version: 4\ndelegate: { resolvers: null }\n' });
     codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
     assert.equal(metadata(await repo.run(review())).resolver, 'cli');
   });
 
   test('a bad user\'s chain that the repository replaces does not stop a review', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [codex] }\n', repo: CLI });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate: { resolvers: [codex] }\n', repo: CLI });
     codex(repo.standIns, [], { rows: [codexAnswers(repo.cwd)] });
     assert.equal(metadata(await repo.run(review())).resolver, 'cli');
   });
 
   test('a bad resolver in the repository\'s lets config is exit 2, naming that file and not the user\'s', async (t) => {
-    const repo = delegateRepo(t, { user: CLI, repo: 'version: 3\ndelegate: { resolvers: [codex] }\n' });
+    const repo = delegateRepo(t, { user: CLI, repo: 'version: 4\ndelegate: { resolvers: [codex] }\n' });
     const result = await repo.run(review());
     failed(result, 2);
     assert.ok(result.stderr.includes(repo.repoConfig), result.stderr);
@@ -300,11 +306,29 @@ describe('review run', () => {
   });
 
   test('a repository\'s lets config with the old version is exit 2, naming it', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\n', repo: 'version: 2\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\n', repo: 'version: 2\n' });
     const result = await repo.run(review());
     failed(result, 2);
     assert.ok(result.stderr.includes(`${repo.repoConfig}: `), result.stderr);
-    assert.match(result.stderr, /version must be 3/);
+    assert.match(result.stderr, /version must be 4/);
+  });
+
+  test('a version 3 file is exit 2 before any resolver, naming each old guidance key and its new key', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate:\n  resolvers: [cli]\n  review:\n    code:\n      guidance: Prefer gpt.\n' });
+    const stand = codex(repo.standIns, []);
+    const result = await repo.run(review());
+    failed(result, 2);
+    assert.ok(result.stderr.includes(`${repo.userConfig}: `), result.stderr);
+    assert.match(result.stderr, /version must be 4, got 3\. Rename delegate\.review\.code to delegate\.review-build\./);
+    assert.deepEqual(stand.calls(), []);
+  });
+
+  test('a version 3 file with no guidance names only the version', async (t) => {
+    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [cli] }\n' });
+    const result = await repo.run(review());
+    failed(result, 2);
+    assert.ok(result.stderr.includes(`${repo.userConfig}: version must be 4, got 3. Then set version: 4.`), result.stderr);
+    assert.doesNotMatch(result.stderr, /delegate\.review/);
   });
 
   test('a repository\'s lets config that is a folder is exit 2, naming it', async (t) => {
@@ -472,7 +496,7 @@ describe('review run', () => {
 // When the default, subagent, is asked. PATH holds no node in any of
 // these runs, so each also shows the default needs only lets's own Node.
 describe('the default', () => {
-  const instructions = ['delegate', 'review', 'instructions', '--for', 'code'];
+  const instructions = ['delegate', 'review', 'instructions', '--for', 'review-build'];
   const savedPrompt = (cwd: string) => join(cwd, '.workspace', 'lets-delegate', 'build-x.prompt.md');
   const resolverOf = (result: LetsResult) => {
     assert.equal(result.code, 0, result.output);
@@ -480,7 +504,7 @@ describe('the default', () => {
   };
 
   test('with no chain in the config, subagent answers', async (t) => {
-    for (const user of [undefined, 'version: 3\n', 'version: 3\ndelegate:\n  review:\n    code:\n      guidance: Prefer claude.\n']) {
+    for (const user of [undefined, 'version: 4\n', 'version: 4\ndelegate:\n  review-build:\n    guidance: Prefer claude.\n']) {
       const repo = delegateRepo(t, { user });
       assert.equal(resolverOf(await repo.run(instructions)), 'subagent', String(user));
     }
@@ -499,7 +523,7 @@ describe('the default', () => {
   });
 
   test('with no node on PATH, subagent saves a step\'s prompt and is exit 3, naming itself', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent] }\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate: { resolvers: [subagent] }\n' });
     const result = await repo.run(stepRun());
     failed(result, 3);
     assert.match(result.stderr, /subagent/);
@@ -507,7 +531,7 @@ describe('the default', () => {
   });
 
   test('an empty chain declines a step: exit 2, naming the config', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [] }\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate: { resolvers: [] }\n' });
     const result = await repo.run(stepRun());
     failed(result, 2);
     assert.match(result.stderr, /every resolver declined/);
@@ -515,7 +539,7 @@ describe('the default', () => {
   });
 
   test('a bad entry after subagent stops a step with exit 2, and saves no prompt', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [subagent, /opt/r/old-resolver] }\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate: { resolvers: [subagent, /opt/r/old-resolver] }\n' });
     const result = await repo.run(stepRun());
     failed(result, 2);
     assert.ok(result.stderr.includes('/opt/r/old-resolver'), result.stderr);
@@ -523,7 +547,7 @@ describe('the default', () => {
   });
 
   test('a chain that declines names the user\'s lets config when the repository\'s sets no delegate', async (t) => {
-    const repo = delegateRepo(t, { user: 'version: 3\ndelegate: { resolvers: [] }\n', repo: 'version: 3\n' });
+    const repo = delegateRepo(t, { user: 'version: 4\ndelegate: { resolvers: [] }\n', repo: 'version: 4\n' });
     const result = await repo.run(stepRun());
     failed(result, 2);
     assert.match(result.stderr, /every resolver declined/);

@@ -13,13 +13,13 @@ import { test } from 'node:test';
 import { run } from '../../../lets/src/delegate/instructions.ts';
 import { commandDeps } from './fixtures/command-deps.ts';
 
-const review = { strategy: 'review', for: 'code' } as const;
+const review = { strategy: 'review', for: 'review-build' } as const;
 const step = { strategy: 'step', for: 'plan' } as const;
 // commandDeps whose config lists only t3, which detects, as a fake adapter.
-const withT3 = () => commandDeps({ config: 'version: 3\ndelegate:\n  resolvers: [t3]\n', adapters: { t3: {} } });
+const withT3 = () => commandDeps({ config: 'version: 4\ndelegate:\n  resolvers: [t3]\n', adapters: { t3: {} } });
 
 test('step instructions skip a resolver that runs no step', async () => {
-  const deps = () => commandDeps({ config: 'version: 3\ndelegate: { resolvers: [cli, t3] }\n', adapters: { cli: { steps: false }, t3: {} } });
+  const deps = () => commandDeps({ config: 'version: 4\ndelegate: { resolvers: [cli, t3] }\n', adapters: { cli: { steps: false }, t3: {} } });
   const t = deps();
   assert.equal(await run(step, t.deps), 0);
   assert.equal(JSON.parse(t.stdout()).resolver, 't3');

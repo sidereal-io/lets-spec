@@ -10,6 +10,8 @@ description: Architecture decision record (ADR) for keeping every lets setting i
 
 > Builds on [ADR-002](ADR-002-lets-owns-the-delegate-config.md): only `lets` reads the config. This record says where the file lives and how it is laid out.
 
+> Partly superseded by [ADR-031](ADR-031-each-guidance-key-names-the-step-it-steers.md): guidance no longer sits at the path of the command that reads it. Each guidance key names the step it steers, such as `delegate.plan.guidance` and `delegate.review-plan.guidance`. The one file, its `version` and its one section per command group still hold.
+
 ## Context
 
 `lets` reads one user-level file, which the user writes by hand on each machine. It used to be `~/.config/lets-delegate/config.yaml`, named for the `lets delegate` command group. Its keys assumed delegation was all there is: `resolvers` at the top level, and `delegations.<intent>.guidance`, which listed the intents `plan`, `code` and `apply` side by side. In fact `plan` and `code` belong to `lets delegate review`, and `apply` belongs to `lets delegate handoff`. The next setting for another command group, such as `lets sync`, would have needed either a second file or a key in a file named for something else. The file's location and shape are a contract with every user's machine, so each change to them breaks every user's setup.

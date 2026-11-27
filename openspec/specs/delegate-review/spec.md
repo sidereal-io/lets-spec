@@ -9,12 +9,12 @@ Says what `lets delegate review run` records about a finished review, so a skill
 When `lets delegate review run` exits 0, the JSON line it prints on stderr SHALL hold `for`, the intent that `--for` gives, as its first field. The line SHALL still hold `resolver`, `family`, `model`, `independent`, `handle`, `gitClean` and `durationSeconds`.
 
 #### Scenario: A code review
-- **WHEN** a resolver answers a run, and the user runs `lets delegate review run --for code`
-- **THEN** the command exits 0, and its stderr ends with one JSON line that starts `{"for":"code",` and holds `resolver`, `family`, `model`, `independent`, `handle`, `gitClean` and `durationSeconds`
+- **WHEN** a resolver answers a run, and the user runs `lets delegate review run --for review-build`
+- **THEN** the command exits 0, and its stderr ends with one JSON line that starts `{"for":"review-build",` and holds `resolver`, `family`, `model`, `independent`, `handle`, `gitClean` and `durationSeconds`
 
 #### Scenario: A plan review
-- **WHEN** a resolver answers a run, and the user runs `lets delegate review run --for plan`
-- **THEN** the command exits 0, and its stderr ends with one JSON line that starts `{"for":"plan",` and holds `resolver`, `family`, `model`, `independent`, `handle`, `gitClean` and `durationSeconds`
+- **WHEN** a resolver answers a run, and the user runs `lets delegate review run --for review-plan`
+- **THEN** the command exits 0, and its stderr ends with one JSON line that starts `{"for":"review-plan",` and holds `resolver`, `family`, `model`, `independent`, `handle`, `gitClean` and `durationSeconds`
 
 ### Requirement: Review skills distinguish listed models from allowed models
 
@@ -136,7 +136,7 @@ When `lets delegate review run` exits 0, its JSON line on stderr SHALL hold `che
 When `lets` cannot tell the checkout, or cannot read its `HEAD`, the field SHALL be `null`, and the command SHALL still exit 0 and print the final message.
 
 #### Scenario: A review through the cli resolver
-- **WHEN** the config's `delegate.resolvers` is `[cli]`, the user runs `lets delegate review run --for code` with every required option in the checkout `/r`, and `/r`'s `HEAD` is `0123456789abcdef0123456789abcdef01234567` when the session ends
+- **WHEN** the config's `delegate.resolvers` is `[cli]`, the user runs `lets delegate review run --for review-build` with every required option in the checkout `/r`, and `/r`'s `HEAD` is `0123456789abcdef0123456789abcdef01234567` when the session ends
 - **THEN** the command exits 0, and its JSON line has `"checkout":"/r"` and `"commit":"0123456789abcdef0123456789abcdef01234567"`
 
 #### Scenario: A reviewer that commits

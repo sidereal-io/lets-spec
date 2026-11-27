@@ -46,7 +46,7 @@ test('key runs no gh command, so it needs no Project', async (t) => {
 });
 
 test('key with an unknown backlog provider is unknown-backlog-provider', async (t) => {
-  const { result } = await key(t, ['149'], { config: 'version: 3\nbacklog:\n  provider: jria\n' });
+  const { result } = await key(t, ['149'], { config: 'version: 4\nbacklog:\n  provider: jria\n' });
   assert.equal(result.code, 1, result.output);
   assert.equal(JSON.parse(result.stdout).error, 'unknown-backlog-provider');
 });
