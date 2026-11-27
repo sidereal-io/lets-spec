@@ -196,7 +196,9 @@ Exit codes:
   2  usage error, or every resolver in the config declined
   3  no fresh session can run here on any model given: the harness or the
      account said no before the model gave any output, or no resolver
-     started a session. stderr names each model and why.
+     started a session. stderr names each model and why. When no resolver
+     started a session, the step can run in a subagent with the prompt
+     lets saved, and lets delegate step read reads its step report.
   4  the outcome is unknown, such as no reply from the harness, or the
      resolver failed in a way it could not report
   6  the session did not finish in time`;

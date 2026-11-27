@@ -296,6 +296,13 @@ test('step run --help lists exit codes 0, 2, 3, 4 and 6, and says exit 0 carries
   assert.doesNotMatch(text, / [57] {1,2}the session/);
 });
 
+test('step run --help says at exit 3 that the step can run in a subagent, and that step read reads its report', async () => {
+  const text = (await lets('delegate', 'step', 'run', '--help')).stdout.replace(/\s+/g, ' ');
+  const exit3 = /3 no fresh session can run here.*? 4 the outcome is unknown/.exec(text)?.[0] ?? '';
+  assert.match(exit3, /subagent/);
+  assert.match(exit3, /lets delegate step read/);
+});
+
 test('step read --help names --message-file, lists exit codes 0 and 2, and reads by the rules of step run', async () => {
   const { code, stdout } = await lets('delegate', 'step', 'read', '--help');
   assert.equal(code, 0);
