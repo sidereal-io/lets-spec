@@ -13,6 +13,6 @@
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [easy] Every project check passes: the Node tests and type check, the flake checks, and OpenSpec validation with warnings as failures (verify: `pnpm test && nix flake check && mise run check`)
+- [x] 3.1 [easy] Every project check passes: the Node tests and type check, the flake checks, and OpenSpec validation with warnings as failures (verify: `pnpm test && nix flake check && mise run check`) (✓ `pnpm test` passed, 865 tests; `nix flake check` passed; `mise run check` passed, 19 items)
 
 ## Deviations Ledger
