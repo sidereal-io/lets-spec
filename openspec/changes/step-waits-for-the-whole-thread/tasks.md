@@ -25,7 +25,7 @@
 ## 3. Integration [depends-on: 2]
 
 - [x] 3.1 [medium] In `tests/lets/resolvers/t3/delegate.test.ts`, `lets delegate step run` through the real `t3` adapter, on a thread whose run 1 completes with an early `failed` step report while an awaited task is pending and whose run 2 completes with a `done` report, exits 0, prints `"outcome":"done"` and archives the thread. Add the provider-thread row through `onLaunch` or a sleep hook, as that file's helpers allow (verify: `node --test tests/lets/resolvers/t3/delegate.test.ts`) (✓ `node --test tests/lets/resolvers/t3/delegate.test.ts` passed)
-- [ ] 3.2 [medium] Every check passes: `pnpm test`, `nix flake check` and `mise run check`. The pull request says that a T3 step or review now waits for awaited background work, names the 30-second grace period, and says that missing or unreadable T3 data falls back to today's behavior (verify: `nix flake check`)
+- [x] 3.2 [medium] Every check passes: `pnpm test`, `nix flake check` and `mise run check`. The pull request says that a T3 step or review now waits for awaited background work, names the 30-second grace period, and says that missing or unreadable T3 data falls back to today's behavior (verify: `nix flake check`) (✓ `pnpm test`, `nix flake check` and `mise run check` passed; pull request #360 body updated)
 
 ## Deviations Ledger
 
