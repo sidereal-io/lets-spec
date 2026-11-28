@@ -39,6 +39,9 @@ import { pollUntil } from '../kit/wait.ts';
 export const ORCHESTRATION_PROTOCOL = 2;
 
 const POLL_MS = 5000;
+// How long to wait, after a session's awaited work clears, for the run
+// that work wakes. Six polls.
+const WAKE_GRACE_MS = 30_000;
 const REPLY_TIMEOUT_MS = 120_000;
 // How long a stop may take, so a T3 that hangs cannot hold a timed-out
 // command for REPLY_TIMEOUT_MS more.
@@ -534,6 +537,10 @@ export function createAdapter(io: Io): Adapter {
 
   // Wait for the thread's run to end, and read its final message.
   async function waitForText(handle: Handle, timeoutMs: number): Promise<{ text: string }> {
+    // The newest run seen completed while awaited work was pending, and when
+    // a poll first saw that work cleared.
+    let heldRun: string | null = null;
+    let clearedAt: number | null = null;
     // Open the database fresh on each check: the server writes it, and a
     // long-lived handle can see stale state.
     const check = () => withDb((db) => {
@@ -553,7 +560,17 @@ export function createAdapter(io: Io): Adapter {
       if (run.status !== 'completed') return undefined;
       // The session ended a turn to wait for work it started. When that work
       // ends, T3 wakes it into a new run, which holds the result.
-      if (awaitedTasks(db, handle.id) > 0) return undefined;
+      if (awaitedTasks(db, handle.id) > 0) {
+        heldRun = run.id;
+        clearedAt = null;
+        return undefined;
+      }
+      // T3 may drop a finished task a moment before it records the run the
+      // task wakes, so the run that waited is read only once none follows.
+      if (run.id === heldRun) {
+        clearedAt ??= io.now();
+        if (io.now() - clearedAt < WAKE_GRACE_MS) return undefined;
+      }
       if (hasProposedPlan(db, run.id)) throw new SessionFailed('the session returned a plan, not a result');
       // A completed run with no message yet is one with none at all; the
       // resolver rejects the empty text. One still streaming will finish.

@@ -494,6 +494,62 @@ test('a completed run whose session left unawaited background work is read on th
   assert.equal(steps.length, 1);
 });
 
+// Steps for running that change db at the given times, in ms. Each sleep is
+// one 5 s poll, so the step at index i runs at (i + 1) * 5 s. A run of empty
+// steps follows the last change.
+function timeline(events: [number, () => void][]): (() => void)[] {
+  const last = Math.max(...events.map(([at]) => at));
+  const steps: (() => void)[] = Array.from({ length: last / 5000 + 20 }, () => () => {});
+  for (const [at, change] of events) steps[at / 5000 - 1] = change;
+  return steps;
+}
+// Run name completes with text, as the newest run of thread T.
+function completes(db: DatabaseSync, name: string, ordinal: number, text: string) {
+  addRun(db, 'T', name, ordinal, 'completed');
+  addMessage(db, `${name}-reply`, name, text, 0, { createdAt: `later-${ordinal}` });
+}
+const EARLY_REPORT = 'Built.\n\n```step-report\noutcome: done\nevidence:\n  - "commit 1a2b3c4: feat: add the first thing"\n```';
+
+test('a run the awaited work wakes within 30 s of its clearing is read', async () => {
+  const db = waitingRun();
+  const steps = timeline([
+    [5000, () => setBackgroundTasks(db, 'T', [])],
+    [30000, () => completes(db, 'run-2', 2, DONE_REPORT)],
+  ]);
+  assert.equal((await running(db, steps)).text, DONE_REPORT);
+});
+test('with no later run 30 s after the awaited work clears, the run that waited is read', async () => {
+  const db = waitingRun(EARLY_REPORT);
+  const steps = timeline([
+    [5000, () => setBackgroundTasks(db, 'T', [])],
+    [40000, () => completes(db, 'run-2', 2, DONE_REPORT)],
+  ]);
+  assert.equal((await running(db, steps)).text, EARLY_REPORT);
+});
+test('a completed run of a session that never had awaited work is read on the first poll', async () => {
+  const db = database();
+  addThread(db, 'T');
+  completes(db, 'run-1', 1, DONE_REPORT);
+  const steps = [() => {}];
+  assert.equal((await running(db, steps)).text, DONE_REPORT);
+  assert.equal(steps.length, 1);
+});
+test('awaited work that is pending again gives its own clearing a fresh 30 s', async () => {
+  const db = waitingRun();
+  const steps = timeline([
+    [5000, () => setBackgroundTasks(db, 'T', [])],
+    [10000, () => addRun(db, 'T', 'run-2', 2, 'running')],
+    [40000, () => {
+      setBackgroundTasks(db, 'T', [{ awaited: true }]);
+      db.exec("update orchestration_v2_projection_runs set status = 'completed' where run_id = 'run-2'");
+      addMessage(db, 'a2', 'run-2', WAITING, 0, { createdAt: 'later-2' });
+    }],
+    [45000, () => setBackgroundTasks(db, 'T', [])],
+    [70000, () => completes(db, 'run-3', 3, DONE_REPORT)],
+  ]);
+  assert.equal((await running(db, steps, { timeoutMs: 300000 })).text, DONE_REPORT);
+});
+
 // A thread whose run failed before any assistant message.
 function refusedRun() {
   const db = database();
