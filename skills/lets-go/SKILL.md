@@ -76,7 +76,7 @@ procedure ranks it.
 
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
-| [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch | this session | [Read the request](#read-the-request) | `lets go questions` fails |
+| [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch, and decides whether the run is in a checkout at the default branch | this session | [Read the request](#read-the-request) | `lets go questions` fails, or `git fetch origin <default>` fails |
 | [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea; [Take up the story run](references/story-run.md#take-up-the-story-run) in a story run's child | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run; [Run the epic](#run-the-epic) for any other epic on the default branch, after [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run; or the epic is a finished epic, or an epic with no stories after shaping, or its discovery stopped when shape cannot run |
@@ -219,6 +219,55 @@ stderr and stop: claim nothing, and run no step. Then find the
 default branch with
 `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`,
 and run `git branch --show-current`.
+
+Then decide, once, whether the run is in a
+[checkout at the default branch](references/terms.md#checkout-at-the-default-branch).
+Keep the answer to the end of the run. A shape step's edits to the
+discovery map do not change it, and no later part runs these checks
+again. The first of these that matches wins:
+
+- **`git branch --show-current` prints `<default>`:** the checkout is
+  at the default branch. Run none of the checks below, whatever changes
+  the checkout holds.
+- **The request starts with `You run a story run of a lets-go epic run:`:**
+  this session is a story run's child. Run none of the checks below:
+  [Take up the story run](references/story-run.md#take-up-the-story-run)
+  checks only that `<branch>` is `<name>`.
+- **Any other branch, `<branch>`:** run the three checks below, in
+  order. The checkout is at the default branch only when all three
+  pass. Stop checking at the first that fails: the checkout is then
+  not at the default branch.
+
+  1. Search for the change's issue. On an error, act as
+     [Backlog errors](#backlog-errors) says.
+
+     ```bash
+     lets backlog find <branch>
+     ```
+
+     Keep the entries of its `issues` field whose title starts with
+     `<branch> — `: these are the matches, which
+     [Read the request](#read-the-request) reads. The check passes when
+     there are none. A match means `<branch>` is a change's branch.
+  2. Check that the checkout has no changes outside `.workspace/`:
+     staged, unstaged or untracked. Ignored files do not count.
+
+     ```bash
+     git status --porcelain -- . ':(exclude).workspace'
+     ```
+
+     The check passes when it prints nothing.
+  3. Check that HEAD is the commit of `origin/<default>`:
+
+     ```bash
+     git fetch origin <default>
+     git rev-parse HEAD origin/<default>
+     ```
+
+     The check passes when `git rev-parse` prints the same commit on
+     both lines. When the fetch fails, show Git's error and stop: claim
+     nothing, and run no step. Without the fetch, the run cannot tell
+     where it is.
 
 Next: [Read the request](#read-the-request).
 
