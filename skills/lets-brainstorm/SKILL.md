@@ -113,6 +113,23 @@ describes what the user does in the product, and names no choice to
 make, is not unclear. "When the user runs `lets-go`, it prints the pull
 request's URL" leaves nothing to the user.
 
+Ask each question the packet leaves to the user in this way, whoever
+runs the brainstorm and at either question mode:
+
+1. Quote the packet line that leaves it to the user, and name the issue
+   whose packet holds it, as `#<n>`. The quote tells the user why the
+   question came to them, and lets them say the packet was wrong.
+2. Give two or three options, each with its trade-offs.
+3. Give no recommendation. Call no option recommended, preferred or
+   best, in the question or in its options. In a `lets-go` step, list
+   the question in the `needs-input` report with no `recommendation`,
+   so `lets-go` asks the user even at `auto`.
+
+Never settle such a question from the code, a document or an
+assumption, even when the code seems to answer it: the packet says the
+user decides. Write no `Evidence` row and no `Assumption` row for it.
+The answer's ledger row has the source `User`.
+
 ### Settle the story
 
 - Ask one question at a time, with your recommended answer and why it
