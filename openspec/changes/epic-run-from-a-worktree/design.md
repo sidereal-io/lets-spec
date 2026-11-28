@@ -71,6 +71,12 @@ run is in a checkout at the default branch. The run keeps that answer
 to its end (D4), so the discovery-map edits of a shape step during the
 run do not turn it into "another branch".
 
+A story run's child, whose request starts with
+`You run a story run of a lets-go epic run:`, runs none of the
+checks. It needs no answer, because it checks only that its branch is
+`<name>`, and the checks would add a backlog call, and a way to fail,
+to every child of a wave.
+
 Alternative: test at each place that reads the branch today. That
 repeats the rule in five places, breaks *Each lets-go rule is written
 once*, and lets a shape step's edits change the answer halfway.
@@ -141,8 +147,9 @@ reader cannot tell which "default branch" it covers, and "stays on
 
 `terms.md` gets a `## Checkout at the default branch` entry, copied
 word for word from the glossary, so the terms check covers it. The
-first mention in `SKILL.md`, in *Read the settings*, links it. No other
-file repeats the definition.
+first mention in `SKILL.md` is in the opening resume bullets, and links
+it. *Read the settings*, which decides the answer, links it too. No
+other file repeats the definition.
 
 ### 6. Branches start from `<default>`, as today
 

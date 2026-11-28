@@ -7,6 +7,8 @@
 
 When `git branch --show-current` prints the default branch, the checkout SHALL be at the default branch, and `lets-go` SHALL run none of the checks below. A run there SHALL go as it does today, whatever changes the checkout holds.
 
+When the request starts with `You run a story run of a lets-go epic run:`, the session is a story run's child, and `lets-go` SHALL run none of the checks below. The child checks only that its branch is the story's, as *Take up the story run* says.
+
 On any other branch, `<branch>`, the checkout SHALL be at the default branch only when all three checks below pass. `lets-go` SHALL run them in this order, and stop checking at the first that fails:
 
 1. `lets backlog find <branch>` prints no open issue whose title starts with `<branch> — `. The entry table SHALL read these matches, and `lets-go` SHALL not search again. When the command prints an `error`, `lets-go` SHALL stop as *A backlog error stops the run* says.
@@ -44,6 +46,10 @@ On any other branch, `<branch>`, the checkout SHALL be at the default branch onl
 #### Scenario: A shape step's edits keep the answer
 - **WHEN** a run that started in a checkout at the default branch on `t3/d0dcada9` runs a shape step whose discovery leaves `openspec/discovery.md` edited
 - **THEN** the run still acts as in a checkout at the default branch when it claims the first story, and runs none of the three checks again
+
+#### Scenario: A story run's child
+- **WHEN** an epic run starts a story run's child on `step-strategy`, with a request that starts with `You run a story run of a lets-go epic run:`
+- **THEN** the child runs neither `lets backlog find step-strategy` nor `git fetch origin main` before it takes up the story run
 
 ### Requirement: A run in a checkout at the default branch acts as on the default branch
 A run that starts in a checkout at the default branch SHALL act as a run on the default branch does, wherever these requirements say what a run does on the default branch or that something needs the default branch: the entry table, the shape step, the `epic` case of *Check the issue*, *Enter the branch*, *Claim* and the epic run. `lets-go` SHALL create each change's branch and each story's worktree from `<default>`, as on the default branch. Outside an epic run, the run SHALL switch its checkout to the change's branch, as on the default branch, and leave the branch it started on as it was. A run on any other branch SHALL act as it does on a change's branch.
