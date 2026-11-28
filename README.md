@@ -258,12 +258,14 @@ Kind's question mode, and a mode you name still wins. A `go.questions`
 other than `ask` or `auto` stops the run before it claims anything. The run ends when
 the pull request is ready for review, with one line per step.
 
-`lets-go` also runs from a checkout at the default branch: a checkout
-on a branch of its own, such as a T3 Code worktree on `t3/d0dcada9`,
-that holds the default branch's latest commit. It acts there as on the
-default branch. The checkout counts when it has no changes outside
+`lets-go` runs from a checkout at the default branch: a checkout on
+the default branch itself, or a checkout on a branch of its own, such
+as a T3 Code worktree on `t3/d0dcada9`, that holds the default branch's
+latest commit. It acts in both as on the default branch. A checkout on
+a branch of its own counts when it has no changes outside
 `.workspace/`, its HEAD is the commit of `origin/<default>` after a
-`git fetch`, and no open issue's title starts with its branch's name.
+`git fetch`, and no open issue's title starts with its branch's name
+and ` — `.
 A new branch starts from the default branch, as always, and the branch
 you started on stays where it was. One case needs the default branch
 itself: a stopped discovery whose map edits are uncommitted resumes
@@ -300,7 +302,8 @@ have stacked the branch by hand, `lets-go` names the open blockers and
 goes on.
 
 Given an epic's number, `lets-go` builds each ready story of the epic to
-a pull request ready for review, from the default branch. An epic run
+a pull request ready for review, from a checkout at the default
+branch. An epic run
 first sorts its stories into waves and prints them, with why each story
 waits. A wave holds stories that no chain of blocked-by links joins and
 whose packets name no overlapping path under **Relevant code**. The
