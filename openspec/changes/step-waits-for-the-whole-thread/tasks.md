@@ -24,7 +24,7 @@
 
 ## 3. Integration [depends-on: 2]
 
-- [ ] 3.1 [medium] In `tests/lets/resolvers/t3/delegate.test.ts`, `lets delegate step run` through the real `t3` adapter, on a thread whose run 1 completes with an early `failed` step report while an awaited task is pending and whose run 2 completes with a `done` report, exits 0, prints `"outcome":"done"` and archives the thread. Add the provider-thread row through `onLaunch` or a sleep hook, as that file's helpers allow (verify: `node --test tests/lets/resolvers/t3/delegate.test.ts`)
+- [x] 3.1 [medium] In `tests/lets/resolvers/t3/delegate.test.ts`, `lets delegate step run` through the real `t3` adapter, on a thread whose run 1 completes with an early `failed` step report while an awaited task is pending and whose run 2 completes with a `done` report, exits 0, prints `"outcome":"done"` and archives the thread. Add the provider-thread row through `onLaunch` or a sleep hook, as that file's helpers allow (verify: `node --test tests/lets/resolvers/t3/delegate.test.ts`) (✓ `node --test tests/lets/resolvers/t3/delegate.test.ts` passed)
 - [ ] 3.2 [medium] Every check passes: `pnpm test`, `nix flake check` and `mise run check`. The pull request says that a T3 step or review now waits for awaited background work, names the 30-second grace period, and says that missing or unreadable T3 data falls back to today's behavior (verify: `nix flake check`)
 
 ## Deviations Ledger
@@ -34,3 +34,4 @@
 - 2026-11-27, task 2.2: the test passed on its first run, because 1.1's `awaitedTasks` already counts only `awaited: true`. It fails when the reader counts every task, so it guards the behavior. Committed as `test:`.
 - 2026-11-27, task 2.4: the guard test passed on its first run, as a guard of an existing order should. It fails when the pending-request check moves below the awaited-work check. Committed as `test:`.
 - 2026-11-27, task 2.5: the tests passed on their first run, because 2.1's wait counts against the existing time limit. They fail when the awaited-work check is removed. Committed as `test:`.
+- 2026-11-27, task 3.1: `runningT3` had no sleep hook, so it gained an `onSleep` hook and a clock that each sleep moves on. The test passed on its first run, because section 2 had built the fix. It fails when the awaited-work check is removed. Committed as `test:`.

@@ -246,17 +246,24 @@ function inCheckout(others: Answer[], top = '/repo', branch = 'main') {
 // over the WebSocket with thread T. Each request is logged in sent. results
 // answers the commands other than git, in order. git answers from the
 // checkout whose top level is top, on branch. onLaunch is called with db
-// and the launch's number, from 1, as T3 is asked for each thread.
+// and the launch's number, from 1, as T3 is asked for each thread. onSleep
+// is called with db and the sleep's number, from 1, after each sleep moves
+// the clock on by the time slept.
 type Running = {
   projectRoot?: string; config?: unknown; fetch?: typeof globalThis.fetch; results?: Answer[]; top?: string; branch?: string;
   onLaunch?: (db: DatabaseSync, n: number) => void;
+  onSleep?: (db: DatabaseSync, n: number) => void;
 };
-function runningT3({ projectRoot = '/repo', config = ONLY_DISABLED as unknown, fetch = ticketFetch, results = [], top, branch, onLaunch = () => {} }: Running = {}) {
+function runningT3({
+  projectRoot = '/repo', config = ONLY_DISABLED as unknown, fetch = ticketFetch, results = [], top, branch, onLaunch = () => {}, onSleep = () => {},
+}: Running = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec(SCHEMA);
   db.prepare(`insert into projection_projects (project_id, title, workspace_root, scripts_json, created_at, updated_at)
     values ('p1', 'lets-spec', ?, '[]', 'now', 'now')`).run(projectRoot);
   const sent: Sent = [];
+  let clock = 0;
+  let sleeps = 0;
   const adapterIo = fakeIo({
     files: { [RUNTIME]: JSON.stringify({ pid: 7, origin: ORIGIN }), [TOKEN]: 'tok' },
     pid: 100,
@@ -269,6 +276,11 @@ function runningT3({ projectRoot = '/repo', config = ONLY_DISABLED as unknown, f
     WebSocket: t3Socket(sent, config, ({ tag }) => {
       if (tag === 'orchestration.launchThread') onLaunch(db, launches(sent).length);
     }),
+    now: () => clock,
+    async sleep(ms) {
+      clock += ms;
+      onSleep(db, ++sleeps);
+    },
   });
   return { db, sent, adapterIo, t: withT3(adapterIo) };
 }
@@ -483,6 +495,31 @@ test('a step whose report is needs-input keeps its thread', async () => {
   assert.equal(await step(lunaStep, t.deps), 0, t.stderr());
   assert.equal(JSON.parse(t.stdout()).outcome, 'needs-input');
   assert.deepEqual(asked(sent), ['launch']);
+});
+
+// T3 lists one pending background task for thread T, which its session
+// awaits, or none.
+function awaits(db: DatabaseSync, pending: boolean) {
+  const payload = JSON.stringify({ pendingBackgroundTasks: pending ? [{ command: 'lets delegate review run', taskId: 'b1', kind: 'command', awaited: true }] : [] });
+  db.prepare(`insert or replace into orchestration_v2_projection_provider_threads (provider_thread_id, thread_id, provider, status, updated_at, payload_json)
+    values ('pt1', 'T', 'codex', 'idle', 'now', ?)`).run(payload);
+}
+
+test('a step whose session writes an early failed report while it awaits work prints the report of the run that work wakes', async () => {
+  const { sent, t } = runningT3({
+    onLaunch: (db) => {
+      completes(db, ending('outcome: failed\nreason: The review is still running.\n'));
+      awaits(db, true);
+    },
+    onSleep: (db, n) => {
+      if (n !== 1) return;
+      awaits(db, false);
+      completes(db, DONE, 2);
+    },
+  });
+  assert.equal(await step(lunaStep, t.deps), 0, t.stderr());
+  assert.equal(JSON.parse(t.stdout()).outcome, 'done');
+  assert.deepEqual(asked(sent), ['launch', 'thread.archive']);
 });
 
 const CLAUDE = { providers: [provider('claudeAgent', [{ slug: 'claude-opus-5-5', isDefault: true }])] };
