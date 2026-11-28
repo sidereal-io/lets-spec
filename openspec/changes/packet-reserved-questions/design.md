@@ -100,7 +100,7 @@ Two places then link the new subsection as their exception:
 The alternative was to put the rule in *Settle the story* itself. That
 list is about the order and shape of every question, and the rule
 would be one long bullet with an exception inside it. A subsection can
-be linked from the step prompt and from the bullets.
+be linked from the bullets in *The stance* and *Settle the story*.
 
 ### 2. Only the story's own packet is read
 
