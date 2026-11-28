@@ -317,6 +317,14 @@ export function readFinalMessage(db: Db, runId: string): { text: string; streami
   return { text: typeof text === 'string' ? text : '', streaming: row.streaming === 1 };
 }
 
+// True when any run of the thread has an assistant message.
+function hasReply(db: Db, threadId: string): boolean {
+  const { replies } = db.prepare(`
+    select count(*) as replies from orchestration_v2_projection_messages
+    where thread_id = ? and role = 'assistant'`).get(threadId) as { replies: number };
+  return replies > 0;
+}
+
 // t3-token in the lets config folder, beside lets's config.yaml.
 const tokenPath = (io: Io) => join(configDir(io.env, io.homedir()), 't3-token');
 
@@ -550,11 +558,12 @@ export function createAdapter(io: Io): Adapter {
       // still read waiting for a moment, while T3 captures the checkpoint at
       // the end of a turn, so it is polled again like any running one.
       if (run.pendingRequests > 0) throw new SessionFailed('the session stopped to ask');
-      // A run that failed before any message is a refusal, such as a model
-      // the account cannot run. run then archives the thread.
+      // A run that failed before the thread had any message is a refusal,
+      // such as a model the account cannot run. run then archives the
+      // thread. A run that awaited work wakes follows one that replied.
       if (run.status === 'failed') {
         const failure = run.failure ?? 'run failed';
-        throw readFinalMessage(db, run.id) === null ? new Refused(failure) : new SessionFailed(failure);
+        throw hasReply(db, handle.id) ? new SessionFailed(failure) : new Refused(failure);
       }
       if (run.status === 'interrupted' || run.status === 'cancelled' || run.status === 'rolled_back') throw new SessionFailed(`run ${run.status.replace('_', ' ')}`);
       if (run.status !== 'completed') return undefined;

@@ -596,6 +596,20 @@ test('run fails a run that failed after an assistant message, with its failure',
   await assert.rejects(running(db),
     (error) => error instanceof SessionFailed && !(error instanceof Refused) && error.message === 'quota exceeded (thread T)');
 });
+test('a run the awaited work wakes that fails before any message fails the session, and keeps its thread', async () => {
+  const db = waitingRun();
+  const log: Log = [];
+  const steps = [
+    () => setBackgroundTasks(db, 'T', []),
+    () => {
+      addRun(db, 'T', 'run-2', 2, 'failed');
+      addFailure(db, 'run-2', 'rate limited');
+    },
+  ];
+  await assert.rejects(running(db, steps, { log }),
+    (error) => error instanceof SessionFailed && !(error instanceof Refused) && error.message === 'rate limited (thread T)');
+  assert.deepEqual(sentTypes(log), ['launch']);
+});
 test('run fails when the session stops to ask', async () => {
   for (const status of ['waiting', 'running']) {
     const db = database();
