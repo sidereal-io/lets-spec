@@ -101,7 +101,8 @@ Recognize such a question by what a line means, not by its words. A
 line leaves a question to the user when it says that the user has not
 yet made a decision, or that a decision must be agreed with the user.
 Any wording counts, under any heading. A packet needs no fixed phrase
-or section for this. For example, #328's packet holds two such lines:
+or section for this. For example, each of these packet lines leaves a
+question to the user:
 
 - "Where the expected fields and values come from is not yet decided by the user"
 - "Agree it with the user in the brainstorm"
