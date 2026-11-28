@@ -12,7 +12,7 @@
 
 ## 1. The term
 
-- [ ] 1.1 [easy] `skills/lets-go/references/terms.md` holds a `## Checkout at the default branch` entry whose text is the `openspec/glossary.md` entry of the same name, word for word (design.md, Decision 5) (verify: `grep -q '^## Checkout at the default branch$' skills/lets-go/references/terms.md && node --test tests/contracts/terms.test.ts`)
+- [x] 1.1 [easy] `skills/lets-go/references/terms.md` holds a `## Checkout at the default branch` entry whose text is the `openspec/glossary.md` entry of the same name, word for word (design.md, Decision 5) (verify: `grep -q '^## Checkout at the default branch$' skills/lets-go/references/terms.md && node --test tests/contracts/terms.test.ts`) (✓ grep and `node --test tests/contracts/terms.test.ts` passed)
 
 ## 2. lets-go's SKILL.md [depends-on: 1]
 
