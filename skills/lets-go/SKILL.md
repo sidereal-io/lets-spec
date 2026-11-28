@@ -27,16 +27,18 @@ depends on where you run it, and on why the last run stopped:
 - **On the change's branch:** it finds the issue from the branch's
   name, prints a dated line for each step already done, and goes on
   from the first unfinished step.
-- **On the default branch, with the issue number:** it finds the
-  change's branch, here or on `origin`, switches to it, and goes on the
-  same way. It does not claim the issue again.
-- **On the default branch, with an epic's number:** it starts the epic
-  run again. It gives each story whose pull request is ready, merged or
-  closed its line, resumes each story this user started, and builds the
-  rest.
-- **On the default branch, with nothing:** it does not resume. It picks
-  the next ready issue, and a claimed issue is never ready. To resume,
-  give the issue number, or run it on the change's branch.
+- **In a
+  [checkout at the default branch](references/terms.md#checkout-at-the-default-branch),
+  with the issue number:** it finds the change's branch, here or on
+  `origin`, switches to it, and goes on the same way. It does not claim the issue again.
+- **In a checkout at the default branch, with an epic's number:** it
+  starts the epic run again. It gives each story whose pull request is
+  ready, merged or closed its line, resumes each story this user
+  started, and builds the rest.
+- **In a checkout at the default branch, with nothing:** it does not
+  resume. It picks the next ready issue, and a claimed issue is never
+  ready. To resume, give the issue number, or run it on the change's
+  branch.
 - **After a failed step:** the run that failed never runs that step
   again. A new run starts it afresh, in a new session, with the answers
   given so far. A failed shape step has no branch: the run says to run
@@ -79,7 +81,7 @@ procedure ranks it.
 | [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch, and decides whether the run is in a checkout at the default branch | this session | [Read the request](#read-the-request) | `lets go questions` fails, or `git fetch origin <default>` fails |
 | [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea; [Take up the story run](references/story-run.md#take-up-the-story-run) in a story run's child | An idea outside a checkout at the default branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
-| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run; [Run the epic](#run-the-epic) for any other epic on the default branch, after [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run; or the epic is a finished epic, or an epic with no stories after shaping, or its discovery stopped when shape cannot run |
+| [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run; [Run the epic](#run-the-epic) for any other epic in a checkout at the default branch, after [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; [Confirm the packet](#confirm-the-packet) returns `epic` outside a checkout at the default branch, or `needs-shape` when shape cannot run; or the epic is a finished epic, or an epic with no stories after shaping, or its discovery stopped when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) | The discovery map has edits of its own, or the step fails or asks a settled question again |
 | [Run the epic](#run-the-epic) | Starts or goes on with an epic run: picks the epic's next ready story, waits for the children of a wave, or ends the epic run | this session | [Check the issue](#check-the-issue) with the picked story; [End of the run](#end-of-the-run) when no story is left | `lets delegate step wait` fails, so the epic run cannot wait for its children |
 | [Route](#route) | Picks the change's schema, and says the route line | this session | [Enter the branch](#enter-the-branch) | Never |
@@ -489,9 +491,9 @@ says.
      started on `<name>`. Say why the packet needs shaping, as the
      result carries it, and show nothing of what a comment says. Say to
      run the `lets-shape` skill on `#<i>`, and stop.
-   - **`epic`:** on a change's branch, say that an epic run needs the
-     default branch, and stop. On the default branch, sort the epic by
-     the sub-issues the result carries. The first of these that matches
+   - **`epic`:** outside a checkout at the default branch, say that an
+     epic run needs the default branch, and stop. In a checkout at the
+     default branch, sort the epic by the sub-issues the result carries. The first of these that matches
      wins:
      1. **An empty epic:** the `subIssues` field and the
         `closedSubIssues` field are both empty. The epic has no stories yet. When no shape step has run
@@ -548,7 +550,7 @@ Next: [Run the shape step](#run-the-shape-step) when
 [Confirm the packet](#confirm-the-packet) returned `needs-shape`, or
 `epic` for an empty epic or one whose discovery stopped, and shape can
 run; [Run the epic](#run-the-epic) when it returned `epic` for any other
-epic on the default branch, or when
+epic in a checkout at the default branch, or when
 [Stack the story](references/epic-run.md#stack-the-story) settled the
 story, or
 [Take up a started story](references/epic-run.md#take-up-a-started-story)
@@ -597,8 +599,9 @@ In an epic run, each stop in this part ends only its story's run, as
 [A stop in an epic run](references/epic-run.md#a-stop-in-an-epic-run)
 says.
 
-1. On the default branch, use what [Check the issue](#check-the-issue)
-   found when it looked for the change's branch, here and on `origin`:
+1. In a checkout at the default branch, use what
+   [Check the issue](#check-the-issue) found when it looked for the
+   change's branch, here and on `origin`:
    - **Neither has it:** run [Claim](#claim), which creates the
      branch, and act on its result as below.
    - **Either has it:** the change has started. Do not run
@@ -611,7 +614,7 @@ says.
 
    Stay on `<name>` for the whole run. In an epic run, the story's
    branch is checked out in its worktree, `<path>`, and the epic run's
-   own checkout stays on `<default>`.
+   own checkout stays where it is.
 2. When you ran [Claim](#claim), act on its result:
    - **`claimed`:** In an epic run, first prepare the worktree
      [Claim](#claim) created, as
@@ -728,8 +731,8 @@ run, [Run the epic](#run-the-epic) after a lost claim.
 
 In an epic run, every story's branch is checked out in a git worktree
 of its own, `<path>`, even in a wave of one story, so the stories of a
-wave can run at the same time. The epic run's own checkout stays on
-`<default>` for the whole epic run. [Claim](#claim) creates the
+wave can run at the same time. The epic run's own checkout stays where
+it is for the whole epic run. [Claim](#claim) creates the
 worktree of a story with no branch. For a story whose branch exists,
 here or on `origin`, find or create it:
 
@@ -1169,10 +1172,20 @@ return to the part that ran it, with the result.
      `claim-failed`, with its `write` field, which names the write that
      failed, its `message` field and, when present, its `claim` field.
      Return it now, before you create a branch, and undo nothing.
-4. Create a branch with the change's name off the default branch. In
-   an epic run, create the branch and the story's worktree together,
-   so that the epic run's own checkout stays on `<default>`. The
-   worktree is `<path>`:
+4. Create a branch with the change's name off the default branch.
+   Outside an epic run, create it off `<default>` and switch this
+   checkout to it:
+
+   ```bash
+   git switch -c <name> <default>
+   ```
+
+   In a checkout at the default branch on a branch of its own, such as
+   `t3/d0dcada9`, that branch stays at the commit it started on.
+
+   In an epic run, create the branch and the story's worktree together,
+   so that the epic run's own checkout stays where it is. The worktree
+   is `<path>`:
 
    ```bash
    git worktree add -b <name> .workspace/lets-go/worktrees/<name> <default>
