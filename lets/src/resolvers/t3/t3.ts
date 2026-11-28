@@ -249,6 +249,22 @@ export function readRun(db: Db, threadId: string): Run | null {
   return { id: run.run_id, status: run.status, pendingRequests: pending, failure };
 }
 
+// How many background tasks the thread's session waits on: the
+// pendingBackgroundTasks entries T3 marks `awaited: true`, as
+// t3_background_wait does. T3 keeps them on the provider thread, not the run,
+// and a thread handed to another provider has more than one.
+export function awaitedTasks(db: Db, threadId: string): number {
+  const rows = db.prepare(`
+    select payload_json from orchestration_v2_projection_provider_threads
+    where thread_id = ?`).all(threadId) as { payload_json: string }[];
+  let awaited = 0;
+  for (const { payload_json } of rows) {
+    const { pendingBackgroundTasks } = JSON.parse(payload_json) as { pendingBackgroundTasks: { awaited?: unknown }[] };
+    awaited += pendingBackgroundTasks.filter((task) => task.awaited === true).length;
+  }
+  return awaited;
+}
+
 // True when the run holds a proposed plan, which T3 writes for a session
 // in plan mode. A review never needs one.
 export function hasProposedPlan(db: Db, runId: string): boolean {

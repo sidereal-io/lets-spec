@@ -1,4 +1,5 @@
--- CREATE statements copied from a t3code 0.1.0 statev2.sqlite on 2026-10-17.
+-- CREATE statements copied from a t3code 0.1.0 statev2.sqlite on 2026-10-17,
+-- except orchestration_v2_projection_provider_threads, copied on 2026-11-28.
 -- Used by the t3 adapter tests to build an in-memory database with the real shape.
 
 CREATE TABLE projection_projects (
@@ -77,3 +78,15 @@ CREATE TABLE orchestration_v2_projection_runtime_requests (
       payload_json TEXT NOT NULL
     );
 
+CREATE TABLE orchestration_v2_projection_provider_threads (
+      provider_thread_id TEXT PRIMARY KEY,
+      thread_id TEXT,
+      owner_node_id TEXT,
+      provider TEXT NOT NULL,
+      provider_session_id TEXT,
+      status TEXT NOT NULL,
+      first_run_ordinal INTEGER,
+      last_run_ordinal INTEGER,
+      updated_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    , driver TEXT, provider_instance_id TEXT);

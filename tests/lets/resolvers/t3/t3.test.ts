@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { Refused, SessionFailed, SpawnError, TimeoutError } from '../../../../lets/src/resolvers/kit/errors.ts';
 import type { Db } from '../../../../lets/src/resolvers/kit/io.ts';
 import {
-  baseDir, buildLaunch, catalogueOf, createAdapter, defaultModel, dispatch, findProject, isAncestor, launch, readCatalogue, readFinalMessage, request,
+  awaitedTasks, baseDir, buildLaunch, catalogueOf, createAdapter, defaultModel, dispatch, findProject, isAncestor, launch, readCatalogue, readFinalMessage, request,
   optionsFromCatalogue, readRun, readRuntime, readToken, t3ModelSelection,
 } from '../../../../lets/src/resolvers/t3/t3.ts';
 import type { RunInput, StartInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
@@ -73,6 +73,15 @@ function addFailure(db: DatabaseSync, runId: string, message: string) {
 function addTurnItem(db: DatabaseSync, runId: string, type: string, { id = 'i1', ordinal = 1 } = {}) {
   db.prepare(`insert into orchestration_v2_projection_turn_items (turn_item_id, thread_id, run_id, ordinal, type, status, updated_at, payload_json)
     values (?, 'T', ?, ?, ?, 'completed', 'now', '{}')`).run(id, runId, ordinal, type);
+}
+
+// A provider thread of threadId whose session has these background tasks
+// pending, as T3 lists them in pendingBackgroundTasks. payload replaces the
+// whole payload. Writing the same provider thread again replaces its tasks.
+function setBackgroundTasks(db: DatabaseSync, threadId: string, tasks: { awaited?: unknown }[], { id = 'pt1', payload = undefined as string | undefined } = {}) {
+  const json = payload ?? JSON.stringify({ pendingBackgroundTasks: tasks.map((task, i) => ({ command: 'pnpm test', taskId: `task-${i}`, kind: 'command', ...task })) });
+  db.prepare(`insert or replace into orchestration_v2_projection_provider_threads (provider_thread_id, thread_id, provider, status, updated_at, payload_json)
+    values (?, ?, 'claudeAgent', 'idle', 'now', ?)`).run(id, threadId, json);
 }
 
 type Log = [string, unknown][];
@@ -344,6 +353,36 @@ test('readRun reads a failed run\'s failure from its error item', () => {
   assert.equal(readRun(shared(db), 'T')!.failure, null);
   addFailure(db, 'run-1', 'quota exceeded');
   assert.equal(readRun(shared(db), 'T')!.failure, 'quota exceeded');
+});
+
+test('awaitedTasks counts the thread\'s pending background tasks marked awaited', () => {
+  const db = database();
+  setBackgroundTasks(db, 'T', [{ awaited: true }, { awaited: false }, { awaited: true }]);
+  assert.equal(awaitedTasks(shared(db), 'T'), 2);
+});
+test('awaitedTasks sums the awaited tasks of every provider thread of the thread', () => {
+  const db = database();
+  setBackgroundTasks(db, 'T', [{ awaited: true }], { id: 'pt1' });
+  setBackgroundTasks(db, 'T', [{ awaited: true }], { id: 'pt2' });
+  assert.equal(awaitedTasks(shared(db), 'T'), 2);
+});
+test('awaitedTasks counts only a task whose awaited is exactly true', () => {
+  const db = database();
+  setBackgroundTasks(db, 'T', [{ awaited: false }, {}, { awaited: 'true' }, { awaited: 1 }]);
+  assert.equal(awaitedTasks(shared(db), 'T'), 0);
+});
+test('awaitedTasks counts 0 for an empty list of tasks', () => {
+  const db = database();
+  setBackgroundTasks(db, 'T', []);
+  assert.equal(awaitedTasks(shared(db), 'T'), 0);
+});
+test('awaitedTasks leaves out another thread\'s tasks', () => {
+  const db = database();
+  setBackgroundTasks(db, 'U', [{ awaited: true }]);
+  assert.equal(awaitedTasks(shared(db), 'T'), 0);
+});
+test('awaitedTasks counts 0 when the thread has no provider thread', () => {
+  assert.equal(awaitedTasks(shared(database()), 'T'), 0);
 });
 
 test('readFinalMessage returns the run\'s newest assistant message', () => {
