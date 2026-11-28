@@ -6,6 +6,8 @@
 
 T3 records a session's background work on its provider thread, not on the run. The table `orchestration_v2_projection_provider_threads` has one row per provider thread, keyed by `provider_thread_id`, with a `thread_id` column. Its `payload_json` holds `pendingBackgroundTasks`, a list of entries with `command`, `taskId`, `kind` and `awaited` (D3). On 2026-11-28, this step's own parent `lets-go` thread showed exactly this state while it waited: provider thread `idle`, newest run completed, one entry with `awaited: true`. Every thread in that database had one provider thread.
 
+Only a session marks work as awaited (D10). T3's `t3_background_wait` tool, as T3 describes it to a session, says to call it with a task's ID to wait for that task before the turn ends, and says "Do not mark work you leave running." So a dev server the session leaves running is not marked. Whether T3 lists unmarked work in `pendingBackgroundTasks` at all could not be observed: on 2026-11-27 every entry in the database had `awaited: true`. The reader does not depend on it, because it counts only entries whose `awaited` is exactly `true` (Decision 1). An entry with `awaited: false`, with no `awaited` field, or with any other value counts 0.
+
 When the awaited task ends, T3 wakes the session, and a new run starts on the same thread with a higher `ordinal` (D1, D8). T3's event table was empty, so the order in which T3 drops the finished task and records the new run could not be observed.
 
 The test fixture `tests/lets/resolvers/t3/fixtures/t3-schema.sql` was copied from T3 on 2026-10-17 and has no provider-threads table.
@@ -60,6 +62,7 @@ In `waitForText`, the order of checks stays as it is. A pending request still en
 
 - If the newest run is a later run, the check reads it as usual.
 - If the newest run is still the held run, the check keeps polling for up to 30 seconds, `WAKE_GRACE_MS`, from the first poll that saw the work cleared. After that, it reads the held run's final message.
+- Each time a poll sees awaited work pending again, the grace clock is cleared, and the newest completed run becomes the held run. A later clearance starts a fresh 30 seconds. A session that awaits a second task in a later run, such as a build that waits for its tests after a review, then gets the full grace period for that task too.
 
 *Why:* T3 may drop a finished task from `pendingBackgroundTasks` a moment before it records the run that the task's exit starts. Without the grace period, a poll that lands in that gap reads the held run's status line, which is the bug this change fixes. With 5-second polls, 30 seconds gives T3 six chances to record the new run. The grace period applies only to a session that waited on background work, so a session with none ends as fast as today.
 
