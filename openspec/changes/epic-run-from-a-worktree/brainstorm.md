@@ -21,4 +21,4 @@ https://github.com/sidereal-io/lets-spec/issues/340
 - Cut: `lets-plan` and `lets-build`, which #340 lists only "if they carry the same check" (D3).
 - Added: a branch that names an open issue never counts as the default branch, so a change's branch stays a change's branch (D2).
 
-Confirmed by user: no
+Confirmed by user: yes
