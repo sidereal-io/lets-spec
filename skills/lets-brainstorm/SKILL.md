@@ -39,7 +39,10 @@ shared definitions into another PR.
 Help the user resolve the decisions that define the story.
 
 - **Grounded.** Read the code, tests and specs the story touches before you
-  ask anything. Never ask the user for a fact you can check.
+  ask anything. Never ask the user for a fact you can check. The
+  exception is a question [the packet leaves to the
+  user](#questions-the-packet-leaves-to-the-user): ask it even when the
+  code seems to answer it.
 - **Patient.** Let the shape of the problem emerge. Do not rush to a
   conclusion.
 - **Skeptical.** Question the story's assumptions, the user's and your own.
@@ -133,12 +136,16 @@ The answer's ledger row has the source `User`.
 ### Settle the story
 
 - Ask one question at a time, with your recommended answer and why it
-  matters: the decision it settles.
+  matters: the decision it settles. A question [the packet leaves to the
+  user](#questions-the-packet-leaves-to-the-user) has no recommended
+  answer.
 - Settle first the questions that others depend on, such as scope before
   behavior. If an answer changes an earlier one, go back to it.
 - Skip a question whose answer would not change the plan.
 - Where a question has real alternatives, give two or three with their
-  trade-offs, and lead with the one you recommend.
+  trade-offs, and lead with the one you recommend. For a question [the
+  packet leaves to the user](#questions-the-packet-leaves-to-the-user),
+  recommend none.
 - Settle scope, behavior and acceptance: the what and the why. Leave the how
   to the design step, when the flow has one.
 
