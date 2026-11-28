@@ -29,7 +29,7 @@
 
 ## 4. Integration [depends-on: 2, 3]
 
-- [ ] 4.1 [medium] Every check passes: `pnpm test`, `mise run check` and `nix flake check`. `grep -rn 'stays on' skills/lets-go` finds nothing, and `skills/lets-plan/` and `skills/lets-build/` are unchanged from `main` (D3) (verify: `nix flake check`)
+- [x] 4.1 [medium] Every check passes: `pnpm test`, `mise run check` and `nix flake check`. `grep -rn 'stays on' skills/lets-go` finds nothing, and `skills/lets-plan/` and `skills/lets-build/` are unchanged from `main` (D3) (verify: `nix flake check`) (✓ `pnpm test`, `mise run check` and `nix flake check` passed; `grep -rn 'stays on' skills/lets-go` found nothing; `git diff main -- skills/lets-plan skills/lets-build` is empty)
 
 ## Deviations Ledger
 
