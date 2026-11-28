@@ -551,6 +551,9 @@ export function createAdapter(io: Io): Adapter {
       }
       if (run.status === 'interrupted' || run.status === 'cancelled' || run.status === 'rolled_back') throw new SessionFailed(`run ${run.status.replace('_', ' ')}`);
       if (run.status !== 'completed') return undefined;
+      // The session ended a turn to wait for work it started. When that work
+      // ends, T3 wakes it into a new run, which holds the result.
+      if (awaitedTasks(db, handle.id) > 0) return undefined;
       if (hasProposedPlan(db, run.id)) throw new SessionFailed('the session returned a plan, not a result');
       // A completed run with no message yet is one with none at all; the
       // resolver rejects the empty text. One still streaming will finish.

@@ -416,10 +416,24 @@ test('readFinalMessage returns the run\'s newest assistant message', () => {
 
 const HANDLE = { kind: 'thread', id: 'T', origin: ORIGIN };
 
-// Run a session in thread T, whose state is db. Each sleep runs the next step.
-// t3 answers each request with the next status, and the log keeps what was sent.
-function running(db: DatabaseSync, steps: (() => void)[] = [], { timeoutMs = 60000, statuses = [200, 200], log = [] as Log } = {}) {
-  return createAdapter(launchingIo(db, log, { sleep: async () => steps.shift()?.(), statuses })).run(runInput, { timeoutMs });
+// Run a session in thread T, whose state is db, as a review or, with via
+// 'step', as a step. Each sleep moves the clock on by the time slept and runs
+// the next step. t3 answers each request with the next status, and the log
+// keeps what was sent.
+function running(db: DatabaseSync, steps: (() => void)[] = [], {
+  timeoutMs = 60000, statuses = [200, 200], log = [] as Log, via = 'run' as 'run' | 'step',
+} = {}): Promise<{ handle: unknown; text: string; checkout?: string | null }> {
+  let clock = 0;
+  const io = launchingIo(db, log, {
+    now: () => clock,
+    sleep: async (ms: number) => {
+      clock += ms;
+      steps.shift()?.();
+    },
+    statuses,
+  });
+  const adapter = createAdapter(io);
+  return via === 'run' ? adapter.run(runInput, { timeoutMs }) : adapter.step!(runInput, { timeoutMs });
 }
 const sentTypes = (log: Log) => log.filter(([what]) => what === 'send').map(([, frame]) => (frame as { payload: { type?: string } }).payload.type ?? 'launch');
 
@@ -435,6 +449,40 @@ test('run waits for the run to complete and the message to stop streaming', asyn
   assert.deepEqual(await running(db, steps), { handle: HANDLE, text: 'FINDINGS', checkout: '/r' });
   assert.equal(steps.length, 0);
 });
+const WAITING = 'The review is running; waiting for it to finish.';
+const DONE_REPORT = 'Built.\n\n```step-report\noutcome: done\nevidence:\n  - "commit 3f2a1c0: feat: add the thing"\n```';
+// A thread whose first run completed with first while its session waited on
+// one awaited background task.
+function waitingRun(first = WAITING) {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'completed');
+  addMessage(db, 'a1', 'run-1', first, 0);
+  setBackgroundTasks(db, 'T', [{ awaited: true }]);
+  return db;
+}
+// The awaited task ends, and wakes the session into run 2, which completes
+// with text.
+const wakes = (db: DatabaseSync, text: string) => [
+  () => {},
+  () => {
+    setBackgroundTasks(db, 'T', []);
+    addRun(db, 'T', 'run-2', 2, 'running');
+  },
+  () => {
+    db.exec("update orchestration_v2_projection_runs set status = 'completed' where run_id = 'run-2'");
+    addMessage(db, 'a2', 'run-2', text, 0, { createdAt: 'later' });
+  },
+];
+for (const via of ['run', 'step'] as const) {
+  test(`${via} reads the run that the session's awaited work wakes, not the run that waited`, async () => {
+    const db = waitingRun();
+    const steps = wakes(db, DONE_REPORT);
+    assert.equal((await running(db, steps, { via })).text, DONE_REPORT);
+    assert.equal(steps.length, 0);
+  });
+}
+
 // A thread whose run failed before any assistant message.
 function refusedRun() {
   const db = database();
@@ -1045,7 +1093,7 @@ test('run is refused when t3 is not running', async () => {
 // checkout, a checkout of /r's repository. t3 answers each request over the
 // WebSocket with LAUNCHED, which names thread T, and logs it.
 function launchingIo(db: DatabaseSync, log: Log, {
-  projectDefault = null as string | null, sleep = async () => {}, statuses = [200, 200], checkout = {} as Parameters<typeof inCheckout>[0],
+  projectDefault = null as string | null, sleep = async (_ms: number) => {}, now = () => 0, statuses = [200, 200], checkout = {} as Parameters<typeof inCheckout>[0],
 } = {}) {
   addProject(db, { root: '/r', selection: projectDefault });
   return fakeIo({
@@ -1055,6 +1103,7 @@ function launchingIo(db: DatabaseSync, log: Log, {
     openDb: () => shared(db),
     fetch: fakeFetch(statuses, []),
     WebSocket: fakeWebSocket(LAUNCHED, log),
+    now,
     sleep,
   });
 }
