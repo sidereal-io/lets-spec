@@ -550,6 +550,12 @@ test('awaited work that is pending again gives its own clearing a fresh 30 s', a
   assert.equal((await running(db, steps, { timeoutMs: 300000 })).text, DONE_REPORT);
 });
 
+test('a session that asks a question while it waits on awaited work stops to ask', async () => {
+  const db = waitingRun();
+  const steps = [() => addPendingRequest(db, 'T')];
+  await assert.rejects(running(db, steps), (error) => error instanceof SessionFailed && error.message === 'the session stopped to ask (thread T)');
+});
+
 // A thread whose run failed before any assistant message.
 function refusedRun() {
   const db = database();
