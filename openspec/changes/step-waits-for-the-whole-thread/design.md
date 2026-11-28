@@ -67,7 +67,22 @@ In `waitForText`, the order of checks stays as it is. A pending request still en
 
 ### 5. Add the provider-threads table to the test fixture
 
-Copy T3's `CREATE TABLE orchestration_v2_projection_provider_threads` statement into `t3-schema.sql`, with its columns as T3 has them on 2026-11-28, and note that date in the file's header comment. Add a test helper, such as `addBackgroundTask(db, threadId, { awaited })`, that writes a provider-thread row with one `pendingBackgroundTasks` entry, and a way to clear it.
+Copy T3's `CREATE TABLE orchestration_v2_projection_provider_threads` statement into `t3-schema.sql`, and note in the file's header comment that this table was copied on 2026-11-28. As T3 has it on that date:
+
+```sql
+CREATE TABLE orchestration_v2_projection_provider_threads (
+      provider_thread_id TEXT PRIMARY KEY,
+      thread_id TEXT,
+      owner_node_id TEXT,
+      provider TEXT NOT NULL,
+      provider_session_id TEXT,
+      status TEXT NOT NULL,
+      first_run_ordinal INTEGER,
+      last_run_ordinal INTEGER,
+      updated_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    , driver TEXT, provider_instance_id TEXT);
+``` Add a test helper, such as `addBackgroundTask(db, threadId, { awaited })`, that writes a provider-thread row with one `pendingBackgroundTasks` entry, and a way to clear it.
 
 None of these decisions is costly to reverse: each sits inside one function and its tests.
 
