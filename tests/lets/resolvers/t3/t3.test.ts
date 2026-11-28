@@ -483,6 +483,17 @@ for (const via of ['run', 'step'] as const) {
   });
 }
 
+test('a completed run whose session left unawaited background work is read on the first poll', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'completed');
+  addMessage(db, 'a1', 'run-1', DONE_REPORT, 0);
+  setBackgroundTasks(db, 'T', [{ awaited: false, command: 'pnpm dev' }]);
+  const steps = [() => {}];
+  assert.equal((await running(db, steps)).text, DONE_REPORT);
+  assert.equal(steps.length, 1);
+});
+
 // A thread whose run failed before any assistant message.
 function refusedRun() {
   const db = database();
