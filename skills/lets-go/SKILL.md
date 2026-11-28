@@ -77,7 +77,7 @@ procedure ranks it.
 | Part | What it does | Runs in | Next | Stops when |
 |---|---|---|---|---|
 | [Read the settings](#read-the-settings) | Reads the default question mode, the default branch and the current branch, and decides whether the run is in a checkout at the default branch | this session | [Read the request](#read-the-request) | `lets go questions` fails, or `git fetch origin <default>` fails |
-| [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea; [Take up the story run](references/story-run.md#take-up-the-story-run) in a story run's child | An idea on a change's branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
+| [Read the request](#read-the-request) | Takes a question mode off the request, after asking the user when the mode word sits beside an idea, then finds the issue from the branch and the request | this session | [Check the issue](#check-the-issue), or [Start from an idea](#start-from-an-idea) for an idea; [Take up the story run](references/story-run.md#take-up-the-story-run) in a story run's child | An idea outside a checkout at the default branch, an idea with no letter or digit, no issue that matches the branch, or [Find the source of demand](#find-the-source-of-demand) returns `nothing-ready` |
 | [Start from an idea](#start-from-an-idea) | Resumes a discovery of the idea, or searches for an issue that is the same work | this session | [Check the issue](#check-the-issue) for the same work; otherwise [Run the shape step](#run-the-shape-step) | Never |
 | [Check the issue](#check-the-issue) | Reads the blockers, looks for the change's branch, finds the source of demand, confirms the packet and prints shape's line | this session | [Run the shape step](#run-the-shape-step) when the packet needs shaping, the epic is empty or its discovery stopped, and shape can run; [Run the epic](#run-the-epic) for any other epic on the default branch, after [Stack the story](references/epic-run.md#stack-the-story) or [Take up a started story](references/epic-run.md#take-up-a-started-story) settles a story, or when a stop ends a story's run; otherwise [Route](#route) | An open blocker with no branch, outside an epic run; [Find the source of demand](#find-the-source-of-demand) returns `unresolved`; [Confirm the packet](#confirm-the-packet) returns `epic` on a change's branch, or `needs-shape` when shape cannot run; or the epic is a finished epic, or an epic with no stories after shaping, or its discovery stopped when shape cannot run |
 | [Run the shape step](#run-the-shape-step) | Runs `lets-shape` on the idea or the issue | this session; its step runs in a fresh one | [Check the issue](#check-the-issue) | The discovery map has edits of its own, or the step fails or asks a settled question again |
@@ -140,7 +140,7 @@ reads as it always has.
 | `<pr-url>` | The URL of a story's pull request, in an epic run | [Run the epic](#run-the-epic), when it settles a built story, or [End the story run](references/story-run.md#end-the-story-run), in a story run's child |
 | `<pr>` | The number of the change's pull request | [Read the records](references/records.md#read-the-records), from the pull request's `number` |
 | `<name>` | The change's name: the part of `<i>`'s title before ` — `. On a change's branch, it is `<branch>` | [Check the issue](#check-the-issue), from the blocker read's title. After a shape step, [Check the issue](#check-the-issue) sets it again from the shaped issue's title |
-| `<branch>` | The branch the run started on, when it is not the default branch. In a story run's child, the branch it started on, whatever it is | [Read the settings](#read-the-settings), from `git branch --show-current` |
+| `<branch>` | The branch the run started on, when the checkout is not at the default branch. In a story run's child, the branch it started on, whatever it is | [Read the settings](#read-the-settings), from `git branch --show-current` |
 | `<default>` | The repository's default branch | [Read the settings](#read-the-settings) |
 | `<path>` | A story's git worktree in an epic run: `.workspace/lets-go/worktrees/<name>` in the epic run's checkout for a worktree the epic run creates, or the path `git worktree list --porcelain` prints for one it reuses | [Claim](#claim) or [The story's worktree](#the-storys-worktree) |
 | `<shape-name>` | The shape step's name: `issue-<i>` or `idea-<slug>` | [The shape step's name](references/shape.md#the-shape-steps-name) |
@@ -284,8 +284,8 @@ Read the request. A leading or trailing `ask` or `auto` may name the
 question mode. When the rest of the request is a number or nothing, the
 word names the question mode: take it off, and keep it for
 [Set the question mode](#set-the-question-mode). When the rest is
-words, on the default branch, ask the user whether the word names the
-question mode or is part of the idea. Show both readings: for
+words, in a checkout at the default branch, ask the user whether the
+word names the question mode or is part of the idea. Show both readings: for
 `ask before deleting the branch`, the question mode `ask` with the idea
 `before deleting the branch`, or the idea
 `ask before deleting the branch`. Ask it in either mode, before
@@ -319,23 +319,24 @@ that key is `<i>`. On `key: null`, the word is words, such as `refactor`.
 Ask it before the discovery query and the title search. On an error,
 act as [Backlog errors](#backlog-errors) says.
 
-Then find the issue, `<i>`, from the branch the run started on and what
-is left of the request:
+Then find the issue, `<i>`, from the checkout the run started in, as
+[Read the settings](#read-the-settings) decided, and what is left of the
+request:
 
-| The branch | A number | An idea | Nothing |
+| The checkout | A number | An idea | Nothing |
 |---|---|---|---|
-| The default branch | The number is `<i>`. Go to [Check the issue](#check-the-issue) | With no letter or digit, stop. Otherwise go to [Start from an idea](#start-from-an-idea) | Run `next`. Its pick is `<i>`: print the `Picked` line, and go to [Check the issue](#check-the-issue). When nothing is ready, stop |
+| A checkout at the default branch | The number is `<i>`. Go to [Check the issue](#check-the-issue) | With no letter or digit, stop. Otherwise go to [Start from an idea](#start-from-an-idea) | Run `next`. Its pick is `<i>`: print the `Picked` line, and go to [Check the issue](#check-the-issue). When nothing is ready, stop |
 | Another branch, `<branch>` | When the number is one of the matches, it is `<i>`: go to [Check the issue](#check-the-issue). Otherwise stop | Stop: an idea needs the default branch | When exactly one issue matches, it is `<i>`: go to [Check the issue](#check-the-issue). When none or several do, stop |
 
-With an idea on the default branch, read its characters first. When
-the idea holds no letter or digit, in any script, say that an idea
-needs at least one letter or digit, and stop, claiming nothing and
-running no step. This comes before the discovery query and the title
+With an idea in a checkout at the default branch, read its characters
+first. When the idea holds no letter or digit, in any script, say that
+an idea needs at least one letter or digit, and stop, claiming nothing
+and running no step. This comes before the discovery query and the title
 search, which an idea like `???` gives nothing to work with. A letter
 in any script counts: `ログを直す` is an idea.
 
-With nothing on the default branch, run the `next` case of
-[Find the source of demand](#find-the-source-of-demand), over the
+With nothing in a checkout at the default branch, run the `next` case
+of [Find the source of demand](#find-the-source-of-demand), over the
 whole backlog. On its result:
 - **`picked`:** print:
 
@@ -348,25 +349,18 @@ whole backlog. On its result:
   `lets-shape` skill to shape more, and stop, claiming nothing.
 
 On another branch, `<branch>`, when the request is words, say that an
-idea needs the default branch, and stop. Otherwise search for the
-change's issue, once. On an error, act as
-[Backlog errors](#backlog-errors) says.
-
-```bash
-lets backlog find <branch>
-```
-
-Keep the entries of its `issues` field whose title starts with
-`<branch> — `: these are the matches. When the user gave a number,
-`<i>` must be the `key` field of one of them. If it is not, say that the issue and the branch do not match,
+idea needs the default branch, and stop. Otherwise read the matches
+that [Read the settings](#read-the-settings) kept: the open issues whose
+title starts with `<branch> — `. Do not search again. When the user
+gave a number, `<i>` must be the `key` field of one of them. If it is not, say that the issue and the branch do not match,
 and stop. When they gave none, exactly one match is the issue. If none
-matches, say that `lets-go` runs on the default branch or on a change's
-branch, and needs the issue number on a change's branch. Stop. If
-several match, say that `lets-go` needs the issue number, and stop.
+matches, say that `lets-go` runs in a checkout at the default branch or
+on a change's branch, and needs the issue number on a change's
+branch. Stop. If several match, say that `lets-go` needs the issue number, and stop.
 
 Next: [Check the issue](#check-the-issue) when the entry table found
-`<i>`; [Start from an idea](#start-from-an-idea) for an idea on the
-default branch;
+`<i>`; [Start from an idea](#start-from-an-idea) for an idea in a
+checkout at the default branch;
 [Take up the story run](references/story-run.md#take-up-the-story-run)
 in a story run's child.
 
