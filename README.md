@@ -258,8 +258,20 @@ Kind's question mode, and a mode you name still wins. A `go.questions`
 other than `ask` or `auto` stops the run before it claims anything. The run ends when
 the pull request is ready for review, with one line per step.
 
-If a run stops, run `lets-go` again, on the default branch or on the
-change's branch. It reads from Git and GitHub which steps are done, and
+`lets-go` also runs from a checkout at the default branch: a checkout
+on a branch of its own, such as a T3 Code worktree on `t3/d0dcada9`,
+that holds the default branch's latest commit. It acts there as on the
+default branch. The checkout counts when it has no changes outside
+`.workspace/`, its HEAD is the commit of `origin/<default>` after a
+`git fetch`, and no open issue's title starts with its branch's name.
+A new branch starts from the default branch, as always, and the branch
+you started on stays where it was. One case needs the default branch
+itself: a stopped discovery whose map edits are uncommitted resumes
+only from a checkout on the default branch. From any other checkout,
+the edits count as changes, and the run stops.
+
+If a run stops, run `lets-go` again, in a checkout at the default
+branch or on the change's branch. It reads from Git and GitHub which steps are done, and
 skips them. Each skip prints one line with its evidence and date, such
 as `Skipped build: every task is ticked, last task commit 2026-11-03
 (3222c70).` It then goes on from the first unfinished step. When the
@@ -295,8 +307,8 @@ whose packets name no overlapping path under **Relevant code**. The
 epic run then builds the stories of one wave at the same time, each in
 a git worktree of its own, and starts the next wave once every story of
 this one is settled. It claims each story and creates its worktree under
-`.workspace/lets-go/worktrees/`, while its own checkout stays on the
-default branch. Then each story runs in a child `lets-go` session, in
+`.workspace/lets-go/worktrees/`, while its own checkout stays where it
+is. Then each story runs in a child `lets-go` session, in
 the background, which walks its steps, so the epic run's own context
 stays small. The epic run puts the children's questions to you one
 report at a time, each marked with its story, such as `#286:`. A story
