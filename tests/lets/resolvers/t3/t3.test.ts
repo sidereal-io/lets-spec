@@ -78,7 +78,7 @@ function addTurnItem(db: DatabaseSync, runId: string, type: string, { id = 'i1',
 // A provider thread of threadId whose session has these background tasks
 // pending, as T3 lists them in pendingBackgroundTasks. payload replaces the
 // whole payload. Writing the same provider thread again replaces its tasks.
-function setBackgroundTasks(db: DatabaseSync, threadId: string, tasks: { awaited?: unknown }[], { id = 'pt1', payload = undefined as string | undefined } = {}) {
+function setBackgroundTasks(db: DatabaseSync, threadId: string, tasks: Record<string, unknown>[], { id = 'pt1', payload = undefined as string | undefined } = {}) {
   const json = payload ?? JSON.stringify({ pendingBackgroundTasks: tasks.map((task, i) => ({ command: 'pnpm test', taskId: `task-${i}`, kind: 'command', ...task })) });
   db.prepare(`insert or replace into orchestration_v2_projection_provider_threads (provider_thread_id, thread_id, provider, status, updated_at, payload_json)
     values (?, ?, 'claudeAgent', 'idle', 'now', ?)`).run(id, threadId, json);
@@ -1176,7 +1176,7 @@ test('run is refused when t3 is not running', async () => {
 // checkout, a checkout of /r's repository. t3 answers each request over the
 // WebSocket with LAUNCHED, which names thread T, and logs it.
 function launchingIo(db: DatabaseSync, log: Log, {
-  projectDefault = null as string | null, sleep = async (_ms: number) => {}, now = () => 0, statuses = [200, 200], checkout = {} as Parameters<typeof inCheckout>[0],
+  projectDefault = null as string | null, sleep = async (_ms: number) => {}, now = (() => 0) as () => number, statuses = [200, 200], checkout = {} as Parameters<typeof inCheckout>[0],
 } = {}) {
   addProject(db, { root: '/r', selection: projectDefault });
   return fakeIo({
