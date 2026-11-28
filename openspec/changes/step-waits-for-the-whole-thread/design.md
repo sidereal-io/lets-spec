@@ -85,7 +85,9 @@ CREATE TABLE orchestration_v2_projection_provider_threads (
       updated_at TEXT NOT NULL,
       payload_json TEXT NOT NULL
     , driver TEXT, provider_instance_id TEXT);
-``` Add a test helper, such as `addBackgroundTask(db, threadId, { awaited })`, that writes a provider-thread row with one `pendingBackgroundTasks` entry, and a way to clear it.
+```
+
+Add a test helper, such as `addBackgroundTask(db, threadId, { awaited })`, that writes a provider-thread row with one `pendingBackgroundTasks` entry, and a way to clear it.
 
 None of these decisions is costly to reverse: each sits inside one function and its tests.
 
