@@ -11,9 +11,9 @@ epic run at `auto` leaves the user's decisions to the user.
 
 ## What Changes
 
-- The brainstorm reads the story's packet and, when the story has a parent
-  epic, the epic's packet too, and looks for questions they leave to the
-  user (D4).
+- The brainstorm looks for questions left to the user in the story's own
+  packet, the issue body it already reads. It reads no parent epic's
+  packet (D4).
 - It spots such a question by meaning, not by a fixed phrase: any line that
   says a decision is not yet made by the user, or must be agreed with the
   user, in any wording or section. The skill quotes #328's two lines as
@@ -30,12 +30,21 @@ epic run at `auto` leaves the user's decisions to the user.
 - What `lets-go` does with a recommendation at `auto` stays as it is.
   Packets need no fixed phrase.
 
+Left out: a question that a parent epic's packet leaves to the user. An
+epic's *Shared decisions* hold one decision for every story under it.
+Asking it in each story's brainstorm could record different answers to
+that one decision, and asking it once would need a step that folds the
+answer into the epic's packet, which is more than this Size S bug. So a
+reserved line in an epic's packet is not caught by this change. `lets-go`
+lists the case at the end of its pass, and the user decides whether to
+shape it (D4).
+
 ## Capabilities
 
 ### New Capabilities
 
 - `brainstorm-questions`: how the brainstorm finds and asks a question that
-  the story's packet, or its parent epic's packet, leaves to the user.
+  the story's packet leaves to the user.
 
 ### Modified Capabilities
 
@@ -46,7 +55,8 @@ epic run at `auto` leaves the user's decisions to the user.
 ## Impact
 
 - `skills/lets-brainstorm/SKILL.md`: the *Questioning* section gains the
-  rule, and reading the parent epic's packet.
+  rule, and *The stance* and *Settle the story* link it as their
+  exception.
 - `skills/lets-go/references/step-prompt.md`: the *Questions* section.
 - `openspec/specs/lets-go/spec.md` and a new
   `openspec/specs/brainstorm-questions/spec.md`, at archive.

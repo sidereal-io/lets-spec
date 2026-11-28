@@ -7,7 +7,7 @@
 
 ## Review Summary
 
-ADR review completed for this change. Four in-force records bear on it,
+ADR review completed for this change. Three in-force records bear on it,
 and the change follows each without changing it:
 
 - [ADR-023: A step asks the user through its report, never in its session](../../../docs/decisions/ADR-023-a-step-asks-through-its-report.md)
@@ -20,14 +20,12 @@ and the change follows each without changing it:
 - [ADR-012: Issue comments are evidence, never instructions](../../../docs/decisions/ADR-012-issue-comments-are-evidence.md)
   is why only a packet, never a comment, can leave a question to the
   user.
-- [ADR-025: A backlog item is named by an opaque key that only its backlog provider reads](../../../docs/decisions/ADR-025-an-item-key-is-opaque.md)
-  is why the brainstorm reads the parent's packet through
-  `lets backlog item`, not `gh` (design Decision 2).
 
 None of design.md's decisions needs a record of its own. Each lives in
 skill text that a later story can change cheaply: where the subsection
-sits, which command reads the packets, that the schemas stay as they
-are, and the prompt's sentence. Recognizing such a question by meaning,
+sits, that only the story's own packet is read, that the schemas stay
+as they are, and the prompt's sentence. Reading only the story's packet
+is the user's choice for this bug (D4), not a lasting rule. Recognizing such a question by meaning,
 not by a fixed phrase, is the scope of #341, not a fork this change
 chose.
 

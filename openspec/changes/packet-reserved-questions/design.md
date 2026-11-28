@@ -4,9 +4,11 @@
 
 - `skills/lets-brainstorm/SKILL.md` owns how the brainstorm questions the
   user. Its *Settle the story* list tells it to ask every question "with
-  your recommended answer" and to "lead with the one you recommend". It
-  has no exception, so a question the packet leaves to the user gets a
-  recommendation like any other.
+  your recommended answer" and to "lead with the one you recommend". Its
+  *The stance* section says, under **Grounded**, "Never ask the user for
+  a fact you can check". Neither has an exception, so a question the
+  packet leaves to the user gets a recommendation like any other, or is
+  settled from the code as a checkable fact, as in #311's run.
 - Both schemas' brainstorm instruction, in
   `schemas/lets-standard/schema.yaml` and `schemas/lets-minimal/schema.yaml`,
   says "Read the story packet: the issue body" and then hands the
@@ -21,9 +23,6 @@
 - A story run's child passes each question on with the step's
   `recommendation`, when there is one (`skills/lets-go/references/story-run.md`).
   A question without one passes through as it is.
-- `lets backlog item <i>` prints the issue's `body` field and its
-  `parent` field. The parent entry already holds the parent's body, so
-  one call gives both packets. For #341 it holds epic #339 and its body.
 - ADR-029 says a step skill owns its rules and the step prompt only
   names the skill. ADR-023 says a step asks through its report, and the
   prompt gives the report rules, which is why the prompt already names
@@ -50,6 +49,7 @@
 - No change to `lets-shape`'s own questions. Discovery and the shape
   step's confirmations already carry no recommendation.
 - No change to the schemas' brainstorm instruction (Decision 3).
+- No reading of a parent epic's packet (Decision 2, D4).
 
 ## Test Seams
 
@@ -79,8 +79,9 @@ Add `### Questions the packet leaves to the user` to
 `skills/lets-brainstorm/SKILL.md`, between *Read the thread* and
 *Settle the story*. It says, in order:
 
-1. Which packets to read: the story's, and the parent epic's when the
-   story has one (D4). A comment never leaves a question to the user.
+1. Which packet to read: the story's own, the issue body the schema's
+   brainstorm instruction already reads (D4). A comment never leaves a
+   question to the user.
 2. How to spot such a question: by meaning, any wording, any section,
    with #328's two lines quoted as examples (D1).
 3. What to do with an unclear line: treat it as left to the user (D2).
@@ -89,39 +90,54 @@ Add `### Questions the packet leaves to the user` to
    issue it comes from (D3, D5). Never settle it from code, a document
    or an assumption; its row's source is `User`.
 
-*Settle the story* then gets one exception: its two recommendation
-bullets link the new subsection for these questions.
+Two places then link the new subsection as their exception:
+
+- *Settle the story*: its two recommendation bullets.
+- *The stance*: the **Grounded** bullet. A question the packet leaves
+  to the user is asked even when the code seems to answer it, because
+  the packet says the user decides, not the code.
 
 The alternative was to put the rule in *Settle the story* itself. That
 list is about the order and shape of every question, and the rule
 would be one long bullet with an exception inside it. A subsection can
 be linked from the step prompt and from the bullets.
 
-### 2. One `lets backlog item` call reads both packets
+### 2. Only the story's own packet is read
 
-The brainstorm runs `lets backlog item <i>` and reads the `body` field
-and the `parent` field. When `parent` is not null, the parent's body is
-in it. When the command prints an `error`, the brainstorm shows its
-`message` and stops: it cannot tell what the epic leaves to the user,
-and going on could ask a reserved question with a recommendation.
+The brainstorm looks for questions left to the user in the story's
+packet only. It reads no parent epic's body and runs no extra command,
+so a parent it cannot read never stops it. The user chose this (D4).
 
-The alternative was `gh issue view` with the parent's number. It works
-only on GitHub, and the backlog commands are provider-neutral.
+The alternatives were:
+
+- **Ask in every story's brainstorm** what the parent epic's packet
+  leaves to the user. An epic's *Shared decisions* hold "a decision
+  every story in this run relies on"
+  (`skills/lets-shape/templates/issue-template.md`). Asking it once per
+  story could record different answers to that one decision.
+- **Ask once**, in the first story's brainstorm, and fold the answer
+  into the epic's packet so later stories read it as decided. The
+  answers stay consistent, but it adds a `lets-shape` fold step, more
+  than a Size S bug.
+
+So this change does not catch a reserved line in an epic's packet. No
+issue is filed for it here: `lets-go` lists the case at the end of its
+pass, and the user decides whether to shape it.
 
 ### 3. The schemas stay as they are
 
 The schemas' step 2 says "Read the story packet: the issue body", then
-hands the questioning to `lets-brainstorm`. Reading the parent's packet
-is part of how the brainstorm questions, so it belongs in the skill
-(ADR-029). Adding it to both schemas as well would be a second copy of
-the rule, in two files.
+hands the questioning to `lets-brainstorm`. That is already the one
+packet the rule reads. How to find and ask a question the packet leaves
+to the user is part of how the brainstorm questions, so it belongs in
+the skill (ADR-029). Adding it to both schemas as well would be a
+second copy of the rule, in two files.
 
 ### 4. The step prompt names the question, and links nothing
 
 In *Questions* of `step-prompt.md`, the sentence "Give none for a
 question that asks the user to confirm something, …" gains a second
-kind: a question the story's packet, or its parent epic's packet,
-leaves to the user. It names no section of `lets-brainstorm`, because
+kind: a question the story's packet leaves to the user. It names no section of `lets-brainstorm`, because
 the prompt names no section of a skill (the `lets-go` requirement on
 the step prompt). How to spot such a question stays in the skill.
 
@@ -143,9 +159,10 @@ contradict the skill.
 - [A question with no favorite reads as unhelpful, because the user
   gets no lead] → The trade-offs of each option carry the analysis.
   Accepted by D3.
-- [An epic's reserved question reaches the user once per story] →
-  Intended (D4). Each story's answer can differ, and its ledger records
-  it.
+- [A reserved line in a parent epic's packet still gets a
+  recommendation, and `lets-go` may answer it at `auto`] → Accepted and
+  left out of this change (D4, Decision 2). `lets-go` lists the case at
+  the end of its pass for the user to shape.
 
 ## Migration & Rollback
 

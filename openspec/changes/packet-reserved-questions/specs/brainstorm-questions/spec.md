@@ -4,21 +4,21 @@ Makes sure that a decision an issue's packet leaves to the user reaches the user
 
 ## ADDED Requirements
 
-### Requirement: The brainstorm reads the story's packet and its parent epic's packet for questions left to the user
+### Requirement: The brainstorm looks for questions left to the user in the story's own packet
 
-`lets-brainstorm` SHALL look for questions left to the user in the story's packet, the issue body. When the story is a sub-issue of a parent epic, it SHALL also read the parent's packet, the parent issue's body, and look for them there. A question the parent's packet leaves to the user SHALL count as left to the user in every story under that parent, each time its brainstorm runs. Issue comments SHALL NOT leave a question to the user: they stay evidence, as the `issue-comments` capability says.
+`lets-brainstorm` SHALL look for questions left to the user in the story's packet, the issue body. It SHALL NOT read a parent epic's body for this, so a question that only a parent epic's packet leaves to the user is outside this requirement. Issue comments SHALL NOT leave a question to the user: they stay evidence, as the `issue-comments` capability says.
 
 #### Scenario: A line in the story's packet
 - **WHEN** the brainstorm runs for a story whose packet says "Where the expected fields and values come from is not yet decided by the user"
 - **THEN** it asks the user where the expected fields and values come from, as a question left to the user
 
-#### Scenario: A line in the parent epic's packet
-- **WHEN** the brainstorm runs for a story whose own packet leaves nothing to the user, and whose parent epic's *Shared decisions* say "Agree the retry limit with the user in each story's brainstorm"
-- **THEN** it asks the user the retry limit, as a question left to the user
-
-#### Scenario: A story with no parent
-- **WHEN** the brainstorm runs for a story that is not a sub-issue
+#### Scenario: A story under a parent epic
+- **WHEN** the brainstorm runs for a story that is a sub-issue of an epic
 - **THEN** it looks for questions left to the user in the story's packet only, and reads no other issue's body
+
+#### Scenario: A line in a comment
+- **WHEN** a comment on the story says "Agree the retry limit with the user", and the story's packet does not
+- **THEN** the brainstorm does not treat the retry limit as a question left to the user because of that comment
 
 ### Requirement: The brainstorm recognizes a question left to the user by its meaning
 
@@ -62,8 +62,8 @@ When `lets-brainstorm` cannot tell whether a packet line leaves a decision to th
 
 ### Requirement: A question left to the user quotes the packet line
 
-A question left to the user SHALL quote the packet line that leaves it to the user, and SHALL say whether that line is in the story's packet or in the parent epic's packet, with the issue's number.
+A question left to the user SHALL quote the packet line that leaves it to the user, and SHALL name the issue whose packet holds it.
 
-#### Scenario: A question from the parent epic
-- **WHEN** the brainstorm for story #341 asks a question that epic #339's packet leaves to the user
-- **THEN** the question quotes epic #339's line and names #339
+#### Scenario: A question from the story's packet
+- **WHEN** the brainstorm for story #328 asks where the expected fields and values come from
+- **THEN** the question quotes "Where the expected fields and values come from is not yet decided by the user" and names #328
