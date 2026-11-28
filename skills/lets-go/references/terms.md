@@ -52,3 +52,15 @@ How `lets-go` handles a step's questions. `ask` puts every question to
 the user, with the step's recommendation as the suggested answer. `auto`
 answers each question that has a recommendation, tells the user what it
 chose, and asks the user the rest.
+
+## Checkout at the default branch
+
+A checkout that `lets-go` treats as the default branch. Either its
+current branch is the default branch, or all of these hold: no open
+issue's title starts with the branch's name and ` — `, so the branch is
+no change's branch; the checkout has no changes outside `.workspace/`,
+staged, unstaged or untracked; and its HEAD is the commit of
+`origin/<default>` after `git fetch origin <default>`. A T3 Code
+worktree on a branch such as `t3/d0dcada9`, made at the default
+branch's commit, is one. `lets-go` decides this once, when a run
+starts, and keeps the answer for the whole run.

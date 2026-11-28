@@ -149,3 +149,15 @@ No chain of blocked-by links joins any two of them, and no two of their
 packets name an overlapping path under **Relevant code**. An epic run
 sorts its stories into waves when it starts, and builds the waves in
 order: it starts the next wave once every story of this one is settled.
+
+## Checkout at the default branch
+
+A checkout that `lets-go` treats as the default branch. Either its
+current branch is the default branch, or all of these hold: no open
+issue's title starts with the branch's name and ` — `, so the branch is
+no change's branch; the checkout has no changes outside `.workspace/`,
+staged, unstaged or untracked; and its HEAD is the commit of
+`origin/<default>` after `git fetch origin <default>`. A T3 Code
+worktree on a branch such as `t3/d0dcada9`, made at the default
+branch's commit, is one. `lets-go` decides this once, when a run
+starts, and keeps the answer for the whole run.

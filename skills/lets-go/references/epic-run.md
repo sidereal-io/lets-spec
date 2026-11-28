@@ -9,7 +9,7 @@ same time, each in a git worktree of its own, and starts the next wave
 once every story of this one is settled. Each story ends at a pull
 request ready for review, and the epic run ends with one line per
 story. The epic run claims each story, routes it and creates its
-worktree itself, and its own checkout stays on the default branch. A
+worktree itself, and its own checkout stays where it is. A
 child `lets-go` session then walks the story's steps in its worktree,
 in the background, so the epic run's context grows by a few lines per
 story. When no child session can start, the epic run walks the story's
@@ -515,8 +515,8 @@ succeeded, the status command lists nothing.
 Run the status command of
 [Commit the map in an epic run](shape.md#commit-the-map-in-an-epic-run)
 in the epic run's own checkout. When it lists a path, name each one,
-and say that they hold the discovery's edits, uncommitted on the
-default branch. Say to commit or discard them before the next run,
+and say that they hold the discovery's edits, uncommitted in the epic
+run's checkout. Say to commit or discard them before the next run,
 because the next run stops on them. This is what
 [Name the maps' edits](shape.md#name-the-maps-edits) says
 for a run that stops after discovery and before
@@ -1012,7 +1012,7 @@ On a stop in a story run, take these actions in order.
    came from a child's report or a walk in this session. Every story
    settled in actions 2 and 3 is passed in `--exclude` of the next
    pick, so none of them is picked. Run no `git switch`: the epic run's
-   checkout stays on `<default>`.
+   checkout stays where it is.
 
 The epic run retries no failed step: running `lets-go` again on the
 failed story's branch carries on, as for any run. The end of the epic

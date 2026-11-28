@@ -12,7 +12,7 @@ prompt, with any answers added.
 
 1. Run that prompt in a subagent that starts with no context from this
    session. It follows the saved prompt, works only in this repository
-   on the branch `<name>`, or on the default branch for shape, and makes
+   on the branch `<name>`, or on `<start-branch>` for shape, and makes
    only the changes that the step calls for. In an epic run's walk, this
    repository is the story's worktree, `<path>`, as
    [Wait for the wave](epic-run.md#wait-for-the-wave) says.

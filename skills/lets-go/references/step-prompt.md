@@ -36,19 +36,21 @@ Invoke the `lets-shape` skill for the idea above, and stop where it stops.
 ```
 
 For shape, the first two lines differ. There is no change, the branch is
-the default branch, `<default>`, and [Route](../SKILL.md#route) has not
-run, so there is no schema and no route line. For an issue, they are:
+the one the run started on, `<start-branch>`, and
+[Route](../SKILL.md#route) has not run, so there is no schema and no
+route line. In a checkout at the default branch on a branch of its own,
+`<start-branch>` is that branch, such as `t3/d0dcada9`, not `<default>`. For an issue, they are:
 
 ```text
 You run one step of a lets-go run: shape, for issue #<i>.
-Issue: #<i>, <issue-url>. Branch: <default>.
+Issue: #<i>, <issue-url>. Branch: <start-branch>.
 ```
 
 For an idea, they are:
 
 ```text
 You run one step of a lets-go run: shape, for an idea.
-Issue: none yet. The idea is: <idea>. Branch: <default>.
+Issue: none yet. The idea is: <idea>. Branch: <start-branch>.
 ```
 
 Add the sentence `Open issues were searched, and none is the same work.`
@@ -58,7 +60,7 @@ and the search or the user found no match. Then `lets-shape` runs no
 search of its own. The second line is then:
 
 ```text
-Issue: none yet. The idea is: <idea>. Branch: <default>. Open issues were searched, and none is the same work.
+Issue: none yet. The idea is: <idea>. Branch: <start-branch>. Open issues were searched, and none is the same work.
 ```
 
 Resolve the installed

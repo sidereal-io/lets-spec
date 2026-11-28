@@ -98,8 +98,8 @@ state, and this input for every other one.
 The shape step turns an idea, or an issue whose packet is not complete,
 into one shaped issue. When the work is too large for one issue, it runs
 discovery instead, which files a parent issue and its stories. It runs
-on the default branch, before any branch or change exists, and at most
-once per run. [Check the issue](../SKILL.md#check-the-issue) decides
+in a [checkout at the default branch](terms.md#checkout-at-the-default-branch),
+before any branch or change exists, and at most once per run. [Check the issue](../SKILL.md#check-the-issue) decides
 when it runs.
 
 The step's input is the idea, or the issue `#<i>`. For an epic whose
@@ -183,19 +183,22 @@ the epic.
 ### Name the maps' edits
 
 A run that stops after discovery and before [Claim](../SKILL.md#claim),
-for any reason, leaves the maps' edits on the default branch. When the
+for any reason, leaves the maps' edits in this checkout. When the
 status command in [Commit the discovery map](#commit-the-discovery-map)
 lists a path, name each one, and say that they hold the discovery's
-edits, uncommitted on the default branch. While
+edits, uncommitted in this checkout. While
 [Find the input's discovery](#find-the-inputs-discovery) still takes the
-parent as this input's discovery, say to leave the maps as they are:
-running `lets-go` again with the same idea, or `#<i>`, resumes the
-discovery and keeps its edits. Otherwise, say to commit or discard them
-before the next run, because the next run stops on them.
+parent as this input's discovery, and this checkout is on `<default>`,
+say to leave the maps as they are: running `lets-go` again with the same
+idea, or `#<i>`, resumes the discovery and keeps its edits. Otherwise,
+say to commit or discard them before the next run, because the next run
+stops on them. On a branch of its own, such as `t3/d0dcada9`, the next
+run counts the edits as changes, so the checkout is no longer at the
+default branch, and the run stops.
 
 ## Commit the discovery map
 
-Discovery edits the discovery maps on the default branch:
+Discovery edits the discovery maps in this checkout:
 `openspec/discovery.md`, and in a repository with several products the
 files under `openspec/discovery/`. The new branch carries the edits with
 it. When a shape step ran in this run, list the changed maps on the new
@@ -274,7 +277,7 @@ later one.
    When a command fails, leave the checkout's edits as they are, and
    return `commit-failed`, with Git's error.
 4. Only once the commit succeeds, return the epic run's checkout to its
-   committed state, so it stays clean on `<default>`. The paths not
+   committed state, so it stays clean. The paths not
    marked `??` are `<tracked paths>`: restore them, when there are any.
    Then remove each path marked `??`, a map discovery created:
 
