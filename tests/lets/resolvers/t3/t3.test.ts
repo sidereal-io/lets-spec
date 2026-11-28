@@ -385,6 +385,25 @@ test('awaitedTasks counts 0 when the thread has no provider thread', () => {
   assert.equal(awaitedTasks(shared(database()), 'T'), 0);
 });
 
+test('awaitedTasks counts 0 when T3 has no provider-threads table', () => {
+  const db = database();
+  db.exec('drop table orchestration_v2_projection_provider_threads');
+  assert.equal(awaitedTasks(shared(db), 'T'), 0);
+});
+test('awaitedTasks counts 0 for a provider thread whose payload does not parse', () => {
+  const db = database();
+  setBackgroundTasks(db, 'T', [], { id: 'pt1', payload: '{not json' });
+  setBackgroundTasks(db, 'T', [{ awaited: true }], { id: 'pt2' });
+  assert.equal(awaitedTasks(shared(db), 'T'), 1);
+});
+test('awaitedTasks counts 0 for a payload with no list of pending background tasks', () => {
+  for (const payload of ['{}', '{"pendingBackgroundTasks":{"awaited":true}}', 'null', '[]', '{"pendingBackgroundTasks":[null,7]}']) {
+    const db = database();
+    setBackgroundTasks(db, 'T', [], { payload });
+    assert.equal(awaitedTasks(shared(db), 'T'), 0, payload);
+  }
+});
+
 test('readFinalMessage returns the run\'s newest assistant message', () => {
   const db = database();
   assert.equal(readFinalMessage(shared(db), 'run-1'), null);

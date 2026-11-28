@@ -253,14 +253,25 @@ export function readRun(db: Db, threadId: string): Run | null {
 // pendingBackgroundTasks entries T3 marks `awaited: true`, as
 // t3_background_wait does. T3 keeps them on the provider thread, not the run,
 // and a thread handed to another provider has more than one.
+// This is T3's private layout. Data in any other shape counts 0, so a T3
+// update that moves it makes a session end as it did before this read.
 export function awaitedTasks(db: Db, threadId: string): number {
+  const table = db.prepare(`
+    select 1 from sqlite_master where type = 'table' and name = 'orchestration_v2_projection_provider_threads'`).get();
+  if (table === undefined) return 0;
   const rows = db.prepare(`
     select payload_json from orchestration_v2_projection_provider_threads
     where thread_id = ?`).all(threadId) as { payload_json: string }[];
   let awaited = 0;
   for (const { payload_json } of rows) {
-    const { pendingBackgroundTasks } = JSON.parse(payload_json) as { pendingBackgroundTasks: { awaited?: unknown }[] };
-    awaited += pendingBackgroundTasks.filter((task) => task.awaited === true).length;
+    let payload: unknown;
+    try {
+      payload = JSON.parse(payload_json);
+    } catch {
+      continue;
+    }
+    const tasks = isObject(payload) ? payload.pendingBackgroundTasks : undefined;
+    if (Array.isArray(tasks)) awaited += tasks.filter((task) => isObject(task) && task.awaited === true).length;
   }
   return awaited;
 }
