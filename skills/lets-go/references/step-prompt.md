@@ -119,7 +119,8 @@ When you need a decision, stop. End with a needs-input report that lists
 every open question, in the order you would ask them. Give a
 recommendation where you have one. Give none for a question that asks
 the user to confirm something, such as a brainstorm ledger, an issue
-packet or a discovery phase.
+packet or a discovery phase. Give none either for a question that the
+story's packet leaves to the user.
 
 A resumed step ends with an `## Answers` section. Each answer settles its
 question, so never ask it again. An answer that ends with "(lets-go

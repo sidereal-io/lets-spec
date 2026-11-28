@@ -19,7 +19,7 @@ as D1 to D5, design decisions as design §N.
 
 ## 2. The step prompt gives no recommendation for such a question
 
-- [ ] 2.1 [parallel] [easy] In `skills/lets-go/references/step-prompt.md`, the *Questions* section's sentence on questions with no recommendation also names a question that the story's packet leaves to the user, and names no section of `lets-brainstorm` (design §4) (verify: sed -n '/^## Questions/,/^## The report/p' skills/lets-go/references/step-prompt.md | tr '\n' ' ' | grep -q 'leaves to the user')
+- [x] 2.1 [parallel] [easy] In `skills/lets-go/references/step-prompt.md`, the *Questions* section's sentence on questions with no recommendation also names a question that the story's packet leaves to the user, and names no section of `lets-brainstorm` (design §4) (verify: sed -n '/^## Questions/,/^## The report/p' skills/lets-go/references/step-prompt.md | tr '\n' ' ' | grep -q 'leaves to the user') (✓ verify passed; section names no lets-brainstorm)
 
 ## 3. Integration [depends-on: 1, 2]
 
