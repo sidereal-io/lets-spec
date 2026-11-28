@@ -23,7 +23,7 @@ as D1 to D5, design decisions as design §N.
 
 ## 3. Integration [depends-on: 1, 2]
 
-- [ ] 3.1 [easy] The project's three checks pass on the branch, including the link, field and term checks in `tests/contracts/` over the edited skills (verify: pnpm test && nix flake check && mise run check)
+- [x] 3.1 [easy] The project's three checks pass on the branch, including the link, field and term checks in `tests/contracts/` over the edited skills (verify: pnpm test && nix flake check && mise run check) (✓ pnpm test: 855 pass; nix flake check: all checks passed; mise run check: 19 passed)
 - [ ] 3.2 [medium] Pull request #363's description holds a walkthrough that traces three packet lines through the edited skill text to a `needs-input` question with no recommendation: #328's two lines, and the unclear line "The timeout is up to the user's preference, probably 30 seconds" (verify: gh pr view 363 --json body --jq .body | grep -qi 'walkthrough')
 
 ## Deviations Ledger
