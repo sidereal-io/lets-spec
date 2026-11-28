@@ -262,9 +262,16 @@ export function awaitedTasks(db: Db, threadId: string): number {
   const table = db.prepare(`
     select 1 from sqlite_master where type = 'table' and name = 'orchestration_v2_projection_provider_threads'`).get();
   if (table === undefined) return 0;
-  const rows = db.prepare(`
-    select payload_json from orchestration_v2_projection_provider_threads
-    where thread_id = ?`).all(threadId) as { payload_json: string }[];
+  let rows: { payload_json: string }[];
+  try {
+    rows = db.prepare(`
+      select payload_json from orchestration_v2_projection_provider_threads
+      where thread_id = ?`).all(threadId) as { payload_json: string }[];
+  } catch (error) {
+    // Only a missing column is a layout change; a locked database is not.
+    if (error instanceof Error && /no such column/.test(error.message)) return 0;
+    throw error;
+  }
   let awaited = 0;
   for (const { payload_json } of rows) {
     let payload: unknown;

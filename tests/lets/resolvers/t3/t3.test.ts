@@ -390,6 +390,11 @@ test('awaitedTasks counts 0 when T3 has no provider-threads table', () => {
   db.exec('drop table orchestration_v2_projection_provider_threads');
   assert.equal(awaitedTasks(shared(db), 'T'), 0);
 });
+test('awaitedTasks counts 0 when the provider-threads table has no payload column', () => {
+  const db = database();
+  db.exec('alter table orchestration_v2_projection_provider_threads drop column payload_json');
+  assert.equal(awaitedTasks(shared(db), 'T'), 0);
+});
 test('awaitedTasks counts 0 for a provider thread whose payload does not parse', () => {
   const db = database();
   setBackgroundTasks(db, 'T', [], { id: 'pt1', payload: '{not json' });
