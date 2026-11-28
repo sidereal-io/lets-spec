@@ -17,7 +17,12 @@ that is for the epic run's own session, not for this one.
 
 [Read the request](../SKILL.md#read-the-request) sends the run here,
 after [Read the settings](../SKILL.md#read-the-settings) has found the
-default branch and the current branch, `<branch>`.
+default branch and the current branch, `<branch>`. A story run's child
+checks only that `<branch>` is `<name>`, in action 2 below. It does not
+read whether its checkout is a
+[checkout at the default branch](terms.md#checkout-at-the-default-branch):
+[Read the settings](../SKILL.md#read-the-settings) runs none of those
+checks in a story run's child.
 
 1. Take these from the story prompt: `<i>`, `<name>` and `<parent>`
    from its first line; `<issue-url>`, `<schema>` and `<route line>`
