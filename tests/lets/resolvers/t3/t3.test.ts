@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { Refused, SessionFailed, SpawnError, TimeoutError } from '../../../../lets/src/resolvers/kit/errors.ts';
 import type { Db } from '../../../../lets/src/resolvers/kit/io.ts';
 import {
-  baseDir, buildLaunch, catalogueOf, createAdapter, defaultModel, dispatch, findProject, isAncestor, launch, readCatalogue, readFinalMessage, request,
+  awaitedTasks, baseDir, buildLaunch, catalogueOf, createAdapter, defaultModel, dispatch, findProject, isAncestor, launch, readCatalogue, readFinalMessage, request,
   optionsFromCatalogue, readRun, readRuntime, readToken, t3ModelSelection,
 } from '../../../../lets/src/resolvers/t3/t3.ts';
 import type { RunInput, StartInput } from '../../../../lets/src/resolvers/kit/adapter.ts';
@@ -73,6 +73,15 @@ function addFailure(db: DatabaseSync, runId: string, message: string) {
 function addTurnItem(db: DatabaseSync, runId: string, type: string, { id = 'i1', ordinal = 1 } = {}) {
   db.prepare(`insert into orchestration_v2_projection_turn_items (turn_item_id, thread_id, run_id, ordinal, type, status, updated_at, payload_json)
     values (?, 'T', ?, ?, ?, 'completed', 'now', '{}')`).run(id, runId, ordinal, type);
+}
+
+// A provider thread of threadId whose session has these background tasks
+// pending, as T3 lists them in pendingBackgroundTasks. payload replaces the
+// whole payload. Writing the same provider thread again replaces its tasks.
+function setBackgroundTasks(db: DatabaseSync, threadId: string, tasks: Record<string, unknown>[], { id = 'pt1', payload = undefined as string | undefined } = {}) {
+  const json = payload ?? JSON.stringify({ pendingBackgroundTasks: tasks.map((task, i) => ({ command: 'pnpm test', taskId: `task-${i}`, kind: 'command', ...task })) });
+  db.prepare(`insert or replace into orchestration_v2_projection_provider_threads (provider_thread_id, thread_id, provider, status, updated_at, payload_json)
+    values (?, ?, 'claudeAgent', 'idle', 'now', ?)`).run(id, threadId, json);
 }
 
 type Log = [string, unknown][];
@@ -346,6 +355,60 @@ test('readRun reads a failed run\'s failure from its error item', () => {
   assert.equal(readRun(shared(db), 'T')!.failure, 'quota exceeded');
 });
 
+test('awaitedTasks counts the thread\'s pending background tasks marked awaited', () => {
+  const db = database();
+  setBackgroundTasks(db, 'T', [{ awaited: true }, { awaited: false }, { awaited: true }]);
+  assert.equal(awaitedTasks(shared(db), 'T'), 2);
+});
+test('awaitedTasks sums the awaited tasks of every provider thread of the thread', () => {
+  const db = database();
+  setBackgroundTasks(db, 'T', [{ awaited: true }], { id: 'pt1' });
+  setBackgroundTasks(db, 'T', [{ awaited: true }], { id: 'pt2' });
+  assert.equal(awaitedTasks(shared(db), 'T'), 2);
+});
+test('awaitedTasks counts only a task whose awaited is exactly true', () => {
+  const db = database();
+  setBackgroundTasks(db, 'T', [{ awaited: false }, {}, { awaited: 'true' }, { awaited: 1 }]);
+  assert.equal(awaitedTasks(shared(db), 'T'), 0);
+});
+test('awaitedTasks counts 0 for an empty list of tasks', () => {
+  const db = database();
+  setBackgroundTasks(db, 'T', []);
+  assert.equal(awaitedTasks(shared(db), 'T'), 0);
+});
+test('awaitedTasks leaves out another thread\'s tasks', () => {
+  const db = database();
+  setBackgroundTasks(db, 'U', [{ awaited: true }]);
+  assert.equal(awaitedTasks(shared(db), 'T'), 0);
+});
+test('awaitedTasks counts 0 when the thread has no provider thread', () => {
+  assert.equal(awaitedTasks(shared(database()), 'T'), 0);
+});
+
+test('awaitedTasks counts 0 when T3 has no provider-threads table', () => {
+  const db = database();
+  db.exec('drop table orchestration_v2_projection_provider_threads');
+  assert.equal(awaitedTasks(shared(db), 'T'), 0);
+});
+test('awaitedTasks counts 0 when the provider-threads table has no payload column', () => {
+  const db = database();
+  db.exec('alter table orchestration_v2_projection_provider_threads drop column payload_json');
+  assert.equal(awaitedTasks(shared(db), 'T'), 0);
+});
+test('awaitedTasks counts 0 for a provider thread whose payload does not parse', () => {
+  const db = database();
+  setBackgroundTasks(db, 'T', [], { id: 'pt1', payload: '{not json' });
+  setBackgroundTasks(db, 'T', [{ awaited: true }], { id: 'pt2' });
+  assert.equal(awaitedTasks(shared(db), 'T'), 1);
+});
+test('awaitedTasks counts 0 for a payload with no list of pending background tasks', () => {
+  for (const payload of ['{}', '{"pendingBackgroundTasks":{"awaited":true}}', 'null', '[]', '{"pendingBackgroundTasks":[null,7]}']) {
+    const db = database();
+    setBackgroundTasks(db, 'T', [], { payload });
+    assert.equal(awaitedTasks(shared(db), 'T'), 0, payload);
+  }
+});
+
 test('readFinalMessage returns the run\'s newest assistant message', () => {
   const db = database();
   assert.equal(readFinalMessage(shared(db), 'run-1'), null);
@@ -358,10 +421,24 @@ test('readFinalMessage returns the run\'s newest assistant message', () => {
 
 const HANDLE = { kind: 'thread', id: 'T', origin: ORIGIN };
 
-// Run a session in thread T, whose state is db. Each sleep runs the next step.
-// t3 answers each request with the next status, and the log keeps what was sent.
-function running(db: DatabaseSync, steps: (() => void)[] = [], { timeoutMs = 60000, statuses = [200, 200], log = [] as Log } = {}) {
-  return createAdapter(launchingIo(db, log, { sleep: async () => steps.shift()?.(), statuses })).run(runInput, { timeoutMs });
+// Run a session in thread T, whose state is db, as a review or, with via
+// 'step', as a step. Each sleep moves the clock on by the time slept and runs
+// the next step. t3 answers each request with the next status, and the log
+// keeps what was sent.
+function running(db: DatabaseSync, steps: (() => void)[] = [], {
+  timeoutMs = 60000, statuses = [200, 200], log = [] as Log, via = 'run' as 'run' | 'step',
+} = {}): Promise<{ handle: unknown; text: string; checkout?: string | null }> {
+  let clock = 0;
+  const io = launchingIo(db, log, {
+    now: () => clock,
+    sleep: async (ms: number) => {
+      clock += ms;
+      steps.shift()?.();
+    },
+    statuses,
+  });
+  const adapter = createAdapter(io);
+  return via === 'run' ? adapter.run(runInput, { timeoutMs }) : adapter.step!(runInput, { timeoutMs });
 }
 const sentTypes = (log: Log) => log.filter(([what]) => what === 'send').map(([, frame]) => (frame as { payload: { type?: string } }).payload.type ?? 'launch');
 
@@ -377,6 +454,123 @@ test('run waits for the run to complete and the message to stop streaming', asyn
   assert.deepEqual(await running(db, steps), { handle: HANDLE, text: 'FINDINGS', checkout: '/r' });
   assert.equal(steps.length, 0);
 });
+const WAITING = 'The review is running; waiting for it to finish.';
+const DONE_REPORT = 'Built.\n\n```step-report\noutcome: done\nevidence:\n  - "commit 3f2a1c0: feat: add the thing"\n```';
+// A thread whose first run completed with first while its session waited on
+// one awaited background task.
+function waitingRun(first = WAITING) {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'completed');
+  addMessage(db, 'a1', 'run-1', first, 0);
+  setBackgroundTasks(db, 'T', [{ awaited: true }]);
+  return db;
+}
+// The awaited task ends, and wakes the session into run 2, which completes
+// with text.
+const wakes = (db: DatabaseSync, text: string) => [
+  () => {},
+  () => {
+    setBackgroundTasks(db, 'T', []);
+    addRun(db, 'T', 'run-2', 2, 'running');
+  },
+  () => {
+    db.exec("update orchestration_v2_projection_runs set status = 'completed' where run_id = 'run-2'");
+    addMessage(db, 'a2', 'run-2', text, 0, { createdAt: 'later' });
+  },
+];
+for (const via of ['run', 'step'] as const) {
+  test(`${via} reads the run that the session's awaited work wakes, not the run that waited`, async () => {
+    const db = waitingRun();
+    const steps = wakes(db, DONE_REPORT);
+    assert.equal((await running(db, steps, { via })).text, DONE_REPORT);
+    assert.equal(steps.length, 0);
+  });
+}
+
+test('a completed run whose session left unawaited background work is read on the first poll', async () => {
+  const db = database();
+  addThread(db, 'T');
+  addRun(db, 'T', 'run-1', 1, 'completed');
+  addMessage(db, 'a1', 'run-1', DONE_REPORT, 0);
+  setBackgroundTasks(db, 'T', [{ awaited: false, command: 'pnpm dev' }]);
+  const steps = [() => {}];
+  assert.equal((await running(db, steps)).text, DONE_REPORT);
+  assert.equal(steps.length, 1);
+});
+
+// Steps for running that change db at the given times, in ms. Each sleep is
+// one 5 s poll, so the step at index i runs at (i + 1) * 5 s. A run of empty
+// steps follows the last change.
+function timeline(events: [number, () => void][]): (() => void)[] {
+  const last = Math.max(...events.map(([at]) => at));
+  const steps: (() => void)[] = Array.from({ length: last / 5000 + 20 }, () => () => {});
+  for (const [at, change] of events) steps[at / 5000 - 1] = change;
+  return steps;
+}
+// Run name completes with text, as the newest run of thread T.
+function completes(db: DatabaseSync, name: string, ordinal: number, text: string) {
+  addRun(db, 'T', name, ordinal, 'completed');
+  addMessage(db, `${name}-reply`, name, text, 0, { createdAt: `later-${ordinal}` });
+}
+const EARLY_REPORT = 'Built.\n\n```step-report\noutcome: done\nevidence:\n  - "commit 1a2b3c4: feat: add the first thing"\n```';
+
+test('a run the awaited work wakes within 30 s of its clearing is read', async () => {
+  const db = waitingRun();
+  const steps = timeline([
+    [5000, () => setBackgroundTasks(db, 'T', [])],
+    [30000, () => completes(db, 'run-2', 2, DONE_REPORT)],
+  ]);
+  assert.equal((await running(db, steps)).text, DONE_REPORT);
+});
+test('with no later run 30 s after the awaited work clears, the run that waited is read', async () => {
+  const db = waitingRun(EARLY_REPORT);
+  const steps = timeline([
+    [5000, () => setBackgroundTasks(db, 'T', [])],
+    [40000, () => completes(db, 'run-2', 2, DONE_REPORT)],
+  ]);
+  assert.equal((await running(db, steps)).text, EARLY_REPORT);
+});
+test('a completed run of a session that never had awaited work is read on the first poll', async () => {
+  const db = database();
+  addThread(db, 'T');
+  completes(db, 'run-1', 1, DONE_REPORT);
+  const steps = [() => {}];
+  assert.equal((await running(db, steps)).text, DONE_REPORT);
+  assert.equal(steps.length, 1);
+});
+test('awaited work that is pending again gives its own clearing a fresh 30 s', async () => {
+  const db = waitingRun();
+  const steps = timeline([
+    [5000, () => setBackgroundTasks(db, 'T', [])],
+    [10000, () => addRun(db, 'T', 'run-2', 2, 'running')],
+    [40000, () => {
+      setBackgroundTasks(db, 'T', [{ awaited: true }]);
+      db.exec("update orchestration_v2_projection_runs set status = 'completed' where run_id = 'run-2'");
+      addMessage(db, 'a2', 'run-2', WAITING, 0, { createdAt: 'later-2' });
+    }],
+    [45000, () => setBackgroundTasks(db, 'T', [])],
+    [70000, () => completes(db, 'run-3', 3, DONE_REPORT)],
+  ]);
+  assert.equal((await running(db, steps, { timeoutMs: 300000 })).text, DONE_REPORT);
+});
+
+test('a session that asks a question while it waits on awaited work stops to ask', async () => {
+  const db = waitingRun();
+  const steps = [() => addPendingRequest(db, 'T')];
+  await assert.rejects(running(db, steps), (error) => error instanceof SessionFailed && error.message === 'the session stopped to ask (thread T)');
+});
+
+test('a session whose awaited work outlasts the time limit times out, naming the thread', async () => {
+  await assert.rejects(running(waitingRun(), [], { timeoutMs: 180000 }),
+    (error) => error instanceof TimeoutError && error.message === 'no result after 180000 ms (thread T)');
+});
+test('a session whose awaited work outlasts the time limit stops its thread, and keeps it', async () => {
+  const log: Log = [];
+  await assert.rejects(running(waitingRun(), [], { timeoutMs: 180000, log }), TimeoutError);
+  assert.deepEqual(sentTypes(log), ['launch', 'thread.stop']);
+});
+
 // A thread whose run failed before any assistant message.
 function refusedRun() {
   const db = database();
@@ -406,6 +600,20 @@ test('run fails a run that failed after an assistant message, with its failure',
   addFailure(db, 'run-1', 'quota exceeded');
   await assert.rejects(running(db),
     (error) => error instanceof SessionFailed && !(error instanceof Refused) && error.message === 'quota exceeded (thread T)');
+});
+test('a run the awaited work wakes that fails before any message fails the session, and keeps its thread', async () => {
+  const db = waitingRun();
+  const log: Log = [];
+  const steps = [
+    () => setBackgroundTasks(db, 'T', []),
+    () => {
+      addRun(db, 'T', 'run-2', 2, 'failed');
+      addFailure(db, 'run-2', 'rate limited');
+    },
+  ];
+  await assert.rejects(running(db, steps, { log }),
+    (error) => error instanceof SessionFailed && !(error instanceof Refused) && error.message === 'rate limited (thread T)');
+  assert.deepEqual(sentTypes(log), ['launch']);
 });
 test('run fails when the session stops to ask', async () => {
   for (const status of ['waiting', 'running']) {
@@ -987,7 +1195,7 @@ test('run is refused when t3 is not running', async () => {
 // checkout, a checkout of /r's repository. t3 answers each request over the
 // WebSocket with LAUNCHED, which names thread T, and logs it.
 function launchingIo(db: DatabaseSync, log: Log, {
-  projectDefault = null as string | null, sleep = async () => {}, statuses = [200, 200], checkout = {} as Parameters<typeof inCheckout>[0],
+  projectDefault = null as string | null, sleep = async (_ms: number) => {}, now = (() => 0) as () => number, statuses = [200, 200], checkout = {} as Parameters<typeof inCheckout>[0],
 } = {}) {
   addProject(db, { root: '/r', selection: projectDefault });
   return fakeIo({
@@ -997,6 +1205,7 @@ function launchingIo(db: DatabaseSync, log: Log, {
     openDb: () => shared(db),
     fetch: fakeFetch(statuses, []),
     WebSocket: fakeWebSocket(LAUNCHED, log),
+    now,
     sleep,
   });
 }

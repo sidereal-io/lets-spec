@@ -39,6 +39,9 @@ import { pollUntil } from '../kit/wait.ts';
 export const ORCHESTRATION_PROTOCOL = 2;
 
 const POLL_MS = 5000;
+// How long to wait, after a session's awaited work clears, for the run
+// that work wakes. Six polls.
+const WAKE_GRACE_MS = 30_000;
 const REPLY_TIMEOUT_MS = 120_000;
 // How long a stop may take, so a T3 that hangs cannot hold a timed-out
 // command for REPLY_TIMEOUT_MS more.
@@ -249,6 +252,40 @@ export function readRun(db: Db, threadId: string): Run | null {
   return { id: run.run_id, status: run.status, pendingRequests: pending, failure };
 }
 
+// How many background tasks the thread's session waits on: the
+// pendingBackgroundTasks entries T3 marks `awaited: true`, as
+// t3_background_wait does. T3 keeps them on the provider thread, not the run,
+// and a thread handed to another provider has more than one.
+// This is T3's private layout. Data in any other shape counts 0, so a T3
+// update that moves it makes a session end as it did before this read.
+export function awaitedTasks(db: Db, threadId: string): number {
+  const table = db.prepare(`
+    select 1 from sqlite_master where type = 'table' and name = 'orchestration_v2_projection_provider_threads'`).get();
+  if (table === undefined) return 0;
+  let rows: { payload_json: string }[];
+  try {
+    rows = db.prepare(`
+      select payload_json from orchestration_v2_projection_provider_threads
+      where thread_id = ?`).all(threadId) as { payload_json: string }[];
+  } catch (error) {
+    // Only a missing column is a layout change; a locked database is not.
+    if (error instanceof Error && /no such column/.test(error.message)) return 0;
+    throw error;
+  }
+  let awaited = 0;
+  for (const { payload_json } of rows) {
+    let payload: unknown;
+    try {
+      payload = JSON.parse(payload_json);
+    } catch {
+      continue;
+    }
+    const tasks = isObject(payload) ? payload.pendingBackgroundTasks : undefined;
+    if (Array.isArray(tasks)) awaited += tasks.filter((task) => isObject(task) && task.awaited === true).length;
+  }
+  return awaited;
+}
+
 // True when the run holds a proposed plan, which T3 writes for a session
 // in plan mode. A review never needs one.
 export function hasProposedPlan(db: Db, runId: string): boolean {
@@ -285,6 +322,14 @@ export function readFinalMessage(db: Db, runId: string): { text: string; streami
   if (!row) return null;
   const { text } = JSON.parse(row.payload_json) as { text?: unknown };
   return { text: typeof text === 'string' ? text : '', streaming: row.streaming === 1 };
+}
+
+// True when any run of the thread has an assistant message.
+function hasReply(db: Db, threadId: string): boolean {
+  const { replies } = db.prepare(`
+    select count(*) as replies from orchestration_v2_projection_messages
+    where thread_id = ? and role = 'assistant'`).get(threadId) as { replies: number };
+  return replies > 0;
 }
 
 // t3-token in the lets config folder, beside lets's config.yaml.
@@ -507,6 +552,10 @@ export function createAdapter(io: Io): Adapter {
 
   // Wait for the thread's run to end, and read its final message.
   async function waitForText(handle: Handle, timeoutMs: number): Promise<{ text: string }> {
+    // The newest run seen completed while awaited work was pending, and when
+    // a poll first saw that work cleared.
+    let heldRun: string | null = null;
+    let clearedAt: number | null = null;
     // Open the database fresh on each check: the server writes it, and a
     // long-lived handle can see stale state.
     const check = () => withDb((db) => {
@@ -516,14 +565,28 @@ export function createAdapter(io: Io): Adapter {
       // still read waiting for a moment, while T3 captures the checkpoint at
       // the end of a turn, so it is polled again like any running one.
       if (run.pendingRequests > 0) throw new SessionFailed('the session stopped to ask');
-      // A run that failed before any message is a refusal, such as a model
-      // the account cannot run. run then archives the thread.
+      // A run that failed before the thread had any message is a refusal,
+      // such as a model the account cannot run. run then archives the
+      // thread. A run that awaited work wakes follows one that replied.
       if (run.status === 'failed') {
         const failure = run.failure ?? 'run failed';
-        throw readFinalMessage(db, run.id) === null ? new Refused(failure) : new SessionFailed(failure);
+        throw hasReply(db, handle.id) ? new SessionFailed(failure) : new Refused(failure);
       }
       if (run.status === 'interrupted' || run.status === 'cancelled' || run.status === 'rolled_back') throw new SessionFailed(`run ${run.status.replace('_', ' ')}`);
       if (run.status !== 'completed') return undefined;
+      // The session ended a turn to wait for work it started. When that work
+      // ends, T3 wakes it into a new run, which holds the result.
+      if (awaitedTasks(db, handle.id) > 0) {
+        heldRun = run.id;
+        clearedAt = null;
+        return undefined;
+      }
+      // T3 may drop a finished task a moment before it records the run the
+      // task wakes, so the run that waited is read only once none follows.
+      if (run.id === heldRun) {
+        clearedAt ??= io.now();
+        if (io.now() - clearedAt < WAKE_GRACE_MS) return undefined;
+      }
       if (hasProposedPlan(db, run.id)) throw new SessionFailed('the session returned a plan, not a result');
       // A completed run with no message yet is one with none at all; the
       // resolver rejects the empty text. One still streaming will finish.
