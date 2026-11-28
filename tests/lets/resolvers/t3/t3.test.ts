@@ -556,6 +556,16 @@ test('a session that asks a question while it waits on awaited work stops to ask
   await assert.rejects(running(db, steps), (error) => error instanceof SessionFailed && error.message === 'the session stopped to ask (thread T)');
 });
 
+test('a session whose awaited work outlasts the time limit times out, naming the thread', async () => {
+  await assert.rejects(running(waitingRun(), [], { timeoutMs: 180000 }),
+    (error) => error instanceof TimeoutError && error.message === 'no result after 180000 ms (thread T)');
+});
+test('a session whose awaited work outlasts the time limit stops its thread, and keeps it', async () => {
+  const log: Log = [];
+  await assert.rejects(running(waitingRun(), [], { timeoutMs: 180000, log }), TimeoutError);
+  assert.deepEqual(sentTypes(log), ['launch', 'thread.stop']);
+});
+
 // A thread whose run failed before any assistant message.
 function refusedRun() {
   const db = database();
