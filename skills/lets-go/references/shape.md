@@ -188,10 +188,13 @@ status command in [Commit the discovery map](#commit-the-discovery-map)
 lists a path, name each one, and say that they hold the discovery's
 edits, uncommitted in this checkout. While
 [Find the input's discovery](#find-the-inputs-discovery) still takes the
-parent as this input's discovery, say to leave the maps as they are:
-running `lets-go` again with the same idea, or `#<i>`, resumes the
-discovery and keeps its edits. Otherwise, say to commit or discard them
-before the next run, because the next run stops on them.
+parent as this input's discovery, and this checkout is on `<default>`,
+say to leave the maps as they are: running `lets-go` again with the same
+idea, or `#<i>`, resumes the discovery and keeps its edits. Otherwise,
+say to commit or discard them before the next run, because the next run
+stops on them. On a branch of its own, such as `t3/d0dcada9`, the next
+run counts the edits as changes, so the checkout is no longer at the
+default branch, and the run stops.
 
 ## Commit the discovery map
 
