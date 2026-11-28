@@ -120,9 +120,10 @@ The alternatives were:
   answers stay consistent, but it adds a `lets-shape` fold step, more
   than a Size S bug.
 
-So this change does not catch a reserved line in an epic's packet. No
-issue is filed for it here: `lets-go` lists the case at the end of its
-pass, and the user decides whether to shape it.
+So this change does not catch a reserved line in an epic's packet. It
+files no issue for it, and no skill lists the case on its own. The
+`lets-go` run that plans this change reports it to the user, who
+decides whether to shape it.
 
 ### 3. The schemas stay as they are
 
@@ -154,15 +155,18 @@ contradict the skill.
   quote #328's lines, which are of that form, and D2 says an unclear
   line goes to the user.
 - [The rule catches lines that only describe the user's role, and asks
-  more questions than needed] → Accepted (D2). The cost is one extra
-  question for the user.
+  more questions than needed] → A line that only describes what the
+  user does, and names no choice, is not unclear (spec, *A line the
+  brainstorm cannot read for certain*). What is left is accepted (D2):
+  the cost is one extra question for the user.
 - [A question with no favorite reads as unhelpful, because the user
   gets no lead] → The trade-offs of each option carry the analysis.
   Accepted by D3.
 - [A reserved line in a parent epic's packet still gets a
   recommendation, and `lets-go` may answer it at `auto`] → Accepted and
-  left out of this change (D4, Decision 2). `lets-go` lists the case at
-  the end of its pass for the user to shape.
+  left out of this change (D4, Decision 2). Nothing reports such a
+  line later; the user hears of the gap once, from the `lets-go` run
+  that plans this change.
 
 ## Migration & Rollback
 

@@ -35,9 +35,10 @@ epic's *Shared decisions* hold one decision for every story under it.
 Asking it in each story's brainstorm could record different answers to
 that one decision, and asking it once would need a step that folds the
 answer into the epic's packet, which is more than this Size S bug. So a
-reserved line in an epic's packet is not caught by this change. `lets-go`
-lists the case at the end of its pass, and the user decides whether to
-shape it (D4).
+reserved line in an epic's packet is not caught by this change. This
+change files no issue for it, and no skill lists the case on its own.
+The `lets-go` run that plans this change reports it to the user, who
+decides whether to shape it (D4).
 
 ## Capabilities
 

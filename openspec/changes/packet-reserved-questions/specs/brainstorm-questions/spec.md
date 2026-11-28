@@ -38,11 +38,15 @@ Makes sure that a decision an issue's packet leaves to the user reaches the user
 
 ### Requirement: A line the brainstorm cannot read for certain leaves the question to the user
 
-When `lets-brainstorm` cannot tell whether a packet line leaves a decision to the user, it SHALL treat the line as leaving it to the user.
+When `lets-brainstorm` cannot tell whether a packet line leaves a decision to the user, it SHALL treat the line as leaving it to the user. A line that only describes what the user does in the product, and names no choice to make, SHALL NOT count as unclear.
 
 #### Scenario: An unclear line
 - **WHEN** a story's packet says "The timeout is up to the user's preference, probably 30 seconds"
 - **THEN** the brainstorm asks the timeout as a question left to the user, with no recommendation
+
+#### Scenario: A line that describes what the user does
+- **WHEN** a story's packet says "When the user runs `lets-go`, it prints the pull request's URL"
+- **THEN** the brainstorm does not treat the line as a question left to the user
 
 ### Requirement: A question left to the user carries no recommendation and names no favorite
 
