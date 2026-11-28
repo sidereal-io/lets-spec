@@ -106,6 +106,13 @@ or section for this. For example, #328's packet holds two such lines:
 A line that makes the decision, such as "The flag is named `--quiet`",
 leaves nothing to the user.
 
+When you cannot tell whether a line leaves a decision to the user,
+treat it as if it does. "The timeout is up to the user's preference,
+probably 30 seconds" is such a line: ask the timeout. A line that only
+describes what the user does in the product, and names no choice to
+make, is not unclear. "When the user runs `lets-go`, it prints the pull
+request's URL" leaves nothing to the user.
+
 ### Settle the story
 
 - Ask one question at a time, with your recommended answer and why it
